@@ -1,0 +1,107 @@
+/* ---------------------------------------------------------------
+ * Design tokens — the only file where raw colors may appear.
+ * Everything else must reference these custom properties.
+ * Accent family = botたんのミントグリーン.
+ * --------------------------------------------------------------- */
+:root {
+	/* mint primitives */
+	--mint-50: #f2fbf9;
+	--mint-100: #dff7f2;
+	--mint-200: #c5efe7;
+	--mint-300: #93dcd0;
+	--mint-400: #4cc5b8;
+	--mint-500: #1db4ab;
+	--mint-600: #18a9a4;
+	--mint-700: #128f8b;
+	--mint-800: #14605d;
+	--mint-900: #123f3e;
+
+	/* semantic: surfaces */
+	--bg: #f4fbfa;
+	--bg-glow: #d9faf3;
+	--bg-raised: #ffffff;
+	--bg-inset: #eef7f5;
+	--bg-veil: rgba(249, 255, 252, 0.85);
+
+	/* semantic: content */
+	--text: #173b3b;
+	--text-strong: #124c4a;
+	--text-muted: #66807e;
+	--text-faint: #8aa3a0;
+	--text-on-accent: #ffffff;
+
+	/* semantic: lines & focus */
+	--line: #dcefeb;
+	--line-strong: #cce7e2;
+	--focus-ring: rgba(24, 169, 164, 0.45);
+
+	/* semantic: accent */
+	--accent: var(--mint-600);
+	--accent-strong: var(--mint-700);
+	--accent-soft: var(--mint-100);
+	--accent-softer: var(--mint-50);
+	--accent-border: var(--mint-300);
+	--brand-gradient: linear-gradient(145deg, #20c9bb, #209ab7);
+
+	/* semantic: states */
+	--danger: #b04a4a;
+	--danger-soft: #fbeeee;
+
+	/* bubbles */
+	--bubble-bg: #ffffff;
+	--bubble-border: #d9ebe7;
+	--bubble-mine-bg: linear-gradient(145deg, #dcf8f3, #e7f9fa);
+	--bubble-mine-border: #bfe4dc;
+	--bubble-bot-bg: linear-gradient(145deg, #ffffff, #edfbf7);
+	--bubble-bot-border: #bfe9e1;
+
+	/* elevation */
+	--shadow-card: 0 6px 22px rgba(47, 108, 101, 0.06);
+	--shadow-pop: 0 20px 60px rgba(35, 94, 86, 0.12);
+
+	/* radii */
+	--radius-s: 10px;
+	--radius-m: 14px;
+	--radius-l: 20px;
+	--radius-pill: 999px;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #0f2321;
+		--bg-glow: #173f3a;
+		--bg-raised: #172d2a;
+		--bg-inset: #122825;
+		--bg-veil: rgba(15, 35, 33, 0.85);
+
+		--text: #d9eeeb;
+		--text-strong: #e6f8f4;
+		--text-muted: #8aa7a3;
+		--text-faint: #6c8a86;
+		--text-on-accent: #06211f;
+
+		--line: #22403c;
+		--line-strong: #2c4c48;
+		--focus-ring: rgba(76, 197, 184, 0.5);
+
+		--accent: var(--mint-400);
+		--accent-strong: var(--mint-300);
+		--accent-soft: #17423d;
+		--accent-softer: #14322f;
+		--accent-border: #2f5d57;
+		--brand-gradient: linear-gradient(145deg, #1a9e93, #1c7f97);
+
+		--danger: #e08d8d;
+		--danger-soft: #3c2626;
+
+		--bubble-bg: #172d2a;
+		--bubble-border: #2a4945;
+		--bubble-mine-bg: linear-gradient(145deg, #18413c, #16463f);
+		--bubble-mine-border: #2d5b54;
+		--bubble-bot-bg: linear-gradient(145deg, #172d2a, #173b35);
+		--bubble-bot-border: #2d554e;
+
+		--shadow-card: 0 6px 22px rgba(0, 0, 0, 0.25);
+		--shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.4);
+	}
+}

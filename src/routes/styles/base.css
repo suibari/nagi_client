@@ -1,0 +1,218 @@
+:root {
+	font-family: 'Hiragino Sans', 'Yu Gothic UI', system-ui, sans-serif;
+	color: var(--text);
+	background: var(--bg);
+	font-synthesis: none;
+}
+* {
+	box-sizing: border-box;
+}
+body {
+	margin: 0;
+	min-width: 320px;
+	background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0, transparent 32rem), var(--bg);
+}
+a {
+	color: inherit;
+	text-decoration: none;
+}
+button,
+input,
+textarea {
+	font: inherit;
+}
+button {
+	cursor: pointer;
+}
+:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-weight: 800;
+	font-size: 20px;
+	letter-spacing: 0.04em;
+	color: var(--text-strong);
+}
+.mark {
+	width: 36px;
+	height: 36px;
+	border-radius: 12px;
+	display: grid;
+	place-items: center;
+	color: var(--text-on-accent);
+	background: var(--brand-gradient);
+	box-shadow: var(--shadow-card);
+}
+.mark.large {
+	width: 58px;
+	height: 58px;
+	margin: auto;
+	border-radius: 19px;
+	font-size: 27px;
+}
+.primary,
+.login,
+.composer .submit,
+.auth-card > button {
+	color: var(--text-on-accent) !important;
+	background: var(--accent);
+	border: 0;
+	border-radius: var(--radius-pill);
+	padding: 10px 18px;
+	font-weight: 700;
+}
+.primary:hover,
+.login:hover,
+.composer .submit:hover,
+.auth-card > button:hover {
+	background: var(--accent-strong);
+}
+.ghost {
+	border: 0;
+	background: none;
+	color: var(--text-muted);
+}
+.ghost:hover {
+	color: var(--accent-strong);
+}
+.eyebrow {
+	color: var(--accent-strong) !important;
+	font-size: 13px;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+.card {
+	background: var(--bg-raised);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-l);
+	box-shadow: var(--shadow-card);
+}
+.state,
+.notice {
+	text-align: center;
+	background: var(--bg-raised);
+	border: 1px solid var(--line);
+	border-radius: 18px;
+	padding: 30px;
+	color: var(--text-muted);
+}
+.state button {
+	display: block;
+	margin: 12px auto 0;
+}
+.error {
+	color: var(--danger);
+}
+.more {
+	justify-self: center;
+	border: 1px solid var(--line-strong);
+	background: var(--bg-raised);
+	color: var(--accent-strong);
+	border-radius: var(--radius-pill);
+	padding: 10px 22px;
+}
+.more:hover {
+	border-color: var(--accent-border);
+	background: var(--accent-softer);
+}
+.page-title {
+	padding: 20px 0 16px;
+}
+.page-title h1 {
+	font-size: 26px;
+	margin: 0;
+	color: var(--text-strong);
+}
+.auth-card {
+	width: min(450px, 100%);
+	margin: 40px auto;
+	background: var(--bg-raised);
+	border: 1px solid var(--line);
+	border-radius: 28px;
+	padding: 34px;
+	text-align: center;
+	box-shadow: var(--shadow-pop);
+}
+.auth-card h1 {
+	color: var(--text-strong);
+}
+.auth-card p {
+	color: var(--text-muted);
+	line-height: 1.7;
+}
+.auth-card label {
+	display: grid;
+	gap: 7px;
+	text-align: left;
+	margin: 24px 0;
+	color: var(--text-muted);
+	font-size: 13px;
+	font-weight: 700;
+}
+.auth-card input,
+.auth-card textarea {
+	border: 1px solid var(--line-strong);
+	border-radius: 12px;
+	padding: 13px;
+	outline: none;
+	background: var(--bg-inset);
+	color: var(--text);
+	resize: vertical;
+}
+.auth-card input:focus,
+.auth-card textarea:focus {
+	border-color: var(--accent);
+}
+.auth-card > button {
+	width: 100%;
+	padding: 13px;
+}
+.auth-card > a {
+	display: block;
+	margin-top: 20px;
+	color: var(--accent-strong);
+	font-size: 13px;
+}
+.auth-card button:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+.legal-links {
+	display: flex;
+	gap: 14px;
+	justify-content: center;
+	font-size: 12px;
+	color: var(--text-faint);
+	margin-top: 18px;
+}
+.legal-links a:hover {
+	color: var(--accent-strong);
+}
+.prose {
+	padding: 26px 28px;
+	line-height: 1.9;
+	text-align: left;
+}
+.prose h1 {
+	font-size: 24px;
+	color: var(--text-strong);
+}
+.prose h2 {
+	font-size: 17px;
+	color: var(--text-strong);
+	margin-top: 28px;
+}
+.prose p,
+.prose li {
+	color: var(--text);
+	font-size: 14px;
+}
+.prose .updated {
+	color: var(--text-faint);
+	font-size: 12px;
+}

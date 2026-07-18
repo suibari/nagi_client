@@ -1,0 +1,30 @@
+<script lang="ts">
+	import type { FeedItem } from '$lib/api/types';
+	import ChatBubble from './ChatBubble.svelte';
+	let { item }: { item: FeedItem } = $props();
+	const STALE_MS = 3 * 60 * 1000;
+	let stale = $derived(
+		item.botReplyState === 'pending' &&
+			Date.now() - new Date(item.createdAt).valueOf() > STALE_MS,
+	);
+</script>
+
+<article class="thread-unit">
+	<ChatBubble post={item} />
+	{#if item.botReply}
+		<div class="thread-reply"><ChatBubble post={item.botReply} compact /></div>
+	{:else if item.botReplyState === 'pending' && !stale}
+		<div class="thread-reply">
+			<div class="bot-pending">
+				<span class="avatar small">凪</span>
+				<div class="pending-bubble" role="status" aria-live="polite">
+					<span class="typing"><i></i><i></i><i></i></span>Botたんが返信を考えています…
+				</div>
+			</div>
+		</div>
+	{:else if item.botReplyState === 'pending'}
+		<p class="bot-missed">Botたんの返信はまだ届いていないようです</p>
+	{:else if item.botReplyState === 'failed'}
+		<p class="bot-missed">Botたんは今回お休みしました</p>
+	{/if}
+</article>

@@ -5,7 +5,7 @@
   "redirect_uris": ["https://nagi.suibari.com/oauth/callback"],
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
-  "scope": "atproto repo:com.suibari.nagi.post repo:com.suibari.nagi.reaction repo:com.suibari.nagi.profile blob:image/* rpc:com.suibari.nagi.getTimeline?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getTrend?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getThread?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getProfile?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getNotifications?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.updateSeen?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.translatePost?aud=did:web:nagi-api.suibari.com%23nagi_appview",
+  "scope": "atproto repo:com.suibari.nagi.post repo:com.suibari.nagi.reaction repo:com.suibari.nagi.profile blob:image/* rpc:com.suibari.nagi.getTimeline?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getAffirmation?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getThread?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getProfile?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.getNotifications?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.updateSeen?aud=did:web:nagi-api.suibari.com%23nagi_appview rpc:com.suibari.nagi.translatePost?aud=did:web:nagi-api.suibari.com%23nagi_appview",
   "token_endpoint_auth_method": "none",
   "application_type": "web",
   "dpop_bound_access_tokens": true

@@ -2,7 +2,7 @@ import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { session } from '$lib/oauth/session.svelte';
-import type { TimelinePage } from './types';
+import type { NotificationView, Page, ProfileFeedFilter, ProfilePage, ThreadView, TimelinePage } from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 const aud = 'did:web:nagi-api.suibari.com#nagi_appview';
 const cache = new Map<string, { token: string; expires: number }>();
@@ -46,20 +46,31 @@ export const getTimeline = (cursor?: string) =>
 		'com.suibari.nagi.getTimeline',
 		`/xrpc/com.suibari.nagi.getTimeline${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
 	);
-export const getTrend = () =>
-	call<TimelinePage>('com.suibari.nagi.getTrend', '/xrpc/com.suibari.nagi.getTrend');
+export const getAffirmation = (cursor?: string) =>
+	call<TimelinePage>(
+		'com.suibari.nagi.getAffirmation',
+		`/xrpc/com.suibari.nagi.getAffirmation${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
+	);
 export const getThread = (uri: string) =>
-	call<any>(
+	call<{ thread: ThreadView }>(
 		'com.suibari.nagi.getThread',
 		`/xrpc/com.suibari.nagi.getThread?uri=${encodeURIComponent(uri)}`,
 	);
-export const getProfile = (actor: string) =>
-	call<any>(
+export const getProfile = (
+	actor: string,
+	opts: { filter?: ProfileFeedFilter; cursor?: string; limit?: number } = {},
+) => {
+	const params = new URLSearchParams({ actor });
+	if (opts.filter) params.set('filter', opts.filter);
+	if (opts.cursor) params.set('cursor', opts.cursor);
+	if (opts.limit) params.set('limit', String(opts.limit));
+	return call<ProfilePage>(
 		'com.suibari.nagi.getProfile',
-		`/xrpc/com.suibari.nagi.getProfile?actor=${encodeURIComponent(actor)}`,
+		`/xrpc/com.suibari.nagi.getProfile?${params}`,
 	);
+};
 export const getNotifications = () =>
-	call<any>(
+	call<Page<NotificationView>>(
 		'com.suibari.nagi.getNotifications',
 		'/xrpc/com.suibari.nagi.getNotifications',
 		{},

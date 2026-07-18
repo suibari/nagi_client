@@ -2,7 +2,9 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { getThread } from '$lib/api/appview';
-	let thread = $state<any>();
+	import type { ThreadView } from '$lib/api/types';
+	import ChatBubble from '$lib/components/ChatBubble.svelte';
+	let thread = $state<ThreadView>();
 	let error = $state('');
 	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
 	onMount(() =>
@@ -17,8 +19,14 @@
 	<h1>スレッド</h1>
 </section>
 <section class="timeline">
-	{#if error}<div class="state error">{error}</div>{:else if !thread}<div class="state">
-			読み込み中…
-		</div>{:else}<div class="notice">{thread.post.text || 'この投稿は削除されました'}</div>
-		{#each thread.replies ?? [] as reply}<div class="notice">{reply.text}</div>{/each}{/if}
+	{#if error}<div class="state error">{error}</div>
+	{:else if !thread}<div class="state">読み込み中…</div>
+	{:else}
+		<article class="thread-unit">
+			<ChatBubble post={thread.post} />
+			{#each thread.replies as reply (reply.uri)}
+				<div class="thread-reply"><ChatBubble post={reply} compact /></div>
+			{/each}
+		</article>
+	{/if}
 </section>

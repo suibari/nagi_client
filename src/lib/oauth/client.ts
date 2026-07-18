@@ -8,7 +8,7 @@ const scope = [
 	'repo:com.suibari.nagi.profile',
 	'blob:image/*',
 	'rpc:com.suibari.nagi.getTimeline?aud=did:web:nagi-api.suibari.com%23nagi_appview',
-	'rpc:com.suibari.nagi.getTrend?aud=did:web:nagi-api.suibari.com%23nagi_appview',
+	'rpc:com.suibari.nagi.getAffirmation?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getThread?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getProfile?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getNotifications?aud=did:web:nagi-api.suibari.com%23nagi_appview',

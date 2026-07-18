@@ -1,7 +1,10 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import Header from '$lib/components/Header.svelte';
+	import SidebarLeft from '$lib/components/shell/SidebarLeft.svelte';
+	import SidebarRight from '$lib/components/shell/SidebarRight.svelte';
+	import MobileHeader from '$lib/components/shell/MobileHeader.svelte';
+	import MobileNav from '$lib/components/shell/MobileNav.svelte';
 	import { initOAuth } from '$lib/oauth/session.svelte';
 	import { onMount } from 'svelte';
 
@@ -17,5 +20,10 @@
 		content="すべての声を受け止める、AT Protocol上のSNS"
 	/></svelte:head
 >
-<Header />
-<main>{@render children()}</main>
+<MobileHeader />
+<div class="shell">
+	<SidebarLeft />
+	<main>{@render children()}</main>
+	<SidebarRight />
+</div>
+<MobileNav />

@@ -30,7 +30,7 @@
 	<div class="composer-foot">
 		<span
 			>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
-		><button disabled={busy || !text.trim()} onclick={submit}
+		><button class="submit" disabled={busy || !text.trim()} onclick={submit}
 			>{busy ? '送信中…' : '投稿する'}</button
 		>
 	</div>

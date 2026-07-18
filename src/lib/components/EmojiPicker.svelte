@@ -3,6 +3,7 @@
 	const emojis = ['🌿', '🫶', '✨', '☺️', '🌊', '💐', '👏', '💫'];
 </script>
 
-<div class="reactions" aria-label="リアクションを選択">
-	{#each emojis as emoji}<button onclick={() => select(emoji)}>{emoji}</button>{/each}
+<div class="emoji-picker" role="menu" aria-label="リアクションを選択">
+	{#each emojis as emoji}<button role="menuitem" onclick={() => select(emoji)}>{emoji}</button
+		>{/each}
 </div>
