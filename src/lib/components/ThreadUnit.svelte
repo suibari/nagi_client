@@ -10,7 +10,12 @@
 </script>
 
 <article class="thread-unit">
-	<ChatBubble post={item} />
+	{#if item.replyParent}
+		<ChatBubble post={item.replyParent} />
+		<div class="thread-reply"><ChatBubble post={item} compact /></div>
+	{:else}
+		<ChatBubble post={item} />
+	{/if}
 	{#if item.botReply}
 		<div class="thread-reply"><ChatBubble post={item.botReply} compact /></div>
 	{:else if item.botReplyState === 'pending' && !stale}
