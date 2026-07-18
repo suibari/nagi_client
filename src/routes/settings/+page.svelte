@@ -2,12 +2,22 @@
 	import { putProfile } from '$lib/atproto/records';
 	import { getProfile } from '$lib/api/appview';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
+	import { getThemePreference, setThemePreference, type ThemePreference } from '$lib/theme';
+	import { onMount } from 'svelte';
 	let name = $state('');
 	let description = $state('');
 	let status = $state('');
 	let error = $state('');
 	let busy = $state(false);
 	let loaded = $state(false);
+	let theme = $state<ThemePreference>('system');
+	onMount(() => {
+		theme = getThemePreference();
+	});
+	function changeTheme(preference: ThemePreference) {
+		theme = preference;
+		setThemePreference(preference);
+	}
 	// prefill with current values so saving doesn't wipe the existing profile
 	$effect(() => {
 		const did = $session?.did;
@@ -41,7 +51,26 @@
 </script>
 
 <section class="auth-card">
-	<h1>プロフィール設定</h1>
+	<h1>設定</h1>
+	<fieldset class="theme-settings">
+		<legend>表示テーマ</legend>
+		<p>この端末で使用する配色を選択します。</p>
+		<div class="theme-options">
+			{#each [{ value: 'system', label: 'システム設定' }, { value: 'light', label: 'ライト' }, { value: 'dark', label: 'ダーク' }] as option}
+				<label class:checked={theme === option.value}>
+					<input
+						type="radio"
+						name="theme"
+						value={option.value}
+						checked={theme === option.value}
+						onchange={() => changeTheme(option.value as ThemePreference)}
+					/>
+					<span>{option.label}</span>
+				</label>
+			{/each}
+		</div>
+	</fieldset>
+	<h2>プロフィール設定</h2>
 	{#if !$session && $oauthReady}
 		<p>設定を変更するにはログインしてください。</p>
 		<a class="login" href="/login">ログイン</a>

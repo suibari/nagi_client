@@ -472,3 +472,70 @@
 		flex-wrap: wrap;
 	}
 }
+.theme-settings {
+	margin: 0 0 1.5rem;
+	padding: 0;
+	border: 0;
+}
+
+.theme-settings legend,
+.auth-card h2 {
+	color: var(--text-strong);
+	font-size: 1.1rem;
+	font-weight: 700;
+}
+
+.theme-settings p {
+	margin: 0.35rem 0 0.75rem;
+	color: var(--text-muted);
+}
+
+.theme-options {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+.theme-options label {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.75rem;
+	padding: 0.5rem 0.75rem;
+	cursor: pointer;
+	color: var(--text);
+	background: var(--bg-inset);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-m);
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.theme-options label:hover {
+	background: var(--bg-hover);
+}
+
+.theme-options label.checked {
+	color: var(--accent-strong);
+	background: var(--accent-soft);
+	border-color: var(--accent);
+}
+
+.theme-options label:has(input:focus-visible) {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
+}
+
+.theme-options input {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	opacity: 0;
+}
+
+@media (max-width: 420px) {
+	.theme-options {
+		grid-template-columns: 1fr;
+	}
+}
