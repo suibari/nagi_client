@@ -51,6 +51,7 @@ export type NotificationView = {
 	id: string;
 	type: 'reply' | 'reaction';
 	actor: ActorView;
+	post?: PostView;
 	subjectUri: string;
 	reasonUri: string;
 	createdAt: string;

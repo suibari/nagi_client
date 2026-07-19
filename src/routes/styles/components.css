@@ -686,20 +686,41 @@
 /* --- notifications --- */
 .notification {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 12px;
 	padding: 14px 16px;
 	text-align: left;
 }
+.notification-main {
+	min-width: 0;
+	flex: 1;
+}
+.notification-head {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+}
 .notification .what {
 	font-size: 14px;
 	color: var(--text);
+	min-width: 0;
 }
 .notification .when {
 	margin-left: auto;
 	font-size: 12px;
 	color: var(--text-faint);
 	flex: 0 0 auto;
+}
+.notification-subject {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	margin: 8px 0 0;
+	color: var(--text-muted);
+	font-size: 14px;
+	line-height: 1.55;
+	white-space: pre-wrap;
 }
 
 /* --- hero (logged-out landing) --- */

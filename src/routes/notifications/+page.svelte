@@ -8,6 +8,7 @@
 	let items = $state<NotificationView[]>([]);
 	let error = $state('');
 	let loading = $state(true);
+	const relativeTimeBase = Date.now();
 	onMount(async () => {
 		if (!$session && $oauthReady) {
 			location.href = '/login';
@@ -25,6 +26,17 @@
 		const [, , did, , rkey] = uri.split('/');
 		return `/thread/${did}/${rkey}`;
 	};
+	const relativeTime = (createdAt: string) => {
+		const differenceSeconds = (new Date(createdAt).valueOf() - relativeTimeBase) / 1000;
+		const absoluteSeconds = Math.abs(differenceSeconds);
+		const formatter = new Intl.RelativeTimeFormat(dateLocale(), { numeric: 'auto' });
+		if (absoluteSeconds < 60) return formatter.format(Math.round(differenceSeconds), 'second');
+		if (absoluteSeconds < 3_600)
+			return formatter.format(Math.round(differenceSeconds / 60), 'minute');
+		if (absoluteSeconds < 86_400)
+			return formatter.format(Math.round(differenceSeconds / 3_600), 'hour');
+		return formatter.format(Math.round(differenceSeconds / 86_400), 'day');
+	};
 </script>
 
 <section class="page-title"><h1>{m.navNotifications()}</h1></section>
@@ -36,19 +48,17 @@
 		{#each items as item (item.id)}
 			<a class="notification card" href={threadHref(item.subjectUri)}>
 				<Avatar actor={item.actor} size="small" />
-				<span class="what"
-					><strong>{item.actor.displayName ?? item.actor.handle}</strong>{item.type === 'reply'
-						? m.notifRepliedSuffix()
-						: m.notifReactedSuffix()}</span
-				>
-				<time class="when"
-					>{new Date(item.createdAt).toLocaleString(dateLocale(), {
-						month: 'short',
-						day: 'numeric',
-						hour: '2-digit',
-						minute: '2-digit',
-					})}</time
-				>
+				<div class="notification-main">
+					<div class="notification-head">
+						<span class="what"
+							><strong>{item.actor.displayName ?? item.actor.handle}</strong>{item.type === 'reply'
+								? m.notifRepliedSuffix()
+								: m.notifReactedSuffix()}</span
+						>
+						<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
+					</div>
+					{#if item.post?.text}<p class="notification-subject">{item.post.text}</p>{/if}
+				</div>
 			</a>
 		{/each}
 	{/if}
