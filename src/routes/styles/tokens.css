@@ -58,10 +58,10 @@
 	/* bubbles */
 	--bubble-bg: var(--color-surface);
 	--bubble-border: #cde3e5;
-	--bubble-mine-bg: linear-gradient(145deg, #cdf7f7, #dcf8fe);
-	--bubble-mine-border: #83dfe1;
-	--bubble-bot-bg: linear-gradient(145deg, #ffffff, #f7eefa);
-	--bubble-bot-border: #edc5e8;
+	--bubble-mine-bg: linear-gradient(145deg, #cfe3fb, #e7f4ff);
+	--bubble-mine-border: #7db7ed;
+	--bubble-bot-bg: linear-gradient(145deg, #d2f5df, #e7fbf3);
+	--bubble-bot-border: #86d8bd;
 
 	/* elevation */
 	--shadow-card: 0 6px 22px rgba(47, 53, 66, 0.07);
@@ -123,10 +123,10 @@
 
 	--bubble-bg: var(--color-surface);
 	--bubble-border: #46515e;
-	--bubble-mine-bg: linear-gradient(145deg, #174953, #19473f);
-	--bubble-mine-border: #287986;
-	--bubble-bot-bg: linear-gradient(145deg, #2f3640, #453543);
-	--bubble-bot-border: #76566f;
+	--bubble-mine-bg: linear-gradient(145deg, #173760, #244f78);
+	--bubble-mine-border: #3978ad;
+	--bubble-bot-bg: linear-gradient(145deg, #163d33, #27624f);
+	--bubble-bot-border: #3b8f75;
 
 	--shadow-card: 0 6px 22px rgba(0, 0, 0, 0.28);
 	--shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.45);
@@ -175,10 +175,10 @@
 		--danger-soft: #4a2931;
 		--bubble-bg: var(--color-surface);
 		--bubble-border: #46515e;
-		--bubble-mine-bg: linear-gradient(145deg, #174953, #19473f);
-		--bubble-mine-border: #287986;
-		--bubble-bot-bg: linear-gradient(145deg, #2f3640, #453543);
-		--bubble-bot-border: #76566f;
+		--bubble-mine-bg: linear-gradient(145deg, #173760, #244f78);
+		--bubble-mine-border: #3978ad;
+		--bubble-bot-bg: linear-gradient(145deg, #163d33, #27624f);
+		--bubble-bot-border: #3b8f75;
 		--shadow-card: 0 6px 22px rgba(0, 0, 0, 0.28);
 		--shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.45);
 	}

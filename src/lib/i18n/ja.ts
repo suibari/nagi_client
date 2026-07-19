@@ -1,8 +1,7 @@
 // Source-of-truth message catalog. en.ts must define exactly these keys
 // with the same signatures (enforced via the Messages type).
 export const ja = {
-	// brand — the 凪 mark is shared by both locales
-	brandMark: '凪',
+	// brand
 	appTitle: 'Nagi — やさしい言葉が凪ぐ場所',
 	appDescription: 'すべての声を受け止める、AT Protocol上のSNS',
 
@@ -142,6 +141,7 @@ export const ja = {
 	// oauth callback
 	oauthLoggingIn: 'ログインしています…',
 	oauthBody: '認証が完了するとタイムラインへ戻ります。',
+	oauthErrorTitle: 'ログインできませんでした',
 	backToTimeline: 'タイムラインへ戻る',
 
 	// settings

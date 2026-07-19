@@ -14,7 +14,7 @@
 </script>
 
 <section class="auth-card">
-	<div class="mark large">{m.brandMark()}</div>
+	<img class="mark large" src="/nagi_icon.png" alt="" />
 	<h1>{m.loginTitle()}</h1>
 	<p>
 		{m.loginBody()}

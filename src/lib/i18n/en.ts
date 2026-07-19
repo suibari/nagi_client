@@ -2,7 +2,6 @@ import type { Messages } from './ja';
 
 // English catalog. The Messages type enforces exact key/signature parity with ja.ts.
 export const en: Messages = {
-	brandMark: '凪',
 	appTitle: 'Nagi — a calm place for gentle words',
 	appDescription: 'A social network on the AT Protocol that embraces every voice',
 
@@ -124,6 +123,7 @@ export const en: Messages = {
 
 	oauthLoggingIn: 'Logging you in…',
 	oauthBody: "You'll return to the timeline once authentication completes.",
+	oauthErrorTitle: 'Login failed',
 	backToTimeline: 'Back to the timeline',
 	backToSettings: 'Back to settings',
 	settingsProfileTitle: 'Profile',

@@ -28,7 +28,7 @@
 	{:else if item.botReplyState === 'pending' && !stale}
 		<div class="thread-reply">
 			<div class="bot-pending">
-				<span class="avatar small">{m.brandMark()}</span>
+				<img class="avatar small" src="/nagi_icon.png" alt="" />
 				<div class="pending-bubble" role="status" aria-live="polite">
 					<span class="typing"><i></i><i></i><i></i></span>{m.botThinking()}
 				</div>

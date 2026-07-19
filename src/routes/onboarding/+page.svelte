@@ -3,7 +3,7 @@
 </script>
 
 <section class="auth-card">
-	<div class="mark large">{m.brandMark()}</div>
+	<img class="mark large" src="/nagi_icon.png" alt="" />
 	<h1>{m.welcomeTitle()}</h1>
 	<p>{m.onboardingBody()}</p>
 	<a class="login" href="/settings/profile?onboarding=1">{m.onboardingSetupProfile()}</a>
