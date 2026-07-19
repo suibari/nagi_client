@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { ReactionView } from '$lib/api/types';
+	import type { ActorView, ReactionView } from '$lib/api/types';
 	import { session } from '$lib/oauth/session.svelte';
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
 	import EmojiPicker from './EmojiPicker.svelte';
+	import Avatar from './Avatar.svelte';
 	let {
 		uri,
 		cid,
@@ -24,6 +25,9 @@
 		if (Date.now() >= holdUntil) local = [...incoming];
 	});
 	const rkeyOf = (u?: string) => u?.split('/').pop();
+	const reactedByViewer = (reaction: ReactionView) =>
+		reaction.reactedByMe ||
+		Boolean($session?.did && reaction.reactors.some((actor) => actor.did === $session?.did));
 	async function toggle(raw: string) {
 		if (!$session) {
 			location.href = '/login';
@@ -33,27 +37,46 @@
 		pickerOpen = false;
 		const emoji = raw.normalize('NFC');
 		const existing = local.find((r) => r.emoji === emoji);
-		const snapshot = local.map((r) => ({ ...r }));
+		const snapshot = local.map((r) => ({ ...r, reactors: [...r.reactors] }));
+		const viewerDid = $session.did;
+		const viewer =
+			local.flatMap((reaction) => reaction.reactors).find((actor) => actor.did === viewerDid) ??
+			({ did: viewerDid, handle: viewerDid } satisfies ActorView);
 		busy = true;
 		holdUntil = Date.now() + HOLD_MS;
 		try {
-			if (existing?.reactedByMe) {
+			if (existing && reactedByViewer(existing)) {
 				const rkey = rkeyOf(existing.viewerReactionUri);
 				if (!rkey) return;
 				local = local
 					.map((r) =>
 						r.emoji === emoji
-							? { ...r, count: r.count - 1, reactedByMe: false, viewerReactionUri: undefined }
+							? {
+									...r,
+									reactors: r.reactors.filter((actor) => actor.did !== viewerDid),
+									reactedByMe: false,
+									viewerReactionUri: undefined,
+								}
 							: r,
 					)
-					.filter((r) => r.count > 0);
+					.filter((r) => r.reactors.length > 0 || r.hasMoreReactors);
 				await deleteRecord(REACTION, rkey);
 			} else {
 				local = existing
 					? local.map((r) =>
-							r.emoji === emoji ? { ...r, count: r.count + 1, reactedByMe: true } : r,
+							r.emoji === emoji
+								? {
+										...r,
+										reactors: [
+											viewer,
+											...r.reactors.filter((actor) => actor.did !== viewerDid),
+										].slice(0, 5),
+										hasMoreReactors: r.hasMoreReactors || r.reactors.length >= 5 || undefined,
+										reactedByMe: true,
+									}
+								: r,
 						)
-					: [...local, { emoji, count: 1, reactedByMe: true }];
+					: [...local, { emoji, reactors: [viewer], reactedByMe: true }];
 				const res = await createReaction({ uri, cid }, emoji);
 				local = local.map((r) =>
 					r.emoji === emoji ? { ...r, viewerReactionUri: res.data.uri } : r,
@@ -69,12 +92,29 @@
 
 <div class="reactions">
 	{#each local as reaction (reaction.emoji)}
-		<button
-			class:active={reaction.reactedByMe}
-			aria-pressed={reaction.reactedByMe ?? false}
-			aria-label={`${reaction.emoji} でリアクション`}
-			onclick={() => toggle(reaction.emoji)}>{reaction.emoji} {reaction.count}</button
-		>
+		<div class="reaction-group">
+			<button
+				class="reaction-emoji"
+				class:active={reactedByViewer(reaction)}
+				aria-pressed={reactedByViewer(reaction)}
+				aria-label={`${reaction.emoji} でリアクション`}
+				onclick={() => toggle(reaction.emoji)}>{reaction.emoji}</button
+			>
+			<div class="reaction-actors">
+				{#each reaction.reactors as actor (actor.did)}
+					<a
+						class="reaction-avatar"
+						href={`/profile/${actor.did}`}
+						aria-label={`${actor.displayName ?? actor.handle}のプロフィールを見る`}
+						title={actor.displayName ?? actor.handle}><Avatar {actor} size="small" /></a
+					>
+				{/each}
+				{#if reaction.hasMoreReactors}<span
+						class="reaction-more"
+						aria-label="ほかにもリアクションした人がいます">…</span
+					>{/if}
+			</div>
+		</div>
 	{/each}
 	<div class="picker-wrap">
 		<button

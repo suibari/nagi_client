@@ -15,21 +15,25 @@ export class Feed {
 	error = $state('');
 	#fetcher: (cursor?: string) => Promise<Page<FeedItem>>;
 	#refreshing = false;
+	#loadRequest = 0;
 	constructor(fetcher: (cursor?: string) => Promise<Page<FeedItem>>) {
 		this.#fetcher = fetcher;
 	}
 	async load() {
+		const request = ++this.#loadRequest;
 		this.loading = true;
 		try {
 			const page = await this.#fetcher();
+			if (request !== this.#loadRequest) return;
 			this.items = page.items;
 			this.cursor = page.cursor;
 			this.hasMore = page.hasMore;
 			this.error = '';
 		} catch (e) {
+			if (request !== this.#loadRequest) return;
 			this.error = message(e, '読み込めませんでした');
 		} finally {
-			this.loading = false;
+			if (request === this.#loadRequest) this.loading = false;
 		}
 	}
 	async loadMore() {
