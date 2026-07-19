@@ -18,6 +18,7 @@
 	let holdUntil = 0;
 	let busy = $state(false);
 	let pickerOpen = $state(false);
+	let addButton = $state<HTMLButtonElement>();
 	$effect(() => {
 		const incoming = reactions;
 		if (Date.now() >= holdUntil) local = [...incoming];
@@ -76,9 +77,20 @@
 		>
 	{/each}
 	<div class="picker-wrap">
-		<button class="add" aria-label="リアクションを追加" onclick={() => (pickerOpen = !pickerOpen)}
-			>＋</button
+		<button
+			bind:this={addButton}
+			class="add"
+			aria-label="リアクションを追加"
+			aria-expanded={pickerOpen}
+			onclick={() => (pickerOpen = !pickerOpen)}>＋</button
 		>
-		{#if pickerOpen}<EmojiPicker select={toggle} />{/if}
+		{#if pickerOpen && addButton}
+			<button
+				class="emoji-picker-backdrop"
+				aria-label="絵文字パレットを閉じる"
+				onclick={() => (pickerOpen = false)}
+			></button>
+			<EmojiPicker anchor={addButton} select={toggle} close={() => (pickerOpen = false)} />
+		{/if}
 	</div>
 </div>
