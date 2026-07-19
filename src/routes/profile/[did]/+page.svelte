@@ -51,6 +51,9 @@
 				})
 			: undefined,
 	);
+	function postDeleted(uri: string) {
+		for (const cachedFeed of feeds.values()) cachedFeed.removePost(uri);
+	}
 </script>
 
 {#if feed?.error && !profile}
@@ -91,7 +94,10 @@
 		{:else if !feed.items.length}<div class="state">
 				{tab === 'reactions' ? m.profileEmptyReactions() : m.profileEmptyPosts()}
 			</div>
-		{:else}{#each feed.items as item (item.uri)}<ThreadUnit {item} />{/each}{#if feed.hasMore}
+		{:else}{#each feed.items as item (item.uri)}<ThreadUnit
+					{item}
+					ondeleted={postDeleted}
+				/>{/each}{#if feed.hasMore}
 				<button class="more" onclick={() => feed?.loadMore()}>{m.loadMore()}</button>{/if}{/if}
 	</section>
 {/if}

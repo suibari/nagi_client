@@ -4,6 +4,7 @@
 	import type { ProfileDetail } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Avatar from '../Avatar.svelte';
+	import Icon from './Icon.svelte';
 	let me = $state<ProfileDetail>();
 	$effect(() => {
 		const did = $session?.did;
@@ -26,7 +27,13 @@
 			<strong>{me?.displayName ?? me?.handle ?? m.meFallback()}</strong>
 			<span>@{me?.handle ?? $session.did}</span>
 		</a>
-		<button class="ghost signout" onclick={() => void signOut()}>{m.signOut()}</button>
+		<button
+			class="ghost signout"
+			type="button"
+			aria-label={m.signOut()}
+			title={m.signOut()}
+			onclick={() => void signOut()}><Icon name="logout" size={19} /></button
+		>
 	</div>
 {:else if $oauthReady}
 	<div class="account-login">

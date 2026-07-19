@@ -24,8 +24,10 @@
 	{:else if !feed.items.length}<div class="state">
 			{m.affirmationEmpty()}
 		</div>
-	{:else}{#each feed.items as item (item.uri)}<ThreadUnit {item} />{/each}{#if feed.hasMore}<button
-				class="more"
-				onclick={() => feed.loadMore()}>{m.loadMore()}</button
+	{:else}{#each feed.items as item (item.uri)}<ThreadUnit
+				{item}
+				ondeleted={(uri) => feed.removePost(uri)}
+			/>{/each}{#if feed.hasMore}<button class="more" onclick={() => feed.loadMore()}
+				>{m.loadMore()}</button
 			>{/if}{/if}
 </section>

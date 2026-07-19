@@ -149,6 +149,18 @@
 .meta time a:hover {
 	color: var(--accent-strong);
 }
+.post-delete {
+	flex: 0 0 auto;
+	display: grid;
+	place-items: center;
+	padding: 3px;
+	color: var(--danger);
+}
+.post-delete:hover {
+	color: var(--danger);
+	background: color-mix(in srgb, var(--danger) 10%, transparent);
+	border-radius: 50%;
+}
 .badge {
 	flex: 0 0 auto;
 	border-radius: var(--radius-pill);
@@ -538,6 +550,50 @@
 }
 .cropper-actions button {
 	padding: 9px 16px;
+}
+.delete-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 110;
+	display: grid;
+	place-items: center;
+	padding: 20px;
+	background: rgb(0 0 0 / 0.58);
+}
+.delete-dialog {
+	width: min(100%, 380px);
+	display: grid;
+	gap: 14px;
+	padding: 22px;
+	border-radius: var(--radius-l);
+	background: var(--bg-raised);
+	box-shadow: var(--shadow-card);
+}
+.delete-dialog h2,
+.delete-dialog p {
+	margin: 0;
+}
+.delete-error {
+	color: var(--danger) !important;
+}
+.delete-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+.delete-actions button {
+	padding: 9px 16px;
+}
+.danger {
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: var(--danger);
+	color: white;
+	font-weight: 700;
+}
+.danger:disabled {
+	cursor: wait;
+	opacity: 0.65;
 }
 @media (max-width: 380px) {
 	.cropper-backdrop {

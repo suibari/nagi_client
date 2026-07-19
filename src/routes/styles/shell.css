@@ -91,7 +91,10 @@
 .account-card .signout {
 	margin-left: auto;
 	flex: 0 0 auto;
-	font-size: 12px;
+	display: grid;
+	place-items: center;
+	padding: 6px;
+	border-radius: 50%;
 }
 .account-login {
 	margin: 16px 6px 0;
@@ -269,6 +272,10 @@
 		width: 30px;
 		height: 30px;
 		border-radius: 10px;
+	}
+	.mobile-profile {
+		display: block;
+		border-radius: 50%;
 	}
 	.mobile-nav {
 		display: flex;

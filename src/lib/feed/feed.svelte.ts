@@ -68,6 +68,15 @@ export class Feed {
 			this.#refreshing = false;
 		}
 	}
+	removePost(uri: string) {
+		this.items = this.items
+			.filter((item) => item.uri !== uri)
+			.map((item) => ({
+				...item,
+				...(item.replyParent?.uri === uri ? { replyParent: undefined } : {}),
+				...(item.botReply?.uri === uri ? { botReply: undefined, botReplyState: undefined } : {}),
+			}));
+	}
 	/** true while one of `did`'s recent posts is still waiting for botたん */
 	hasPendingFor(did?: string, windowMs = 180_000) {
 		if (!did) return false;
