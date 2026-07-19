@@ -1,19 +1,23 @@
+<script lang="ts">
+	import { m } from '$lib/i18n/i18n.svelte';
+</script>
+
 <aside class="sidebar sidebar-right">
 	<div class="side-card">
-		<h2>🌿 Nagiについて</h2>
+		<h2>{m.aboutTitle()}</h2>
 		<p>
-			Nagiに投稿すると、<a href="https://suibari.com/character/">全肯定botたん</a
-			>があなたの言葉をまるごと受け止めて返信してくれます。どんな気持ちも、まずここで凪ぎますように。
+			{m.aboutBeforeLink()}<a href="https://suibari.com/character/">{m.aboutLinkText()}</a
+			>{m.aboutAfterLink()}
 		</p>
 	</div>
 	<div class="side-card">
-		<h2>🗂️ タブのつかいかた</h2>
+		<h2>{m.tabsGuideTitle()}</h2>
 		<p>
-			「グローバル」にはみんなの投稿が流れます。「全肯定」には、botたんがとくに強く肯定した投稿が集まります。
+			{m.tabsGuideBody()}
 		</p>
 	</div>
 	<div class="spacer"></div>
 	<footer class="side-footer">
-		<a href="/terms">利用規約</a><a href="/privacy">プライバシーポリシー</a><span>© Nagi</span>
+		<a href="/terms">{m.termsLink()}</a><a href="/privacy">{m.privacyLink()}</a><span>© Nagi</span>
 	</footer>
 </aside>

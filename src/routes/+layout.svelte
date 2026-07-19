@@ -5,6 +5,7 @@
 	import MobileHeader from '$lib/components/shell/MobileHeader.svelte';
 	import MobileNav from '$lib/components/shell/MobileNav.svelte';
 	import { initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 	import { getOwnNagiProfile } from '$lib/atproto/records';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -31,8 +32,8 @@
 </script>
 
 <svelte:head>
-	<title>Nagi — やさしい言葉が凪ぐ場所</title>
-	<meta name="description" content="すべての声を受け止める、AT Protocol上のSNS" />
+	<title>{m.appTitle()}</title>
+	<meta name="description" content={m.appDescription()} />
 
 	<link rel="icon" type="image/png" href="/nagi_icon.png" />
 	<link rel="apple-touch-icon" href="/nagi_icon.png" />

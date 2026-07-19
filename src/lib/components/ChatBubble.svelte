@@ -4,6 +4,7 @@
 	import Avatar from './Avatar.svelte';
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import { session } from '$lib/oauth/session.svelte';
+	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	let { post, compact = false }: { post: PostView; compact?: boolean } = $props();
 	let expanded = $state(false);
 	let mine = $derived($session?.did === post.author.did);
@@ -12,15 +13,15 @@
 </script>
 
 <div class="post-row" class:mine class:bot={post.isBot}>
-	<a href={`/profile/${post.author.did}`} aria-label="プロフィールを見る"
+	<a href={`/profile/${post.author.did}`} aria-label={m.viewProfileAria()}
 		><Avatar actor={post.author} size={compact ? 'small' : undefined} /></a
 	>
 	<div class="bubble">
 		<div class="meta">
 			<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
-			>{#if post.isBot}<span class="badge">Botたん</span>{/if}<time
+			>{#if post.isBot}<span class="badge">{m.botBadge()}</span>{/if}<time
 				><a href={threadHref}
-					>{new Date(post.createdAt).toLocaleString('ja-JP', {
+					>{new Date(post.createdAt).toLocaleString(dateLocale(), {
 						month: 'short',
 						day: 'numeric',
 						hour: '2-digit',
@@ -29,9 +30,9 @@
 				></time
 			>
 		</div>
-		<p class:collapsed={!expanded}>{post.deleted ? 'この投稿は削除されました' : post.text}</p>
+		<p class:collapsed={!expanded}>{post.deleted ? m.postDeleted() : post.text}</p>
 		{#if post.text.length > 220}<button class="read" onclick={() => (expanded = !expanded)}
-				>{expanded ? '閉じる' : '続きを読む'}</button
+				>{expanded ? m.readLess() : m.readMore()}</button
 			>{/if}{#if post.images?.length}<div class="images">
 				{#each post.images as image}<img src={resolve(image.url)} alt={image.alt} />{/each}
 			</div>{/if}<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />

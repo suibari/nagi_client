@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { signIn, oauthError } from '$lib/oauth/session.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 	let handle = $state('');
 	let busy = $state(false);
 	async function submit() {
@@ -13,13 +14,14 @@
 </script>
 
 <section class="auth-card">
-	<div class="mark large">凪</div>
-	<h1>Nagiに参加する</h1>
+	<div class="mark large">{m.brandMark()}</div>
+	<h1>{m.loginTitle()}</h1>
 	<p>
-		BlueskyまたはAT Protocolのハンドルでログインします。パスワードをNagiが受け取ることはありません。
+		{m.loginBody()}
 	</p>
-	<label>ハンドル<input bind:value={handle} placeholder="yourname.bsky.social" /></label><button
-		disabled={busy || !handle.trim()}
-		onclick={submit}>{busy ? '移動しています…' : 'OAuthでログイン'}</button
-	>{#if $oauthError}<p class="error">{$oauthError}</p>{/if}<a href="/">ログインせずに見る</a>
+	<label
+		>{m.loginHandleLabel()}<input bind:value={handle} placeholder="yourname.bsky.social" /></label
+	><button disabled={busy || !handle.trim()} onclick={submit}
+		>{busy ? m.loginRedirecting() : m.loginSubmit()}</button
+	>{#if $oauthError}<p class="error">{$oauthError}</p>{/if}<a href="/">{m.loginBrowse()}</a>
 </section>

@@ -1,6 +1,10 @@
+<script lang="ts">
+	import { m } from '$lib/i18n/i18n.svelte';
+</script>
+
 <section class="auth-card">
-	<div class="mark large">凪</div>
-	<h1>Nagiへようこそ</h1>
-	<p>ここは、言葉をまず受け止める場所です。公開タイムラインへの投稿は誰でも読むことができます。</p>
-	<a class="login" href="/settings?onboarding=1">プロフィールを設定する</a>
+	<div class="mark large">{m.brandMark()}</div>
+	<h1>{m.welcomeTitle()}</h1>
+	<p>{m.onboardingBody()}</p>
+	<a class="login" href="/settings?onboarding=1">{m.onboardingSetupProfile()}</a>
 </section>

@@ -1,6 +1,10 @@
+<script lang="ts">
+	import { m } from '$lib/i18n/i18n.svelte';
+</script>
+
 <section class="auth-card">
-	<div class="mark large">凪</div>
-	<h1>ログインしています…</h1>
-	<p>認証が完了するとタイムラインへ戻ります。</p>
-	<a href="/">タイムラインへ戻る</a>
+	<div class="mark large">{m.brandMark()}</div>
+	<h1>{m.oauthLoggingIn()}</h1>
+	<p>{m.oauthBody()}</p>
+	<a href="/">{m.backToTimeline()}</a>
 </section>

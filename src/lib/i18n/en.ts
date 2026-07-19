@@ -1,0 +1,148 @@
+import type { Messages } from './ja';
+
+// English catalog. The Messages type enforces exact key/signature parity with ja.ts.
+export const en: Messages = {
+	brandMark: '凪',
+	appTitle: 'Nagi — a calm place for gentle words',
+	appDescription: 'A social network on the AT Protocol that embraces every voice',
+
+	loading: 'Loading…',
+	retry: 'Try again',
+	loadMore: 'Load more',
+	loadFailed: 'Could not load',
+	login: 'Log in',
+	cancel: 'Cancel',
+
+	navGlobal: 'Global',
+	navAffirmation: 'Affirmation',
+	navNotifications: 'Notifications',
+	navSettings: 'Settings',
+	mainNavAria: 'Main navigation',
+	feedTabsAria: 'Feed tabs',
+
+	aboutTitle: '🌿 About Nagi',
+	aboutBeforeLink: 'When you post on Nagi, ',
+	aboutLinkText: 'the fully affirming Bot-tan',
+	aboutAfterLink:
+		' embraces your words and replies with warmth. May every feeling find its calm here first.',
+	tabsGuideTitle: '🗂️ How the tabs work',
+	tabsGuideBody:
+		'"Global" shows posts from everyone. "Affirmation" gathers the posts Bot-tan affirmed most strongly.',
+	termsLink: 'Terms of Service',
+	privacyLink: 'Privacy Policy',
+
+	myProfileAria: 'Your profile',
+	meFallback: 'Me',
+	signOut: 'Log out',
+	loginHint: 'Join with your Bluesky account',
+	profileLink: 'Profile',
+
+	composerPlaceholder: 'How are you feeling right now?',
+	composerAria: 'Post text',
+	composerSubmit: 'Post',
+	composerSubmitting: 'Posting…',
+	postFailed: 'Could not post',
+
+	viewProfileAria: 'View profile',
+	botBadge: 'Bot-tan',
+	postDeleted: 'This post has been deleted',
+	readMore: 'Read more',
+	readLess: 'Show less',
+	translate: 'Translate',
+	translating: 'Translating…',
+
+	botThinking: 'Bot-tan is thinking of a reply…',
+	botMissed: "Bot-tan's reply doesn't seem to have arrived yet",
+	botSkipped: 'Bot-tan sat this one out',
+
+	reactWithAria: (p) => `React with ${p.emoji}`,
+	viewProfileOfAria: (p) => `View ${p.name}'s profile`,
+	moreReactorsAria: 'More people have reacted',
+	addReactionAria: 'Add a reaction',
+	closeEmojiAria: 'Close emoji palette',
+	emojiPickerAria: 'Choose a reaction',
+	emojiFavoritesLabel: 'Frequently used',
+	emojiSearchLabel: 'Search emoji',
+
+	heroEyebrow: 'A gentle place to connect on the AT Protocol',
+	heroTitle: 'Words arrive, quietly.',
+	heroBody: 'Here, every voice is embraced first.',
+	welcomeTitle: 'Welcome to Nagi',
+	welcomeBody: 'Anyone can read the timeline. Join to post and react.',
+	joinCta: 'Join',
+	feedWaiting: 'Waiting for the waves to arrive…',
+	feedEmpty: 'The sea is still calm. Waiting for the first words.',
+
+	affirmationEmpty: 'Posts that Bot-tan affirmed most strongly gather here.',
+
+	notifFetchFailed: 'Could not fetch notifications',
+	notifEmpty: 'No notifications yet.',
+	notifRepliedSuffix: ' replied to your post',
+	notifReactedSuffix: ' reacted to your post',
+
+	threadEyebrow: 'Conversation',
+	threadTitle: 'Thread',
+
+	profileTabPosts: 'Posts',
+	profileTabReplies: 'Replies',
+	profileTabMedia: 'Media',
+	profileTabReactions: 'Reactions',
+	profileTabsAria: 'Profile tabs',
+	profileEdit: 'Edit profile',
+	profilePostsUnit: (p) => (p.count === 1 ? 'post' : 'posts'),
+	profileJoinedSince: (p) => `Joined ${p.date}`,
+	profileEmptyPosts: 'No posts yet.',
+	profileEmptyReactions: 'No reactions yet.',
+
+	loginTitle: 'Join Nagi',
+	loginBody: 'Log in with your Bluesky or AT Protocol handle. Nagi never receives your password.',
+	loginHandleLabel: 'Handle',
+	loginSubmit: 'Log in with OAuth',
+	loginRedirecting: 'Redirecting…',
+	loginBrowse: 'Browse without logging in',
+
+	onboardingBody:
+		'This is a place where words are embraced first. Posts to the public timeline can be read by anyone.',
+	onboardingSetupProfile: 'Set up your profile',
+
+	oauthLoggingIn: 'Logging you in…',
+	oauthBody: "You'll return to the timeline once authentication completes.",
+	backToTimeline: 'Back to the timeline',
+
+	themeLegend: 'Theme',
+	themeHelp: 'Choose the color scheme used on this device.',
+	optionSystem: 'System',
+	themeLight: 'Light',
+	themeDark: 'Dark',
+	languageLegend: '言語 / Language',
+	languageHelp: 'Choose the display language used on this device.',
+	localeJa: '日本語',
+	localeEn: 'English',
+	profileSettingsTitle: 'Profile settings',
+	profileSettingsNote:
+		'Your Nagi profile is independent from your Bluesky profile. Changes saved here are not reflected on Bluesky.',
+	onboardingLoadedNote:
+		'Your Bluesky profile has been loaded as a starting point. Review it and save.',
+	loginRequired: 'Log in to change your settings.',
+	currentAvatarAlt: 'Current avatar',
+	selectImage: 'Choose image',
+	remove: 'Remove',
+	avatarNote: "JPEG, PNG, or WebP. You'll crop it to a square after selecting.",
+	displayNameLabel: 'Display name',
+	bioLabel: 'Bio',
+	save: 'Save',
+	saving: 'Saving…',
+	saved: 'Saved',
+	saveFailed: 'Could not save',
+	profileLoadFailed: 'Could not load your profile',
+	imageTypeError: 'Please choose a JPEG, PNG, or WebP image',
+	imageSizeError: 'Please choose an image no larger than 25MB',
+
+	cropperTitle: 'Crop your avatar',
+	cropperDragAria: 'Drag the image to adjust its position',
+	cropperZoom: 'Zoom',
+	confirm: 'Apply',
+	processing: 'Processing…',
+	imageProcessFailed: 'Could not process the image',
+	imageCompressFailed: 'Could not compress the image below 1MB',
+};

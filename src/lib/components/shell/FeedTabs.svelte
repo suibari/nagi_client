@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { m } from '$lib/i18n/i18n.svelte';
 </script>
 
-<nav class="feed-tabs" aria-label="フィード切り替え">
-	<a href="/" class:active={page.url.pathname === '/'}>グローバル</a>
-	<a href="/affirmation" class:active={page.url.pathname.startsWith('/affirmation')}>全肯定</a>
+<nav class="feed-tabs" aria-label={m.feedTabsAria()}>
+	<a href="/" class:active={page.url.pathname === '/'}>{m.navGlobal()}</a>
+	<a href="/affirmation" class:active={page.url.pathname.startsWith('/affirmation')}
+		>{m.navAffirmation()}</a
+	>
 </nav>

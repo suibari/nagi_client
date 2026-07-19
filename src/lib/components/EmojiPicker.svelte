@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import ja from 'emoji-picker-element/i18n/ja';
-	import emojiDataUrl from 'emoji-picker-element-data/ja/emojibase/data.json?url';
+	import jaI18n from 'emoji-picker-element/i18n/ja';
+	import enI18n from 'emoji-picker-element/i18n/en';
+	import emojiDataUrlJa from 'emoji-picker-element-data/ja/emojibase/data.json?url';
+	import emojiDataUrlEn from 'emoji-picker-element-data/en/emojibase/data.json?url';
+	import { i18n, m } from '$lib/i18n/i18n.svelte';
 
 	let {
 		anchor,
@@ -67,13 +70,14 @@
 		updatePosition();
 		void import('emoji-picker-element').then(({ Picker }) => {
 			if (disposed) return;
+			const locale = i18n.locale;
 			picker = new Picker({
-				locale: 'ja',
-				dataSource: emojiDataUrl,
+				locale,
+				dataSource: locale === 'ja' ? emojiDataUrlJa : emojiDataUrlEn,
 				i18n: {
-					...ja,
-					favoritesLabel: 'よく使う絵文字',
-					searchLabel: '絵文字を検索',
+					...(locale === 'ja' ? jaI18n : enI18n),
+					favoritesLabel: m.emojiFavoritesLabel(),
+					searchLabel: m.emojiSearchLabel(),
 				},
 			});
 			picker.addEventListener('emoji-click', (event) => {
@@ -104,5 +108,5 @@
 	class:positioned
 	style={positionStyle}
 	role="dialog"
-	aria-label="リアクションを選択"
+	aria-label={m.emojiPickerAria()}
 ></div>

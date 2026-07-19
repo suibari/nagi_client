@@ -6,6 +6,7 @@
 	import Composer from '$lib/components/Composer.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 	const feed = new Feed((cursor) => getTimeline(cursor));
 	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {
@@ -39,29 +40,27 @@
 	<Composer onposted={() => feed.refresh()} />
 {:else}
 	<section class="hero">
-		<p class="eyebrow">AT Protocolでつながる、やさしい場所</p>
-		<h1>言葉が、静かに届く。</h1>
-		<p>ここでは、どんな声もまず受け止めます。</p>
+		<p class="eyebrow">{m.heroEyebrow()}</p>
+		<h1>{m.heroTitle()}</h1>
+		<p>{m.heroBody()}</p>
 	</section>
 	<aside class="welcome">
 		<div>
-			<strong>Nagiへようこそ</strong><span
-				>タイムラインは誰でも読めます。参加すると投稿やリアクションができます。</span
-			>
+			<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
 		</div>
-		<a href="/login">参加する</a>
+		<a href="/login">{m.joinCta()}</a>
 	</aside>
 {/if}
 <section class="timeline" aria-busy={feed.loading}>
-	{#if feed.loading && !feed.items.length}<div class="state">波が届くのを待っています…</div>
+	{#if feed.loading && !feed.items.length}<div class="state">{m.feedWaiting()}</div>
 	{:else if feed.error && !feed.items.length}<div class="state error">
-			{feed.error}<button onclick={() => feed.load()}>もう一度</button>
+			{feed.error}<button onclick={() => feed.load()}>{m.retry()}</button>
 		</div>
 	{:else if !feed.items.length}<div class="state">
-			まだ静かな海です。最初の言葉を待っています。
+			{m.feedEmpty()}
 		</div>
 	{:else}{#each feed.items as item (item.uri)}<ThreadUnit {item} />{/each}{#if feed.hasMore}<button
 				class="more"
-				onclick={() => feed.loadMore()}>さらに読む</button
+				onclick={() => feed.loadMore()}>{m.loadMore()}</button
 			>{/if}{/if}
 </section>

@@ -4,6 +4,7 @@
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
 	import EmojiPicker from './EmojiPicker.svelte';
 	import Avatar from './Avatar.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 	let {
 		uri,
 		cid,
@@ -97,7 +98,7 @@
 				class="reaction-emoji"
 				class:active={reactedByViewer(reaction)}
 				aria-pressed={reactedByViewer(reaction)}
-				aria-label={`${reaction.emoji} でリアクション`}
+				aria-label={m.reactWithAria({ emoji: reaction.emoji })}
 				onclick={() => toggle(reaction.emoji)}>{reaction.emoji}</button
 			>
 			<div class="reaction-actors">
@@ -105,13 +106,12 @@
 					<a
 						class="reaction-avatar"
 						href={`/profile/${actor.did}`}
-						aria-label={`${actor.displayName ?? actor.handle}のプロフィールを見る`}
+						aria-label={m.viewProfileOfAria({ name: actor.displayName ?? actor.handle })}
 						title={actor.displayName ?? actor.handle}><Avatar {actor} size="small" /></a
 					>
 				{/each}
-				{#if reaction.hasMoreReactors}<span
-						class="reaction-more"
-						aria-label="ほかにもリアクションした人がいます">…</span
+				{#if reaction.hasMoreReactors}<span class="reaction-more" aria-label={m.moreReactorsAria()}
+						>…</span
 					>{/if}
 			</div>
 		</div>
@@ -120,14 +120,14 @@
 		<button
 			bind:this={addButton}
 			class="add"
-			aria-label="リアクションを追加"
+			aria-label={m.addReactionAria()}
 			aria-expanded={pickerOpen}
 			onclick={() => (pickerOpen = !pickerOpen)}>＋</button
 		>
 		{#if pickerOpen && addButton}
 			<button
 				class="emoji-picker-backdrop"
-				aria-label="絵文字パレットを閉じる"
+				aria-label={m.closeEmojiAria()}
 				onclick={() => (pickerOpen = false)}
 			></button>
 			<EmojiPicker anchor={addButton} select={toggle} close={() => (pickerOpen = false)} />

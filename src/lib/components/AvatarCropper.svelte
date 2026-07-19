@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 
 	let {
 		file,
@@ -76,7 +77,7 @@
 			canvas.width = size;
 			canvas.height = size;
 			const context = canvas.getContext('2d');
-			if (!context) throw new Error('画像を処理できませんでした');
+			if (!context) throw new Error(m.imageProcessFailed());
 			const ratio = size / viewport;
 			context.drawImage(
 				image!,
@@ -91,10 +92,10 @@
 				blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
 				quality -= 0.1;
 			} while (blob && blob.size > 1_000_000 && quality >= 0.4);
-			if (!blob || blob.size > 1_000_000) throw new Error('画像を1MB以下に圧縮できませんでした');
+			if (!blob || blob.size > 1_000_000) throw new Error(m.imageCompressFailed());
 			onconfirm(blob);
 		} catch (cause) {
-			error = cause instanceof Error ? cause.message : '画像を処理できませんでした';
+			error = cause instanceof Error ? cause.message : m.imageProcessFailed();
 		} finally {
 			processing = false;
 		}
@@ -108,7 +109,7 @@
 
 <div class="cropper-backdrop" role="presentation">
 	<div class="cropper-dialog" role="dialog" aria-modal="true" aria-labelledby="cropper-title">
-		<h2 id="cropper-title">アバターをトリミング</h2>
+		<h2 id="cropper-title">{m.cropperTitle()}</h2>
 		<div
 			class="cropper-viewport"
 			onpointerdown={pointerDown}
@@ -116,7 +117,7 @@
 			onpointerup={() => (dragging = false)}
 			onpointercancel={() => (dragging = false)}
 			role="application"
-			aria-label="画像をドラッグして位置を調整"
+			aria-label={m.cropperDragAria()}
 		>
 			{#if source}
 				<img
@@ -132,14 +133,14 @@
 			{/if}
 		</div>
 		<label class="cropper-zoom">
-			<span>拡大</span>
+			<span>{m.cropperZoom()}</span>
 			<input type="range" min="1" max="3" step="0.01" value={zoom} oninput={changeZoom} />
 		</label>
 		{#if error}<p class="error">{error}</p>{/if}
 		<div class="cropper-actions">
-			<button type="button" class="ghost" onclick={oncancel}>キャンセル</button>
+			<button type="button" class="ghost" onclick={oncancel}>{m.cancel()}</button>
 			<button type="button" class="primary" disabled={processing || !imageWidth} onclick={crop}>
-				{processing ? '処理中…' : '決定'}
+				{processing ? m.processing() : m.confirm()}
 			</button>
 		</div>
 	</div>

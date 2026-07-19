@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { FeedItem } from '$lib/api/types';
 	import ChatBubble from './ChatBubble.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 	let { item }: { item: FeedItem } = $props();
 	const STALE_MS = 3 * 60 * 1000;
 	let stale = $derived(
-		item.botReplyState === 'pending' &&
-			Date.now() - new Date(item.createdAt).valueOf() > STALE_MS,
+		item.botReplyState === 'pending' && Date.now() - new Date(item.createdAt).valueOf() > STALE_MS,
 	);
 </script>
 
@@ -21,15 +21,15 @@
 	{:else if item.botReplyState === 'pending' && !stale}
 		<div class="thread-reply">
 			<div class="bot-pending">
-				<span class="avatar small">凪</span>
+				<span class="avatar small">{m.brandMark()}</span>
 				<div class="pending-bubble" role="status" aria-live="polite">
-					<span class="typing"><i></i><i></i><i></i></span>Botたんが返信を考えています…
+					<span class="typing"><i></i><i></i><i></i></span>{m.botThinking()}
 				</div>
 			</div>
 		</div>
 	{:else if item.botReplyState === 'pending'}
-		<p class="bot-missed">Botたんの返信はまだ届いていないようです</p>
+		<p class="bot-missed">{m.botMissed()}</p>
 	{:else if item.botReplyState === 'failed'}
-		<p class="bot-missed">Botたんは今回お休みしました</p>
+		<p class="bot-missed">{m.botSkipped()}</p>
 	{/if}
 </article>

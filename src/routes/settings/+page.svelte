@@ -12,6 +12,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { getThemePreference, setThemePreference, type ThemePreference } from '$lib/theme';
+	import { i18n, m, setLocalePreference, type LocalePreference } from '$lib/i18n/i18n.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	let name = $state('');
 	let description = $state('');
@@ -24,9 +25,11 @@
 	let avatarChange = $state<Blob | null>();
 	let cropFile = $state<File>();
 	let theme = $state<ThemePreference>('system');
+	let localePref = $state<LocalePreference>('system');
 	let onboarding = $derived(page.url.searchParams.get('onboarding') === '1');
 	onMount(() => {
 		theme = getThemePreference();
+		localePref = i18n.preference;
 	});
 	onDestroy(() => {
 		if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview);
@@ -34,6 +37,10 @@
 	function changeTheme(preference: ThemePreference) {
 		theme = preference;
 		setThemePreference(preference);
+	}
+	function changeLocale(preference: LocalePreference) {
+		localePref = preference;
+		setLocalePreference(preference);
 	}
 	// Use the Nagi profile when editing. On first login, start with the Bluesky profile.
 	$effect(() => {
@@ -60,7 +67,7 @@
 				loaded = true;
 			})
 			.catch((e) => {
-				error = e instanceof Error ? e.message : 'プロフィールを読み込めませんでした';
+				error = e instanceof Error ? e.message : m.profileLoadFailed();
 				loaded = true;
 			});
 	});
@@ -70,11 +77,11 @@
 		input.value = '';
 		if (!file) return;
 		if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-			error = 'JPEG、PNG、WebPの画像を選択してください';
+			error = m.imageTypeError();
 			return;
 		}
 		if (file.size > 25_000_000) {
-			error = '25MB以下の画像を選択してください';
+			error = m.imageSizeError();
 			return;
 		}
 		error = '';
@@ -111,10 +118,10 @@
 			await putProfile(name, description, updatedDraft);
 			draft = updatedDraft;
 			avatarChange = undefined;
-			status = '保存しました';
+			status = m.saved();
 			if (onboarding) await goto('/');
 		} catch (e) {
-			error = e instanceof Error ? e.message : '保存できませんでした';
+			error = e instanceof Error ? e.message : m.saveFailed();
 		} finally {
 			busy = false;
 		}
@@ -122,12 +129,12 @@
 </script>
 
 <section class="auth-card">
-	<h1>設定</h1>
+	<h1>{m.navSettings()}</h1>
 	<fieldset class="theme-settings">
-		<legend>表示テーマ</legend>
-		<p>この端末で使用する配色を選択します。</p>
+		<legend>{m.themeLegend()}</legend>
+		<p>{m.themeHelp()}</p>
 		<div class="theme-options">
-			{#each [{ value: 'system', label: 'システム設定' }, { value: 'light', label: 'ライト' }, { value: 'dark', label: 'ダーク' }] as option}
+			{#each [{ value: 'system', label: m.optionSystem() }, { value: 'light', label: m.themeLight() }, { value: 'dark', label: m.themeDark() }] as option (option.value)}
 				<label class:checked={theme === option.value}>
 					<input
 						type="radio"
@@ -141,42 +148,64 @@
 			{/each}
 		</div>
 	</fieldset>
-	<h2>プロフィール設定</h2>
+	<fieldset class="theme-settings">
+		<legend>{m.languageLegend()}</legend>
+		<p>{m.languageHelp()}</p>
+		<div class="theme-options">
+			{#each [{ value: 'system', label: m.optionSystem() }, { value: 'ja', label: m.localeJa() }, { value: 'en', label: m.localeEn() }] as option (option.value)}
+				<label class:checked={localePref === option.value}>
+					<input
+						type="radio"
+						name="locale"
+						value={option.value}
+						checked={localePref === option.value}
+						onchange={() => changeLocale(option.value as LocalePreference)}
+					/>
+					<span>{option.label}</span>
+				</label>
+			{/each}
+		</div>
+	</fieldset>
+	<h2>{m.profileSettingsTitle()}</h2>
 	<p>
-		NagiのプロフィールはBlueskyのプロフィールとは独立しています。ここで変更・保存しても、Bluesky側のプロフィールには反映されません。
+		{m.profileSettingsNote()}
 	</p>
 	{#if onboarding}<p>
-			Blueskyのプロフィールを初期値として読み込みました。内容を確認して保存してください。
+			{m.onboardingLoadedNote()}
 		</p>{/if}
 	{#if !$session && $oauthReady}
-		<p>設定を変更するにはログインしてください。</p>
-		<a class="login" href="/login">ログイン</a>
+		<p>{m.loginRequired()}</p>
+		<a class="login" href="/login">{m.login()}</a>
 	{:else}
 		<div class="avatar-setting">
 			{#if avatarPreview}
-				<img class="avatar-preview" src={avatarPreview} alt="現在のアバター" />
+				<img class="avatar-preview" src={avatarPreview} alt={m.currentAvatarAlt()} />
 			{:else}
 				<span class="avatar large">{name.slice(0, 1) || '○'}</span>
 			{/if}
 			<div class="avatar-controls">
 				<label class="avatar-select">
-					画像を選択
+					{m.selectImage()}
 					<input type="file" accept="image/jpeg,image/png,image/webp" onchange={selectAvatar} />
 				</label>
 				{#if avatarPreview}
-					<button type="button" class="ghost avatar-remove" onclick={removeAvatar}>削除</button>
+					<button type="button" class="ghost avatar-remove" onclick={removeAvatar}
+						>{m.remove()}</button
+					>
 				{/if}
-				<small>JPEG・PNG・WebP。選択後に正方形へトリミングします。</small>
+				<small>{m.avatarNote()}</small>
 			</div>
 		</div>
-		<label>表示名<input bind:value={name} maxlength="640" /></label>
-		<label>自己紹介<textarea bind:value={description} maxlength="2560" rows="4"></textarea></label>
-		<button disabled={busy || !loaded} onclick={save}>{busy ? '保存中…' : '保存'}</button>
+		<label>{m.displayNameLabel()}<input bind:value={name} maxlength="640" /></label>
+		<label
+			>{m.bioLabel()}<textarea bind:value={description} maxlength="2560" rows="4"></textarea></label
+		>
+		<button disabled={busy || !loaded} onclick={save}>{busy ? m.saving() : m.save()}</button>
 		{#if status}<p>{status}</p>{/if}
 		{#if error}<p class="error">{error}</p>{/if}
 	{/if}
 	<div class="legal-links">
-		<a href="/terms">利用規約</a><a href="/privacy">プライバシーポリシー</a>
+		<a href="/terms">{m.termsLink()}</a><a href="/privacy">{m.privacyLink()}</a>
 	</div>
 </section>
 

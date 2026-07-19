@@ -1,4 +1,5 @@
 import type { FeedItem, Page } from '$lib/api/types';
+import { m } from '$lib/i18n/i18n.svelte';
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 
@@ -31,7 +32,7 @@ export class Feed {
 			this.error = '';
 		} catch (e) {
 			if (request !== this.#loadRequest) return;
-			this.error = message(e, '読み込めませんでした');
+			this.error = message(e, m.loadFailed());
 		} finally {
 			if (request === this.#loadRequest) this.loading = false;
 		}
@@ -45,7 +46,7 @@ export class Feed {
 			this.cursor = page.cursor;
 			this.hasMore = page.hasMore;
 		} catch (e) {
-			this.error = message(e, '読み込めませんでした');
+			this.error = message(e, m.loadFailed());
 		}
 	}
 	async refresh() {
