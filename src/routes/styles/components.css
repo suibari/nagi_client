@@ -389,6 +389,125 @@
 	font-size: 13px;
 	color: var(--text-muted);
 }
+
+/* --- avatar settings / cropper --- */
+.avatar-setting {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+.avatar-preview {
+	width: 76px;
+	height: 76px;
+	flex: 0 0 auto;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 2px solid var(--bg-raised);
+	box-shadow: var(--shadow-card);
+}
+.avatar-controls {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.avatar-controls small {
+	width: 100%;
+	color: var(--text-muted);
+}
+.avatar-select {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid var(--accent);
+	color: var(--accent-strong);
+	border-radius: var(--radius-pill);
+	padding: 8px 14px;
+	font-size: 13px;
+	font-weight: 700;
+	cursor: pointer;
+}
+.avatar-select input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+.avatar-remove {
+	padding: 8px 10px;
+	color: var(--danger);
+}
+.cropper-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	display: grid;
+	place-items: center;
+	padding: 20px;
+	background: rgb(0 0 0 / 0.58);
+}
+.cropper-dialog {
+	width: min(100%, 360px);
+	display: grid;
+	gap: 16px;
+	padding: 22px;
+	border-radius: var(--radius-l);
+	background: var(--bg-raised);
+	box-shadow: var(--shadow-card);
+}
+.cropper-dialog h2 {
+	margin: 0;
+	font-size: 19px;
+}
+.cropper-viewport {
+	width: 280px;
+	height: 280px;
+	max-width: 100%;
+	justify-self: center;
+	position: relative;
+	overflow: hidden;
+	touch-action: none;
+	cursor: grab;
+	background: var(--bg);
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px var(--accent-border);
+}
+.cropper-viewport:active {
+	cursor: grabbing;
+}
+.cropper-viewport img {
+	position: absolute;
+	top: 0;
+	left: 0;
+	max-width: none;
+	user-select: none;
+	pointer-events: none;
+}
+.cropper-zoom {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	align-items: center;
+	gap: 12px;
+}
+.cropper-zoom input {
+	width: 100%;
+}
+.cropper-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+.cropper-actions button {
+	padding: 9px 16px;
+}
+@media (max-width: 380px) {
+	.cropper-backdrop {
+		padding: 8px;
+	}
+	.cropper-dialog {
+		padding: 8px;
+	}
+}
 .profile-stats strong {
 	color: var(--text-strong);
 }
