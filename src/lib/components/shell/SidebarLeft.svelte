@@ -6,7 +6,9 @@
 </script>
 
 <aside class="sidebar sidebar-left">
-	<a class="brand" href="/" aria-label="Nagi home"><span class="mark">凪</span><span>Nagi</span></a>
+	<a class="brand" href="/" aria-label="Nagi home"
+		><img class="mark" src="/nagi_icon.png" alt="" /><span>Nagi</span></a
+	>
 	<nav class="side-nav" aria-label="メインナビゲーション">
 		{#each navItems as item (item.href)}
 			<a

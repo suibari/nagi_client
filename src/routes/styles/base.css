@@ -47,6 +47,10 @@ button {
 	background: var(--brand-gradient);
 	box-shadow: var(--shadow-card);
 }
+img.mark {
+	display: block;
+	object-fit: cover;
+}
 .mark.large {
 	width: 58px;
 	height: 58px;
