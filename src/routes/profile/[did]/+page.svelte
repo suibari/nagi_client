@@ -66,7 +66,7 @@
 				<h1>{profile?.displayName ?? profile?.handle ?? did}</h1>
 				<span class="handle">@{profile?.handle ?? did}</span>
 			</div>
-			{#if $session?.did === did}<a class="edit" href="/settings">{m.profileEdit()}</a>{/if}
+			{#if $session?.did === did}<a class="edit" href="/settings/profile">{m.profileEdit()}</a>{/if}
 		</div>
 		{#if profile?.description}<p class="description">{profile.description}</p>{/if}
 		<div class="profile-stats">

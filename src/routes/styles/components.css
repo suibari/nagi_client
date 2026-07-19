@@ -797,6 +797,7 @@
 	transition:
 		background 0.15s ease,
 		border-color 0.15s ease;
+	margin: 0;
 }
 
 .theme-options label:hover {
@@ -825,4 +826,107 @@
 	.theme-options {
 		grid-template-columns: 1fr;
 	}
+}
+
+/* --- categorized settings --- */
+.settings-page {
+	display: grid;
+	gap: 22px;
+}
+.settings-page h1,
+.settings-detail h1 {
+	margin: 0;
+}
+.settings-categories {
+	display: grid;
+	gap: 10px;
+}
+.settings-category {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: 15px;
+	min-height: 86px;
+	padding: 14px 18px;
+	color: var(--text);
+	background: var(--bg-raised);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-l);
+	box-shadow: var(--shadow-card);
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease,
+		transform 0.15s ease;
+}
+.settings-category:hover {
+	background: var(--bg-hover);
+	border-color: var(--line-strong);
+	transform: translateY(-1px);
+}
+.settings-category:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
+}
+.settings-category-icon {
+	display: grid;
+	place-items: center;
+	width: 46px;
+	height: 46px;
+	color: var(--accent-strong);
+	background: var(--accent-soft);
+	border-radius: 13px;
+}
+.settings-category-copy {
+	display: grid;
+	gap: 3px;
+}
+.settings-category-copy strong {
+	color: var(--text-strong);
+	font-size: 1.05rem;
+}
+.settings-category-copy small {
+	color: var(--text-muted);
+	font-size: 0.86rem;
+}
+.settings-category.danger .settings-category-icon,
+.settings-category.danger strong {
+	color: var(--danger, #c43d4d);
+}
+.settings-category.danger .settings-category-icon {
+	background: color-mix(in srgb, var(--danger, #c43d4d) 12%, transparent);
+}
+.settings-detail {
+	display: grid;
+	gap: 18px;
+}
+.settings-back {
+	width: fit-content;
+	color: var(--text-muted);
+	font-size: 0.9rem;
+}
+.settings-back:hover {
+	color: var(--accent-strong);
+}
+.auth-card > a.settings-back {
+	display: block;
+	margin: 0;
+	text-align: left;
+}
+.settings-detail .theme-settings {
+	margin-bottom: 0;
+}
+.delete-data-page strong {
+	display: block;
+	margin: 8px 0;
+	color: var(--text-strong);
+}
+.auth-card > button.danger-button,
+.auth-card > button.retry-delete {
+	margin-top: 0;
+}
+.auth-card > button.danger-button {
+	background: var(--danger, #c43d4d);
+}
+.auth-card > button.danger-button:hover {
+	filter: brightness(0.94);
 }

@@ -121,6 +121,26 @@ export async function deleteRecord(collection: string, rkey: string) {
 	const s = current();
 	return new Agent(s).com.atproto.repo.deleteRecord({ repo: s.did, collection, rkey });
 }
+export async function deleteAllNagiRecords() {
+	const s = current();
+	const agent = new Agent(s);
+	for (const collection of [POST, REACTION, PROFILE]) {
+		let cursor: string | undefined;
+		do {
+			const response = await agent.com.atproto.repo.listRecords({
+				repo: s.did,
+				collection,
+				limit: 100,
+				cursor,
+			});
+			for (const record of response.data.records) {
+				const rkey = record.uri.slice(record.uri.lastIndexOf('/') + 1);
+				await agent.com.atproto.repo.deleteRecord({ repo: s.did, collection, rkey });
+			}
+			cursor = response.data.cursor;
+		} while (cursor);
+	}
+}
 export async function putProfile(displayName: string, description: string, draft?: ProfileDraft) {
 	const s = current();
 	return new Agent(s).com.atproto.repo.putRecord({

@@ -40,3 +40,8 @@ export function setThemePreference(preference: ThemePreference): void {
 	}
 	applyThemePreference(preference);
 }
+
+export function clearThemePreference(): void {
+	if (typeof window !== 'undefined') window.localStorage.removeItem(THEME_STORAGE_KEY);
+	applyThemePreference('system');
+}

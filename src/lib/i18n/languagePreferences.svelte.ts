@@ -115,6 +115,14 @@ export function setTranslationLanguagePreference(preference: LanguagePreference)
 	storePreference(TRANSLATION_LANGUAGE_STORAGE_KEY, preference);
 }
 
+export function clearLanguagePreferences(): void {
+	preferences.post = 'browser';
+	preferences.translation = 'browser';
+	if (typeof window === 'undefined') return;
+	window.localStorage.removeItem(POST_LANGUAGE_STORAGE_KEY);
+	window.localStorage.removeItem(TRANSLATION_LANGUAGE_STORAGE_KEY);
+}
+
 export function languageName(language: SupportedLanguage, displayLocale: string): string {
 	try {
 		return new Intl.DisplayNames([displayLocale], { type: 'language' }).of(language) ?? language;

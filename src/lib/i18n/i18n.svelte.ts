@@ -56,6 +56,12 @@ export function setLocalePreference(preference: LocalePreference): void {
 	applyLang();
 }
 
+export function clearLocalePreference(): void {
+	prefs.preference = 'system';
+	if (typeof window !== 'undefined') window.localStorage.removeItem(LOCALE_STORAGE_KEY);
+	applyLang();
+}
+
 applyLang();
 
 /** Locale string for Intl/toLocaleString calls. */

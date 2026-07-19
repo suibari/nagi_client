@@ -90,4 +90,15 @@ export const translatePost = (uri: string, targetLang: string) =>
 		{ method: 'POST', body: JSON.stringify({ uri, targetLang }) },
 		'none',
 	);
+export const deleteAccountData = () =>
+	call<{ success: true }>(
+		'com.suibari.nagi.deleteAccountData',
+		'/xrpc/com.suibari.nagi.deleteAccountData',
+		{ method: 'POST' },
+		'required',
+	);
+export async function prepareDeleteAccountData(): Promise<void> {
+	const jwt = await token('com.suibari.nagi.deleteAccountData');
+	if (!jwt) throw new Error('Authentication required');
+}
 export { base as APPVIEW_URL };

@@ -22,7 +22,8 @@
 		checkedDid = did;
 		void getOwnNagiProfile()
 			.then((profile) => {
-				if (!profile && page.url.pathname !== '/settings') void goto('/settings?onboarding=1');
+				if (!profile && page.url.pathname !== '/settings/profile')
+					void goto('/settings/profile?onboarding=1');
 			})
 			.catch((error) => {
 				checkedDid = undefined;

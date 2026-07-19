@@ -145,6 +145,17 @@ export const ja = {
 	backToTimeline: 'タイムラインへ戻る',
 
 	// settings
+	backToSettings: '設定に戻る',
+	settingsProfileTitle: 'プロフィール',
+	settingsProfileDescription: '表示名、自己紹介、アバター',
+	settingsAppearanceTitle: '外観',
+	settingsAppearanceDescription: '表示テーマと配色',
+	settingsLanguageTitle: '言語',
+	settingsLanguageDescription: '表示、投稿、翻訳に使う言語',
+	settingsAboutTitle: 'Nagiについて',
+	settingsAboutDescription: 'アプリの説明、利用規約、プライバシー',
+	settingsDeleteTitle: '全データ削除',
+	settingsDeleteDescription: 'Nagiに保存されたデータを完全に削除',
 	themeLegend: '表示テーマ',
 	themeHelp: 'この端末で使用する配色を選択します。',
 	optionSystem: 'システム設定',
@@ -180,6 +191,17 @@ export const ja = {
 	profileLoadFailed: 'プロフィールを読み込めませんでした',
 	imageTypeError: 'JPEG、PNG、WebPの画像を選択してください',
 	imageSizeError: '25MB以下の画像を選択してください',
+	deleteDataWarning:
+		'Nagiの投稿、リアクション、プロフィールとAppView上の関連データを完全に削除します。この操作は取り消せません。',
+	deleteDataInstruction: '続行するには、次の文字を入力してください。',
+	deleteDataPhrase: 'Nagiの全データを削除',
+	deleteDataButton: '全データを削除する',
+	deleteDataDialogTitle: '本当に全データを削除しますか？',
+	deleteDataDialogBody: '削除後にデータを復元することはできません。完了するとログアウトします。',
+	deleteDataConfirm: '完全に削除する',
+	deleteDataDeleting: '削除中…',
+	deleteDataFailed: '全データを削除できませんでした',
+	deleteDataLoginRequired: 'データを削除するにはログインしてください。',
 
 	// avatar cropper
 	cropperTitle: 'アバターをトリミング',
