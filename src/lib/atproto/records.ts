@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
 import { linkFacets } from './facets';
+import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile';
@@ -94,6 +95,7 @@ export async function createPost(
 			$type: POST,
 			text,
 			facets: linkFacets(text),
+			langs: [languagePreferences.postLanguage],
 			createdAt: new Date().toISOString(),
 			...(reply && { reply }),
 		},

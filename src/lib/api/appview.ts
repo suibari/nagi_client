@@ -2,7 +2,14 @@ import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { session } from '$lib/oauth/session.svelte';
-import type { NotificationView, Page, ProfileFeedFilter, ProfilePage, ThreadView, TimelinePage } from './types';
+import type {
+	NotificationView,
+	Page,
+	ProfileFeedFilter,
+	ProfilePage,
+	ThreadView,
+	TimelinePage,
+} from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 const aud = 'did:web:nagi-api.suibari.com#nagi_appview';
 const cache = new Map<string, { token: string; expires: number }>();
@@ -24,9 +31,9 @@ async function call<T>(
 	lxm: string,
 	path: string,
 	options: RequestInit = {},
-	auth: 'optional' | 'required' = 'optional',
+	auth: 'none' | 'optional' | 'required' = 'optional',
 ): Promise<T> {
-	const jwt = await token(lxm);
+	const jwt = auth === 'none' ? undefined : await token(lxm);
 	if (auth === 'required' && !jwt) throw new Error('Authentication required');
 	const response = await fetch(`${base}${path}`, {
 		...options,
@@ -81,6 +88,6 @@ export const translatePost = (uri: string, targetLang: string) =>
 		'com.suibari.nagi.translatePost',
 		'/xrpc/com.suibari.nagi.translatePost',
 		{ method: 'POST', body: JSON.stringify({ uri, targetLang }) },
-		'required',
+		'none',
 	);
 export { base as APPVIEW_URL };

@@ -5,6 +5,8 @@
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import TranslateToggle from './TranslateToggle.svelte';
+	import QuoteCard from './QuoteCard.svelte';
 	let { post, compact = false }: { post: PostView; compact?: boolean } = $props();
 	let expanded = $state(false);
 	let mine = $derived($session?.did === post.author.did);
@@ -30,11 +32,21 @@
 				></time
 			>
 		</div>
-		<p class:collapsed={!expanded}>{post.deleted ? m.postDeleted() : post.text}</p>
+		<TranslateToggle
+			uri={post.uri}
+			text={post.text}
+			langs={post.langs}
+			deleted={post.deleted}
+			collapsed={!expanded}
+		/>
 		{#if post.text.length > 220}<button class="read" onclick={() => (expanded = !expanded)}
 				>{expanded ? m.readLess() : m.readMore()}</button
 			>{/if}{#if post.images?.length}<div class="images">
 				{#each post.images as image}<img src={resolve(image.url)} alt={image.alt} />{/each}
-			</div>{/if}<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
+			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}<ReactionBar
+			uri={post.uri}
+			cid={post.cid}
+			reactions={post.reactions}
+		/>
 	</div>
 </div>

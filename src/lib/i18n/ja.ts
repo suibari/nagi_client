@@ -54,8 +54,10 @@ export const ja = {
 	postDeleted: 'この投稿は削除されました',
 	readMore: '続きを読む',
 	readLess: '閉じる',
-	translate: '翻訳',
 	translating: '翻訳中…',
+	translationLabel: '自動翻訳',
+	originalTextLabel: '元の文章',
+	translationFailed: '翻訳を表示できませんでした',
 
 	// thread unit (bot reply states)
 	botThinking: 'Botたんが返信を考えています…',
@@ -137,6 +139,13 @@ export const ja = {
 	languageHelp: 'この端末で使用する表示言語を選択します。',
 	localeJa: '日本語',
 	localeEn: 'English',
+	postLanguageLegend: '投稿言語',
+	postLanguageHelp: 'Botたんが返信に使用する言語を選択します。次回以降の投稿に適用されます。',
+	postLanguageLabel: '投稿言語を選択',
+	translationLanguageLegend: '翻訳言語',
+	translationLanguageHelp: '投稿を自動翻訳して表示する言語を選択します。',
+	translationLanguageLabel: '翻訳言語を選択',
+	optionBrowser: 'ブラウザの設定',
 	profileSettingsTitle: 'プロフィール設定',
 	profileSettingsNote:
 		'NagiのプロフィールはBlueskyのプロフィールとは独立しています。ここで変更・保存しても、Bluesky側のプロフィールには反映されません。',

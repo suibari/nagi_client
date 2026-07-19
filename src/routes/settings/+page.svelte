@@ -13,6 +13,14 @@
 	import { page } from '$app/state';
 	import { getThemePreference, setThemePreference, type ThemePreference } from '$lib/theme';
 	import { i18n, m, setLocalePreference, type LocalePreference } from '$lib/i18n/i18n.svelte';
+	import {
+		languageName,
+		languagePreferences,
+		setPostLanguagePreference,
+		setTranslationLanguagePreference,
+		SUPPORTED_LANGUAGES,
+		type LanguagePreference,
+	} from '$lib/i18n/languagePreferences.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	let name = $state('');
 	let description = $state('');
@@ -166,6 +174,44 @@
 			{/each}
 		</div>
 	</fieldset>
+	<fieldset class="theme-settings language-settings">
+		<legend>{m.postLanguageLegend()}</legend>
+		<p>{m.postLanguageHelp()}</p>
+		<label>
+			<span>{m.postLanguageLabel()}</span>
+			<select
+				value={languagePreferences.postPreference}
+				onchange={(event) =>
+					setPostLanguagePreference(
+						(event.currentTarget as HTMLSelectElement).value as LanguagePreference,
+					)}
+			>
+				<option value="browser">{m.optionBrowser()}</option>
+				{#each SUPPORTED_LANGUAGES as language}
+					<option value={language}>{languageName(language, i18n.locale)}</option>
+				{/each}
+			</select>
+		</label>
+	</fieldset>
+	<fieldset class="theme-settings language-settings">
+		<legend>{m.translationLanguageLegend()}</legend>
+		<p>{m.translationLanguageHelp()}</p>
+		<label>
+			<span>{m.translationLanguageLabel()}</span>
+			<select
+				value={languagePreferences.translationPreference}
+				onchange={(event) =>
+					setTranslationLanguagePreference(
+						(event.currentTarget as HTMLSelectElement).value as LanguagePreference,
+					)}
+			>
+				<option value="browser">{m.optionBrowser()}</option>
+				{#each SUPPORTED_LANGUAGES as language}
+					<option value={language}>{languageName(language, i18n.locale)}</option>
+				{/each}
+			</select>
+		</label>
+	</fieldset>
 	<h2>{m.profileSettingsTitle()}</h2>
 	<p>
 		{m.profileSettingsNote()}
@@ -212,3 +258,23 @@
 {#if cropFile}
 	<AvatarCropper file={cropFile} onconfirm={applyAvatar} oncancel={() => (cropFile = undefined)} />
 {/if}
+
+<style>
+	.language-settings label {
+		margin: 0;
+	}
+
+	.language-settings select {
+		width: 100%;
+		border: 1px solid var(--line-strong);
+		border-radius: 12px;
+		padding: 13px;
+		outline: none;
+		background: var(--bg-inset);
+		color: var(--text);
+	}
+
+	.language-settings select:focus {
+		border-color: var(--accent);
+	}
+</style>
