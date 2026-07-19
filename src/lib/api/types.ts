@@ -13,6 +13,7 @@ export type ReactionView = {
 	viewerReactionUri?: string;
 };
 export type AspectRatio = { width: number; height: number };
+export type PostImage = { url: string; alt: string; aspectRatio?: AspectRatio };
 export type Facet = { index: { byteStart: number; byteEnd: number }; features: unknown[] };
 export type PostView = {
 	uri: string;
@@ -24,7 +25,7 @@ export type PostView = {
 	createdAt: string;
 	indexedAt: string;
 	reply?: { root?: string; parent: string };
-	images?: Array<{ url?: string; alt: string; aspectRatio?: AspectRatio }>;
+	images?: PostImage[];
 	quote?: PostView;
 	reactions: ReactionView[];
 	isBot: boolean;

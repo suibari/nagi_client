@@ -2,7 +2,6 @@
 	import type { PostView } from '$lib/api/types';
 	import ReactionBar from './ReactionBar.svelte';
 	import Avatar from './Avatar.svelte';
-	import { APPVIEW_URL } from '$lib/api/appview';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import TranslateToggle from './TranslateToggle.svelte';
@@ -10,6 +9,9 @@
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import { createPost, deleteRecord } from '$lib/atproto/records';
 	import Icon from './shell/Icon.svelte';
+	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
+	import ImageGallery from './ImageGallery.svelte';
+	import type { ImageAttachment } from '$lib/images';
 	let {
 		post,
 		compact = false,
@@ -29,19 +31,24 @@
 	let composeText = $state('');
 	let posting = $state(false);
 	let postError = $state('');
+	let attachments = $state<ImageAttachment[]>([]);
 	let mine = $derived($session?.did === post.author.did);
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
-	const resolve = (url?: string) => (url?.startsWith('/') ? APPVIEW_URL + url : (url ?? ''));
 	function openComposer(mode: 'reply' | 'quote') {
 		if (!$session) {
 			location.href = '/login';
 			return;
 		}
 		postError = '';
-		composeMode = composeMode === mode ? undefined : mode;
+		if (composeMode === mode) {
+			composeMode = undefined;
+			attachments = [];
+		} else {
+			composeMode = mode;
+		}
 	}
 	async function submitPost() {
-		if (!composeMode || !composeText.trim() || posting) return;
+		if (!composeMode || (!composeText.trim() && !attachments.length) || posting) return;
 		posting = true;
 		postError = '';
 		try {
@@ -50,8 +57,10 @@
 				composeText.trim(),
 				composeMode === 'reply' ? { root: subject, parent: subject } : undefined,
 				composeMode === 'quote' ? subject : undefined,
+				attachments,
 			);
 			composeText = '';
+			attachments = [];
 			composeMode = undefined;
 			await onposted?.();
 		} catch (error) {
@@ -108,9 +117,9 @@
 		/>
 		{#if post.text.length > 220}<button class="read" onclick={() => (expanded = !expanded)}
 				>{expanded ? m.readLess() : m.readMore()}</button
-			>{/if}{#if post.images?.length}<div class="images">
-				{#each post.images as image}<img src={resolve(image.url)} alt={image.alt} />{/each}
-			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}<ReactionBar
+			>{/if}{#if post.images?.length}<ImageGallery
+				images={post.images}
+			/>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}<ReactionBar
 			uri={post.uri}
 			cid={post.cid}
 			reactions={post.reactions}
@@ -155,18 +164,22 @@
 						maxlength="30000"
 						placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
 					></textarea>
+					<ImageAttachmentEditor bind:attachments disabled={posting} />
 					<div class="post-composer-foot">
 						{#if postError}<span class="error" role="alert">{postError}</span>{/if}
 						<button
 							class="ghost"
 							type="button"
 							disabled={posting}
-							onclick={() => (composeMode = undefined)}>{m.cancel()}</button
+							onclick={() => {
+								composeMode = undefined;
+								attachments = [];
+							}}>{m.cancel()}</button
 						>
 						<button
 							class="primary"
 							type="button"
-							disabled={posting || !composeText.trim()}
+							disabled={posting || (!composeText.trim() && !attachments.length)}
 							onclick={() => void submitPost()}
 							>{posting ? m.composerSubmitting() : m.composerSubmit()}</button
 						>

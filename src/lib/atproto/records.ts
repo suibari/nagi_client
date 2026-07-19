@@ -3,6 +3,7 @@ import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
 import { linkFacets } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
+import type { ImageAttachment } from '$lib/images';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile';
@@ -86,9 +87,28 @@ export async function createPost(
 	text: string,
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } },
 	quote?: { uri: string; cid: string },
+	attachments: ImageAttachment[] = [],
 ) {
 	const s = current();
-	return new Agent(s).com.atproto.repo.createRecord({
+	const agent = new Agent(s);
+	const images = await Promise.all(
+		attachments.map(async (attachment) => {
+			const response = await agent.com.atproto.repo.uploadBlob(attachment.blob, {
+				encoding: attachment.blob.type,
+			});
+			return {
+				image: response.data.blob,
+				alt: attachment.alt,
+				aspectRatio: attachment.aspectRatio,
+			};
+		}),
+	);
+	const embed = quote
+		? { $type: `${POST}#quote`, record: quote, ...(images.length ? { images } : {}) }
+		: images.length
+			? { $type: `${POST}#images`, images }
+			: undefined;
+	return agent.com.atproto.repo.createRecord({
 		repo: s.did,
 		collection: POST,
 		validate: false,
@@ -99,7 +119,7 @@ export async function createPost(
 			langs: [languagePreferences.postLanguage],
 			createdAt: new Date().toISOString(),
 			...(reply && { reply }),
-			...(quote && { embed: { $type: `${POST}#quote`, record: quote } }),
+			...(embed && { embed }),
 		},
 	});
 }
