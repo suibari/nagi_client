@@ -2,7 +2,12 @@
 	import type { FeedItem } from '$lib/api/types';
 	import ChatBubble from './ChatBubble.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	let { item, ondeleted }: { item: FeedItem; ondeleted?: (uri: string) => void } = $props();
+	let {
+		item,
+		ondeleted,
+		onposted,
+	}: { item: FeedItem; ondeleted?: (uri: string) => void; onposted?: () => void | Promise<void> } =
+		$props();
 	const STALE_MS = 3 * 60 * 1000;
 	let stale = $derived(
 		item.botReplyState === 'pending' && Date.now() - new Date(item.createdAt).valueOf() > STALE_MS,
@@ -11,13 +16,15 @@
 
 <article class="thread-unit">
 	{#if item.replyParent}
-		<ChatBubble post={item.replyParent} {ondeleted} />
-		<div class="thread-reply"><ChatBubble post={item} compact {ondeleted} /></div>
+		<ChatBubble post={item.replyParent} {ondeleted} {onposted} />
+		<div class="thread-reply"><ChatBubble post={item} compact {ondeleted} {onposted} /></div>
 	{:else}
-		<ChatBubble post={item} {ondeleted} />
+		<ChatBubble post={item} {ondeleted} {onposted} />
 	{/if}
 	{#if item.botReply}
-		<div class="thread-reply"><ChatBubble post={item.botReply} compact {ondeleted} /></div>
+		<div class="thread-reply">
+			<ChatBubble post={item.botReply} compact {ondeleted} {onposted} />
+		</div>
 	{:else if item.botReplyState === 'pending' && !stale}
 		<div class="thread-reply">
 			<div class="bot-pending">

@@ -9,6 +9,9 @@
 	let thread = $state<ThreadView>();
 	let error = $state('');
 	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
+	async function refreshThread() {
+		thread = (await getThread(uri)).thread;
+	}
 	function postDeleted(deletedUri: string) {
 		if (deletedUri === uri) {
 			void goto('/');
@@ -33,9 +36,11 @@
 	{:else if !thread}<div class="state">{m.loading()}</div>
 	{:else}
 		<article class="thread-unit">
-			<ChatBubble post={thread.post} ondeleted={postDeleted} />
+			<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
 			{#each thread.replies as reply (reply.uri)}
-				<div class="thread-reply"><ChatBubble post={reply} compact ondeleted={postDeleted} /></div>
+				<div class="thread-reply">
+					<ChatBubble post={reply} compact ondeleted={postDeleted} onposted={refreshThread} />
+				</div>
 			{/each}
 		</article>
 	{/if}

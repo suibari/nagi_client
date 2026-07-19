@@ -85,6 +85,7 @@ export async function uploadAvatar(blob: Blob) {
 export async function createPost(
 	text: string,
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } },
+	quote?: { uri: string; cid: string },
 ) {
 	const s = current();
 	return new Agent(s).com.atproto.repo.createRecord({
@@ -98,6 +99,7 @@ export async function createPost(
 			langs: [languagePreferences.postLanguage],
 			createdAt: new Date().toISOString(),
 			...(reply && { reply }),
+			...(quote && { embed: { $type: `${POST}#quote`, record: quote } }),
 		},
 	});
 }

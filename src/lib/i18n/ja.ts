@@ -54,6 +54,12 @@ export const ja = {
 	postDeleted: 'この投稿は削除されました',
 	readMore: '続きを読む',
 	readLess: '閉じる',
+	replyPost: '返信',
+	quotePost: '引用',
+	replyComposerLabel: '返信を作成',
+	quoteComposerLabel: '引用ポストを作成',
+	replyPlaceholder: '返信を書く',
+	quotePlaceholder: 'コメントを書く',
 	deletePost: '削除',
 	deletePostAria: 'この投稿を削除',
 	deletePostTitle: '投稿を削除しますか？',
@@ -64,6 +70,8 @@ export const ja = {
 	translating: '翻訳中…',
 	translationLabel: '自動翻訳',
 	originalTextLabel: '元の文章',
+	showOriginalText: '原文を表示',
+	hideOriginalText: '原文を閉じる',
 	translationFailed: '翻訳を表示できませんでした',
 
 	// thread unit (bot reply states)

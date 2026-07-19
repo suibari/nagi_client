@@ -29,6 +29,7 @@
 	let translated = $state('');
 	let busy = $state(false);
 	let failed = $state(false);
+	let originalExpanded = $state(false);
 
 	function requestTranslation(postUri: string, targetLang: string): Promise<string> {
 		const key = `${postUri}\n${targetLang}`;
@@ -65,6 +66,7 @@
 	$effect(() => {
 		const targetLang = languagePreferences.translationLanguage;
 		const sourceLang = normalizeSupportedLanguage(langs?.[0]);
+		originalExpanded = false;
 		if (!visible || deleted || !text.trim() || sourceLang === targetLang) {
 			translated = '';
 			busy = false;
@@ -100,13 +102,28 @@
 			<p class="label">{m.translationLabel()}</p>
 			<p class="text">{translated}</p>
 		</div>
+		<button
+			class="original-toggle"
+			type="button"
+			aria-expanded={originalExpanded}
+			onclick={() => (originalExpanded = !originalExpanded)}
+			>{originalExpanded ? m.hideOriginalText() : m.showOriginalText()}</button
+		>
+		{#if originalExpanded}
+			<div class="original separated">
+				<p class="label">{m.originalTextLabel()}</p>
+				<p class:collapsed>{text}</p>
+			</div>
+		{/if}
 	{:else if failed}
 		<p class="status">{m.translationFailed()}</p>
 	{/if}
-	<div class="original" class:separated={busy || Boolean(translated) || failed}>
-		<p class="label">{m.originalTextLabel()}</p>
-		<p class:collapsed>{deleted ? m.postDeleted() : text}</p>
-	</div>
+	{#if !translated}
+		<div class="original" class:separated={busy || failed}>
+			<p class="label">{m.originalTextLabel()}</p>
+			<p class:collapsed>{deleted ? m.postDeleted() : text}</p>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -129,6 +146,19 @@
 	.translation .text {
 		margin-top: 0.2rem;
 		white-space: pre-wrap;
+	}
+
+	.original-toggle {
+		margin-top: 0.35rem;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--accent-strong);
+		font-size: 0.75rem;
+	}
+
+	.original-toggle:hover {
+		text-decoration: underline;
 	}
 
 	.original > :last-child {

@@ -62,6 +62,7 @@
 	{:else}{#each feed.items as item (item.uri)}<ThreadUnit
 				{item}
 				ondeleted={(uri) => feed.removePost(uri)}
+				onposted={() => feed.refresh()}
 			/>{/each}{#if feed.hasMore}<button class="more" onclick={() => feed.loadMore()}
 				>{m.loadMore()}</button
 			>{/if}{/if}

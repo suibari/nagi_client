@@ -97,6 +97,7 @@
 		{:else}{#each feed.items as item (item.uri)}<ThreadUnit
 					{item}
 					ondeleted={postDeleted}
+					onposted={() => feed?.refresh()}
 				/>{/each}{#if feed.hasMore}
 				<button class="more" onclick={() => feed?.loadMore()}>{m.loadMore()}</button>{/if}{/if}
 	</section>

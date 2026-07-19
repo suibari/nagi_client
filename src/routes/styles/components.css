@@ -149,17 +149,69 @@
 .meta time a:hover {
 	color: var(--accent-strong);
 }
-.post-delete {
-	flex: 0 0 auto;
-	display: grid;
-	place-items: center;
-	padding: 3px;
+.post-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 8px;
+	padding-top: 7px;
+	border-top: 1px solid var(--line);
+}
+.post-actions button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border-radius: var(--radius-pill);
+}
+.post-actions button.active {
+	color: var(--accent-strong);
+	background: var(--accent-soft);
+}
+.post-actions button.danger {
 	color: var(--danger);
 }
-.post-delete:hover {
+.post-composer {
+	margin-top: 8px;
+}
+.post-composer label {
+	display: block;
+	margin-bottom: 5px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--text-muted);
+}
+.post-composer textarea {
+	display: block;
+	width: 100%;
+	min-height: 82px;
+	resize: vertical;
+	padding: 10px;
+	color: var(--text);
+	background: var(--bg-raised);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+}
+.post-composer-foot {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 7px;
+}
+.post-composer-foot .error {
+	margin-right: auto;
+	font-size: 12px;
 	color: var(--danger);
-	background: color-mix(in srgb, var(--danger) 10%, transparent);
-	border-radius: 50%;
+}
+.post-composer-foot button {
+	padding: 7px 13px;
+}
+.post-composer-foot button:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
 }
 .badge {
 	flex: 0 0 auto;
@@ -584,14 +636,14 @@
 .delete-actions button {
 	padding: 9px 16px;
 }
-.danger {
+.delete-actions .danger {
 	border: 0;
 	border-radius: var(--radius-pill);
 	background: var(--danger);
 	color: white;
 	font-weight: 700;
 }
-.danger:disabled {
+.delete-actions .danger:disabled {
 	cursor: wait;
 	opacity: 0.65;
 }
