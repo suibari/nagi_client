@@ -235,6 +235,7 @@
 	font-size: 30px;
 }
 .bubble {
+	position: relative;
 	min-width: 0;
 	flex: 1;
 	padding: 13px 16px;
@@ -242,13 +243,38 @@
 	border: 1px solid var(--bubble-border);
 	border-radius: 7px 20px 20px;
 }
+.bubble::before,
+.bubble::after {
+	content: '';
+	position: absolute;
+	top: 14px;
+	width: 0;
+	height: 0;
+	border-top: 7px solid transparent;
+	border-bottom: 7px solid transparent;
+}
+.bubble::before {
+	left: -8px;
+	border-right: 8px solid var(--bubble-border);
+}
+.bubble::after {
+	top: 15px;
+	left: -6px;
+	border-top-width: 6px;
+	border-right: 7px solid var(--bubble-bg);
+	border-bottom-width: 6px;
+}
 .mine > .bubble {
-	background: var(--bubble-mine-bg);
 	border-color: var(--bubble-mine-border);
+}
+.mine > .bubble::before {
+	border-right-color: var(--bubble-mine-border);
 }
 .bot > .bubble {
 	border-color: var(--bubble-bot-border);
-	background: var(--bubble-bot-bg);
+}
+.bot > .bubble::before {
+	border-right-color: var(--bubble-bot-border);
 }
 .meta {
 	display: flex;
@@ -372,35 +398,9 @@
 	font-size: 12px;
 }
 
-/* connector between a post and botたん's reply */
 .thread-reply {
-	position: relative;
 	margin-top: 10px;
 	padding-left: 30px;
-}
-.thread-reply::before {
-	content: '';
-	position: absolute;
-	left: 20px;
-	top: -12px;
-	bottom: auto;
-	width: 2px;
-	height: calc(100% + 12px);
-	max-height: 44px;
-	border-radius: 2px;
-	background: var(--accent-border);
-}
-.thread-reply .post-row {
-	position: relative;
-}
-.thread-reply .post-row::before {
-	content: '';
-	position: absolute;
-	left: -10px;
-	top: 17px;
-	width: 10px;
-	height: 2px;
-	background: var(--accent-border);
 }
 
 /* botたん pending / failed states */
