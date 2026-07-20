@@ -53,7 +53,9 @@
 						<span class="what"
 							><strong>{item.actor.displayName ?? item.actor.handle}</strong>{item.type === 'reply'
 								? m.notifRepliedSuffix()
-								: m.notifReactedSuffix()}</span
+								: item.type === 'reaction'
+									? m.notifReactedSuffix()
+									: m.notifMentionedSuffix()}</span
 						>
 						<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
 					</div>

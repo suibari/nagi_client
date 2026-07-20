@@ -16,6 +16,8 @@
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import LinkCard from './LinkCard.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import MentionTextarea from './MentionTextarea.svelte';
+	import type { MentionSelection } from '$lib/atproto/facets';
 	let {
 		post,
 		ondeleted,
@@ -35,6 +37,7 @@
 	let postError = $state('');
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
+	let mentions = $state<MentionSelection[]>([]);
 	let mine = $derived($session?.did === post.author.did);
 	let optimistic = $derived(Boolean(post.optimisticState));
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
@@ -48,6 +51,7 @@
 			composeMode = undefined;
 			attachments = [];
 			linkCards = [];
+			mentions = [];
 		} else {
 			composeMode = mode;
 		}
@@ -68,6 +72,7 @@
 			mode === 'quote' ? subject : undefined,
 			attachments,
 			linkCards,
+			mentions,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),
@@ -78,6 +83,7 @@
 		composeText = '';
 		attachments = [];
 		linkCards = [];
+		mentions = [];
 		composeMode = undefined;
 		try {
 			const response = await createPost(draft);
@@ -186,12 +192,13 @@
 					<label for={`compose-${post.cid}`}
 						>{composeMode === 'reply' ? m.replyComposerLabel() : m.quoteComposerLabel()}</label
 					>
-					<textarea
+					<MentionTextarea
 						id={`compose-${post.cid}`}
 						bind:value={composeText}
-						maxlength="30000"
+						bind:mentions
 						placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
-					></textarea>
+						disabled={posting}
+					/>
 					<ImageAttachmentEditor bind:attachments disabled={posting} />
 					<LinkCardEditor text={composeText} bind:cards={linkCards} disabled={posting} />
 					<div class="post-composer-foot">
@@ -204,6 +211,7 @@
 								composeMode = undefined;
 								attachments = [];
 								linkCards = [];
+								mentions = [];
 							}}>{m.cancel()}</button
 						>
 						<button

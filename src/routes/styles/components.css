@@ -40,6 +40,52 @@
 	background: none;
 	color: var(--text);
 }
+.mention-textarea {
+	position: relative;
+}
+.mention-suggestions {
+	position: absolute;
+	z-index: 20;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 5px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: var(--bg-raised);
+	box-shadow: var(--shadow-card);
+}
+.mention-suggestions button {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	width: 100%;
+	padding: 8px;
+	border: 0;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text);
+	text-align: left;
+}
+.mention-suggestions button:hover,
+.mention-suggestions button.active {
+	background: var(--bg-subtle);
+}
+.mention-suggestions button span {
+	display: grid;
+	min-width: 0;
+}
+.mention-suggestions button strong,
+.mention-suggestions button small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.mention-suggestions button small {
+	color: var(--text-muted);
+}
 .composer-foot {
 	display: flex;
 	align-items: center;

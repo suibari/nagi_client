@@ -1,9 +1,13 @@
-export type LinkFacet = {
+export type Facet = {
 	index: { byteStart: number; byteEnd: number };
-	features: Array<{ $type: 'app.bsky.richtext.facet#link'; uri: string }>;
+	features: Array<
+		| { $type: 'app.bsky.richtext.facet#link'; uri: string }
+		| { $type: 'app.bsky.richtext.facet#mention'; did: string }
+	>;
 };
 
-export type ParsedPostText = { text: string; facets: LinkFacet[]; urls: string[] };
+export type MentionSelection = { start: number; end: number; did: string; handle: string };
+export type ParsedPostText = { text: string; facets: Facet[]; urls: string[] };
 
 const encoder = new TextEncoder();
 const byteLength = (value: string) => encoder.encode(value).length;
@@ -26,9 +30,12 @@ const trimRawUrl = (value: string) => {
 	return result;
 };
 
-export function parsePostText(source: string): ParsedPostText {
+export function parsePostText(
+	source: string,
+	mentionSelections: MentionSelection[] = [],
+): ParsedPostText {
 	let text = '';
-	const facets: LinkFacet[] = [];
+	const facets: Facet[] = [];
 	const urls: string[] = [];
 	const add = (label: string, uri: string) => {
 		const byteStart = byteLength(text);
@@ -39,8 +46,31 @@ export function parsePostText(source: string): ParsedPostText {
 		});
 		if (!urls.includes(uri)) urls.push(uri);
 	};
+	const mentions = [...mentionSelections]
+		.filter(
+			(mention) =>
+				mention.start >= 0 &&
+				mention.end > mention.start &&
+				source.slice(mention.start, mention.end) === `@${mention.handle}`,
+		)
+		.sort((a, b) => a.start - b.start);
+	let mentionIndex = 0;
 
 	for (let index = 0; index < source.length;) {
+		while (mentions[mentionIndex]?.start < index) mentionIndex++;
+		const mention = mentions[mentionIndex];
+		if (mention?.start === index) {
+			const label = source.slice(mention.start, mention.end);
+			const byteStart = byteLength(text);
+			text += label;
+			facets.push({
+				index: { byteStart, byteEnd: byteStart + byteLength(label) },
+				features: [{ $type: 'app.bsky.richtext.facet#mention', did: mention.did }],
+			});
+			index = mention.end;
+			mentionIndex++;
+			continue;
+		}
 		if (source[index] === '[') {
 			const labelEnd = source.indexOf('](', index + 1);
 			if (labelEnd > index + 1) {

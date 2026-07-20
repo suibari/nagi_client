@@ -7,6 +7,7 @@ import type {
 	Page,
 	ProfileFeedFilter,
 	ProfilePage,
+	SearchActorsResult,
 	ThreadView,
 	TimelinePage,
 } from './types';
@@ -77,6 +78,13 @@ export const getProfile = (
 		`/xrpc/com.suibari.nagi.getProfile?${params}`,
 	);
 };
+export const searchActors = (query: string, limit = 10) =>
+	call<SearchActorsResult>(
+		'com.suibari.nagi.searchActors',
+		`/xrpc/com.suibari.nagi.searchActors?q=${encodeURIComponent(query)}&limit=${Math.min(10, Math.max(1, limit))}`,
+		{},
+		'none',
+	);
 export const getNotifications = () =>
 	call<Page<NotificationView>>(
 		'com.suibari.nagi.getNotifications',

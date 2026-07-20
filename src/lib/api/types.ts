@@ -54,7 +54,7 @@ export type ProfilePage = { profile: ProfileDetail; feed: Page<FeedItem> };
 export type ThreadView = { post: PostView; replies: PostView[] };
 export type NotificationView = {
 	id: string;
-	type: 'reply' | 'reaction';
+	type: 'reply' | 'reaction' | 'mention';
 	actor: ActorView;
 	post?: PostView;
 	subjectUri: string;
@@ -62,3 +62,4 @@ export type NotificationView = {
 	createdAt: string;
 	readAt?: string;
 };
+export type SearchActorsResult = { actors: ActorView[] };

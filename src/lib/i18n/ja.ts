@@ -128,6 +128,7 @@ export const ja = {
 	notifEmpty: 'まだ通知はありません。',
 	notifRepliedSuffix: 'さんが返信しました',
 	notifReactedSuffix: 'さんがリアクションしました',
+	notifMentionedSuffix: 'さんがあなたをメンションしました',
 
 	// thread page
 	threadEyebrow: '会話',

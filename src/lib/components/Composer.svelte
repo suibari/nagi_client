@@ -7,21 +7,25 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import MentionTextarea from './MentionTextarea.svelte';
+	import type { MentionSelection } from '$lib/atproto/facets';
 	let { onposted }: { onposted: () => void | Promise<void> } = $props();
 	let text = $state('');
 	let busy = $state(false);
 	let error = $state('');
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
+	let mentions = $state<MentionSelection[]>([]);
 	async function submit() {
 		if ((!text.trim() && !attachments.length && !linkCards.length) || busy || !$session) return;
-		const draft = preparePostDraft(text, undefined, undefined, attachments, linkCards);
+		const draft = preparePostDraft(text, undefined, undefined, attachments, linkCards, mentions);
 		const optimisticId = optimisticPosts.add(draft, $session.did);
 		busy = true;
 		error = '';
 		text = '';
 		attachments = [];
 		linkCards = [];
+		mentions = [];
 		try {
 			const response = await createPost(draft);
 			optimisticPosts.markCreated(optimisticId, response.data);
@@ -36,12 +40,13 @@
 </script>
 
 <section class="composer">
-	<textarea
+	<MentionTextarea
 		bind:value={text}
-		maxlength="30000"
+		bind:mentions
 		placeholder={m.composerPlaceholder()}
-		aria-label={m.composerAria()}
-	></textarea>
+		ariaLabel={m.composerAria()}
+		disabled={busy}
+	/>
 	<ImageAttachmentEditor bind:attachments disabled={busy} />
 	<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />
 	<div class="composer-foot">

@@ -116,6 +116,7 @@ export const en: Messages = {
 	notifEmpty: 'No notifications yet.',
 	notifRepliedSuffix: ' replied to your post',
 	notifReactedSuffix: ' reacted to your post',
+	notifMentionedSuffix: ' mentioned you',
 
 	threadEyebrow: 'Conversation',
 	threadTitle: 'Thread',

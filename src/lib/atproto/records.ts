@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
-import { parsePostText } from './facets';
+import { parsePostText, type MentionSelection } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment } from '$lib/images';
 const POST = 'com.suibari.nagi.post',
@@ -44,8 +44,18 @@ export function preparePostDraft(
 	quote?: PostDraft['quote'],
 	attachments: ImageAttachment[] = [],
 	linkCards: LinkCardDraft[] = [],
+	mentions: MentionSelection[] = [],
 ): PostDraft {
-	const parsed = parsePostText(text.trim());
+	const leadingWhitespace = text.length - text.trimStart().length;
+	const source = text.trim();
+	const parsed = parsePostText(
+		source,
+		mentions.map((mention) => ({
+			...mention,
+			start: mention.start - leadingWhitespace,
+			end: mention.end - leadingWhitespace,
+		})),
+	);
 	return {
 		text: parsed.text,
 		facets: parsed.facets,
