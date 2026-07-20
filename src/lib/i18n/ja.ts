@@ -110,9 +110,10 @@ export const ja = {
 	emojiSearchLabel: '絵文字を検索',
 
 	// home
-	heroEyebrow: 'AT Protocolでつながる、やさしい場所',
-	heroTitle: '言葉が、静かに届く。',
-	heroBody: 'ここでは、どんな声もまず受け止めます。',
+	heroEyebrow: 'AT PROTOCOLでつながる、全肯定SNS',
+	heroTitle: 'やさしい言葉が凪ぐ場所',
+	heroBody:
+		'いいねの数も、フォロー関係もありません。他人の目を気にせず、自由にアウトプットできるSNSです。',
 	welcomeTitle: 'Nagiへようこそ',
 	welcomeBody: 'タイムラインは誰でも読めます。参加すると投稿やリアクションができます。',
 	joinCta: '参加する',

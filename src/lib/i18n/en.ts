@@ -101,9 +101,10 @@ export const en: Messages = {
 	emojiFavoritesLabel: 'Frequently used',
 	emojiSearchLabel: 'Search emoji',
 
-	heroEyebrow: 'A gentle place to connect on the AT Protocol',
-	heroTitle: 'Words arrive, quietly.',
-	heroBody: 'Here, every voice is embraced first.',
+	heroEyebrow: 'An all-affirming social network powered by the AT Protocol',
+	heroTitle: 'A calm place for gentle words',
+	heroBody:
+		'No like counts. No follower relationships. A social network where you can express yourself freely, without worrying about what others think.',
 	welcomeTitle: 'Welcome to Nagi',
 	welcomeBody: 'Anyone can read the timeline. Join to post and react.',
 	joinCta: 'Join',
