@@ -33,18 +33,18 @@
 <article class="thread-unit" class:optimistic={Boolean(item.optimisticState)}>
 	{#if item.replyParent}
 		<ChatBubble post={item.replyParent} {ondeleted} {onposted} />
-		<div class="thread-reply"><ChatBubble post={item} compact {ondeleted} {onposted} /></div>
+		<div class="thread-reply"><ChatBubble post={item} {ondeleted} {onposted} /></div>
 	{:else}
 		<ChatBubble post={item} {ondeleted} {onposted} />
 	{/if}
 	{#if !item.optimisticState && item.botReply}
 		<div class="thread-reply">
-			<ChatBubble post={item.botReply} compact {ondeleted} {onposted} />
+			<ChatBubble post={item.botReply} {ondeleted} {onposted} />
 		</div>
 	{:else if !item.optimisticState && waiting && !stale}
 		<div class="thread-reply">
 			<div class="bot-pending">
-				<Avatar actor={botActor} size="small" />
+				<Avatar actor={botActor} />
 				<div class="pending-bubble" role="status" aria-live="polite">
 					<div><span class="typing"><i></i><i></i><i></i></span>{pendingStatus}</div>
 					{#if longWait}<small>{m.botLongWait()}</small>{/if}

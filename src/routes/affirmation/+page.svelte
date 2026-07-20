@@ -26,7 +26,13 @@
 
 <FeedTabs />
 <section class="timeline" aria-busy={feed.loading}>
-	{#if feed.loading && !feed.visibleItems.length}<div class="state">{m.feedWaiting()}</div>
+	{#if feed.loading && !feed.visibleItems.length}<div
+			class="timeline-loading"
+			role="status"
+			aria-label={m.feedWaiting()}
+		>
+			<span class="spinner" aria-hidden="true"></span>
+		</div>
 	{:else if feed.error && !feed.visibleItems.length}<div class="state error">
 			{feed.error}<button onclick={() => feed.load()}>{m.retry()}</button>
 		</div>

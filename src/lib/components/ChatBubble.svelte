@@ -18,12 +18,10 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	let {
 		post,
-		compact = false,
 		ondeleted,
 		onposted,
 	}: {
 		post: PostView;
-		compact?: boolean;
 		ondeleted?: (uri: string) => void;
 		onposted?: () => void | Promise<void>;
 	} = $props();
@@ -115,7 +113,7 @@
 
 <div class="post-row" class:mine class:bot={post.isBot}>
 	<a href={`/profile/${post.author.did}`} aria-label={m.viewProfileAria()}
-		><Avatar actor={post.author} size={compact ? 'small' : undefined} /></a
+		><Avatar actor={post.author} /></a
 	>
 	<div class="bubble">
 		<div class="meta">

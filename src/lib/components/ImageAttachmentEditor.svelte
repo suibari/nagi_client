@@ -82,10 +82,11 @@
 		class="ghost attachment-add"
 		type="button"
 		disabled={disabled || processing || attachments.length >= MAX_IMAGE_COUNT}
+		aria-label={processing ? m.postImageProcessing() : m.postImageAdd()}
+		title={processing ? m.postImageProcessing() : m.postImageAdd()}
 		onclick={() => input.click()}
 	>
 		<Icon name="image" size={18} />
-		{processing ? m.postImageProcessing() : m.postImageAdd()}
 		<span>{attachments.length}/{MAX_IMAGE_COUNT}</span>
 	</button>
 	{#if attachments.length}

@@ -54,7 +54,7 @@
 			<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
 			{#each replies as reply (reply.uri)}
 				<div class="thread-reply">
-					<ChatBubble post={reply} compact ondeleted={postDeleted} onposted={refreshThread} />
+					<ChatBubble post={reply} ondeleted={postDeleted} onposted={refreshThread} />
 				</div>
 			{/each}
 		</article>
