@@ -1,5 +1,6 @@
 import type { FeedItem, Page } from '$lib/api/types';
 import { m } from '$lib/i18n/i18n.svelte';
+import { optimisticPosts } from './optimistic-posts.svelte';
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 
@@ -15,16 +16,30 @@ export class Feed {
 	loading = $state(false);
 	error = $state('');
 	#fetcher: (cursor?: string) => Promise<Page<FeedItem>>;
+	#optimisticFilter: (item: FeedItem) => boolean;
 	#refreshing = false;
 	#loadRequest = 0;
-	constructor(fetcher: (cursor?: string) => Promise<Page<FeedItem>>) {
+	constructor(
+		fetcher: (cursor?: string) => Promise<Page<FeedItem>>,
+		optimisticFilter: (item: FeedItem) => boolean = () => true,
+	) {
 		this.#fetcher = fetcher;
+		this.#optimisticFilter = optimisticFilter;
+	}
+	get visibleItems() {
+		const pending = optimisticPosts.items.filter(this.#optimisticFilter);
+		const pendingUris = new Set(pending.map((item) => item.uri));
+		return [...pending, ...this.items.filter((item) => !pendingUris.has(item.uri))];
+	}
+	hasOptimistic() {
+		return optimisticPosts.items.some(this.#optimisticFilter);
 	}
 	async load() {
 		const request = ++this.#loadRequest;
 		this.loading = true;
 		try {
 			const page = await this.#fetcher();
+			optimisticPosts.reconcile(page.items);
 			if (request !== this.#loadRequest) return;
 			this.items = page.items;
 			this.cursor = page.cursor;
@@ -41,6 +56,7 @@ export class Feed {
 		if (!this.cursor || this.loading) return;
 		try {
 			const page = await this.#fetcher(this.cursor);
+			optimisticPosts.reconcile(page.items);
 			const unseen = page.items.filter((p) => !this.items.some((x) => x.uri === p.uri));
 			this.items = [...this.items, ...unseen];
 			this.cursor = page.cursor;
@@ -54,6 +70,7 @@ export class Feed {
 		this.#refreshing = true;
 		try {
 			const page = await this.#fetcher();
+			optimisticPosts.reconcile(page.items);
 			const incoming = new Map(page.items.map((i) => [i.uri, i]));
 			const fresh = page.items.filter((i) => !this.items.some((x) => x.uri === i.uri));
 			this.items = [...fresh, ...this.items.map((i) => incoming.get(i.uri) ?? i)];

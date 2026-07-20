@@ -7,7 +7,7 @@
 	import TranslateToggle from './TranslateToggle.svelte';
 	import QuoteCard from './QuoteCard.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
-	import { createPost, deleteRecord } from '$lib/atproto/records';
+	import { createPost, deleteRecord, preparePostDraft } from '$lib/atproto/records';
 	import Icon from './shell/Icon.svelte';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageGallery from './ImageGallery.svelte';
@@ -15,6 +15,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import LinkCard from './LinkCard.svelte';
+	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	let {
 		post,
 		compact = false,
@@ -37,6 +38,7 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mine = $derived($session?.did === post.author.did);
+	let optimistic = $derived(Boolean(post.optimisticState));
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
 	function openComposer(mode: 'reply' | 'quote') {
 		if (!$session) {
@@ -56,26 +58,35 @@
 		if (
 			!composeMode ||
 			(!composeText.trim() && !attachments.length && !linkCards.length) ||
-			posting
+			posting ||
+			!$session
 		)
 			return;
+		const mode = composeMode;
+		const subject = { uri: post.uri, cid: post.cid };
+		const draft = preparePostDraft(
+			composeText,
+			mode === 'reply' ? { root: subject, parent: subject } : undefined,
+			mode === 'quote' ? subject : undefined,
+			attachments,
+			linkCards,
+		);
+		const optimisticId = optimisticPosts.add(draft, $session.did, {
+			...(mode === 'reply' ? { replyParent: post } : {}),
+			...(mode === 'quote' ? { quote: post } : {}),
+		});
 		posting = true;
 		postError = '';
+		composeText = '';
+		attachments = [];
+		linkCards = [];
+		composeMode = undefined;
 		try {
-			const subject = { uri: post.uri, cid: post.cid };
-			await createPost(
-				composeText.trim(),
-				composeMode === 'reply' ? { root: subject, parent: subject } : undefined,
-				composeMode === 'quote' ? subject : undefined,
-				attachments,
-				linkCards,
-			);
-			composeText = '';
-			attachments = [];
-			linkCards = [];
-			composeMode = undefined;
-			await onposted?.();
+			const response = await createPost(draft);
+			optimisticPosts.markCreated(optimisticId, response.data);
+			await Promise.resolve(onposted?.()).catch(() => undefined);
 		} catch (error) {
+			optimisticPosts.remove(optimisticId);
 			postError = error instanceof Error ? error.message : m.postFailed();
 		} finally {
 			posting = false;
@@ -127,6 +138,7 @@
 			facets={post.facets}
 			deleted={post.deleted}
 			collapsed={!expanded}
+			disabled={optimistic}
 		/>
 		{#if post.text.length > 220}<button class="read" onclick={() => (expanded = !expanded)}
 				>{expanded ? m.readLess() : m.readMore()}</button
@@ -134,12 +146,13 @@
 				images={post.images}
 			/>{/if}{#if post.linkCards?.length}<div class="link-cards">
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
-			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}<ReactionBar
-			uri={post.uri}
-			cid={post.cid}
-			reactions={post.reactions}
-		/>
-		{#if !post.deleted}
+			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}
+		{#if optimistic}
+			<p class="post-sending" role="status">{m.postSending()}</p>
+		{:else}
+			<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
+		{/if}
+		{#if !post.deleted && !optimistic}
 			<div class="post-actions">
 				<button
 					class="ghost"
@@ -205,6 +218,7 @@
 				</div>
 			{/if}
 		{/if}
+		{#if postError && !composeMode}<p class="error" role="alert">{postError}</p>{/if}
 	</div>
 </div>
 {#if deleteOpen}
@@ -215,3 +229,11 @@
 		oncancel={() => (deleteOpen = false)}
 	/>
 {/if}
+
+<style>
+	.post-sending {
+		margin-top: 0.45rem;
+		color: var(--text-muted);
+		font-size: 0.75rem;
+	}
+</style>

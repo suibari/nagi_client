@@ -45,6 +45,7 @@ export const ja = {
 	composerAria: '投稿内容',
 	composerSubmit: '投稿する',
 	composerSubmitting: '送信中…',
+	postSending: '送信中…',
 	postFailed: '投稿できませんでした',
 	postImageAdd: '画像を追加',
 	postImageProcessing: '画像を処理中…',

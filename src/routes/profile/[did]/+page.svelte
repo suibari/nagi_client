@@ -7,6 +7,8 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import { onMount } from 'svelte';
+	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 
 	const tabs: Array<{ id: ProfileFeedFilter; label: () => string }> = [
 		{ id: 'posts', label: m.profileTabPosts },
@@ -32,11 +34,20 @@
 		const key = `${actor}:${filter}`;
 		let f = feeds.get(key);
 		if (!f) {
-			f = new Feed((cursor) =>
-				getProfile(actor, { filter, cursor }).then((r) => {
-					profile = r.profile;
-					return r.feed;
-				}),
+			f = new Feed(
+				(cursor) =>
+					getProfile(actor, { filter, cursor }).then((r) => {
+						profile = r.profile;
+						optimisticPosts.rememberActor(r.profile);
+						return r.feed;
+					}),
+				(item) => {
+					if (item.author.did !== actor) return false;
+					if (filter === 'posts') return !item.reply;
+					if (filter === 'replies') return Boolean(item.reply);
+					if (filter === 'media') return Boolean(item.images?.length);
+					return false;
+				},
 			);
 			feeds.set(key, f);
 			void f.load();
@@ -54,6 +65,12 @@
 	function postDeleted(uri: string) {
 		for (const cachedFeed of feeds.values()) cachedFeed.removePost(uri);
 	}
+	onMount(() => {
+		const timer = setInterval(() => {
+			if (document.visibilityState === 'visible' && feed?.hasOptimistic()) void feed.refresh();
+		}, 3_000);
+		return () => clearInterval(timer);
+	});
 </script>
 
 {#if feed?.error && !profile}
@@ -87,14 +104,14 @@
 		{/each}
 	</nav>
 	<section class="timeline" aria-busy={feed?.loading}>
-		{#if !feed || (feed.loading && !feed.items.length)}<div class="state">{m.loading()}</div>
-		{:else if feed.error && !feed.items.length}<div class="state error">
+		{#if !feed || (feed.loading && !feed.visibleItems.length)}<div class="state">{m.loading()}</div>
+		{:else if feed.error && !feed.visibleItems.length}<div class="state error">
 				{feed.error}<button onclick={() => feed?.load()}>{m.retry()}</button>
 			</div>
-		{:else if !feed.items.length}<div class="state">
+		{:else if !feed.visibleItems.length}<div class="state">
 				{tab === 'reactions' ? m.profileEmptyReactions() : m.profileEmptyPosts()}
 			</div>
-		{:else}{#each feed.items as item (item.uri)}<ThreadUnit
+		{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
 					{item}
 					ondeleted={postDeleted}
 					onposted={() => feed?.refresh()}

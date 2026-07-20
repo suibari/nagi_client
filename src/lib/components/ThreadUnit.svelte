@@ -14,18 +14,18 @@
 	);
 </script>
 
-<article class="thread-unit">
+<article class="thread-unit" class:optimistic={Boolean(item.optimisticState)}>
 	{#if item.replyParent}
 		<ChatBubble post={item.replyParent} {ondeleted} {onposted} />
 		<div class="thread-reply"><ChatBubble post={item} compact {ondeleted} {onposted} /></div>
 	{:else}
 		<ChatBubble post={item} {ondeleted} {onposted} />
 	{/if}
-	{#if item.botReply}
+	{#if !item.optimisticState && item.botReply}
 		<div class="thread-reply">
 			<ChatBubble post={item.botReply} compact {ondeleted} {onposted} />
 		</div>
-	{:else if item.botReplyState === 'pending' && !stale}
+	{:else if !item.optimisticState && item.botReplyState === 'pending' && !stale}
 		<div class="thread-reply">
 			<div class="bot-pending">
 				<img class="avatar small" src="/nagi_icon.png" alt="" />
@@ -34,9 +34,9 @@
 				</div>
 			</div>
 		</div>
-	{:else if item.botReplyState === 'pending'}
+	{:else if !item.optimisticState && item.botReplyState === 'pending'}
 		<p class="bot-missed">{m.botMissed()}</p>
-	{:else if item.botReplyState === 'failed'}
+	{:else if !item.optimisticState && item.botReplyState === 'failed'}
 		<p class="bot-missed">{m.botSkipped()}</p>
 	{/if}
 </article>

@@ -20,6 +20,7 @@
 		facets,
 		deleted = false,
 		collapsed = false,
+		disabled = false,
 	}: {
 		uri: string;
 		text: string;
@@ -27,6 +28,7 @@
 		facets?: Facet[];
 		deleted?: boolean;
 		collapsed?: boolean;
+		disabled?: boolean;
 	} = $props();
 	let root: HTMLDivElement;
 	let visible = $state(false);
@@ -71,7 +73,7 @@
 		const targetLang = languagePreferences.translationLanguage;
 		const sourceLang = normalizeSupportedLanguage(langs?.[0]);
 		originalExpanded = false;
-		if (!visible || deleted || !text.trim() || sourceLang === targetLang) {
+		if (disabled || !visible || deleted || !text.trim() || sourceLang === targetLang) {
 			translated = '';
 			busy = false;
 			failed = false;

@@ -33,6 +33,8 @@ export type PostView = {
 	isBot: boolean;
 	isAffirmation: boolean;
 	deleted?: boolean;
+	/** Client-only state; never returned by the AppView API. */
+	optimisticState?: 'sending' | 'indexing';
 };
 export type BotReplyState = 'pending' | 'posted' | 'failed';
 export type FeedItem = PostView & {

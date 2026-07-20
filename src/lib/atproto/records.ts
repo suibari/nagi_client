@@ -27,6 +27,36 @@ export type LinkCardDraft = {
 	thumbnail?: Blob;
 	previewUrl?: string;
 };
+export type PostDraft = {
+	text: string;
+	facets: ReturnType<typeof parsePostText>['facets'];
+	langs: string[];
+	createdAt: string;
+	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
+	quote?: { uri: string; cid: string };
+	attachments: ImageAttachment[];
+	linkCards: LinkCardDraft[];
+};
+
+export function preparePostDraft(
+	text: string,
+	reply?: PostDraft['reply'],
+	quote?: PostDraft['quote'],
+	attachments: ImageAttachment[] = [],
+	linkCards: LinkCardDraft[] = [],
+): PostDraft {
+	const parsed = parsePostText(text.trim());
+	return {
+		text: parsed.text,
+		facets: parsed.facets,
+		langs: [languagePreferences.postLanguage],
+		createdAt: new Date().toISOString(),
+		reply,
+		quote,
+		attachments: [...attachments],
+		linkCards: linkCards.slice(0, 4).map((card) => ({ ...card })),
+	};
+}
 
 const isRecordNotFound = (error: unknown) =>
 	typeof error === 'object' &&
@@ -90,17 +120,11 @@ export async function uploadAvatar(blob: Blob) {
 	const response = await new Agent(s).com.atproto.repo.uploadBlob(blob, { encoding: blob.type });
 	return response.data.blob;
 }
-export async function createPost(
-	text: string,
-	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } },
-	quote?: { uri: string; cid: string },
-	attachments: ImageAttachment[] = [],
-	linkCards: LinkCardDraft[] = [],
-) {
+export async function createPost(draft: PostDraft) {
 	const s = current();
 	const agent = new Agent(s);
 	const images = await Promise.all(
-		attachments.map(async (attachment) => {
+		draft.attachments.map(async (attachment) => {
 			const response = await agent.com.atproto.repo.uploadBlob(attachment.blob, {
 				encoding: attachment.blob.type,
 			});
@@ -112,7 +136,7 @@ export async function createPost(
 		}),
 	);
 	const cards = await Promise.all(
-		linkCards.slice(0, 4).map(async (card) => {
+		draft.linkCards.map(async (card) => {
 			const thumb = card.thumbnail
 				? (
 						await agent.com.atproto.repo.uploadBlob(card.thumbnail, {
@@ -128,9 +152,8 @@ export async function createPost(
 			};
 		}),
 	);
-	const parsed = parsePostText(text);
-	const embed = quote
-		? { $type: `${POST}#quote`, record: quote, ...(images.length ? { images } : {}) }
+	const embed = draft.quote
+		? { $type: `${POST}#quote`, record: draft.quote, ...(images.length ? { images } : {}) }
 		: images.length
 			? { $type: `${POST}#images`, images }
 			: undefined;
@@ -140,11 +163,11 @@ export async function createPost(
 		validate: false,
 		record: {
 			$type: POST,
-			text: parsed.text,
-			facets: parsed.facets,
-			langs: [languagePreferences.postLanguage],
-			createdAt: new Date().toISOString(),
-			...(reply && { reply }),
+			text: draft.text,
+			facets: draft.facets,
+			langs: draft.langs,
+			createdAt: draft.createdAt,
+			...(draft.reply && { reply: draft.reply }),
 			...(cards.length && { linkCards: cards }),
 			...(embed && { embed }),
 		},

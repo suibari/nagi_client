@@ -40,6 +40,7 @@ export const en: Messages = {
 	composerAria: 'Post text',
 	composerSubmit: 'Post',
 	composerSubmitting: 'Posting…',
+	postSending: 'Posting…',
 	postFailed: 'Could not post',
 	postImageAdd: 'Add images',
 	postImageProcessing: 'Processing image…',

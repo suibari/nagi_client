@@ -16,7 +16,10 @@
 			if (document.visibilityState === 'visible') feed.refresh();
 		}, 30_000);
 		const fast = setInterval(() => {
-			if (document.visibilityState === 'visible' && feed.hasPendingFor($session?.did))
+			if (
+				document.visibilityState === 'visible' &&
+				(feed.hasOptimistic() || feed.hasPendingFor($session?.did))
+			)
 				feed.refresh();
 		}, 3_000);
 		return () => {
@@ -52,14 +55,14 @@
 	</aside>
 {/if}
 <section class="timeline" aria-busy={feed.loading}>
-	{#if feed.loading && !feed.items.length}<div class="state">{m.feedWaiting()}</div>
-	{:else if feed.error && !feed.items.length}<div class="state error">
+	{#if feed.loading && !feed.visibleItems.length}<div class="state">{m.feedWaiting()}</div>
+	{:else if feed.error && !feed.visibleItems.length}<div class="state error">
 			{feed.error}<button onclick={() => feed.load()}>{m.retry()}</button>
 		</div>
-	{:else if !feed.items.length}<div class="state">
+	{:else if !feed.visibleItems.length}<div class="state">
 			{m.feedEmpty()}
 		</div>
-	{:else}{#each feed.items as item (item.uri)}<ThreadUnit
+	{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
 				{item}
 				ondeleted={(uri) => feed.removePost(uri)}
 				onposted={() => feed.refresh()}
