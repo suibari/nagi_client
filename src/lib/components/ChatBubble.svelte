@@ -5,10 +5,10 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import TranslateToggle from './TranslateToggle.svelte';
+	import Icon from './shell/Icon.svelte';
 	import QuoteCard from './QuoteCard.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import { createPost, deleteRecord, preparePostDraft } from '$lib/atproto/records';
-	import Icon from './shell/Icon.svelte';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageGallery from './ImageGallery.svelte';
 	import type { ImageAttachment } from '$lib/images';
@@ -204,23 +204,27 @@
 					<div class="post-composer-foot">
 						{#if postError}<span class="error" role="alert">{postError}</span>{/if}
 						<button
-							class="ghost"
+							class="ghost icon-action"
 							type="button"
 							disabled={posting}
+							aria-label={m.cancel()}
+							title={m.cancel()}
 							onclick={() => {
 								composeMode = undefined;
 								attachments = [];
 								linkCards = [];
 								mentions = [];
-							}}>{m.cancel()}</button
+							}}><Icon name="cancel" size={18} /></button
 						>
 						<button
-							class="primary"
+							class="primary icon-action primary-icon"
 							type="button"
 							disabled={posting ||
 								(!composeText.trim() && !attachments.length && !linkCards.length)}
+							aria-label={posting ? m.composerSubmitting() : m.composerSubmit()}
+							title={posting ? m.composerSubmitting() : m.composerSubmit()}
 							onclick={() => void submitPost()}
-							>{posting ? m.composerSubmitting() : m.composerSubmit()}</button
+							><Icon name={posting ? 'refresh' : 'send'} size={18} /></button
 						>
 					</div>
 				</div>

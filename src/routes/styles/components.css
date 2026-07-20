@@ -2,7 +2,7 @@
 .welcome,
 .composer {
 	background: var(--bg-raised);
-	border: 1px solid var(--line);
+	border: 0;
 	border-radius: var(--radius-l);
 	box-shadow: var(--shadow-card);
 	margin: 0 0 16px;
@@ -252,7 +252,7 @@
 }
 .thread-unit {
 	background: var(--bg-raised);
-	border: 1px solid var(--line);
+	border: 0;
 	border-radius: var(--radius-l);
 	box-shadow: var(--shadow-card);
 	padding: 14px 14px 12px;
@@ -427,6 +427,40 @@
 }
 .post-composer-foot button {
 	padding: 7px 13px;
+}
+.icon-action {
+	display: inline-grid;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	color: var(--text-muted);
+	background: transparent;
+	transition:
+		color 0.18s ease,
+		background 0.18s ease,
+		transform 0.18s ease;
+}
+.icon-action:hover {
+	color: var(--accent-strong);
+	background: var(--accent-softer);
+	transform: translateY(-1px);
+}
+.icon-action.primary-icon {
+	color: var(--text-on-accent);
+	background: var(--accent);
+	box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.icon-action.primary-icon:hover {
+	color: var(--text-on-accent);
+	background: var(--accent-strong);
+}
+.icon-action:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
+	transform: none;
 }
 .post-composer-foot button:disabled {
 	opacity: 0.55;
@@ -1047,27 +1081,37 @@
 }
 .profile-tabs {
 	display: flex;
-	gap: 4px;
+	gap: 8px;
 	margin-bottom: 14px;
-	border-bottom: 1px solid var(--line);
+	border-bottom: 0;
 }
 .profile-tabs button {
+	position: relative;
 	flex: 1;
 	border: 0;
 	background: none;
-	padding: 11px 0;
+	padding: 11px 0 13px;
 	font-size: 14px;
 	font-weight: 700;
 	color: var(--text-muted);
-	border-bottom: 2px solid transparent;
-	margin-bottom: -1px;
+	transition: color 0.18s ease;
 }
 .profile-tabs button:hover {
 	color: var(--accent-strong);
 }
 .profile-tabs button.active {
 	color: var(--accent-strong);
-	border-bottom-color: var(--accent);
+}
+.profile-tabs button.active::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: 3px;
+	width: 30px;
+	height: 3px;
+	border-radius: var(--radius-pill);
+	background: var(--accent);
+	transform: translateX(-50%);
 }
 
 /* --- notifications --- */
@@ -1258,17 +1302,15 @@
 	padding: 14px 18px;
 	color: var(--text);
 	background: var(--bg-raised);
-	border: 1px solid var(--line);
+	border: 0;
 	border-radius: var(--radius-l);
 	box-shadow: var(--shadow-card);
 	transition:
 		background 0.15s ease,
-		border-color 0.15s ease,
 		transform 0.15s ease;
 }
 .settings-category:hover {
 	background: var(--bg-hover);
-	border-color: var(--line-strong);
 	transform: translateY(-1px);
 }
 .settings-category:focus-visible {

@@ -5,6 +5,7 @@
 	import { Feed } from '$lib/feed/feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { onMount } from 'svelte';
@@ -106,7 +107,13 @@
 	<section class="timeline" aria-busy={feed?.loading}>
 		{#if !feed || (feed.loading && !feed.visibleItems.length)}<div class="state">{m.loading()}</div>
 		{:else if feed.error && !feed.visibleItems.length}<div class="state error">
-				{feed.error}<button onclick={() => feed?.load()}>{m.retry()}</button>
+				{feed.error}<button
+					class="icon-action"
+					type="button"
+					aria-label={m.retry()}
+					title={m.retry()}
+					onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+				>
 			</div>
 		{:else if !feed.visibleItems.length}<div class="state">
 				{tab === 'reactions' ? m.profileEmptyReactions() : m.profileEmptyPosts()}
@@ -117,6 +124,12 @@
 					ondeleted={postDeleted}
 					onposted={() => feed?.refresh()}
 				/>{/each}{#if feed.hasMore}
-				<button class="more" onclick={() => feed?.loadMore()}>{m.loadMore()}</button>{/if}{/if}
+				<button
+					class="more icon-action"
+					type="button"
+					aria-label={m.loadMore()}
+					title={m.loadMore()}
+					onclick={() => feed?.loadMore()}><Icon name="more" size={20} /></button
+				>{/if}{/if}
 	</section>
 {/if}

@@ -64,8 +64,8 @@
 	--bubble-bot-border: #86d8bd;
 
 	/* elevation */
-	--shadow-card: 0 6px 22px rgba(47, 53, 66, 0.07);
-	--shadow-pop: 0 20px 60px rgba(47, 53, 66, 0.14);
+	--shadow-card: 0 10px 34px rgba(67, 75, 66, 0.075);
+	--shadow-pop: 0 22px 64px rgba(67, 75, 66, 0.15);
 
 	/* radii */
 	--radius-s: 10px;
@@ -128,7 +128,7 @@
 	--bubble-bot-bg: linear-gradient(145deg, #163d33, #27624f);
 	--bubble-bot-border: #3b8f75;
 
-	--shadow-card: 0 6px 22px rgba(0, 0, 0, 0.28);
+	--shadow-card: 0 12px 38px rgba(8, 12, 9, 0.3);
 	--shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
 
@@ -179,7 +179,7 @@
 		--bubble-mine-border: #3978ad;
 		--bubble-bot-bg: linear-gradient(145deg, #163d33, #27624f);
 		--bubble-bot-border: #3b8f75;
-		--shadow-card: 0 6px 22px rgba(0, 0, 0, 0.28);
+		--shadow-card: 0 12px 38px rgba(8, 12, 9, 0.3);
 		--shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.45);
 	}
 }

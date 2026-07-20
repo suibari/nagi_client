@@ -8,6 +8,7 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
+	import Icon from './shell/Icon.svelte';
 	import type { MentionSelection } from '$lib/atproto/facets';
 	let { onposted }: { onposted: () => void | Promise<void> } = $props();
 	let text = $state('');
@@ -53,9 +54,12 @@
 		<span
 			>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
 		><button
-			class="submit"
+			class="submit icon-action primary-icon"
+			type="button"
 			disabled={busy || (!text.trim() && !attachments.length && !linkCards.length)}
-			onclick={submit}>{busy ? m.composerSubmitting() : m.composerSubmit()}</button
+			aria-label={busy ? m.composerSubmitting() : m.composerSubmit()}
+			title={busy ? m.composerSubmitting() : m.composerSubmit()}
+			onclick={submit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button
 		>
 	</div>
 	{#if error}<p class="error">{error}</p>{/if}
