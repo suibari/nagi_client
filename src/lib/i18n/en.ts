@@ -81,12 +81,14 @@ export const en: Messages = {
 	deletePostFailed: 'Could not delete post',
 	translating: 'Translating…',
 	translationLabel: 'Automatic translation',
-	originalTextLabel: 'Original text',
 	showOriginalText: 'Show original',
 	hideOriginalText: 'Hide original',
 	translationFailed: 'Translation is unavailable',
 
 	botThinking: 'Bot-tan is thinking of a reply…',
+	botWaiting: 'Bot-tan is getting ready to reply…',
+	botLongWait: 'This is taking longer than usual. Please check again in a little while.',
+	botFailed: 'Bot-tan could not reply because of an error.',
 	botMissed: "Bot-tan's reply doesn't seem to have arrived yet",
 	botSkipped: 'Bot-tan sat this one out',
 

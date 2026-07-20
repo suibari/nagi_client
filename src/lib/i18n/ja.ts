@@ -87,13 +87,15 @@ export const ja = {
 	deletePostFailed: '投稿を削除できませんでした',
 	translating: '翻訳中…',
 	translationLabel: '自動翻訳',
-	originalTextLabel: '元の文章',
 	showOriginalText: '原文を表示',
 	hideOriginalText: '原文を閉じる',
 	translationFailed: '翻訳を表示できませんでした',
 
 	// thread unit (bot reply states)
 	botThinking: 'Botたんが返信を考えています…',
+	botWaiting: 'Botたんが返信の準備をしています…',
+	botLongWait: '通常より時間がかかっています。しばらくしてからもう一度ご覧ください。',
+	botFailed: 'エラーのため、Botたんが返信できませんでした。',
 	botMissed: 'Botたんの返信はまだ届いていないようです',
 	botSkipped: 'Botたんは今回お休みしました',
 

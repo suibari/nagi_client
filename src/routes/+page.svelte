@@ -64,6 +64,7 @@
 		</div>
 	{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
 				{item}
+				botActor={feed.botActor}
 				ondeleted={(uri) => feed.removePost(uri)}
 				onposted={() => feed.refresh()}
 			/>{/each}{#if feed.hasMore}<button class="more" onclick={() => feed.loadMore()}

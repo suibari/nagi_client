@@ -148,7 +148,9 @@
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
 			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}
 		{#if optimistic}
-			<p class="post-sending" role="status">{m.postSending()}</p>
+			<div class="pending-bubble post-sending" role="status" aria-live="polite">
+				<div><span class="typing"><i></i><i></i><i></i></span>{m.postSending()}</div>
+			</div>
 		{:else}
 			<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
 		{/if}
@@ -233,7 +235,5 @@
 <style>
 	.post-sending {
 		margin-top: 0.45rem;
-		color: var(--text-muted);
-		font-size: 0.75rem;
 	}
 </style>

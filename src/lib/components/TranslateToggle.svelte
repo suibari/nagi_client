@@ -73,7 +73,14 @@
 		const targetLang = languagePreferences.translationLanguage;
 		const sourceLang = normalizeSupportedLanguage(langs?.[0]);
 		originalExpanded = false;
-		if (disabled || !visible || deleted || !text.trim() || sourceLang === targetLang) {
+		if (
+			disabled ||
+			!visible ||
+			deleted ||
+			!text.trim() ||
+			!sourceLang ||
+			sourceLang === targetLang
+		) {
 			translated = '';
 			busy = false;
 			failed = false;
@@ -117,7 +124,6 @@
 		>
 		{#if originalExpanded}
 			<div class="original separated">
-				<p class="label">{m.originalTextLabel()}</p>
 				<p class:collapsed><RichText {text} {facets} /></p>
 			</div>
 		{/if}
@@ -126,7 +132,6 @@
 	{/if}
 	{#if !translated}
 		<div class="original" class:separated={busy || failed}>
-			<p class="label">{m.originalTextLabel()}</p>
 			<p class:collapsed>
 				{#if deleted}{m.postDeleted()}{:else}<RichText {text} {facets} />{/if}
 			</p>

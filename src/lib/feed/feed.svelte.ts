@@ -1,4 +1,4 @@
-import type { FeedItem, Page } from '$lib/api/types';
+import type { ActorView, FeedItem, Page } from '$lib/api/types';
 import { m } from '$lib/i18n/i18n.svelte';
 import { optimisticPosts } from './optimistic-posts.svelte';
 
@@ -15,6 +15,7 @@ export class Feed {
 	hasMore = $state(false);
 	loading = $state(false);
 	error = $state('');
+	botActor = $state<ActorView>();
 	#fetcher: (cursor?: string) => Promise<Page<FeedItem>>;
 	#optimisticFilter: (item: FeedItem) => boolean;
 	#refreshing = false;
@@ -42,6 +43,7 @@ export class Feed {
 			optimisticPosts.reconcile(page.items);
 			if (request !== this.#loadRequest) return;
 			this.items = page.items;
+			this.botActor = page.botActor ?? this.botActor;
 			this.cursor = page.cursor;
 			this.hasMore = page.hasMore;
 			this.error = '';
@@ -59,6 +61,7 @@ export class Feed {
 			optimisticPosts.reconcile(page.items);
 			const unseen = page.items.filter((p) => !this.items.some((x) => x.uri === p.uri));
 			this.items = [...this.items, ...unseen];
+			this.botActor = page.botActor ?? this.botActor;
 			this.cursor = page.cursor;
 			this.hasMore = page.hasMore;
 		} catch (e) {
@@ -74,6 +77,7 @@ export class Feed {
 			const incoming = new Map(page.items.map((i) => [i.uri, i]));
 			const fresh = page.items.filter((i) => !this.items.some((x) => x.uri === i.uri));
 			this.items = [...fresh, ...this.items.map((i) => incoming.get(i.uri) ?? i)];
+			this.botActor = page.botActor ?? this.botActor;
 			if (!this.cursor) {
 				this.cursor = page.cursor;
 				this.hasMore = page.hasMore;
@@ -101,7 +105,7 @@ export class Feed {
 		return this.items.some(
 			(i) =>
 				i.author.did === did &&
-				i.botReplyState === 'pending' &&
+				(i.botReplyState === 'pending' || i.botReplyState === 'processing') &&
 				now - new Date(i.createdAt).valueOf() < windowMs,
 		);
 	}

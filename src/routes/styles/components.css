@@ -412,14 +412,18 @@
 .pending-bubble {
 	flex: 1;
 	display: flex;
-	align-items: center;
-	gap: 10px;
+	flex-direction: column;
+	gap: 4px;
 	padding: 13px 16px;
 	border: 1px dashed var(--accent-border);
 	border-radius: 7px 20px 20px;
 	background: var(--accent-softer);
 	color: var(--text-muted);
 	font-size: 13px;
+}
+.pending-bubble small {
+	font-size: 12px;
+	line-height: 1.5;
 }
 .typing {
 	display: inline-flex;

@@ -36,13 +36,13 @@ export type PostView = {
 	/** Client-only state; never returned by the AppView API. */
 	optimisticState?: 'sending' | 'indexing';
 };
-export type BotReplyState = 'pending' | 'posted' | 'failed';
+export type BotReplyState = 'pending' | 'processing' | 'posted' | 'failed';
 export type FeedItem = PostView & {
 	replyParent?: PostView;
 	botReply?: PostView;
 	botReplyState?: BotReplyState;
 };
-export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean };
+export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean; botActor?: ActorView };
 export type TimelinePage = Page<FeedItem>;
 export type ProfileFeedFilter = 'posts' | 'replies' | 'media' | 'reactions';
 export type ProfileDetail = ActorView & {
