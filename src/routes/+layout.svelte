@@ -34,26 +34,8 @@
 
 <svelte:head>
 	<title>{m.appTitle()}</title>
-	<meta name="description" content={m.appDescription()} />
-
-	<link rel="icon" type="image/png" href="/nagi_icon.png" />
-	<link rel="apple-touch-icon" href="/nagi_icon.png" />
-
-	<meta property="og:type" content="website" />
-	<meta property="og:site_name" content="Nagi" />
-	<meta property="og:title" content="Nagi — やさしい言葉が凪ぐ場所" />
-	<meta property="og:description" content="すべての声を受け止める、AT Protocol上のSNS" />
-	<meta property="og:url" content="https://nagi.suibari.com" />
-	<meta property="og:image" content="https://nagi.suibari.com/nagi_ogp.png" />
-	<meta property="og:image:width" content="2848" />
-	<meta property="og:image:height" content="1504" />
-	<meta property="og:image:alt" content="Nagi — やさしい言葉が凪ぐ場所" />
-
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content="Nagi — やさしい言葉が凪ぐ場所" />
-	<meta name="twitter:description" content="すべての声を受け止める、AT Protocol上のSNS" />
-	<meta name="twitter:image" content="https://nagi.suibari.com/nagi_ogp.png" />
-	<meta name="twitter:image:alt" content="Nagi — やさしい言葉が凪ぐ場所" />
+	<!-- OGP・favicon などクローラ向けの静的メタは app.html にある（SPA なので
+	     ここに書くと JS 実行後にしか現れない）。ここは i18n で変わるものだけ。 -->
 </svelte:head>
 <MobileHeader />
 <div class="shell">

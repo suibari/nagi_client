@@ -4,6 +4,33 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+
+		<!-- SPA (ssr=false) のため svelte:head の内容は JS 実行後にしか現れない。クローラは
+		     JS を実行しないので、OGP など静的なメタ情報はここに直接書いて配信 HTML に含める。
+		     title は Svelte が document.title 代入にコンパイルするため実行時に上書きされる。 -->
+		<title>Nagi — やさしい言葉が凪ぐ場所</title>
+		<meta name="description" content="すべての声を受け止める、AT Protocol上のSNS" />
+
+		<link rel="icon" type="image/png" href="%sveltekit.assets%/nagi_icon.png" />
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/nagi_icon.png" />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Nagi" />
+		<meta property="og:title" content="Nagi — やさしい言葉が凪ぐ場所" />
+		<meta property="og:description" content="すべての声を受け止める、AT Protocol上のSNS" />
+		<meta property="og:url" content="https://nagi.suibari.com" />
+		<meta property="og:image" content="https://nagi.suibari.com/nagi_ogp.jpg" />
+		<meta property="og:image:type" content="image/jpeg" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Nagi — やさしい言葉が凪ぐ場所" />
+
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Nagi — やさしい言葉が凪ぐ場所" />
+		<meta name="twitter:description" content="すべての声を受け止める、AT Protocol上のSNS" />
+		<meta name="twitter:image" content="https://nagi.suibari.com/nagi_ogp.jpg" />
+		<meta name="twitter:image:alt" content="Nagi — やさしい言葉が凪ぐ場所" />
+
 		<script src="%sveltekit.assets%/theme-init.js"></script>
 		%sveltekit.head%
 	</head>
