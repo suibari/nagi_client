@@ -443,6 +443,9 @@
 		background 0.18s ease,
 		transform 0.18s ease;
 }
+.composer .submit.icon-action {
+	padding: 0;
+}
 .icon-action:hover {
 	color: var(--accent-strong);
 	background: var(--accent-softer);
