@@ -21,7 +21,9 @@ export default defineConfig(({ mode }) => {
 				// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
 				// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
 				// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-				adapter: adapter({ fallback: '200.html' }),
+				// Vercel は 200.html の SPA フォールバック規約を解さないため、index.html を
+				// 出力して vercel.json の rewrites で全ルートをそこへ流す。
+				adapter: adapter({ fallback: 'index.html' }),
 
 				// Content-Security-Policy を <meta> タグとして出力する。hash モードにより
 				// SvelteKit が自身のインラインbootstrap scriptをビルド毎にハッシュ化するため、
