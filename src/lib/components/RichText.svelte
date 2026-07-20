@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Facet } from '$lib/api/types';
+	import { httpUrl } from '$lib/atproto/facets';
 	let { text, facets = [] }: { text: string; facets?: Facet[] } = $props();
 	type Segment = { text: string; uri?: string };
 	let segments = $derived.by(() => {
@@ -19,7 +20,9 @@
 			const end = facet.index.byteEnd;
 			if (!feature || start < offset || end <= start || end > bytes.length) continue;
 			if (start > offset) result.push({ text: decoder.decode(bytes.slice(offset, start)) });
-			result.push({ text: decoder.decode(bytes.slice(start, end)), uri: feature.uri });
+			// facet の URI が http(s) の場合のみリンクとして描画する。それ以外はリンクにせず
+			// テキスト表示にし、細工された javascript: URI がクリックで実行されないようにする。
+			result.push({ text: decoder.decode(bytes.slice(start, end)), uri: httpUrl(feature.uri) });
 			offset = end;
 		}
 		if (offset < bytes.length) result.push({ text: decoder.decode(bytes.slice(offset)) });

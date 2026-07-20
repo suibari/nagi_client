@@ -4,31 +4,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
-		<script>
-			(function () {
-				try {
-					var theme = localStorage.getItem('nagi-theme');
-					if (theme === 'light' || theme === 'dark') {
-						document.documentElement.setAttribute('data-theme', theme);
-						document.documentElement.style.colorScheme = theme;
-					} else {
-						document.documentElement.removeAttribute('data-theme');
-						document.documentElement.style.colorScheme = 'light dark';
-					}
-				} catch (_) {
-					document.documentElement.style.colorScheme = 'light dark';
-				}
-				try {
-					var locale = localStorage.getItem('nagi-locale');
-					if (locale !== 'ja' && locale !== 'en') {
-						locale = (navigator.language || '').toLowerCase().indexOf('ja') === 0 ? 'ja' : 'en';
-					}
-					document.documentElement.lang = locale;
-				} catch (_) {
-					/* keep the static lang fallback */
-				}
-			})();
-		</script>
+		<script src="%sveltekit.assets%/theme-init.js"></script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

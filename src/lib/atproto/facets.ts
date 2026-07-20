@@ -7,7 +7,7 @@ export type ParsedPostText = { text: string; facets: LinkFacet[]; urls: string[]
 
 const encoder = new TextEncoder();
 const byteLength = (value: string) => encoder.encode(value).length;
-const httpUrl = (value: string) => {
+export const httpUrl = (value: string) => {
 	try {
 		const url = new URL(value);
 		return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : undefined;
