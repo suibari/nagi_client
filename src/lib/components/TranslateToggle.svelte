@@ -10,17 +10,21 @@
 		languagePreferences,
 		normalizeSupportedLanguage,
 	} from '$lib/i18n/languagePreferences.svelte';
+	import type { Facet } from '$lib/api/types';
+	import RichText from './RichText.svelte';
 
 	let {
 		uri,
 		text,
 		langs,
+		facets,
 		deleted = false,
 		collapsed = false,
 	}: {
 		uri: string;
 		text: string;
 		langs?: string[];
+		facets?: Facet[];
 		deleted?: boolean;
 		collapsed?: boolean;
 	} = $props();
@@ -112,7 +116,7 @@
 		{#if originalExpanded}
 			<div class="original separated">
 				<p class="label">{m.originalTextLabel()}</p>
-				<p class:collapsed>{text}</p>
+				<p class:collapsed><RichText {text} {facets} /></p>
 			</div>
 		{/if}
 	{:else if failed}
@@ -121,7 +125,9 @@
 	{#if !translated}
 		<div class="original" class:separated={busy || failed}>
 			<p class="label">{m.originalTextLabel()}</p>
-			<p class:collapsed>{deleted ? m.postDeleted() : text}</p>
+			<p class:collapsed>
+				{#if deleted}{m.postDeleted()}{:else}<RichText {text} {facets} />{/if}
+			</p>
 		</div>
 	{/if}
 </div>

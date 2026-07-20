@@ -62,6 +62,8 @@ export const ja = {
 	postImageClose: '拡大表示を閉じる',
 	postImagePrevious: '前の画像',
 	postImageNext: '次の画像',
+	linkCardLoading: 'リンク情報を取得中…',
+	linkCardRemove: 'リンクカードを削除',
 
 	// post bubble
 	viewProfileAria: 'プロフィールを見る',

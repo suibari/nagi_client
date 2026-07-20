@@ -27,6 +27,7 @@ async function token(lxm: string) {
 	cache.set(lxm, { token: jwt, expires: Date.now() + 50_000 });
 	return jwt;
 }
+export type LinkMetadata = { uri: string; title: string; description?: string; image?: string };
 async function call<T>(
 	lxm: string,
 	path: string,
@@ -97,6 +98,23 @@ export const deleteAccountData = () =>
 		{ method: 'POST' },
 		'required',
 	);
+export const getLinkMetadata = (url: string, fallback = false) =>
+	call<LinkMetadata>(
+		'com.suibari.nagi.getLinkMetadata',
+		`/xrpc/com.suibari.nagi.getLinkMetadata?url=${encodeURIComponent(url)}${fallback ? '&fallback=true' : ''}`,
+		{},
+		'required',
+	);
+export async function getLinkThumbnail(url: string): Promise<Blob> {
+	const lxm = 'com.suibari.nagi.getLinkThumbnail';
+	const jwt = await token(lxm);
+	if (!jwt) throw new Error('Authentication required');
+	const response = await fetch(`${base}/xrpc/${lxm}?url=${encodeURIComponent(url)}`, {
+		headers: { authorization: `Bearer ${jwt}` },
+	});
+	if (!response.ok) throw new Error(`Thumbnail request failed (${response.status})`);
+	return response.blob();
+}
 export async function prepareDeleteAccountData(): Promise<void> {
 	const jwt = await token('com.suibari.nagi.deleteAccountData');
 	if (!jwt) throw new Error('Authentication required');

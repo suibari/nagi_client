@@ -12,6 +12,9 @@
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageGallery from './ImageGallery.svelte';
 	import type { ImageAttachment } from '$lib/images';
+	import type { LinkCardDraft } from '$lib/atproto/records';
+	import LinkCardEditor from './LinkCardEditor.svelte';
+	import LinkCard from './LinkCard.svelte';
 	let {
 		post,
 		compact = false,
@@ -32,6 +35,7 @@
 	let posting = $state(false);
 	let postError = $state('');
 	let attachments = $state<ImageAttachment[]>([]);
+	let linkCards = $state<LinkCardDraft[]>([]);
 	let mine = $derived($session?.did === post.author.did);
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
 	function openComposer(mode: 'reply' | 'quote') {
@@ -43,12 +47,18 @@
 		if (composeMode === mode) {
 			composeMode = undefined;
 			attachments = [];
+			linkCards = [];
 		} else {
 			composeMode = mode;
 		}
 	}
 	async function submitPost() {
-		if (!composeMode || (!composeText.trim() && !attachments.length) || posting) return;
+		if (
+			!composeMode ||
+			(!composeText.trim() && !attachments.length && !linkCards.length) ||
+			posting
+		)
+			return;
 		posting = true;
 		postError = '';
 		try {
@@ -58,9 +68,11 @@
 				composeMode === 'reply' ? { root: subject, parent: subject } : undefined,
 				composeMode === 'quote' ? subject : undefined,
 				attachments,
+				linkCards,
 			);
 			composeText = '';
 			attachments = [];
+			linkCards = [];
 			composeMode = undefined;
 			await onposted?.();
 		} catch (error) {
@@ -112,6 +124,7 @@
 			uri={post.uri}
 			text={post.text}
 			langs={post.langs}
+			facets={post.facets}
 			deleted={post.deleted}
 			collapsed={!expanded}
 		/>
@@ -119,7 +132,9 @@
 				>{expanded ? m.readLess() : m.readMore()}</button
 			>{/if}{#if post.images?.length}<ImageGallery
 				images={post.images}
-			/>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}<ReactionBar
+			/>{/if}{#if post.linkCards?.length}<div class="link-cards">
+				{#each post.linkCards as card}<LinkCard {card} />{/each}
+			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}<ReactionBar
 			uri={post.uri}
 			cid={post.cid}
 			reactions={post.reactions}
@@ -165,6 +180,7 @@
 						placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
 					></textarea>
 					<ImageAttachmentEditor bind:attachments disabled={posting} />
+					<LinkCardEditor text={composeText} bind:cards={linkCards} disabled={posting} />
 					<div class="post-composer-foot">
 						{#if postError}<span class="error" role="alert">{postError}</span>{/if}
 						<button
@@ -174,12 +190,14 @@
 							onclick={() => {
 								composeMode = undefined;
 								attachments = [];
+								linkCards = [];
 							}}>{m.cancel()}</button
 						>
 						<button
 							class="primary"
 							type="button"
-							disabled={posting || (!composeText.trim() && !attachments.length)}
+							disabled={posting ||
+								(!composeText.trim() && !attachments.length && !linkCards.length)}
 							onclick={() => void submitPost()}
 							>{posting ? m.composerSubmitting() : m.composerSubmit()}</button
 						>

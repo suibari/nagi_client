@@ -51,6 +51,135 @@
 	opacity: 0.45;
 	cursor: not-allowed;
 }
+.link-card-editor {
+	margin: 10px 0;
+}
+.link-card-previews {
+	display: grid;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+.link-card-preview {
+	position: relative;
+	display: flex;
+	min-height: 92px;
+	overflow: hidden;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: var(--bg-raised);
+}
+.link-card-preview.loading {
+	opacity: 0.72;
+}
+.link-card-preview > img {
+	width: 104px;
+	object-fit: cover;
+	flex: 0 0 auto;
+}
+.link-card-preview > span {
+	display: grid;
+	align-content: center;
+	gap: 3px;
+	min-width: 0;
+	padding: 10px 46px 10px 10px;
+}
+.link-card-preview strong,
+.link-card-preview span span,
+.link-card-preview small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.link-card-preview strong,
+.link-card-preview span span {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+}
+.link-card-preview strong {
+	-webkit-line-clamp: 2;
+}
+.link-card-preview span span {
+	-webkit-line-clamp: 2;
+	font-size: 12px;
+	color: var(--text-muted);
+}
+.link-card-preview small {
+	display: block;
+	white-space: nowrap;
+	color: var(--text-muted);
+	font-size: 11px;
+}
+.link-card-remove {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: color-mix(in srgb, var(--text-muted) 82%, transparent);
+	color: white;
+	font-size: 24px;
+	line-height: 1;
+}
+.rich-link {
+	color: var(--accent-strong);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.link-cards {
+	display: grid;
+	gap: 8px;
+	margin-top: 9px;
+}
+.link-card {
+	display: flex;
+	min-width: 0;
+	overflow: hidden;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: var(--bg-raised);
+}
+.link-card:hover {
+	border-color: var(--accent);
+}
+.link-card img {
+	width: 112px;
+	min-height: 88px;
+	object-fit: cover;
+	flex: 0 0 auto;
+}
+.link-card-copy {
+	display: grid;
+	align-content: center;
+	gap: 3px;
+	min-width: 0;
+	padding: 10px;
+}
+.link-card-copy strong,
+.link-card-copy span {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.link-card-copy strong {
+	-webkit-line-clamp: 2;
+}
+.link-card-copy span {
+	-webkit-line-clamp: 2;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+.link-card-copy small {
+	color: var(--text-faint);
+}
+@media (max-width: 520px) {
+	.link-card img {
+		width: 88px;
+	}
+}
 
 /* --- feed & thread units --- */
 .timeline {

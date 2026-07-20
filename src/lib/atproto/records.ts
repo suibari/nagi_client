@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
-import { linkFacets } from './facets';
+import { parsePostText } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment } from '$lib/images';
 const POST = 'com.suibari.nagi.post',
@@ -19,6 +19,13 @@ export type ProfileDraft = {
 	avatar?: unknown;
 	avatarUrl?: string;
 	createdAt?: string;
+};
+export type LinkCardDraft = {
+	uri: string;
+	title: string;
+	description?: string;
+	thumbnail?: Blob;
+	previewUrl?: string;
 };
 
 const isRecordNotFound = (error: unknown) =>
@@ -88,6 +95,7 @@ export async function createPost(
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } },
 	quote?: { uri: string; cid: string },
 	attachments: ImageAttachment[] = [],
+	linkCards: LinkCardDraft[] = [],
 ) {
 	const s = current();
 	const agent = new Agent(s);
@@ -103,6 +111,24 @@ export async function createPost(
 			};
 		}),
 	);
+	const cards = await Promise.all(
+		linkCards.slice(0, 4).map(async (card) => {
+			const thumb = card.thumbnail
+				? (
+						await agent.com.atproto.repo.uploadBlob(card.thumbnail, {
+							encoding: card.thumbnail.type,
+						})
+					).data.blob
+				: undefined;
+			return {
+				uri: card.uri,
+				title: card.title,
+				...(card.description ? { description: card.description } : {}),
+				...(thumb ? { thumb } : {}),
+			};
+		}),
+	);
+	const parsed = parsePostText(text);
 	const embed = quote
 		? { $type: `${POST}#quote`, record: quote, ...(images.length ? { images } : {}) }
 		: images.length
@@ -114,11 +140,12 @@ export async function createPost(
 		validate: false,
 		record: {
 			$type: POST,
-			text,
-			facets: linkFacets(text),
+			text: parsed.text,
+			facets: parsed.facets,
 			langs: [languagePreferences.postLanguage],
 			createdAt: new Date().toISOString(),
 			...(reply && { reply }),
+			...(cards.length && { linkCards: cards }),
 			...(embed && { embed }),
 		},
 	});

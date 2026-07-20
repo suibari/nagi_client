@@ -57,6 +57,8 @@ export const en: Messages = {
 	postImageClose: 'Close enlarged image',
 	postImagePrevious: 'Previous image',
 	postImageNext: 'Next image',
+	linkCardLoading: 'Loading link details…',
+	linkCardRemove: 'Remove link card',
 
 	viewProfileAria: 'View profile',
 	botBadge: 'Bot-tan',
