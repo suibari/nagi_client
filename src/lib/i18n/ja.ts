@@ -198,6 +198,9 @@ export const ja = {
 	notifEmpty: 'まだ通知はありません。',
 	notifRepliedSuffix: 'さんが返信しました',
 	notifReactedSuffix: 'さんがリアクションしました',
+	// 絵文字を文中に挟むため前後で分割している
+	notifReactedWithPrefix: 'さんが',
+	notifReactedWithSuffix: 'でリアクションしました',
 	notifMentionedSuffix: 'さんがあなたをメンションしました',
 
 	// thread page
