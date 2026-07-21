@@ -5,7 +5,8 @@
 	import { Feed } from '$lib/feed/feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
-	import SuperPositiveBadge from '$lib/components/SuperPositiveBadge.svelte';
+	import ActorBadges from '$lib/components/ActorBadges.svelte';
+	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
@@ -56,6 +57,7 @@
 		}
 		feed = f;
 	});
+	const badges = $derived(actorBadges(profile));
 	const joined = $derived(
 		profile?.joinedAt
 			? new Date(profile.joinedAt).toLocaleDateString(dateLocale(), {
@@ -84,8 +86,8 @@
 			<div class="names">
 				<h1>{profile?.displayName ?? profile?.handle ?? did}</h1>
 				<span class="handle">@{profile?.handle ?? did}</span>
-				{#if profile?.superPositiveLevel}
-					<div class="profile-badges"><SuperPositiveBadge actor={profile} /></div>
+				{#if badges.length}
+					<div class="profile-badges"><ActorBadges actor={profile} /></div>
 				{/if}
 			</div>
 			{#if $session?.did === did}<a class="edit" href="/settings/profile">{m.profileEdit()}</a>{/if}

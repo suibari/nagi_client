@@ -7,7 +7,7 @@
 	import TranslateToggle from './TranslateToggle.svelte';
 	import Icon from './shell/Icon.svelte';
 	import QuoteCard from './QuoteCard.svelte';
-	import SuperPositiveBadge from './SuperPositiveBadge.svelte';
+	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import { createPost, deleteRecord, preparePostDraft } from '$lib/atproto/records';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
@@ -127,9 +127,7 @@
 	<div class="bubble">
 		<div class="meta">
 			<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
-			>{#if post.isBot}<span class="badge">{m.botBadge()}</span>{/if}<SuperPositiveBadge
-				actor={post.author}
-			/><time
+			><ActorBadges actor={post.author} /><time
 				><a href={threadHref}
 					>{new Date(post.createdAt).toLocaleString(dateLocale(), {
 						month: 'short',

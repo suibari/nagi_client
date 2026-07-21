@@ -4,6 +4,8 @@ export type ActorView = {
 	displayName?: string;
 	description?: string;
 	avatar?: string;
+	/** botたん本人か。PostView.isBot はこれと同じ判定の投稿単位版。 */
+	isBot?: boolean;
 	/** 超ポジティブLv（Bluesky と共通のカウンタ。100以上もそのまま表示する） */
 	superPositiveLevel?: number;
 };

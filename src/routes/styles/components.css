@@ -510,6 +510,34 @@
 	padding: 2px 7px;
 	font-size: 10px;
 	font-weight: 800;
+	white-space: nowrap;
+}
+/* バッジのトーン。どれを付けるかは lib/badges/badges.ts が決める */
+.badge--bot {
+	background: var(--badge-bot-bg);
+	color: var(--badge-bot-fg);
+}
+.badge--tier-1 {
+	background: var(--badge-tier-1-bg);
+	color: var(--badge-tier-1-fg);
+}
+.badge--tier-2 {
+	background: var(--badge-tier-2-bg);
+	color: var(--badge-tier-2-fg);
+}
+.badge--tier-3 {
+	background: var(--badge-tier-3-bg);
+	color: var(--badge-tier-3-fg);
+}
+.badge--tier-4 {
+	background: var(--badge-tier-4-bg);
+	color: var(--badge-tier-4-fg);
+}
+/* Lv.100+：Bluesky 側のラベルが頭打ちになる先なので、ここだけ特別扱い */
+.badge--tier-5 {
+	background: var(--badge-tier-5-bg);
+	color: var(--badge-tier-5-fg);
+	box-shadow: 0 0 0 1px var(--badge-tier-5-glow);
 }
 .bubble p {
 	white-space: pre-wrap;
