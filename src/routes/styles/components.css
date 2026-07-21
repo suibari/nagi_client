@@ -795,7 +795,36 @@
 	padding: 8px;
 	overflow: hidden;
 }
-.emoji-custom input[type='search'] {
+.emoji-unicode {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+/* display 指定があると hidden 属性が効かなくなるので明示的に消す */
+.emoji-unicode[hidden] {
+	display: none;
+}
+.emoji-unicode .emoji-search {
+	margin: 8px;
+	width: auto;
+}
+.emoji-unicode-host {
+	flex: 1;
+	min-height: 0;
+}
+.emoji-unicode-results {
+	flex: 1;
+	min-height: 0;
+	padding: 0 8px 8px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+.emoji-unicode-item {
+	font-size: 24px;
+	line-height: 1;
+}
+.emoji-search {
 	width: 100%;
 	padding: 6px 10px;
 	border: 1px solid var(--line-strong);

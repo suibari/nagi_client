@@ -7,6 +7,11 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { searchEmojis } from '$lib/api/appview';
 	import { displayEmojiName, resolveEmojiUrl } from '$lib/atproto/bluemoji';
+	import {
+		loadUnicodeEmojiIndex,
+		searchUnicodeEmojis,
+		type UnicodeEmoji,
+	} from '$lib/emoji/unicodeSearch';
 	import type { EmojiView } from '$lib/api/types';
 
 	let {
@@ -27,6 +32,33 @@
 	let customEmojis = $state<EmojiView[]>([]);
 	let customLoading = $state(false);
 	let customError = $state(false);
+	let unicodeInput = $state<HTMLInputElement>();
+	let unicodeQuery = $state('');
+	let unicodeIndex = $state<UnicodeEmoji[]>([]);
+	let unicodeLoading = $state(false);
+	let unicodeError = $state(false);
+	let unicodeRequested = false;
+
+	const unicodeSearching = $derived(unicodeQuery.trim().length > 0);
+	const unicodeResults = $derived(
+		unicodeSearching ? searchUnicodeEmojis(unicodeIndex, unicodeQuery, 60) : [],
+	);
+
+	// 検索データ（ja+en）は初回入力時にだけ取りに行く。以降はメモリ上で絞り込む。
+	async function ensureUnicodeIndex() {
+		if (unicodeRequested) return;
+		unicodeRequested = true;
+		unicodeLoading = true;
+		try {
+			unicodeIndex = await loadUnicodeEmojiIndex(i18n.locale);
+			unicodeError = false;
+		} catch {
+			unicodeRequested = false;
+			unicodeError = true;
+		} finally {
+			unicodeLoading = false;
+		}
+	}
 
 	const VIEWPORT_MARGIN = 16;
 	const ANCHOR_GAP = 8;
@@ -124,9 +156,11 @@
 				if (emoji) select(emoji);
 			});
 			unicodeHost.append(picker);
-			requestAnimationFrame(() => {
-				picker?.shadowRoot?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
-			});
+			// 検索は自前で行うので内蔵の検索バーは隠す。
+			const hideSearchRow = document.createElement('style');
+			hideSearchRow.textContent = '.search-row { display: none; }';
+			picker.shadowRoot?.append(hideSearchRow);
+			requestAnimationFrame(() => unicodeInput?.focus());
 		});
 
 		return () => {
@@ -163,10 +197,46 @@
 			onclick={() => (tab = 'custom')}>{m.emojiTabCustom()}</button
 		>
 	</div>
-	<div class="emoji-panel" bind:this={unicodeHost} hidden={tab !== 'unicode'}></div>
+	<div class="emoji-panel emoji-unicode" hidden={tab !== 'unicode'}>
+		<input
+			class="emoji-search"
+			type="search"
+			bind:this={unicodeInput}
+			bind:value={unicodeQuery}
+			oninput={ensureUnicodeIndex}
+			placeholder={m.emojiSearchLabel()}
+			aria-label={m.emojiSearchLabel()}
+		/>
+		<div class="emoji-unicode-host" bind:this={unicodeHost} hidden={unicodeSearching}></div>
+		{#if unicodeSearching}
+			<div class="emoji-unicode-results">
+				{#if unicodeError}
+					<p class="emoji-custom-empty">{m.emojiSearchFailed()}</p>
+				{:else if unicodeLoading && !unicodeIndex.length}
+					<p class="emoji-custom-empty">{m.loading()}</p>
+				{:else if !unicodeResults.length}
+					<p class="emoji-custom-empty">{m.emojiUnicodeEmpty()}</p>
+				{:else}
+					<div class="emoji-custom-grid">
+						{#each unicodeResults as emoji (emoji.emoji)}
+							<button
+								class="emoji-custom-item emoji-unicode-item"
+								title={emoji.label}
+								aria-label={m.reactWithAria({ emoji: emoji.label })}
+								onclick={() => select(emoji.emoji)}
+							>
+								{emoji.emoji}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</div>
 	{#if tab === 'custom'}
 		<div class="emoji-panel emoji-custom">
 			<input
+				class="emoji-search"
 				type="search"
 				bind:value={query}
 				placeholder={m.emojiSearchLabel()}

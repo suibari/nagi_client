@@ -152,7 +152,8 @@ export const ja = {
 	emojiTabUnicode: '絵文字',
 	emojiTabCustom: 'カスタム',
 	emojiCustomEmpty: 'カスタム絵文字が見つかりません',
-	emojiSearchFailed: 'カスタム絵文字を読み込めませんでした',
+	emojiUnicodeEmpty: '絵文字が見つかりません',
+	emojiSearchFailed: '絵文字を読み込めませんでした',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'カスタム絵文字',

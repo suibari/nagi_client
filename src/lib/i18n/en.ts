@@ -143,7 +143,8 @@ export const en: Messages = {
 	emojiTabUnicode: 'Emoji',
 	emojiTabCustom: 'Custom',
 	emojiCustomEmpty: 'No custom emoji found',
-	emojiSearchFailed: 'Could not load custom emoji',
+	emojiUnicodeEmpty: 'No emoji found',
+	emojiSearchFailed: 'Could not load emoji',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'Custom emoji',
