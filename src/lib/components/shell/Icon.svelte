@@ -28,6 +28,7 @@
 		markdown: 'M3 6h18v12H3V6Zm3 9V9l2.5 3L11 9v6M15 9v4.5M13 13l2 2 2-2',
 		text: 'M4 5h16M4 10h16M4 15h11M4 20h7',
 		shield: 'M12 3l7 3v6c0 4.2-2.8 7.4-7 9-4.2-1.6-7-4.8-7-9V6l7-3Zm-3 9 2 2 4-4',
+		draft: 'M14 3H6.5v18h11V6.5L14 3Zm0 0v3.5h3.5M9 12h6M9 16h4',
 	};
 </script>
 

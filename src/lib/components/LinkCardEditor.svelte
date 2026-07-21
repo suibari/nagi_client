@@ -8,28 +8,35 @@
 	let {
 		text,
 		cards = $bindable(),
+		// ユーザーが × で消した URL。下書きに保存して復元時の再取得を防ぐため公開している。
+		dismissedUrls = $bindable([]),
 		disabled = false,
-	}: { text: string; cards: LinkCardDraft[]; disabled?: boolean } = $props();
+	}: {
+		text: string;
+		cards: LinkCardDraft[];
+		dismissedUrls?: string[];
+		disabled?: boolean;
+	} = $props();
 	let loading = $state<string[]>([]);
 	let urls = $derived(parsePostText(text).urls);
-	const dismissed = new Set<string>();
 	const previews = new Set<string>();
 	let previousUrls = new Set<string>();
 
 	$effect(() => {
 		const currentUrls = new Set(urls);
-		for (const uri of previousUrls) {
-			if (!currentUrls.has(uri)) dismissed.delete(uri);
-		}
+		// 本文から URL 自体が消えたら「消した」記録も忘れる。書き戻しは差分があるときだけ
+		// 行う（この effect は dismissedUrls を読むので、無条件の代入はループになる）。
+		const kept = dismissedUrls.filter((uri) => !previousUrls.has(uri) || currentUrls.has(uri));
+		if (kept.length !== dismissedUrls.length) dismissedUrls = kept;
 		previousUrls = currentUrls;
 		const candidates = urls.filter(
 			(uri) =>
-				!dismissed.has(uri) && !cards.some((card) => card.uri === uri) && !loading.includes(uri),
+				!kept.includes(uri) && !cards.some((card) => card.uri === uri) && !loading.includes(uri),
 		);
 		if (!candidates.length || cards.length >= 4) return;
 		const timer = window.setTimeout(() => {
 			for (const uri of candidates) {
-				if (cards.length >= 4 || dismissed.has(uri) || !urls.includes(uri)) break;
+				if (cards.length >= 4 || dismissedUrls.includes(uri) || !urls.includes(uri)) break;
 				void add(uri);
 			}
 		}, 700);
@@ -94,7 +101,7 @@
 	}
 
 	function remove(uri: string) {
-		if (urls.includes(uri)) dismissed.add(uri);
+		if (urls.includes(uri) && !dismissedUrls.includes(uri)) dismissedUrls = [...dismissedUrls, uri];
 		cards = cards.filter((card) => card.uri !== uri);
 		loading = loading.filter((item) => item !== uri);
 	}

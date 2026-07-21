@@ -101,6 +101,24 @@ export const en: Messages = {
 	linkCardLoading: 'Loading link details…',
 	linkCardRemove: 'Remove link card',
 
+	// drafts
+	draftSave: 'Save as draft',
+	draftSaveFailed: 'Could not save the draft',
+	draftLimitReached: (p: { max: number }) => `You can keep up to ${p.max} drafts`,
+	draftListOpen: 'Drafts',
+	draftListTitle: 'Drafts',
+	draftListClose: 'Close drafts',
+	draftListEmpty: 'No saved drafts yet',
+	draftRestore: 'Restore',
+	draftRestoreOverwrite: 'What you are writing now will be discarded. Restore this draft?',
+	draftDelete: 'Delete draft',
+	draftDeleteConfirm: 'Delete',
+	draftImagesOnly: (p: { count: number }) =>
+		p.count === 1 ? 'Draft with 1 image' : `Draft with ${p.count} images`,
+	draftLinkOnly: 'Draft with a link only',
+	draftLocalOnlyNote: 'Drafts are stored only on this device and do not sync across devices.',
+	draftsClearedNote: 'Drafts saved on this device will be deleted too.',
+
 	viewProfileAria: 'View profile',
 	botBadge: 'Bot-tan',
 	superPositiveBadge: (p: { level: number }) => `Super-Positive Lv.${p.level}`,

@@ -7,6 +7,7 @@
 	import { clearLanguagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { oauthReady, session, signOut } from '$lib/oauth/session.svelte';
 	import { clearThemePreference } from '$lib/theme';
+	import { drafts } from '$lib/drafts/drafts.svelte';
 
 	let confirmation = $state('');
 	let dialogOpen = $state(false);
@@ -18,10 +19,13 @@
 		if (busy || !$session) return;
 		busy = true;
 		error = '';
+		const did = $session.did;
 		try {
 			await prepareDeleteAccountData();
 			await deleteAllNagiRecords();
 			await deleteAccountData();
+			// 下書きは AppView に無く端末ローカルなので、ここで一緒に消す。
+			await drafts.clear(did).catch(() => undefined);
 			clearThemePreference();
 			clearLanguagePreferences();
 			clearLocalePreference();
@@ -39,6 +43,7 @@
 	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
 	<h1>{m.settingsDeleteTitle()}</h1>
 	<p>{m.deleteDataWarning()}</p>
+	<p>{m.draftsClearedNote()}</p>
 	{#if !$session && $oauthReady}
 		<p>{m.deleteDataLoginRequired()}</p>
 		<a class="login" href="/login">{m.login()}</a>

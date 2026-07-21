@@ -107,6 +107,23 @@ export const ja = {
 	linkCardLoading: 'リンク情報を取得中…',
 	linkCardRemove: 'リンクカードを削除',
 
+	// drafts
+	draftSave: '下書きに保存',
+	draftSaveFailed: '下書きを保存できませんでした',
+	draftLimitReached: (p: { max: number }) => `下書きは${p.max}件まで保存できます`,
+	draftListOpen: '下書き一覧',
+	draftListTitle: '下書き',
+	draftListClose: '下書き一覧を閉じる',
+	draftListEmpty: '保存した下書きはありません',
+	draftRestore: '復元',
+	draftRestoreOverwrite: '編集中の内容は破棄されます。下書きを復元しますか？',
+	draftDelete: '下書きを削除',
+	draftDeleteConfirm: '削除する',
+	draftImagesOnly: (p: { count: number }) => `画像${p.count}枚の下書き`,
+	draftLinkOnly: 'リンクのみの下書き',
+	draftLocalOnlyNote: '下書きはこの端末にのみ保存され、他の端末とは同期しません。',
+	draftsClearedNote: 'この端末に保存した下書きも削除されます。',
+
 	// post bubble
 	viewProfileAria: 'プロフィールを見る',
 	botBadge: 'Botたん',
