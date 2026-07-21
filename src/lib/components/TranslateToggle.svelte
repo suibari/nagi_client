@@ -21,6 +21,7 @@
 		deleted = false,
 		collapsed = false,
 		disabled = false,
+		onoverflowchange,
 	}: {
 		uri: string;
 		text: string;
@@ -29,8 +30,10 @@
 		deleted?: boolean;
 		collapsed?: boolean;
 		disabled?: boolean;
+		onoverflowchange?: (overflowing: boolean) => void;
 	} = $props();
 	let root: HTMLDivElement;
+	let body = $state<HTMLParagraphElement>();
 	let visible = $state(false);
 	let translated = $state('');
 	let busy = $state(false);
@@ -105,6 +108,30 @@
 			current = false;
 		};
 	});
+
+	// 文字数ではなく実際の行数で「続きを読む」の要否を決める。
+	// overflow: hidden でも scrollHeight は全文の高さを返すので、
+	// 折りたたみ中／展開中どちらでも同じ判定になる。
+	$effect(() => {
+		const target = body;
+		if (!target) {
+			onoverflowchange?.(false);
+			return;
+		}
+		void text;
+		const measure = () => {
+			const style = getComputedStyle(target);
+			const lines = Number.parseFloat(style.getPropertyValue('--clamp-lines')) || 6;
+			const lineHeight =
+				Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.75;
+			onoverflowchange?.(target.scrollHeight > lineHeight * lines + 1);
+		};
+		measure();
+		if (!('ResizeObserver' in window)) return;
+		const observer = new ResizeObserver(measure);
+		observer.observe(target);
+		return () => observer.disconnect();
+	});
 </script>
 
 <div class="translation" bind:this={root} aria-live="polite">
@@ -132,7 +159,7 @@
 	{/if}
 	{#if !translated}
 		<div class="original" class:separated={busy || failed}>
-			<p class:collapsed>
+			<p class:collapsed bind:this={body}>
 				{#if deleted}{m.postDeleted()}{:else}<RichText {text} {facets} />{/if}
 			</p>
 		</div>

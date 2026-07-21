@@ -29,6 +29,7 @@
 		onposted?: () => void | Promise<void>;
 	} = $props();
 	let expanded = $state(false);
+	let overflowing = $state(false);
 	let deleteOpen = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state('');
@@ -144,8 +145,9 @@
 			deleted={post.deleted}
 			collapsed={!expanded}
 			disabled={optimistic}
+			onoverflowchange={(value) => (overflowing = value)}
 		/>
-		{#if post.text.length > 220}<button class="read" onclick={() => (expanded = !expanded)}
+		{#if overflowing || expanded}<button class="read" onclick={() => (expanded = !expanded)}
 				>{expanded ? m.readLess() : m.readMore()}</button
 			>{/if}{#if post.images?.length}<ImageGallery
 				images={post.images}
