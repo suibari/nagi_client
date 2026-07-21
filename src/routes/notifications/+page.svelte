@@ -30,6 +30,11 @@
 		const [, , did, , rkey] = uri.split('/');
 		return `/thread/${did}/${rkey}`;
 	};
+	/** 日記はスレッドが無いので、本人のプロフィールの日記タブに飛ばす。 */
+	const notificationHref = (item: NotificationView) =>
+		item.type === 'diary'
+			? `/profile/${item.diary?.subject ?? $session?.did}?tab=diary${item.diary ? `&date=${item.diary.date}` : ''}`
+			: threadHref(item.subjectUri);
 	const resolveImage = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 	const relativeTime = (createdAt: string) => {
 		const differenceSeconds = (new Date(createdAt).valueOf() - relativeTimeBase) / 1000;
@@ -61,7 +66,7 @@
 	{:else if !items.length}<div class="state">{m.notifEmpty()}</div>
 	{:else}
 		{#each items as item (item.id)}
-			<a class="notification card" href={threadHref(item.subjectUri)}>
+			<a class="notification card" href={notificationHref(item)}>
 				<Avatar actor={item.actor} size="small" />
 				<div class="notification-main">
 					<div class="notification-head">
@@ -69,11 +74,13 @@
 							<strong>{item.actor.displayName ?? item.actor.handle}</strong
 							>{#if item.type === 'reaction' && item.reaction}{m.notifReactedWithPrefix()}{@render reactionEmoji(
 									item.reaction,
-								)}{m.notifReactedWithSuffix()}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{m.notifReactedSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
+								)}{m.notifReactedWithSuffix()}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{m.notifReactedSuffix()}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else}{m.notifMentionedSuffix()}{/if}
 						</span>
 						<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
 					</div>
-					{#if item.post?.text}<p class="notification-subject">
+					{#if item.type === 'diary' && item.diary}<p class="notification-subject">
+							{stripMarkdown(item.diary.text)}
+						</p>{:else if item.post?.text}<p class="notification-subject">
 							{stripMarkdown(item.post.text)}
 						</p>{/if}
 					{#if item.post?.images?.length}<div class="notification-thumbs">

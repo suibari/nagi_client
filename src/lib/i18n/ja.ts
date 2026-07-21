@@ -129,6 +129,8 @@ export const ja = {
 	botBadge: 'Botたん',
 	superPositiveBadge: (p: { level: number }) => `超ポジティブ Lv.${p.level}`,
 	superPositiveBadgeAria: (p: { level: number }) => `超ポジティブ レベル${p.level}`,
+	titleBadge: (p: { title: string }) => `称号: ${p.title}`,
+	titleBadgeAria: (p: { title: string }) => `日記でもらった称号「${p.title}」`,
 	postDeleted: 'この投稿は削除されました',
 	readMore: '続きを読む',
 	readLess: '閉じる',
@@ -221,6 +223,7 @@ export const ja = {
 	notifReactedWithPrefix: 'さんが',
 	notifReactedWithSuffix: 'でリアクションしました',
 	notifMentionedSuffix: 'さんがあなたをメンションしました',
+	notifDiarySuffix: 'さんが今日の日記を書いてくれました',
 
 	// thread page
 	threadEyebrow: '会話',
@@ -231,12 +234,23 @@ export const ja = {
 	profileTabReplies: '返信',
 	profileTabMedia: 'メディア',
 	profileTabReactions: 'リアクション',
+	profileTabDiary: '日記',
 	profileTabsAria: 'プロフィールのタブ',
 	profileEdit: 'プロフィールを編集',
 	profilePostsUnit: (_p: { count: number }) => '投稿',
 	profileJoinedSince: (p: { date: string }) => `${p.date}から`,
 	profileEmptyPosts: 'まだ投稿がありません。',
 	profileEmptyReactions: 'まだリアクションがありません。',
+
+	// diary
+	diaryEmptyMonth: 'この月の日記はまだありません。',
+	diaryFetchFailed: '日記を取得できません',
+	diaryPrevMonth: '前の月',
+	diaryNextMonth: '次の月',
+	diaryPickDate: '日記のある日を選ぶと本文が読めます。',
+	diaryTitleLabel: (p: { title: string }) => `今日の称号: ${p.title}`,
+	diaryDayAria: (p: { date: string }) => `${p.date}の日記`,
+	diaryAbout: 'botたんが、その日の投稿をもとに書いてくれた日記です。',
 
 	// login
 	loginTitle: 'Nagiに参加する',

@@ -6,6 +6,7 @@
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import ActorBadges from '$lib/components/ActorBadges.svelte';
+	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -13,14 +14,19 @@
 	import { onMount } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 
-	const tabs: Array<{ id: ProfileFeedFilter; label: () => string }> = [
+	// 日記はポストではないので Feed には載らない。タブだけ同じ並びに足す。
+	type ProfileTab = ProfileFeedFilter | 'diary';
+	const tabs: Array<{ id: ProfileTab; label: () => string }> = [
 		{ id: 'posts', label: m.profileTabPosts },
 		{ id: 'replies', label: m.profileTabReplies },
 		{ id: 'media', label: m.profileTabMedia },
 		{ id: 'reactions', label: m.profileTabReactions },
+		{ id: 'diary', label: m.profileTabDiary },
 	];
 	let did = $derived(page.params.did ?? '');
-	let tab = $state<ProfileFeedFilter>('posts');
+	// 通知から ?tab=diary&date=YYYY-MM-DD で該当日を開く。
+	const initialDiaryDate = $derived(page.url.searchParams.get('date') ?? undefined);
+	let tab = $state<ProfileTab>('posts');
 	let profile = $state<ProfileDetail>();
 	// per-(did, tab) feed cache so switching tabs back doesn't refetch
 	const feeds = new Map<string, Feed>();
@@ -28,11 +34,12 @@
 	$effect(() => {
 		void did;
 		profile = undefined;
-		tab = 'posts';
+		tab = page.url.searchParams.get('tab') === 'diary' ? 'diary' : 'posts';
 	});
 	$effect(() => {
 		const actor = did;
-		const filter = tab;
+		// 日記タブでもプロフィール欄は要るので、投稿フィードは読んでおく。
+		const filter: ProfileFeedFilter = tab === 'diary' ? 'posts' : tab;
 		if (!actor) return;
 		const key = `${actor}:${filter}`;
 		let f = feeds.get(key);
@@ -110,6 +117,9 @@
 			>
 		{/each}
 	</nav>
+	{#if tab === 'diary'}
+		<section class="timeline"><DiaryCalendar {did} initialDate={initialDiaryDate} /></section>
+	{:else}
 	<section class="timeline" aria-busy={feed?.loading}>
 		{#if !feed || (feed.loading && !feed.visibleItems.length)}<div class="state">{m.loading()}</div>
 		{:else if feed.error && !feed.visibleItems.length}<div class="state error">
@@ -138,4 +148,5 @@
 					onclick={() => feed?.loadMore()}><Icon name="more" size={20} /></button
 				>{/if}{/if}
 	</section>
+	{/if}
 {/if}

@@ -1,5 +1,5 @@
 import type { ActorView } from '$lib/api/types';
-import { m } from '$lib/i18n/i18n.svelte';
+import { i18n, m } from '$lib/i18n/i18n.svelte';
 
 /**
  * 「誰にどのバッジが付くか」を決める唯一の場所。
@@ -33,6 +33,19 @@ export function actorBadges(actor?: ActorView): Badge[] {
 
 	if (actor.isBot) {
 		badges.push({ id: 'bot', label: m.botBadge(), tone: 'bot' });
+	}
+
+	// 称号は Bluesky と共通。あちらのラベルは24時間で失効するが、こちらは
+	// 次の日記が書かれるまで出しっぱなしにする。
+	const title = actor.currentTitle;
+	if (title) {
+		const label = i18n.locale === 'ja' ? title.ja : title.en;
+		badges.push({
+			id: 'title',
+			label: m.titleBadge({ title: label }),
+			title: m.titleBadgeAria({ title: label }),
+			tone: 'title',
+		});
 	}
 
 	const level = actor.superPositiveLevel ?? 0;

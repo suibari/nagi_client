@@ -8,6 +8,11 @@ export type ActorView = {
 	isBot?: boolean;
 	/** 超ポジティブLv（Bluesky と共通のカウンタ。100以上もそのまま表示する） */
 	superPositiveLevel?: number;
+	/**
+	 * 現在の称号（Bluesky と共通）。次の日記が書かれるまで維持される。
+	 * UI 言語で出し分けるので両方来る。
+	 */
+	currentTitle?: { ja: string; en: string };
 };
 /** カスタム絵文字（blue.moji.collection.item）のビュー。url は AppView の blob プロキシ。 */
 export type EmojiView = {
@@ -66,11 +71,29 @@ export type ProfileDetail = ActorView & {
 };
 export type ProfilePage = { profile: ProfileDetail; feed: Page<FeedItem> };
 export type ThreadView = { post: PostView; replies: PostView[] };
+/** botたんが書いた1日分の日記。ポストではないのでタイムラインには出ない。 */
+export type DiaryView = {
+	uri: string;
+	cid: string;
+	/** 日記の対象ユーザーの DID。 */
+	subject: string;
+	/** "YYYY-MM-DD"（本人のローカル日付） */
+	date: string;
+	text: string;
+	titleJa?: string;
+	titleEn?: string;
+	langs?: string[];
+	createdAt: string;
+	indexedAt: string;
+};
+export type DiaryPage = { items: DiaryView[]; cursor?: string; hasMore: boolean };
 export type NotificationView = {
 	id: string;
-	type: 'reply' | 'reaction' | 'mention';
+	type: 'reply' | 'reaction' | 'mention' | 'diary';
 	actor: ActorView;
 	post?: PostView;
+	/** type が 'diary' のときの日記本体。post は付かない。 */
+	diary?: DiaryView;
 	/** type が 'reaction' のときの、押された絵文字。 */
 	reaction?: { emoji: string; bluemoji?: EmojiView };
 	subjectUri: string;

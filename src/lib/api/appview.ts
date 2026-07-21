@@ -3,6 +3,7 @@ import { Agent } from '@atproto/api';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
+	DiaryPage,
 	EmojiView,
 	NotificationView,
 	Page,
@@ -77,6 +78,18 @@ export const getProfile = (
 	return call<ProfilePage>(
 		'com.suibari.nagi.getProfile',
 		`/xrpc/com.suibari.nagi.getProfile?${params}`,
+	);
+};
+/** 日記は公開コンテンツなので認証不要。month は "YYYY-MM"。 */
+export const getDiaries = (actor: string, opts: { month?: string; cursor?: string } = {}) => {
+	const params = new URLSearchParams({ actor });
+	if (opts.month) params.set('month', opts.month);
+	if (opts.cursor) params.set('cursor', opts.cursor);
+	return call<DiaryPage>(
+		'com.suibari.nagi.getDiaries',
+		`/xrpc/com.suibari.nagi.getDiaries?${params}`,
+		{},
+		'none',
 	);
 };
 export const searchActors = (query: string, limit = 10) =>

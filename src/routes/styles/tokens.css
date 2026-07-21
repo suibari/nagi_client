@@ -50,6 +50,9 @@
 	/* semantic: badges — bot はブランド色、超ポジティブLvはティアごとに別系統の色相 */
 	--badge-bot-bg: var(--accent-soft);
 	--badge-bot-fg: var(--accent-strong);
+	/* 称号（日記でもらう）。ティア色と混ざらないよう緑系にする */
+	--badge-title-bg: #e2f5e6;
+	--badge-title-fg: #276b3c;
 	--badge-tier-1-bg: #d9f7fd;
 	--badge-tier-1-fg: #0b6a8a;
 	--badge-tier-2-bg: #e8e4ff;
@@ -135,6 +138,8 @@
 
 	--badge-bot-bg: var(--accent-soft);
 	--badge-bot-fg: var(--accent-strong);
+	--badge-title-bg: #23412c;
+	--badge-title-fg: #9fe0b0;
 	--badge-tier-1-bg: #173f4d;
 	--badge-tier-1-fg: #7fd8f0;
 	--badge-tier-2-bg: #2e2a4d;
@@ -202,6 +207,8 @@
 		--brand-gradient: linear-gradient(145deg, var(--color-primary), var(--color-secondary));
 		--badge-bot-bg: var(--accent-soft);
 		--badge-bot-fg: var(--accent-strong);
+		--badge-title-bg: #23412c;
+		--badge-title-fg: #9fe0b0;
 		--badge-tier-1-bg: #173f4d;
 		--badge-tier-1-fg: #7fd8f0;
 		--badge-tier-2-bg: #2e2a4d;

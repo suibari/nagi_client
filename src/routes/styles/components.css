@@ -637,6 +637,11 @@
 	background: var(--badge-bot-bg);
 	color: var(--badge-bot-fg);
 }
+/* 称号：日記でもらう。次の日記が書かれるまで維持される */
+.badge--title {
+	background: var(--badge-title-bg);
+	color: var(--badge-title-fg);
+}
 .badge--tier-1 {
 	background: var(--badge-tier-1-bg);
 	color: var(--badge-tier-1-fg);
