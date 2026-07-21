@@ -7,7 +7,8 @@ export default defineConfig(({ mode }) => {
 	const isDev = mode === 'development';
 
 	// 本番は https ホスト（appview・PDS・bsky.social）のみに接続するが、dev では
-	// ローカル appview に http://localhost で接続するため、dev のときだけ許可する。
+	// ローカル appview に http://localhost で接続する（XRPC も blob 画像も）ため、
+	// dev のときだけ connect-src / img-src で許可する。
 	return {
 		plugins: [
 			tailwindcss(),
@@ -36,7 +37,9 @@ export default defineConfig(({ mode }) => {
 						'default-src': ['self'],
 						'script-src': ['self'],
 						'style-src': ['self', 'unsafe-inline'],
-						'img-src': ['self', 'https:', 'data:', 'blob:'],
+						'img-src': isDev
+							? ['self', 'https:', 'data:', 'blob:', 'http://localhost:*']
+							: ['self', 'https:', 'data:', 'blob:'],
 						'font-src': ['self', 'data:'],
 						'connect-src': isDev ? ['self', 'https:', 'http://localhost:*'] : ['self', 'https:'],
 						'base-uri': ['self'],

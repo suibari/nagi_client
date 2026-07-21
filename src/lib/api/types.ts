@@ -5,8 +5,18 @@ export type ActorView = {
 	description?: string;
 	avatar?: string;
 };
+/** カスタム絵文字（blue.moji.collection.item）のビュー。url は AppView の blob プロキシ。 */
+export type EmojiView = {
+	uri: string;
+	cid: string;
+	did: string;
+	name: string;
+	alt?: string;
+	url: string;
+};
 export type ReactionView = {
 	emoji: string;
+	bluemoji?: EmojiView;
 	reactors: ActorView[];
 	hasMoreReactors?: boolean;
 	reactedByMe?: boolean;

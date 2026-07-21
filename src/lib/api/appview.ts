@@ -3,6 +3,7 @@ import { Agent } from '@atproto/api';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
+	EmojiView,
 	NotificationView,
 	Page,
 	ProfileFeedFilter,
@@ -82,6 +83,28 @@ export const searchActors = (query: string, limit = 10) =>
 	call<SearchActorsResult>(
 		'com.suibari.nagi.searchActors',
 		`/xrpc/com.suibari.nagi.searchActors?q=${encodeURIComponent(query)}&limit=${Math.min(10, Math.max(1, limit))}`,
+		{},
+		'none',
+	);
+export const searchEmojis = (
+	opts: { q?: string; repo?: string; limit?: number; cursor?: string } = {},
+) => {
+	const params = new URLSearchParams();
+	if (opts.q) params.set('q', opts.q);
+	if (opts.repo) params.set('repo', opts.repo);
+	params.set('limit', String(Math.min(100, Math.max(1, opts.limit ?? 50))));
+	if (opts.cursor) params.set('cursor', opts.cursor);
+	return call<{ emojis: EmojiView[]; cursor?: string }>(
+		'com.suibari.nagi.searchEmojis',
+		`/xrpc/com.suibari.nagi.searchEmojis?${params}`,
+		{},
+		'none',
+	);
+};
+export const getEmoji = (uri: string) =>
+	call<{ emoji: EmojiView }>(
+		'com.suibari.nagi.getEmoji',
+		`/xrpc/com.suibari.nagi.getEmoji?uri=${encodeURIComponent(uri)}`,
 		{},
 		'none',
 	);

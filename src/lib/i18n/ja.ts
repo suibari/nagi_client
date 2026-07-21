@@ -113,6 +113,33 @@ export const ja = {
 	emojiPickerAria: 'リアクションを選択',
 	emojiFavoritesLabel: 'よく使う絵文字',
 	emojiSearchLabel: '絵文字を検索',
+	emojiTabUnicode: '絵文字',
+	emojiTabCustom: 'カスタム',
+	emojiCustomEmpty: 'カスタム絵文字が見つかりません',
+	emojiSearchFailed: 'カスタム絵文字を読み込めませんでした',
+
+	// custom emoji settings
+	emojiSettingsTitle: 'カスタム絵文字',
+	emojiSettingsDescription: '自分の絵文字を登録して、みんなで使う',
+	emojiSettingsNote:
+		'登録した絵文字はあなたのPDSにBluemoji（blue.moji.collection.item）として保存され、Nagiのみんながリアクションに使えます。',
+	emojiUploadNote: 'PNG・WebP・GIF・APNG。長辺128pxに縮小します（GIF・APNGは128KBまで）。',
+	emojiNameLabel: '絵文字名（半角英数字、_と-）',
+	emojiAltLabel: '説明（任意）',
+	emojiUpload: '登録する',
+	emojiUploaded: '絵文字を登録しました',
+	emojiDeleted: '絵文字を削除しました',
+	emojiMineTitle: '登録した絵文字',
+	emojiMineEmpty: 'まだ絵文字を登録していません。',
+	emojiNameInvalid: '半角英数字・アンダースコア・ハイフンで1〜32文字にしてください',
+	emojiNameTaken: 'この名前の絵文字はすでに登録されています',
+	emojiTypeError: 'PNG、WebP、GIF、APNGの画像を選択してください',
+	emojiInputSizeError: '画像のサイズが大きすぎます',
+	emojiAnimatedSizeError: 'アニメーション画像は128KB以下にしてください',
+	emojiCompressError: '画像を変換できませんでした',
+	emojiUploadFailed: '絵文字を登録できませんでした',
+	emojiDeleteFailed: '絵文字を削除できませんでした',
+	emojiLoadFailed: '絵文字を読み込めませんでした',
 
 	// home
 	heroEyebrow: 'AT PROTOCOLでつながる、全肯定SNS',

@@ -13,6 +13,12 @@
 			description={m.settingsProfileDescription()}
 		/>
 		<SettingsCategoryCard
+			href="/settings/emoji"
+			icon="emoji"
+			title={m.emojiSettingsTitle()}
+			description={m.emojiSettingsDescription()}
+		/>
+		<SettingsCategoryCard
 			href="/settings/appearance"
 			icon="sun"
 			title={m.settingsAppearanceTitle()}

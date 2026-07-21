@@ -5,21 +5,60 @@
 	import emojiDataUrlJa from 'emoji-picker-element-data/ja/emojibase/data.json?url';
 	import emojiDataUrlEn from 'emoji-picker-element-data/en/emojibase/data.json?url';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { searchEmojis } from '$lib/api/appview';
+	import { displayEmojiName, resolveEmojiUrl } from '$lib/atproto/bluemoji';
+	import type { EmojiView } from '$lib/api/types';
 
 	let {
 		anchor,
 		select,
 		close,
-	}: { anchor: HTMLElement; select: (emoji: string) => void; close: () => void } = $props();
+	}: {
+		anchor: HTMLElement;
+		select: (emoji: string | EmojiView) => void;
+		close: () => void;
+	} = $props();
 	let host: HTMLDivElement;
+	let unicodeHost = $state<HTMLDivElement>();
 	let positionStyle = $state('');
 	let positioned = $state(false);
+	let tab = $state<'unicode' | 'custom'>('unicode');
+	let query = $state('');
+	let customEmojis = $state<EmojiView[]>([]);
+	let customLoading = $state(false);
+	let customError = $state(false);
 
 	const VIEWPORT_MARGIN = 16;
 	const ANCHOR_GAP = 8;
 	const DESKTOP_BREAKPOINT = 768;
 	const PICKER_WIDTH = 352;
 	const PICKER_HEIGHT = 440;
+
+	// カスタムタブは AppView 検索。打鍵ごとに叩かないよう少し待ってから問い合わせる。
+	const SEARCH_DEBOUNCE_MS = 250;
+	$effect(() => {
+		if (tab !== 'custom') return;
+		const q = query.trim();
+		let cancelled = false;
+		customLoading = true;
+		const timer = setTimeout(async () => {
+			try {
+				const result = await searchEmojis({ q: q || undefined, limit: 60 });
+				if (!cancelled) {
+					customEmojis = result.emojis;
+					customError = false;
+				}
+			} catch {
+				if (!cancelled) customError = true;
+			} finally {
+				if (!cancelled) customLoading = false;
+			}
+		}, SEARCH_DEBOUNCE_MS);
+		return () => {
+			cancelled = true;
+			clearTimeout(timer);
+		};
+	});
 
 	onMount(() => {
 		let disposed = false;
@@ -69,7 +108,7 @@
 		window.addEventListener('scroll', schedulePositionUpdate, true);
 		updatePosition();
 		void import('emoji-picker-element').then(({ Picker }) => {
-			if (disposed) return;
+			if (disposed || !unicodeHost) return;
 			const locale = i18n.locale;
 			picker = new Picker({
 				locale,
@@ -84,7 +123,7 @@
 				const emoji = (event as CustomEvent<{ unicode?: string }>).detail.unicode;
 				if (emoji) select(emoji);
 			});
-			host.append(picker);
+			unicodeHost.append(picker);
 			requestAnimationFrame(() => {
 				picker?.shadowRoot?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
 			});
@@ -109,4 +148,50 @@
 	style={positionStyle}
 	role="dialog"
 	aria-label={m.emojiPickerAria()}
-></div>
+>
+	<div class="emoji-tabs" role="tablist">
+		<button
+			role="tab"
+			aria-selected={tab === 'unicode'}
+			class:active={tab === 'unicode'}
+			onclick={() => (tab = 'unicode')}>{m.emojiTabUnicode()}</button
+		>
+		<button
+			role="tab"
+			aria-selected={tab === 'custom'}
+			class:active={tab === 'custom'}
+			onclick={() => (tab = 'custom')}>{m.emojiTabCustom()}</button
+		>
+	</div>
+	<div class="emoji-panel" bind:this={unicodeHost} hidden={tab !== 'unicode'}></div>
+	{#if tab === 'custom'}
+		<div class="emoji-panel emoji-custom">
+			<input
+				type="search"
+				bind:value={query}
+				placeholder={m.emojiSearchLabel()}
+				aria-label={m.emojiSearchLabel()}
+			/>
+			{#if customError}
+				<p class="emoji-custom-empty">{m.emojiSearchFailed()}</p>
+			{:else if customLoading && !customEmojis.length}
+				<p class="emoji-custom-empty">{m.loading()}</p>
+			{:else if !customEmojis.length}
+				<p class="emoji-custom-empty">{m.emojiCustomEmpty()}</p>
+			{:else}
+				<div class="emoji-custom-grid">
+					{#each customEmojis as emoji (emoji.uri)}
+						<button
+							class="emoji-custom-item"
+							title={displayEmojiName(emoji.name)}
+							aria-label={m.reactWithAria({ emoji: displayEmojiName(emoji.name) })}
+							onclick={() => select(emoji)}
+						>
+							<img src={resolveEmojiUrl(emoji.url)} alt={emoji.alt ?? emoji.name} loading="lazy" />
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	{/if}
+</div>

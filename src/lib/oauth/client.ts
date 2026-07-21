@@ -7,6 +7,8 @@ const baseScopes = [
 	'repo:com.suibari.nagi.post',
 	'repo:com.suibari.nagi.reaction',
 	'repo:com.suibari.nagi.profile',
+	// カスタム絵文字は Bluemoji 標準レコードとしてユーザー自身の PDS に置く。
+	'repo:blue.moji.collection.item',
 	'blob:image/*',
 	'rpc:com.suibari.nagi.getTimeline?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getAffirmation?aud=did:web:nagi-api.suibari.com%23nagi_appview',
@@ -17,6 +19,8 @@ const baseScopes = [
 	'rpc:com.suibari.nagi.deleteAccountData?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getLinkMetadata?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getLinkThumbnail?aud=did:web:nagi-api.suibari.com%23nagi_appview',
+	'rpc:com.suibari.nagi.searchEmojis?aud=did:web:nagi-api.suibari.com%23nagi_appview',
+	'rpc:com.suibari.nagi.getEmoji?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 ];
 // クロスポストはオプトインのため、通常のサインインでは base のみを要求する。
 // クライアントメタデータには宣言可能な最大集合として crosspost も含める。

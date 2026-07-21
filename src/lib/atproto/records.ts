@@ -4,6 +4,8 @@ import { session } from '$lib/oauth/session.svelte';
 import { parsePostText, type MentionSelection } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment } from '$lib/images';
+import type { EmojiView } from '$lib/api/types';
+import { BLUEMOJI_ITEM, bluemojiRefOf } from './bluemoji';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile';
@@ -199,8 +201,12 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 		},
 	});
 }
-export async function createReaction(subject: { uri: string; cid: string }, emoji: string) {
+export async function createReaction(
+	subject: { uri: string; cid: string },
+	emoji: string | EmojiView,
+) {
 	const s = current();
+	const custom = typeof emoji === 'string' ? undefined : emoji;
 	return new Agent(s).com.atproto.repo.createRecord({
 		repo: s.did,
 		collection: REACTION,
@@ -208,7 +214,9 @@ export async function createReaction(subject: { uri: string; cid: string }, emoj
 		record: {
 			$type: REACTION,
 			subject,
-			emoji: emoji.normalize('NFC'),
+			// カスタム絵文字では emoji はフォールバックテキスト（":name:"）。
+			emoji: custom ? custom.name : (emoji as string).normalize('NFC'),
+			...(custom ? { bluemoji: bluemojiRefOf(custom) } : {}),
 			createdAt: new Date().toISOString(),
 		},
 	});
@@ -220,7 +228,7 @@ export async function deleteRecord(collection: string, rkey: string) {
 export async function deleteAllNagiRecords() {
 	const s = current();
 	const agent = new Agent(s);
-	for (const collection of [POST, REACTION, PROFILE]) {
+	for (const collection of [POST, REACTION, PROFILE, BLUEMOJI_ITEM]) {
 		let cursor: string | undefined;
 		do {
 			const response = await agent.com.atproto.repo.listRecords({
