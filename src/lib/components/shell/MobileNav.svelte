@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { navItems, isActive } from './nav';
+	import { navItems, isActive, formatUnread } from './nav';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { unreadCount } from '$lib/notifications/unread.svelte';
 	import Icon from './Icon.svelte';
 </script>
 
@@ -12,7 +13,14 @@
 			class:active={isActive(page.url.pathname, item.href)}
 			aria-current={isActive(page.url.pathname, item.href) ? 'page' : undefined}
 		>
-			<Icon name={item.icon} size={22} /><span>{item.label()}</span>
+			<span class="nav-icon">
+				<Icon name={item.icon} size={22} />
+				{#if item.href === '/notifications' && $unreadCount > 0}
+					<span class="nav-badge" aria-label={m.notifUnreadBadgeAria({ count: $unreadCount })}
+						>{formatUnread($unreadCount)}</span
+					>
+				{/if}
+			</span><span>{item.label()}</span>
 		</a>
 	{/each}
 </nav>

@@ -15,6 +15,7 @@ const baseScopes = [
 	'rpc:com.suibari.nagi.getThread?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getProfile?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getNotifications?aud=did:web:nagi-api.suibari.com%23nagi_appview',
+	'rpc:com.suibari.nagi.getUnreadCount?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.updateSeen?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.deleteAccountData?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getLinkMetadata?aud=did:web:nagi-api.suibari.com%23nagi_appview',

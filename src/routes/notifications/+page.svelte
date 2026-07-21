@@ -6,6 +6,7 @@
 	import { stripMarkdown } from '$lib/atproto/markdown';
 	import { displayEmojiName, resolveEmojiUrl } from '$lib/atproto/bluemoji';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
+	import { markAllSeen } from '$lib/notifications/unread.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	let items = $state<NotificationView[]>([]);
 	let error = $state('');
@@ -20,6 +21,9 @@
 		}
 		try {
 			items = (await getNotifications()).items;
+			// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
+			// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
+			if (items.length) void markAllSeen(items[0].createdAt);
 		} catch (e) {
 			error = e instanceof Error ? e.message : m.notifFetchFailed();
 		} finally {
@@ -66,7 +70,7 @@
 	{:else if !items.length}<div class="state">{m.notifEmpty()}</div>
 	{:else}
 		{#each items as item (item.id)}
-			<a class="notification card" href={notificationHref(item)}>
+			<a class="notification card" class:unread={item.readAt == null} href={notificationHref(item)}>
 				<Avatar actor={item.actor} size="small" />
 				<div class="notification-main">
 					<div class="notification-head">

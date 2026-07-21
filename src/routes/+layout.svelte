@@ -11,12 +11,15 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
 
 	let { children } = $props();
 	let checkedDid: string | undefined;
 	onMount(() => {
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
 		void initOAuth().then(() => resolveCrosspostPending());
+		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。
+		startUnreadPolling();
 	});
 	$effect(() => {
 		const did = $session?.did;

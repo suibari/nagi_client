@@ -212,6 +212,7 @@ export const en: Messages = {
 	notifReactedWithSuffix: ' to your post',
 	notifMentionedSuffix: ' mentioned you',
 	notifDiarySuffix: ' wrote your diary for today',
+	notifUnreadBadgeAria: (p: { count: number }) => `${p.count} unread notifications`,
 
 	threadEyebrow: 'Conversation',
 	threadTitle: 'Thread',

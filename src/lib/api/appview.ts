@@ -128,6 +128,20 @@ export const getNotifications = () =>
 		{},
 		'required',
 	);
+export const getUnreadCount = () =>
+	call<{ count: number }>(
+		'com.suibari.nagi.getUnreadCount',
+		'/xrpc/com.suibari.nagi.getUnreadCount',
+		{},
+		'required',
+	);
+export const updateSeen = (seenAt: string) =>
+	call<{ updated: number }>(
+		'com.suibari.nagi.updateSeen',
+		'/xrpc/com.suibari.nagi.updateSeen',
+		{ method: 'POST', body: JSON.stringify({ seenAt }) },
+		'required',
+	);
 export const translatePost = (uri: string, targetLang: string) =>
 	call<{ text: string }>(
 		'com.suibari.nagi.translatePost',

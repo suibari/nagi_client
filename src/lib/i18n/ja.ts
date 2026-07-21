@@ -224,6 +224,7 @@ export const ja = {
 	notifReactedWithSuffix: 'でリアクションしました',
 	notifMentionedSuffix: 'さんがあなたをメンションしました',
 	notifDiarySuffix: 'さんが今日の日記を書いてくれました',
+	notifUnreadBadgeAria: (p: { count: number }) => `未読通知 ${p.count} 件`,
 
 	// thread page
 	threadEyebrow: '会話',

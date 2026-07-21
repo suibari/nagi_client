@@ -1542,6 +1542,11 @@
 	padding: 14px 16px;
 	text-align: left;
 }
+/* 未読は左のアクセントバー＋淡い地色で示す。開いた直後に見え、既読化後も表示中は残る。 */
+.notification.unread {
+	background: var(--accent-softer);
+	box-shadow: inset 3px 0 0 var(--accent);
+}
 .notification-main {
 	min-width: 0;
 	flex: 1;
