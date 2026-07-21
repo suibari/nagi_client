@@ -211,6 +211,7 @@
 				bind:mentions
 				placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
 				disabled={posting}
+				onsubmit={() => void submitPost()}
 			/>
 			<ImageAttachmentEditor bind:attachments disabled={posting} />
 			<LinkCardEditor text={composeText} bind:cards={linkCards} disabled={posting} />

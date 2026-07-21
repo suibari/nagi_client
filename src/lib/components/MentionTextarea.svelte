@@ -11,6 +11,7 @@
 		placeholder,
 		ariaLabel,
 		disabled = false,
+		onsubmit,
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
@@ -18,6 +19,7 @@
 		placeholder?: string;
 		ariaLabel?: string;
 		disabled?: boolean;
+		onsubmit?: () => void;
 	} = $props();
 
 	let textarea: HTMLTextAreaElement;
@@ -110,6 +112,13 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
+		// Ctrl/Cmd+Enter は投稿送信。メンション候補の Enter 確定より優先させる。
+		// IME 変換確定中（isComposing）は誤爆を避けるため無視する。
+		if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.isComposing) {
+			event.preventDefault();
+			onsubmit?.();
+			return;
+		}
 		if (!actors.length || !token) {
 			if (event.key === 'Escape') close();
 			return;

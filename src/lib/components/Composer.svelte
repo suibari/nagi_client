@@ -138,6 +138,7 @@
 			placeholder={m.composerPlaceholder()}
 			ariaLabel={m.composerAria()}
 			disabled={busy}
+			onsubmit={submit}
 		/>
 		<ImageAttachmentEditor bind:attachments disabled={busy} />
 		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />

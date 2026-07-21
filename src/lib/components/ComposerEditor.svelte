@@ -11,6 +11,7 @@
 		placeholder,
 		ariaLabel,
 		disabled = false,
+		onsubmit,
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
@@ -18,6 +19,7 @@
 		placeholder?: string;
 		ariaLabel?: string;
 		disabled?: boolean;
+		onsubmit?: () => void;
 	} = $props();
 
 	let preview = $state(false);
@@ -50,7 +52,7 @@
 			</p>{/if}
 	</div>
 {:else}
-	<MentionTextarea bind:value bind:mentions {id} {placeholder} {ariaLabel} {disabled} />
+	<MentionTextarea bind:value bind:mentions {id} {placeholder} {ariaLabel} {disabled} {onsubmit} />
 {/if}
 
 <style>
