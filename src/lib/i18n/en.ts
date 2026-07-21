@@ -12,6 +12,7 @@ export const en: Messages = {
 	login: 'Log in',
 	cancel: 'Cancel',
 
+	navFeed: 'Feed',
 	navGlobal: 'Global',
 	navAffirmation: 'Affirmation',
 	navNotifications: 'Notifications',

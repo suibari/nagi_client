@@ -18,6 +18,7 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
 	import type { MentionSelection } from '$lib/atproto/facets';
+	import { myProfile } from '$lib/profile/me.svelte';
 	let {
 		post,
 		ondeleted,
@@ -187,52 +188,57 @@
 						}}><Icon name="trash" size={17} /></button
 					>{/if}
 			</div>
-			{#if composeMode}
-				<div class="post-composer">
-					<label for={`compose-${post.cid}`}
-						>{composeMode === 'reply' ? m.replyComposerLabel() : m.quoteComposerLabel()}</label
-					>
-					<MentionTextarea
-						id={`compose-${post.cid}`}
-						bind:value={composeText}
-						bind:mentions
-						placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
-						disabled={posting}
-					/>
-					<ImageAttachmentEditor bind:attachments disabled={posting} />
-					<LinkCardEditor text={composeText} bind:cards={linkCards} disabled={posting} />
-					<div class="post-composer-foot">
-						{#if postError}<span class="error" role="alert">{postError}</span>{/if}
-						<button
-							class="ghost icon-action"
-							type="button"
-							disabled={posting}
-							aria-label={m.cancel()}
-							title={m.cancel()}
-							onclick={() => {
-								composeMode = undefined;
-								attachments = [];
-								linkCards = [];
-								mentions = [];
-							}}><Icon name="cancel" size={18} /></button
-						>
-						<button
-							class="primary icon-action primary-icon"
-							type="button"
-							disabled={posting ||
-								(!composeText.trim() && !attachments.length && !linkCards.length)}
-							aria-label={posting ? m.composerSubmitting() : m.composerSubmit()}
-							title={posting ? m.composerSubmitting() : m.composerSubmit()}
-							onclick={() => void submitPost()}
-							><Icon name={posting ? 'refresh' : 'send'} size={18} /></button
-						>
-					</div>
-				</div>
-			{/if}
 		{/if}
 		{#if postError && !composeMode}<p class="error" role="alert">{postError}</p>{/if}
 	</div>
 </div>
+{#if composeMode}
+	<!-- リプライ／引用も「自分のアバター＋吹き出し」で、投稿後のカードと同じ並びに見せる -->
+	<div class="post-row mine composer-row">
+		<a href={`/profile/${$session?.did}`} aria-label={m.myProfileAria()}
+			><Avatar actor={myProfile.current} /></a
+		>
+		<section class="bubble post-composer">
+			<label for={`compose-${post.cid}`}
+				>{composeMode === 'reply' ? m.replyComposerLabel() : m.quoteComposerLabel()}</label
+			>
+			<MentionTextarea
+				id={`compose-${post.cid}`}
+				bind:value={composeText}
+				bind:mentions
+				placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
+				disabled={posting}
+			/>
+			<ImageAttachmentEditor bind:attachments disabled={posting} />
+			<LinkCardEditor text={composeText} bind:cards={linkCards} disabled={posting} />
+			<div class="post-composer-foot">
+				{#if postError}<span class="error" role="alert">{postError}</span>{/if}
+				<button
+					class="ghost icon-action"
+					type="button"
+					disabled={posting}
+					aria-label={m.cancel()}
+					title={m.cancel()}
+					onclick={() => {
+						composeMode = undefined;
+						attachments = [];
+						linkCards = [];
+						mentions = [];
+					}}><Icon name="cancel" size={18} /></button
+				>
+				<button
+					class="primary icon-action primary-icon"
+					type="button"
+					disabled={posting || (!composeText.trim() && !attachments.length && !linkCards.length)}
+					aria-label={posting ? m.composerSubmitting() : m.composerSubmit()}
+					title={posting ? m.composerSubmitting() : m.composerSubmit()}
+					onclick={() => void submitPost()}
+					><Icon name={posting ? 'refresh' : 'send'} size={18} /></button
+				>
+			</div>
+		</section>
+	</div>
+{/if}
 {#if deleteOpen}
 	<PostDeleteDialog
 		busy={deleting}

@@ -9,6 +9,8 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
 	import Icon from './shell/Icon.svelte';
+	import Avatar from './Avatar.svelte';
+	import { myProfile } from '$lib/profile/me.svelte';
 	import type { MentionSelection } from '$lib/atproto/facets';
 	let { onposted }: { onposted: () => void | Promise<void> } = $props();
 	let text = $state('');
@@ -40,27 +42,32 @@
 	}
 </script>
 
-<section class="composer">
-	<MentionTextarea
-		bind:value={text}
-		bind:mentions
-		placeholder={m.composerPlaceholder()}
-		ariaLabel={m.composerAria()}
-		disabled={busy}
-	/>
-	<ImageAttachmentEditor bind:attachments disabled={busy} />
-	<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />
-	<div class="composer-foot">
-		<span
-			>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
-		><button
-			class="submit icon-action primary-icon"
-			type="button"
-			disabled={busy || (!text.trim() && !attachments.length && !linkCards.length)}
-			aria-label={busy ? m.composerSubmitting() : m.composerSubmit()}
-			title={busy ? m.composerSubmitting() : m.composerSubmit()}
-			onclick={submit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button
-		>
-	</div>
-	{#if error}<p class="error">{error}</p>{/if}
-</section>
+<div class="post-row mine composer-row composer-card">
+	<a href={`/profile/${$session?.did}`} aria-label={m.myProfileAria()}
+		><Avatar actor={myProfile.current} /></a
+	>
+	<section class="bubble composer">
+		<MentionTextarea
+			bind:value={text}
+			bind:mentions
+			placeholder={m.composerPlaceholder()}
+			ariaLabel={m.composerAria()}
+			disabled={busy}
+		/>
+		<ImageAttachmentEditor bind:attachments disabled={busy} />
+		<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />
+		<div class="composer-foot">
+			<span
+				>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
+			><button
+				class="submit icon-action primary-icon"
+				type="button"
+				disabled={busy || (!text.trim() && !attachments.length && !linkCards.length)}
+				aria-label={busy ? m.composerSubmitting() : m.composerSubmit()}
+				title={busy ? m.composerSubmitting() : m.composerSubmit()}
+				onclick={submit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button
+			>
+		</div>
+		{#if error}<p class="error">{error}</p>{/if}
+	</section>
+</div>

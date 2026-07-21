@@ -1,12 +1,19 @@
 /* --- welcome / composer --- */
-.welcome,
-.composer {
+.welcome {
 	background: var(--bg-raised);
 	border: 0;
 	border-radius: var(--radius-l);
 	box-shadow: var(--shadow-card);
 	margin: 0 0 16px;
 	padding: 18px 20px;
+}
+/* 投稿フォームは thread-unit と同じカードに載せ、投稿後の楽観カードと見た目・位置を揃える */
+.composer-card {
+	background: var(--bg-raised);
+	border-radius: var(--radius-l);
+	box-shadow: var(--shadow-card);
+	margin: 0 0 16px;
+	padding: 14px;
 }
 .welcome {
 	display: flex;
@@ -328,11 +335,36 @@
 	border-right: 7px solid var(--bubble-bg);
 	border-bottom-width: 6px;
 }
+/* 自分の投稿・投稿フォームは右揃えのチャット風。しっぽも左右反転する */
+.post-row.mine {
+	flex-direction: row-reverse;
+}
 .mine > .bubble {
 	border-color: var(--bubble-mine-border);
+	border-radius: 20px 7px 20px 20px;
+}
+.mine > .bubble::before,
+.mine > .bubble::after {
+	left: auto;
+	border-right: 0;
 }
 .mine > .bubble::before {
-	border-right-color: var(--bubble-mine-border);
+	right: -8px;
+	border-left: 8px solid var(--bubble-mine-border);
+}
+.mine > .bubble::after {
+	right: -6px;
+	border-left: 7px solid var(--bubble-bg);
+}
+.mine .meta {
+	flex-direction: row-reverse;
+}
+.mine .meta time {
+	margin-left: 0;
+	margin-right: auto;
+}
+.mine .post-actions {
+	justify-content: flex-end;
 }
 .bot > .bubble {
 	border-color: var(--bubble-bot-border);
@@ -392,8 +424,9 @@
 .post-actions button.danger {
 	color: var(--danger);
 }
-.post-composer {
-	margin-top: 8px;
+/* リプライ／引用フォームは親投稿の下に、自分側の吹き出しとしてぶら下がる */
+.composer-row:not(.composer-card) {
+	margin-top: 10px;
 }
 .post-composer label {
 	display: block;

@@ -12,6 +12,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { myProfile } from '$lib/profile/me.svelte';
 	import { onDestroy } from 'svelte';
 
 	let name = $state('');
@@ -105,6 +106,7 @@
 			draft = updatedDraft;
 			avatarChange = undefined;
 			status = m.saved();
+			myProfile.refresh();
 			if (onboarding) await goto('/');
 		} catch (e) {
 			error = e instanceof Error ? e.message : m.saveFailed();

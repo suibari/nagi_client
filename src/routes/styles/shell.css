@@ -253,6 +253,9 @@
 	.shell {
 		display: block;
 		padding: 0 10px;
+		/* sticky な .mobile-top は .shell の外側に積まれるので、100dvh のままだと
+		   中身が短くてもヘッダ高の分だけ縦に動いてしまう */
+		min-height: calc(100dvh - var(--mobile-header-h));
 	}
 	.sidebar {
 		display: none;
@@ -268,7 +271,7 @@
 		position: sticky;
 		top: 0;
 		z-index: 20;
-		height: 56px;
+		height: var(--mobile-header-h);
 		margin: 0 -10px;
 		padding: 0 14px;
 		background: var(--bg-veil);
@@ -316,6 +319,6 @@
 		color: var(--accent-strong);
 	}
 	.feed-tabs {
-		top: 62px;
+		top: calc(var(--mobile-header-h) + 6px);
 	}
 }

@@ -1,21 +1,10 @@
 <script lang="ts">
 	import { session, oauthReady, signOut } from '$lib/oauth/session.svelte';
-	import { getProfile } from '$lib/api/appview';
-	import type { ProfileDetail } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Avatar from '../Avatar.svelte';
 	import Icon from './Icon.svelte';
-	let me = $state<ProfileDetail>();
-	$effect(() => {
-		const did = $session?.did;
-		if (!did) {
-			me = undefined;
-			return;
-		}
-		getProfile(did, { limit: 1 })
-			.then((r) => (me = r.profile))
-			.catch(() => (me = undefined));
-	});
+	import { myProfile } from '$lib/profile/me.svelte';
+	let me = $derived(myProfile.current);
 </script>
 
 {#if $session}

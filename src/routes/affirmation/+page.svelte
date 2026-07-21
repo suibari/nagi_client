@@ -3,8 +3,10 @@
 	import { getAffirmation } from '$lib/api/appview';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
+	import Composer from '$lib/components/Composer.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	const feed = new Feed(
 		(cursor) => getAffirmation(cursor),
@@ -26,6 +28,9 @@
 </script>
 
 <FeedTabs />
+{#if $session}
+	<Composer onposted={() => feed.refresh()} />
+{/if}
 <section class="timeline" aria-busy={feed.loading}>
 	{#if feed.loading && !feed.visibleItems.length}<div
 			class="timeline-loading"

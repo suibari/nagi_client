@@ -14,6 +14,7 @@ export const ja = {
 	cancel: 'キャンセル',
 
 	// nav
+	navFeed: 'フィード',
 	navGlobal: 'グローバル',
 	navAffirmation: '全肯定',
 	navNotifications: '通知',
