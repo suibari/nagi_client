@@ -130,7 +130,16 @@ export async function uploadAvatar(blob: Blob) {
 	const response = await new Agent(s).com.atproto.repo.uploadBlob(blob, { encoding: blob.type });
 	return response.data.blob;
 }
-export async function createPost(draft: PostDraft) {
+/**
+ * 投稿に添付する blob をアップロードした結果。Bluesky クロスポストでも
+ * 同じ blobRef を使い回すため、レコード作成とは分けて公開している。
+ */
+export type PostAssets = {
+	images: { image: unknown; alt: string; aspectRatio: { width: number; height: number } }[];
+	cards: { uri: string; title: string; description?: string; thumb?: unknown }[];
+};
+
+export async function uploadPostAssets(draft: PostDraft): Promise<PostAssets> {
 	const s = current();
 	const agent = new Agent(s);
 	const images = await Promise.all(
@@ -162,6 +171,13 @@ export async function createPost(draft: PostDraft) {
 			};
 		}),
 	);
+	return { images, cards };
+}
+
+export async function createPost(draft: PostDraft, assets?: PostAssets) {
+	const s = current();
+	const agent = new Agent(s);
+	const { images, cards } = assets ?? (await uploadPostAssets(draft));
 	const embed = draft.quote
 		? { $type: `${POST}#quote`, record: draft.quote, ...(images.length ? { images } : {}) }
 		: images.length

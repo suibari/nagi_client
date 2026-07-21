@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { createPost, preparePostDraft } from '$lib/atproto/records';
+	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
+	import { crosspostToBluesky } from '$lib/crosspost/bluesky';
+	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import type { ImageAttachment } from '$lib/images';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
@@ -16,6 +18,7 @@
 	let text = $state('');
 	let busy = $state(false);
 	let error = $state('');
+	let warning = $state('');
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
@@ -25,13 +28,24 @@
 		const optimisticId = optimisticPosts.add(draft, $session.did);
 		busy = true;
 		error = '';
+		warning = '';
 		text = '';
 		attachments = [];
 		linkCards = [];
 		mentions = [];
 		try {
-			const response = await createPost(draft);
+			const assets = await uploadPostAssets(draft);
+			const response = await createPost(draft, assets);
 			optimisticPosts.markCreated(optimisticId, response.data);
+			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
+			// エラーではなく警告として伝える。
+			if (getCrosspostEnabled() && (await hasCrosspostScope())) {
+				try {
+					await crosspostToBluesky(draft, assets);
+				} catch (e) {
+					warning = e instanceof Error ? e.message : m.crosspostFailed();
+				}
+			}
 			await Promise.resolve(onposted()).catch(() => undefined);
 		} catch (e) {
 			optimisticPosts.remove(optimisticId);
@@ -68,6 +82,8 @@
 				onclick={submit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button
 			>
 		</div>
-		{#if error}<p class="error">{error}</p>{/if}
+		{#if error}<p class="error">{error}</p>{/if}{#if warning}<p class="error">
+				{m.crosspostWarning({ reason: warning })}
+			</p>{/if}
 	</section>
 </div>

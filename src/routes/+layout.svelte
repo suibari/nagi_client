@@ -7,6 +7,7 @@
 	import { initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { getOwnNagiProfile } from '$lib/atproto/records';
+	import { resolveCrosspostPending } from '$lib/crosspost/preferences';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -14,7 +15,8 @@
 	let { children } = $props();
 	let checkedDid: string | undefined;
 	onMount(() => {
-		void initOAuth();
+		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
+		void initOAuth().then(() => resolveCrosspostPending());
 	});
 	$effect(() => {
 		const did = $session?.did;

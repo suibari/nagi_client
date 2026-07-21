@@ -1,7 +1,8 @@
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 const production = typeof location !== 'undefined' && location.hostname === 'nagi.suibari.com';
 const origin = typeof location !== 'undefined' ? location.origin : 'http://127.0.0.1';
-const scope = [
+export const CROSSPOST_SCOPE = 'repo:app.bsky.feed.post';
+const baseScopes = [
 	'atproto',
 	'repo:com.suibari.nagi.post',
 	'repo:com.suibari.nagi.reaction',
@@ -16,7 +17,12 @@ const scope = [
 	'rpc:com.suibari.nagi.deleteAccountData?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getLinkMetadata?aud=did:web:nagi-api.suibari.com%23nagi_appview',
 	'rpc:com.suibari.nagi.getLinkThumbnail?aud=did:web:nagi-api.suibari.com%23nagi_appview',
-].join(' ');
+];
+// クロスポストはオプトインのため、通常のサインインでは base のみを要求する。
+// クライアントメタデータには宣言可能な最大集合として crosspost も含める。
+export const BASE_SCOPE = baseScopes.join(' ');
+export const FULL_SCOPE = [...baseScopes, CROSSPOST_SCOPE].join(' ');
+const scope = FULL_SCOPE;
 export const oauthClient = new BrowserOAuthClient({
 	clientMetadata: production
 		? {

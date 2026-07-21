@@ -25,6 +25,12 @@
 			description={m.settingsLanguageDescription()}
 		/>
 		<SettingsCategoryCard
+			href="/settings/crosspost"
+			icon="send"
+			title={m.settingsCrosspostTitle()}
+			description={m.settingsCrosspostDescription()}
+		/>
+		<SettingsCategoryCard
 			href="/settings/about"
 			icon="info"
 			title={m.settingsAboutTitle()}

@@ -184,6 +184,23 @@ export const ja = {
 	settingsAboutDescription: 'アプリの説明、利用規約、プライバシー',
 	settingsDeleteTitle: '全データ削除',
 	settingsDeleteDescription: 'Nagiに保存されたデータを完全に削除',
+	settingsCrosspostTitle: 'Blueskyクロスポスト',
+	settingsCrosspostDescription: 'Nagiへの投稿をBlueskyにも投稿',
+	crosspostLegend: 'Blueskyクロスポスト',
+	crosspostHelp:
+		'Nagiのタイムラインへの投稿を、Blueskyにも同時に投稿します。スレッドへの返信は対象外です。',
+	crosspostSplitNote:
+		'300文字を超える投稿は、Blueskyでは複数の投稿に分割され、スレッドとして繋がります。',
+	crosspostDeviceNote: 'この設定は、この端末でのみ有効です。',
+	crosspostBotNote: 'クロスポストされた投稿には、Bluesky側のBotたんは返信しません。',
+	crosspostEnableLabel: 'Blueskyにもクロスポストする',
+	crosspostReauthNote: '有効にするには、Blueskyへの投稿権限を追加するための再ログインが必要です。',
+	crosspostReauthSubmit: '再ログインして有効にする',
+	crosspostReauthPending: '移動しています…',
+	crosspostSignInRequired: 'クロスポストを設定するにはログインしてください。',
+	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
+	crosspostWarning: (p: { reason: string }) =>
+		`Nagiには投稿しましたが、Blueskyへのクロスポストに失敗しました: ${p.reason}`,
 	themeLegend: '表示テーマ',
 	themeHelp: 'この端末で使用する配色を選択します。',
 	optionSystem: 'システム設定',

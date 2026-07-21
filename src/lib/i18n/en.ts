@@ -164,6 +164,24 @@ export const en: Messages = {
 	settingsAboutDescription: 'About the app, terms, and privacy',
 	settingsDeleteTitle: 'Delete all data',
 	settingsDeleteDescription: 'Permanently delete your data from Nagi',
+	settingsCrosspostTitle: 'Bluesky crossposting',
+	settingsCrosspostDescription: 'Also post your Nagi posts to Bluesky',
+	crosspostLegend: 'Bluesky crossposting',
+	crosspostHelp:
+		'Posts you make to the Nagi timeline are also posted to Bluesky. Replies in threads are not crossposted.',
+	crosspostSplitNote:
+		'Posts longer than 300 characters are split into several Bluesky posts, connected as a thread.',
+	crosspostDeviceNote: 'This setting applies to this device only.',
+	crosspostBotNote: 'Bot-tan does not reply to crossposted posts on Bluesky.',
+	crosspostEnableLabel: 'Crosspost to Bluesky',
+	crosspostReauthNote:
+		'Enabling this requires signing in again to grant permission to post on Bluesky.',
+	crosspostReauthSubmit: 'Sign in again to enable',
+	crosspostReauthPending: 'Redirecting…',
+	crosspostSignInRequired: 'Sign in to configure crossposting.',
+	crosspostFailed: 'Could not crosspost to Bluesky',
+	crosspostWarning: (p: { reason: string }) =>
+		`Posted to Nagi, but crossposting to Bluesky failed: ${p.reason}`,
 
 	themeLegend: 'Theme',
 	themeHelp: 'Choose the color scheme used on this device.',
