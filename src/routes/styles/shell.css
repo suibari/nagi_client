@@ -267,7 +267,6 @@
 		top: 0;
 		z-index: 20;
 		height: var(--mobile-header-h);
-		margin: 0 -10px;
 		padding: 0 14px;
 		background: var(--bg-veil);
 		border-bottom: 1px solid var(--line);

@@ -378,6 +378,7 @@
 	}
 }
 .thread-unit {
+	min-width: 0;
 	background: var(--bg-raised);
 	border: 0;
 	border-radius: var(--radius-l);
