@@ -3,6 +3,7 @@
 	import { getNotifications } from '$lib/api/appview';
 	import type { NotificationView } from '$lib/api/types';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import { stripMarkdown } from '$lib/atproto/markdown';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	let items = $state<NotificationView[]>([]);
@@ -59,7 +60,9 @@
 						>
 						<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
 					</div>
-					{#if item.post?.text}<p class="notification-subject">{item.post.text}</p>{/if}
+					{#if item.post?.text}<p class="notification-subject">
+							{stripMarkdown(item.post.text)}
+						</p>{/if}
 				</div>
 			</a>
 		{/each}

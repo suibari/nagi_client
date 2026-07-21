@@ -16,7 +16,7 @@
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import LinkCard from './LinkCard.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
-	import MentionTextarea from './MentionTextarea.svelte';
+	import ComposerEditor from './ComposerEditor.svelte';
 	import type { MentionSelection } from '$lib/atproto/facets';
 	import { myProfile } from '$lib/profile/me.svelte';
 	let {
@@ -204,7 +204,7 @@
 			<label for={`compose-${post.cid}`}
 				>{composeMode === 'reply' ? m.replyComposerLabel() : m.quoteComposerLabel()}</label
 			>
-			<MentionTextarea
+			<ComposerEditor
 				id={`compose-${post.cid}`}
 				bind:value={composeText}
 				bind:mentions

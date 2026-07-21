@@ -7,7 +7,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
-	import MentionTextarea from './MentionTextarea.svelte';
+	import ComposerEditor from './ComposerEditor.svelte';
 	import Icon from './shell/Icon.svelte';
 	import Avatar from './Avatar.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
@@ -47,7 +47,7 @@
 		><Avatar actor={myProfile.current} /></a
 	>
 	<section class="bubble composer">
-		<MentionTextarea
+		<ComposerEditor
 			bind:value={text}
 			bind:mentions
 			placeholder={m.composerPlaceholder()}

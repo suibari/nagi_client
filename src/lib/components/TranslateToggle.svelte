@@ -33,7 +33,7 @@
 		onoverflowchange?: (overflowing: boolean) => void;
 	} = $props();
 	let root: HTMLDivElement;
-	let body = $state<HTMLParagraphElement>();
+	let body = $state<HTMLElement>();
 	let visible = $state(false);
 	let translated = $state('');
 	let busy = $state(false);
@@ -140,7 +140,7 @@
 	{:else if translated}
 		<div class="translated">
 			<p class="label">{m.translationLabel()}</p>
-			<p class="text">{translated}</p>
+			<div class="post-text text"><RichText text={translated} /></div>
 		</div>
 		<button
 			class="original-toggle"
@@ -151,7 +151,7 @@
 		>
 		{#if originalExpanded}
 			<div class="original separated">
-				<p class:collapsed><RichText {text} {facets} /></p>
+				<div class="post-text" class:collapsed><RichText {text} {facets} /></div>
 			</div>
 		{/if}
 	{:else if failed}
@@ -159,9 +159,9 @@
 	{/if}
 	{#if !translated}
 		<div class="original" class:separated={busy || failed}>
-			<p class:collapsed bind:this={body}>
-				{#if deleted}{m.postDeleted()}{:else}<RichText {text} {facets} />{/if}
-			</p>
+			<div class="post-text" class:collapsed bind:this={body}>
+				{#if deleted}<p>{m.postDeleted()}</p>{:else}<RichText {text} {facets} />{/if}
+			</div>
 		</div>
 	{/if}
 </div>

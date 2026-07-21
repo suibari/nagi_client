@@ -512,19 +512,86 @@
 	font-weight: 800;
 }
 .bubble p {
-	/* 折りたたみ時の表示行数。TranslateToggle が同じ値を読んで溢れを判定する */
-	--clamp-lines: 6;
 	white-space: pre-wrap;
 	line-height: 1.75;
 	margin: 8px 0;
 	color: var(--text);
 	overflow-wrap: anywhere;
 }
-.bubble p.collapsed {
+
+/* 投稿本文（Markdown 描画）。RichText が出すブロック要素をまとめて受ける */
+.post-text {
+	/* 折りたたみ時の表示行数。TranslateToggle が同じ値を読んで溢れを判定する */
+	--clamp-lines: 6;
+	line-height: 1.75;
+	color: var(--text);
+	overflow-wrap: anywhere;
+}
+.post-text.collapsed {
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: var(--clamp-lines, 6);
 	overflow: hidden;
+}
+.post-text p,
+.post-text li,
+.post-text blockquote {
+	white-space: pre-wrap;
+}
+.post-text p {
+	margin: 8px 0;
+}
+.post-text > :first-child {
+	margin-top: 0;
+}
+.post-text > :last-child {
+	margin-bottom: 0;
+}
+.post-text h3,
+.post-text h4,
+.post-text h5 {
+	margin: 12px 0 8px;
+	font-weight: 700;
+	line-height: 1.5;
+	color: var(--text);
+}
+.post-text h3 {
+	font-size: 1.25em;
+}
+.post-text h4 {
+	font-size: 1.15em;
+}
+.post-text h5 {
+	font-size: 1.05em;
+}
+.post-text ul,
+.post-text ol {
+	margin: 8px 0;
+	padding-left: 1.35em;
+}
+.post-text ul {
+	list-style: disc;
+}
+.post-text ol {
+	list-style: decimal;
+}
+.post-text li {
+	margin: 2px 0;
+}
+.post-text blockquote {
+	margin: 8px 0;
+	padding-left: 0.7em;
+	border-left: 3px solid var(--line);
+	color: var(--text-muted);
+}
+.post-text code {
+	padding: 1px 4px;
+	border-radius: 4px;
+	/* 吹き出し背景と同色にならないよう、本文色を薄く重ねる */
+	background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.9em;
+	overflow-wrap: anywhere;
 }
 .read {
 	border: 0;
