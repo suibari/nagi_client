@@ -1589,6 +1589,62 @@
 .settings-detail .theme-settings {
 	margin-bottom: 0;
 }
+
+/* --- about page (Nagi ならではの機能一覧) --- */
+.about-heading {
+	margin: 6px 0 0;
+	font-size: 1.05rem;
+	color: var(--text-strong);
+}
+.about-lead {
+	margin: -12px 0 0;
+	font-size: 0.86rem;
+}
+.about-features {
+	display: grid;
+	gap: 14px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	text-align: left;
+}
+.about-feature {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 14px;
+	align-items: start;
+}
+.about-feature-icon {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	color: var(--accent-strong);
+	background: var(--accent-soft);
+	border-radius: 12px;
+}
+.about-feature h3 {
+	margin: 2px 0 4px;
+	font-size: 0.98rem;
+	color: var(--text-strong);
+}
+.about-feature p {
+	margin: 0;
+	font-size: 0.86rem;
+	line-height: 1.8;
+	color: var(--text-muted);
+}
+.about-feature-link {
+	display: inline-block;
+	margin-top: 6px;
+	font-size: 0.84rem;
+	font-weight: 600;
+	color: var(--accent-strong);
+}
+.about-feature-link:hover {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
 .delete-data-page strong {
 	display: block;
 	margin: 8px 0;

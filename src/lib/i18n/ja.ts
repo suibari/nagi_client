@@ -22,17 +22,53 @@ export const ja = {
 	mainNavAria: 'メインナビゲーション',
 	feedTabsAria: 'フィード切り替え',
 
-	// sidebar
-	aboutTitle: '🌿 Nagiについて',
+	// sidebar footer / about page intro
 	aboutBeforeLink: 'Nagiに投稿すると、',
 	aboutLinkText: '全肯定botたん',
 	aboutAfterLink:
 		'があなたの言葉をまるごと受け止めて返信してくれます。どんな気持ちも、まずここで凪ぎますように。',
-	tabsGuideTitle: '🗂️ タブのつかいかた',
-	tabsGuideBody:
-		'「グローバル」にはみんなの投稿が流れます。「全肯定」には、botたんがとくに強く肯定した投稿が集まります。',
 	termsLink: '利用規約',
 	privacyLink: 'プライバシーポリシー',
+	aboutLink: 'Nagiについて',
+
+	// about page — Nagi ならではの機能一覧
+	aboutFeaturesHeading: 'Nagiでできること',
+	aboutFeaturesLead: 'Blueskyとは少し違う、Nagiならではの機能です。',
+	aboutBotTitle: 'botたんが返信します',
+	aboutBotBody:
+		'投稿すると、全肯定botたんがあなたの言葉を受け止めて返信します。返信を書いている間はその様子も表示されます。',
+	aboutNoLikesTitle: 'いいねもフォローもありません',
+	aboutNoLikesBody:
+		'数で評価されることも、フォロー関係に縛られることもありません。みんなの投稿がひとつのタイムラインに流れます。',
+	aboutReactionTitle: '絵文字リアクション',
+	aboutReactionBody:
+		'好きな絵文字でリアクションできます。だれがリアクションしたかもアイコンで見えます。',
+	aboutCustomEmojiTitle: 'カスタム絵文字',
+	aboutCustomEmojiBody:
+		'自分だけの絵文字を登録できます。登録した絵文字はNagiのみんながリアクションに使えます。',
+	aboutCustomEmojiLink: 'カスタム絵文字を登録する',
+	aboutMarkdownTitle: 'Markdown記法が使えます',
+	aboutMarkdownBody:
+		'見出し・箇条書き・番号付きリスト・引用・太字・斜体・打ち消しが使えます。投稿欄のプレビュータブで仕上がりを確認できます。',
+	aboutLongPostTitle: '3000文字まで書けます',
+	aboutLongPostBody:
+		'ひとつの投稿に3000文字まで書けます。長くなった気持ちも、区切らずそのまま置いていけます。',
+	aboutTranslateTitle: '自動で翻訳されます',
+	aboutTranslateBody:
+		'ほかの言語の投稿は、あなたの言語に自動で翻訳されて表示されます。原文もその場で開けます。翻訳先の言語は、初期設定ではブラウザの言語で、設定から変更できます。',
+	aboutTranslateLink: '翻訳言語を設定する',
+	aboutCrosspostTitle: 'Blueskyへのクロスポスト',
+	aboutCrosspostBody:
+		'Nagiへの投稿をBlueskyにも同時に投稿できます。300文字を超える投稿は、Blueskyでは分割されてスレッドになります。',
+	aboutCrosspostLink: 'クロスポストを設定する',
+	aboutProfileTitle: 'Bluesky とは別のプロフィール',
+	aboutProfileBody:
+		'Nagiの表示名・自己紹介・アイコンはBlueskyとは独立しています。ここだけの姿でいられます。',
+	aboutProfileLink: 'プロフィールを編集する',
+	aboutDataTitle: 'データはあなたのものです',
+	aboutDataBody:
+		'投稿はあなた自身のPDSに保存されます。ログインはOAuthなので、パスワードをNagiが受け取ることはありません。いつでも全データを削除できます。',
+	aboutDataLink: '全データを削除する',
 
 	// account card / mobile header
 	myProfileAria: '自分のプロフィール',
@@ -208,7 +244,7 @@ export const ja = {
 	settingsLanguageTitle: '言語',
 	settingsLanguageDescription: '表示、投稿、翻訳に使う言語',
 	settingsAboutTitle: 'Nagiについて',
-	settingsAboutDescription: 'アプリの説明、利用規約、プライバシー',
+	settingsAboutDescription: 'Nagiでできること、利用規約、プライバシー',
 	settingsDeleteTitle: '全データ削除',
 	settingsDeleteDescription: 'Nagiに保存されたデータを完全に削除',
 	settingsCrosspostTitle: 'Blueskyクロスポスト',
@@ -233,15 +269,16 @@ export const ja = {
 	optionSystem: 'システム設定',
 	themeLight: 'ライト',
 	themeDark: 'ダーク',
-	languageLegend: '言語 / Language',
-	languageHelp: 'この端末で使用する表示言語を選択します。',
+	languageLegend: 'UI言語 / UI language',
+	languageHelp: 'この端末で、Nagiの画面表示に使う言語です。',
 	localeJa: '日本語',
 	localeEn: 'English',
 	postLanguageLegend: '投稿言語',
-	postLanguageHelp: 'Botたんが返信に使用する言語を選択します。次回以降の投稿に適用されます。',
+	postLanguageHelp:
+		'あなたの投稿につける言語です。Botたんもこの言語で返信します。次回以降の投稿に適用されます。',
 	postLanguageLabel: '投稿言語を選択',
 	translationLanguageLegend: '翻訳言語',
-	translationLanguageHelp: '投稿を自動翻訳して表示する言語を選択します。',
+	translationLanguageHelp: 'ほかの言語の投稿を、自動でこの言語に翻訳して表示します。',
 	translationLanguageLabel: '翻訳言語を選択',
 	optionBrowser: 'ブラウザの設定',
 	profileSettingsTitle: 'プロフィール設定',

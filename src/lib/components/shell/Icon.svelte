@@ -15,8 +15,7 @@
 		sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
 		language: 'M4 5h11M9.5 3v2M6 5c.7 4 3.2 7 7 9M13 5c-.8 4-3.4 7.4-7 9M14 21l4-10 4 10M15.5 17h5',
 		info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 10v7M12 7h.01',
-		emoji:
-			'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM8 14.2a5 5 0 0 0 8 0M9 9.5h.01M15 9.5h.01',
+		emoji: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM8 14.2a5 5 0 0 0 8 0M9 9.5h.01M15 9.5h.01',
 		chevron: 'm9 18 6-6-6-6',
 		image: 'M4 5h16v14H4V5Zm0 11 4.5-4.5 3.5 3 2.5-2.5 5.5 5M9 9h.01',
 		close: 'M5 5l14 14M19 5 5 19',
@@ -24,18 +23,38 @@
 		refresh: 'M20 7v5h-5M4 17v-5h5M6.1 8.5A7 7 0 0 1 18.7 7M5.3 17A7 7 0 0 0 17.9 15.5',
 		more: 'm7 10 5 5 5-5',
 		cancel: 'M6 6l12 12M18 6 6 18',
+		emojiPlus:
+			'M21 12a9 9 0 1 1-9-9M8 14.2a5 5 0 0 0 8 0M9 9.5h.01M15 9.5h.01M18.5 2.5v6M21.5 5.5h-6',
+		markdown: 'M3 6h18v12H3V6Zm3 9V9l2.5 3L11 9v6M15 9v4.5M13 13l2 2 2-2',
+		text: 'M4 5h16M4 10h16M4 15h11M4 20h7',
+		shield: 'M12 3l7 3v6c0 4.2-2.8 7.4-7 9-4.2-1.6-7-4.8-7-9V6l7-3Zm-3 9 2 2 4-4',
 	};
 </script>
 
-<svg
-	class="icon"
-	width={size}
-	height={size}
-	viewBox="0 0 24 24"
-	fill="none"
-	stroke="currentColor"
-	stroke-width="1.8"
-	stroke-linecap="round"
-	stroke-linejoin="round"
-	aria-hidden="true"><path d={paths[name]} /></svg
->
+{#if name === 'bot'}
+	<!-- botたんは線画PNGなので、透過をマスクに使って他のアイコンと同じ currentColor で塗る -->
+	<span class="icon icon-bot" style="width: {size}px; height: {size}px;" aria-hidden="true"></span>
+{:else}
+	<svg
+		class="icon"
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="1.8"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+		aria-hidden="true"><path d={paths[name]} /></svg
+	>
+{/if}
+
+<style>
+	.icon-bot {
+		display: inline-block;
+		flex-shrink: 0;
+		background-color: currentColor;
+		-webkit-mask: url('/bot_icon_trans.png') center / contain no-repeat;
+		mask: url('/bot_icon_trans.png') center / contain no-repeat;
+	}
+</style>

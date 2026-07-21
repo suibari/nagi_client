@@ -20,16 +20,51 @@ export const en: Messages = {
 	mainNavAria: 'Main navigation',
 	feedTabsAria: 'Feed tabs',
 
-	aboutTitle: '🌿 About Nagi',
 	aboutBeforeLink: 'When you post on Nagi, ',
 	aboutLinkText: 'the fully affirming Bot-tan',
 	aboutAfterLink:
 		' embraces your words and replies with warmth. May every feeling find its calm here first.',
-	tabsGuideTitle: '🗂️ How the tabs work',
-	tabsGuideBody:
-		'"Global" shows posts from everyone. "Affirmation" gathers the posts Bot-tan affirmed most strongly.',
 	termsLink: 'Terms of Service',
 	privacyLink: 'Privacy Policy',
+	aboutLink: 'About Nagi',
+
+	aboutFeaturesHeading: 'What you can do on Nagi',
+	aboutFeaturesLead: 'Features that make Nagi a little different from Bluesky.',
+	aboutBotTitle: 'Bot-tan always replies',
+	aboutBotBody:
+		'When you post, the fully affirming Bot-tan takes in your words and replies. You can see when a reply is on its way.',
+	aboutNoLikesTitle: 'No likes, no follows',
+	aboutNoLikesBody:
+		'Nothing is measured in numbers, and nothing depends on who follows whom. Everyone’s posts flow through a single timeline.',
+	aboutReactionTitle: 'Emoji reactions',
+	aboutReactionBody:
+		'React with any emoji you like. You can also see who reacted, right next to the emoji.',
+	aboutCustomEmojiTitle: 'Custom emoji',
+	aboutCustomEmojiBody:
+		'Register emoji of your own. Once registered, everyone on Nagi can use them in reactions.',
+	aboutCustomEmojiLink: 'Register custom emoji',
+	aboutMarkdownTitle: 'Markdown works here',
+	aboutMarkdownBody:
+		'Headings, bullet lists, numbered lists, quotes, bold, italic, and strikethrough. The preview tab in the composer shows how it will look.',
+	aboutLongPostTitle: 'Write up to 3,000 characters',
+	aboutLongPostBody:
+		'A single post can hold up to 3,000 characters, so long feelings can stay in one piece.',
+	aboutTranslateTitle: 'Translated automatically',
+	aboutTranslateBody:
+		'Posts in other languages are translated into your language automatically, and the original is always one tap away. The target language follows your browser by default and can be changed in settings.',
+	aboutTranslateLink: 'Set your translation language',
+	aboutCrosspostTitle: 'Crosspost to Bluesky',
+	aboutCrosspostBody:
+		'Post to Nagi and Bluesky at the same time. Posts over 300 characters are split into a thread on Bluesky.',
+	aboutCrosspostLink: 'Set up crossposting',
+	aboutProfileTitle: 'A profile separate from Bluesky',
+	aboutProfileBody:
+		'Your Nagi display name, bio, and avatar are independent from Bluesky. You can look however you like here.',
+	aboutProfileLink: 'Edit your profile',
+	aboutDataTitle: 'Your data stays yours',
+	aboutDataBody:
+		'Your posts are stored in your own PDS. Sign-in uses OAuth, so Nagi never receives your password, and you can delete all of your data at any time.',
+	aboutDataLink: 'Delete all of your data',
 
 	myProfileAria: 'Your profile',
 	meFallback: 'Me',
@@ -189,7 +224,7 @@ export const en: Messages = {
 	settingsLanguageTitle: 'Language',
 	settingsLanguageDescription: 'Display, post, and translation languages',
 	settingsAboutTitle: 'About Nagi',
-	settingsAboutDescription: 'About the app, terms, and privacy',
+	settingsAboutDescription: 'What you can do on Nagi, terms, and privacy',
 	settingsDeleteTitle: 'Delete all data',
 	settingsDeleteDescription: 'Permanently delete your data from Nagi',
 	settingsCrosspostTitle: 'Bluesky crossposting',
@@ -216,15 +251,16 @@ export const en: Messages = {
 	optionSystem: 'System',
 	themeLight: 'Light',
 	themeDark: 'Dark',
-	languageLegend: '言語 / Language',
-	languageHelp: 'Choose the display language used on this device.',
+	languageLegend: 'UI language / UI言語',
+	languageHelp: 'The language Nagi’s interface uses on this device.',
 	localeJa: '日本語',
 	localeEn: 'English',
 	postLanguageLegend: 'Post language',
-	postLanguageHelp: 'Choose the language Bot-tan uses to reply. This applies to new posts.',
+	postLanguageHelp:
+		'The language attached to your posts. Bot-tan replies in this language too. Applies to new posts.',
 	postLanguageLabel: 'Choose post language',
 	translationLanguageLegend: 'Translation language',
-	translationLanguageHelp: 'Choose the language used for automatic post translations.',
+	translationLanguageHelp: 'Posts in other languages are translated into this language for you.',
 	translationLanguageLabel: 'Choose translation language',
 	optionBrowser: 'Browser language',
 	profileSettingsTitle: 'Profile settings',

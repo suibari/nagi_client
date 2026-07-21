@@ -114,36 +114,6 @@
 .sidebar-right {
 	gap: 16px;
 }
-.side-card {
-	padding: 18px;
-	border: 0;
-	border-radius: var(--radius-l);
-	background: var(--bg-raised);
-	box-shadow: var(--shadow-card);
-}
-.side-card h2 {
-	margin: 0 0 8px;
-	font-size: 15px;
-	color: var(--text-strong);
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-.side-card p {
-	margin: 0;
-	font-size: 13px;
-	line-height: 1.8;
-	color: var(--text-muted);
-}
-.side-card p a {
-	color: var(--accent-strong);
-	font-weight: 600;
-	text-decoration: underline;
-	text-underline-offset: 3px;
-}
-.side-card p a:hover {
-	text-decoration-thickness: 2px;
-}
 .sidebar-right .spacer {
 	flex: 1;
 }
