@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { getNotifications, APPVIEW_URL } from '$lib/api/appview';
 	import type { NotificationView } from '$lib/api/types';
 	import Avatar from '$lib/components/Avatar.svelte';
@@ -14,21 +13,28 @@
 	const relativeTimeBase = Date.now();
 	/** 通知カード全体がリンクなので、サムネはギャラリー無しの素の img で並べる。 */
 	const MAX_THUMBS = 4;
-	onMount(async () => {
-		if (!$session && $oauthReady) {
+	let loaded = $state(false);
+	// OAuth 復元は非同期なので oauthReady を待つ。待たずに required API を叩くと、リロード時に
+	// session がまだ null で "Authentication required" になる。復元完了後に一度だけ取得する。
+	$effect(() => {
+		if (!$oauthReady || loaded) return;
+		if (!$session) {
 			location.href = '/login';
 			return;
 		}
-		try {
-			items = (await getNotifications()).items;
-			// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
-			// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
-			if (items.length) void markAllSeen(items[0].createdAt);
-		} catch (e) {
-			error = e instanceof Error ? e.message : m.notifFetchFailed();
-		} finally {
-			loading = false;
-		}
+		loaded = true;
+		void (async () => {
+			try {
+				items = (await getNotifications()).items;
+				// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
+				// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
+				if (items.length) void markAllSeen(items[0].createdAt);
+			} catch (e) {
+				error = e instanceof Error ? e.message : m.notifFetchFailed();
+			} finally {
+				loading = false;
+			}
+		})();
 	});
 	const threadHref = (uri: string) => {
 		const [, , did, , rkey] = uri.split('/');

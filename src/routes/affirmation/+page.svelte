@@ -6,14 +6,14 @@
 	import Composer from '$lib/components/Composer.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { session } from '$lib/oauth/session.svelte';
+	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	const feed = new Feed(
 		(cursor) => getAffirmation(cursor),
 		(item) => item.isAffirmation,
 	);
+	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {
-		feed.load();
 		const timer = setInterval(() => {
 			if (document.visibilityState === 'visible') feed.refresh();
 		}, 30_000);
@@ -24,6 +24,17 @@
 			clearInterval(timer);
 			clearInterval(fast);
 		};
+	});
+	// OAuth 復元完了を待ってから読み込む。待たずに load すると、リロード時に session が
+	// まだ null で本人向けフィードにならない。session（did）が変わったら再ロードする。
+	$effect(() => {
+		if ($oauthReady) {
+			const did = $session?.did;
+			if (did !== lastDid) {
+				lastDid = did;
+				feed.load();
+			}
+		}
 	});
 </script>
 
