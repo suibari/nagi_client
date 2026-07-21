@@ -110,6 +110,8 @@ export const ja = {
 	// post bubble
 	viewProfileAria: 'プロフィールを見る',
 	botBadge: 'Botたん',
+	superPositiveBadge: (p: { level: number }) => `超ポジティブ Lv.${p.level}`,
+	superPositiveBadgeAria: (p: { level: number }) => `超ポジティブ レベル${p.level}`,
 	postDeleted: 'この投稿は削除されました',
 	readMore: '続きを読む',
 	readLess: '閉じる',

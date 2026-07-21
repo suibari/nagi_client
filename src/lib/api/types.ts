@@ -4,6 +4,8 @@ export type ActorView = {
 	displayName?: string;
 	description?: string;
 	avatar?: string;
+	/** 超ポジティブLv（Bluesky と共通のカウンタ。100以上もそのまま表示する） */
+	superPositiveLevel?: number;
 };
 /** カスタム絵文字（blue.moji.collection.item）のビュー。url は AppView の blob プロキシ。 */
 export type EmojiView = {

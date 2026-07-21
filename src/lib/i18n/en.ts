@@ -103,6 +103,8 @@ export const en: Messages = {
 
 	viewProfileAria: 'View profile',
 	botBadge: 'Bot-tan',
+	superPositiveBadge: (p: { level: number }) => `Super-Positive Lv.${p.level}`,
+	superPositiveBadgeAria: (p: { level: number }) => `Super-Positive level ${p.level}`,
 	postDeleted: 'This post has been deleted',
 	readMore: 'Read more',
 	readLess: 'Show less',

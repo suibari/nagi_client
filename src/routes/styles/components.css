@@ -1144,6 +1144,12 @@
 	color: var(--text-strong);
 	overflow-wrap: anywhere;
 }
+.profile-header .profile-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 2px;
+}
 .profile-header .handle {
 	color: var(--text-faint);
 	font-size: 13px;
