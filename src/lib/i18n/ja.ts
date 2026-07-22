@@ -273,6 +273,9 @@ export const ja = {
 	loginSubmit: 'OAuthでログイン',
 	loginRedirecting: '移動しています…',
 	loginBrowse: 'ログインせずに見る',
+	loginCrosspostLabel: 'Blueskyにもクロスポストする',
+	loginCrosspostNote:
+		'ONにすると、あなたのBlueskyへ投稿する権限を認可します。あとから設定で変更できます。',
 
 	// onboarding
 	onboardingBody:
@@ -321,8 +324,9 @@ export const ja = {
 	crosspostDeviceNote: 'この設定は、この端末でのみ有効です。',
 	crosspostBotNote: 'クロスポストされた投稿には、Bluesky側のBotたんは返信しません。',
 	crosspostEnableLabel: 'Blueskyにもクロスポストする',
-	crosspostReauthNote: '有効にするには、Blueskyへの投稿権限を追加するための再ログインが必要です。',
-	crosspostReauthSubmit: '再ログインして有効にする',
+	crosspostReauthNote:
+		'クロスポストにはBlueskyへの投稿権限が必要です。下のボタンから追加の権限を付与してください（Blueskyの認可画面が開きます）。',
+	crosspostReauthSubmit: '追加の権限を付与する',
 	crosspostReauthPending: '移動しています…',
 	crosspostSignInRequired: 'クロスポストを設定するにはログインしてください。',
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',

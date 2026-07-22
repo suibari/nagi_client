@@ -254,6 +254,9 @@ export const en: Messages = {
 	loginBody: 'Log in with your Bluesky or AT Protocol handle. Nagi never receives your password.',
 	loginHandleLabel: 'Handle',
 	loginSubmit: 'Log in with OAuth',
+	loginCrosspostLabel: 'Also crosspost to Bluesky',
+	loginCrosspostNote:
+		'When on, Nagi is authorized to post to your Bluesky. You can change this later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
 
@@ -301,8 +304,8 @@ export const en: Messages = {
 	crosspostBotNote: 'Bot-tan does not reply to crossposted posts on Bluesky.',
 	crosspostEnableLabel: 'Crosspost to Bluesky',
 	crosspostReauthNote:
-		'Enabling this requires signing in again to grant permission to post on Bluesky.',
-	crosspostReauthSubmit: 'Sign in again to enable',
+		'Crossposting needs permission to post on Bluesky. Grant the additional permission below (the Bluesky authorization screen will open).',
+	crosspostReauthSubmit: 'Grant additional permission',
 	crosspostReauthPending: 'Redirecting…',
 	crosspostSignInRequired: 'Sign in to configure crossposting.',
 	crosspostFailed: 'Could not crosspost to Bluesky',
