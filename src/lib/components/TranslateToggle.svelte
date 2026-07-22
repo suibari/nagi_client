@@ -10,6 +10,10 @@
 		languagePreferences,
 		normalizeSupportedLanguage,
 	} from '$lib/i18n/languagePreferences.svelte';
+	import {
+		buildExternalTranslationUrl,
+		translationProviderName,
+	} from '$lib/i18n/translationProviders';
 	import type { Facet } from '$lib/api/types';
 	import RichText from './RichText.svelte';
 
@@ -39,6 +43,24 @@
 	let busy = $state(false);
 	let failed = $state(false);
 	let originalExpanded = $state(false);
+	let attempt = $state(0);
+
+	// 内蔵翻訳が失敗した時のフォールバック用に、選択中プロバイダーの外部翻訳URLを組む。
+	let fallbackProvider = $derived(languagePreferences.translationProvider);
+	let fallbackUrl = $derived.by(() => {
+		if (!text.trim()) return '';
+		return buildExternalTranslationUrl(fallbackProvider, {
+			text,
+			from: normalizeSupportedLanguage(langs?.[0]),
+			to: languagePreferences.translationLanguage,
+		});
+	});
+
+	function retry() {
+		requests.delete(`${uri}\n${languagePreferences.translationLanguage}`);
+		failed = false;
+		attempt += 1;
+	}
 
 	function requestTranslation(postUri: string, targetLang: string): Promise<string> {
 		const key = `${postUri}\n${targetLang}`;
@@ -75,9 +97,12 @@
 	$effect(() => {
 		const targetLang = languagePreferences.translationLanguage;
 		const sourceLang = normalizeSupportedLanguage(langs?.[0]);
+		const autoTranslate = languagePreferences.autoTranslate;
+		void attempt;
 		originalExpanded = false;
 		if (
 			disabled ||
+			!autoTranslate ||
 			!visible ||
 			deleted ||
 			!text.trim() ||
@@ -155,7 +180,21 @@
 			</div>
 		{/if}
 	{:else if failed}
-		<p class="status">{m.translationFailed()}</p>
+		<div class="fallback">
+			<p class="status">{m.translationFailed()}</p>
+			<div class="fallback-actions">
+				<button class="fallback-link" type="button" onclick={retry}>{m.translationRetry()}</button>
+				{#if fallbackUrl}<a
+						class="fallback-link"
+						href={fallbackUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						>{m.openInExternalTranslator({
+							provider: translationProviderName(fallbackProvider),
+						})}</a
+					>{/if}
+			</div>
+		</div>
 	{/if}
 	{#if !translated}
 		<div class="original" class:separated={busy || failed}>
@@ -198,6 +237,25 @@
 	}
 
 	.original-toggle:hover {
+		text-decoration: underline;
+	}
+
+	.fallback-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 0.2rem;
+	}
+
+	.fallback-link {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--accent-strong);
+		font-size: 0.75rem;
+	}
+
+	.fallback-link:hover {
 		text-decoration: underline;
 	}
 

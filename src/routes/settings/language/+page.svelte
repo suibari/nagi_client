@@ -3,11 +3,15 @@
 	import {
 		languageName,
 		languagePreferences,
+		setAutoTranslatePreference,
 		setPostLanguagePreference,
 		setTranslationLanguagePreference,
+		setTranslationProviderPreference,
 		SUPPORTED_LANGUAGES,
 		type LanguagePreference,
 	} from '$lib/i18n/languagePreferences.svelte';
+	import { TRANSLATION_PROVIDERS, type TranslationProvider } from '$lib/i18n/translationProviders';
+	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 	let localePref = $state<LocalePreference>('system');
 	onMount(() => (localePref = i18n.preference));
@@ -56,6 +60,31 @@
 			>
 		</fieldset>
 	{/each}
+	<fieldset class="theme-settings language-settings">
+		<legend>{m.autoTranslateLegend()}</legend>
+		<p>{m.autoTranslateHelp()}</p>
+		<ToggleSwitch
+			checked={languagePreferences.autoTranslate}
+			label={m.autoTranslateLabel()}
+			onchange={setAutoTranslatePreference}
+		/>
+	</fieldset>
+	<fieldset class="theme-settings language-settings">
+		<legend>{m.translationProviderLegend()}</legend>
+		<p>{m.translationProviderHelp()}</p>
+		<label
+			><span>{m.translationProviderLabel()}</span><select
+				value={languagePreferences.translationProvider}
+				onchange={(event) =>
+					setTranslationProviderPreference(
+						(event.currentTarget as HTMLSelectElement).value as TranslationProvider,
+					)}
+			>
+				{#each TRANSLATION_PROVIDERS as provider}<option value={provider.id}>{provider.name}</option
+					>{/each}
+			</select></label
+		>
+	</fieldset>
 </section>
 
 <style>

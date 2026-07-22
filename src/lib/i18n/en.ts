@@ -155,6 +155,9 @@ export const en: Messages = {
 	showOriginalText: 'Show original',
 	hideOriginalText: 'Hide original',
 	translationFailed: 'Translation is unavailable',
+	translationRetry: 'Retry',
+	translateExternally: 'Open in your chosen translator',
+	openInExternalTranslator: (p: { provider: string }) => `Open in ${p.provider}`,
 
 	botThinking: 'Bot-tan is thinking of a reply…',
 	botWaiting: 'Bot-tan is getting ready to reply…',
@@ -322,6 +325,13 @@ export const en: Messages = {
 	translationLanguageLegend: 'Translation language',
 	translationLanguageHelp: 'Posts in other languages are translated into this language for you.',
 	translationLanguageLabel: 'Choose translation language',
+	autoTranslateLegend: 'Automatic translation',
+	autoTranslateHelp: 'Posts in other languages are translated automatically when you open them.',
+	autoTranslateLabel: 'Enable automatic translation',
+	translationProviderLegend: 'Translation provider',
+	translationProviderHelp:
+		'The external translation service used by the translate button on posts, and as a fallback when automatic translation fails.',
+	translationProviderLabel: 'Choose translation provider',
 	optionBrowser: 'Browser language',
 	profileSettingsTitle: 'Profile settings',
 	profileSettingsNote:

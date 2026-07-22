@@ -20,6 +20,11 @@
 	import ComposerEditor from './ComposerEditor.svelte';
 	import type { MentionSelection } from '$lib/atproto/facets';
 	import { myProfile } from '$lib/profile/me.svelte';
+	import {
+		languagePreferences,
+		normalizeSupportedLanguage,
+	} from '$lib/i18n/languagePreferences.svelte';
+	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
 	let {
 		post,
 		ondeleted,
@@ -46,6 +51,21 @@
 	let topLevel = $derived(!post.reply);
 	let optimistic = $derived(Boolean(post.optimisticState));
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
+	// 外国語の投稿にだけ「選択したプロバイダーで翻訳」ボタンを出す。
+	let translateSourceLang = $derived(normalizeSupportedLanguage(post.langs?.[0]));
+	let canTranslateExternally = $derived(
+		Boolean(post.text?.trim()) &&
+			Boolean(translateSourceLang) &&
+			translateSourceLang !== languagePreferences.translationLanguage,
+	);
+	function openExternalTranslation() {
+		const url = buildExternalTranslationUrl(languagePreferences.translationProvider, {
+			text: post.text,
+			from: translateSourceLang,
+			to: languagePreferences.translationLanguage,
+		});
+		window.open(url, '_blank', 'noopener,noreferrer');
+	}
 	function openComposer(mode: 'reply' | 'quote') {
 		if (!$session) {
 			location.href = '/login';
@@ -196,6 +216,13 @@
 					title={m.replyPost()}
 					onclick={() => openComposer('reply')}><Icon name="reply" size={17} /></button
 				>
+				{#if canTranslateExternally}<button
+						class="ghost"
+						type="button"
+						aria-label={m.translateExternally()}
+						title={m.translateExternally()}
+						onclick={openExternalTranslation}><Icon name="language" size={17} /></button
+					>{/if}
 				{#if post.isBot}<button
 						class="ghost"
 						class:active={composeMode === 'quote'}

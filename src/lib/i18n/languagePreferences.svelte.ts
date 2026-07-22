@@ -1,3 +1,9 @@
+import {
+	DEFAULT_TRANSLATION_PROVIDER,
+	isTranslationProvider,
+	type TranslationProvider,
+} from './translationProviders';
+
 export const SUPPORTED_LANGUAGES = [
 	'ar',
 	'bn',
@@ -44,6 +50,8 @@ export type LanguagePreference = 'browser' | SupportedLanguage;
 
 export const POST_LANGUAGE_STORAGE_KEY = 'nagi-post-language';
 export const TRANSLATION_LANGUAGE_STORAGE_KEY = 'nagi-translation-language';
+export const TRANSLATION_PROVIDER_STORAGE_KEY = 'nagi-translation-provider';
+export const AUTO_TRANSLATE_STORAGE_KEY = 'nagi-auto-translate';
 
 const supported = new Set<string>(SUPPORTED_LANGUAGES);
 
@@ -85,9 +93,31 @@ function storePreference(key: string, preference: LanguagePreference): void {
 	}
 }
 
+function storedProvider(): TranslationProvider {
+	if (typeof window === 'undefined') return DEFAULT_TRANSLATION_PROVIDER;
+	try {
+		const value = window.localStorage.getItem(TRANSLATION_PROVIDER_STORAGE_KEY);
+		return isTranslationProvider(value) ? value : DEFAULT_TRANSLATION_PROVIDER;
+	} catch {
+		return DEFAULT_TRANSLATION_PROVIDER;
+	}
+}
+
+// 自動翻訳は既定 on。localStorage に 'off' が入っている時だけ off にする。
+function storedAutoTranslate(): boolean {
+	if (typeof window === 'undefined') return true;
+	try {
+		return window.localStorage.getItem(AUTO_TRANSLATE_STORAGE_KEY) !== 'off';
+	} catch {
+		return true;
+	}
+}
+
 const preferences = $state({
 	post: storedPreference(POST_LANGUAGE_STORAGE_KEY),
 	translation: storedPreference(TRANSLATION_LANGUAGE_STORAGE_KEY),
+	provider: storedProvider(),
+	autoTranslate: storedAutoTranslate(),
 });
 
 export const languagePreferences = {
@@ -103,6 +133,12 @@ export const languagePreferences = {
 	get translationLanguage(): SupportedLanguage {
 		return preferences.translation === 'browser' ? browserLanguage() : preferences.translation;
 	},
+	get translationProvider(): TranslationProvider {
+		return preferences.provider;
+	},
+	get autoTranslate(): boolean {
+		return preferences.autoTranslate;
+	},
 };
 
 export function setPostLanguagePreference(preference: LanguagePreference): void {
@@ -115,12 +151,36 @@ export function setTranslationLanguagePreference(preference: LanguagePreference)
 	storePreference(TRANSLATION_LANGUAGE_STORAGE_KEY, preference);
 }
 
+export function setTranslationProviderPreference(provider: TranslationProvider): void {
+	preferences.provider = provider;
+	if (typeof window === 'undefined') return;
+	try {
+		window.localStorage.setItem(TRANSLATION_PROVIDER_STORAGE_KEY, provider);
+	} catch {
+		// The preference still applies in-memory when storage is unavailable.
+	}
+}
+
+export function setAutoTranslatePreference(enabled: boolean): void {
+	preferences.autoTranslate = enabled;
+	if (typeof window === 'undefined') return;
+	try {
+		window.localStorage.setItem(AUTO_TRANSLATE_STORAGE_KEY, enabled ? 'on' : 'off');
+	} catch {
+		// The preference still applies in-memory when storage is unavailable.
+	}
+}
+
 export function clearLanguagePreferences(): void {
 	preferences.post = 'browser';
 	preferences.translation = 'browser';
+	preferences.provider = DEFAULT_TRANSLATION_PROVIDER;
+	preferences.autoTranslate = true;
 	if (typeof window === 'undefined') return;
 	window.localStorage.removeItem(POST_LANGUAGE_STORAGE_KEY);
 	window.localStorage.removeItem(TRANSLATION_LANGUAGE_STORAGE_KEY);
+	window.localStorage.removeItem(TRANSLATION_PROVIDER_STORAGE_KEY);
+	window.localStorage.removeItem(AUTO_TRANSLATE_STORAGE_KEY);
 }
 
 export function languageName(language: SupportedLanguage, displayLocale: string): string {

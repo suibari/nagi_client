@@ -161,6 +161,9 @@ export const ja = {
 	showOriginalText: '原文を表示',
 	hideOriginalText: '原文を閉じる',
 	translationFailed: '翻訳を表示できませんでした',
+	translationRetry: '再試行',
+	translateExternally: '選んだ翻訳サービスで開く',
+	openInExternalTranslator: (p: { provider: string }) => `${p.provider}で開く`,
 
 	// thread unit (bot reply states)
 	botThinking: 'Botたんが返信を考えています…',
@@ -341,6 +344,13 @@ export const ja = {
 	translationLanguageLegend: '翻訳言語',
 	translationLanguageHelp: 'ほかの言語の投稿を、自動でこの言語に翻訳して表示します。',
 	translationLanguageLabel: '翻訳言語を選択',
+	autoTranslateLegend: '自動翻訳',
+	autoTranslateHelp: 'ほかの言語の投稿を、開いたときに自動で翻訳して表示します。',
+	autoTranslateLabel: '自動翻訳を有効にする',
+	translationProviderLegend: '翻訳プロバイダー',
+	translationProviderHelp:
+		'投稿の翻訳ボタンや、自動翻訳が失敗したときに開く外部の翻訳サービスです。',
+	translationProviderLabel: '翻訳プロバイダーを選択',
 	optionBrowser: 'ブラウザの設定',
 	profileSettingsTitle: 'プロフィール設定',
 	profileSettingsNote:
