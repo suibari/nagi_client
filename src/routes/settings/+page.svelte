@@ -38,6 +38,12 @@
 			description={m.settingsLanguageDescription()}
 		/>
 		<SettingsCategoryCard
+			href="/settings/notifications"
+			icon="bell"
+			title={m.settingsNotificationsTitle()}
+			description={m.settingsNotificationsDescription()}
+		/>
+		<SettingsCategoryCard
 			href="/settings/crosspost"
 			icon="send"
 			title={m.settingsCrosspostTitle()}

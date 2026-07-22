@@ -141,6 +141,23 @@ export const updateSeen = (seenAt: string) =>
 		{ method: 'POST', body: JSON.stringify({ seenAt }) },
 		'required',
 	);
+export const registerPushSubscription = (input: {
+	endpoint: string;
+	keys: { p256dh: string; auth: string };
+}) =>
+	call<{ registered: boolean }>(
+		'com.suibari.nagi.registerPushSubscription',
+		'/xrpc/com.suibari.nagi.registerPushSubscription',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
+export const deletePushSubscription = (endpoint: string) =>
+	call<{ deleted: number }>(
+		'com.suibari.nagi.deletePushSubscription',
+		'/xrpc/com.suibari.nagi.deletePushSubscription',
+		{ method: 'POST', body: JSON.stringify({ endpoint }) },
+		'required',
+	);
 export const translatePost = (uri: string, targetLang: string) =>
 	call<{ text: string }>(
 		'com.suibari.nagi.translatePost',

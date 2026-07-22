@@ -1,0 +1,25 @@
+{
+  "name": "Nagi — やさしい言葉が凪ぐ場所",
+  "short_name": "Nagi",
+  "description": "すべての声を受け止める、AT Protocol上のSNS",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/nagi_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nagi_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

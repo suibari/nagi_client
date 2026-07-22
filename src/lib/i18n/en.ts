@@ -274,6 +274,19 @@ export const en: Messages = {
 	settingsDeleteTitle: 'Delete all data',
 	settingsDeleteDescription: 'Permanently delete your data from Nagi',
 	signOutDescription: 'Sign out of your account on this device',
+	settingsNotificationsTitle: 'Notifications',
+	settingsNotificationsDescription: 'Push notifications to your device',
+	pushLegend: 'Push notifications',
+	pushHelp:
+		'Get replies, mentions, reactions, and diaries pushed to this device — even when the app is closed.',
+	pushEnableLabel: 'Receive notifications on this device',
+	pushDeviceNote: 'This setting applies only to this device.',
+	pushSignInRequired: 'Sign in to enable push notifications.',
+	pushUnsupported: 'This device or browser does not support push notifications.',
+	pushBlocked:
+		'Notifications are blocked by your browser. Change the site notification permission to “Allow”.',
+	pushIosInstallNote:
+		'On iPhone and iPad, add Nagi to your Home Screen from the Share menu and open it as an app to enable push notifications.',
 	settingsCrosspostTitle: 'Bluesky crossposting',
 	settingsCrosspostDescription: 'Also post your Nagi posts to Bluesky',
 	crosspostLegend: 'Bluesky crossposting',

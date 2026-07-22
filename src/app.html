@@ -14,6 +14,14 @@
 		<link rel="icon" type="image/png" href="%sveltekit.assets%/nagi_icon.png" />
 		<link rel="apple-touch-icon" href="%sveltekit.assets%/nagi_icon.png" />
 
+		<!-- PWA: ホーム画面追加で standalone 起動。iOS の Web Push は standalone 必須。 -->
+		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+		<meta name="theme-color" content="#ffffff" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		<meta name="apple-mobile-web-app-title" content="Nagi" />
+
 		<meta property="og:type" content="website" />
 		<meta property="og:site_name" content="Nagi" />
 		<meta property="og:title" content="Nagi — やさしい言葉が凪ぐ場所" />

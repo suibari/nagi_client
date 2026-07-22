@@ -295,6 +295,19 @@ export const ja = {
 	settingsDeleteTitle: '全データ削除',
 	settingsDeleteDescription: 'Nagiに保存されたデータを完全に削除',
 	signOutDescription: 'この端末からアカウントをサインアウト',
+	settingsNotificationsTitle: '通知',
+	settingsNotificationsDescription: 'デバイスへのプッシュ通知',
+	pushLegend: 'プッシュ通知',
+	pushHelp:
+		'返信・メンション・リアクション・日記をこの端末にプッシュ通知します。アプリを閉じていても届きます。',
+	pushEnableLabel: 'この端末で通知を受け取る',
+	pushDeviceNote: 'この設定は、この端末でのみ有効です。',
+	pushSignInRequired: 'プッシュ通知を有効にするにはサインインが必要です。',
+	pushUnsupported: 'この端末・ブラウザはプッシュ通知に対応していません。',
+	pushBlocked:
+		'通知がブラウザ側でブロックされています。サイトの通知設定を「許可」に変更してください。',
+	pushIosInstallNote:
+		'iPhone・iPad では、共有メニューから「ホーム画面に追加」してアプリとして起動すると、プッシュ通知を有効にできます。',
 	settingsCrosspostTitle: 'Blueskyクロスポスト',
 	settingsCrosspostDescription: 'Nagiへの投稿をBlueskyにも投稿',
 	crosspostLegend: 'Blueskyクロスポスト',

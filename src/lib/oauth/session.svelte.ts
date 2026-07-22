@@ -28,6 +28,14 @@ export async function signIn(handle: string, options: { crosspost?: boolean } = 
 export async function signOut() {
 	const current = get(session);
 	if (current) {
+		// 認可が切れる前にこのデバイスのプッシュ購読を解除・削除しておく（AppView 呼び出しは
+		// 有効なセッションが要るため signOut より先に行う）。循環 import を避け動的読み込み。
+		try {
+			const { unsubscribeCurrent } = await import('$lib/notifications/push.svelte');
+			await unsubscribeCurrent();
+		} catch {
+			// 購読解除に失敗してもサインアウト自体は続行する。
+		}
 		localStorage.removeItem('nagi.did');
 		await current.signOut();
 	}

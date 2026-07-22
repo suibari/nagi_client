@@ -10,6 +10,21 @@ import { session } from '$lib/oauth/session.svelte';
  */
 export const unreadCount = writable(0);
 
+/** PWA アプリアイコンのバッジを未読件数に合わせる。非対応環境では静かに無視。 */
+function syncAppBadge(count: number) {
+	if (typeof navigator === 'undefined') return;
+	const nav = navigator as Navigator & {
+		setAppBadge?: (n?: number) => Promise<void>;
+		clearAppBadge?: () => Promise<void>;
+	};
+	try {
+		if (count > 0) void nav.setAppBadge?.(count);
+		else void nav.clearAppBadge?.();
+	} catch {
+		// バッジ非対応（多くのデスクトップブラウザ等）は無視。
+	}
+}
+
 const POLL_INTERVAL_MS = 60_000;
 let timer: ReturnType<typeof setInterval> | undefined;
 let started = false;
@@ -46,6 +61,8 @@ function onVisible() {
 export function startUnreadPolling() {
 	if (typeof window === 'undefined' || started) return;
 	started = true;
+	// 件数が変わるたびに PWA アプリバッジへ反映する（唯一の真実源は unreadCount）。
+	unreadCount.subscribe(syncAppBadge);
 	// ログイン/ログアウトに追従（初回購読で現在値が即座に流れる）。
 	session.subscribe((current) => {
 		if (current) void refreshUnread();
