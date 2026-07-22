@@ -1,5 +1,4 @@
 import { get } from 'svelte/store';
-import { Agent } from '@atproto/api';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
@@ -14,38 +13,38 @@ import type {
 	TimelinePage,
 } from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
-const aud = 'did:web:nagi-api.suibari.com#nagi_appview';
-const cache = new Map<string, { token: string; expires: number }>();
-async function token(lxm: string) {
-	const current = get(session);
-	if (!current) return;
-	const hit = cache.get(lxm);
-	if (hit && hit.expires > Date.now() + 5000) return hit.token;
-	const response = await new Agent(current).com.atproto.server.getServiceAuth({
-		aud,
-		lxm,
-		exp: Math.floor(Date.now() / 1000) + 55,
-	});
-	const jwt = response.data.token;
-	cache.set(lxm, { token: jwt, expires: Date.now() + 50_000 });
-	return jwt;
-}
+// AppView へのアクセスはユーザ自身の PDS 経由でプロキシする（atproto-proxy ヘッダー）。
+// 自前 getServiceAuth を廃止したことで、未更新セルフホスト PDS の aud params 検証
+// （format:did で fragment を却下）を回避できる。scope チェックは proxy ヘッダーの
+// fragment aud で granted scope と一致し、トークン発行は PDS 内部処理（aud は PDS の
+// バージョンに応じ fragment/bare、サーバ serviceAuth.ts は両方受理）。
+// 未ログイン閲覧と auth:'none' は従来どおり appview へ直 fetch する（proxy は DPoP セッション必須）。
+const APPVIEW_PROXY = 'did:web:nagi-api.suibari.com#nagi_appview';
 export type LinkMetadata = { uri: string; title: string; description?: string; image?: string };
+// セッションがあり認証を要する呼び出しは PDS 経由プロキシ、それ以外は appview 直 fetch。
+async function request(
+	path: string,
+	options: RequestInit,
+	auth: 'none' | 'optional' | 'required',
+): Promise<Response> {
+	const current = auth === 'none' ? null : get(session);
+	if (auth === 'required' && !current) throw new Error('Authentication required');
+	const headers = { ...(options.body ? { 'content-type': 'application/json' } : {}) };
+	if (current) {
+		return current.fetchHandler(path, {
+			...options,
+			headers: { ...headers, 'atproto-proxy': APPVIEW_PROXY },
+		});
+	}
+	return fetch(`${base}${path}`, { ...options, headers });
+}
 async function call<T>(
-	lxm: string,
+	_lxm: string,
 	path: string,
 	options: RequestInit = {},
 	auth: 'none' | 'optional' | 'required' = 'optional',
 ): Promise<T> {
-	const jwt = auth === 'none' ? undefined : await token(lxm);
-	if (auth === 'required' && !jwt) throw new Error('Authentication required');
-	const response = await fetch(`${base}${path}`, {
-		...options,
-		headers: {
-			...(options.body ? { 'content-type': 'application/json' } : {}),
-			...(jwt ? { authorization: `Bearer ${jwt}` } : {}),
-		},
-	});
+	const response = await request(path, options, auth);
 	if (!response.ok) {
 		const body = await response.json().catch(() => ({}));
 		throw new Error(body.message ?? `Request failed (${response.status})`);
@@ -164,17 +163,15 @@ export const getLinkMetadata = (url: string, fallback = false) =>
 		'required',
 	);
 export async function getLinkThumbnail(url: string): Promise<Blob> {
-	const lxm = 'com.suibari.nagi.getLinkThumbnail';
-	const jwt = await token(lxm);
-	if (!jwt) throw new Error('Authentication required');
-	const response = await fetch(`${base}/xrpc/${lxm}?url=${encodeURIComponent(url)}`, {
-		headers: { authorization: `Bearer ${jwt}` },
-	});
+	const response = await request(
+		`/xrpc/com.suibari.nagi.getLinkThumbnail?url=${encodeURIComponent(url)}`,
+		{},
+		'required',
+	);
 	if (!response.ok) throw new Error(`Thumbnail request failed (${response.status})`);
 	return response.blob();
 }
 export async function prepareDeleteAccountData(): Promise<void> {
-	const jwt = await token('com.suibari.nagi.deleteAccountData');
-	if (!jwt) throw new Error('Authentication required');
+	if (!get(session)) throw new Error('Authentication required');
 }
 export { base as APPVIEW_URL };
