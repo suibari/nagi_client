@@ -605,6 +605,10 @@
 	background: var(--accent-softer);
 	transform: translateY(-1px);
 }
+.icon-action.kossori-toggle.active {
+	color: var(--accent-strong);
+	background: var(--accent-softer);
+}
 .icon-action.primary-icon {
 	color: var(--text-on-accent);
 	background: var(--accent);
@@ -629,6 +633,19 @@
 	background: var(--accent-soft);
 	color: var(--accent-strong);
 	padding: 2px 7px;
+	font-size: 10px;
+	font-weight: 800;
+	white-space: nowrap;
+}
+.kossori-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	flex: 0 0 auto;
+	border-radius: var(--radius-pill);
+	background: var(--accent-softer);
+	color: var(--text-muted);
+	padding: 2px 7px 2px 5px;
 	font-size: 10px;
 	font-weight: 800;
 	white-space: nowrap;

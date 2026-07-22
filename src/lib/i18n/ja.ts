@@ -106,6 +106,8 @@ export const ja = {
 	postImageNext: '次の画像',
 	linkCardLoading: 'リンク情報を取得中…',
 	linkCardRemove: 'リンクカードを削除',
+	composerKossori: 'こっそり',
+	composerKossoriAria: 'こっそり投稿（グローバル・全肯定タイムラインには載せません）',
 
 	// drafts
 	draftSave: '下書きに保存',
@@ -147,6 +149,13 @@ export const ja = {
 	deletePostConfirm: '削除する',
 	deletingPost: '削除中…',
 	deletePostFailed: '投稿を削除できませんでした',
+	kossoriBadge: 'こっそり',
+	kossoriBadgeAria: 'こっそり投稿（グローバル・全肯定タイムラインには表示されません）',
+	kossoriEnable: 'こっそりにする',
+	kossoriEnableAria: 'この投稿をこっそりにする',
+	kossoriDisable: '公開に戻す',
+	kossoriDisableAria: 'この投稿を公開に戻す',
+	kossoriToggleFailed: 'こっそり設定を変更できませんでした',
 	translating: '翻訳中…',
 	translationLabel: '自動翻訳',
 	showOriginalText: '原文を表示',

@@ -51,6 +51,8 @@ export type PostView = {
 	reactions: ReactionView[];
 	isBot: boolean;
 	isAffirmation: boolean;
+	/** こっそりモード。グローバル/全肯定TLには出ず、プロフィール・スレッドでのみ見える。 */
+	kossori?: boolean;
 	deleted?: boolean;
 	/** Client-only state; never returned by the AppView API. */
 	optimisticState?: 'sending' | 'indexing';

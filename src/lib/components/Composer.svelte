@@ -25,6 +25,7 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
+	let kossori = $state(false);
 	let dismissedUrls = $state<string[]>([]);
 	let draftListOpen = $state(false);
 	let draftError = $state('');
@@ -47,6 +48,7 @@
 		linkCards = [];
 		mentions = [];
 		dismissedUrls = [];
+		kossori = false;
 	}
 
 	async function saveDraft() {
@@ -97,7 +99,15 @@
 
 	async function submit() {
 		if (empty || busy || !$session) return;
-		const draft = preparePostDraft(text, undefined, undefined, attachments, linkCards, mentions);
+		const draft = preparePostDraft(
+			text,
+			undefined,
+			undefined,
+			attachments,
+			linkCards,
+			mentions,
+			kossori,
+		);
 		const optimisticId = optimisticPosts.add(draft, $session.did);
 		busy = true;
 		error = '';
@@ -145,6 +155,16 @@
 		<div class="composer-foot">
 			<span
 				>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
+			>
+			<button
+				class="icon-action kossori-toggle"
+				class:active={kossori}
+				type="button"
+				disabled={busy}
+				aria-pressed={kossori}
+				aria-label={m.composerKossoriAria()}
+				title={m.composerKossoriAria()}
+				onclick={() => (kossori = !kossori)}><Icon name="hide" size={18} /></button
 			>
 			{#if drafts.count}
 				<button

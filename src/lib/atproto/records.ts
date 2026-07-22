@@ -38,6 +38,8 @@ export type PostDraft = {
 	quote?: { uri: string; cid: string };
 	attachments: ImageAttachment[];
 	linkCards: LinkCardDraft[];
+	/** こっそりモード。true のトップレベル投稿はグローバル/全肯定TLに出さない。 */
+	kossori?: boolean;
 };
 
 export function preparePostDraft(
@@ -47,6 +49,7 @@ export function preparePostDraft(
 	attachments: ImageAttachment[] = [],
 	linkCards: LinkCardDraft[] = [],
 	mentions: MentionSelection[] = [],
+	kossori = false,
 ): PostDraft {
 	const leadingWhitespace = text.length - text.trimStart().length;
 	const source = text.trim();
@@ -67,6 +70,7 @@ export function preparePostDraft(
 		quote,
 		attachments: [...attachments],
 		linkCards: linkCards.slice(0, 4).map((card) => ({ ...card })),
+		...(kossori ? { kossori: true } : {}),
 	};
 }
 
@@ -195,10 +199,34 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			facets: draft.facets,
 			langs: draft.langs,
 			createdAt: draft.createdAt,
+			...(draft.kossori && { kossori: true }),
 			...(draft.reply && { reply: draft.reply }),
 			...(cards.length && { linkCards: cards }),
 			...(embed && { embed }),
 		},
+	});
+}
+/**
+ * 既存のトップレベル投稿のこっそり状態だけを切り替える。text/embed/facets 等は
+ * getRecord で取得した値をそのまま putRecord で書き戻して保持する。
+ */
+export async function setPostKossori(rkey: string, kossori: boolean) {
+	const s = current();
+	const agent = new Agent(s);
+	const { data } = await agent.com.atproto.repo.getRecord({
+		repo: s.did,
+		collection: POST,
+		rkey,
+	});
+	const record: Record<string, unknown> = { ...(data.value as Record<string, unknown>), $type: POST };
+	if (kossori) record.kossori = true;
+	else delete record.kossori;
+	return agent.com.atproto.repo.putRecord({
+		repo: s.did,
+		collection: POST,
+		rkey,
+		validate: false,
+		record,
 	});
 }
 export async function createReaction(

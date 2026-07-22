@@ -58,6 +58,7 @@ class OptimisticPosts {
 			}),
 			...(context.quote && { quote: context.quote }),
 			...(context.replyParent && { replyParent: context.replyParent }),
+			...(draft.kossori && { kossori: true }),
 			reactions: [],
 			isBot: false,
 			isAffirmation: false,

@@ -100,6 +100,8 @@ export const en: Messages = {
 	postImageNext: 'Next image',
 	linkCardLoading: 'Loading link details…',
 	linkCardRemove: 'Remove link card',
+	composerKossori: 'Kossori',
+	composerKossoriAria: 'Kossori post (kept off the Global and Affirmation timelines)',
 
 	// drafts
 	draftSave: 'Save as draft',
@@ -141,6 +143,13 @@ export const en: Messages = {
 	deletePostConfirm: 'Delete',
 	deletingPost: 'Deleting…',
 	deletePostFailed: 'Could not delete post',
+	kossoriBadge: 'Kossori',
+	kossoriBadgeAria: 'Kossori post (not shown on the Global or Affirmation timeline)',
+	kossoriEnable: 'Make kossori',
+	kossoriEnableAria: 'Hide this post from the timelines',
+	kossoriDisable: 'Make public',
+	kossoriDisableAria: 'Show this post on the timelines again',
+	kossoriToggleFailed: 'Could not change the kossori setting',
 	translating: 'Translating…',
 	translationLabel: 'Automatic translation',
 	showOriginalText: 'Show original',

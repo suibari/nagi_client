@@ -9,7 +9,7 @@
 	import QuoteCard from './QuoteCard.svelte';
 	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
-	import { createPost, deleteRecord, preparePostDraft } from '$lib/atproto/records';
+	import { createPost, deleteRecord, preparePostDraft, setPostKossori } from '$lib/atproto/records';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageGallery from './ImageGallery.svelte';
 	import type { ImageAttachment } from '$lib/images';
@@ -41,7 +41,9 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
+	let kossoriBusy = $state(false);
 	let mine = $derived($session?.did === post.author.did);
+	let topLevel = $derived(!post.reply);
 	let optimistic = $derived(Boolean(post.optimisticState));
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
 	function openComposer(mode: 'reply' | 'quote') {
@@ -118,6 +120,24 @@
 			deleting = false;
 		}
 	}
+	async function toggleKossori() {
+		if (kossoriBusy) return;
+		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
+		if (!match) {
+			postError = m.kossoriToggleFailed();
+			return;
+		}
+		kossoriBusy = true;
+		postError = '';
+		try {
+			await setPostKossori(match[2], !post.kossori);
+			await Promise.resolve(onposted?.()).catch(() => undefined);
+		} catch (error) {
+			postError = error instanceof Error ? error.message : m.kossoriToggleFailed();
+		} finally {
+			kossoriBusy = false;
+		}
+	}
 </script>
 
 <div class="post-row" class:mine class:bot={post.isBot}>
@@ -127,7 +147,11 @@
 	<div class="bubble">
 		<div class="meta">
 			<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
-			><ActorBadges actor={post.author} /><time
+			><ActorBadges actor={post.author} />{#if post.kossori}<span
+					class="kossori-badge"
+					title={m.kossoriBadgeAria()}
+					aria-label={m.kossoriBadgeAria()}><Icon name="hide" size={12} />{m.kossoriBadge()}</span
+				>{/if}<time
 				><a href={threadHref}
 					>{new Date(post.createdAt).toLocaleString(dateLocale(), {
 						month: 'short',
@@ -179,6 +203,16 @@
 						aria-label={m.quotePost()}
 						title={m.quotePost()}
 						onclick={() => openComposer('quote')}><Icon name="quote" size={17} /></button
+					>{/if}
+				{#if mine && topLevel}<button
+						class="ghost"
+						class:active={post.kossori}
+						type="button"
+						disabled={kossoriBusy}
+						aria-pressed={Boolean(post.kossori)}
+						aria-label={post.kossori ? m.kossoriDisableAria() : m.kossoriEnableAria()}
+						title={post.kossori ? m.kossoriDisable() : m.kossoriEnable()}
+						onclick={toggleKossori}><Icon name="hide" size={17} /></button
 					>{/if}
 				{#if mine}<button
 						class="ghost danger"

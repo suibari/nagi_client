@@ -8,7 +8,11 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	const feed = new Feed((cursor) => getTimeline(cursor));
+	// こっそりポストは共有TLに載せない。楽観表示でも一瞬たりとも出さない。
+	const feed = new Feed(
+		(cursor) => getTimeline(cursor),
+		(item) => !item.kossori,
+	);
 	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {
 		feed.load();
