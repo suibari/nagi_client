@@ -5,10 +5,12 @@ export const CROSSPOST_SCOPE = 'repo:app.bsky.feed.post';
 // repo/rpc 権限は permission set に集約し、公開済み lexicon を真実源にする。
 // 定義: bsky-affirmative-bot/packages/nagi-lexicon/lexicons/com/suibari/nagi/appviewAccess.json
 // blob は permission set に入れられない仕様なので直接スコープで残す。
+// rpc aud は permission set 側で "aud":"*" にハードコード（旧 PDS の bare-aud 照合対応, cf. Skyblur）。
+// そのため include に aud パラメータは付けない。真実源は nagi-lexicon の NAGI_OAUTH_SCOPE。
 const baseScopes = [
 	'atproto',
 	'blob:image/*',
-	'include:com.suibari.nagi.appviewAccess?aud=did:web:nagi-api.suibari.com%23nagi_appview',
+	'include:com.suibari.nagi.appviewAccess',
 ];
 // クロスポストはオプトインのため、通常のサインインでは base のみを要求する。
 // クライアントメタデータには宣言可能な最大集合として crosspost も含める。

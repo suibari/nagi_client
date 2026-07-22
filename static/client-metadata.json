@@ -5,7 +5,7 @@
   "redirect_uris": ["https://nagi.suibari.com/oauth/callback"],
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
-  "scope": "atproto blob:image/* include:com.suibari.nagi.appviewAccess?aud=did:web:nagi-api.suibari.com%23nagi_appview repo:app.bsky.feed.post",
+  "scope": "atproto blob:image/* include:com.suibari.nagi.appviewAccess repo:app.bsky.feed.post",
   "token_endpoint_auth_method": "none",
   "application_type": "web",
   "dpop_bound_access_tokens": true
