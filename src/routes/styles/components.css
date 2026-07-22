@@ -604,10 +604,9 @@
 .composer .submit.icon-action {
 	padding: 0;
 }
-.icon-action:hover {
+.icon-action:active {
 	color: var(--accent-strong);
 	background: var(--accent-softer);
-	transform: translateY(-1px);
 }
 .icon-action.kossori-toggle.active {
 	color: var(--accent-strong);
@@ -618,9 +617,20 @@
 	background: var(--accent);
 	box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 24%, transparent);
 }
-.icon-action.primary-icon:hover {
+.icon-action.primary-icon:active {
 	color: var(--text-on-accent);
 	background: var(--accent-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+	.icon-action:hover {
+		color: var(--accent-strong);
+		background: var(--accent-softer);
+		transform: translateY(-1px);
+	}
+	.icon-action.primary-icon:hover {
+		color: var(--text-on-accent);
+		background: var(--accent-strong);
+	}
 }
 .icon-action:disabled {
 	cursor: not-allowed;
@@ -657,6 +667,11 @@
 	font-size: 10px;
 	font-weight: 800;
 	white-space: nowrap;
+}
+.post-flags {
+	display: flex;
+	align-items: center;
+	margin-top: 7px;
 }
 /* バッジのトーン。どれを付けるかは lib/badges/badges.ts が決める */
 .badge--bot {

@@ -167,11 +167,7 @@
 	<div class="bubble" class:sending={optimistic}>
 		<div class="meta">
 			<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
-			><ActorBadges actor={post.author} />{#if post.kossori}<span
-					class="kossori-badge"
-					title={m.kossoriBadgeAria()}
-					aria-label={m.kossoriBadgeAria()}><Icon name="hide" size={12} />{m.kossoriBadge()}</span
-				>{/if}<time
+			><ActorBadges actor={post.author} /><time
 				><a href={threadHref}
 					>{new Date(post.createdAt).toLocaleString(dateLocale(), {
 						month: 'short',
@@ -182,6 +178,13 @@
 				></time
 			>
 		</div>
+		{#if post.kossori}
+			<div class="post-flags">
+				<span class="kossori-badge" title={m.kossoriBadgeAria()} aria-label={m.kossoriBadgeAria()}
+					><Icon name="hide" size={12} />{m.kossoriBadge()}</span
+				>
+			</div>
+		{/if}
 		<TranslateToggle
 			uri={post.uri}
 			text={post.text}

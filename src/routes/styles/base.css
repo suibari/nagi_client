@@ -85,8 +85,13 @@ img.mark {
 	background: none;
 	color: var(--text-muted);
 }
-.ghost:hover {
+.ghost:active {
 	color: var(--accent-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+	.ghost:hover {
+		color: var(--accent-strong);
+	}
 }
 .eyebrow {
 	color: var(--accent-strong) !important;
