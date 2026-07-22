@@ -2,15 +2,17 @@ import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 const production = typeof location !== 'undefined' && location.hostname === 'nagi.suibari.com';
 const origin = typeof location !== 'undefined' ? location.origin : 'http://127.0.0.1';
 export const CROSSPOST_SCOPE = 'repo:app.bsky.feed.post';
-// repo/rpc 権限は permission set に集約し、公開済み lexicon を真実源にする。
+export const BLUEMOJI_SCOPE = 'repo:blue.moji.collection.item';
+// Nagi namespace の repo/rpc 権限は permission set に集約し、公開済み lexicon を真実源にする。
 // 定義: bsky-affirmative-bot/packages/nagi-lexicon/lexicons/com/suibari/nagi/appviewAccess.json
-// blob は permission set に入れられない仕様なので直接スコープで残す。
+// blob と別 namespace の Bluemoji repo 権限は permission set に入れられないため直接スコープで残す。
 // rpc aud は permission set 側で "aud":"*" にハードコード（旧 PDS の bare-aud 照合対応, cf. Skyblur）。
 // そのため include に aud パラメータは付けない。真実源は nagi-lexicon の NAGI_OAUTH_SCOPE。
 const baseScopes = [
 	'atproto',
 	'blob:image/*',
 	'include:com.suibari.nagi.appviewAccess',
+	BLUEMOJI_SCOPE,
 ];
 // クロスポストはオプトインのため、通常のサインインでは base のみを要求する。
 // クライアントメタデータには宣言可能な最大集合として crosspost も含める。
