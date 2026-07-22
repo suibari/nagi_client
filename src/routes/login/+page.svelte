@@ -44,10 +44,6 @@
 			ariaLabel={m.loginHandleLabel()}
 			disabled={busy}
 			onsubmit={submit}
-			onselect={(h) => {
-				handle = h;
-				submit();
-			}}
 		/></label
 	>
 	<div class="crosspost-optin">

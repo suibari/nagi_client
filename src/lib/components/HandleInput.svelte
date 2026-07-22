@@ -14,7 +14,6 @@
 		placeholder,
 		ariaLabel,
 		disabled = false,
-		onselect,
 		onsubmit,
 	}: {
 		value?: string;
@@ -22,8 +21,6 @@
 		placeholder?: string;
 		ariaLabel?: string;
 		disabled?: boolean;
-		/** 候補を選択したとき。ログインでは即サインインに使う。 */
-		onselect?: (handle: string) => void;
 		/** 候補非表示中に Enter を押したとき（フォーム送信）。 */
 		onsubmit?: () => void;
 	} = $props();
@@ -41,7 +38,6 @@
 	function choose(actor: ActorView) {
 		value = actor.handle;
 		suggest.reset();
-		onselect?.(actor.handle);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
