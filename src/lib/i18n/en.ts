@@ -273,6 +273,7 @@ export const en: Messages = {
 	settingsAboutDescription: 'What you can do on Nagi, terms, and privacy',
 	settingsDeleteTitle: 'Delete all data',
 	settingsDeleteDescription: 'Permanently delete your data from Nagi',
+	signOutDescription: 'Sign out of your account on this device',
 	settingsCrosspostTitle: 'Bluesky crossposting',
 	settingsCrosspostDescription: 'Also post your Nagi posts to Bluesky',
 	crosspostLegend: 'Bluesky crossposting',

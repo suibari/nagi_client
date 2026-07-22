@@ -1771,6 +1771,12 @@
 		background 0.15s ease,
 		transform 0.15s ease;
 }
+button.settings-category {
+	width: 100%;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
 .settings-category:hover {
 	background: var(--bg-hover);
 	transform: translateY(-1px);

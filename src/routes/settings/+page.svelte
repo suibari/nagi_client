@@ -1,6 +1,13 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import SettingsCategoryCard from '$lib/components/SettingsCategoryCard.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { signOut } from '$lib/oauth/session.svelte';
+
+	async function handleSignOut() {
+		await signOut();
+		await goto('/');
+	}
 </script>
 
 <section class="settings-page">
@@ -41,6 +48,12 @@
 			icon="info"
 			title={m.settingsAboutTitle()}
 			description={m.settingsAboutDescription()}
+		/>
+		<SettingsCategoryCard
+			icon="logout"
+			title={m.signOut()}
+			description={m.signOutDescription()}
+			onclick={() => void handleSignOut()}
 		/>
 		<SettingsCategoryCard
 			href="/settings/delete-data"

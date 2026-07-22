@@ -294,6 +294,7 @@ export const ja = {
 	settingsAboutDescription: 'Nagiでできること、利用規約、プライバシー',
 	settingsDeleteTitle: '全データ削除',
 	settingsDeleteDescription: 'Nagiに保存されたデータを完全に削除',
+	signOutDescription: 'この端末からアカウントをサインアウト',
 	settingsCrosspostTitle: 'Blueskyクロスポスト',
 	settingsCrosspostDescription: 'Nagiへの投稿をBlueskyにも投稿',
 	crosspostLegend: 'Blueskyクロスポスト',
