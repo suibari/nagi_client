@@ -98,6 +98,20 @@ export const searchActors = (query: string, limit = 10) =>
 		{},
 		'none',
 	);
+// ログイン画面のサジェスト用。ログイン時点ではまだ Nagi ユーザーですらないため、
+// Nagi AppView を経由せず未認証で叩ける公開 Bsky AppView を直接叩く。
+const BSKY_PUBLIC = 'https://public.api.bsky.app';
+export const searchActorsTypeahead = async (
+	query: string,
+	limit = 8,
+): Promise<SearchActorsResult> => {
+	const q = query.trim();
+	if (!q) return { actors: [] };
+	const url = `${BSKY_PUBLIC}/xrpc/app.bsky.actor.searchActorsTypeahead?q=${encodeURIComponent(q)}&limit=${Math.min(10, Math.max(1, limit))}`;
+	const res = await fetch(url);
+	if (!res.ok) return { actors: [] };
+	return res.json() as Promise<SearchActorsResult>;
+};
 export const searchEmojis = (
 	opts: { q?: string; repo?: string; limit?: number; cursor?: string } = {},
 ) => {

@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
 import { BASE_SCOPE, FULL_SCOPE, oauthClient } from './client';
+import { normalizeHandle } from '$lib/atproto/handle';
 export type OAuthSession = Awaited<ReturnType<typeof oauthClient.restore>>;
 export const session = writable<OAuthSession | null>(null);
 export const oauthReady = writable(false);
@@ -21,7 +22,8 @@ export async function initOAuth() {
 export async function signIn(handle: string, options: { crosspost?: boolean } = {}) {
 	// クロスポストはオプトインなので、有効化するときだけ Bluesky への
 	// 書き込み権限を含むスコープで認可し直す。
-	await oauthClient.signIn(handle.trim(), {
+	// 先頭 @ や大文字・前後空白を落として handle 解決の失敗を防ぐ。
+	await oauthClient.signIn(normalizeHandle(handle), {
 		scope: options.crosspost ? FULL_SCOPE : BASE_SCOPE,
 	});
 }
