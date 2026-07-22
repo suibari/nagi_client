@@ -30,10 +30,13 @@
 		post,
 		ondeleted,
 		onposted,
+		displayOnly = false,
 	}: {
 		post: PostView;
 		ondeleted?: (uri: string) => void;
 		onposted?: () => void | Promise<void>;
+		/** ニュースコメント等、投稿と同じ見た目だけを使う読み取り専用表示。 */
+		displayOnly?: boolean;
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
@@ -168,15 +171,20 @@
 	<div class="bubble" class:sending={optimistic}>
 		<div class="meta">
 			<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
-			><ActorBadges actor={post.author} /><time
-				><a href={threadHref}
+			><ActorBadges actor={post.author} /><time>
+				{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
+					month: 'short',
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit',
+				})}{:else}<a href={threadHref}
 					>{new Date(post.createdAt).toLocaleString(dateLocale(), {
 						month: 'short',
 						day: 'numeric',
 						hour: '2-digit',
 						minute: '2-digit',
 					})}</a
-				></time
+				>{/if}</time
 			>
 		</div>
 		{#if post.kossori}
@@ -204,15 +212,15 @@
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
 			</div>{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
 		{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} />{/if}
-		{#if optimistic}
+		{#if !displayOnly}{#if optimistic}
 			<div class="post-sending" role="status" aria-live="polite">
 				<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
 				<span>{m.postSending()}</span>
 			</div>
 		{:else}
 			<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
-		{/if}
-		{#if !post.deleted && !optimistic}
+		{/if}{/if}
+		{#if !displayOnly && !post.deleted && !optimistic}
 			<div class="post-actions">
 				<button
 					class="ghost"
@@ -262,7 +270,7 @@
 		{#if postError && !composeMode}<p class="error" role="alert">{postError}</p>{/if}
 	</div>
 </div>
-{#if composeMode}
+{#if composeMode && !displayOnly}
 	<!-- リプライ／引用も「自分のアバター＋吹き出し」で、投稿後のカードと同じ並びに見せる -->
 	<div class="post-row mine composer-row">
 		<a href={`/profile/${$session?.did}`} aria-label={m.myProfileAria()}
