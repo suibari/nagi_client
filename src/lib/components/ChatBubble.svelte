@@ -164,7 +164,7 @@
 	<a href={`/profile/${post.author.did}`} aria-label={m.viewProfileAria()}
 		><Avatar actor={post.author} /></a
 	>
-	<div class="bubble">
+	<div class="bubble" class:sending={optimistic}>
 		<div class="meta">
 			<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
 			><ActorBadges actor={post.author} />{#if post.kossori}<span
@@ -200,8 +200,9 @@
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
 			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}
 		{#if optimistic}
-			<div class="pending-bubble post-sending" role="status" aria-live="polite">
-				<div><span class="typing"><i></i><i></i><i></i></span>{m.postSending()}</div>
+			<div class="post-sending" role="status" aria-live="polite">
+				<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
+				<span>{m.postSending()}</span>
 			</div>
 		{:else}
 			<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
@@ -314,7 +315,19 @@
 {/if}
 
 <style>
+	.bubble.sending {
+		border-style: dashed;
+	}
+	.bubble.sending::before,
+	.bubble.sending::after {
+		display: none;
+	}
 	.post-sending {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 		margin-top: 0.45rem;
+		color: var(--text-muted);
+		font-size: 0.8125rem;
 	}
 </style>
