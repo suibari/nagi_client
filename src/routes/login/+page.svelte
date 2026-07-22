@@ -49,19 +49,27 @@
 				submit();
 			}}
 		/></label
-	><ToggleSwitch
-		checked={crosspostOptIn}
-		label={m.loginCrosspostLabel()}
-		disabled={busy}
-		onchange={(next) => (crosspostOptIn = next)}
-	/>
-	<p class="hint">{m.loginCrosspostNote()}</p>
+	>
+	<div class="crosspost-optin">
+		<ToggleSwitch
+			checked={crosspostOptIn}
+			label={m.loginCrosspostLabel()}
+			disabled={busy}
+			onchange={(next) => (crosspostOptIn = next)}
+		/>
+		<p class="hint">{m.loginCrosspostNote()}</p>
+	</div>
 	<button disabled={busy || !handle.trim()} onclick={submit}
 		>{busy ? m.loginRedirecting() : m.loginSubmit()}</button
 	>{#if $oauthError}<p class="error">{$oauthError}</p>{/if}<a href="/">{m.loginBrowse()}</a>
 </section>
 
 <style>
+	/* ToggleSwitch は内部で <button> を描画するため、.auth-card 直下に置くと
+	   .auth-card > button のプライマリボタン装飾を拾ってしまう。div で包んで直下 button を回避する。 */
+	.crosspost-optin {
+		margin: 24px 0;
+	}
 	/* トグル直下の補足文。カード内の他の段落より小さく、左寄せでトグルと揃える。 */
 	.hint {
 		margin-top: 6px;
