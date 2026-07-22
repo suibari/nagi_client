@@ -37,11 +37,15 @@ export default defineConfig(({ mode }) => {
 						'default-src': ['self'],
 						'script-src': ['self'],
 						'style-src': ['self', 'unsafe-inline'],
+						// OAuth ループバックは localhost を拒否するため dev はページを 127.0.0.1 で開く。
+						// appview も 127.0.0.1 で開くケースに備え、localhost と 127.0.0.1 の両方を許可する。
 						'img-src': isDev
-							? ['self', 'https:', 'data:', 'blob:', 'http://localhost:*']
+							? ['self', 'https:', 'data:', 'blob:', 'http://localhost:*', 'http://127.0.0.1:*']
 							: ['self', 'https:', 'data:', 'blob:'],
 						'font-src': ['self', 'data:'],
-						'connect-src': isDev ? ['self', 'https:', 'http://localhost:*'] : ['self', 'https:'],
+						'connect-src': isDev
+							? ['self', 'https:', 'http://localhost:*', 'http://127.0.0.1:*']
+							: ['self', 'https:'],
 						'base-uri': ['self'],
 						'form-action': ['self'],
 						'object-src': ['none']
