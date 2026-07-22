@@ -8,4 +8,5 @@
 	<a href="/affirmation" class:active={page.url.pathname.startsWith('/affirmation')}
 		>{m.navAffirmation()}</a
 	>
+	<a href="/news" class:active={page.url.pathname.startsWith('/news')}>{m.navNews()}</a>
 </nav>

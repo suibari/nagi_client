@@ -35,6 +35,11 @@ export type AspectRatio = { width: number; height: number };
 export type PostImage = { url: string; alt: string; aspectRatio?: AspectRatio };
 export type Facet = { index: { byteStart: number; byteEnd: number }; features: unknown[] };
 export type LinkCardView = { uri: string; title: string; description?: string; thumb?: string };
+export type NewsView = {
+	uri: string; cid: string; articleId: string; url: string; title: string;
+	sourceName?: string; sourceUrl?: string; publishedAt?: string; botComment: string;
+	lang: 'ja' | 'en'; createdAt: string; indexedAt: string; unavailable?: boolean;
+};
 export type PostView = {
 	uri: string;
 	cid: string;
@@ -47,7 +52,7 @@ export type PostView = {
 	reply?: { root?: string; parent: string };
 	images?: PostImage[];
 	linkCards?: LinkCardView[];
-	quote?: PostView;
+	quote?: { kind: 'post'; post: PostView } | { kind: 'news'; news: NewsView };
 	reactions: ReactionView[];
 	isBot: boolean;
 	isAffirmation: boolean;
@@ -65,6 +70,7 @@ export type FeedItem = PostView & {
 };
 export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean; botActor?: ActorView };
 export type TimelinePage = Page<FeedItem>;
+export type NewsPage = Page<NewsView>;
 export type ProfileFeedFilter = 'posts' | 'replies' | 'media' | 'reactions';
 export type ProfileDetail = ActorView & {
 	postCount: number;

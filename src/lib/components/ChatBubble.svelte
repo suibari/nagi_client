@@ -7,6 +7,7 @@
 	import TranslateToggle from './TranslateToggle.svelte';
 	import Icon from './shell/Icon.svelte';
 	import QuoteCard from './QuoteCard.svelte';
+	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import { createPost, deleteRecord, preparePostDraft, setPostKossori } from '$lib/atproto/records';
@@ -201,7 +202,8 @@
 				images={post.images}
 			/>{/if}{#if post.linkCards?.length}<div class="link-cards">
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
-			</div>{/if}{#if post.quote}<QuoteCard post={post.quote} />{/if}
+			</div>{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
+		{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} />{/if}
 		{#if optimistic}
 			<div class="post-sending" role="status" aria-live="polite">
 				<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>

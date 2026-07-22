@@ -56,7 +56,7 @@ class OptimisticPosts {
 					thumb: localUrl(card.thumbnail),
 				})),
 			}),
-			...(context.quote && { quote: context.quote }),
+			...(context.quote && { quote: { kind: 'post' as const, post: context.quote } }),
 			...(context.replyParent && { replyParent: context.replyParent }),
 			...(draft.kossori && { kossori: true }),
 			reactions: [],

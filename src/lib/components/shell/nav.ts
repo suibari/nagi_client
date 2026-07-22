@@ -8,8 +8,8 @@ export const navItems: NavItem[] = [
 	{ href: '/notifications', label: m.navNotifications, icon: 'bell' },
 	{ href: '/settings', label: m.navSettings, icon: 'settings' },
 ];
-/** グローバルと全肯定は同じ「フィード」の 2 タブなので、/affirmation でもホームを active に */
+/** 3つのフィードタブではホームを active にする。 */
 export const isActive = (pathname: string, href: string) =>
 	href === '/'
-		? pathname === '/' || pathname.startsWith('/affirmation')
+		? pathname === '/' || pathname.startsWith('/affirmation') || pathname.startsWith('/news')
 		: pathname === href || pathname.startsWith(`${href}/`);

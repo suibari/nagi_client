@@ -201,7 +201,8 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			createdAt: draft.createdAt,
 			...(draft.kossori && { kossori: true }),
 			...(draft.reply && { reply: draft.reply }),
-			...(cards.length && { linkCards: cards }),
+			// ニュース引用はNagiでは専用カードを描画する。linkCardsはBluesky変換用だけに使う。
+			...(cards.length && draft.quote?.uri.split('/')[3] !== 'com.suibari.nagi.news' && { linkCards: cards }),
 			...(embed && { embed }),
 		},
 	});

@@ -5,6 +5,7 @@ import type {
 	DiaryPage,
 	EmojiView,
 	NotificationView,
+	NewsPage,
 	Page,
 	ProfileFeedFilter,
 	ProfilePage,
@@ -61,6 +62,11 @@ export const getAffirmation = (cursor?: string) =>
 		'com.suibari.nagi.getAffirmation',
 		`/xrpc/com.suibari.nagi.getAffirmation${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
 	);
+export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
+	const params = new URLSearchParams({ limit: '20', lang });
+	if (cursor) params.set('cursor', cursor);
+	return call<NewsPage>('com.suibari.nagi.getPositiveNews', `/xrpc/com.suibari.nagi.getPositiveNews?${params}`, {}, 'none');
+};
 export const getThread = (uri: string) =>
 	call<{ thread: ThreadView }>(
 		'com.suibari.nagi.getThread',
