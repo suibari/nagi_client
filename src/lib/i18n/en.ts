@@ -23,6 +23,7 @@ export const en: Messages = {
 	navSettings: 'Settings',
 	mainNavAria: 'Main navigation',
 	feedTabsAria: 'Feed tabs',
+	newsUnreadAria: 'Unread news is available',
 	newsEmpty: 'There are no bright news stories to show right now.',
 	newsReadArticle: 'Read article',
 	newsQuote: 'Quote',

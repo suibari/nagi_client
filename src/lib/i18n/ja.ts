@@ -25,6 +25,7 @@ export const ja = {
 	navSettings: '設定',
 	mainNavAria: 'メインナビゲーション',
 	feedTabsAria: 'フィード切り替え',
+	newsUnreadAria: '未読ニュースがあります',
 	newsEmpty: 'いま掲載できる明るいニュースはありません。',
 	newsReadArticle: '記事を読む',
 	newsQuote: '引用',

@@ -12,6 +12,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
+	import { startUnreadNewsPolling } from '$lib/news/unread.svelte';
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
 
 	let { children } = $props();
@@ -21,6 +22,8 @@
 		void initOAuth().then(() => resolveCrosspostPending());
 		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。
 		startUnreadPolling();
+		// 公開ニュースの新着有無を端末内の既読基準と照合する。
+		startUnreadNewsPolling();
 	});
 	$effect(() => {
 		const did = $session?.did;

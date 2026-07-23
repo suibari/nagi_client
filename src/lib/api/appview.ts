@@ -67,7 +67,22 @@ export const getAffirmation = (cursor?: string) =>
 export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ limit: '20', lang });
 	if (cursor) params.set('cursor', cursor);
-	return call<NewsPage>('com.suibari.nagi.getPositiveNews', `/xrpc/com.suibari.nagi.getPositiveNews?${params}`, {}, 'none');
+	return call<NewsPage>(
+		'com.suibari.nagi.getPositiveNews',
+		`/xrpc/com.suibari.nagi.getPositiveNews?${params}`,
+		{},
+		'none',
+	);
+};
+/** 未読確認用。本文を描画しない画面では最新の1件だけを取得する。 */
+export const getLatestPositiveNews = (lang: 'ja' | 'en') => {
+	const params = new URLSearchParams({ limit: '1', lang });
+	return call<NewsPage>(
+		'com.suibari.nagi.getPositiveNews',
+		`/xrpc/com.suibari.nagi.getPositiveNews?${params}`,
+		{},
+		'none',
+	);
 };
 export const getThread = (uri: string) =>
 	call<{ thread: ThreadView }>(

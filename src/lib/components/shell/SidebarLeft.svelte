@@ -3,6 +3,7 @@
 	import { navItems, isActive, formatUnread } from './nav';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { unreadCount } from '$lib/notifications/unread.svelte';
+	import { unreadNews } from '$lib/news/unread.svelte';
 	import Icon from './Icon.svelte';
 	import AccountCard from './AccountCard.svelte';
 </script>
@@ -21,6 +22,11 @@
 			>
 				<span class="nav-icon">
 					<Icon name={item.icon} />
+					{#if item.href === '/' && $unreadNews}
+						<span class="news-unread-dot"
+							><span class="visually-hidden">{m.newsUnreadAria()}</span></span
+						>
+					{/if}
 					{#if item.href === '/notifications' && $unreadCount > 0}
 						<span class="nav-badge" aria-label={m.notifUnreadBadgeAria({ count: $unreadCount })}
 							>{formatUnread($unreadCount)}</span
