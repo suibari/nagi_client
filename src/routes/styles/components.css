@@ -671,7 +671,27 @@
 .post-flags {
 	display: flex;
 	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
 	margin-top: 7px;
+}
+/* 投稿に付く所属チャンネルのバッジ（グローバルTLからの導線）。 */
+.channel-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	flex: 0 0 auto;
+	border-radius: var(--radius-pill);
+	background: var(--accent-softer);
+	color: var(--accent);
+	padding: 2px 8px 2px 5px;
+	font-size: 10px;
+	font-weight: 800;
+	white-space: nowrap;
+	text-decoration: none;
+}
+.channel-badge:hover {
+	background: var(--accent-soft);
 }
 /* バッジのトーン。どれを付けるかは lib/badges/badges.ts が決める */
 .badge--bot {
@@ -1425,7 +1445,8 @@
 .cropper-backdrop {
 	position: fixed;
 	inset: 0;
-	z-index: 100;
+	/* 別モーダル（作成ダイアログ .draft-backdrop = 110）の上に重ねてトリミングできるようにする。 */
+	z-index: 120;
 	display: grid;
 	place-items: center;
 	padding: 20px;
@@ -1926,4 +1947,179 @@ button.settings-category {
 }
 .auth-card > button.danger-button:hover {
 	filter: brightness(0.94);
+}
+
+/* ---- チャンネル機能 ---- */
+.channels-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 4px 0 12px;
+}
+.channels-head h1 {
+	font-size: 1.15rem;
+	margin: 0;
+}
+.channels-head button.primary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex: 0 0 auto;
+}
+.channels-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+/* Misskey 風の大きなヘッダーカード。バナーがカードいっぱいに広がり、
+   左上にチャンネル名、下部に説明と更新日時を重ねる。banner が無くても同じ枠で表示。 */
+.channel-card,
+.channel-hero {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	border-radius: var(--radius-m);
+	background: var(--bg-inset);
+	/* 文字が乗るので十分な高さを確保しつつ、横長を保つ。 */
+	aspect-ratio: 3 / 1;
+	min-block-size: 140px;
+	text-decoration: none;
+	color: #fff;
+}
+.channel-card {
+	box-shadow: var(--shadow-card);
+}
+.channel-card:hover {
+	filter: brightness(0.97);
+}
+.channel-card-media {
+	position: absolute;
+	inset: 0;
+	display: block;
+	background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+}
+.channel-card-media img {
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+/* 上下にスクリムを敷いて、明るい画像でも名前・説明が読めるようにする。 */
+.channel-card::after,
+.channel-hero::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		linear-gradient(to bottom, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0) 38%),
+		linear-gradient(to top, rgb(0 0 0 / 0.7) 0%, rgb(0 0 0 / 0) 46%);
+}
+.channel-card-name {
+	position: absolute;
+	inset-block-start: 12px;
+	inset-inline-start: 14px;
+	z-index: 1;
+	margin: 0;
+	max-inline-size: calc(100% - 28px);
+	font-size: 1.1rem;
+	font-weight: 800;
+	color: #fff;
+	text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
+	overflow-wrap: anywhere;
+}
+.channel-card-foot {
+	position: absolute;
+	inset-block-end: 12px;
+	inset-inline: 14px;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
+}
+.channel-card-desc {
+	color: rgb(255 255 255 / 0.95);
+	font-size: 0.85rem;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+.channel-card-updated {
+	color: rgb(255 255 255 / 0.85);
+	font-size: 0.72rem;
+}
+/* チャンネルページのヘッダー */
+.channel-header {
+	margin-bottom: 12px;
+}
+.channel-hero {
+	margin-block-start: 8px;
+}
+.channel-hero-delete {
+	position: absolute;
+	inset-block-start: 10px;
+	inset-inline-end: 10px;
+	z-index: 2;
+	display: grid;
+	place-items: center;
+	inline-size: 34px;
+	block-size: 34px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: rgb(0 0 0 / 0.4);
+	color: #fff;
+	cursor: pointer;
+}
+.channel-hero-delete:hover {
+	background: rgb(0 0 0 / 0.6);
+}
+/* 作成ダイアログのバナープレビュー（オーバーレイなしの素の枠） */
+.channel-banner.preview {
+	display: block;
+	inline-size: 100%;
+	max-inline-size: 240px;
+	aspect-ratio: 3 / 1;
+	background: var(--bg-inset);
+	border-radius: var(--radius-s);
+	overflow: hidden;
+}
+.channel-banner.preview img {
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+.channel-only-row {
+	padding: 2px 4px 6px;
+}
+/* 新規作成ダイアログのフォーム行（draft-dialog 内で使う） */
+.draft-dialog .field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-block: 10px;
+	text-align: start;
+}
+.draft-dialog .field input[type='text'],
+.draft-dialog .field input:not([type]),
+.draft-dialog .field textarea {
+	inline-size: 100%;
+	padding: 8px 10px;
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-s);
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+}
+.draft-dialog .field small {
+	color: var(--text-muted);
+	font-size: 0.75rem;
+}
+/* ファイル選択はボタン風のラベル（.avatar-select）。列内で幅いっぱいに伸びないよう内容幅に。 */
+.draft-dialog .field .avatar-select {
+	align-self: start;
 }

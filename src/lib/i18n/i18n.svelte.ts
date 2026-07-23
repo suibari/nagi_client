@@ -69,6 +69,28 @@ export function dateLocale(): 'ja-JP' | 'en-US' {
 	return i18n.locale === 'ja' ? 'ja-JP' : 'en-US';
 }
 
+/** "11秒前" / "3 hours ago" のような相対時刻。チャンネルの更新日時などに使う。 */
+export function relativeTime(iso: string): string {
+	const then = new Date(iso).getTime();
+	if (Number.isNaN(then)) return '';
+	const diffSec = Math.round((then - Date.now()) / 1000);
+	const abs = Math.abs(diffSec);
+	const rtf = new Intl.RelativeTimeFormat(dateLocale(), { numeric: 'auto' });
+	const units: [Intl.RelativeTimeFormatUnit, number][] = [
+		['year', 31_536_000],
+		['month', 2_592_000],
+		['week', 604_800],
+		['day', 86_400],
+		['hour', 3_600],
+		['minute', 60],
+		['second', 1],
+	];
+	for (const [unit, secs] of units) {
+		if (abs >= secs || unit === 'second') return rtf.format(Math.trunc(diffSec / secs), unit);
+	}
+	return '';
+}
+
 type MessageAccessors = {
 	[K in keyof Messages]: Messages[K] extends (...args: infer A) => string
 		? (...args: A) => string

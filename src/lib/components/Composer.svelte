@@ -17,7 +17,15 @@
 	import { drafts } from '$lib/drafts/drafts.svelte';
 	import { DraftStorageError } from '$lib/drafts/storage';
 	import DraftListDialog from './DraftListDialog.svelte';
-	let { onposted }: { onposted: () => void | Promise<void> } = $props();
+	import ToggleSwitch from './ToggleSwitch.svelte';
+	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定トグルもそのとき出す。
+	let {
+		onposted,
+		channel,
+	}: {
+		onposted: () => void | Promise<void>;
+		channel?: { uri: string; cid: string; name?: string };
+	} = $props();
 	let text = $state('');
 	let busy = $state(false);
 	let error = $state('');
@@ -26,6 +34,7 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let kossori = $state(false);
+	let channelOnly = $state(false);
 	let dismissedUrls = $state<string[]>([]);
 	let draftListOpen = $state(false);
 	let draftError = $state('');
@@ -49,6 +58,7 @@
 		mentions = [];
 		dismissedUrls = [];
 		kossori = false;
+		channelOnly = false;
 	}
 
 	async function saveDraft() {
@@ -107,6 +117,8 @@
 			linkCards,
 			mentions,
 			kossori,
+			channel ? { uri: channel.uri, cid: channel.cid } : undefined,
+			channelOnly,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did);
 		busy = true;
@@ -152,6 +164,16 @@
 		/>
 		<ImageAttachmentEditor bind:attachments disabled={busy} />
 		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+		{#if channel}
+			<div class="channel-only-row">
+				<ToggleSwitch
+					checked={channelOnly}
+					label={m.composerChannelOnly()}
+					disabled={busy}
+					onchange={(value) => (channelOnly = value)}
+				/>
+			</div>
+		{/if}
 		<div class="composer-foot">
 			<span
 				>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span

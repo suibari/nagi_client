@@ -55,6 +55,11 @@
 	let topLevel = $derived(!post.reply);
 	let optimistic = $derived(Boolean(post.optimisticState));
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
+	// at://<did>/<collection>/<rkey> のチャンネル URI から /channels/<did>/<rkey> を作る。
+	const channelHref = (uri: string) => {
+		const rest = uri.slice('at://'.length).split('/');
+		return `/channels/${rest[0]}/${rest[2]}`;
+	};
 	// 外国語の投稿にだけ「選択したプロバイダーで翻訳」ボタンを出す。
 	let translateSourceLang = $derived(normalizeSupportedLanguage(post.langs?.[0]));
 	let canTranslateExternally = $derived(
@@ -95,6 +100,12 @@
 			return;
 		const mode = composeMode;
 		const subject = { uri: post.uri, cid: post.cid };
+		// 返信は親の所属チャンネルを継承する（Misskey 同様、返信も CH TL に並ぶ）。
+		// 引用は通常投稿として扱い、引用元の CH には入れない。
+		const inheritedChannel =
+			mode === 'reply' && post.channel?.cid
+				? { uri: post.channel.uri, cid: post.channel.cid }
+				: undefined;
 		const draft = preparePostDraft(
 			composeText,
 			mode === 'reply' ? { root: subject, parent: subject } : undefined,
@@ -102,6 +113,9 @@
 			attachments,
 			linkCards,
 			mentions,
+			false,
+			inheritedChannel,
+			inheritedChannel ? Boolean(post.channelOnly) : false,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),
@@ -187,11 +201,21 @@
 				>{/if}</time
 			>
 		</div>
-		{#if post.kossori}
+		{#if post.kossori || post.channel}
 			<div class="post-flags">
-				<span class="kossori-badge" title={m.kossoriBadgeAria()} aria-label={m.kossoriBadgeAria()}
-					><Icon name="hide" size={12} />{m.kossoriBadge()}</span
-				>
+				{#if post.channel}
+					<a
+						class="channel-badge"
+						href={channelHref(post.channel.uri)}
+						aria-label={m.channelBadgeAria({ name: post.channel.name ?? '' })}
+						><Icon name="hash" size={12} />{post.channel.name ?? m.navChannels()}</a
+					>
+				{/if}
+				{#if post.kossori}
+					<span class="kossori-badge" title={m.kossoriBadgeAria()} aria-label={m.kossoriBadgeAria()}
+						><Icon name="hide" size={12} />{m.kossoriBadge()}</span
+					>
+				{/if}
 			</div>
 		{/if}
 		<TranslateToggle

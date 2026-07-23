@@ -2,6 +2,8 @@ import { get } from 'svelte/store';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
+	ChannelsPage,
+	ChannelView,
 	DiaryPage,
 	EmojiView,
 	NotificationView,
@@ -72,6 +74,37 @@ export const getThread = (uri: string) =>
 		'com.suibari.nagi.getThread',
 		`/xrpc/com.suibari.nagi.getThread?uri=${encodeURIComponent(uri)}`,
 	);
+// チャンネル閲覧は公開コンテンツ。PDS プロキシを経由せず AppView を直接叩く（auth:'none'）。
+// これにより permission-set への rpc スコープ追加（goat lex publish）の反映を待たずに閲覧できる。
+// 未ログイン閲覧にも対応でき、getPositiveNews / getDiaries と同じ方針。
+// 代わりにログイン中でも viewerDid が渡らないため、CH TL では自分のリアクション強調（reactedByMe）は付かない。
+export const getChannels = (cursor?: string) => {
+	const params = new URLSearchParams({ limit: '50' });
+	if (cursor) params.set('cursor', cursor);
+	return call<ChannelsPage>(
+		'com.suibari.nagi.getChannels',
+		`/xrpc/com.suibari.nagi.getChannels?${params}`,
+		{},
+		'none',
+	);
+};
+export const getChannel = (uri: string) =>
+	call<{ channel: ChannelView }>(
+		'com.suibari.nagi.getChannel',
+		`/xrpc/com.suibari.nagi.getChannel?uri=${encodeURIComponent(uri)}`,
+		{},
+		'none',
+	);
+export const getChannelTimeline = (uri: string, cursor?: string) => {
+	const params = new URLSearchParams({ uri });
+	if (cursor) params.set('cursor', cursor);
+	return call<TimelinePage>(
+		'com.suibari.nagi.getChannelTimeline',
+		`/xrpc/com.suibari.nagi.getChannelTimeline?${params}`,
+		{},
+		'none',
+	);
+};
 export const getProfile = (
 	actor: string,
 	opts: { filter?: ProfileFeedFilter; cursor?: string; limit?: number } = {},

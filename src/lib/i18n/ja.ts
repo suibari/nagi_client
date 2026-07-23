@@ -451,6 +451,37 @@ export const ja = {
 	processing: '処理中…',
 	imageProcessFailed: '画像を処理できませんでした',
 	imageCompressFailed: '画像を1MB以下に圧縮できませんでした',
+
+	// channels
+	navChannels: 'チャンネル',
+	channelsTitle: 'チャンネル',
+	channelsEmpty: 'まだチャンネルがありません。最初のひとつを作ってみませんか？',
+	channelCreate: 'チャンネルを作成',
+	channelCreateTitle: '新しいチャンネル',
+	channelNameLabel: 'チャンネル名',
+	channelNamePlaceholder: '例：写真部、猫部、もくもく作業部',
+	channelNameHint: '「〜部」のような名前がおすすめです。',
+	channelDescLabel: '説明（任意）',
+	channelDescPlaceholder: 'どんな話題のチャンネルか、ひとことで。',
+	channelBannerLabel: 'バナー画像（任意）',
+	channelBannerAlt: 'チャンネルのバナー',
+	channelBannerNote: 'JPEG・PNG・WebP。選択後に横長へトリミングします。',
+	channelCreateSubmit: '作成する',
+	channelCreating: '作成中…',
+	channelCreateFailed: 'チャンネルを作成できませんでした',
+	channelTimelineEmpty: 'このチャンネルにはまだ投稿がありません。最初の一言をどうぞ。',
+	channelBadge: (o: { name: string }) => `#${o.name}`,
+	channelBadgeAria: (o: { name: string }) => `チャンネル「${o.name}」の投稿`,
+	channelUpdatedAt: (o: { time: string }) => `更新日時: ${o.time}`,
+	composerChannelOnly: 'このチャンネルだけに投稿（グローバルに出さない）',
+	channelDelete: 'チャンネルを削除',
+	channelDeleteTitle: 'チャンネルを削除しますか？',
+	channelDeleteConfirmation:
+		'チャンネルを削除しても、これまでの投稿は残ります（グローバルに出ていたものはそのまま）。ただし「このチャンネルだけ」に投稿されたものは、どこからも辿れなくなります。',
+	channelDeleteConfirm: '削除する',
+	channelDeleting: '削除中…',
+	channelDeleteFailed: 'チャンネルを削除できませんでした',
+	cropperBannerTitle: 'バナーをトリミング',
 } satisfies Record<string, string | ((...args: never[]) => string)>;
 
 export type Messages = typeof ja;

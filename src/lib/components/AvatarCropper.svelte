@@ -6,8 +6,22 @@
 		file,
 		onconfirm,
 		oncancel,
-	}: { file: File; onconfirm: (blob: Blob) => void; oncancel: () => void } = $props();
-	const viewport = 280;
+		// アスペクト比（幅/高さ）。1=正方形（アバター）、3=横長（チャンネルバナー）など。
+		aspect = 1,
+		// 見た目。アバターは円形、バナーは角丸の矩形。
+		round = true,
+		title = m.cropperTitle(),
+	}: {
+		file: File;
+		onconfirm: (blob: Blob) => void;
+		oncancel: () => void;
+		aspect?: number;
+		round?: boolean;
+		title?: string;
+	} = $props();
+	// ビューポートは幅を基準に、高さをアスペクト比から決める。
+	const viewportW = 280;
+	let viewportH = $derived(Math.round(viewportW / aspect));
 	let source = $state('');
 	let imageWidth = $state(0);
 	let imageHeight = $state(0);
@@ -24,13 +38,13 @@
 	let image = $state<HTMLImageElement>();
 
 	let baseScale = $derived(
-		imageWidth && imageHeight ? Math.max(viewport / imageWidth, viewport / imageHeight) : 1,
+		imageWidth && imageHeight ? Math.max(viewportW / imageWidth, viewportH / imageHeight) : 1,
 	);
 	let scale = $derived(baseScale * zoom);
 
 	function clampOffsets(x = offsetX, y = offsetY) {
-		const minX = viewport - imageWidth * scale;
-		const minY = viewport - imageHeight * scale;
+		const minX = viewportW - imageWidth * scale;
+		const minY = viewportH - imageHeight * scale;
 		offsetX = Math.min(0, Math.max(minX, x));
 		offsetY = Math.min(0, Math.max(minY, y));
 	}
@@ -39,18 +53,18 @@
 		const target = event.currentTarget as HTMLImageElement;
 		imageWidth = target.naturalWidth;
 		imageHeight = target.naturalHeight;
-		offsetX = (viewport - imageWidth * baseScale) / 2;
-		offsetY = (viewport - imageHeight * baseScale) / 2;
+		offsetX = (viewportW - imageWidth * baseScale) / 2;
+		offsetY = (viewportH - imageHeight * baseScale) / 2;
 	}
 
 	function changeZoom(event: Event) {
 		const next = Number((event.currentTarget as HTMLInputElement).value);
 		const oldScale = scale;
-		const centerX = (viewport / 2 - offsetX) / oldScale;
-		const centerY = (viewport / 2 - offsetY) / oldScale;
+		const centerX = (viewportW / 2 - offsetX) / oldScale;
+		const centerY = (viewportH / 2 - offsetY) / oldScale;
 		zoom = next;
-		offsetX = viewport / 2 - centerX * scale;
-		offsetY = viewport / 2 - centerY * scale;
+		offsetX = viewportW / 2 - centerX * scale;
+		offsetY = viewportH / 2 - centerY * scale;
 		clampOffsets();
 	}
 
@@ -72,13 +86,15 @@
 		processing = true;
 		error = '';
 		try {
-			const size = 512;
+			const outW = 512;
+			const outH = Math.round(outW / aspect);
 			const canvas = document.createElement('canvas');
-			canvas.width = size;
-			canvas.height = size;
+			canvas.width = outW;
+			canvas.height = outH;
 			const context = canvas.getContext('2d');
 			if (!context) throw new Error(m.imageProcessFailed());
-			const ratio = size / viewport;
+			// viewportW と outW の比。viewportH:outH も同じ比なので単一 ratio で足りる。
+			const ratio = outW / viewportW;
 			context.drawImage(
 				image!,
 				offsetX * ratio,
@@ -109,9 +125,12 @@
 
 <div class="cropper-backdrop" role="presentation">
 	<div class="cropper-dialog" role="dialog" aria-modal="true" aria-labelledby="cropper-title">
-		<h2 id="cropper-title">{m.cropperTitle()}</h2>
+		<h2 id="cropper-title">{title}</h2>
 		<div
 			class="cropper-viewport"
+			style:width={`${viewportW}px`}
+			style:height={`${viewportH}px`}
+			style:border-radius={round ? '50%' : 'var(--radius-m)'}
 			onpointerdown={pointerDown}
 			onpointermove={pointerMove}
 			onpointerup={() => (dragging = false)}

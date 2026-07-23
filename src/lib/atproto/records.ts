@@ -8,7 +8,8 @@ import type { EmojiView } from '$lib/api/types';
 import { BLUEMOJI_ITEM, bluemojiRefOf } from './bluemoji';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
-	PROFILE = 'com.suibari.nagi.profile';
+	PROFILE = 'com.suibari.nagi.profile',
+	CHANNEL = 'com.suibari.nagi.channel';
 const current = () => {
 	const value = get(session);
 	if (!value) throw new Error('Authentication required');
@@ -40,6 +41,10 @@ export type PostDraft = {
 	linkCards: LinkCardDraft[];
 	/** こっそりモード。true のトップレベル投稿はグローバル/全肯定TLに出さない。 */
 	kossori?: boolean;
+	/** 所属チャンネルへの参照。返信は親の channel を引き継ぐ。 */
+	channel?: { uri: string; cid: string };
+	/** true なら CH 限定＝グローバルTL非表示。 */
+	channelOnly?: boolean;
 };
 
 export function preparePostDraft(
@@ -50,6 +55,8 @@ export function preparePostDraft(
 	linkCards: LinkCardDraft[] = [],
 	mentions: MentionSelection[] = [],
 	kossori = false,
+	channel?: { uri: string; cid: string },
+	channelOnly = false,
 ): PostDraft {
 	const leadingWhitespace = text.length - text.trimStart().length;
 	const source = text.trim();
@@ -71,6 +78,8 @@ export function preparePostDraft(
 		attachments: [...attachments],
 		linkCards: linkCards.slice(0, 4).map((card) => ({ ...card })),
 		...(kossori ? { kossori: true } : {}),
+		...(channel ? { channel } : {}),
+		...(channel && channelOnly ? { channelOnly: true } : {}),
 	};
 }
 
@@ -200,6 +209,8 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			langs: draft.langs,
 			createdAt: draft.createdAt,
 			...(draft.kossori && { kossori: true }),
+			...(draft.channel && { channel: draft.channel }),
+			...(draft.channel && draft.channelOnly && { channelOnly: true }),
 			...(draft.reply && { reply: draft.reply }),
 			// ニュース引用はNagiでは専用カードを描画する。linkCardsはBluesky変換用だけに使う。
 			...(cards.length && draft.quote?.uri.split('/')[3] !== 'com.suibari.nagi.news' && { linkCards: cards }),
@@ -253,6 +264,38 @@ export async function createReaction(
 export async function deleteRecord(collection: string, rkey: string) {
 	const s = current();
 	return new Agent(s).com.atproto.repo.deleteRecord({ repo: s.did, collection, rkey });
+}
+/**
+ * チャンネルを作成する。誰でも作成でき、作成者が所有者（レコードは作成者の PDS）。
+ * banner はアバターと同じく AvatarCropper で切り出した webp Blob をアップロードして載せる。
+ */
+export async function createChannel(input: {
+	name: string;
+	description?: string;
+	banner?: Blob;
+}) {
+	const s = current();
+	const agent = new Agent(s);
+	const banner = input.banner
+		? (await agent.com.atproto.repo.uploadBlob(input.banner, { encoding: input.banner.type }))
+				.data.blob
+		: undefined;
+	return agent.com.atproto.repo.createRecord({
+		repo: s.did,
+		collection: CHANNEL,
+		validate: false,
+		record: {
+			$type: CHANNEL,
+			name: input.name,
+			...(input.description ? { description: input.description } : {}),
+			...(banner ? { banner } : {}),
+			createdAt: new Date().toISOString(),
+		},
+	});
+}
+/** チャンネル削除。所有者だけが自分の PDS のレコードを消せる。所属投稿は残る。 */
+export async function deleteChannel(rkey: string) {
+	return deleteRecord(CHANNEL, rkey);
 }
 export async function deleteAllNagiRecords() {
 	const s = current();

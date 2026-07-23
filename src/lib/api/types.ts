@@ -58,6 +58,10 @@ export type PostView = {
 	isAffirmation: boolean;
 	/** こっそりモード。グローバル/全肯定TLには出ず、プロフィール・スレッドでのみ見える。 */
 	kossori?: boolean;
+	/** 所属チャンネル（あれば）。バッジ表示・返信時の継承元に使う。 */
+	channel?: { uri: string; cid: string; name?: string };
+	/** CH 限定投稿（グローバル非表示）か。 */
+	channelOnly?: boolean;
 	deleted?: boolean;
 	/** Client-only state; never returned by the AppView API. */
 	optimisticState?: 'sending' | 'indexing';
@@ -110,3 +114,17 @@ export type NotificationView = {
 	readAt?: string;
 };
 export type SearchActorsResult = { actors: ActorView[] };
+/** ユーザーが作るチャンネルのビュー。banner は AppView の blob プロキシへの相対パス。 */
+export type ChannelView = {
+	uri: string;
+	cid: string;
+	did: string;
+	name: string;
+	description?: string;
+	banner?: string;
+	createdAt: string;
+	indexedAt: string;
+	/** 最新投稿時刻（活動順・過疎判定用）。投稿ゼロなら付かない。 */
+	lastPostAt?: string;
+};
+export type ChannelsPage = { channels: ChannelView[]; cursor?: string; hasMore: boolean };

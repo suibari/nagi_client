@@ -5,6 +5,7 @@ export type NavItem = { href: string; label: () => string; icon: string };
 export const formatUnread = (count: number) => (count > 99 ? '99+' : String(count));
 export const navItems: NavItem[] = [
 	{ href: '/', label: m.navFeed, icon: 'home' },
+	{ href: '/channels', label: m.navChannels, icon: 'hash' },
 	{ href: '/notifications', label: m.navNotifications, icon: 'bell' },
 	{ href: '/settings', label: m.navSettings, icon: 'settings' },
 ];
