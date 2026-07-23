@@ -185,6 +185,23 @@ export const translatePost = (uri: string, targetLang: string) =>
 		{ method: 'POST', body: JSON.stringify({ uri, targetLang }) },
 		'none',
 	);
+// 任意アプリ連携のフィールド選択補助。publish 済み Lexicon のスキーマを AppView 経由で解決する
+// （DNS TXT 解決はブラウザ不可のためサーバ側で行う）。未解決なら resolved:false。認証不要。
+export const resolveLexicon = (nsid: string) =>
+	call<{ resolved: boolean; nsid: string; schema?: unknown }>(
+		'com.suibari.nagi.resolveLexicon',
+		`/xrpc/com.suibari.nagi.resolveLexicon?nsid=${encodeURIComponent(nsid)}`,
+		{},
+		'none',
+	);
+// アプリの favicon を解決する（連携設定時に1回呼び、結果 URL をレコードへ保存）。認証不要。
+export const getAppIcon = (url: string) =>
+	call<{ iconUrl?: string }>(
+		'com.suibari.nagi.getAppIcon',
+		`/xrpc/com.suibari.nagi.getAppIcon?url=${encodeURIComponent(url)}`,
+		{},
+		'none',
+	);
 export const deleteAccountData = () =>
 	call<{ success: true }>(
 		'com.suibari.nagi.deleteAccountData',

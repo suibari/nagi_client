@@ -7,6 +7,7 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import ActorBadges from '$lib/components/ActorBadges.svelte';
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
+	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -107,6 +108,7 @@
 			>
 			{#if joined}<span>{m.profileJoinedSince({ date: joined })}</span>{/if}
 		</div>
+		<ProfileAppLinks did={profile?.did} />
 	</header>
 	<nav class="profile-tabs" aria-label={m.profileTabsAria()}>
 		{#each tabs as t (t.id)}
