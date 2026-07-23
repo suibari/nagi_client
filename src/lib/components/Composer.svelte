@@ -34,7 +34,6 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let kossori = $state(false);
-	let channelOnly = $state(false);
 	let dismissedUrls = $state<string[]>([]);
 	let draftListOpen = $state(false);
 	let draftError = $state('');
@@ -58,7 +57,6 @@
 		mentions = [];
 		dismissedUrls = [];
 		kossori = false;
-		channelOnly = false;
 	}
 
 	async function saveDraft() {
@@ -118,7 +116,6 @@
 			mentions,
 			kossori,
 			channel ? { uri: channel.uri, cid: channel.cid } : undefined,
-			channelOnly,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did);
 		busy = true;
@@ -167,10 +164,10 @@
 		{#if channel}
 			<div class="channel-only-row">
 				<ToggleSwitch
-					checked={channelOnly}
+					checked={kossori}
 					label={m.composerChannelOnly()}
 					disabled={busy}
-					onchange={(value) => (channelOnly = value)}
+					onchange={(value) => (kossori = value)}
 				/>
 			</div>
 		{/if}
@@ -178,16 +175,18 @@
 			<span
 				>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
 			>
-			<button
-				class="icon-action kossori-toggle"
-				class:active={kossori}
-				type="button"
-				disabled={busy}
-				aria-pressed={kossori}
-				aria-label={m.composerKossoriAria()}
-				title={m.composerKossoriAria()}
-				onclick={() => (kossori = !kossori)}><Icon name="hide" size={18} /></button
-			>
+			{#if !channel}
+				<button
+					class="icon-action kossori-toggle"
+					class:active={kossori}
+					type="button"
+					disabled={busy}
+					aria-pressed={kossori}
+					aria-label={m.composerKossoriAria()}
+					title={m.composerKossoriAria()}
+					onclick={() => (kossori = !kossori)}><Icon name="hide" size={18} /></button
+				>
+			{/if}
 			{#if drafts.count}
 				<button
 					class="icon-action draft-open"

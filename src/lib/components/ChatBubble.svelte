@@ -113,9 +113,9 @@
 			attachments,
 			linkCards,
 			mentions,
-			false,
+			// 親が「グローバルに出さない」（kossori、または旧データの channelOnly）なら返信も kossori 継承。
+			inheritedChannel ? Boolean(post.kossori) || Boolean(post.channelOnly) : false,
 			inheritedChannel,
-			inheritedChannel ? Boolean(post.channelOnly) : false,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),

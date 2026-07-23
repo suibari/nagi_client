@@ -123,6 +123,8 @@ function buildEmbed(assets: PostAssets) {
  * blob は Nagi 投稿でアップロード済みのものを使い回す（同一リポジトリ・同一サイズ上限）。
  */
 export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
+	// 「グローバルに出さない」投稿（こっそり）は Bluesky にもクロスポストしない。
+	if (draft.kossori) return;
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);
