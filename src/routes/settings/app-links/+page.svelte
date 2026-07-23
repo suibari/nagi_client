@@ -305,6 +305,21 @@
 					/>
 					{#if editor.expanded}
 						<div class="editor">
+							<label class="field">
+								<span>{m.appLinksLabelLabel()}</span>
+								<input type="text" placeholder={editor.collection} bind:value={editor.label} />
+							</label>
+
+							<label class="field">
+								<span>{m.appLinksAppUriLabel()}</span>
+								<span class="with-button">
+									<input type="url" placeholder="https://" bind:value={editor.appUri} />
+									<button type="button" disabled={!editor.appUri.trim()} onclick={() => refetchIcon(editor)}>
+										{m.appLinksResolveIcon()}
+									</button>
+								</span>
+							</label>
+
 							{#if editor.loading}
 								<p class="muted">{m.appLinksLoadingSample()}</p>
 							{:else if !editor.record}
@@ -322,18 +337,6 @@
 										</div>
 									{/each}
 								</div>
-							{/if}
-
-							{#if !editor.iconUrl}
-								<label class="field icon-source">
-									<span>{m.appLinksIconSourceLabel()}</span>
-									<span class="with-button">
-										<input type="url" placeholder="https://" bind:value={editor.appUri} />
-										<button type="button" disabled={!editor.appUri.trim()} onclick={() => refetchIcon(editor)}>
-											{m.appLinksResolveIcon()}
-										</button>
-									</span>
-								</label>
 							{/if}
 
 							<button type="button" class="remove" onclick={() => removeLink(i)}>{m.appLinksRemove()}</button>
@@ -445,11 +448,11 @@
 		gap: 0.25rem;
 		font-size: 0.9rem;
 	}
-	.icon-source .with-button {
+	.field .with-button {
 		display: flex;
 		gap: 0.4rem;
 	}
-	.icon-source .with-button input {
+	.field .with-button input {
 		flex: 1;
 		min-inline-size: 0;
 	}

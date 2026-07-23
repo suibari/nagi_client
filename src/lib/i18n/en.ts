@@ -340,7 +340,7 @@ export const en: Messages = {
 	appLinksNoSample: 'No records found for this collection.',
 	appLinksDiscoveredHint: 'Collections in your repository:',
 	appLinksLabelLabel: 'Display name (app name)',
-	appLinksAppUriLabel: 'App URL (icon source)',
+	appLinksAppUriLabel: 'App URL (link target for the app name, and icon source)',
 	appLinksResolveIcon: 'Fetch icon',
 	appLinksResolvingIcon: 'Fetching…',
 	appLinksIconResolved: 'Icon fetched',

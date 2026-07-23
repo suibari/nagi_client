@@ -360,7 +360,7 @@ export const ja = {
 	appLinksNoSample: 'このコレクションのレコードが見つかりませんでした。',
 	appLinksDiscoveredHint: 'あなたのリポジトリにあるコレクション:',
 	appLinksLabelLabel: '表示名（アプリ名）',
-	appLinksAppUriLabel: 'アプリのURL（アイコンの取得元）',
+	appLinksAppUriLabel: 'アプリのURL（アプリ名のリンク先・アイコンの取得元）',
 	appLinksResolveIcon: 'アイコンを取得',
 	appLinksResolvingIcon: '取得中…',
 	appLinksIconResolved: 'アイコンを取得しました',
