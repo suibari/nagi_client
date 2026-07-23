@@ -26,6 +26,8 @@
 		normalizeSupportedLanguage,
 	} from '$lib/i18n/languagePreferences.svelte';
 	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
+	import { tick } from 'svelte';
+	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	let {
 		post,
 		ondeleted,
@@ -51,15 +53,11 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let kossoriBusy = $state(false);
+	let postRow: HTMLDivElement;
 	let mine = $derived($session?.did === post.author.did);
 	let topLevel = $derived(!post.reply);
 	let optimistic = $derived(Boolean(post.optimisticState));
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
-	// at://<did>/<collection>/<rkey> のチャンネル URI から /channels/<did>/<rkey> を作る。
-	const channelHref = (uri: string) => {
-		const rest = uri.slice('at://'.length).split('/');
-		return `/channels/${rest[0]}/${rest[2]}`;
-	};
 	// 外国語の投稿にだけ「選択したプロバイダーで翻訳」ボタンを出す。
 	let translateSourceLang = $derived(normalizeSupportedLanguage(post.langs?.[0]));
 	let canTranslateExternally = $derived(
@@ -90,6 +88,15 @@
 			composeMode = mode;
 		}
 	}
+	const postHref = (uri: string) => {
+		const [did, , rkey] = uri.slice('at://'.length).split('/');
+		return `/thread/${did}/${rkey}`;
+	};
+	const scrollBehavior = (): ScrollBehavior =>
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+	function scrollTo(element?: Element | null) {
+		element?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+	}
 	async function submitPost() {
 		if (
 			!composeMode ||
@@ -99,7 +106,12 @@
 		)
 			return;
 		const mode = composeMode;
+		postFollowNotice.clear();
 		const subject = { uri: post.uri, cid: post.cid };
+		// ネスト返信でも最初のルートを維持することで、公開範囲を含むスレッド設定を
+		// 途中の返信が上書きしないようにする。引用は新しいスレッドなので継承しない。
+		const reply =
+			mode === 'reply' ? { root: post.reply?.root ?? subject, parent: subject } : undefined;
 		// 返信は親の所属チャンネルを継承する（Misskey 同様、返信も CH TL に並ぶ）。
 		// 引用は通常投稿として扱い、引用元の CH には入れない。
 		const inheritedChannel =
@@ -108,18 +120,21 @@
 				: undefined;
 		const draft = preparePostDraft(
 			composeText,
-			mode === 'reply' ? { root: subject, parent: subject } : undefined,
+			reply,
 			mode === 'quote' ? subject : undefined,
 			attachments,
 			linkCards,
 			mentions,
-			// 親が「グローバルに出さない」（kossori、または旧データの channelOnly）なら返信も kossori 継承。
-			inheritedChannel ? Boolean(post.kossori) || Boolean(post.channelOnly) : false,
+			// こっそりはスレッドルートだけが所有するため、返信レコードへ複製しない。
+			false,
 			inheritedChannel,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),
 			...(mode === 'quote' ? { quote: post } : {}),
+			...(inheritedChannel && post.channel ? { channel: post.channel } : {}),
+			threadKossori:
+				mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori ?? post.channelOnly) : false,
 		});
 		posting = true;
 		postError = '';
@@ -128,13 +143,24 @@
 		linkCards = [];
 		mentions = [];
 		composeMode = undefined;
+		await tick();
+		const optimisticTarget = document.querySelector(`[data-optimistic-key="${optimisticId}"]`);
+		const followedImmediately = Boolean(optimisticTarget);
+		scrollTo(optimisticTarget);
 		try {
 			const response = await createPost(draft);
 			optimisticPosts.markCreated(optimisticId, response.data);
 			await Promise.resolve(onposted?.()).catch(() => undefined);
+			if (!followedImmediately) {
+				// フィルター外の投稿で画面を自動遷移すると閲覧中の文脈を失うため、
+				// 明示的な導線だけを提示し、移動するかはユーザーに委ねる。
+				postFollowNotice.show(postHref(response.data.uri));
+			}
 		} catch (error) {
 			optimisticPosts.remove(optimisticId);
 			postError = error instanceof Error ? error.message : m.postFailed();
+			await tick();
+			scrollTo(postRow);
 		} finally {
 			posting = false;
 		}
@@ -178,46 +204,32 @@
 	}
 </script>
 
-<div class="post-row" class:mine class:bot={post.isBot}>
+<div class="post-row" class:mine class:bot={post.isBot} bind:this={postRow}>
 	<a href={`/profile/${post.author.did}`} aria-label={m.viewProfileAria()}
 		><Avatar actor={post.author} /></a
 	>
 	<div class="bubble" class:sending={optimistic}>
 		<div class="meta">
-			<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
-			><ActorBadges actor={post.author} /><time>
+			<div class="meta-author">
+				<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a>
+				<div class="meta-badges"><ActorBadges actor={post.author} /></div>
+			</div>
+			<time>
 				{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
-					month: 'short',
-					day: 'numeric',
-					hour: '2-digit',
-					minute: '2-digit',
-				})}{:else}<a href={threadHref}
-					>{new Date(post.createdAt).toLocaleString(dateLocale(), {
 						month: 'short',
 						day: 'numeric',
 						hour: '2-digit',
 						minute: '2-digit',
-					})}</a
-				>{/if}</time
+					})}{:else}<a href={threadHref}
+						>{new Date(post.createdAt).toLocaleString(dateLocale(), {
+							month: 'short',
+							day: 'numeric',
+							hour: '2-digit',
+							minute: '2-digit',
+						})}</a
+					>{/if}</time
 			>
 		</div>
-		{#if post.kossori || post.channel}
-			<div class="post-flags">
-				{#if post.channel}
-					<a
-						class="channel-badge"
-						href={channelHref(post.channel.uri)}
-						aria-label={m.channelBadgeAria({ name: post.channel.name ?? '' })}
-						><Icon name="hash" size={12} />{post.channel.name ?? m.navChannels()}</a
-					>
-				{/if}
-				{#if post.kossori}
-					<span class="kossori-badge" title={m.kossoriBadgeAria()} aria-label={m.kossoriBadgeAria()}
-						><Icon name="hide" size={12} />{m.kossoriBadge()}</span
-					>
-				{/if}
-			</div>
-		{/if}
 		<TranslateToggle
 			uri={post.uri}
 			text={post.text}
@@ -237,13 +249,13 @@
 			</div>{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
 		{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} />{/if}
 		{#if !displayOnly}{#if optimistic}
-			<div class="post-sending" role="status" aria-live="polite">
-				<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
-				<span>{m.postSending()}</span>
-			</div>
-		{:else}
-			<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
-		{/if}{/if}
+				<div class="post-sending" role="status" aria-live="polite">
+					<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
+					<span>{m.postSending()}</span>
+				</div>
+			{:else}
+				<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
+			{/if}{/if}
 		{#if !displayOnly && !post.deleted && !optimistic}
 			<div class="post-actions">
 				<button

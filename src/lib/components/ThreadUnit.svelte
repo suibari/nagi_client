@@ -3,6 +3,7 @@
 	import ChatBubble from './ChatBubble.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Avatar from './Avatar.svelte';
+	import ThreadFlags from './ThreadFlags.svelte';
 	import { onMount } from 'svelte';
 	let {
 		item,
@@ -28,9 +29,25 @@
 	let pendingStatus = $derived(
 		item.botReplyState === 'processing' ? m.botThinking() : m.botWaiting(),
 	);
+	let channel = $derived(item.channel ?? item.replyParent?.channel ?? item.botReply?.channel);
+	let threadKossori = $derived(
+		Boolean(
+			item.threadKossori ??
+			item.replyParent?.threadKossori ??
+			item.botReply?.threadKossori ??
+			item.kossori ??
+			item.channelOnly,
+		),
+	);
 </script>
 
-<article class="thread-unit" class:optimistic={Boolean(item.optimisticState)}>
+<article
+	class="thread-unit"
+	class:optimistic={Boolean(item.optimisticState)}
+	data-post-uri={item.uri}
+	data-optimistic-key={item.optimisticKey}
+>
+	<ThreadFlags {channel} kossori={threadKossori} />
 	{#if item.replyParent}
 		<ChatBubble post={item.replyParent} {ondeleted} {onposted} />
 		<div class="thread-reply"><ChatBubble post={item} {ondeleted} {onposted} /></div>

@@ -10,7 +10,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	const feed = new Feed(
 		(cursor) => getAffirmation(cursor),
-		(item) => item.isAffirmation && !item.kossori,
+		(item) => item.isAffirmation && !item.threadKossori,
 	);
 	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {

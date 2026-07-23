@@ -35,6 +35,7 @@ export type AspectRatio = { width: number; height: number };
 export type PostImage = { url: string; alt: string; aspectRatio?: AspectRatio };
 export type Facet = { index: { byteStart: number; byteEnd: number }; features: unknown[] };
 export type LinkCardView = { uri: string; title: string; description?: string; thumb?: string };
+export type StrongRef = { uri: string; cid: string };
 export type NewsView = {
 	uri: string; cid: string; articleId: string; url: string; title: string;
 	sourceName?: string; sourceUrl?: string; publishedAt?: string; botComment: string;
@@ -49,15 +50,17 @@ export type PostView = {
 	langs?: string[];
 	createdAt: string;
 	indexedAt: string;
-	reply?: { root?: string; parent: string };
+	reply?: { root: StrongRef; parent: StrongRef };
 	images?: PostImage[];
 	linkCards?: LinkCardView[];
 	quote?: { kind: 'post'; post: PostView } | { kind: 'news'; news: NewsView };
 	reactions: ReactionView[];
 	isBot: boolean;
 	isAffirmation: boolean;
-	/** こっそりモード。グローバル/全肯定TLには出ず、プロフィール・スレッドでのみ見える。 */
+	/** このレコード自身のこっそり値。新規データではスレッドルートだけが持つ。 */
 	kossori?: boolean;
+	/** ルート投稿から解決した、スレッド全体の有効なこっそり状態。 */
+	threadKossori?: boolean;
 	/** 所属チャンネル（あれば）。バッジ表示・返信時の継承元に使う。 */
 	channel?: { uri: string; cid: string; name?: string };
 	/** CH 限定投稿（グローバル非表示）か。 */
@@ -65,6 +68,8 @@ export type PostView = {
 	deleted?: boolean;
 	/** Client-only state; never returned by the AppView API. */
 	optimisticState?: 'sending' | 'indexing';
+	/** Client-only stable DOM key used while an optimistic post changes URI/CID. */
+	optimisticKey?: string;
 };
 export type BotReplyState = 'pending' | 'processing' | 'posted' | 'failed';
 export type FeedItem = PostView & {

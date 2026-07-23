@@ -7,6 +7,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { goto } from '$app/navigation';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
 	let thread = $state<ThreadView>();
 	let error = $state('');
 	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
@@ -16,7 +17,9 @@
 		thread = next;
 	}
 	let replies = $derived([
-		...optimisticPosts.items.filter((item) => item.reply?.parent === uri),
+		...optimisticPosts.items.filter(
+			(item) => item.reply?.root.uri === uri || item.reply?.parent.uri === uri,
+		),
 		...(thread?.replies ?? []).filter(
 			(reply) => !optimisticPosts.items.some((item) => item.uri === reply.uri),
 		),
@@ -34,7 +37,9 @@
 		const timer = setInterval(() => {
 			if (
 				document.visibilityState === 'visible' &&
-				optimisticPosts.items.some((item) => item.reply?.parent === uri)
+				optimisticPosts.items.some(
+					(item) => item.reply?.root.uri === uri || item.reply?.parent.uri === uri,
+				)
 			)
 				void refreshThread().catch(() => undefined);
 		}, 3_000);
@@ -51,9 +56,19 @@
 	{:else if !thread}<div class="state">{m.loading()}</div>
 	{:else}
 		<article class="thread-unit">
+			<ThreadFlags
+				channel={thread.post.channel}
+				kossori={Boolean(
+					thread.post.threadKossori ?? thread.post.kossori ?? thread.post.channelOnly,
+				)}
+			/>
 			<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
 			{#each replies as reply (reply.uri)}
-				<div class="thread-reply">
+				<div
+					class="thread-reply"
+					data-post-uri={reply.uri}
+					data-optimistic-key={reply.optimisticKey}
+				>
 					<ChatBubble post={reply} ondeleted={postDeleted} onposted={refreshThread} />
 				</div>
 			{/each}

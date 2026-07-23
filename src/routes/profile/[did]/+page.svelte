@@ -120,7 +120,9 @@
 		{/each}
 	</nav>
 	{#if tab === 'diary'}
-		<section class="timeline"><DiaryCalendar {did} initialDate={initialDiaryDate} /></section>
+		<section class="timeline">
+			<DiaryCalendar {did} initialDate={initialDiaryDate} botActor={feed?.botActor} />
+		</section>
 	{:else}
 	<section class="timeline" aria-busy={feed?.loading}>
 		{#if !feed || (feed.loading && !feed.visibleItems.length)}<div class="state">{m.loading()}</div>

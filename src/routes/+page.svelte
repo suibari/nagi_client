@@ -11,7 +11,7 @@
 	// こっそりポストは共有TLに載せない。楽観表示でも一瞬たりとも出さない。
 	const feed = new Feed(
 		(cursor) => getTimeline(cursor),
-		(item) => !item.kossori,
+		(item) => !item.threadKossori,
 	);
 	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {

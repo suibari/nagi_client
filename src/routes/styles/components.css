@@ -398,6 +398,13 @@
 	display: grid;
 	gap: 0;
 }
+.thread-flags {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin-bottom: 10px;
+}
 .post-row {
 	display: flex;
 	gap: 11px;
@@ -506,14 +513,20 @@
 }
 .meta {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	flex-wrap: wrap;
 	gap: 4px 8px;
 	font-size: 12px;
 	color: var(--text-muted);
 	min-width: 0;
 }
-.meta > a:first-child {
+.meta-author {
+	display: grid;
+	gap: 3px;
+	flex: 1 1 0;
+	min-width: 0;
+}
+.meta-author > a:first-child {
 	flex: 0 1 auto;
 	min-width: 0;
 	max-width: 100%;
@@ -522,6 +535,18 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+.meta-badges {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+.mine .meta-author {
+	justify-items: end;
+}
+.mine .meta-badges {
+	justify-content: flex-end;
 }
 .meta .handle {
 	color: var(--text-faint);
@@ -679,14 +704,7 @@
 	font-weight: 800;
 	white-space: nowrap;
 }
-.post-flags {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	flex-wrap: wrap;
-	margin-top: 7px;
-}
-/* 投稿に付く所属チャンネルのバッジ（グローバルTLからの導線）。 */
+/* スレッドの所属チャンネルを示すバッジ（グローバルTLからの導線）。 */
 .channel-badge {
 	display: inline-flex;
 	align-items: center;
@@ -828,6 +846,16 @@
 
 .thread-reply {
 	margin-top: 10px;
+}
+.thread-unit,
+.thread-reply {
+	scroll-margin-top: 16px;
+}
+@media (max-width: 767px) {
+	.thread-unit,
+	.thread-reply {
+		scroll-margin-top: calc(var(--mobile-header-h) + 8px);
+	}
 }
 
 /* botたん pending / failed states */

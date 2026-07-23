@@ -116,7 +116,10 @@
 			kossori,
 			channel ? { uri: channel.uri, cid: channel.cid } : undefined,
 		);
-		const optimisticId = optimisticPosts.add(draft, $session.did);
+		const optimisticId = optimisticPosts.add(draft, $session.did, {
+			...(channel && { channel }),
+			threadKossori: kossori,
+		});
 		busy = true;
 		error = '';
 		warning = '';

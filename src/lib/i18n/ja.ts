@@ -12,6 +12,9 @@ export const ja = {
 	loadFailed: '読み込めませんでした',
 	login: 'ログイン',
 	cancel: 'キャンセル',
+	postCreated: '投稿しました',
+	viewCreatedPost: '投稿を見る',
+	dismissNotice: '通知を閉じる',
 
 	// nav
 	navFeed: 'フィード',

@@ -22,7 +22,16 @@ class OptimisticPosts {
 		return this.#actors.get(did) ?? { did, handle: did };
 	}
 
-	add(draft: PostDraft, did: string, context: { replyParent?: PostView; quote?: PostView } = {}) {
+	add(
+		draft: PostDraft,
+		did: string,
+		context: {
+			replyParent?: PostView;
+			quote?: PostView;
+			channel?: PostView['channel'];
+			threadKossori?: boolean;
+		} = {},
+	) {
 		const id = crypto.randomUUID();
 		const objectUrls: string[] = [];
 		const localUrl = (blob?: Blob) => {
@@ -40,7 +49,7 @@ class OptimisticPosts {
 			langs: draft.langs,
 			createdAt: draft.createdAt,
 			indexedAt: draft.createdAt,
-			...(draft.reply && { reply: { root: draft.reply.root.uri, parent: draft.reply.parent.uri } }),
+			...(draft.reply && { reply: draft.reply }),
 			...(draft.attachments.length && {
 				images: draft.attachments.map((attachment) => ({
 					url: localUrl(attachment.blob)!,
@@ -59,10 +68,15 @@ class OptimisticPosts {
 			...(context.quote && { quote: { kind: 'post' as const, post: context.quote } }),
 			...(context.replyParent && { replyParent: context.replyParent }),
 			...(draft.kossori && { kossori: true }),
+			...((context.channel ?? draft.channel) && {
+				channel: context.channel ?? draft.channel,
+			}),
+			...((context.threadKossori ?? draft.kossori) && { threadKossori: true }),
 			reactions: [],
 			isBot: false,
 			isAffirmation: false,
 			optimisticState: 'sending',
+			optimisticKey: id,
 		};
 		this.entries = [{ id, item, objectUrls }, ...this.entries];
 		return id;

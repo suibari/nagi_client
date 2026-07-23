@@ -17,13 +17,36 @@
 
 	// 単一表示（従来レイアウト）は 1 レコードのときだけ。複数はコンパクトなリスト行で並べる。
 	let single = $derived(link.records.length === 1 ? link.records[0] : null);
+	const COLLAPSED_HEIGHT = 160;
+	let content: HTMLDivElement;
+	let expanded = $state(false);
+	let overflowing = $state(false);
+	let contentId = $derived(`app-link-content-${link.collection.replace(/[^a-zA-Z0-9_-]/g, '-')}`);
+
+	$effect(() => {
+		const target = content;
+		if (!target) return;
+		void link;
+		const measure = () => {
+			overflowing = target.scrollHeight > COLLAPSED_HEIGHT + 1;
+			if (!overflowing) expanded = false;
+		};
+		measure();
+		if (!('ResizeObserver' in window)) return;
+		const observer = new ResizeObserver(measure);
+		observer.observe(target);
+		return () => observer.disconnect();
+	});
 </script>
 
 {#snippet fieldList(fields: AppLinkView['records'][number]['fields'])}
 	<ul class="fields">
 		{#each fields as f, i (i)}
 			<li class="field {f.role}">
-				{#if f.role === 'datetime'}<Icon name="clock" size={13} />{:else if f.role === 'url'}<Icon name="link" size={13} />{/if}
+				{#if f.role === 'datetime'}<Icon name="clock" size={13} />{:else if f.role === 'url'}<Icon
+						name="link"
+						size={13}
+					/>{/if}
 				{#if f.role === 'url'}
 					<a href={f.value} target="_blank" rel="noopener noreferrer">{f.value}</a>
 				{:else}
@@ -50,34 +73,65 @@
 				<span class="icon fallback"><Icon name="apps" size={14} /></span>
 			{/if}
 			{#if link.appUri}
-				<a class="name" href={link.appUri} target="_blank" rel="noopener noreferrer">{link.label}</a>
+				<a class="name" href={link.appUri} target="_blank" rel="noopener noreferrer">{link.label}</a
+				>
 			{:else}
 				<span class="name">{link.label}</span>
 			{/if}
 			{#if editable}
-				<button type="button" class="edit" aria-label={m.appLinksEdit()} title={m.appLinksEdit()} aria-pressed={editing} onclick={() => onedit?.()}>
+				<button
+					type="button"
+					class="edit"
+					aria-label={m.appLinksEdit()}
+					title={m.appLinksEdit()}
+					aria-pressed={editing}
+					onclick={() => onedit?.()}
+				>
 					<Icon name="edit" size={16} />
 				</button>
 			{/if}
 		</header>
 
-		{#if single}
-			{#if single.fields.length}
-				{@render fieldList(single.fields)}
+		<div
+			class="content"
+			class:collapsed={overflowing && !expanded}
+			id={contentId}
+			bind:this={content}
+		>
+			{#if single}
+				{#if single.fields.length}
+					{@render fieldList(single.fields)}
+				{/if}
+			{:else}
+				<ul class="rows">
+					{#each link.records as rec, i (i)}
+						<li class="row" class:has-thumb={rec.images.length}>
+							{#if rec.images.length}
+								<img
+									class="row-thumb"
+									src={rec.images[0]}
+									alt=""
+									width="36"
+									height="36"
+									loading="lazy"
+								/>
+							{/if}
+							<div class="row-body">
+								{@render fieldList(rec.fields)}
+							</div>
+						</li>
+					{/each}
+				</ul>
 			{/if}
-		{:else}
-			<ul class="rows">
-				{#each link.records as rec, i (i)}
-					<li class="row" class:has-thumb={rec.images.length}>
-						{#if rec.images.length}
-							<img class="row-thumb" src={rec.images[0]} alt="" width="36" height="36" loading="lazy" />
-						{/if}
-						<div class="row-body">
-							{@render fieldList(rec.fields)}
-						</div>
-					</li>
-				{/each}
-			</ul>
+		</div>
+		{#if overflowing}
+			<button
+				type="button"
+				class="expand"
+				aria-expanded={expanded}
+				aria-controls={contentId}
+				onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
+			>
 		{/if}
 	</div>
 </article>
@@ -125,6 +179,21 @@
 		display: flex;
 		flex-direction: column;
 	}
+	.content {
+		position: relative;
+	}
+	.content.collapsed {
+		max-block-size: 160px;
+		overflow: hidden;
+	}
+	.content.collapsed::after {
+		content: '';
+		position: absolute;
+		inset: auto 0 0;
+		height: 42px;
+		pointer-events: none;
+		background: linear-gradient(to bottom, transparent, var(--bg-raised));
+	}
 	header {
 		display: flex;
 		align-items: center;
@@ -171,6 +240,16 @@
 	.edit[aria-pressed='true'] {
 		color: var(--accent);
 		background: var(--bg-inset);
+	}
+	.expand {
+		align-self: flex-start;
+		margin-top: 0.35rem;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--accent-strong);
+		font-size: 0.75rem;
+		font-weight: 700;
 	}
 	.fields {
 		list-style: none;

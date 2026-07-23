@@ -22,7 +22,8 @@
 	let headError = $state('');
 	let feed = $state<Feed>();
 
-	// CH の投稿は channelOnly でも CH TL には出るので、楽観フィルタは掛けない。
+	// CH の投稿はこっそりでも表示するが、別画面で送信中の楽観投稿まで混ざらないよう
+	// 所属チャンネルだけは一致させる。
 	// 閲覧は未認証（AppView 直読み）なのでセッション復元を待つ必要はない。
 	let currentUri = $state('');
 	$effect(() => {
@@ -39,7 +40,10 @@
 					if (target === currentUri)
 						headError = e instanceof Error ? e.message : m.loadFailed();
 				});
-			feed = new Feed((cursor) => getChannelTimeline(target, cursor));
+			feed = new Feed(
+				(cursor) => getChannelTimeline(target, cursor),
+				(item) => item.channel?.uri === target,
+			);
 			feed.load();
 		}
 	});

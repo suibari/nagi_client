@@ -12,6 +12,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
+	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
 
 	let { children } = $props();
 	let checkedDid: string | undefined;
@@ -49,3 +50,4 @@
 	<SidebarRight />
 </div>
 <MobileNav />
+<PostFollowNotice />

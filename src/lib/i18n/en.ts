@@ -11,6 +11,9 @@ export const en: Messages = {
 	loadFailed: 'Could not load',
 	login: 'Log in',
 	cancel: 'Cancel',
+	postCreated: 'Posted',
+	viewCreatedPost: 'View post',
+	dismissNotice: 'Dismiss notification',
 
 	navFeed: 'Feed',
 	navGlobal: 'Global',

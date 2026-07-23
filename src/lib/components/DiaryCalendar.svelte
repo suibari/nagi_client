@@ -1,10 +1,18 @@
 <script lang="ts">
 	import { getDiaries } from '$lib/api/appview';
-	import type { DiaryView } from '$lib/api/types';
+	import type { ActorView, DiaryView, PostView } from '$lib/api/types';
 	import { i18n, m, dateLocale } from '$lib/i18n/i18n.svelte';
-	import RichText from './RichText.svelte';
+	import ChatBubble from './ChatBubble.svelte';
 
-	let { did, initialDate }: { did: string; initialDate?: string } = $props();
+	let {
+		did,
+		initialDate,
+		botActor,
+	}: {
+		did: string;
+		initialDate?: string;
+		botActor?: ActorView;
+	} = $props();
 
 	/** "YYYY-MM" */
 	const monthOf = (date: string) => date.slice(0, 7);
@@ -97,6 +105,28 @@
 		});
 	const entryTitle = (entry: DiaryView) =>
 		i18n.locale === 'ja' ? (entry.titleJa ?? entry.titleEn) : (entry.titleEn ?? entry.titleJa);
+	const diaryPost = $derived.by((): PostView | undefined => {
+		if (!current) return undefined;
+		return {
+			uri: current.uri,
+			cid: current.cid,
+			author:
+				botActor ??
+				({
+					did: 'did:unknown:bot-tan',
+					handle: 'bot-tan',
+					displayName: m.botBadge(),
+					isBot: true,
+				} satisfies ActorView),
+			text: current.text,
+			langs: current.langs,
+			createdAt: current.createdAt,
+			indexedAt: current.indexedAt,
+			reactions: [],
+			isBot: true,
+			isAffirmation: false,
+		};
+	});
 </script>
 
 <section class="diary card">
@@ -146,13 +176,13 @@
 
 		{#if loading}
 			<div class="state">{m.loading()}</div>
-		{:else if current}
+		{:else if current && diaryPost}
 			<article class="diary-entry">
 				<h3>{longDate(current.date)}</h3>
 				{#if entryTitle(current)}
 					<p class="diary-title">{m.diaryTitleLabel({ title: entryTitle(current)! })}</p>
 				{/if}
-				<div class="post-body"><RichText text={current.text} /></div>
+				<ChatBubble post={diaryPost} displayOnly />
 			</article>
 		{:else if entries.length}
 			<p class="diary-hint">{m.diaryPickDate()}</p>
