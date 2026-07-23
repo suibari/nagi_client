@@ -1,21 +1,23 @@
 /**
- * 任意 Atmosphere アプリ連携。プロフィール所有者本人が「どの collection の・どのキーを・
- * どうラベル付けして出すか」を自分の PDS の com.suibari.nagi.appLinks（rkey=self）に curate する。
- * 表示側は対象 DID の PDS を直読みして描画する（バックエンド非依存）。
+ * 任意 Atmosphere アプリ連携。プロフィール所有者本人が「どの collection の・どのキーを出すか」を
+ * 自分の PDS の com.suibari.nagi.appLinks（rkey=self）に curate する。表示側は対象 DID の PDS を
+ * 直読みして描画する（バックエンド非依存）。
  *
- * - 設定の読み書き / discovery / サンプル取得は「自分の repo」なので認証済み Agent を使う。
- * - 表示（loadProfileAppLinks）は任意 DID なので pds.ts の未認証直読みを使う。
+ * 描画の役割（値/日時/リンク/画像）はレコードの実値から自動判別するので、ユーザーが設定するのは
+ * 「どのフィールドを表示するか」だけ。設定は表示するキーパスの宣言のみを保存する。
  */
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
-import { resolveLexicon as resolveLexiconApi, getAppIcon as getAppIconApi } from '$lib/api/appview';
-import { listRecords as pdsListRecords, getRecord as pdsGetRecord } from './pds';
+import { dateLocale } from '$lib/i18n/i18n.svelte';
+import { getAppIcon as getAppIconApi } from '$lib/api/appview';
+import { listRecords as pdsListRecords, getRecord as pdsGetRecord, resolvePdsUrl } from './pds';
 
 export const APP_LINKS = 'com.suibari.nagi.appLinks';
 
-export type AppLinkFieldRole = 'title' | 'value' | 'datetime' | 'url';
-export type AppLinkField = { path: string; label?: string; role: AppLinkFieldRole };
+export type AppLinkFieldRole = 'value' | 'datetime' | 'url' | 'image';
+/** 保存する連携設定。fields は「表示するキーパス」の宣言のみ。 */
+export type AppLinkField = { path: string };
 export type AppLink = {
 	collection: string;
 	label: string;
@@ -38,10 +40,14 @@ const KNOWN_COLLECTIONS = new Set([
 	'app.bsky.feed.post',
 	'app.bsky.feed.like',
 	'app.bsky.feed.repost',
+	'app.bsky.feed.threadgate',
+	'app.bsky.feed.postgate',
 	'app.bsky.graph.follow',
 	'app.bsky.graph.block',
 	'app.bsky.graph.list',
 	'app.bsky.graph.listitem',
+	'app.bsky.graph.starterpack',
+	'chat.bsky.actor.declaration',
 	'com.suibari.nagi.post',
 	'com.suibari.nagi.reaction',
 	'com.suibari.nagi.profile',
@@ -98,32 +104,67 @@ export async function listOwnCollections(): Promise<string[]> {
 	return collections.filter((c) => !KNOWN_COLLECTIONS.has(c)).sort();
 }
 
-export type FlatField = { path: string; sample: string };
+/** 自分の repo の指定 collection の最新1件を取得（設定画面のプレビュー用）。 */
+export async function fetchOwnLatestRecord(collection: string): Promise<Record<string, unknown> | null> {
+	const s = current();
+	const res = await new Agent(s).com.atproto.repo.listRecords({ repo: s.did, collection, limit: 1 });
+	const rec = res.data.records[0];
+	return rec ? (rec.value as Record<string, unknown>) : null;
+}
 
+/** 自分の PDS ベース URL（blob URL 生成用）。 */
+export async function resolveOwnPdsUrl(): Promise<string> {
+	return resolvePdsUrl(current().did);
+}
+
+// ---- 値からの役割判別・整形 -------------------------------------------------
+
+const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+function isBlob(v: unknown): v is { $type?: string; ref?: unknown; mimeType?: string } {
+	return !!v && typeof v === 'object' && (('$type' in v && (v as { $type?: string }).$type === 'blob') || ('ref' in v && 'mimeType' in v));
+}
+export function isImageBlob(v: unknown): boolean {
+	return isBlob(v) && typeof v.mimeType === 'string' && v.mimeType.startsWith('image/');
+}
 /**
- * レコード本体を再帰的に flatten し、[キーパス → サンプル値] の一覧を返す。
- * 配列は先頭要素 [0] のみ展開。blob は "[blob]"。深さ・件数に上限を設ける。
+ * blob の CID 文字列を取り出す。生JSON表現（listRecords の raw fetch）は ref.$link、
+ * @atproto/api の Agent 経由では ref が CID インスタンス（toString で CID 文字列）になる。両対応。
  */
-export function flattenRecord(value: unknown, prefix = '', out: FlatField[] = [], depth = 0): FlatField[] {
-	if (depth > 6 || out.length >= 80 || value === null || value === undefined) return out;
-	if (Array.isArray(value)) {
-		if (value.length) flattenRecord(value[0], `${prefix}[0]`, out, depth + 1);
-		return out;
+function blobCidOf(v: unknown): string | undefined {
+	if (!isBlob(v)) return undefined;
+	const ref = v.ref as { $link?: string; toString?: () => string } | undefined;
+	if (!ref || typeof ref !== 'object') return undefined;
+	if (typeof ref.$link === 'string') return ref.$link;
+	if (typeof ref.toString === 'function') {
+		const s = ref.toString();
+		return s && s !== '[object Object]' ? s : undefined;
 	}
-	if (typeof value === 'object') {
-		const obj = value as Record<string, unknown>;
-		if (obj.$type === 'blob' || (obj.ref && obj.mimeType)) {
-			if (prefix) out.push({ path: prefix, sample: '[blob]' });
-			return out;
-		}
-		for (const [k, v] of Object.entries(obj)) {
-			if (k === '$type') continue;
-			flattenRecord(v, prefix ? `${prefix}.${k}` : k, out, depth + 1);
-		}
-		return out;
+	return undefined;
+}
+export function blobUrl(pdsUrl: string, did: string, cid: string): string {
+	return `${pdsUrl}/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}`;
+}
+
+/** キーパスと実値から描画役割を判別する。表示できない型は null。 */
+export function detectRole(path: string, value: unknown): AppLinkFieldRole | null {
+	if (isImageBlob(value)) return 'image';
+	if (typeof value === 'string') {
+		const key = path.split('.').pop() ?? '';
+		if (DATETIME_RE.test(value) || (/At$/.test(key) && !Number.isNaN(Date.parse(value)))) return 'datetime';
+		if (/^(https?|at):\/\//.test(value)) return 'url';
+		return 'value';
 	}
-	if (prefix) out.push({ path: prefix, sample: String(value).slice(0, 120) });
-	return out;
+	if (typeof value === 'number' || typeof value === 'boolean') return 'value';
+	return null;
+}
+
+function formatValue(role: AppLinkFieldRole, value: unknown): string {
+	if (role === 'datetime') {
+		const d = new Date(String(value));
+		return Number.isNaN(d.valueOf()) ? String(value) : d.toLocaleString(dateLocale());
+	}
+	return String(value).slice(0, 300);
 }
 
 /** flatten キーパスで値を取り出す。"a.b[0].c" 形式に対応。 */
@@ -139,98 +180,142 @@ export function getByPath(root: unknown, path: string): unknown {
 	return cur;
 }
 
-/** 自分の repo の指定 collection の最新1件を取得（設定画面のサンプル表示用）。 */
-export async function fetchOwnLatestRecord(collection: string): Promise<Record<string, unknown> | null> {
-	const s = current();
-	const res = await new Agent(s).com.atproto.repo.listRecords({
-		repo: s.did,
-		collection,
-		limit: 1,
-	});
-	const rec = res.data.records[0];
-	return rec ? (rec.value as Record<string, unknown>) : null;
+// ---- レコードの走査（設定画面のフィールド候補） ----------------------------
+
+export type Leaf = { path: string; value: unknown; role: AppLinkFieldRole };
+
+/** レコード本体を再帰的に走査し、表示可能なリーフ（役割付き）の一覧を返す。配列は先頭のみ。 */
+export function collectLeaves(value: unknown, prefix = '', out: Leaf[] = [], depth = 0): Leaf[] {
+	if (depth > 6 || out.length >= 60 || value === null || value === undefined) return out;
+	if (isBlob(value)) {
+		if (prefix && isImageBlob(value)) out.push({ path: prefix, value, role: 'image' });
+		return out;
+	}
+	if (Array.isArray(value)) {
+		if (value.length) collectLeaves(value[0], `${prefix}[0]`, out, depth + 1);
+		return out;
+	}
+	if (typeof value === 'object') {
+		for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+			if (k === '$type') continue;
+			collectLeaves(v, prefix ? `${prefix}.${k}` : k, out, depth + 1);
+		}
+		return out;
+	}
+	if (prefix) {
+		const role = detectRole(prefix, value);
+		if (role) out.push({ path: prefix, value, role });
+	}
+	return out;
+}
+
+/** サンプル値の短い表示文字列。 */
+export function sampleText(leaf: Leaf): string {
+	if (leaf.role === 'image') return '🖼';
+	if (leaf.role === 'datetime') return formatValue('datetime', leaf.value);
+	return String(leaf.value).slice(0, 80);
 }
 
 /**
- * publish 済み Lexicon のスキーマからフィールド候補を得る（未解決なら空）。サンプル値と併せて
- * フィールド選択 UI を補助する。record 型の properties のキーを返す。
+ * 初期選択するコアフィールドのパス集合: 画像blob・代表テキスト1つ・~At日時。
+ * 代表テキストは createdAt 等を除いた最初の value 文字列。
  */
-export async function resolveSchemaFields(nsid: string): Promise<{ path: string; description?: string }[]> {
-	try {
-		const res = await resolveLexiconApi(nsid);
-		if (!res.resolved || !res.schema) return [];
-		const defs = (res.schema as { defs?: Record<string, unknown> }).defs ?? {};
-		const main = defs.main as { type?: string; record?: { properties?: Record<string, { description?: string }> } } | undefined;
-		const props = main?.type === 'record' ? main.record?.properties : undefined;
-		if (!props) return [];
-		return Object.entries(props).map(([path, def]) => ({ path, description: def?.description }));
-	} catch {
-		return [];
+export function autoSelectFields(record: Record<string, unknown>): string[] {
+	const leaves = collectLeaves(record);
+	const selected: string[] = [];
+	const image = leaves.find((l) => l.role === 'image');
+	if (image) selected.push(image.path);
+	const skip = new Set(['createdAt', 'updatedAt', 'indexedAt']);
+	const rep = leaves.find(
+		(l) => l.role === 'value' && typeof l.value === 'string' && !skip.has(l.path.split('.').pop() ?? ''),
+	);
+	if (rep) selected.push(rep.path);
+	const dt = leaves.find((l) => l.role === 'datetime');
+	if (dt) selected.push(dt.path);
+	return selected;
+}
+
+// ---- 表示用ビューの構築（プロフィール・設定プレビュー共通） ----------------
+
+export type AppLinkFieldView = { role: 'value' | 'datetime' | 'url'; value: string };
+export type AppLinkView = {
+	collection: string;
+	label: string;
+	appUri?: string;
+	iconUrl?: string;
+	image?: string;
+	fields: AppLinkFieldView[];
+};
+
+/** 1連携の設定＋実レコードから表示用ビューを組み立てる。画像は getBlob URL にする。 */
+export function buildLinkView(
+	did: string,
+	pdsUrl: string,
+	link: Pick<AppLink, 'collection' | 'label' | 'appUri' | 'iconUrl' | 'fields'>,
+	record: Record<string, unknown>,
+): AppLinkView {
+	const fields: AppLinkFieldView[] = [];
+	let image: string | undefined;
+	for (const f of link.fields ?? []) {
+		const raw = getByPath(record, f.path);
+		if (raw === null || raw === undefined) continue;
+		const role = detectRole(f.path, raw);
+		if (!role) continue;
+		if (role === 'image') {
+			if (!image) {
+				const cid = blobCidOf(raw);
+				if (cid) image = blobUrl(pdsUrl, did, cid);
+			}
+			continue;
+		}
+		fields.push({ role, value: formatValue(role, raw) });
 	}
+	return {
+		collection: link.collection,
+		label: link.label || link.collection,
+		appUri: link.appUri,
+		iconUrl: link.iconUrl,
+		image,
+		fields,
+	};
 }
 
 /** appUri から favicon を解決する。失敗時は undefined。 */
 export async function resolveAppIcon(appUri: string): Promise<string | undefined> {
 	try {
-		const res = await getAppIconApi(appUri);
-		return res.iconUrl;
+		return (await getAppIconApi(appUri)).iconUrl;
 	} catch {
 		return undefined;
 	}
 }
 
 /**
- * NSID の authority ドメインを推定して Web サイト URL を作る（appUri の初期サジェスト用）。
- * 例: fm.teal.alpha.feed.play → https://feed.alpha.teal.fm 。ユーザーが編集する前提。
+ * NSID から アプリの Web サイト URL を推定する（favicon の取得元／カードのリンク先）。
+ * lexicon の authority は深いサブドメインになりがちで favicon を持たないことが多いので、
+ * 登録可能ドメイン（先頭2セグメントを逆順）を使う。例: fm.teal.alpha.feed.play → https://teal.fm 。
  */
 export function suggestAppUri(nsid: string): string | undefined {
 	const parts = nsid.split('.');
-	if (parts.length < 3) return undefined;
-	const domain = parts.slice(0, -1).reverse().join('.');
-	return `https://${domain}`;
-}
-
-export type AppLinkFieldView = { role: AppLinkFieldRole; label?: string; value: string };
-export type AppLinkView = {
-	label: string;
-	appUri?: string;
-	iconUrl?: string;
-	fields: AppLinkFieldView[];
-};
-
-function renderField(field: AppLinkField, record: Record<string, unknown>): AppLinkFieldView | null {
-	const raw = getByPath(record, field.path);
-	if (raw === null || raw === undefined) return null;
-	let value: string;
-	if (field.role === 'datetime') {
-		const d = new Date(String(raw));
-		value = Number.isNaN(d.valueOf()) ? String(raw) : d.toLocaleString();
-	} else if (typeof raw === 'object') {
-		value = JSON.stringify(raw).slice(0, 200);
-	} else {
-		value = String(raw).slice(0, 300);
-	}
-	return { role: field.role, label: field.label, value };
+	if (parts.length < 2) return undefined;
+	return `https://${parts.slice(0, 2).reverse().join('.')}`;
 }
 
 /**
- * 対象 DID のプロフィールに表示する連携カードを構築する。config と対象レコードを、
- * 対象 DID の PDS から直読みして組み立てる。1連携の取得失敗は握りつぶして他を出す。
+ * 対象 DID のプロフィールに表示する連携カードを構築する。config と対象レコードを対象 DID の
+ * PDS から直読みして組み立てる。1連携の取得失敗は握りつぶして他を出す。
  */
 export async function loadProfileAppLinks(did: string): Promise<AppLinkView[]> {
 	const config = await pdsGetRecord(did, APP_LINKS, 'self');
 	const links = (config?.value?.links as AppLink[] | undefined) ?? [];
 	const enabled = links.filter((l) => l.enabled !== false && l.collection);
+	if (!enabled.length) return [];
+	const pdsUrl = await resolvePdsUrl(did);
 	const views = await Promise.all(
 		enabled.map(async (link): Promise<AppLinkView | null> => {
 			try {
 				const { records } = await pdsListRecords(did, link.collection, { limit: 1 });
 				const record = records[0]?.value;
-				if (!record) return null;
-				const fields = (link.fields ?? [])
-					.map((f) => renderField(f, record))
-					.filter((f): f is AppLinkFieldView => f !== null);
-				return { label: link.label, appUri: link.appUri, iconUrl: link.iconUrl, fields };
+				return record ? buildLinkView(did, pdsUrl, link, record) : null;
 			} catch {
 				return null;
 			}

@@ -1,48 +1,47 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
+	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
+	import AppLinkCard from '$lib/components/AppLinkCard.svelte';
 	import {
 		getOwnAppLinks,
 		putAppLinks,
 		listOwnCollections,
 		fetchOwnLatestRecord,
-		flattenRecord,
-		resolveSchemaFields,
+		resolveOwnPdsUrl,
+		collectLeaves,
+		sampleText,
+		autoSelectFields,
+		buildLinkView,
 		resolveAppIcon,
 		suggestAppUri,
 		type AppLink,
 		type AppLinkFieldRole,
+		type AppLinkView,
 	} from '$lib/atproto/appLinks';
 
-	type Role = '' | AppLinkFieldRole;
-	type FieldRow = { path: string; sample?: string; schema: boolean; role: Role; label: string };
+	type FieldChoice = { path: string; sample: string; role: AppLinkFieldRole; shown: boolean };
 	type LinkEditor = {
 		collection: string;
 		label: string;
 		appUri: string;
 		iconUrl: string;
-		enabled: boolean;
-		rows: FieldRow[];
+		savedPaths: string[];
+		isNew: boolean;
+		record: Record<string, unknown> | null;
+		choices: FieldChoice[];
 		expanded: boolean;
 		loading: boolean;
-		sampleError: boolean;
-		schemaResolved: boolean;
-		iconBusy: boolean;
-		iconError: boolean;
+		loaded: boolean;
 	};
-
-	const roleOptions: { value: Role; label: () => string }[] = [
-		{ value: '', label: m.appLinksRoleNone },
-		{ value: 'title', label: m.appLinksRoleTitle },
-		{ value: 'value', label: m.appLinksRoleValue },
-		{ value: 'datetime', label: m.appLinksRoleDatetime },
-		{ value: 'url', label: m.appLinksRoleUrl },
-	];
 
 	let editors = $state<LinkEditor[]>([]);
 	let discovered = $state<string[]>([]);
+	let discoveredIcons = $state<Record<string, string>>({});
+	let ownDid = $state('');
+	let ownPdsUrl = $state('');
 	let loaded = $state(false);
 	let saving = $state(false);
 	let saveState = $state<'idle' | 'saved' | 'failed'>('idle');
@@ -53,119 +52,185 @@
 			label: link.label ?? '',
 			appUri: link.appUri ?? '',
 			iconUrl: link.iconUrl ?? '',
-			enabled: link.enabled !== false,
-			rows: (link.fields ?? []).map((f) => ({
-				path: f.path,
-				schema: false,
-				role: f.role,
-				label: f.label ?? '',
-			})),
+			savedPaths: (link.fields ?? []).map((f) => f.path),
+			isNew: false,
+			record: null,
+			choices: [],
 			expanded: false,
 			loading: false,
-			sampleError: false,
-			schemaResolved: false,
-			iconBusy: false,
-			iconError: false,
+			loaded: false,
 		};
 	}
+
+	let brokenIcons = $state<Set<string>>(new Set());
+
+	// 未追加の（＝すでに編集中でない）discovery 候補。
+	let availableCollections = $derived(
+		discovered.filter((c) => !editors.some((e) => e.collection === c)),
+	);
+
+	const appHome = (c: string) => suggestAppUri(c) ?? '';
+
+	// アプリ内で「メタ」っぽいコレクションを避けて代表を選ぶ。
+	function pickRep(cols: string[]): string {
+		const meta = /\.(profile|declaration|preference|preferences|settings|status|self)$/;
+		const content = cols.filter((c) => !meta.test(c));
+		const pool = content.length ? content : cols;
+		return [...pool].sort((a, b) => a.split('.').length - b.split('.').length || a.localeCompare(b))[0];
+	}
+
+	// discovery はコレクション単位ではなくアプリ単位でまとめる（同じ favicon が並ぶのを防ぎ、
+	// favicon 解決も 1 アプリ 1 回でレート制限に収める）。favicon が解決したものだけ表示。
+	let appGroups = $derived.by(() => {
+		const map = new Map<string, string[]>();
+		for (const c of availableCollections) {
+			const home = appHome(c);
+			if (!home) continue;
+			(map.get(home) ?? map.set(home, []).get(home)!).push(c);
+		}
+		return [...map.entries()]
+			.map(([home, cols]) => ({ home, rep: pickRep(cols) }))
+			.filter((g) => discoveredIcons[g.home] && !brokenIcons.has(g.home))
+			.sort((a, b) => a.home.localeCompare(b.home));
+	});
 
 	onMount(async () => {
 		if (!$session) {
 			loaded = true;
 			return;
 		}
+		ownDid = $session.did;
 		try {
-			const [links, cols] = await Promise.all([getOwnAppLinks(), listOwnCollections().catch(() => [])]);
+			const [links, cols, pds] = await Promise.all([
+				getOwnAppLinks(),
+				listOwnCollections().catch(() => [] as string[]),
+				resolveOwnPdsUrl().catch(() => ''),
+			]);
 			editors = links.map(toEditor);
 			discovered = cols;
+			ownPdsUrl = pds;
+			// 既存カードのプレビュー用にレコードを先読み。
+			await Promise.all(editors.map((e) => ensureLoaded(e)));
+			// discovery 候補の favicon を裏で解決。
+			void resolveDiscoveredIcons(cols);
+			// ?edit=<collection> があれば該当連携を開く。
+			const target = page.url.searchParams.get('edit');
+			if (target) {
+				const editor = editors.find((e) => e.collection === target);
+				if (editor) {
+					editor.expanded = true;
+					await tick();
+					document.getElementById(`link-${target}`)?.scrollIntoView({ block: 'center' });
+				}
+			}
 		} finally {
 			loaded = true;
 		}
 	});
 
-	function addLink() {
-		editors.push({
-			collection: '',
-			label: '',
+	async function resolveDiscoveredIcons(cols: string[]) {
+		// アプリ（ホーム URL）単位で一意化してから解決する。
+		const homes = [...new Set(cols.map(appHome).filter(Boolean))];
+		await Promise.all(
+			homes.map(async (home) => {
+				const icon = await resolveAppIcon(home);
+				if (icon) discoveredIcons = { ...discoveredIcons, [home]: icon };
+			}),
+		);
+	}
+
+	async function ensureLoaded(editor: LinkEditor) {
+		if (editor.loaded || editor.loading || !editor.collection.trim()) return;
+		editor.loading = true;
+		try {
+			const record = await fetchOwnLatestRecord(editor.collection.trim());
+			editor.record = record;
+			if (record) {
+				const shown = new Set(editor.isNew ? autoSelectFields(record) : editor.savedPaths);
+				editor.choices = collectLeaves(record).map((l) => ({
+					path: l.path,
+					sample: sampleText(l),
+					role: l.role,
+					shown: shown.has(l.path),
+				}));
+			}
+			// favicon 自動取得（未設定時）。
+			if (!editor.iconUrl) {
+				if (!editor.appUri) editor.appUri = suggestAppUri(editor.collection.trim()) ?? '';
+				if (editor.appUri) {
+					const icon = await resolveAppIcon(editor.appUri);
+					if (icon) editor.iconUrl = icon;
+				}
+			}
+		} finally {
+			editor.loading = false;
+			editor.loaded = true;
+		}
+	}
+
+	async function addCollection(collection: string) {
+		const c = collection.trim();
+		if (!c) return;
+		const existing = editors.find((e) => e.collection === c);
+		if (existing) {
+			existing.expanded = true;
+			return;
+		}
+		const editor: LinkEditor = {
+			collection: c,
+			label: c.split('.').slice(-2).join('.'),
 			appUri: '',
-			iconUrl: '',
-			enabled: true,
-			rows: [],
+			iconUrl: discoveredIcons[appHome(c)] ?? '',
+			savedPaths: [],
+			isNew: true,
+			record: null,
+			choices: [],
 			expanded: true,
 			loading: false,
-			sampleError: false,
-			schemaResolved: false,
-			iconBusy: false,
-			iconError: false,
-		});
+			loaded: false,
+		};
+		editors.push(editor);
+		await ensureLoaded(editor);
 	}
 
 	function removeLink(index: number) {
 		editors.splice(index, 1);
 	}
 
-	async function loadSample(editor: LinkEditor) {
-		const collection = editor.collection.trim();
-		if (!collection) return;
-		editor.loading = true;
-		editor.sampleError = false;
-		editor.schemaResolved = false;
-		if (!editor.appUri) editor.appUri = suggestAppUri(collection) ?? '';
-		try {
-			const [record, schemaFields] = await Promise.all([
-				fetchOwnLatestRecord(collection),
-				resolveSchemaFields(collection),
-			]);
-			editor.schemaResolved = schemaFields.length > 0;
-			const flat = record ? flattenRecord(record) : [];
-			editor.sampleError = !record;
-			// 既存 rows の role/label を保持しつつ、サンプル＆スキーマのパスを統合する。
-			const existing = new Map(editor.rows.map((r) => [r.path, r]));
-			const merged = new Map<string, FieldRow>();
-			for (const f of flat) {
-				const prev = existing.get(f.path);
-				merged.set(f.path, {
-					path: f.path,
-					sample: f.sample,
-					schema: false,
-					role: prev?.role ?? '',
-					label: prev?.label ?? '',
-				});
-			}
-			for (const s of schemaFields) {
-				const row = merged.get(s.path);
-				if (row) row.schema = true;
-				else {
-					const prev = existing.get(s.path);
-					merged.set(s.path, {
-						path: s.path,
-						schema: true,
-						role: prev?.role ?? '',
-						label: prev?.label ?? '',
-					});
-				}
-			}
-			// サンプルにもスキーマにも無いが既に設定済みのパスは残す。
-			for (const [path, row] of existing) if (!merged.has(path)) merged.set(path, row);
-			editor.rows = [...merged.values()];
-			editor.expanded = true;
-		} finally {
-			editor.loading = false;
-		}
+	async function toggleExpand(editor: LinkEditor) {
+		editor.expanded = !editor.expanded;
+		if (editor.expanded) await ensureLoaded(editor);
 	}
 
-	async function fetchIcon(editor: LinkEditor) {
-		const uri = editor.appUri.trim();
-		if (!uri) return;
-		editor.iconBusy = true;
-		editor.iconError = false;
-		try {
-			const icon = await resolveAppIcon(uri);
-			if (icon) editor.iconUrl = icon;
-			else editor.iconError = true;
-		} finally {
-			editor.iconBusy = false;
+	async function refetchIcon(editor: LinkEditor) {
+		if (!editor.appUri.trim()) return;
+		const icon = await resolveAppIcon(editor.appUri.trim());
+		if (icon) editor.iconUrl = icon;
+	}
+
+	function fieldName(path: string): string {
+		return path.split('.').pop() ?? path;
+	}
+
+	// プレビュー用ビュー（putRecord せず、選択中フィールドを実レコードに適用して即時反映）。
+	function previewOf(editor: LinkEditor): AppLinkView {
+		const link = {
+			collection: editor.collection,
+			label: editor.label,
+			appUri: editor.appUri || undefined,
+			iconUrl: editor.iconUrl || undefined,
+			fields: editor.choices.filter((c) => c.shown).map((c) => ({ path: c.path })),
+		};
+		if (!editor.record) {
+			return {
+				collection: editor.collection,
+				label: editor.label || editor.collection,
+				appUri: link.appUri,
+				iconUrl: link.iconUrl,
+				fields: [],
+			};
 		}
+		return buildLinkView(ownDid, ownPdsUrl, link, editor.record);
 	}
 
 	async function save() {
@@ -180,14 +245,10 @@
 					selection: 'latest',
 					...(e.appUri.trim() ? { appUri: e.appUri.trim() } : {}),
 					...(e.iconUrl.trim() ? { iconUrl: e.iconUrl.trim() } : {}),
-					enabled: e.enabled,
-					fields: e.rows
-						.filter((r) => r.role)
-						.map((r) => ({
-							path: r.path,
-							role: r.role as AppLinkFieldRole,
-							...(r.label.trim() ? { label: r.label.trim() } : {}),
-						})),
+					fields: (e.loaded
+						? e.choices.filter((c) => c.shown).map((c) => c.path)
+						: e.savedPaths
+					).map((path) => ({ path })),
 				}));
 			await putAppLinks(links);
 			saveState = 'saved';
@@ -212,92 +273,90 @@
 		{:else if !loaded}
 			<p>{m.loading()}</p>
 		{:else}
-			{#if discovered.length}
-				<p class="muted discovered">
-					{m.appLinksDiscoveredHint()}
-					{#each discovered as c (c)}<code>{c}</code>{/each}
-				</p>
+			{#if appGroups.length}
+				<div class="discover">
+					<span class="muted">{m.appLinksFromRepoHint()}</span>
+					<div class="favicons">
+						{#each appGroups as g (g.home)}
+							<button type="button" class="favicon-btn" title={g.rep} onclick={() => addCollection(g.rep)}>
+								<img
+									src={discoveredIcons[g.home]}
+									alt=""
+									width="24"
+									height="24"
+									onerror={() => (brokenIcons = new Set(brokenIcons).add(g.home))}
+								/>
+							</button>
+						{/each}
+					</div>
+				</div>
 			{/if}
 
-			{#each editors as editor, i (i)}
-				<div class="link-card">
-					<div class="link-head">
-						{#if editor.iconUrl}
-							<img class="link-icon" src={editor.iconUrl} alt="" width="20" height="20" />
-						{/if}
-						<input
-							class="collection"
-							type="text"
-							list="app-links-collections"
-							placeholder={m.appLinksCollectionPlaceholder()}
-							aria-label={m.appLinksCollectionLabel()}
-							bind:value={editor.collection}
-						/>
-						<button type="button" disabled={editor.loading || !editor.collection.trim()} onclick={() => loadSample(editor)}>
-							{editor.loading ? m.appLinksLoadingSample() : m.appLinksLoadSample()}
-						</button>
-						<button type="button" class="remove" onclick={() => removeLink(i)} aria-label={m.appLinksRemove()} title={m.appLinksRemove()}>×</button>
-					</div>
-
+			{#each editors as editor, i (editor.collection + i)}
+				<div class="link" id={`link-${editor.collection}`}>
+					<AppLinkCard
+						link={previewOf(editor)}
+						editable
+						editing={editor.expanded}
+						onedit={() => toggleExpand(editor)}
+					/>
 					{#if editor.expanded}
-						<label class="field">
-							<span>{m.appLinksLabelLabel()}</span>
-							<input type="text" bind:value={editor.label} />
-						</label>
-
-						<label class="field">
-							<span>{m.appLinksAppUriLabel()}</span>
-							<span class="with-button">
-								<input type="url" placeholder="https://" bind:value={editor.appUri} />
-								<button type="button" disabled={editor.iconBusy || !editor.appUri.trim()} onclick={() => fetchIcon(editor)}>
-									{editor.iconBusy ? m.appLinksResolvingIcon() : m.appLinksResolveIcon()}
-								</button>
-							</span>
-						</label>
-						{#if editor.iconError}<p class="muted">{m.appLinksIconFailed()}</p>{/if}
-
-						<ToggleSwitch checked={editor.enabled} label={m.appLinksEnabledLabel()} onchange={(v) => (editor.enabled = v)} />
-
-						{#if editor.sampleError}
-							<p class="muted">{m.appLinksNoSample()}</p>
-						{/if}
-
-						{#if editor.rows.length}
-							<fieldset class="fields">
-								<legend>
-									{m.appLinksFieldsLegend()}
-									{#if editor.schemaResolved}<span class="badge">{m.appLinksSchemaResolved()}</span>{/if}
-								</legend>
-								{#each editor.rows as row (row.path)}
-									<div class="field-row">
-										<div class="path-col">
-											<code>{row.path}</code>
-											{#if row.sample !== undefined}<small class="sample">{m.appLinksSampleLabel()}: {row.sample}</small>{/if}
+						<div class="editor">
+							{#if editor.loading}
+								<p class="muted">{m.appLinksLoadingSample()}</p>
+							{:else if !editor.record}
+								<p class="muted">{m.appLinksNoSample()}</p>
+							{:else}
+								<p class="fields-hint muted">{m.appLinksChooseFields()}</p>
+								<div class="field-list">
+									{#each editor.choices as choice (choice.path)}
+										<div class="field-row" title={`${choice.path}: ${choice.sample}`}>
+											<ToggleSwitch
+												checked={choice.shown}
+												label={fieldName(choice.path)}
+												onchange={(v) => (choice.shown = v)}
+											/>
 										</div>
-										<select bind:value={row.role} aria-label={row.path}>
-											{#each roleOptions as opt (opt.value)}<option value={opt.value}>{opt.label()}</option>{/each}
-										</select>
-										<input
-											class="row-label"
-											type="text"
-											placeholder={m.appLinksFieldLabelPlaceholder()}
-											bind:value={row.label}
-											disabled={!row.role}
-										/>
-									</div>
-								{/each}
-							</fieldset>
-						{/if}
+									{/each}
+								</div>
+							{/if}
+
+							{#if !editor.iconUrl}
+								<label class="field icon-source">
+									<span>{m.appLinksIconSourceLabel()}</span>
+									<span class="with-button">
+										<input type="url" placeholder="https://" bind:value={editor.appUri} />
+										<button type="button" disabled={!editor.appUri.trim()} onclick={() => refetchIcon(editor)}>
+											{m.appLinksResolveIcon()}
+										</button>
+									</span>
+								</label>
+							{/if}
+
+							<button type="button" class="remove" onclick={() => removeLink(i)}>{m.appLinksRemove()}</button>
+						</div>
 					{/if}
 				</div>
 			{/each}
 
-			<datalist id="app-links-collections">
-				{#each discovered as c (c)}<option value={c}></option>{/each}
-			</datalist>
+			{#if availableCollections.length}
+				<div class="add-row">
+					<select
+						class="add-select"
+						aria-label={m.appLinksAddSelect()}
+						onchange={(e) => {
+							const v = e.currentTarget.value;
+							e.currentTarget.value = '';
+							if (v) void addCollection(v);
+						}}
+					>
+						<option value="" selected>{m.appLinksAddSelect()}</option>
+						{#each availableCollections as c (c)}<option value={c}>{c}</option>{/each}
+					</select>
+				</div>
+			{/if}
 
 			<div class="actions">
-				<button type="button" class="ghost" onclick={addLink}>+ {m.appLinksAddLink()}</button>
 				<button type="button" disabled={saving} onclick={save}>{saving ? m.appLinksSaving() : m.appLinksSave()}</button>
 			</div>
 			{#if editors.length === 0}<p class="muted">{m.appLinksEmpty()}</p>{/if}
@@ -308,54 +367,72 @@
 </section>
 
 <style>
+	/* このページはフォーム主体なので、継承される中央寄せ(.auth-card)を左寄せに統一する。 */
+	.theme-settings {
+		text-align: left;
+	}
 	.muted {
 		color: var(--text-muted);
 		font-size: 0.85rem;
 	}
-	.discovered {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.3rem;
-		align-items: center;
-	}
-	.discovered code,
-	.path-col code {
-		background: var(--bg-inset);
-		border-radius: var(--radius-s);
-		padding: 0.05rem 0.35rem;
-		font-size: 0.8rem;
-		word-break: break-all;
-	}
-	.link-card {
-		border: 1px solid var(--line);
-		border-radius: var(--radius-m);
-		padding: 0.75rem;
-		margin-block: 0.75rem;
+	.discover {
+		margin-block: 0.6rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.6rem;
+		gap: 0.35rem;
 	}
-	.link-head {
+	.favicons {
 		display: flex;
-		align-items: center;
+		flex-wrap: wrap;
 		gap: 0.4rem;
+		max-block-size: 7rem;
+		overflow-y: auto;
+		padding: 0.1rem;
 	}
-	.link-icon {
-		border-radius: var(--radius-s);
-		flex: none;
-	}
-	.link-head .collection {
-		flex: 1;
-		min-inline-size: 0;
-	}
-	.remove {
-		flex: none;
-		background: none;
-		border: 0;
-		color: var(--text-muted);
-		font-size: 1.2rem;
+	.favicon-btn {
+		inline-size: 2.1rem;
+		block-size: 2.1rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid var(--line);
+		border-radius: var(--radius-m);
+		background: var(--bg-inset);
 		cursor: pointer;
-		line-height: 1;
+		padding: 0;
+		flex: none;
+	}
+	.favicon-btn:hover {
+		border-color: var(--accent);
+	}
+	.favicon-btn img {
+		border-radius: var(--radius-s);
+	}
+	.link {
+		margin-block: 0.6rem;
+	}
+	.editor {
+		border: 1px solid var(--line);
+		border-block-start: 0;
+		border-radius: 0 0 var(--radius-m) var(--radius-m);
+		padding: 0.6rem 0.7rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-block-start: -1px;
+	}
+	.fields-hint {
+		margin: 0.2rem 0 0;
+	}
+	.field-list {
+		display: flex;
+		flex-direction: column;
+	}
+	.field-row {
+		border-block-start: 1px solid var(--line);
+	}
+	.field-row:first-child {
+		border-block-start: 0;
 	}
 	.field {
 		display: flex;
@@ -363,61 +440,46 @@
 		gap: 0.25rem;
 		font-size: 0.9rem;
 	}
-	.field .with-button {
+	.icon-source .with-button {
 		display: flex;
 		gap: 0.4rem;
 	}
-	.field .with-button input {
+	.icon-source .with-button input {
 		flex: 1;
 		min-inline-size: 0;
 	}
-	.fields {
-		border: 1px solid var(--line);
-		border-radius: var(--radius-s);
-		padding: 0.5rem;
-	}
-	.fields .badge {
-		margin-inline-start: 0.4rem;
-		font-size: 0.7rem;
-		color: var(--accent);
-	}
-	.field-row {
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
-		gap: 0.4rem;
-		align-items: center;
-		padding-block: 0.3rem;
-		border-block-start: 1px solid var(--line);
-	}
-	.field-row:first-of-type {
-		border-block-start: 0;
-	}
-	.path-col {
-		display: flex;
-		flex-direction: column;
-		gap: 0.1rem;
-		min-inline-size: 0;
-	}
-	.path-col .sample {
+	.remove {
+		align-self: flex-start;
+		background: none;
+		border: 0;
 		color: var(--text-muted);
-		font-size: 0.72rem;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		text-decoration: underline;
+		cursor: pointer;
+		padding: 0;
+		font-size: 0.8rem;
 	}
-	.row-label {
-		min-inline-size: 0;
+	.add-row {
+		margin-block-start: 0.8rem;
+	}
+	/* ネイティブ select はダークモードで option が読めなくなりがちなので配色を明示する。 */
+	.add-select {
+		inline-size: 100%;
+		padding: 0.5rem 0.6rem;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-m);
+		color-scheme: light dark;
+		cursor: pointer;
+	}
+	.add-select option {
+		background: var(--bg);
+		color: var(--text);
 	}
 	.actions {
 		display: flex;
-		justify-content: space-between;
-		gap: 0.5rem;
-		margin-block-start: 0.75rem;
-	}
-	.actions .ghost {
-		background: none;
-		border: 1px dashed var(--line-strong);
-		color: var(--text);
+		justify-content: flex-end;
+		margin-block-start: 0.6rem;
 	}
 	.ok {
 		color: var(--accent);
@@ -426,13 +488,5 @@
 	.error-text {
 		color: var(--danger, crimson);
 		font-size: 0.85rem;
-	}
-	@media (max-width: 480px) {
-		.field-row {
-			grid-template-columns: 1fr 1fr;
-		}
-		.path-col {
-			grid-column: 1 / -1;
-		}
 	}
 </style>
