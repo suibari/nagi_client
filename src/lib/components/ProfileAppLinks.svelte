@@ -32,7 +32,8 @@
 </script>
 
 {#if links.length}
-	<section class="app-links" aria-label={m.profileAppLinksHeading()}>
+	<section class="app-links" aria-labelledby="profile-app-links-heading">
+		<h2 id="profile-app-links-heading" class="heading">{m.profileAppLinksHeading()}</h2>
 		{#each links as link (link.collection)}
 			<AppLinkCard {link} editable={isOwner} onedit={() => edit(link.collection)} />
 		{/each}
@@ -45,5 +46,11 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		margin-block-start: 0.75rem;
+	}
+	.heading {
+		margin: 0;
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: var(--text-muted);
 	}
 </style>

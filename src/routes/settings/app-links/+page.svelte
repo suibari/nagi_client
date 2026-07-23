@@ -189,8 +189,10 @@
 			loading: false,
 			loaded: false,
 		};
-		editors.push(editor);
-		await ensureLoaded(editor);
+		// push した生オブジェクトではなく、$state 配列がラップしたプロキシ要素を辿って渡す。
+		// 生参照経由のミューテーションはリアクティブに反映されない（UI が「取得中…」のまま固まる）。
+		const idx = editors.push(editor) - 1;
+		await ensureLoaded(editors[idx]);
 	}
 
 	function removeLink(index: number) {
@@ -227,6 +229,7 @@
 				label: editor.label || editor.collection,
 				appUri: link.appUri,
 				iconUrl: link.iconUrl,
+				images: [],
 				fields: [],
 			};
 		}
@@ -357,7 +360,9 @@
 			{/if}
 
 			<div class="actions">
-				<button type="button" disabled={saving} onclick={save}>{saving ? m.appLinksSaving() : m.appLinksSave()}</button>
+				<button type="button" class="primary save" disabled={saving} onclick={save}>
+					{saving ? m.appLinksSaving() : m.appLinksSave()}
+				</button>
 			</div>
 			{#if editors.length === 0}<p class="muted">{m.appLinksEmpty()}</p>{/if}
 			{#if saveState === 'saved'}<p class="ok">{m.appLinksSaved()}</p>{/if}
@@ -477,9 +482,18 @@
 		color: var(--text);
 	}
 	.actions {
-		display: flex;
-		justify-content: flex-end;
-		margin-block-start: 0.6rem;
+		margin-block-start: 0.8rem;
+	}
+	/* 他の設定画面の保存ボタン（.auth-card > button）と同じ全幅プライマリに揃える。 */
+	.save {
+		inline-size: 100%;
+		padding: 13px;
+		border-radius: var(--radius-pill);
+		font-weight: 700;
+	}
+	.save:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
 	}
 	.ok {
 		color: var(--accent);

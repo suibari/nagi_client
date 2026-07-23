@@ -243,7 +243,7 @@ export type AppLinkView = {
 	label: string;
 	appUri?: string;
 	iconUrl?: string;
-	image?: string;
+	images: string[];
 	fields: AppLinkFieldView[];
 };
 
@@ -255,17 +255,15 @@ export function buildLinkView(
 	record: Record<string, unknown>,
 ): AppLinkView {
 	const fields: AppLinkFieldView[] = [];
-	let image: string | undefined;
+	const images: string[] = [];
 	for (const f of link.fields ?? []) {
 		const raw = getByPath(record, f.path);
 		if (raw === null || raw === undefined) continue;
 		const role = detectRole(f.path, raw);
 		if (!role) continue;
 		if (role === 'image') {
-			if (!image) {
-				const cid = blobCidOf(raw);
-				if (cid) image = blobUrl(pdsUrl, did, cid);
-			}
+			const cid = blobCidOf(raw);
+			if (cid) images.push(blobUrl(pdsUrl, did, cid));
 			continue;
 		}
 		fields.push({ role, value: formatValue(role, raw) });
@@ -275,7 +273,7 @@ export function buildLinkView(
 		label: link.label || link.collection,
 		appUri: link.appUri,
 		iconUrl: link.iconUrl,
-		image,
+		images,
 		fields,
 	};
 }
