@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { APPVIEW_URL, getChannels } from '$lib/api/appview';
 	import { createChannel } from '$lib/atproto/records';
+	import { deletedChannels } from '$lib/channels/optimistic.svelte';
 	import type { ChannelView } from '$lib/api/types';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -33,6 +34,8 @@
 	};
 	// 更新日時は「最新投稿時刻（なければ作成日時）」の相対表示。
 	const updatedAt = (c: ChannelView) => relativeTime(c.lastPostAt ?? c.createdAt);
+	// 削除直後は取り込み反映まで API がまだ返すので、楽観的に除外する。
+	let visibleChannels = $derived(channels.filter((c) => !deletedChannels.has(c.uri)));
 
 	async function load() {
 		loading = true;
@@ -136,10 +139,10 @@
 				><Icon name="refresh" size={18} /></button
 			>
 		</div>
-	{:else if !channels.length}
+	{:else if !visibleChannels.length}
 		<div class="state">{m.channelsEmpty()}</div>
 	{:else}
-		{#each channels as channel (channel.uri)}
+		{#each visibleChannels as channel (channel.uri)}
 			<a class="channel-card" href={channelHref(channel.uri)}>
 				<span class="channel-card-media">
 					{#if channel.banner}

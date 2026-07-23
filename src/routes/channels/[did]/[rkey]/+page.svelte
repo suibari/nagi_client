@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { APPVIEW_URL, getChannel, getChannelTimeline } from '$lib/api/appview';
 	import { deleteChannel } from '$lib/atproto/records';
+	import { deletedChannels } from '$lib/channels/optimistic.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import type { ChannelView } from '$lib/api/types';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
@@ -56,6 +57,8 @@
 		deleteError = '';
 		try {
 			await deleteChannel(rkey);
+			// 取り込み反映まで getChannels がまだ返すので、一覧側で楽観的に除外する。
+			deletedChannels.add(uri);
 			deleteOpen = false;
 			await goto('/channels');
 		} catch (e) {
