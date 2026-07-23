@@ -50,6 +50,10 @@ export const ja = {
 	aboutNoLikesTitle: 'いいねもフォローもありません',
 	aboutNoLikesBody:
 		'数で評価されることも、フォロー関係に縛られることもありません。みんなの投稿がひとつのタイムラインに流れます。',
+	aboutChannelsTitle: 'チャンネル',
+	aboutChannelsBody:
+		'同じ興味の人が集まる場所です。フォローはできませんが、チャンネルでゆるくつながれます。投稿はグローバルにも流れるので、居場所と安心感だけを持てます。',
+	aboutChannelsLink: 'チャンネルを見る',
 	aboutReactionTitle: '絵文字リアクション',
 	aboutReactionBody:
 		'好きな絵文字でリアクションできます。だれがリアクションしたかもアイコンで見えます。',

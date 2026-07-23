@@ -14,6 +14,13 @@
 	const features: Feature[] = [
 		{ icon: 'bot', title: m.aboutBotTitle, body: m.aboutBotBody },
 		{ icon: 'heart', title: m.aboutNoLikesTitle, body: m.aboutNoLikesBody },
+		{
+			icon: 'hash',
+			title: m.aboutChannelsTitle,
+			body: m.aboutChannelsBody,
+			href: '/channels',
+			link: m.aboutChannelsLink,
+		},
 		{ icon: 'emoji', title: m.aboutReactionTitle, body: m.aboutReactionBody },
 		{
 			icon: 'emojiPlus',

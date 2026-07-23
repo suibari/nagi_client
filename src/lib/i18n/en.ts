@@ -46,6 +46,10 @@ export const en: Messages = {
 	aboutNoLikesTitle: 'No likes, no follows',
 	aboutNoLikesBody:
 		'Nothing is measured in numbers, and nothing depends on who follows whom. Everyone’s posts flow through a single timeline.',
+	aboutChannelsTitle: 'Channels',
+	aboutChannelsBody:
+		'Places where people who share an interest gather. You can’t follow anyone, but you can stay loosely connected through a channel. Posts still flow to the global timeline, giving you a sense of belonging.',
+	aboutChannelsLink: 'Browse channels',
 	aboutReactionTitle: 'Emoji reactions',
 	aboutReactionBody:
 		'React with any emoji you like. You can also see who reacted, right next to the emoji.',
