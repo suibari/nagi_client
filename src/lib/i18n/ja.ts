@@ -233,6 +233,7 @@ export const ja = {
 	welcomeTitle: 'Nagiへようこそ',
 	welcomeBody: 'タイムラインは誰でも読めます。参加すると投稿やリアクションができます。',
 	joinCta: '参加する',
+	welcomeAboutLink: 'Nagiのことを知る',
 	feedWaiting: '波が届くのを待っています…',
 	feedEmpty: 'まだ静かな海です。最初の言葉を待っています。',
 
@@ -304,6 +305,7 @@ export const ja = {
 
 	// settings
 	backToSettings: '設定に戻る',
+	backToHome: 'ホームに戻る',
 	settingsProfileTitle: 'プロフィール',
 	settingsProfileDescription: '表示名、自己紹介、アバター',
 	settingsAppearanceTitle: '外観',

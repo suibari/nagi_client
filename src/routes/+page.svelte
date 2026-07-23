@@ -55,6 +55,7 @@
 	<aside class="welcome">
 		<div>
 			<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
+			<a class="welcome-about" href="/settings/about">{m.welcomeAboutLink()} →</a>
 		</div>
 		<a href="/login">{m.joinCta()}</a>
 	</aside>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 
 	// m.* はロケールを読むアクセサ。文字列に展開せず関数のまま持ち、
 	// テンプレートで呼ぶことで言語切り替えに追従させる。
@@ -63,7 +64,13 @@
 </script>
 
 <section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
+	<!-- 未サインインで来る導線（ホームの「Nagiのことを知る」）があるので、
+	     戻り先はログイン状態で出し分ける。 -->
+	{#if $session}
+		<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
+	{:else}
+		<a class="settings-back" href="/">← {m.backToHome()}</a>
+	{/if}
 	<h1>{m.settingsAboutTitle()}</h1>
 	<p>
 		{m.aboutBeforeLink()}<a href="https://suibari.com/character/">{m.aboutLinkText()}</a

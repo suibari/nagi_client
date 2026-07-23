@@ -225,6 +225,7 @@ export const en: Messages = {
 	welcomeTitle: 'Welcome to Nagi',
 	welcomeBody: 'Anyone can read the timeline. Join to post and react.',
 	joinCta: 'Join',
+	welcomeAboutLink: 'Get to know Nagi',
 	feedWaiting: 'Waiting for the waves to arrive…',
 	feedEmpty: 'The sea is still calm. Waiting for the first words.',
 
@@ -283,6 +284,7 @@ export const en: Messages = {
 	oauthErrorTitle: 'Login failed',
 	backToTimeline: 'Back to the timeline',
 	backToSettings: 'Back to settings',
+	backToHome: 'Back to home',
 	settingsProfileTitle: 'Profile',
 	settingsProfileDescription: 'Display name, bio, and avatar',
 	settingsAppearanceTitle: 'Appearance',

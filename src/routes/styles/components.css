@@ -37,6 +37,17 @@
 	padding: 9px 17px;
 	font-weight: 700;
 }
+/* 「参加する」の下に添える、機能紹介(about)への控えめな導線リンク。 */
+.welcome-about {
+	justify-self: start;
+	margin-top: 3px;
+	color: var(--accent-strong);
+	font-size: 13px;
+	font-weight: 600;
+}
+.welcome-about:hover {
+	text-decoration: underline;
+}
 .composer textarea {
 	border: 0;
 	resize: vertical;
