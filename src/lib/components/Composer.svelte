@@ -17,8 +17,7 @@
 	import { drafts } from '$lib/drafts/drafts.svelte';
 	import { DraftStorageError } from '$lib/drafts/storage';
 	import DraftListDialog from './DraftListDialog.svelte';
-	import ToggleSwitch from './ToggleSwitch.svelte';
-	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定トグルもそのとき出す。
+	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は kossori（目アイコン）で表現。
 	let {
 		onposted,
 		channel,
@@ -161,32 +160,20 @@
 		/>
 		<ImageAttachmentEditor bind:attachments disabled={busy} />
 		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
-		{#if channel}
-			<div class="channel-only-row">
-				<ToggleSwitch
-					checked={kossori}
-					label={m.composerChannelOnly()}
-					disabled={busy}
-					onchange={(value) => (kossori = value)}
-				/>
-			</div>
-		{/if}
 		<div class="composer-foot">
 			<span
 				>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
 			>
-			{#if !channel}
-				<button
-					class="icon-action kossori-toggle"
-					class:active={kossori}
-					type="button"
-					disabled={busy}
-					aria-pressed={kossori}
-					aria-label={m.composerKossoriAria()}
-					title={m.composerKossoriAria()}
-					onclick={() => (kossori = !kossori)}><Icon name="hide" size={18} /></button
-				>
-			{/if}
+			<button
+				class="icon-action kossori-toggle"
+				class:active={kossori}
+				type="button"
+				disabled={busy}
+				aria-pressed={kossori}
+				aria-label={channel ? m.composerChannelOnly() : m.composerKossoriAria()}
+				title={channel ? m.composerChannelOnly() : m.composerKossoriAria()}
+				onclick={() => (kossori = !kossori)}><Icon name="hide" size={18} /></button
+			>
 			{#if drafts.count}
 				<button
 					class="icon-action draft-open"
