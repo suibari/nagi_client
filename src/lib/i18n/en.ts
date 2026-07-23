@@ -313,6 +313,17 @@ export const en: Messages = {
 		'Notifications are blocked by your browser. Change the site notification permission to “Allow”.',
 	pushIosInstallNote:
 		'On iPhone and iPad, add Nagi to your Home Screen from the Share menu and open it as an app to enable push notifications.',
+	pushAuthRequired:
+		'Your current login does not have permission to register notifications. Refresh your permissions and try again.',
+	pushUnavailable:
+		'The notification delivery server is not configured yet. Please try again later.',
+	pushNetworkError: 'Notifications could not be registered because the network is unavailable.',
+	pushRegistrationFailed: 'Notification registration failed. Please try again.',
+	pushUnsubscribeFailed:
+		'Notifications were removed from this device, but the server registration could not be fully removed.',
+	pushRetry: 'Try again',
+	pushRefreshPermissions: 'Refresh permissions and sign in',
+	pushReauthPending: 'Opening authorization…',
 	settingsCrosspostTitle: 'Bluesky crossposting',
 	settingsCrosspostDescription: 'Also post your Nagi posts to Bluesky',
 	crosspostLegend: 'Bluesky crossposting',

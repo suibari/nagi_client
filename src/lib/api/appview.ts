@@ -24,6 +24,19 @@ const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 // 未ログイン閲覧と auth:'none' は従来どおり appview へ直 fetch する（proxy は DPoP セッション必須）。
 const APPVIEW_PROXY = 'did:web:nagi-api.suibari.com#nagi_appview';
 export type LinkMetadata = { uri: string; title: string; description?: string; image?: string };
+
+/** AppView が返したHTTPステータスとエラーコードを、呼び出し側で判定できる形で保持する。 */
+export class ApiRequestError extends Error {
+	constructor(
+		public readonly status: number,
+		public readonly code: string | undefined,
+		message: string,
+	) {
+		super(message);
+		this.name = 'ApiRequestError';
+	}
+}
+
 // セッションがあり認証を要する呼び出しは PDS 経由プロキシ、それ以外は appview 直 fetch。
 async function request(
 	path: string,
@@ -49,8 +62,15 @@ async function call<T>(
 ): Promise<T> {
 	const response = await request(path, options, auth);
 	if (!response.ok) {
-		const body = await response.json().catch(() => ({}));
-		throw new Error(body.message ?? `Request failed (${response.status})`);
+		const body = (await response.json().catch(() => ({}))) as {
+			error?: string;
+			message?: string;
+		};
+		throw new ApiRequestError(
+			response.status,
+			body.error,
+			body.message ?? `Request failed (${response.status})`,
+		);
 	}
 	return response.json();
 }

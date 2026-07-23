@@ -5,6 +5,28 @@ export type OAuthSession = Awaited<ReturnType<typeof oauthClient.restore>>;
 export const session = writable<OAuthSession | null>(null);
 export const oauthReady = writable(false);
 export const oauthError = writable<string | null>(null);
+const OAUTH_RETURN_TO_KEY = 'nagi.oauth.return-to';
+
+export function setOAuthReturnTo(path: string): void {
+	if (typeof window === 'undefined' || !path.startsWith('/') || path.startsWith('//')) return;
+	try {
+		localStorage.setItem(OAUTH_RETURN_TO_KEY, path);
+	} catch {
+		// 戻り先を保存できなくてもOAuth自体は続行できる。
+	}
+}
+
+export function consumeOAuthReturnTo(): string | null {
+	if (typeof window === 'undefined') return null;
+	try {
+		const path = localStorage.getItem(OAUTH_RETURN_TO_KEY);
+		localStorage.removeItem(OAUTH_RETURN_TO_KEY);
+		return path?.startsWith('/') && !path.startsWith('//') ? path : null;
+	} catch {
+		return null;
+	}
+}
+
 export async function initOAuth() {
 	try {
 		const result = await oauthClient.init();
@@ -19,12 +41,16 @@ export async function initOAuth() {
 		oauthReady.set(true);
 	}
 }
-export async function signIn(handle: string, options: { crosspost?: boolean } = {}) {
+export async function signIn(
+	handle: string,
+	options: { crosspost?: boolean; refreshPermissions?: boolean } = {},
+) {
 	// クロスポストはオプトインなので、有効化するときだけ Bluesky への
 	// 書き込み権限を含むスコープで認可し直す。
 	// 先頭 @ や大文字・前後空白を落として handle 解決の失敗を防ぐ。
 	await oauthClient.signIn(normalizeHandle(handle), {
 		scope: options.crosspost ? FULL_SCOPE : BASE_SCOPE,
+		...(options.refreshPermissions ? { prompt: 'consent' as const } : {}),
 	});
 }
 export async function signOut() {

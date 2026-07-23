@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { oauthError, oauthReady, session } from '$lib/oauth/session.svelte';
+	import { consumeOAuthReturnTo, oauthError, oauthReady, session } from '$lib/oauth/session.svelte';
 
 	$effect(() => {
-		if ($oauthReady && $session) void goto('/');
+		if ($oauthReady && $session) void goto(consumeOAuthReturnTo() ?? '/');
 	});
 </script>
 

@@ -1,5 +1,9 @@
 import { PUBLIC_VAPID_KEY } from '$env/static/public';
-import { registerPushSubscription, deletePushSubscription } from '$lib/api/appview';
+import {
+	ApiRequestError,
+	registerPushSubscription,
+	deletePushSubscription,
+} from '$lib/api/appview';
 
 /**
  * Web Push の購読状態と購読/解除の操作をまとめたモジュール。
@@ -55,25 +59,83 @@ function toInput(sub: PushSubscription) {
 	return { endpoint: sub.endpoint, keys: { p256dh: keys.p256dh ?? '', auth: keys.auth ?? '' } };
 }
 
-/** リアクティブな購読状態。ページはこれを読んでトグルの見た目を切り替える。 */
+export type PushPhase = 'idle' | 'checking' | 'enabling' | 'disabling' | 'error';
+export type PushError =
+	| 'permission-denied'
+	| 'auth-required'
+	| 'push-unavailable'
+	| 'network'
+	| 'registration-failed'
+	| 'unsubscribe-failed';
+
+function classifyError(error: unknown, fallback: PushError): PushError {
+	const message = error instanceof Error ? error.message : '';
+	if (error instanceof ApiRequestError) {
+		if (error.status === 401 || error.status === 403 || /auth|scope/i.test(error.code ?? ''))
+			return 'auth-required';
+		if (error.status === 503 && error.code === 'push_unavailable') return 'push-unavailable';
+	}
+	if (/scope|authentication/i.test(message)) return 'auth-required';
+	if (
+		error instanceof TypeError ||
+		(typeof navigator !== 'undefined' && navigator.onLine === false)
+	)
+		return 'network';
+	return fallback;
+}
+
+function setReady(subscribed: boolean): void {
+	pushState.registered = subscribed;
+	pushState.subscribed = subscribed;
+	pushState.error = null;
+	pushState.phase = 'idle';
+}
+
+function setError(error: PushError): void {
+	pushState.registered = false;
+	pushState.subscribed = false;
+	pushState.error = error;
+	pushState.phase = 'error';
+}
+
+/** リアクティブな購読状態。ON は端末購読と AppView 登録の双方が成功した場合だけ。 */
 export const pushState = $state({
 	supported: false,
 	permission: 'default' as NotificationPermission,
+	browserSubscribed: false,
+	registered: false,
 	subscribed: false,
-	busy: false
+	busy: false,
+	phase: 'idle' as PushPhase,
+	error: null as PushError | null,
 });
 
-/** 現在の購読状態を読み直す（ページマウント時に呼ぶ）。 */
+/**
+ * 現在の購読状態を読み直す。端末内に購読があれば AppView へ idempotent に再登録し、
+ * 「端末だけ購読済み」の不整合を自動修復する。
+ */
 export async function refreshPushState(): Promise<void> {
 	pushState.supported = isPushSupported();
-	if (!pushState.supported) return;
+	if (!pushState.supported || pushState.busy) return;
+	pushState.busy = true;
+	pushState.phase = 'checking';
+	pushState.error = null;
 	pushState.permission = Notification.permission;
 	try {
 		const reg = await navigator.serviceWorker.ready;
 		const sub = await reg.pushManager.getSubscription();
-		pushState.subscribed = !!sub;
-	} catch {
-		pushState.subscribed = false;
+		pushState.browserSubscribed = !!sub;
+		if (!sub) {
+			setReady(false);
+			return;
+		}
+		await registerPushSubscription(toInput(sub));
+		setReady(true);
+	} catch (error) {
+		console.error('[push] refresh/register failed', error);
+		setError(classifyError(error, 'registration-failed'));
+	} finally {
+		pushState.busy = false;
 	}
 }
 
@@ -84,23 +146,37 @@ export async function refreshPushState(): Promise<void> {
 export async function enablePush(): Promise<boolean> {
 	if (!isPushSupported() || pushState.busy) return false;
 	pushState.busy = true;
+	pushState.phase = 'enabling';
+	pushState.error = null;
+	let created: PushSubscription | null = null;
 	try {
 		const permission = await Notification.requestPermission();
 		pushState.permission = permission;
-		if (permission !== 'granted') return false;
+		if (permission !== 'granted') {
+			setError('permission-denied');
+			return false;
+		}
 		const reg = await navigator.serviceWorker.ready;
 		const existing = await reg.pushManager.getSubscription();
 		const sub =
 			existing ??
 			(await reg.pushManager.subscribe({
 				userVisibleOnly: true,
-				applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY) as BufferSource
+				applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY) as BufferSource,
 			}));
+		if (!existing) created = sub;
+		pushState.browserSubscribed = true;
 		await registerPushSubscription(toInput(sub));
-		pushState.subscribed = true;
+		setReady(true);
 		return true;
-	} catch (e) {
-		console.error('[push] enable failed', e);
+	} catch (error) {
+		console.error('[push] enable failed', error);
+		// 今回作った購読だけを戻す。以前からある不完全な購読は再認証後の修復に使える。
+		if (created) {
+			const removed = await created.unsubscribe().catch(() => false);
+			pushState.browserSubscribed = !removed;
+		}
+		setError(classifyError(error, 'registration-failed'));
 		return false;
 	} finally {
 		pushState.busy = false;
@@ -111,12 +187,43 @@ export async function enablePush(): Promise<boolean> {
 export async function disablePush(): Promise<void> {
 	if (pushState.busy) return;
 	pushState.busy = true;
+	pushState.phase = 'disabling';
+	pushState.error = null;
 	try {
-		await unsubscribeCurrent();
-		pushState.subscribed = false;
+		await removeCurrentSubscription();
+		pushState.browserSubscribed = false;
+		setReady(false);
+	} catch (error) {
+		console.error('[push] disable failed', error);
+		// ローカル解除に成功していれば表示はOFFのままにする。AppView側の失効購読は
+		// 次回配信の404/410でも掃除される。
+		try {
+			const reg = await navigator.serviceWorker.ready;
+			pushState.browserSubscribed = !!(await reg.pushManager.getSubscription());
+		} catch {
+			pushState.browserSubscribed = false;
+		}
+		setError(classifyError(error, 'unsubscribe-failed'));
 	} finally {
 		pushState.busy = false;
 	}
+}
+
+async function removeCurrentSubscription(): Promise<void> {
+	if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+	const reg = await navigator.serviceWorker.ready;
+	const sub = await reg.pushManager.getSubscription();
+	if (!sub) return;
+
+	let serverError: unknown;
+	try {
+		await deletePushSubscription(sub.endpoint);
+	} catch (error) {
+		serverError = error;
+	}
+	const unsubscribed = await sub.unsubscribe();
+	if (!unsubscribed) throw new Error('Browser push subscription could not be removed');
+	if (serverError) throw serverError;
 }
 
 /**
@@ -124,14 +231,8 @@ export async function disablePush(): Promise<void> {
  * pushState を触らず副作用を最小化した下請け。失敗しても致命的でないので握りつぶす。
  */
 export async function unsubscribeCurrent(): Promise<void> {
-	if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 	try {
-		const reg = await navigator.serviceWorker.ready;
-		const sub = await reg.pushManager.getSubscription();
-		if (!sub) return;
-		const { endpoint } = sub;
-		await sub.unsubscribe().catch(() => {});
-		await deletePushSubscription(endpoint).catch(() => {});
+		await removeCurrentSubscription();
 	} catch {
 		// 未ログイン・SW未登録などは無視。
 	}

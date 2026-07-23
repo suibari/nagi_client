@@ -334,6 +334,17 @@ export const ja = {
 		'通知がブラウザ側でブロックされています。サイトの通知設定を「許可」に変更してください。',
 	pushIosInstallNote:
 		'iPhone・iPad では、共有メニューから「ホーム画面に追加」してアプリとして起動すると、プッシュ通知を有効にできます。',
+	pushAuthRequired:
+		'通知を登録するための権限が現在のログインにありません。権限を更新して、もう一度登録してください。',
+	pushUnavailable:
+		'通知配信サーバーの設定が完了していません。しばらくしてからもう一度お試しください。',
+	pushNetworkError: '通信できなかったため、通知を登録できませんでした。',
+	pushRegistrationFailed: '通知の登録に失敗しました。もう一度お試しください。',
+	pushUnsubscribeFailed:
+		'端末の通知は解除されましたが、サーバー側の登録を完全に削除できませんでした。',
+	pushRetry: 'もう一度試す',
+	pushRefreshPermissions: '権限を更新して再ログイン',
+	pushReauthPending: '認証画面へ移動しています…',
 	settingsCrosspostTitle: 'Blueskyクロスポスト',
 	settingsCrosspostDescription: 'Nagiへの投稿をBlueskyにも投稿',
 	crosspostLegend: 'Blueskyクロスポスト',
