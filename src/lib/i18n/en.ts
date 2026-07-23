@@ -363,6 +363,8 @@ export const en: Messages = {
 	appLinksEnabledLabel: 'Show on profile',
 	appLinksEdit: 'Edit',
 	appLinksChooseFields: 'What to show',
+	appLinksExpandList: 'Show as a list',
+	appLinksArrayField: 'List to expand',
 	appLinksFromRepoHint: 'Add from your apps:',
 	appLinksAddManualLabel: 'Add by NSID',
 	appLinksAddSelect: 'Add from your collections…',

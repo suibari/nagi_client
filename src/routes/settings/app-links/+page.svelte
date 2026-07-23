@@ -12,6 +12,8 @@
 		fetchOwnLatestRecord,
 		resolveOwnPdsUrl,
 		collectLeaves,
+		collectArrayCandidates,
+		getByPath,
 		sampleText,
 		autoSelectFields,
 		buildLinkView,
@@ -20,6 +22,7 @@
 		type AppLink,
 		type AppLinkFieldRole,
 		type AppLinkView,
+		type ArrayCandidate,
 	} from '$lib/atproto/appLinks';
 
 	type FieldChoice = { path: string; sample: string; role: AppLinkFieldRole; shown: boolean };
@@ -29,6 +32,10 @@
 		appUri: string;
 		iconUrl: string;
 		savedPaths: string[];
+		/** repeat 展開する配列のキーパス（未使用時は ''）。 */
+		repeat: string;
+		/** レコードから検出した repeat 候補配列。 */
+		arrayCandidates: ArrayCandidate[];
 		isNew: boolean;
 		record: Record<string, unknown> | null;
 		choices: FieldChoice[];
@@ -53,6 +60,8 @@
 			appUri: link.appUri ?? '',
 			iconUrl: link.iconUrl ?? '',
 			savedPaths: (link.fields ?? []).map((f) => f.path),
+			repeat: link.repeat ?? '',
+			arrayCandidates: [],
 			isNew: false,
 			record: null,
 			choices: [],
@@ -60,6 +69,42 @@
 			loading: false,
 			loaded: false,
 		};
+	}
+
+	/** repeat の有無に応じてフィールド候補を組み立てる（repeat 時は配列の先頭要素を走査）。 */
+	function computeChoices(editor: LinkEditor, autoDefault: boolean): FieldChoice[] {
+		if (!editor.record) return [];
+		const base = editor.repeat
+			? getByPath(editor.record, editor.repeat)
+			: editor.record;
+		const element =
+			editor.repeat && Array.isArray(base) ? (base[0] as Record<string, unknown>) : base;
+		if (!element || typeof element !== 'object') return [];
+		const target = element as Record<string, unknown>;
+		const shown = new Set(autoDefault ? autoSelectFields(target) : editor.savedPaths);
+		return collectLeaves(target).map((l) => ({
+			path: l.path,
+			sample: sampleText(l),
+			role: l.role,
+			shown: shown.has(l.path),
+		}));
+	}
+
+	/** リスト展開トグル。ON で配列候補を検出し先頭を repeat に採用、OFF で単一表示へ戻す。 */
+	function toggleRepeat(editor: LinkEditor, on: boolean) {
+		if (on) {
+			if (!editor.arrayCandidates.length) return;
+			editor.repeat = editor.arrayCandidates[0].path;
+		} else {
+			editor.repeat = '';
+		}
+		editor.choices = computeChoices(editor, true);
+	}
+
+	/** 展開対象の配列を切り替える（候補が複数あるとき）。 */
+	function selectRepeat(editor: LinkEditor, path: string) {
+		editor.repeat = path;
+		editor.choices = computeChoices(editor, true);
 	}
 
 	let brokenIcons = $state<Set<string>>(new Set());
@@ -146,13 +191,8 @@
 			const record = await fetchOwnLatestRecord(editor.collection.trim());
 			editor.record = record;
 			if (record) {
-				const shown = new Set(editor.isNew ? autoSelectFields(record) : editor.savedPaths);
-				editor.choices = collectLeaves(record).map((l) => ({
-					path: l.path,
-					sample: sampleText(l),
-					role: l.role,
-					shown: shown.has(l.path),
-				}));
+				editor.arrayCandidates = collectArrayCandidates(record);
+				editor.choices = computeChoices(editor, editor.isNew);
 			}
 			// favicon 自動取得（未設定時）。
 			if (!editor.iconUrl) {
@@ -182,6 +222,8 @@
 			appUri: '',
 			iconUrl: discoveredIcons[appHome(c)] ?? '',
 			savedPaths: [],
+			repeat: '',
+			arrayCandidates: [],
 			isNew: true,
 			record: null,
 			choices: [],
@@ -221,6 +263,7 @@
 			label: editor.label,
 			appUri: editor.appUri || undefined,
 			iconUrl: editor.iconUrl || undefined,
+			repeat: editor.repeat || undefined,
 			fields: editor.choices.filter((c) => c.shown).map((c) => ({ path: c.path })),
 		};
 		if (!editor.record) {
@@ -229,8 +272,7 @@
 				label: editor.label || editor.collection,
 				appUri: link.appUri,
 				iconUrl: link.iconUrl,
-				images: [],
-				fields: [],
+				records: [],
 			};
 		}
 		return buildLinkView(ownDid, ownPdsUrl, link, editor.record);
@@ -246,6 +288,7 @@
 					collection: e.collection.trim(),
 					label: e.label.trim() || e.collection.trim(),
 					selection: 'latest',
+					...(e.repeat.trim() ? { repeat: e.repeat.trim() } : {}),
 					...(e.appUri.trim() ? { appUri: e.appUri.trim() } : {}),
 					...(e.iconUrl.trim() ? { iconUrl: e.iconUrl.trim() } : {}),
 					fields: (e.loaded
@@ -325,6 +368,29 @@
 							{:else if !editor.record}
 								<p class="muted">{m.appLinksNoSample()}</p>
 							{:else}
+								{#if editor.arrayCandidates.length}
+									<div class="field-row expand-row">
+										<ToggleSwitch
+											checked={!!editor.repeat}
+											label={m.appLinksExpandList()}
+											onchange={(v) => toggleRepeat(editor, v)}
+										/>
+									</div>
+									{#if editor.repeat && editor.arrayCandidates.length > 1}
+										<label class="field">
+											<span>{m.appLinksArrayField()}</span>
+											<select
+												class="add-select"
+												value={editor.repeat}
+												onchange={(e) => selectRepeat(editor, e.currentTarget.value)}
+											>
+												{#each editor.arrayCandidates as cand (cand.path)}
+													<option value={cand.path}>{cand.path} ({cand.length})</option>
+												{/each}
+											</select>
+										</label>
+									{/if}
+								{/if}
 								<p class="fields-hint muted">{m.appLinksChooseFields()}</p>
 								<div class="field-list">
 									{#each editor.choices as choice (choice.path)}
@@ -378,6 +444,14 @@
 	/* このページはフォーム主体なので、継承される中央寄せ(.auth-card)を左寄せに統一する。 */
 	.theme-settings {
 		text-align: left;
+		/* .settings-detail は display:grid で、この fieldset はグリッドアイテム。既定の
+		   min-width:auto だと、折り返せない長い URL の min-content 幅がカード(450px)を突き破る。
+		   0 に下げて内側の flex 省略(ellipsis)を効かせる。 */
+		min-inline-size: 0;
+	}
+	/* カード自身もグリッド／フレックス文脈で縮めるようにして横あふれを防ぐ。 */
+	.link {
+		min-inline-size: 0;
 	}
 	.muted {
 		color: var(--text-muted);
@@ -441,6 +515,10 @@
 	}
 	.field-row:first-child {
 		border-block-start: 0;
+	}
+	.expand-row {
+		border-block-start: 0;
+		padding-block: 0.15rem;
 	}
 	.field {
 		display: flex;

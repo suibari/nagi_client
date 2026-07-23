@@ -14,13 +14,31 @@
 		editing?: boolean;
 		onedit?: () => void;
 	} = $props();
+
+	// 単一表示（従来レイアウト）は 1 レコードのときだけ。複数はコンパクトなリスト行で並べる。
+	let single = $derived(link.records.length === 1 ? link.records[0] : null);
 </script>
 
-<article class="app-link" class:editing class:has-thumb={link.images.length}>
-	{#if link.images.length}
+{#snippet fieldList(fields: AppLinkView['records'][number]['fields'])}
+	<ul class="fields">
+		{#each fields as f, i (i)}
+			<li class="field {f.role}">
+				{#if f.role === 'datetime'}<Icon name="clock" size={13} />{:else if f.role === 'url'}<Icon name="link" size={13} />{/if}
+				{#if f.role === 'url'}
+					<a href={f.value} target="_blank" rel="noopener noreferrer">{f.value}</a>
+				{:else}
+					<span>{f.value}</span>
+				{/if}
+			</li>
+		{/each}
+	</ul>
+{/snippet}
+
+<article class="app-link" class:editing class:has-thumb={single && single.images.length}>
+	{#if single && single.images.length}
 		<div class="thumb">
-			<img class="cover" src={link.images[0]} alt="" loading="lazy" />
-			{#if link.images.length > 1}<span class="more">+{link.images.length - 1}</span>{/if}
+			<img class="cover" src={single.images[0]} alt="" loading="lazy" />
+			{#if single.images.length > 1}<span class="more">+{single.images.length - 1}</span>{/if}
 		</div>
 	{/if}
 
@@ -43,16 +61,20 @@
 			{/if}
 		</header>
 
-		{#if link.fields.length}
-			<ul class="fields">
-				{#each link.fields as f, i (i)}
-					<li class="field {f.role}">
-						{#if f.role === 'datetime'}<Icon name="clock" size={13} />{:else if f.role === 'url'}<Icon name="link" size={13} />{/if}
-						{#if f.role === 'url'}
-							<a href={f.value} target="_blank" rel="noopener noreferrer">{f.value}</a>
-						{:else}
-							<span>{f.value}</span>
+		{#if single}
+			{#if single.fields.length}
+				{@render fieldList(single.fields)}
+			{/if}
+		{:else}
+			<ul class="rows">
+				{#each link.records as rec, i (i)}
+					<li class="row" class:has-thumb={rec.images.length}>
+						{#if rec.images.length}
+							<img class="row-thumb" src={rec.images[0]} alt="" width="36" height="36" loading="lazy" />
 						{/if}
+						<div class="row-body">
+							{@render fieldList(rec.fields)}
+						</div>
 					</li>
 				{/each}
 			</ul>
@@ -175,8 +197,41 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		/* ネスト flex 内で長文が縮まずカードを押し広げるのを防ぐ（省略記号を効かせる）。 */
+		min-inline-size: 0;
 	}
 	.field.datetime {
 		color: var(--text-muted);
+	}
+	/* repeat 展開時のリスト行。1要素=小サムネ+フィールドの詰まった1行。 */
+	.rows {
+		list-style: none;
+		margin: 0.35rem 0 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.row {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		min-inline-size: 0;
+	}
+	.row-thumb {
+		flex: none;
+		inline-size: 36px;
+		block-size: 36px;
+		object-fit: cover;
+		border-radius: var(--radius-s);
+		display: block;
+	}
+	.row-body {
+		flex: 1;
+		min-inline-size: 0;
+	}
+	.row-body .fields {
+		margin: 0;
+		gap: 0.1rem;
 	}
 </style>

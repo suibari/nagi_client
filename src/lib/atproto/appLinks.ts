@@ -22,11 +22,19 @@ export type AppLink = {
 	collection: string;
 	label: string;
 	selection: 'latest';
+	/**
+	 * 1レコード内で、このキーパスが指す配列の各要素を1行として展開する（例 "cards"）。
+	 * 省略時は単一表示。指定時、fields の path は配列の各要素からの相対パスになる。
+	 */
+	repeat?: string;
 	appUri?: string;
 	iconUrl?: string;
 	enabled?: boolean;
 	fields: AppLinkField[];
 };
+
+/** repeat 配列を展開して並べるときの最大件数。 */
+export const MAX_LIST_ITEMS = 30;
 
 const current = () => {
 	const value = get(session);
@@ -209,6 +217,39 @@ export function collectLeaves(value: unknown, prefix = '', out: Leaf[] = [], dep
 	return out;
 }
 
+/** repeat 展開の候補になる配列（要素がプレーンオブジェクトの配列）。 */
+export type ArrayCandidate = { path: string; length: number; sample: Record<string, unknown> };
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+	return !!v && typeof v === 'object' && !Array.isArray(v) && !isBlob(v);
+}
+
+/**
+ * レコードを浅く走査し、repeat 展開に使える「要素がオブジェクトの配列」を候補として集める。
+ * Linkat の cards のようなリスト型フィールドを検出する用途。表示可能なリーフが多い順に並べる。
+ */
+export function collectArrayCandidates(
+	value: unknown,
+	prefix = '',
+	out: ArrayCandidate[] = [],
+	depth = 0,
+): ArrayCandidate[] {
+	if (depth > 4 || out.length >= 20 || value === null || value === undefined) return out;
+	if (Array.isArray(value)) {
+		if (prefix && value.length && isPlainObject(value[0])) {
+			out.push({ path: prefix, length: value.length, sample: value[0] });
+		}
+		return out;
+	}
+	if (isPlainObject(value)) {
+		for (const [k, v] of Object.entries(value)) {
+			if (k === '$type') continue;
+			collectArrayCandidates(v, prefix ? `${prefix}.${k}` : k, out, depth + 1);
+		}
+	}
+	return out;
+}
+
 /** サンプル値の短い表示文字列。 */
 export function sampleText(leaf: Leaf): string {
 	if (leaf.role === 'image') return '🖼';
@@ -238,25 +279,27 @@ export function autoSelectFields(record: Record<string, unknown>): string[] {
 // ---- 表示用ビューの構築（プロフィール・設定プレビュー共通） ----------------
 
 export type AppLinkFieldView = { role: 'value' | 'datetime' | 'url'; value: string };
+/** 1レコード（または repeat 展開時の1要素）分の表示内容。 */
+export type AppLinkRecordView = { images: string[]; fields: AppLinkFieldView[] };
 export type AppLinkView = {
 	collection: string;
 	label: string;
 	appUri?: string;
 	iconUrl?: string;
-	images: string[];
-	fields: AppLinkFieldView[];
+	/** 単一表示なら1件、repeat 展開なら配列要素ごとに1件。 */
+	records: AppLinkRecordView[];
 };
 
-/** 1連携の設定＋実レコードから表示用ビューを組み立てる。画像は getBlob URL にする。 */
-export function buildLinkView(
+/** fields 宣言＋1レコード（または1要素）から表示内容を組む。画像は getBlob URL にする。 */
+function buildRecordView(
 	did: string,
 	pdsUrl: string,
-	link: Pick<AppLink, 'collection' | 'label' | 'appUri' | 'iconUrl' | 'fields'>,
+	fields: AppLinkField[],
 	record: Record<string, unknown>,
-): AppLinkView {
-	const fields: AppLinkFieldView[] = [];
+): AppLinkRecordView {
+	const viewFields: AppLinkFieldView[] = [];
 	const images: string[] = [];
-	for (const f of link.fields ?? []) {
+	for (const f of fields ?? []) {
 		const raw = getByPath(record, f.path);
 		if (raw === null || raw === undefined) continue;
 		const role = detectRole(f.path, raw);
@@ -266,15 +309,39 @@ export function buildLinkView(
 			if (cid) images.push(blobUrl(pdsUrl, did, cid));
 			continue;
 		}
-		fields.push({ role, value: formatValue(role, raw) });
+		viewFields.push({ role, value: formatValue(role, raw) });
+	}
+	return { images, fields: viewFields };
+}
+
+/**
+ * 1連携の設定＋実レコードから表示用ビューを組み立てる。
+ * link.repeat があれば、その配列の各要素を1件として展開する（fields は要素相対パス）。
+ */
+export function buildLinkView(
+	did: string,
+	pdsUrl: string,
+	link: Pick<AppLink, 'collection' | 'label' | 'appUri' | 'iconUrl' | 'fields' | 'repeat'>,
+	record: Record<string, unknown>,
+): AppLinkView {
+	let items: Record<string, unknown>[];
+	if (link.repeat) {
+		const arr = getByPath(record, link.repeat);
+		items = Array.isArray(arr)
+			? (arr.filter((it) => it && typeof it === 'object') as Record<string, unknown>[]).slice(
+					0,
+					MAX_LIST_ITEMS,
+				)
+			: [];
+	} else {
+		items = [record];
 	}
 	return {
 		collection: link.collection,
 		label: link.label || link.collection,
 		appUri: link.appUri,
 		iconUrl: link.iconUrl,
-		images,
-		fields,
+		records: items.map((it) => buildRecordView(did, pdsUrl, link.fields ?? [], it)),
 	};
 }
 
@@ -313,7 +380,10 @@ export async function loadProfileAppLinks(did: string): Promise<AppLinkView[]> {
 			try {
 				const { records } = await pdsListRecords(did, link.collection, { limit: 1 });
 				const record = records[0]?.value;
-				return record ? buildLinkView(did, pdsUrl, link, record) : null;
+				if (!record) return null;
+				const view = buildLinkView(did, pdsUrl, link, record);
+				// repeat 配列が空など、表示すべき中身が無いカードは出さない。
+				return view.records.length ? view : null;
 			} catch {
 				return null;
 			}

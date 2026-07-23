@@ -383,6 +383,8 @@ export const ja = {
 	appLinksEnabledLabel: 'プロフィールに表示',
 	appLinksEdit: '編集',
 	appLinksChooseFields: '表示する項目',
+	appLinksExpandList: 'リストとして展開',
+	appLinksArrayField: '展開する配列',
 	appLinksFromRepoHint: 'あなたのアプリから追加:',
 	appLinksAddManualLabel: 'NSIDを直接入力して追加',
 	appLinksAddSelect: '所有コレクションから追加…',
