@@ -215,6 +215,7 @@
 		const followedImmediately = Boolean(optimisticTarget);
 		scrollTo(optimisticTarget);
 		try {
+			// 返信・引用はNagi内の投稿文脈を参照するため、Blueskyへはクロスポストしない。
 			const response = await createPost(draft);
 			optimisticPosts.markCreated(optimisticId, response.data);
 			await Promise.resolve(onposted?.()).catch(() => undefined);

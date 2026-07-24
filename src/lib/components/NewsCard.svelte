@@ -8,8 +8,6 @@
 	} from '$lib/atproto/records';
 	import type { MentionSelection } from '$lib/atproto/facets';
 	import type { ImageAttachment } from '$lib/images';
-	import { crosspostToBluesky } from '$lib/crosspost/bluesky';
-	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -96,17 +94,8 @@
 		);
 		try {
 			const assets = await uploadPostAssets(draft);
+			// ニュース引用もNagi内レコードを参照するため、Blueskyへはクロスポストしない。
 			await createPost(draft, assets);
-			if (getCrosspostEnabled() && (await hasCrosspostScope()))
-				await crosspostToBluesky(draft, {
-					...assets,
-					// BlueskyにはNagiのニュースレコードが無いため、記事リンクを引用相当として付ける。
-					cards: [{ uri: news.url, title: news.title }, ...assets.cards].slice(0, 4),
-				}).catch((e) => {
-					error = m.crosspostWarning({
-						reason: e instanceof Error ? e.message : m.crosspostFailed(),
-					});
-				});
 			clearQuote();
 			composing = false;
 		} catch (e) {
