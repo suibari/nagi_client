@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { APPVIEW_URL, getChannels } from '$lib/api/appview';
+	import { getChannels } from '$lib/api/appview';
 	import { createChannel } from '$lib/atproto/records';
 	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
 	import type { ChannelView } from '$lib/api/types';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
+	import ChannelCard from '$lib/components/ChannelCard.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
-	import { m, relativeTime } from '$lib/i18n/i18n.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 
 	let channels = $state<ChannelView[]>([]);
 	let cursor = $state<string | undefined>(undefined);
@@ -26,14 +27,11 @@
 	let creating = $state(false);
 	let createError = $state('');
 
-	const resolve = (url?: string) => (url?.startsWith('/') ? APPVIEW_URL + url : url);
 	// at://<did>/<collection>/<rkey> → /channels/<did>/<rkey>
 	const channelHref = (uri: string) => {
 		const rest = uri.slice('at://'.length).split('/');
 		return `/channels/${rest[0]}/${rest[2]}`;
 	};
-	// 更新日時は「最新投稿時刻（なければ作成日時）」の相対表示。
-	const updatedAt = (c: ChannelView) => relativeTime(c.lastPostAt ?? c.createdAt);
 	// 削除直後は取り込み反映まで API がまだ返すので、楽観的に除外する。
 	let visibleChannels = $derived(channels.filter((c) => !deletedChannels.has(c.uri)));
 
@@ -156,20 +154,7 @@
 		<div class="state">{m.channelsEmpty()}</div>
 	{:else}
 		{#each visibleChannels as channel (channel.uri)}
-			<a class="channel-card" href={channelHref(channel.uri)}>
-				<span class="channel-card-media">
-					{#if channel.banner}
-						<img src={resolve(channel.banner)} alt="" loading="lazy" />
-					{/if}
-				</span>
-				<span class="channel-card-name">{channel.name}</span>
-				<span class="channel-card-foot">
-					{#if channel.description}<span class="channel-card-desc">{channel.description}</span>{/if}
-					<span class="channel-card-updated"
-						>{m.channelUpdatedAt({ time: updatedAt(channel) })}</span
-					>
-				</span>
-			</a>
+			<ChannelCard {channel} />
 		{/each}
 		{#if hasMore}
 			<button

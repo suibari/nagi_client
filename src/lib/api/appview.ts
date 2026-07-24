@@ -162,6 +162,39 @@ export const searchPosts = (tag: string, cursor?: string) => {
 		'none',
 	);
 };
+// 自由文キーワード検索（意味検索＋語彙一致のハイブリッド）。tag 検索と同じ /search 画面に相乗り。
+export const searchPostsByQuery = (q: string, cursor?: string) => {
+	const params = new URLSearchParams({ q });
+	if (cursor) params.set('cursor', cursor);
+	return call<TimelinePage>(
+		'com.suibari.nagi.searchPosts',
+		`/xrpc/com.suibari.nagi.searchPosts?${params}`,
+		{},
+		'none',
+	);
+};
+// チャンネルの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
+export const searchChannelsByQuery = (q: string, cursor?: string) => {
+	const params = new URLSearchParams({ q });
+	if (cursor) params.set('cursor', cursor);
+	return call<ChannelsPage>(
+		'com.suibari.nagi.searchChannels',
+		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
+		{},
+		'none',
+	);
+};
+// ニュースの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
+export const searchNewsByQuery = (q: string, lang: 'ja' | 'en', cursor?: string) => {
+	const params = new URLSearchParams({ q, lang });
+	if (cursor) params.set('cursor', cursor);
+	return call<NewsPage>(
+		'com.suibari.nagi.searchNews',
+		`/xrpc/com.suibari.nagi.searchNews?${params}`,
+		{},
+		'none',
+	);
+};
 type GetProfileOptions = {
 	filter?: ProfileFeedFilter;
 	cursor?: string;
