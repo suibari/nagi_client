@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { getProfile } from '$lib/api/appview';
-	import type { ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
+	import type { PostView, ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import {
 		isNewsReactionItem,
@@ -10,6 +10,7 @@
 	} from '$lib/profile/reaction-feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
+	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import ActorBadges from '$lib/components/ActorBadges.svelte';
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
@@ -94,6 +95,29 @@
 		feed = f;
 	});
 	const badges = $derived(actorBadges(profile));
+	// botたんの自動分析コメントを、NewsCard と同じく合成 PostView にして吹き出し表示する。
+	const commentBotPost = $derived<PostView | undefined>(
+		profile?.comment
+			? {
+					uri: `at://${profile.did}/#bot-comment`,
+					cid: 'bot-comment',
+					author: feed?.botActor ??
+						reactionFeed?.botActor ?? {
+							did: 'did:unknown:bot-tan',
+							handle: 'bot-tan',
+							displayName: 'Botたん',
+							isBot: true,
+						},
+					text: profile.comment,
+					langs: [i18n.locale],
+					createdAt: profile.joinedAt ?? new Date().toISOString(),
+					indexedAt: profile.joinedAt ?? new Date().toISOString(),
+					reactions: [],
+					isBot: true,
+					isAffirmation: false,
+				}
+			: undefined,
+	);
 	const joined = $derived(
 		profile?.joinedAt
 			? new Date(profile.joinedAt).toLocaleDateString(dateLocale(), {
@@ -138,6 +162,11 @@
 			{#if joined}<span>{m.profileJoinedSince({ date: joined })}</span>{/if}
 		</div>
 		<ProfileAppLinks did={profile?.did} />
+		{#if commentBotPost}
+			<div class="profile-comment">
+				<ChatBubble post={commentBotPost} displayOnly />
+			</div>
+		{/if}
 	</header>
 	<nav class="profile-tabs" aria-label={m.profileTabsAria()}>
 		{#each tabs as t (t.id)}
@@ -218,3 +247,9 @@
 		</section>
 	{/if}
 {/if}
+
+<style>
+	.profile-comment {
+		margin-top: 0.75rem;
+	}
+</style>

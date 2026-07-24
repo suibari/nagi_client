@@ -96,6 +96,8 @@ export type ProfileDetail = ActorView & {
 	postCount: number;
 	firstPostAt?: string;
 	joinedAt?: string;
+	/** botたんの自動分析コメント。閲覧者の言語に合わせた本文（無ければ undefined）。 */
+	comment?: string;
 };
 export type ProfileNewsReactionItem = { kind: 'news'; news: NewsView };
 export type ProfileFeedItem = FeedItem | ProfileNewsReactionItem;
