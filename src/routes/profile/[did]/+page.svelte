@@ -3,7 +3,13 @@
 	import { getProfile } from '$lib/api/appview';
 	import type { ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
 	import { Feed } from '$lib/feed/feed.svelte';
+	import {
+		isNewsReactionItem,
+		ProfileReactionFeed,
+		reactionItemUri,
+	} from '$lib/profile/reaction-feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
+	import NewsCard from '$lib/components/NewsCard.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import ActorBadges from '$lib/components/ActorBadges.svelte';
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
@@ -11,7 +17,7 @@
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
-	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 	import { onMount } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 
@@ -31,17 +37,39 @@
 	let profile = $state<ProfileDetail>();
 	// per-(did, tab) feed cache so switching tabs back doesn't refetch
 	const feeds = new Map<string, Feed>();
+	const reactionFeeds = new Map<string, ProfileReactionFeed>();
 	let feed = $state<Feed>();
+	let reactionFeed = $state<ProfileReactionFeed>();
 	$effect(() => {
 		void did;
 		profile = undefined;
+		feed = undefined;
+		reactionFeed = undefined;
 		tab = page.url.searchParams.get('tab') === 'diary' ? 'diary' : 'posts';
 	});
 	$effect(() => {
 		const actor = did;
+		const locale = i18n.locale;
 		// 日記タブでもプロフィール欄は要るので、投稿フィードは読んでおく。
 		const filter: ProfileFeedFilter = tab === 'diary' ? 'posts' : tab;
 		if (!actor) return;
+		if (filter === 'reactions') {
+			const key = `${actor}:reactions:${locale}`;
+			let f = reactionFeeds.get(key);
+			if (!f) {
+				f = new ProfileReactionFeed((cursor) =>
+					getProfile(actor, { filter, cursor, lang: locale }).then((response) => {
+						profile = response.profile;
+						optimisticPosts.rememberActor(response.profile);
+						return response.feed;
+					}),
+				);
+				reactionFeeds.set(key, f);
+				void f.load();
+			}
+			reactionFeed = f;
+			return;
+		}
 		const key = `${actor}:${filter}`;
 		let f = feeds.get(key);
 		if (!f) {
@@ -76,6 +104,7 @@
 	);
 	function postDeleted(uri: string) {
 		for (const cachedFeed of feeds.values()) cachedFeed.removePost(uri);
+		for (const cachedFeed of reactionFeeds.values()) cachedFeed.removePost(uri);
 	}
 	onMount(() => {
 		const timer = setInterval(() => {
@@ -85,8 +114,8 @@
 	});
 </script>
 
-{#if feed?.error && !profile}
-	<div class="state error">{feed.error}</div>
+{#if (tab === 'reactions' ? reactionFeed?.error : feed?.error) && !profile}
+	<div class="state error">{tab === 'reactions' ? reactionFeed?.error : feed?.error}</div>
 {:else}
 	<header class="profile-header card">
 		<div class="top">
@@ -123,34 +152,69 @@
 		<section class="timeline">
 			<DiaryCalendar {did} initialDate={initialDiaryDate} botActor={feed?.botActor} />
 		</section>
+	{:else if tab === 'reactions'}
+		<section class="timeline" aria-busy={reactionFeed?.loading}>
+			{#if !reactionFeed || (reactionFeed.loading && !reactionFeed.items.length)}
+				<div class="state">{m.loading()}</div>
+			{:else if reactionFeed.error && !reactionFeed.items.length}
+				<div class="state error">
+					{reactionFeed.error}<button
+						class="icon-action"
+						type="button"
+						aria-label={m.retry()}
+						title={m.retry()}
+						onclick={() => reactionFeed?.load()}><Icon name="refresh" size={18} /></button
+					>
+				</div>
+			{:else if !reactionFeed.items.length}
+				<div class="state">{m.profileEmptyReactions()}</div>
+			{:else}
+				{#each reactionFeed.items as item (reactionItemUri(item))}
+					{#if isNewsReactionItem(item)}
+						<NewsCard news={item.news} botActor={reactionFeed.botActor} />
+					{:else}
+						<ThreadUnit {item} botActor={reactionFeed.botActor} ondeleted={postDeleted} />
+					{/if}
+				{/each}
+				{#if reactionFeed.hasMore}
+					<button
+						class="more icon-action"
+						type="button"
+						aria-label={m.loadMore()}
+						title={m.loadMore()}
+						onclick={() => reactionFeed?.loadMore()}><Icon name="more" size={20} /></button
+					>
+				{/if}
+			{/if}
+		</section>
 	{:else}
-	<section class="timeline" aria-busy={feed?.loading}>
-		{#if !feed || (feed.loading && !feed.visibleItems.length)}<div class="state">{m.loading()}</div>
-		{:else if feed.error && !feed.visibleItems.length}<div class="state error">
-				{feed.error}<button
-					class="icon-action"
-					type="button"
-					aria-label={m.retry()}
-					title={m.retry()}
-					onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
-				>
-			</div>
-		{:else if !feed.visibleItems.length}<div class="state">
-				{tab === 'reactions' ? m.profileEmptyReactions() : m.profileEmptyPosts()}
-			</div>
-		{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
-					{item}
-					botActor={feed.botActor}
-					ondeleted={postDeleted}
-					onposted={() => feed?.refresh()}
-				/>{/each}{#if feed.hasMore}
-				<button
-					class="more icon-action"
-					type="button"
-					aria-label={m.loadMore()}
-					title={m.loadMore()}
-					onclick={() => feed?.loadMore()}><Icon name="more" size={20} /></button
-				>{/if}{/if}
-	</section>
+		<section class="timeline" aria-busy={feed?.loading}>
+			{#if !feed || (feed.loading && !feed.visibleItems.length)}<div class="state">
+					{m.loading()}
+				</div>
+			{:else if feed.error && !feed.visibleItems.length}<div class="state error">
+					{feed.error}<button
+						class="icon-action"
+						type="button"
+						aria-label={m.retry()}
+						title={m.retry()}
+						onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+					>
+				</div>
+			{:else if !feed.visibleItems.length}<div class="state">{m.profileEmptyPosts()}</div>
+			{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
+						{item}
+						botActor={feed.botActor}
+						ondeleted={postDeleted}
+						onposted={() => feed?.refresh()}
+					/>{/each}{#if feed.hasMore}
+					<button
+						class="more icon-action"
+						type="button"
+						aria-label={m.loadMore()}
+						title={m.loadMore()}
+						onclick={() => feed?.loadMore()}><Icon name="more" size={20} /></button
+					>{/if}{/if}
+		</section>
 	{/if}
 {/if}

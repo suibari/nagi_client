@@ -37,9 +37,20 @@ export type Facet = { index: { byteStart: number; byteEnd: number }; features: u
 export type LinkCardView = { uri: string; title: string; description?: string; thumb?: string };
 export type StrongRef = { uri: string; cid: string };
 export type NewsView = {
-	uri: string; cid: string; articleId: string; url: string; title: string;
-	sourceName?: string; sourceUrl?: string; publishedAt?: string; botComment: string;
-	lang: 'ja' | 'en'; createdAt: string; indexedAt: string; unavailable?: boolean;
+	uri: string;
+	cid: string;
+	articleId: string;
+	url: string;
+	title: string;
+	sourceName?: string;
+	sourceUrl?: string;
+	publishedAt?: string;
+	botComment: string;
+	lang: 'ja' | 'en';
+	createdAt: string;
+	indexedAt: string;
+	reactions: ReactionView[];
+	unavailable?: boolean;
 };
 export type PostView = {
 	uri: string;
@@ -86,7 +97,13 @@ export type ProfileDetail = ActorView & {
 	firstPostAt?: string;
 	joinedAt?: string;
 };
+export type ProfileNewsReactionItem = { kind: 'news'; news: NewsView };
+export type ProfileFeedItem = FeedItem | ProfileNewsReactionItem;
 export type ProfilePage = { profile: ProfileDetail; feed: Page<FeedItem> };
+export type ProfileReactionPage = {
+	profile: ProfileDetail;
+	feed: Page<ProfileFeedItem>;
+};
 export type ThreadView = { post: PostView; replies: PostView[] };
 /** botたんが書いた1日分の日記。ポストではないのでタイムラインには出ない。 */
 export type DiaryView = {

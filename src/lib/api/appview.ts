@@ -11,6 +11,7 @@ import type {
 	Page,
 	ProfileFeedFilter,
 	ProfilePage,
+	ProfileReactionPage,
 	SearchActorsResult,
 	ThreadView,
 	TimelinePage,
@@ -87,12 +88,21 @@ export const getAffirmation = (cursor?: string) =>
 export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ limit: '20', lang });
 	if (cursor) params.set('cursor', cursor);
-	return call<NewsPage>(
-		'com.suibari.nagi.getPositiveNews',
-		`/xrpc/com.suibari.nagi.getPositiveNews?${params}`,
-		{},
-		'none',
-	);
+	const path = `/xrpc/com.suibari.nagi.getPositiveNews?${params}`;
+	return call<NewsPage>('com.suibari.nagi.getPositiveNews', path).catch((error) => {
+		// permission-set のpublish直後はPDSのキャッシュが古い場合がある。
+		// 認証だけが拒否されたときは公開取得へ戻し、ニュース閲覧を止めない。
+		if (
+			get(session) &&
+			error instanceof ApiRequestError &&
+			(error.status === 401 ||
+				error.status === 403 ||
+				(error.status === 400 && /scope|permission/i.test(error.message)))
+		) {
+			return call<NewsPage>('com.suibari.nagi.getPositiveNews', path, {}, 'none');
+		}
+		throw error;
+	});
 };
 /** 未読確認用。本文を描画しない画面では最新の1件だけを取得する。 */
 export const getLatestPositiveNews = (lang: 'ja' | 'en') => {
@@ -111,7 +121,7 @@ export const getThread = (uri: string) =>
 	);
 // チャンネル閲覧は公開コンテンツ。PDS プロキシを経由せず AppView を直接叩く（auth:'none'）。
 // これにより permission-set への rpc スコープ追加（goat lex publish）の反映を待たずに閲覧できる。
-// 未ログイン閲覧にも対応でき、getPositiveNews / getDiaries と同じ方針。
+// 未ログイン閲覧にも対応でき、getLatestPositiveNews / getDiaries と同じ方針。
 // 代わりにログイン中でも viewerDid が渡らないため、CH TL では自分のリアクション強調（reactedByMe）は付かない。
 export const getChannels = (cursor?: string) => {
 	const params = new URLSearchParams({ limit: '50' });
@@ -152,19 +162,33 @@ export const searchPosts = (tag: string, cursor?: string) => {
 		'none',
 	);
 };
-export const getProfile = (
+type GetProfileOptions = {
+	filter?: ProfileFeedFilter;
+	cursor?: string;
+	limit?: number;
+	lang?: 'ja' | 'en';
+};
+export function getProfile(
 	actor: string,
-	opts: { filter?: ProfileFeedFilter; cursor?: string; limit?: number } = {},
-) => {
+	opts: GetProfileOptions & { filter: 'reactions' },
+): Promise<ProfileReactionPage>;
+export function getProfile(
+	actor: string,
+	opts?: GetProfileOptions & {
+		filter?: Exclude<ProfileFeedFilter, 'reactions'>;
+	},
+): Promise<ProfilePage>;
+export function getProfile(actor: string, opts: GetProfileOptions = {}) {
 	const params = new URLSearchParams({ actor });
 	if (opts.filter) params.set('filter', opts.filter);
 	if (opts.cursor) params.set('cursor', opts.cursor);
 	if (opts.limit) params.set('limit', String(opts.limit));
-	return call<ProfilePage>(
+	if (opts.lang) params.set('lang', opts.lang);
+	return call<ProfilePage | ProfileReactionPage>(
 		'com.suibari.nagi.getProfile',
 		`/xrpc/com.suibari.nagi.getProfile?${params}`,
 	);
-};
+}
 /** 日記は公開コンテンツなので認証不要。month は "YYYY-MM"。 */
 export const getDiaries = (actor: string, opts: { month?: string; cursor?: string } = {}) => {
 	const params = new URLSearchParams({ actor });
