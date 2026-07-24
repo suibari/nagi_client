@@ -147,6 +147,8 @@
 
 <style>
 	.news-card {
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		padding: 1rem 1.1rem;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-l);
@@ -156,8 +158,13 @@
 	.news-meta {
 		display: flex;
 		gap: 0.65rem;
+		min-inline-size: 0;
 		color: var(--text-muted);
 		font-size: 0.78rem;
+	}
+	.news-meta > span {
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
 	}
 	.news-meta time {
 		margin-left: auto;
@@ -166,6 +173,7 @@
 		font-size: 1.08rem;
 		line-height: 1.55;
 		margin: 0.45rem 0 0.75rem;
+		overflow-wrap: anywhere;
 	}
 	.news-actions {
 		display: flex;

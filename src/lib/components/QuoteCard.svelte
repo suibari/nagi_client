@@ -44,6 +44,8 @@
 <style>
 	.quote-card {
 		margin-top: 0.6rem;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		padding: 0.25rem 0 0.25rem 0.75rem;
 		border-left: 3px solid var(--line-strong);
 		color: var(--text);
@@ -59,10 +61,17 @@
 		margin-bottom: 0.35rem;
 		color: var(--text-muted);
 		font-size: 0.75rem;
+		min-inline-size: 0;
+	}
+
+	.quote-meta > a {
+		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 
 	.quote-meta strong {
 		color: var(--text-strong);
+		overflow-wrap: anywhere;
 	}
 
 	.quote-meta a:hover {

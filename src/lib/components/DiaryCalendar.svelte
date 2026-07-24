@@ -198,6 +198,8 @@
 		padding: 16px;
 		display: grid;
 		gap: 14px;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.diary-head {
 		display: flex;
@@ -256,8 +258,12 @@
 		color: var(--text-strong);
 		margin-bottom: 6px;
 	}
+	.diary-entry {
+		min-inline-size: 0;
+	}
 	.diary-title {
 		display: inline-block;
+		max-inline-size: 100%;
 		border-radius: var(--radius-pill);
 		background: var(--badge-title-bg);
 		color: var(--badge-title-fg);
@@ -265,6 +271,7 @@
 		font-size: 11px;
 		font-weight: 800;
 		margin-bottom: 8px;
+		overflow-wrap: anywhere;
 	}
 	.diary-hint,
 	.diary-about {

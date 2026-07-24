@@ -141,6 +141,9 @@
 		display: flex;
 		gap: 0.6rem;
 		align-items: flex-start;
+		inline-size: 100%;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-m);
 		padding: 0.55rem 0.65rem;
@@ -176,11 +179,14 @@
 	.body {
 		flex: 1;
 		min-inline-size: 0;
+		max-inline-size: 100%;
 		display: flex;
 		flex-direction: column;
 	}
 	.content {
 		position: relative;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.content.collapsed {
 		max-block-size: 160px;
@@ -198,6 +204,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
+		min-inline-size: 0;
 	}
 	.icon {
 		border-radius: var(--radius-s);
@@ -212,6 +219,9 @@
 		color: var(--text-muted);
 	}
 	.name {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		font-weight: 600;
 		font-size: 0.85rem;
 		color: var(--text);
@@ -258,6 +268,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.2rem;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.field {
 		display: flex;
@@ -266,6 +278,7 @@
 		font-size: 0.82rem;
 		color: var(--text);
 		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.field :global(svg) {
 		color: var(--text-muted);
@@ -273,11 +286,14 @@
 	}
 	.field span,
 	.field a {
+		display: block;
+		flex: 1 1 auto;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		/* ネスト flex 内で長文が縮まずカードを押し広げるのを防ぐ（省略記号を効かせる）。 */
 		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.field.datetime {
 		color: var(--text-muted);
@@ -290,6 +306,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.35rem;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.row {
 		display: flex;
@@ -308,6 +326,7 @@
 	.row-body {
 		flex: 1;
 		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.row-body .fields {
 		margin: 0;

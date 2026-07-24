@@ -46,6 +46,9 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		margin-block-start: 0.75rem;
+		/* profile-header の grid アイテムとして、長い URL の min-content 幅を親へ伝播させない。 */
+		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 	.heading {
 		margin: 0;
