@@ -24,7 +24,7 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
-	import type { MentionSelection } from '$lib/atproto/facets';
+	import { restorePostEditState, type MentionSelection } from '$lib/atproto/facets';
 	import {
 		languagePreferences,
 		normalizeSupportedLanguage,
@@ -117,8 +117,9 @@
 			return;
 		}
 		editError = '';
-		editMentions = [];
-		editText = post.text;
+		const restored = restorePostEditState(post.text, post.facets);
+		editText = restored.text;
+		editMentions = restored.mentions;
 		editing = true;
 	}
 	function cancelEdit() {
@@ -387,7 +388,7 @@
 						title={pinned ? m.channelUnpinPost() : m.channelPinPost()}
 						onclick={() => void ontogglepin?.(post)}><Icon name="pin" size={17} /></button
 					>{/if}
-				{#if mine && topLevel}<button
+				{#if mine}<button
 						class="ghost"
 						class:active={editing}
 						type="button"

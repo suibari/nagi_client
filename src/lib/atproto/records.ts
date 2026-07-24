@@ -245,7 +245,7 @@ export async function setPostKossori(rkey: string, kossori: boolean) {
 	});
 }
 /**
- * 既存トップレベル投稿の本文を編集する（投稿後編集）。text/facets/langs だけ差し替え、
+ * 既存投稿の本文を編集する（投稿後編集）。text/facets/langs だけ差し替え、
  * createdAt・embed・reply・channel・kossori 等は getRecord した値を保持したまま putRecord で
  * 書き戻す（同一 rkey → uri 不変・cid 変化）。Lexicon は変更していないため record に編集用
  * フィールドは足さない。「編集済み」判定は AppView が cid 変化を検知して行う。
