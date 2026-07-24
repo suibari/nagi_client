@@ -213,7 +213,8 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			...(draft.channel && draft.channelOnly && { channelOnly: true }),
 			...(draft.reply && { reply: draft.reply }),
 			// ニュース引用はNagiでは専用カードを描画する。linkCardsはBluesky変換用だけに使う。
-			...(cards.length && draft.quote?.uri.split('/')[3] !== 'com.suibari.nagi.news' && { linkCards: cards }),
+			...(cards.length &&
+				draft.quote?.uri.split('/')[3] !== 'com.suibari.nagi.news' && { linkCards: cards }),
 			...(embed && { embed }),
 		},
 	});
@@ -230,9 +231,41 @@ export async function setPostKossori(rkey: string, kossori: boolean) {
 		collection: POST,
 		rkey,
 	});
-	const record: Record<string, unknown> = { ...(data.value as Record<string, unknown>), $type: POST };
+	const record: Record<string, unknown> = {
+		...(data.value as Record<string, unknown>),
+		$type: POST,
+	};
 	if (kossori) record.kossori = true;
 	else delete record.kossori;
+	return agent.com.atproto.repo.putRecord({
+		repo: s.did,
+		collection: POST,
+		rkey,
+		validate: false,
+		record,
+	});
+}
+/**
+ * 既存トップレベル投稿の本文を編集する（投稿後編集）。text/facets/langs だけ差し替え、
+ * createdAt・embed・reply・channel・kossori 等は getRecord した値を保持したまま putRecord で
+ * 書き戻す（同一 rkey → uri 不変・cid 変化）。Lexicon は変更していないため record に編集用
+ * フィールドは足さない。「編集済み」判定は AppView が cid 変化を検知して行う。
+ */
+export async function updatePost(rkey: string, draft: PostDraft) {
+	const s = current();
+	const agent = new Agent(s);
+	const { data } = await agent.com.atproto.repo.getRecord({
+		repo: s.did,
+		collection: POST,
+		rkey,
+	});
+	const record: Record<string, unknown> = {
+		...(data.value as Record<string, unknown>),
+		$type: POST,
+		text: draft.text,
+		facets: draft.facets,
+		langs: draft.langs,
+	};
 	return agent.com.atproto.repo.putRecord({
 		repo: s.did,
 		collection: POST,
@@ -269,16 +302,12 @@ export async function deleteRecord(collection: string, rkey: string) {
  * チャンネルを作成する。誰でも作成でき、作成者が所有者（レコードは作成者の PDS）。
  * banner はアバターと同じく AvatarCropper で切り出した webp Blob をアップロードして載せる。
  */
-export async function createChannel(input: {
-	name: string;
-	description?: string;
-	banner?: Blob;
-}) {
+export async function createChannel(input: { name: string; description?: string; banner?: Blob }) {
 	const s = current();
 	const agent = new Agent(s);
 	const banner = input.banner
-		? (await agent.com.atproto.repo.uploadBlob(input.banner, { encoding: input.banner.type }))
-				.data.blob
+		? (await agent.com.atproto.repo.uploadBlob(input.banner, { encoding: input.banner.type })).data
+				.blob
 		: undefined;
 	return agent.com.atproto.repo.createRecord({
 		repo: s.did,

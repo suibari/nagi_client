@@ -603,7 +603,8 @@
 	font-weight: 700;
 	color: var(--text-muted);
 }
-.post-composer textarea {
+.post-composer textarea,
+.inline-edit textarea {
 	display: block;
 	width: 100%;
 	min-height: 82px;
@@ -628,6 +629,12 @@
 }
 .post-composer-foot button {
 	padding: 7px 13px;
+}
+/* 送信などの円形アイコンボタンは 38×38・padding:0 が前提（通常コンポーザと同じ）。
+   上のテキストボタン用 padding が効くと内容領域が潰れてアイコンが中心からずれるため、
+   icon-action は padding:0 を保つ。 */
+.post-composer-foot .icon-action {
+	padding: 0;
 }
 .icon-action {
 	display: inline-grid;

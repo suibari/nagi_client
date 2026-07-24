@@ -71,6 +71,9 @@ export const ja = {
 	aboutLongPostTitle: '3000文字まで書けます',
 	aboutLongPostBody:
 		'ひとつの投稿に3000文字まで書けます。長くなった気持ちも、区切らずそのまま置いていけます。',
+	aboutEditTitle: '投稿を後から編集できます',
+	aboutEditBody:
+		'投稿したあとでも本文を書き直せます。編集した投稿には「編集済み」と表示されるので、直したことはちゃんと伝わります。',
 	aboutTranslateTitle: '自動で翻訳されます',
 	aboutTranslateBody:
 		'ほかの言語の投稿は、あなたの言語に自動で翻訳されて表示されます。原文もその場で開けます。翻訳先の言語は、初期設定ではブラウザの言語で、設定から変更できます。',
@@ -174,6 +177,12 @@ export const ja = {
 	kossoriDisable: '公開に戻す',
 	kossoriDisableAria: 'この投稿を公開に戻す',
 	kossoriToggleFailed: 'こっそり設定を変更できませんでした',
+	editPost: '編集',
+	editPostAria: 'この投稿を編集',
+	editPlaceholder: '投稿を編集',
+	editPostFailed: '投稿を編集できませんでした',
+	editedBadge: '編集済み',
+	editedBadgeAria: '編集済みの投稿',
 	translating: '翻訳中…',
 	translationLabel: '自動翻訳',
 	showOriginalText: '原文を表示',

@@ -10,7 +10,13 @@
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
-	import { createPost, deleteRecord, preparePostDraft, setPostKossori } from '$lib/atproto/records';
+	import {
+		createPost,
+		deleteRecord,
+		preparePostDraft,
+		setPostKossori,
+		updatePost,
+	} from '$lib/atproto/records';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageGallery from './ImageGallery.svelte';
 	import type { ImageAttachment } from '$lib/images';
@@ -53,6 +59,12 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let kossoriBusy = $state(false);
+	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
+	let editing = $state(false);
+	let editText = $state('');
+	let editMentions = $state<MentionSelection[]>([]);
+	let editBusy = $state(false);
+	let editError = $state('');
 	let postRow: HTMLDivElement;
 	let mine = $derived($session?.did === post.author.did);
 	let topLevel = $derived(!post.reply);
@@ -88,6 +100,22 @@
 			composeMode = mode;
 		}
 	}
+	function startEdit() {
+		if (!$session) {
+			location.href = '/login';
+			return;
+		}
+		editError = '';
+		editMentions = [];
+		editText = post.text;
+		editing = true;
+	}
+	function cancelEdit() {
+		editing = false;
+		editText = '';
+		editMentions = [];
+		editError = '';
+	}
 	const postHref = (uri: string) => {
 		const [did, , rkey] = uri.slice('at://'.length).split('/');
 		return `/thread/${did}/${rkey}`;
@@ -96,6 +124,34 @@
 		window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 	function scrollTo(element?: Element | null) {
 		element?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+	}
+	async function submitEdit() {
+		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
+		if (!editText.trim() || editBusy || !$session) return;
+		if (!match) {
+			editError = m.editPostFailed();
+			return;
+		}
+		// 編集は本文（text/facets/langs）だけ差し替え、createdAt・embed 等は既存値を保持する。
+		const draft = preparePostDraft(editText, undefined, undefined, [], [], editMentions);
+		editBusy = true;
+		editError = '';
+		try {
+			await updatePost(match[2], draft);
+			// 楽観反映: このカードの本文/facets を差し替え「編集済み」を立てる。AppView が
+			// putRecord を取り込むと同じ内容へ収束するため、即時 refresh は呼ばない
+			// （取り込み前は旧本文が返り楽観反映を打ち消してしまうため）。
+			post.text = draft.text;
+			post.facets = draft.facets as PostView['facets'];
+			post.edited = true;
+			editing = false;
+			editText = '';
+			editMentions = [];
+		} catch (error) {
+			editError = error instanceof Error ? error.message : m.editPostFailed();
+		} finally {
+			editBusy = false;
+		}
 	}
 	async function submitPost() {
 		if (
@@ -229,20 +285,48 @@
 						})}</a
 					>{/if}</time
 			>
+			{#if post.edited}<span class="edited-badge" aria-label={m.editedBadgeAria()}
+					>{m.editedBadge()}</span
+				>{/if}
 		</div>
-		<TranslateToggle
-			uri={post.uri}
-			text={post.text}
-			langs={post.langs}
-			facets={post.facets}
-			deleted={post.deleted}
-			collapsed={!expanded}
-			disabled={optimistic}
-			onoverflowchange={(value) => (overflowing = value)}
-		/>
-		{#if overflowing || expanded}<button class="read" onclick={() => (expanded = !expanded)}
-				>{expanded ? m.readLess() : m.readMore()}</button
-			>{/if}{#if post.images?.length}<ImageGallery
+		{#if editing}
+			<div class="inline-edit">
+				<ComposerEditor
+					id={`edit-${post.cid}`}
+					bind:value={editText}
+					bind:mentions={editMentions}
+					placeholder={m.editPlaceholder()}
+					disabled={editBusy}
+					onsubmit={() => void submitEdit()}
+				/>
+				<div class="post-composer-foot">
+					{#if editError}<span class="error" role="alert">{editError}</span>{/if}
+					<button
+						class="primary icon-action primary-icon"
+						type="button"
+						disabled={editBusy || !editText.trim()}
+						aria-label={editBusy ? m.composerSubmitting() : m.composerSubmit()}
+						title={editBusy ? m.composerSubmitting() : m.composerSubmit()}
+						onclick={() => void submitEdit()}
+						><Icon name={editBusy ? 'refresh' : 'send'} size={18} /></button
+					>
+				</div>
+			</div>
+		{:else}
+			<TranslateToggle
+				uri={post.uri}
+				text={post.text}
+				langs={post.langs}
+				facets={post.facets}
+				deleted={post.deleted}
+				collapsed={!expanded}
+				disabled={optimistic}
+				onoverflowchange={(value) => (overflowing = value)}
+			/>
+			{#if overflowing || expanded}<button class="read" onclick={() => (expanded = !expanded)}
+					>{expanded ? m.readLess() : m.readMore()}</button
+				>{/if}
+		{/if}{#if post.images?.length}<ImageGallery
 				images={post.images}
 			/>{/if}{#if post.linkCards?.length}<div class="link-cards">
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
@@ -280,6 +364,15 @@
 						aria-label={m.quotePost()}
 						title={m.quotePost()}
 						onclick={() => openComposer('quote')}><Icon name="quote" size={17} /></button
+					>{/if}
+				{#if mine && topLevel}<button
+						class="ghost"
+						class:active={editing}
+						type="button"
+						aria-label={m.editPostAria()}
+						title={m.editPost()}
+						onclick={() => (editing ? cancelEdit() : startEdit())}
+						><Icon name="edit" size={17} /></button
 					>{/if}
 				{#if mine && topLevel}<button
 						class="ghost"
@@ -378,5 +471,13 @@
 		margin-top: 0.45rem;
 		color: var(--text-muted);
 		font-size: 0.8125rem;
+	}
+	.edited-badge {
+		margin-left: 0.4rem;
+		color: var(--text-muted);
+		font-size: 0.75rem;
+	}
+	.inline-edit {
+		margin-top: 0.35rem;
 	}
 </style>

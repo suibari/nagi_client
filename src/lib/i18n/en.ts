@@ -67,6 +67,9 @@ export const en: Messages = {
 	aboutLongPostTitle: 'Write up to 3,000 characters',
 	aboutLongPostBody:
 		'A single post can hold up to 3,000 characters, so long feelings can stay in one piece.',
+	aboutEditTitle: 'Edit posts after sharing',
+	aboutEditBody:
+		'You can rewrite a post even after sharing it. Edited posts are marked as “Edited,” so the change is always clear.',
 	aboutTranslateTitle: 'Translated automatically',
 	aboutTranslateBody:
 		'Posts in other languages are translated into your language automatically, and the original is always one tap away. The target language follows your browser by default and can be changed in settings.',
@@ -168,6 +171,12 @@ export const en: Messages = {
 	kossoriDisable: 'Make public',
 	kossoriDisableAria: 'Show this post on the timelines again',
 	kossoriToggleFailed: 'Could not change the limited mode setting',
+	editPost: 'Edit',
+	editPostAria: 'Edit this post',
+	editPlaceholder: 'Edit your post',
+	editPostFailed: 'Could not edit post',
+	editedBadge: 'Edited',
+	editedBadgeAria: 'Edited post',
 	translating: 'Translating…',
 	translationLabel: 'Automatic translation',
 	showOriginalText: 'Show original',

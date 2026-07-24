@@ -32,6 +32,7 @@
 		},
 		{ icon: 'markdown', title: m.aboutMarkdownTitle, body: m.aboutMarkdownBody },
 		{ icon: 'text', title: m.aboutLongPostTitle, body: m.aboutLongPostBody },
+		{ icon: 'edit', title: m.aboutEditTitle, body: m.aboutEditBody },
 		{
 			icon: 'language',
 			title: m.aboutTranslateTitle,
