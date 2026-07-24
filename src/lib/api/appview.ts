@@ -1,5 +1,6 @@
 import { get } from 'svelte/store';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
 	ChannelsPage,
@@ -24,6 +25,10 @@ const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 // バージョンに応じ fragment/bare、サーバ serviceAuth.ts は両方受理）。
 // 未ログイン閲覧と auth:'none' は従来どおり appview へ直 fetch する（proxy は DPoP セッション必須）。
 const APPVIEW_PROXY = 'did:web:nagi-api.suibari.com#nagi_appview';
+// 開発専用: PUBLIC_APPVIEW_DIRECT=true のとき、ログイン中でも PDS プロキシを介さず
+// base(=PUBLIC_APPVIEW_URL, 通常 local appview)へ直 fetch する。viewerDid は
+// x-viewer-did ヘッダーで渡し、appview 側の APPVIEW_DEV_TRUST_VIEWER=true で信用させる。
+const APPVIEW_DIRECT = env.PUBLIC_APPVIEW_DIRECT === 'true';
 export type LinkMetadata = { uri: string; title: string; description?: string; image?: string };
 
 /** AppView が返したHTTPステータスとエラーコードを、呼び出し側で判定できる形で保持する。 */
@@ -47,6 +52,13 @@ async function request(
 	const current = auth === 'none' ? null : get(session);
 	if (auth === 'required' && !current) throw new Error('Authentication required');
 	const headers = { ...(options.body ? { 'content-type': 'application/json' } : {}) };
+	// ローカル開発: プロキシを介さず local appview へ直接。ログイン中は viewerDid を dev ヘッダーで渡す。
+	if (APPVIEW_DIRECT) {
+		return fetch(`${base}${path}`, {
+			...options,
+			headers: { ...headers, ...(current ? { 'x-viewer-did': current.did } : {}) },
+		});
+	}
 	if (current) {
 		return current.fetchHandler(path, {
 			...options,
