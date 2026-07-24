@@ -72,6 +72,7 @@
 		{#if showParent && item.replyParent}
 			<ChatBubble
 				post={item.replyParent}
+				{botActor}
 				{ondeleted}
 				{onposted}
 				canPin={canPinPost(item.replyParent)}
@@ -84,6 +85,7 @@
 			{#if showParent}<div class="thread-reply">
 					<ChatBubble
 						post={item}
+						{botActor}
 						{ondeleted}
 						{onposted}
 						canPin={canPinPost(item)}
@@ -94,6 +96,7 @@
 				</div>
 			{:else}<ChatBubble
 					post={item}
+					{botActor}
 					{ondeleted}
 					{onposted}
 					canPin={canPinPost(item)}
@@ -107,6 +110,7 @@
 			{#if showItem}<div class="thread-reply">
 					<ChatBubble
 						post={item.botReply}
+						{botActor}
 						{ondeleted}
 						{onposted}
 						canPin={canPinPost(item.botReply)}
@@ -117,6 +121,7 @@
 				</div>
 			{:else}<ChatBubble
 					post={item.botReply}
+					{botActor}
 					{ondeleted}
 					{onposted}
 					canPin={canPinPost(item.botReply)}

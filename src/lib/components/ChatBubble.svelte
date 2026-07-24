@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PostView } from '$lib/api/types';
+	import type { ActorView, PostView } from '$lib/api/types';
 	import ReactionBar from './ReactionBar.svelte';
 	import Avatar from './Avatar.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -34,6 +34,7 @@
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	let {
 		post,
+		botActor,
 		ondeleted,
 		onposted,
 		displayOnly = false,
@@ -43,6 +44,8 @@
 		ontogglepin,
 	}: {
 		post: PostView;
+		/** ニュース引用ブロックの botたんヘッダーに使う実データ。 */
+		botActor?: ActorView;
 		ondeleted?: (uri: string) => void;
 		onposted?: () => void | Promise<void>;
 		/** ニュースコメント等、投稿と同じ見た目だけを使う読み取り専用表示。 */
@@ -344,7 +347,7 @@
 			/>{/if}{#if post.linkCards?.length}<div class="link-cards">
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
 			</div>{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
-		{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} />{/if}
+		{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} {botActor} />{/if}
 		{#if !displayOnly}{#if optimistic}
 				<div class="post-sending" role="status" aria-live="polite">
 					<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
