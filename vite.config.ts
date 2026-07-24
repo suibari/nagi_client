@@ -1,15 +1,31 @@
 import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
-export default defineConfig(({ mode }) => {
-	const isDev = mode === 'development';
+export default defineConfig(({ command, mode }) => {
+	// mode は任意名に変更できるため、開発サーバーか本番ビルドかは command で判定する。
+	const isDev = command === 'serve';
+	const publicEnv = loadEnv(mode, '.', 'PUBLIC_');
+	const directAppView = publicEnv.PUBLIC_APPVIEW_DIRECT === 'true';
+	const appViewTarget = publicEnv.PUBLIC_APPVIEW_URL || 'http://127.0.0.1:3202';
 
 	// 本番は https ホスト（appview・PDS・bsky.social）のみに接続するが、dev では
 	// ローカル appview に http://localhost で接続する（XRPC も blob 画像も）ため、
 	// dev のときだけ connect-src / img-src で許可する。
 	return {
+		// ブラウザからローカル AppView を直接参照すると、svelte-kit sync が生成した本番用
+		// CSP を開発サーバーが再利用した際に拒否される。開発時は同一オリジンへ寄せ、
+		// Vite が AppView へ転送することで CSP の生成タイミングに依存させない。
+		server:
+			isDev && directAppView
+				? {
+						proxy: {
+							'/xrpc': { target: appViewTarget, changeOrigin: true },
+							'/api/blob': { target: appViewTarget, changeOrigin: true },
+						},
+					}
+				: undefined,
 		plugins: [
 			tailwindcss(),
 			sveltekit({
@@ -48,8 +64,8 @@ export default defineConfig(({ mode }) => {
 							: ['self', 'https:'],
 						'base-uri': ['self'],
 						'form-action': ['self'],
-						'object-src': ['none']
-					}
+						'object-src': ['none'],
+					},
 				},
 			}),
 		],

@@ -1,4 +1,5 @@
 import { get } from 'svelte/store';
+import { dev } from '$app/environment';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { env } from '$env/dynamic/public';
 import { session } from '$lib/oauth/session.svelte';
@@ -23,12 +24,15 @@ const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 // （format:did で fragment を却下）を回避できる。scope チェックは proxy ヘッダーの
 // fragment aud で granted scope と一致し、トークン発行は PDS 内部処理（aud は PDS の
 // バージョンに応じ fragment/bare、サーバ serviceAuth.ts は両方受理）。
-// 未ログイン閲覧と auth:'none' は従来どおり appview へ直 fetch する（proxy は DPoP セッション必須）。
+// 未ログイン閲覧と auth:'none' は AppView へ直接取得する（開発時だけ Vite 経由）。
 const APPVIEW_PROXY = 'did:web:nagi-api.suibari.com#nagi_appview';
 // 開発専用: PUBLIC_APPVIEW_DIRECT=true のとき、ログイン中でも PDS プロキシを介さず
-// base(=PUBLIC_APPVIEW_URL, 通常 local appview)へ直 fetch する。viewerDid は
+// Vite の同一オリジンプロキシから local AppView へ転送する。viewerDid は
 // x-viewer-did ヘッダーで渡し、appview 側の APPVIEW_DEV_TRUST_VIEWER=true で信用させる。
-const APPVIEW_DIRECT = env.PUBLIC_APPVIEW_DIRECT === 'true';
+const APPVIEW_DIRECT = dev && env.PUBLIC_APPVIEW_DIRECT === 'true';
+// 開発時は Vite の同一オリジンプロキシを使う。これにより本番用 CSP が生成済みでも、
+// ブラウザからローカル AppView への通信と画像取得を拒否されない。
+const browserBase = APPVIEW_DIRECT ? '' : base;
 export type LinkMetadata = { uri: string; title: string; description?: string; image?: string };
 
 /** AppView が返したHTTPステータスとエラーコードを、呼び出し側で判定できる形で保持する。 */
@@ -52,9 +56,9 @@ async function request(
 	const current = auth === 'none' ? null : get(session);
 	if (auth === 'required' && !current) throw new Error('Authentication required');
 	const headers = { ...(options.body ? { 'content-type': 'application/json' } : {}) };
-	// ローカル開発: プロキシを介さず local appview へ直接。ログイン中は viewerDid を dev ヘッダーで渡す。
+	// ローカル開発: Vite の同一オリジンプロキシ経由。ログイン中は viewerDid を dev ヘッダーで渡す。
 	if (APPVIEW_DIRECT) {
-		return fetch(`${base}${path}`, {
+		return fetch(path, {
 			...options,
 			headers: { ...headers, ...(current ? { 'x-viewer-did': current.did } : {}) },
 		});
@@ -377,4 +381,4 @@ export async function getLinkThumbnail(url: string): Promise<Blob> {
 export async function prepareDeleteAccountData(): Promise<void> {
 	if (!get(session)) throw new Error('Authentication required');
 }
-export { base as APPVIEW_URL };
+export { browserBase as APPVIEW_URL };

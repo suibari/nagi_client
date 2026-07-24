@@ -67,11 +67,12 @@
 			headError = '';
 			const target = uri;
 			void loadChannel(target, () => cancelled);
-			feed = new Feed(
+			const nextFeed = new Feed(
 				(cursor) => getChannelTimeline(target, cursor),
 				(item) => item.channel?.uri === target,
 			);
-			feed.load();
+			feed = nextFeed;
+			void nextFeed.load();
 			return () => {
 				cancelled = true;
 			};
