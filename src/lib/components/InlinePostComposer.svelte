@@ -46,8 +46,18 @@
 	>
 	<section class="bubble post-composer">
 		<label for={id}>{label}</label>
-		<ComposerEditor {id} bind:value={text} bind:mentions {placeholder} disabled={busy} {onsubmit} />
-		<ImageAttachmentEditor bind:attachments disabled={busy} />
+		{#snippet editorTools()}
+			<ImageAttachmentEditor bind:attachments disabled={busy} />
+		{/snippet}
+		<ComposerEditor
+			{id}
+			bind:value={text}
+			bind:mentions
+			{placeholder}
+			disabled={busy}
+			{onsubmit}
+			tools={editorTools}
+		/>
 		<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />
 		<div class="post-composer-foot">
 			{#if error}<span class="error" role="alert">{error}</span>{/if}

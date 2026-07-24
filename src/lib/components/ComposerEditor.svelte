@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { parsePostText, type MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import MarkdownPalette, { type MarkdownFormat } from './MarkdownPalette.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
 	import RichText from './RichText.svelte';
 
@@ -12,6 +14,7 @@
 		ariaLabel,
 		disabled = false,
 		onsubmit,
+		tools,
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
@@ -20,9 +23,11 @@
 		ariaLabel?: string;
 		disabled?: boolean;
 		onsubmit?: () => void;
+		tools?: Snippet;
 	} = $props();
 
 	let preview = $state(false);
+	let editor = $state<{ applyMarkdown: (format: MarkdownFormat) => void }>();
 	// 投稿時と同じ変換をかけ、[ラベル](URL)・生URL・メンションが facet になった状態を見せる
 	let parsed = $derived(preview ? parsePostText(value, mentions) : undefined);
 </script>
@@ -52,7 +57,20 @@
 			</p>{/if}
 	</div>
 {:else}
-	<MentionTextarea bind:value bind:mentions {id} {placeholder} {ariaLabel} {disabled} {onsubmit} />
+	<MentionTextarea
+		bind:this={editor}
+		bind:value
+		bind:mentions
+		{id}
+		{placeholder}
+		{ariaLabel}
+		{disabled}
+		{onsubmit}
+	/>
+	<div class="composer-tools" class:with-leading={tools}>
+		{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}
+		<MarkdownPalette {disabled} onformat={(format) => editor?.applyMarkdown(format)} />
+	</div>
 {/if}
 
 <style>
@@ -88,5 +106,22 @@
 	.composer-preview .muted {
 		margin: 0;
 		color: var(--text-muted);
+	}
+
+	.composer-tools {
+		display: flex;
+		align-items: flex-start;
+		justify-content: flex-end;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.composer-tools.with-leading {
+		justify-content: space-between;
+	}
+
+	.composer-tools-leading {
+		flex: 1;
+		min-width: 0;
 	}
 </style>

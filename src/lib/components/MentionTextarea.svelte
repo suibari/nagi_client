@@ -3,7 +3,9 @@
 	import { createActorSearch } from '$lib/api/useActorSearch.svelte';
 	import type { ActorView } from '$lib/api/types';
 	import type { MentionSelection } from '$lib/atproto/facets';
+	import { m } from '$lib/i18n/i18n.svelte';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
+	import type { MarkdownFormat } from './MarkdownPalette.svelte';
 
 	let {
 		value = $bindable(''),
@@ -71,6 +73,101 @@
 		updateMentionRanges(value, next);
 		value = next;
 		detectToken();
+	}
+
+	type Insertion = { at: number; text: string };
+
+	function insertText(insertions: Insertion[], selectionStart: number, selectionEnd: number) {
+		const ordered = [...insertions].sort((a, b) => b.at - a.at);
+		let next = value;
+		for (const insertion of ordered) {
+			next = `${next.slice(0, insertion.at)}${insertion.text}${next.slice(insertion.at)}`;
+		}
+		mentions = mentions.flatMap((mention) => {
+			if (
+				insertions.some((insertion) => insertion.at > mention.start && insertion.at < mention.end)
+			)
+				return [];
+			const startShift = insertions.reduce(
+				(total, insertion) => total + (insertion.at <= mention.start ? insertion.text.length : 0),
+				0,
+			);
+			const endShift = insertions.reduce(
+				(total, insertion) => total + (insertion.at < mention.end ? insertion.text.length : 0),
+				0,
+			);
+			return [{ ...mention, start: mention.start + startShift, end: mention.end + endShift }];
+		});
+		value = next;
+		close();
+		requestAnimationFrame(() => {
+			textarea.focus();
+			textarea.setSelectionRange(selectionStart, selectionEnd);
+		});
+	}
+
+	function applyInlineFormat(prefix: string, suffix: string, placeholder: string) {
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		if (start === end) {
+			insertText(
+				[{ at: start, text: `${prefix}${placeholder}${suffix}` }],
+				start + prefix.length,
+				start + prefix.length + placeholder.length,
+			);
+			return;
+		}
+		insertText(
+			[
+				{ at: start, text: prefix },
+				{ at: end, text: suffix },
+			],
+			start + prefix.length,
+			end + prefix.length,
+		);
+	}
+
+	function applyLineFormat(format: MarkdownFormat) {
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const firstLineStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+		const coveredEnd = end > start && value[end - 1] === '\n' ? end - 1 : end;
+		const lineStarts = [firstLineStart];
+		for (
+			let newline = value.indexOf('\n', firstLineStart);
+			newline !== -1 && newline < coveredEnd;
+		) {
+			lineStarts.push(newline + 1);
+			newline = value.indexOf('\n', newline + 1);
+		}
+		const insertions = lineStarts.map((at, index) => ({
+			at,
+			text:
+				format === 'heading'
+					? '# '
+					: format === 'bulletList'
+						? '- '
+						: format === 'numberedList'
+							? `${index + 1}. `
+							: '> ',
+		}));
+		const shiftBeforeStart = insertions.reduce(
+			(total, insertion) => total + (insertion.at <= start ? insertion.text.length : 0),
+			0,
+		);
+		const shiftBeforeEnd = insertions.reduce(
+			(total, insertion) => total + (insertion.at <= end ? insertion.text.length : 0),
+			0,
+		);
+		insertText(insertions, start + shiftBeforeStart, end + shiftBeforeEnd);
+	}
+
+	export function applyMarkdown(format: MarkdownFormat) {
+		if (disabled) return;
+		if (format === 'bold') applyInlineFormat('**', '**', m.markdownBoldPlaceholder());
+		else if (format === 'italic') applyInlineFormat('*', '*', m.markdownItalicPlaceholder());
+		else if (format === 'strike') applyInlineFormat('~~', '~~', m.markdownStrikePlaceholder());
+		else applyLineFormat(format);
 	}
 
 	function choose(actor: ActorView) {

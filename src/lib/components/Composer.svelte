@@ -153,6 +153,9 @@
 		><Avatar actor={myProfile.current} /></a
 	>
 	<section class="bubble composer">
+		{#snippet editorTools()}
+			<ImageAttachmentEditor bind:attachments disabled={busy} />
+		{/snippet}
 		<ComposerEditor
 			bind:value={text}
 			bind:mentions
@@ -160,8 +163,8 @@
 			ariaLabel={m.composerAria()}
 			disabled={busy}
 			onsubmit={submit}
+			tools={editorTools}
 		/>
-		<ImageAttachmentEditor bind:attachments disabled={busy} />
 		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
 		<div class="composer-foot">
 			<span
