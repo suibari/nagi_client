@@ -199,6 +199,9 @@ export const ja = {
 	botFailed: 'エラーのため、Botたんが返信できませんでした。',
 	botMissed: 'Botたんの返信はまだ届いていないようです',
 	botSkipped: 'Botたんは今回お休みしました',
+	// conversation grouping
+	threadMore: (p: { count: number }) => `${p.count}件のやりとり`,
+	threadViewAll: 'やりとりを全部見る',
 
 	// reactions
 	reactWithAria: (p: { emoji: string }) => `${p.emoji} でリアクション`,

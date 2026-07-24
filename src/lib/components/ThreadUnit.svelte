@@ -32,7 +32,11 @@
 	} = $props();
 	const STALE_MS = 3 * 60 * 1000;
 	const LONG_WAIT_MS = 10 * 1000;
-	let waiting = $derived(item.botReplyState === 'pending' || item.botReplyState === 'processing');
+	// 会話グループ(group モード)では待機状態は conversation.awaitingBotReply が持つ。
+	let conv = $derived(item.conversation);
+	let botState = $derived(conv ? conv.awaitingBotReply : item.botReplyState);
+	let waiting = $derived(botState === 'pending' || botState === 'processing');
+	let failed = $derived(botState === 'failed');
 	let now = $state(Date.now());
 	onMount(() => {
 		const timer = window.setInterval(() => (now = Date.now()), 1000);
@@ -40,8 +44,15 @@
 	});
 	let stale = $derived(waiting && now - new Date(item.createdAt).valueOf() > STALE_MS);
 	let longWait = $derived(waiting && now - new Date(item.createdAt).valueOf() >= LONG_WAIT_MS);
-	let pendingStatus = $derived(
-		item.botReplyState === 'processing' ? m.botThinking() : m.botWaiting(),
+	let pendingStatus = $derived(botState === 'processing' ? m.botThinking() : m.botWaiting());
+	let fullThreadHref = $derived(
+		conv ? `/thread/${conv.root.author.did}/${conv.root.uri.split('/').pop()}` : '',
+	);
+	let convChannel = $derived(
+		conv?.root.channel ?? conv?.bubbles.find((b) => b.post.channel)?.post.channel,
+	);
+	let convKossori = $derived(
+		Boolean(conv && (conv.root.threadKossori ?? conv.root.kossori ?? conv.root.channelOnly)),
 	);
 	let channel = $derived(item.channel ?? item.replyParent?.channel ?? item.botReply?.channel);
 	let threadKossori = $derived(
@@ -61,7 +72,58 @@
 		canPin && (!pinChannelUri || post.channel?.uri === pinChannelUri);
 </script>
 
-{#if hasVisiblePost}
+{#if conv}
+	<article
+		class="thread-unit"
+		class:optimistic={Boolean(item.optimisticState)}
+		data-post-uri={item.uri}
+		data-optimistic-key={item.optimisticKey}
+	>
+		<ThreadFlags channel={convChannel} kossori={convKossori} />
+		<ChatBubble
+			post={conv.root}
+			{botActor}
+			{ondeleted}
+			{onposted}
+			canPin={canPinPost(conv.root)}
+			pinned={conv.root.uri === pinnedPostUri}
+			{pinBusy}
+			{ontogglepin}
+		/>
+		{#if conv.hiddenCount > 0}<a class="thread-gap" href={fullThreadHref} aria-label={m.threadViewAll()}
+				>{m.threadMore({ count: conv.hiddenCount })}</a
+			>{/if}
+		{#each conv.bubbles as bubble (bubble.post.uri)}
+			<div class="thread-reply" style="--reply-indent: {Math.min(Math.max(0, bubble.depth - 1), 5)}">
+				<ChatBubble
+					post={bubble.post}
+					{botActor}
+					{ondeleted}
+					{onposted}
+					canPin={canPinPost(bubble.post)}
+					pinned={bubble.post.uri === pinnedPostUri}
+					{pinBusy}
+					{ontogglepin}
+				/>
+			</div>
+		{/each}
+		{#if !item.optimisticState && waiting && !stale}
+			<div class="thread-reply">
+				<div class="bot-pending">
+					<Avatar actor={botActor} />
+					<div class="pending-bubble" role="status" aria-live="polite">
+						<div><span class="typing"><i></i><i></i><i></i></span>{pendingStatus}</div>
+						{#if longWait}<small>{m.botLongWait()}</small>{/if}
+					</div>
+				</div>
+			</div>
+		{:else if !item.optimisticState && waiting}
+			<p class="bot-missed">{m.botMissed()}</p>
+		{:else if !item.optimisticState && failed}
+			<p class="bot-missed" role="status">{m.botFailed()}</p>
+		{/if}
+	</article>
+{:else if hasVisiblePost}
 	<article
 		class="thread-unit"
 		class:optimistic={Boolean(item.optimisticState)}

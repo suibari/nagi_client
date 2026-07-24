@@ -80,7 +80,7 @@
 	{:else if !feed.visibleItems.length}<div class="state">
 			{m.feedEmpty()}
 		</div>
-	{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
+	{:else}{#each feed.visibleItems as item (item.conversation?.threadRootUri ?? item.uri)}<ThreadUnit
 				{item}
 				botActor={feed.botActor}
 				ondeleted={(uri) => feed.removePost(uri)}

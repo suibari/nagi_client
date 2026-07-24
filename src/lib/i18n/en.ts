@@ -192,6 +192,9 @@ export const en: Messages = {
 	botFailed: 'Bot-tan could not reply because of an error.',
 	botMissed: "Bot-tan's reply doesn't seem to have arrived yet",
 	botSkipped: 'Bot-tan sat this one out',
+	// conversation grouping
+	threadMore: (p: { count: number }) => `${p.count} more in this conversation`,
+	threadViewAll: 'View full conversation',
 
 	reactWithAria: (p) => `React with ${p.emoji}`,
 	viewProfileOfAria: (p) => `View ${p.name}'s profile`,

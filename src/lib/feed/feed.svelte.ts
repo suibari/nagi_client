@@ -1,8 +1,21 @@
-import type { ActorView, FeedItem, Page } from '$lib/api/types';
+import type { ActorView, FeedItem, Page, PostView } from '$lib/api/types';
 import { m } from '$lib/i18n/i18n.svelte';
 import { optimisticPosts } from './optimistic-posts.svelte';
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
+
+/**
+ * マージ/DOMキー用の安定キー。会話グループでは代表 uri が新リプライで変わっても
+ * threadRootUri は不変なので、同スレッドの二重表示を防げる。
+ */
+export const feedKey = (item: FeedItem) => item.conversation?.threadRootUri ?? item.uri;
+/** アイテムが内包する全投稿（会話バブル・返信元・bot返信を含む）。楽観突合・author記憶に使う。 */
+export const feedPosts = (item: FeedItem): PostView[] =>
+	item.conversation
+		? [item.conversation.root, ...item.conversation.bubbles.map((b) => b.post)]
+		: [item, item.replyParent, item.botReply].filter((p): p is PostView => Boolean(p));
+/** feedPosts の uri 版。 */
+export const feedUris = (item: FeedItem): string[] => feedPosts(item).map((p) => p.uri);
 
 /**
  * Shared feed state for timeline/affirmation/profile tabs.
@@ -30,7 +43,11 @@ export class Feed {
 	get visibleItems() {
 		const pending = optimisticPosts.items.filter(this.#optimisticFilter);
 		const pendingUris = new Set(pending.map((item) => item.uri));
-		return [...pending, ...this.items.filter((item) => !pendingUris.has(item.uri))];
+		// 楽観投稿が既存アイテム（会話バブル含む）として現れたら、そのアイテム側を隠す。
+		return [
+			...pending,
+			...this.items.filter((item) => !feedUris(item).some((u) => pendingUris.has(u))),
+		];
 	}
 	hasOptimistic() {
 		return optimisticPosts.items.some(this.#optimisticFilter);
@@ -40,7 +57,7 @@ export class Feed {
 		this.loading = true;
 		try {
 			const page = await this.#fetcher();
-			optimisticPosts.reconcile(page.items);
+			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
 			if (request !== this.#loadRequest) return;
 			this.items = page.items;
 			this.botActor = page.botActor ?? this.botActor;
@@ -58,8 +75,9 @@ export class Feed {
 		if (!this.cursor || this.loading) return;
 		try {
 			const page = await this.#fetcher(this.cursor);
-			optimisticPosts.reconcile(page.items);
-			const unseen = page.items.filter((p) => !this.items.some((x) => x.uri === p.uri));
+			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
+			const seen = new Set(this.items.map(feedKey));
+			const unseen = page.items.filter((p) => !seen.has(feedKey(p)));
 			this.items = [...this.items, ...unseen];
 			this.botActor = page.botActor ?? this.botActor;
 			this.cursor = page.cursor;
@@ -73,10 +91,13 @@ export class Feed {
 		this.#refreshing = true;
 		try {
 			const page = await this.#fetcher();
-			optimisticPosts.reconcile(page.items);
-			const incoming = new Map(page.items.map((i) => [i.uri, i]));
-			const fresh = page.items.filter((i) => !this.items.some((x) => x.uri === i.uri));
-			this.items = [...fresh, ...this.items.map((i) => incoming.get(i.uri) ?? i)];
+			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
+			// スレッドキーでマージ。新リプライで代表 uri が変わっても同スレッドは in-place 更新され、
+			// 二重表示されない。既存スレッドは位置固定（no-jump）、新規スレッドだけ prepend。
+			const incoming = new Map(page.items.map((i) => [feedKey(i), i]));
+			const seen = new Set(this.items.map(feedKey));
+			const fresh = page.items.filter((i) => !seen.has(feedKey(i)));
+			this.items = [...fresh, ...this.items.map((i) => incoming.get(feedKey(i)) ?? i)];
 			this.botActor = page.botActor ?? this.botActor;
 			if (!this.cursor) {
 				this.cursor = page.cursor;
@@ -90,23 +111,47 @@ export class Feed {
 		}
 	}
 	removePost(uri: string) {
-		this.items = this.items
-			.filter((item) => item.uri !== uri)
-			.map((item) => ({
-				...item,
-				...(item.replyParent?.uri === uri ? { replyParent: undefined } : {}),
-				...(item.botReply?.uri === uri ? { botReply: undefined, botReplyState: undefined } : {}),
-			}));
+		this.items = this.items.flatMap((item) => {
+			if (item.conversation) {
+				// ルート削除はスレッドを非共有化するので、会話ごと除去。
+				if (item.conversation.root.uri === uri) return [];
+				const bubbles = item.conversation.bubbles.filter((b) => b.post.uri !== uri);
+				if (bubbles.length === item.conversation.bubbles.length) return [item];
+				const removed = item.conversation.bubbles.length - bubbles.length;
+				return [
+					{
+						...item,
+						conversation: {
+							...item.conversation,
+							bubbles,
+							totalCount: Math.max(1, item.conversation.totalCount - removed),
+						},
+					},
+				];
+			}
+			if (item.uri === uri) return [];
+			return [
+				{
+					...item,
+					...(item.replyParent?.uri === uri ? { replyParent: undefined } : {}),
+					...(item.botReply?.uri === uri
+						? { botReply: undefined, botReplyState: undefined }
+						: {}),
+				},
+			];
+		});
 	}
 	/** true while one of `did`'s recent posts is still waiting for botたん */
 	hasPendingFor(did?: string, windowMs = 180_000) {
 		if (!did) return false;
 		const now = Date.now();
-		return this.items.some(
-			(i) =>
+		return this.items.some((i) => {
+			const state = i.conversation?.awaitingBotReply ?? i.botReplyState;
+			return (
 				i.author.did === did &&
-				(i.botReplyState === 'pending' || i.botReplyState === 'processing') &&
-				now - new Date(i.createdAt).valueOf() < windowMs,
-		);
+				(state === 'pending' || state === 'processing') &&
+				now - new Date(i.createdAt).valueOf() < windowMs
+			);
+		});
 	}
 }

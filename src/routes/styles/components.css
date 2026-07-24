@@ -860,6 +860,25 @@
 
 .thread-reply {
 	margin-top: 10px;
+	/* Reddit風の深さインデント。--reply-indent 段(直リプ=0段)ぶん左に寄せる。既存箇所は未設定=0。 */
+	padding-inline-start: calc(var(--reply-indent, 0) * 18px);
+}
+/* 会話グループでルートと最新群の間に畳んだ件数を出す区切り。押すとスレッド全体へ。 */
+.thread-gap {
+	display: block;
+	width: fit-content;
+	margin: 10px auto 2px;
+	padding: 3px 12px;
+	font-size: 12px;
+	color: var(--text-faint);
+	background: var(--bg-subtle);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-pill);
+	text-decoration: none;
+}
+.thread-gap:hover {
+	color: var(--text);
+	background: var(--bg-hover);
 }
 .thread-unit,
 .thread-reply {
