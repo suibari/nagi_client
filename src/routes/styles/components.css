@@ -2142,11 +2142,15 @@ button.settings-category {
 .channel-hero {
 	margin-block-start: 8px;
 }
-.channel-hero-delete {
+.channel-hero-actions {
 	position: absolute;
 	inset-block-start: 10px;
 	inset-inline-end: 10px;
 	z-index: 2;
+	display: flex;
+	gap: 6px;
+}
+.channel-hero-action {
 	display: grid;
 	place-items: center;
 	inline-size: 34px;
@@ -2158,8 +2162,41 @@ button.settings-category {
 	color: #fff;
 	cursor: pointer;
 }
-.channel-hero-delete:hover {
+.channel-hero-action:hover {
 	background: rgb(0 0 0 / 0.6);
+}
+.channel-hero .channel-card-name {
+	max-inline-size: calc(100% - 100px);
+}
+.channel-pinned {
+	margin-block: 12px;
+	padding: 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: var(--bg-inset);
+}
+.channel-pinned-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-block-end: 8px;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+.channel-pinned-head > span {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+.channel-pinned-unavailable p {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: 0.85rem;
+}
+.channel-pin-error {
+	margin-block: 8px;
 }
 /* 作成ダイアログのバナープレビュー（オーバーレイなしの素の枠） */
 .channel-banner.preview {
@@ -2175,6 +2212,12 @@ button.settings-category {
 	inline-size: 100%;
 	block-size: 100%;
 	object-fit: cover;
+}
+.channel-banner-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 .channel-only-row {
 	padding: 2px 4px 6px;

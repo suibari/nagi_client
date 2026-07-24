@@ -3,12 +3,13 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { APPVIEW_URL, getChannel, getChannelTimeline } from '$lib/api/appview';
-	import { deleteChannel } from '$lib/atproto/records';
+	import { deleteChannel, setChannelPinnedPost, updateChannel } from '$lib/atproto/records';
 	import { deletedChannels } from '$lib/channels/optimistic.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
-	import type { ChannelView } from '$lib/api/types';
+	import type { ChannelView, PostView } from '$lib/api/types';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Composer from '$lib/components/Composer.svelte';
+	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, relativeTime } from '$lib/i18n/i18n.svelte';
@@ -37,8 +38,7 @@
 					if (target === currentUri) channel = res.channel;
 				})
 				.catch((e) => {
-					if (target === currentUri)
-						headError = e instanceof Error ? e.message : m.loadFailed();
+					if (target === currentUri) headError = e instanceof Error ? e.message : m.loadFailed();
 				});
 			feed = new Feed(
 				(cursor) => getChannelTimeline(target, cursor),
@@ -49,8 +49,146 @@
 	});
 
 	let isOwner = $derived(Boolean($session && channel && channel.did === $session.did));
-	let composerChannel = $derived(channel ? { uri: channel.uri, cid: channel.cid, name: channel.name } : undefined);
+	let composerChannel = $derived(
+		channel ? { uri: channel.uri, cid: channel.cid, name: channel.name } : undefined,
+	);
 	const resolve = (url?: string) => (url?.startsWith('/') ? APPVIEW_URL + url : url);
+
+	let editOpen = $state(false);
+	let editName = $state('');
+	let editDescription = $state('');
+	// undefined=既存画像を維持、null=削除、Blob=差し替え。
+	let editBanner = $state<Blob | null | undefined>(undefined);
+	let editBannerPreview = $state<string>();
+	let localBannerUrl = $state<string>();
+	let cropFile = $state<File>();
+	let editing = $state(false);
+	let editError = $state('');
+	function revokeEditPreview() {
+		// 既存バナーが楽観表示用 blob URL の場合は channel 側が所有するため、ここでは破棄しない。
+		if (editBanner instanceof Blob && editBannerPreview?.startsWith('blob:'))
+			URL.revokeObjectURL(editBannerPreview);
+	}
+	function openEdit() {
+		if (!channel || !isOwner) return;
+		revokeEditPreview();
+		editName = channel.name;
+		editDescription = channel.description ?? '';
+		editBanner = undefined;
+		editBannerPreview = resolve(channel.banner);
+		editError = '';
+		editOpen = true;
+	}
+	function closeEdit() {
+		if (editing) return;
+		revokeEditPreview();
+		editBannerPreview = undefined;
+		cropFile = undefined;
+		editOpen = false;
+	}
+	function selectBanner(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (!file) return;
+		if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+			editError = m.imageTypeError();
+			return;
+		}
+		if (file.size > 25_000_000) {
+			editError = m.imageSizeError();
+			return;
+		}
+		editError = '';
+		cropFile = file;
+	}
+	function applyBanner(blob: Blob) {
+		revokeEditPreview();
+		editBanner = blob;
+		editBannerPreview = URL.createObjectURL(blob);
+		cropFile = undefined;
+	}
+	function removeBanner() {
+		revokeEditPreview();
+		editBanner = null;
+		editBannerPreview = undefined;
+	}
+	async function submitEdit() {
+		const targetRkey = rkey;
+		if (!channel || !isOwner || editing || !editName.trim() || !targetRkey) return;
+		editing = true;
+		editError = '';
+		const name = editName.trim();
+		const description = editDescription.trim();
+		try {
+			const response = await updateChannel(targetRkey, {
+				name,
+				description: description || undefined,
+				banner: editBanner,
+			});
+			const updated: ChannelView = {
+				...channel,
+				cid: response.data.cid,
+				name,
+			};
+			if (description) updated.description = description;
+			else delete updated.description;
+			if (editBanner === null) {
+				delete updated.banner;
+				if (localBannerUrl) URL.revokeObjectURL(localBannerUrl);
+				localBannerUrl = undefined;
+			} else if (editBanner instanceof Blob) {
+				if (localBannerUrl) URL.revokeObjectURL(localBannerUrl);
+				localBannerUrl = URL.createObjectURL(editBanner);
+				updated.banner = localBannerUrl;
+			}
+			channel = updated;
+			revokeEditPreview();
+			editBannerPreview = undefined;
+			editOpen = false;
+		} catch (e) {
+			editError = e instanceof Error ? e.message : m.channelEditFailed();
+		} finally {
+			editing = false;
+		}
+	}
+
+	let pinBusy = $state(false);
+	let pinError = $state('');
+	async function savePinnedPost(post?: PostView) {
+		const targetRkey = rkey;
+		if (!channel || !isOwner || pinBusy || !targetRkey) return;
+		pinBusy = true;
+		pinError = '';
+		const ref = post ? { uri: post.uri, cid: post.cid } : undefined;
+		try {
+			const response = await setChannelPinnedPost(targetRkey, ref);
+			const updated: ChannelView = { ...channel, cid: response.data.cid };
+			if (ref && post) {
+				updated.pinnedPostRef = ref;
+				updated.pinnedPost = post;
+			} else {
+				delete updated.pinnedPostRef;
+				delete updated.pinnedPost;
+			}
+			channel = updated;
+		} catch (e) {
+			pinError = e instanceof Error ? e.message : m.channelPinFailed();
+		} finally {
+			pinBusy = false;
+		}
+	}
+	function togglePinnedPost(post: PostView) {
+		return savePinnedPost(channel?.pinnedPostRef?.uri === post.uri ? undefined : post);
+	}
+	function onPostDeleted(postUri: string) {
+		feed?.removePost(postUri);
+		if (channel?.pinnedPost?.uri === postUri) {
+			const updated = { ...channel };
+			delete updated.pinnedPost;
+			channel = updated;
+		}
+	}
 
 	let deleteOpen = $state(false);
 	let deleting = $state(false);
@@ -76,7 +214,11 @@
 		const base = setInterval(() => {
 			if (document.visibilityState === 'visible') feed?.refresh();
 		}, 30_000);
-		return () => clearInterval(base);
+		return () => {
+			clearInterval(base);
+			revokeEditPreview();
+			if (localBannerUrl) URL.revokeObjectURL(localBannerUrl);
+		};
 	});
 </script>
 
@@ -89,18 +231,29 @@
 			</span>
 			<h1 class="channel-card-name">{channel.name}</h1>
 			{#if isOwner}
-				<button
-					class="channel-hero-delete"
-					type="button"
-					aria-label={m.channelDelete()}
-					title={m.channelDelete()}
-					onclick={() => (deleteOpen = true)}><Icon name="trash" size={18} /></button
-				>
+				<div class="channel-hero-actions">
+					<button
+						class="channel-hero-action"
+						type="button"
+						aria-label={m.channelEdit()}
+						title={m.channelEdit()}
+						onclick={openEdit}><Icon name="edit" size={18} /></button
+					>
+					<button
+						class="channel-hero-action"
+						type="button"
+						aria-label={m.channelDelete()}
+						title={m.channelDelete()}
+						onclick={() => (deleteOpen = true)}><Icon name="trash" size={18} /></button
+					>
+				</div>
 			{/if}
 			<span class="channel-card-foot">
 				{#if channel.description}<span class="channel-card-desc">{channel.description}</span>{/if}
 				<span class="channel-card-updated"
-					>{m.channelUpdatedAt({ time: relativeTime(channel.lastPostAt ?? channel.createdAt) })}</span
+					>{m.channelUpdatedAt({
+						time: relativeTime(channel.lastPostAt ?? channel.createdAt),
+					})}</span
 				>
 			</span>
 		</div>
@@ -112,6 +265,35 @@
 {#if $session}
 	<Composer channel={composerChannel} onposted={() => feed?.refresh()} />
 {/if}
+
+{#if channel?.pinnedPost}
+	<section class="channel-pinned" aria-label={m.channelPinnedPost()}>
+		<div class="channel-pinned-head">
+			<span><Icon name="pin" size={16} />{m.channelPinnedPost()}</span>
+		</div>
+		<ThreadUnit
+			item={channel.pinnedPost}
+			canPin={isOwner}
+			pinChannelUri={channel.uri}
+			pinnedPostUri={channel.pinnedPostRef?.uri}
+			{pinBusy}
+			ontogglepin={togglePinnedPost}
+			ondeleted={onPostDeleted}
+			onposted={() => feed?.refresh()}
+		/>
+	</section>
+{:else if isOwner && channel?.pinnedPostRef}
+	<section class="channel-pinned channel-pinned-unavailable">
+		<div class="channel-pinned-head">
+			<span><Icon name="pin" size={16} />{m.channelPinnedPost()}</span>
+			<button class="ghost" type="button" disabled={pinBusy} onclick={() => savePinnedPost()}
+				>{m.channelUnpinPost()}</button
+			>
+		</div>
+		<p>{m.channelPinnedUnavailable()}</p>
+	</section>
+{/if}
+{#if pinError}<p class="error channel-pin-error" role="alert">{pinError}</p>{/if}
 
 <section class="timeline" aria-busy={feed?.loading}>
 	{#if feed}
@@ -136,8 +318,14 @@
 				<ThreadUnit
 					{item}
 					botActor={feed.botActor}
-					ondeleted={(u) => feed?.removePost(u)}
+					ondeleted={onPostDeleted}
 					onposted={() => feed?.refresh()}
+					canPin={isOwner}
+					pinChannelUri={channel?.uri}
+					pinnedPostUri={channel?.pinnedPostRef?.uri}
+					hiddenPostUri={channel?.pinnedPost?.uri}
+					{pinBusy}
+					ontogglepin={togglePinnedPost}
 				/>
 			{/each}
 			{#if feed.hasMore}
@@ -153,6 +341,62 @@
 	{/if}
 </section>
 
+{#if editOpen}
+	<div class="draft-backdrop" role="presentation">
+		<div class="draft-dialog" role="dialog" aria-modal="true" aria-label={m.channelEditTitle()}>
+			<h2>{m.channelEditTitle()}</h2>
+			<label class="field"
+				>{m.channelNameLabel()}
+				<input bind:value={editName} maxlength="500" placeholder={m.channelNamePlaceholder()} />
+			</label>
+			<label class="field"
+				>{m.channelDescLabel()}
+				<textarea
+					bind:value={editDescription}
+					maxlength="3000"
+					rows="3"
+					placeholder={m.channelDescPlaceholder()}
+				></textarea>
+			</label>
+			<div class="field">
+				<span>{m.channelBannerLabel()}</span>
+				{#if editBannerPreview}
+					<span class="channel-banner preview"
+						><img src={editBannerPreview} alt={m.channelBannerAlt()} /></span
+					>
+				{/if}
+				<div class="channel-banner-actions">
+					<label class="avatar-select"
+						>{m.selectImage()}<input
+							type="file"
+							accept="image/jpeg,image/png,image/webp"
+							onchange={selectBanner}
+						/></label
+					>
+					{#if editBannerPreview}
+						<button type="button" class="ghost" onclick={removeBanner}
+							>{m.channelBannerRemove()}</button
+						>
+					{/if}
+				</div>
+				<small>{m.channelBannerNote()}</small>
+			</div>
+			{#if editError}<p class="error" role="alert">{editError}</p>{/if}
+			<div class="delete-actions">
+				<button type="button" class="ghost" disabled={editing} onclick={closeEdit}
+					>{m.cancel()}</button
+				>
+				<button
+					type="button"
+					class="primary"
+					disabled={editing || !editName.trim()}
+					onclick={submitEdit}>{editing ? m.channelSaving() : m.save()}</button
+				>
+			</div>
+		</div>
+	</div>
+{/if}
+
 {#if deleteOpen}
 	<div class="draft-backdrop" role="presentation">
 		<div class="draft-dialog draft-confirm" role="dialog" aria-modal="true">
@@ -160,7 +404,8 @@
 			<p>{m.channelDeleteConfirmation()}</p>
 			{#if deleteError}<p class="error">{deleteError}</p>{/if}
 			<div class="delete-actions">
-				<button type="button" class="ghost" onclick={() => (deleteOpen = false)}>{m.cancel()}</button
+				<button type="button" class="ghost" onclick={() => (deleteOpen = false)}
+					>{m.cancel()}</button
 				>
 				<button type="button" class="danger" disabled={deleting} onclick={removeChannel}
 					>{deleting ? m.channelDeleting() : m.channelDeleteConfirm()}</button
@@ -168,4 +413,15 @@
 			</div>
 		</div>
 	</div>
+{/if}
+
+{#if cropFile}
+	<AvatarCropper
+		file={cropFile}
+		aspect={3}
+		round={false}
+		title={m.cropperBannerTitle()}
+		onconfirm={applyBanner}
+		oncancel={() => (cropFile = undefined)}
+	/>
 {/if}

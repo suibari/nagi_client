@@ -39,12 +39,21 @@
 		ondeleted,
 		onposted,
 		displayOnly = false,
+		canPin = false,
+		pinned = false,
+		pinBusy = false,
+		ontogglepin,
 	}: {
 		post: PostView;
 		ondeleted?: (uri: string) => void;
 		onposted?: () => void | Promise<void>;
 		/** ニュースコメント等、投稿と同じ見た目だけを使う読み取り専用表示。 */
 		displayOnly?: boolean;
+		/** チャンネル作成者向け。投稿者に関係なく、この投稿をピン操作できる。 */
+		canPin?: boolean;
+		pinned?: boolean;
+		pinBusy?: boolean;
+		ontogglepin?: (post: PostView) => void | Promise<void>;
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
@@ -364,6 +373,16 @@
 						aria-label={m.quotePost()}
 						title={m.quotePost()}
 						onclick={() => openComposer('quote')}><Icon name="quote" size={17} /></button
+					>{/if}
+				{#if canPin}<button
+						class="ghost"
+						class:active={pinned}
+						type="button"
+						disabled={pinBusy}
+						aria-pressed={pinned}
+						aria-label={pinned ? m.channelUnpinPost() : m.channelPinPost()}
+						title={pinned ? m.channelUnpinPost() : m.channelPinPost()}
+						onclick={() => void ontogglepin?.(post)}><Icon name="pin" size={17} /></button
 					>{/if}
 				{#if mine && topLevel}<button
 						class="ghost"

@@ -322,6 +322,74 @@ export async function createChannel(input: { name: string; description?: string;
 		},
 	});
 }
+/**
+ * チャンネルの表示情報を更新する。banner は undefined=維持、null=削除、Blob=差し替え。
+ * 最新レコードを読み、createdAt・pinnedPost・未知の将来フィールドを保持したまま書き戻す。
+ */
+export async function updateChannel(
+	rkey: string,
+	input: { name: string; description?: string; banner?: Blob | null },
+) {
+	const s = current();
+	const agent = new Agent(s);
+	const banner =
+		input.banner instanceof Blob
+			? (await agent.com.atproto.repo.uploadBlob(input.banner, { encoding: input.banner.type }))
+					.data.blob
+			: input.banner;
+	const { data } = await agent.com.atproto.repo.getRecord({
+		repo: s.did,
+		collection: CHANNEL,
+		rkey,
+	});
+	const record: Record<string, unknown> = {
+		...(data.value as Record<string, unknown>),
+		$type: CHANNEL,
+		name: input.name,
+	};
+	if (input.description) record.description = input.description;
+	else delete record.description;
+	if (banner === null) delete record.banner;
+	else if (banner !== undefined) record.banner = banner;
+	return agent.com.atproto.repo.putRecord({
+		repo: s.did,
+		collection: CHANNEL,
+		rkey,
+		validate: false,
+		swapRecord: data.cid,
+		record,
+	});
+}
+/**
+ * チャンネルのピンを設定・解除する。PDS はログイン中ユーザー自身の repo にしか書かないため、
+ * チャンネル作成者以外が他人のチャンネルレコードを変更することはできない。
+ */
+export async function setChannelPinnedPost(
+	rkey: string,
+	pinnedPost?: { uri: string; cid: string },
+) {
+	const s = current();
+	const agent = new Agent(s);
+	const { data } = await agent.com.atproto.repo.getRecord({
+		repo: s.did,
+		collection: CHANNEL,
+		rkey,
+	});
+	const record: Record<string, unknown> = {
+		...(data.value as Record<string, unknown>),
+		$type: CHANNEL,
+	};
+	if (pinnedPost) record.pinnedPost = pinnedPost;
+	else delete record.pinnedPost;
+	return agent.com.atproto.repo.putRecord({
+		repo: s.did,
+		collection: CHANNEL,
+		rkey,
+		validate: false,
+		swapRecord: data.cid,
+		record,
+	});
+}
 /** チャンネル削除。所有者だけが自分の PDS のレコードを消せる。所属投稿は残る。 */
 export async function deleteChannel(rkey: string) {
 	return deleteRecord(CHANNEL, rkey);

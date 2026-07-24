@@ -152,5 +152,9 @@ export type ChannelView = {
 	indexedAt: string;
 	/** 最新投稿時刻（活動順・過疎判定用）。投稿ゼロなら付かない。 */
 	lastPostAt?: string;
+	/** PDS のチャンネルレコードに保存された参照。取得不能でも解除に使う。 */
+	pinnedPostRef?: StrongRef;
+	/** 非削除かつこのチャンネル所属であることを確認済みのピン投稿。 */
+	pinnedPost?: PostView;
 };
 export type ChannelsPage = { channels: ChannelView[]; cursor?: string; hasMore: boolean };
