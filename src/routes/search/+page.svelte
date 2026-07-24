@@ -37,11 +37,9 @@
 	});
 </script>
 
-<section class="channel-header">
-	{#if tag}
-		<h1 class="channel-card-name" aria-label={m.searchTagAria({ tag })}>{m.searchTagTitle({ tag })}</h1>
-	{/if}
-</section>
+{#if tag}
+	<section class="page-title"><h1 aria-label={m.searchTagAria({ tag })}>{m.searchTagTitle({ tag })}</h1></section>
+{/if}
 
 <section class="timeline" aria-busy={feed?.loading}>
 	{#if !tag}
