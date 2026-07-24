@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { APPVIEW_URL, getChannels } from '$lib/api/appview';
 	import { createChannel } from '$lib/atproto/records';
-	import { deletedChannels } from '$lib/channels/optimistic.svelte';
+	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
 	import type { ChannelView } from '$lib/api/types';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -109,6 +109,19 @@
 				description: description.trim() || undefined,
 				banner: bannerBlob ?? undefined,
 			});
+			const now = new Date().toISOString();
+			createdChannels.add(
+				{
+					uri: res.data.uri,
+					cid: res.data.cid,
+					did: $session.did,
+					name: name.trim(),
+					...(description.trim() ? { description: description.trim() } : {}),
+					createdAt: now,
+					indexedAt: now,
+				},
+				bannerBlob ?? undefined,
+			);
 			createOpen = false;
 			await goto(channelHref(res.data.uri));
 		} catch (e) {
@@ -152,7 +165,9 @@
 				<span class="channel-card-name">{channel.name}</span>
 				<span class="channel-card-foot">
 					{#if channel.description}<span class="channel-card-desc">{channel.description}</span>{/if}
-					<span class="channel-card-updated">{m.channelUpdatedAt({ time: updatedAt(channel) })}</span>
+					<span class="channel-card-updated"
+						>{m.channelUpdatedAt({ time: updatedAt(channel) })}</span
+					>
 				</span>
 			</a>
 		{/each}
@@ -202,7 +217,8 @@
 			</div>
 			{#if createError}<p class="error">{createError}</p>{/if}
 			<div class="delete-actions">
-				<button type="button" class="ghost" onclick={() => (createOpen = false)}>{m.cancel()}</button
+				<button type="button" class="ghost" onclick={() => (createOpen = false)}
+					>{m.cancel()}</button
 				>
 				<button
 					type="button"

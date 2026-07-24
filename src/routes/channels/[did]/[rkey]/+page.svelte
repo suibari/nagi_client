@@ -2,9 +2,9 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { APPVIEW_URL, getChannel, getChannelTimeline } from '$lib/api/appview';
+	import { APPVIEW_URL, ApiRequestError, getChannel, getChannelTimeline } from '$lib/api/appview';
 	import { deleteChannel, setChannelPinnedPost, updateChannel } from '$lib/atproto/records';
-	import { deletedChannels } from '$lib/channels/optimistic.svelte';
+	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import type { ChannelView, PostView } from '$lib/api/types';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
@@ -22,29 +22,59 @@
 	let channel = $state<ChannelView>();
 	let headError = $state('');
 	let feed = $state<Feed>();
+	const CREATED_CHANNEL_RETRY_DELAYS = [0, 500, 1_000, 1_500, 2_000, 3_000, 5_000, 7_000];
+	const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+	async function loadChannel(target: string, cancelled: () => boolean) {
+		const created = createdChannels.get(target);
+		if (created) channel = created;
+		for (const delay of created ? CREATED_CHANNEL_RETRY_DELAYS : [0]) {
+			if (delay) await wait(delay);
+			if (cancelled() || target !== currentUri) return;
+			try {
+				const res = await getChannel(target);
+				if (cancelled() || target !== currentUri) return;
+				channel = res.channel;
+				headError = '';
+				createdChannels.remove(target);
+				return;
+			} catch (e) {
+				if (
+					created &&
+					e instanceof ApiRequestError &&
+					e.status === 404 &&
+					delay !== CREATED_CHANNEL_RETRY_DELAYS.at(-1)
+				)
+					continue;
+				if (cancelled() || target !== currentUri) return;
+				channel = undefined;
+				createdChannels.remove(target);
+				headError = e instanceof Error ? e.message : m.loadFailed();
+				return;
+			}
+		}
+	}
 
 	// CH の投稿はこっそりでも表示するが、別画面で送信中の楽観投稿まで混ざらないよう
 	// 所属チャンネルだけは一致させる。
 	// 閲覧は未認証（AppView 直読み）なのでセッション復元を待つ必要はない。
-	let currentUri = $state('');
+	let currentUri = '';
 	$effect(() => {
 		if (uri !== currentUri) {
+			let cancelled = false;
 			currentUri = uri;
 			channel = undefined;
 			headError = '';
 			const target = uri;
-			getChannel(target)
-				.then((res) => {
-					if (target === currentUri) channel = res.channel;
-				})
-				.catch((e) => {
-					if (target === currentUri) headError = e instanceof Error ? e.message : m.loadFailed();
-				});
+			void loadChannel(target, () => cancelled);
 			feed = new Feed(
 				(cursor) => getChannelTimeline(target, cursor),
 				(item) => item.channel?.uri === target,
 			);
 			feed.load();
+			return () => {
+				cancelled = true;
+			};
 		}
 	});
 
@@ -214,8 +244,18 @@
 		const base = setInterval(() => {
 			if (document.visibilityState === 'visible') feed?.refresh();
 		}, 30_000);
+		// 投稿直後は AppView 取り込み前のため、即時 refresh だけでは楽観投稿を
+		// reconcile できない。反映されるまで短い間隔で追従する。
+		const fast = setInterval(() => {
+			if (
+				document.visibilityState === 'visible' &&
+				(feed?.hasOptimistic() || feed?.hasPendingFor($session?.did))
+			)
+				feed?.refresh();
+		}, 3_000);
 		return () => {
 			clearInterval(base);
+			clearInterval(fast);
 			revokeEditPreview();
 			if (localBannerUrl) URL.revokeObjectURL(localBannerUrl);
 		};
