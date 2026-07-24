@@ -68,15 +68,15 @@
 	<fieldset class="theme-settings">
 		<legend>{m.pushLegend()}</legend>
 		<p>{m.pushHelp()}</p>
-		{#if !$session}
+		{#if !$session && $oauthReady}
 			<p>{m.pushSignInRequired()}</p>
-		{:else if needsStandalone}
+		{:else if $session && needsStandalone}
 			<p>{m.pushIosInstallNote()}</p>
-		{:else if !pushState.supported}
+		{:else if $session && !pushState.supported}
 			<p>{m.pushUnsupported()}</p>
-		{:else if pushState.permission === 'denied'}
+		{:else if $session && pushState.permission === 'denied'}
 			<p>{m.pushBlocked()}</p>
-		{:else}
+		{:else if $session}
 			<ToggleSwitch
 				checked={pushState.subscribed}
 				label={m.pushEnableLabel()}

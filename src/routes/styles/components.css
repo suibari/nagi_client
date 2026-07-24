@@ -852,6 +852,18 @@
 	scroll-margin-top: 16px;
 }
 @media (max-width: 767px) {
+	/* 入力フォームはアバター分の幅を使い、スマホでも十分な入力領域を確保する。 */
+	.post-row.composer-row > a:first-child {
+		display: none;
+	}
+	.composer-row > .bubble {
+		width: 100%;
+		border-radius: 20px;
+	}
+	.composer-row > .bubble::before,
+	.composer-row > .bubble::after {
+		display: none;
+	}
 	.thread-unit,
 	.thread-reply {
 		scroll-margin-top: calc(var(--mobile-header-h) + 8px);

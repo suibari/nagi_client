@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { session } from '$lib/oauth/session.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
 
 	// m.* はロケールを読むアクセサ。文字列に展開せず関数のまま持ち、
 	// テンプレートで呼ぶことで言語切り替えに追従させる。
@@ -68,7 +68,7 @@
 	     戻り先はログイン状態で出し分ける。 -->
 	{#if $session}
 		<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	{:else}
+	{:else if $oauthReady}
 		<a class="settings-back" href="/">← {m.backToHome()}</a>
 	{/if}
 	<h1>{m.settingsAboutTitle()}</h1>

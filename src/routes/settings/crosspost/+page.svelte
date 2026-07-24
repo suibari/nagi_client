@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { session, signIn } from '$lib/oauth/session.svelte';
+	import { oauthReady, session, signIn } from '$lib/oauth/session.svelte';
 	import {
 		getCrosspostEnabled,
 		hasCrosspostScope,
@@ -45,11 +45,11 @@
 		<p>{m.crosspostSplitNote()}</p>
 		<p>{m.crosspostBotNote()}</p>
 		<p>{m.crosspostDeviceNote()}</p>
-		{#if !$session}
+		{#if !$session && $oauthReady}
 			<p>{m.crosspostSignInRequired()}</p>
-		{:else if granted}
+		{:else if $session && granted}
 			<ToggleSwitch checked={enabled} label={m.crosspostEnableLabel()} onchange={toggle} />
-		{:else}
+		{:else if $session}
 			<p>{m.crosspostReauthNote()}</p>
 			<button type="button" disabled={busy} onclick={reauthorize}
 				>{busy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}</button

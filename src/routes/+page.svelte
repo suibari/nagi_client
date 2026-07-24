@@ -46,7 +46,7 @@
 <FeedTabs />
 {#if $session}
 	<Composer onposted={() => feed.refresh()} />
-{:else}
+{:else if $oauthReady}
 	<section class="hero">
 		<p class="eyebrow">{m.heroEyebrow()}</p>
 		<h1>{m.heroTitle()}</h1>

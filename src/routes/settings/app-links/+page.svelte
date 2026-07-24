@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { session } from '$lib/oauth/session.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import AppLinkCard from '$lib/components/AppLinkCard.svelte';
 	import {
@@ -314,11 +314,11 @@
 		<p>{m.appLinksHelp()}</p>
 		<p class="muted">{m.appLinksPublicNote()}</p>
 
-		{#if !$session}
+		{#if !$session && $oauthReady}
 			<p>{m.appLinksSignInRequired()}</p>
-		{:else if !loaded}
+		{:else if $session && !loaded}
 			<p>{m.loading()}</p>
-		{:else}
+		{:else if $session}
 			{#if appGroups.length}
 				<div class="discover">
 					<span class="muted">{m.appLinksFromRepoHint()}</span>
