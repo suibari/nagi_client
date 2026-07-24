@@ -1,12 +1,20 @@
 <script lang="ts">
 	import type { ActorView, NewsView, PostView } from '$lib/api/types';
-	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
+	import {
+		createPost,
+		preparePostDraft,
+		uploadPostAssets,
+		type LinkCardDraft,
+	} from '$lib/atproto/records';
+	import type { MentionSelection } from '$lib/atproto/facets';
+	import type { ImageAttachment } from '$lib/images';
 	import { crosspostToBluesky } from '$lib/crosspost/bluesky';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
 	import ChatBubble from './ChatBubble.svelte';
+	import InlinePostComposer from './InlinePostComposer.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	let { news, botActor }: { news: NewsView; botActor?: ActorView } = $props();
 	let composing = $state(false),
@@ -14,6 +22,9 @@
 		busy = $state(false),
 		error = $state(''),
 		shared = $state(false);
+	let attachments = $state<ImageAttachment[]>([]);
+	let linkCards = $state<LinkCardDraft[]>([]);
+	let mentions = $state<MentionSelection[]>([]);
 	let safeUrl = $derived.by(() => {
 		try {
 			const u = new URL(news.url);
@@ -57,30 +68,46 @@
 			location.href = '/login';
 			return;
 		}
-		composing = !composing;
 		error = '';
+		if (composing) cancelQuote();
+		else composing = true;
+	}
+	function clearQuote() {
+		text = '';
+		attachments = [];
+		linkCards = [];
+		mentions = [];
+	}
+	function cancelQuote() {
+		composing = false;
+		clearQuote();
 	}
 	async function quote() {
-		if (!$session || !text.trim() || busy) return;
+		if (!$session || (!text.trim() && !attachments.length && !linkCards.length) || busy) return;
 		busy = true;
 		error = '';
 		const draft = preparePostDraft(
 			text,
 			undefined,
 			{ uri: news.uri, cid: news.cid },
-			[],
-			[{ uri: news.url, title: news.title }],
+			attachments,
+			linkCards,
+			mentions,
 		);
 		try {
 			const assets = await uploadPostAssets(draft);
 			await createPost(draft, assets);
 			if (getCrosspostEnabled() && (await hasCrosspostScope()))
-				await crosspostToBluesky(draft, assets).catch((e) => {
+				await crosspostToBluesky(draft, {
+					...assets,
+					// BlueskyにはNagiのニュースレコードが無いため、記事リンクを引用相当として付ける。
+					cards: [{ uri: news.url, title: news.title }, ...assets.cards].slice(0, 4),
+				}).catch((e) => {
 					error = m.crosspostWarning({
 						reason: e instanceof Error ? e.message : m.crosspostFailed(),
 					});
 				});
-			text = '';
+			clearQuote();
 			composing = false;
 		} catch (e) {
 			error = e instanceof Error ? e.message : m.postFailed();
@@ -126,23 +153,20 @@
 			title={shared ? m.newsCopied() : m.newsShare()}><Icon name="share" size={18} /></button
 		>
 	</div>
-	{#if composing}<div class="news-composer">
-			<label
-				>{m.newsQuoteLabel()}<textarea
-					bind:value={text}
-					maxlength="3000"
-					placeholder={m.quotePlaceholder()}
-					disabled={busy}
-				></textarea></label
-			>
-			<div>
-				<button class="ghost" type="button" onclick={() => (composing = false)}>{m.cancel()}</button
-				><button class="primary" type="button" disabled={busy || !text.trim()} onclick={quote}
-					>{busy ? m.composerSubmitting() : m.composerSubmit()}</button
-				>
-			</div>
-		</div>{/if}
-	{#if error}<p class="error" role="alert">{error}</p>{/if}
+	{#if composing}<InlinePostComposer
+			id={`news-quote-${news.cid}`}
+			label={m.newsQuoteLabel()}
+			placeholder={m.quotePlaceholder()}
+			bind:text
+			bind:mentions
+			bind:attachments
+			bind:linkCards
+			{busy}
+			{error}
+			onsubmit={() => void quote()}
+			oncancel={cancelQuote}
+		/>{/if}
+	{#if error && !composing}<p class="error" role="alert">{error}</p>{/if}
 </article>
 
 <style>
@@ -192,29 +216,6 @@
 	.news-actions .icon-action {
 		width: 36px;
 		height: 36px;
-	}
-	.news-composer {
-		margin-top: 0.75rem;
-	}
-	.news-composer label {
-		display: grid;
-		gap: 0.35rem;
-		font-size: 0.85rem;
-	}
-	.news-composer textarea {
-		min-height: 6rem;
-		resize: vertical;
-		padding: 0.7rem;
-		border: 1px solid var(--line);
-		border-radius: 0.7rem;
-		background: var(--bg-raised);
-		color: var(--text);
-	}
-	.news-composer > div {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.4rem;
-		margin-top: 0.45rem;
 	}
 	.error {
 		color: var(--danger);

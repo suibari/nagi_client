@@ -17,16 +17,14 @@
 		setPostKossori,
 		updatePost,
 	} from '$lib/atproto/records';
-	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageGallery from './ImageGallery.svelte';
 	import type { ImageAttachment } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
-	import LinkCardEditor from './LinkCardEditor.svelte';
 	import LinkCard from './LinkCard.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import ComposerEditor from './ComposerEditor.svelte';
+	import InlinePostComposer from './InlinePostComposer.svelte';
 	import type { MentionSelection } from '$lib/atproto/facets';
-	import { myProfile } from '$lib/profile/me.svelte';
 	import {
 		languagePreferences,
 		normalizeSupportedLanguage,
@@ -101,13 +99,17 @@
 		}
 		postError = '';
 		if (composeMode === mode) {
-			composeMode = undefined;
-			attachments = [];
-			linkCards = [];
-			mentions = [];
+			cancelComposer();
 		} else {
 			composeMode = mode;
 		}
+	}
+	function cancelComposer() {
+		composeMode = undefined;
+		composeText = '';
+		attachments = [];
+		linkCards = [];
+		mentions = [];
 	}
 	function startEdit() {
 		if (!$session) {
@@ -420,51 +422,19 @@
 </div>
 {#if composeMode && !displayOnly}
 	<!-- リプライ／引用も「自分のアバター＋吹き出し」で、投稿後のカードと同じ並びに見せる -->
-	<div class="post-row mine composer-row">
-		<a href={`/profile/${$session?.did}`} aria-label={m.myProfileAria()}
-			><Avatar actor={myProfile.current} /></a
-		>
-		<section class="bubble post-composer">
-			<label for={`compose-${post.cid}`}
-				>{composeMode === 'reply' ? m.replyComposerLabel() : m.quoteComposerLabel()}</label
-			>
-			<ComposerEditor
-				id={`compose-${post.cid}`}
-				bind:value={composeText}
-				bind:mentions
-				placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
-				disabled={posting}
-				onsubmit={() => void submitPost()}
-			/>
-			<ImageAttachmentEditor bind:attachments disabled={posting} />
-			<LinkCardEditor text={composeText} bind:cards={linkCards} disabled={posting} />
-			<div class="post-composer-foot">
-				{#if postError}<span class="error" role="alert">{postError}</span>{/if}
-				<button
-					class="ghost icon-action"
-					type="button"
-					disabled={posting}
-					aria-label={m.cancel()}
-					title={m.cancel()}
-					onclick={() => {
-						composeMode = undefined;
-						attachments = [];
-						linkCards = [];
-						mentions = [];
-					}}><Icon name="cancel" size={18} /></button
-				>
-				<button
-					class="primary icon-action primary-icon"
-					type="button"
-					disabled={posting || (!composeText.trim() && !attachments.length && !linkCards.length)}
-					aria-label={posting ? m.composerSubmitting() : m.composerSubmit()}
-					title={posting ? m.composerSubmitting() : m.composerSubmit()}
-					onclick={() => void submitPost()}
-					><Icon name={posting ? 'refresh' : 'send'} size={18} /></button
-				>
-			</div>
-		</section>
-	</div>
+	<InlinePostComposer
+		id={`compose-${post.cid}`}
+		label={composeMode === 'reply' ? m.replyComposerLabel() : m.quoteComposerLabel()}
+		placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
+		bind:text={composeText}
+		bind:mentions
+		bind:attachments
+		bind:linkCards
+		busy={posting}
+		error={postError}
+		onsubmit={() => void submitPost()}
+		oncancel={cancelComposer}
+	/>
 {/if}
 {#if deleteOpen}
 	<PostDeleteDialog

@@ -212,9 +212,8 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			...(draft.channel && { channel: draft.channel }),
 			...(draft.channel && draft.channelOnly && { channelOnly: true }),
 			...(draft.reply && { reply: draft.reply }),
-			// ニュース引用はNagiでは専用カードを描画する。linkCardsはBluesky変換用だけに使う。
-			...(cards.length &&
-				draft.quote?.uri.split('/')[3] !== 'com.suibari.nagi.news' && { linkCards: cards }),
+			// ニュース記事そのものは引用カードで描画し、本文中の別URLだけがここへ入る。
+			...(cards.length && { linkCards: cards }),
 			...(embed && { embed }),
 		},
 	});
