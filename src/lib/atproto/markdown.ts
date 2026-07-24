@@ -28,21 +28,25 @@ function linkRanges(text: string, facets: Facet[]): LinkRange[] {
 	for (const facet of [...facets].sort((a, b) => a.index.byteStart - b.index.byteStart)) {
 		const feature = facet.features.find((item) => {
 			if (typeof item !== 'object' || item === null) return false;
-			const candidate = item as { $type?: unknown; uri?: unknown; did?: unknown };
+			const candidate = item as { $type?: unknown; uri?: unknown; did?: unknown; tag?: unknown };
 			return (
 				(candidate.$type === 'app.bsky.richtext.facet#link' && typeof candidate.uri === 'string') ||
-				(candidate.$type === 'app.bsky.richtext.facet#mention' && typeof candidate.did === 'string')
+				(candidate.$type === 'app.bsky.richtext.facet#mention' &&
+					typeof candidate.did === 'string') ||
+				(candidate.$type === 'app.bsky.richtext.facet#tag' && typeof candidate.tag === 'string')
 			);
-		}) as { $type: string; uri?: string; did?: string } | undefined;
+		}) as { $type: string; uri?: string; did?: string; tag?: string } | undefined;
 		const start = facet.index.byteStart;
 		const end = facet.index.byteEnd;
 		if (!feature || start < offset || end <= start || end > bytes.length) continue;
 		const href =
 			feature.$type === 'app.bsky.richtext.facet#mention' && feature.did
 				? `/profile/${encodeURIComponent(feature.did)}`
-				: feature.uri
-					? httpUrl(feature.uri)
-					: undefined;
+				: feature.$type === 'app.bsky.richtext.facet#tag' && feature.tag
+					? `/search?tag=${encodeURIComponent(feature.tag.toLowerCase())}`
+					: feature.uri
+						? httpUrl(feature.uri)
+						: undefined;
 		ranges.push({
 			start: decoder.decode(bytes.slice(0, start)).length,
 			end: decoder.decode(bytes.slice(0, end)).length,

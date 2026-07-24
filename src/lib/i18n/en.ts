@@ -476,6 +476,11 @@ export const en: Messages = {
 	channelTimelineEmpty: 'No posts in this channel yet. Say the first word.',
 	channelBadge: (o: { name: string }) => `#${o.name}`,
 	channelBadgeAria: (o: { name: string }) => `Posts in channel "${o.name}"`,
+	// search (hashtag search; future keyword search shares this screen)
+	searchTagTitle: (o: { tag: string }) => `#${o.tag}`,
+	searchTagAria: (o: { tag: string }) => `Posts tagged "#${o.tag}"`,
+	searchTagEmpty: 'No posts with this tag yet.',
+	searchNoQuery: 'No tag was given to search for.',
 	channelUpdatedAt: (o: { time: string }) => `Updated ${o.time}`,
 	composerChannelOnly: 'Post to this channel only (hide from global)',
 	channelDelete: 'Delete channel',

@@ -140,6 +140,18 @@ export const getChannelTimeline = (uri: string, cursor?: string) => {
 		'none',
 	);
 };
+// タグ投稿の検索。公開コンテンツなので getChannelTimeline と同じく AppView 直読み（auth:'none'）。
+// 将来のキーワード検索も同じ /search 画面・同系エンドポイントへ相乗りできるよう tag を明示パラメータにする。
+export const searchPosts = (tag: string, cursor?: string) => {
+	const params = new URLSearchParams({ tag });
+	if (cursor) params.set('cursor', cursor);
+	return call<TimelinePage>(
+		'com.suibari.nagi.searchPosts',
+		`/xrpc/com.suibari.nagi.searchPosts?${params}`,
+		{},
+		'none',
+	);
+};
 export const getProfile = (
 	actor: string,
 	opts: { filter?: ProfileFeedFilter; cursor?: string; limit?: number } = {},

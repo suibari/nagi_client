@@ -495,6 +495,11 @@ export const ja = {
 	channelTimelineEmpty: 'このチャンネルにはまだ投稿がありません。最初の一言をどうぞ。',
 	channelBadge: (o: { name: string }) => `#${o.name}`,
 	channelBadgeAria: (o: { name: string }) => `チャンネル「${o.name}」の投稿`,
+	// search（ハッシュタグ検索。将来のキーワード検索も同画面に相乗り）
+	searchTagTitle: (o: { tag: string }) => `#${o.tag}`,
+	searchTagAria: (o: { tag: string }) => `「#${o.tag}」の投稿`,
+	searchTagEmpty: 'このタグの投稿はまだありません。',
+	searchNoQuery: '検索するタグが指定されていません。',
 	channelUpdatedAt: (o: { time: string }) => `更新日時: ${o.time}`,
 	composerChannelOnly: 'このチャンネルだけに投稿（グローバルに出さない）',
 	channelDelete: 'チャンネルを削除',

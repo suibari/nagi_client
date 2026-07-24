@@ -3,6 +3,7 @@ export type Facet = {
 	features: Array<
 		| { $type: 'app.bsky.richtext.facet#link'; uri: string }
 		| { $type: 'app.bsky.richtext.facet#mention'; did: string }
+		| { $type: 'app.bsky.richtext.facet#tag'; tag: string }
 	>;
 };
 
@@ -11,6 +12,9 @@ export type ParsedPostText = { text: string; facets: Facet[]; urls: string[] };
 
 const encoder = new TextEncoder();
 const byteLength = (value: string) => encoder.encode(value).length;
+// Bluesky detectFacets のタグ本体クラス: 先頭のゼロ幅系を除外し、数字のみのタグを弾く。
+const TAG_BODY =
+	/^[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20E2]*[^\d\s]\S*/u;
 export const httpUrl = (value: string) => {
 	try {
 		const url = new URL(value);
@@ -70,6 +74,30 @@ export function parsePostText(
 			index = mention.end;
 			mentionIndex++;
 			continue;
+		}
+		if (
+			(source[index] === '#' || source[index] === '＃') &&
+			(index === 0 || /\s/.test(source[index - 1]))
+		) {
+			// Bluesky の detectFacets に倣う: # の後ろが数字のみ/ゼロ幅は不可、末尾の
+			// 句読点は tag から除く。tag 値は原文ケースを保持し、小文字化は保存/URL 側で行う。
+			const body = TAG_BODY.exec(
+				source.slice(index + 1),
+			)?.[0];
+			if (body) {
+				const tag = body.replace(/\p{P}+$/gu, '');
+				if (tag && byteLength(tag) <= 640) {
+					const marker = source[index];
+					const byteStart = byteLength(text);
+					text += marker + body;
+					facets.push({
+						index: { byteStart, byteEnd: byteStart + byteLength(marker + tag) },
+						features: [{ $type: 'app.bsky.richtext.facet#tag', tag }],
+					});
+					index += 1 + body.length;
+					continue;
+				}
+			}
 		}
 		if (source[index] === '[') {
 			const labelEnd = source.indexOf('](', index + 1);
