@@ -590,8 +590,7 @@ export const ja = {
 	cardCommentNotReady: 'botたんはまだ考え中みたい。あとでもう一度開いてみてね',
 	cardOpenDetail: 'カードの詳細を開く',
 	cardAcquiredAt: (p: { time: string }) => `${p.time} に入手`,
-	cardCollectionProgress: (p: { owned: number; total: number }) =>
-		`${p.total}枚中 ${p.owned}枚`,
+	cardCollectionProgress: (p: { owned: number; total: number }) => `${p.total}枚中 ${p.owned}枚`,
 	cardLocked: 'まだ持っていないカード',
 	cardRaceBracket: (p: { race: string }) => `【${p.race}】`,
 	cardClose: '閉じる',
@@ -601,6 +600,8 @@ export const ja = {
 	cardAttributeWater: '水',
 	cardAttributeWind: '風',
 	cardAttributeEarth: '地',
+	cardFabUndrawn: 'きょうのカード、まだ引いていないよ',
+	cardViewCollection: 'コレクションを見る',
 	cropperBannerTitle: 'バナーをトリミング',
 } satisfies Record<string, string | ((...args: never[]) => string)>;
 

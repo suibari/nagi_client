@@ -581,5 +581,7 @@ export const en: Messages = {
 	cardAttributeWater: 'WATER',
 	cardAttributeWind: 'WIND',
 	cardAttributeEarth: 'EARTH',
+	cardFabUndrawn: "You haven't drawn today's card yet",
+	cardViewCollection: 'View collection',
 	cropperBannerTitle: 'Crop your banner',
 };

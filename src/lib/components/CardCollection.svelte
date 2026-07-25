@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { drawCard, getCards } from '$lib/api/appview';
-	import type { CardCollectionView, CardView, DrawCardResult } from '$lib/api/types';
+	import { drawCard } from '$lib/api/appview';
+	import type { CardView, DrawCardResult } from '$lib/api/types';
+	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
@@ -14,42 +15,22 @@
 		isSelf?: boolean;
 	} = $props();
 
-	let collection = $state<CardCollectionView | undefined>();
-	let loading = $state(true);
-	let error = $state('');
 	let drawing = $state(false);
 	let drawError = $state('');
 	// 引いた直後の演出。開いているカードは opened で持つ。
 	let drawResult = $state<DrawCardResult | undefined>();
 	// モーダルで開いているカード（引いた直後 / 一覧からタップ の両方）。
 	let opened = $state<CardView | undefined>();
-	// ユーザーごとのキャッシュ。タブを行き来しても取り直さない（DiaryCalendar と同じ方針）。
-	const cache = new Map<string, CardCollectionView>();
 
+	// コレクションは cardCollections が DID ごとに 1 度だけ取る。フィードの FAB と同じ
+	// 実体を見ているので、TOP で引いた直後にここへ来ても drawStatus がズレない。
 	$effect(() => {
-		const actor = did;
-		if (!actor) return;
-		const cached = cache.get(actor);
-		if (cached) {
-			collection = cached;
-			loading = false;
-			error = '';
-			return;
-		}
-		loading = true;
-		error = '';
-		getCards(actor)
-			.then((page) => {
-				cache.set(actor, page);
-				collection = page;
-			})
-			.catch((e) => {
-				error = e instanceof Error ? e.message : m.cardFetchFailed();
-			})
-			.finally(() => {
-				loading = false;
-			});
+		void cardCollections.ensure(did);
 	});
+	const entry = $derived(cardCollections.entry(did));
+	const collection = $derived(entry?.view);
+	const loading = $derived(!entry?.view && !entry?.failed);
+	const error = $derived(entry?.failed ? entry.error || m.cardFetchFailed() : '');
 
 	const status = $derived(collection?.drawStatus);
 	/*
@@ -76,6 +57,7 @@
 		drawError = '';
 		try {
 			const result = await drawCard();
+			cardCollections.applyDraw(did, result);
 			drawResult = result;
 			opened = result.card;
 		} catch (e) {
@@ -90,26 +72,9 @@
 	 * 見返しで開いたときも、待っている間にコメントが届いていれば一覧へ書き戻る。
 	 */
 	function closeDialog(final: CardView) {
-		const result = drawResult;
 		opened = undefined;
 		drawResult = undefined;
-		if (!collection) return;
-		const next: CardCollectionView = {
-			...collection,
-			cards: collection.cards.map((c) =>
-				c.volume === final.volume && c.id === final.id ? final : c,
-			),
-			...(result
-				? {
-						ownedCount: collection.cards.filter(
-							(c) => c.owned || (c.volume === final.volume && c.id === final.id),
-						).length,
-						drawStatus: result.drawStatus,
-					}
-				: {}),
-		};
-		cache.set(did, next);
-		collection = next;
+		cardCollections.applyCard(did, final);
 	}
 </script>
 

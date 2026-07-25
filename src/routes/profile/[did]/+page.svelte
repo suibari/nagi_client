@@ -64,7 +64,8 @@
 		profile = undefined;
 		feed = undefined;
 		reactionFeed = undefined;
-		tab = page.url.searchParams.get('tab') === 'diary' ? 'diary' : 'posts';
+		const requested = page.url.searchParams.get('tab');
+		tab = requested === 'diary' || requested === 'cards' ? requested : 'posts';
 	});
 	$effect(() => {
 		const actor = did;

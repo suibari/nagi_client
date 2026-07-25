@@ -4,6 +4,7 @@
 	import type { CardView, DrawCardResult } from '$lib/api/types';
 	import { dateLocale, i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
+	import CardBack from './CardBack.svelte';
 
 	/** 時刻表示。日付境界は JST 4:00 だが、表示は閲覧者のローカル時刻に合わせる。 */
 	function formatTime(iso: string): string {
@@ -21,6 +22,7 @@
 		initial,
 		actor,
 		draw,
+		collectionHref,
 		onclose,
 	}: {
 		/** 表示するカード。draw があるときはその結果のカード。 */
@@ -29,6 +31,11 @@
 		actor: string;
 		/** 引いた直後だけ渡す。無ければ所持カードを見返しているだけ（演出なし）。 */
 		draw?: DrawCardResult;
+		/**
+		 * 渡すと「コレクションを見る」リンクを出す。図鑑の外（フィードの FAB）から
+		 * 引いたときだけ使う。カードタブから開いたときは自分自身への導線になるので渡さない。
+		 */
+		collectionHref?: string;
 		onclose: (final: CardView) => void;
 	} = $props();
 
@@ -69,9 +76,7 @@
 			}
 			try {
 				const collection = await getCards(actor);
-				const fresh = collection.cards.find(
-					(c) => c.volume === card.volume && c.id === card.id,
-				);
+				const fresh = collection.cards.find((c) => c.volume === card.volume && c.id === card.id);
 				if (fresh?.commentJa || fresh?.commentEn) {
 					card = fresh;
 					return;
@@ -118,7 +123,7 @@
 		<div class="draw-stage rarity-{card.rarity.toLowerCase()}" class:revealed class:flip={!!draw}>
 			<div class="draw-flip">
 				<div class="draw-back" aria-hidden={revealed}>
-					<span>?</span>
+					<CardBack />
 				</div>
 				<div class="draw-front" aria-hidden={!revealed}>
 					<AffirmationCard {card} size="full" />
@@ -145,9 +150,16 @@
 		{:else if card.acquiredAt}
 			<p class="draw-next">{m.cardAcquiredAt({ time: formatTime(card.acquiredAt) })}</p>
 		{/if}
-		<button bind:this={closeButton} type="button" class="ghost" onclick={close}>
-			{m.cardClose()}
-		</button>
+		<div class="draw-actions">
+			<button bind:this={closeButton} type="button" class="ghost" onclick={close}>
+				{m.cardClose()}
+			</button>
+			{#if collectionHref}
+				<a class="draw-collection" href={collectionHref} onclick={close}
+					>{m.cardViewCollection()} →</a
+				>
+			{/if}
+		</div>
 	</div>
 </div>
 
@@ -178,6 +190,18 @@
 		margin: 0;
 		font-size: 1.05rem;
 	}
+	.draw-actions {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 0.6rem 1rem;
+	}
+	.draw-collection {
+		color: var(--accent-strong);
+		font-size: 0.85rem;
+		font-weight: 700;
+	}
 
 	/* --- 裏 → 表のフリップ（引いた直後だけ） --- */
 	.draw-stage {
@@ -201,15 +225,9 @@
 		inset: 0;
 		backface-visibility: hidden;
 	}
+	/* 枠線・地色・botたんは CardBack 側。ここは角丸だけ渡す（CardBack が inherit する）。 */
 	.draw-back {
-		display: grid;
-		place-items: center;
-		border: 2px solid var(--accent-border);
 		border-radius: var(--radius-s);
-		background: var(--brand-gradient);
-		color: var(--text-on-accent);
-		font-size: 3rem;
-		font-weight: 700;
 	}
 	.draw-front {
 		display: grid;
