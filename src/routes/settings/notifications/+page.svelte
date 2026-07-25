@@ -13,20 +13,15 @@
 	} from '$lib/notifications/push.svelte';
 
 	let needsStandalone = $state(false);
-	let refreshedDid = $state<string | null>(null);
 	let reauthBusy = $state(false);
 
 	onMount(() => {
 		needsStandalone = needsStandaloneForPush();
 	});
 
-	// OAuth復元後に一度だけ確認する。端末内購読が残っていればAppViewへ再登録して修復する。
-	$effect(() => {
-		const did = $oauthReady ? $session?.did : undefined;
-		if (!did || refreshedDid === did) return;
-		refreshedDid = did;
-		void refreshPushState();
-	});
+	// このページは pushState を表示・操作するだけ。購読状態の同期は +layout.svelte が
+	// セッション確立時に済ませている（ページを開かないと直らない状態を作らないため）。
+	// ここで表示されるエラーは、その起動時同期の結果であることが多い。
 
 	async function toggle(next: boolean) {
 		if (next) await enablePush();

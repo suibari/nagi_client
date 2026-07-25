@@ -15,10 +15,12 @@
 	import { startUnreadNewsPolling } from '$lib/news/unread.svelte';
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
+	import { refreshPushState } from '$lib/notifications/push.svelte';
 
 	let { children } = $props();
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
+	let pushSyncedDid: string | undefined;
 	// ミュート一覧はサインインごとに1回だけ読み、サインアウトで捨てる。
 	$effect(() => {
 		const did = $session?.did;
@@ -26,6 +28,18 @@
 		mutesDid = did;
 		if (did) void mutes.load();
 		else mutes.clear();
+	});
+	// プッシュ購読の状態同期。ブラウザ側の PushSubscription と AppView 側の購読行という
+	// 2つの真実を突き合わせる処理なので、特定のページではなくセッション確立に紐付ける。
+	// 以前これを /settings/notifications の $effect に置いていたため、そのページを開くまで
+	// 「端末は購読済みだがサーバーに行が無い」不整合が直らず、通知が届かない端末を
+	// ユーザーが自力で見つけられなかった。ここに置くことで起動のたびに自己修復される。
+	// refreshPushState() は非対応環境と多重実行を自分でガードするので呼び放しでよい。
+	$effect(() => {
+		const did = $oauthReady ? $session?.did : undefined;
+		if (!did || pushSyncedDid === did) return;
+		pushSyncedDid = did;
+		void refreshPushState();
 	});
 	onMount(() => {
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
