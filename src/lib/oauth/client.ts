@@ -1,7 +1,11 @@
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
 const production = typeof location !== 'undefined' && location.hostname === 'nagi.suibari.com';
 const origin = typeof location !== 'undefined' ? location.origin : 'http://127.0.0.1';
-export const CROSSPOST_SCOPE = 'repo:app.bsky.feed.post';
+/** クロスポスト対象コレクション。付与判定の前方一致にも使う。 */
+export const CROSSPOST_COLLECTION_SCOPE = 'repo:app.bsky.feed.post';
+// Nagi は Bluesky 投稿を作成するだけで、更新・削除は一切行わない（cf. crosspost/bluesky.ts）。
+// action 未指定は create/update/delete 全許可になるため、明示的に create のみへ絞る。
+export const CROSSPOST_SCOPE = `${CROSSPOST_COLLECTION_SCOPE}?action=create`;
 export const BLUEMOJI_SCOPE = 'repo:blue.moji.collection.item';
 // Nagi namespace の repo/rpc 権限は permission set に集約し、公開済み lexicon を真実源にする。
 // 定義: bsky-affirmative-bot/packages/nagi-lexicon/lexicons/com/suibari/nagi/appviewAccess.json

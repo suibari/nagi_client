@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { CROSSPOST_SCOPE } from '$lib/oauth/client';
+import { CROSSPOST_COLLECTION_SCOPE } from '$lib/oauth/client';
 import { session } from '$lib/oauth/session.svelte';
 
 export const CROSSPOST_STORAGE_KEY = 'nagi-crosspost-bluesky';
@@ -38,7 +38,13 @@ export async function hasCrosspostScope(): Promise<boolean> {
 	if (!current) return false;
 	try {
 		const info = await current.getTokenInfo();
-		return info.scope.split(' ').includes(CROSSPOST_SCOPE);
+		// 旧セッションは action 無し（全操作許可）の広いスコープを保持しているため、
+		// 完全一致だと既存ユーザーのクロスポストが黙って止まる。コレクション単位で判定する。
+		return info.scope
+			.split(' ')
+			.some(
+				(s) => s === CROSSPOST_COLLECTION_SCOPE || s.startsWith(`${CROSSPOST_COLLECTION_SCOPE}?`),
+			);
 	} catch {
 		return false;
 	}
