@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { navItems, isActive, formatUnread } from './nav';
+	import { navItems, isActive } from './nav';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { unreadCount } from '$lib/notifications/unread.svelte';
-	import { unreadNews } from '$lib/news/unread.svelte';
 	import Icon from './Icon.svelte';
+	import NavBadge from './NavBadge.svelte';
 	import AccountCard from './AccountCard.svelte';
 </script>
 
@@ -22,16 +21,7 @@
 			>
 				<span class="nav-icon">
 					<Icon name={item.icon} />
-					{#if item.href === '/news' && $unreadNews}
-						<span class="news-unread-dot"
-							><span class="visually-hidden">{m.newsUnreadAria()}</span></span
-						>
-					{/if}
-					{#if item.href === '/notifications' && $unreadCount > 0}
-						<span class="nav-badge" aria-label={m.notifUnreadBadgeAria({ count: $unreadCount })}
-							>{formatUnread($unreadCount)}</span
-						>
-					{/if}
+					{#if item.badge}<NavBadge {...item.badge} />{/if}
 				</span><span class="label">{item.label()}</span>
 			</a>
 		{/each}

@@ -16,6 +16,7 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { startVisiblePolling } from '$lib/polling';
 
 	// 自由文検索(?q=)を優先。無ければタグ検索(?tag=、小文字で正規化して保存側と一致)。
 	let q = $derived((page.url.searchParams.get('q') ?? '').trim());
@@ -73,12 +74,7 @@
 			!news.items.length,
 	);
 
-	onMount(() => {
-		const base = setInterval(() => {
-			if (document.visibilityState === 'visible') feed?.refresh();
-		}, 30_000);
-		return () => clearInterval(base);
-	});
+	onMount(() => startVisiblePolling(() => feed?.refresh(), 30_000, { onReturn: true }));
 </script>
 
 {#if q}

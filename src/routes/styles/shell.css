@@ -59,7 +59,7 @@
 	display: inline-flex;
 	flex: 0 0 auto;
 }
-.news-unread-dot {
+.nav-unread-dot {
 	position: absolute;
 	top: -3px;
 	right: -5px;

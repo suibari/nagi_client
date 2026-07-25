@@ -13,6 +13,7 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
+	import { startVisiblePolling } from '$lib/polling';
 	import { m, relativeTime } from '$lib/i18n/i18n.svelte';
 
 	const CHANNEL = 'com.suibari.nagi.channel';
@@ -256,21 +257,15 @@
 	}
 
 	onMount(() => {
-		const base = setInterval(() => {
-			if (document.visibilityState === 'visible') feed?.refresh();
-		}, 30_000);
+		const base = startVisiblePolling(() => feed?.refresh(), 30_000, { onReturn: true });
 		// 投稿直後は AppView 取り込み前のため、即時 refresh だけでは楽観投稿を
 		// reconcile できない。反映されるまで短い間隔で追従する。
-		const fast = setInterval(() => {
-			if (
-				document.visibilityState === 'visible' &&
-				(feed?.hasOptimistic() || feed?.hasPendingFor($session?.did))
-			)
-				feed?.refresh();
-		}, 3_000);
+		const fast = startVisiblePolling(() => feed?.refresh(), 3_000, {
+			when: () => Boolean(feed?.hasOptimistic() || feed?.hasPendingFor($session?.did)),
+		});
 		return () => {
-			clearInterval(base);
-			clearInterval(fast);
+			base();
+			fast();
 			revokeEditPreview();
 			if (localBannerUrl) URL.revokeObjectURL(localBannerUrl);
 		};

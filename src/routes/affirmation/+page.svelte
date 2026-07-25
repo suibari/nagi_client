@@ -3,6 +3,7 @@
 	import { getAffirmation } from '$lib/api/appview';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import { affirmationFeedRead } from '$lib/feed/unread.svelte';
+	import { startVisiblePolling } from '$lib/polling';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Composer from '$lib/components/Composer.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
@@ -16,15 +17,13 @@
 	);
 	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {
-		const timer = setInterval(() => {
-			if (document.visibilityState === 'visible') feed.refresh();
-		}, 30_000);
-		const fast = setInterval(() => {
-			if (document.visibilityState === 'visible' && feed.hasOptimistic()) feed.refresh();
-		}, 3_000);
+		const timer = startVisiblePolling(() => feed.refresh(), 30_000, { onReturn: true });
+		const fast = startVisiblePolling(() => feed.refresh(), 3_000, {
+			when: () => feed.hasOptimistic(),
+		});
 		return () => {
-			clearInterval(timer);
-			clearInterval(fast);
+			timer();
+			fast();
 		};
 	});
 	// OAuth 復元完了を待ってから読み込む。待たずに load すると、リロード時に session が

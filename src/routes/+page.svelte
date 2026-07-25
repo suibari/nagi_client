@@ -3,6 +3,7 @@
 	import { getTimeline } from '$lib/api/appview';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import { globalFeedRead } from '$lib/feed/unread.svelte';
+	import { startVisiblePolling } from '$lib/polling';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Composer from '$lib/components/Composer.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
@@ -19,19 +20,13 @@
 	onMount(() => {
 		feed.load();
 		// base refresh + fast poll while own recent posts wait for botたん's reply
-		const base = setInterval(() => {
-			if (document.visibilityState === 'visible') feed.refresh();
-		}, 30_000);
-		const fast = setInterval(() => {
-			if (
-				document.visibilityState === 'visible' &&
-				(feed.hasOptimistic() || feed.hasPendingFor($session?.did))
-			)
-				feed.refresh();
-		}, 3_000);
+		const base = startVisiblePolling(() => feed.refresh(), 30_000, { onReturn: true });
+		const fast = startVisiblePolling(() => feed.refresh(), 3_000, {
+			when: () => feed.hasOptimistic() || feed.hasPendingFor($session?.did),
+		});
 		return () => {
-			clearInterval(base);
-			clearInterval(fast);
+			base();
+			fast();
 		};
 	});
 	$effect(() => {
