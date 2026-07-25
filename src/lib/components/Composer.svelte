@@ -38,6 +38,7 @@
 	let draftError = $state('');
 	let pendingRestoreId = $state<string | null>(null);
 	let loadedDid = $state<string | undefined>(undefined);
+	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
 
@@ -154,7 +155,7 @@
 	>
 	<section class="bubble composer">
 		{#snippet editorTools()}
-			<ImageAttachmentEditor bind:attachments disabled={busy} />
+			<ImageAttachmentEditor bind:this={imageEditor} bind:attachments disabled={busy} />
 		{/snippet}
 		<ComposerEditor
 			bind:value={text}
@@ -163,6 +164,7 @@
 			ariaLabel={m.composerAria()}
 			disabled={busy}
 			onsubmit={submit}
+			onpaste={(event) => imageEditor?.handlePaste(event)}
 			tools={editorTools}
 		/>
 		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />

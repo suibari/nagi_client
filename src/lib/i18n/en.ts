@@ -118,6 +118,7 @@ export const en: Messages = {
 	postImageAdd: 'Add images',
 	postImageProcessing: 'Processing image…',
 	postImageRemove: 'Remove image',
+	postPastedImageName: 'Pasted image',
 	postImageAltLabel: 'Image description (optional)',
 	postImageAltPlaceholder: 'Describe the contents of this image',
 	postImageCountError: 'You can attach up to four images',

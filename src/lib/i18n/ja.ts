@@ -124,6 +124,7 @@ export const ja = {
 	postImageAdd: '画像を追加',
 	postImageProcessing: '画像を処理中…',
 	postImageRemove: '画像を削除',
+	postPastedImageName: '貼り付け画像',
 	postImageAltLabel: '画像の説明（任意）',
 	postImageAltPlaceholder: '画像の内容を説明してください',
 	postImageCountError: '画像は4枚まで添付できます',

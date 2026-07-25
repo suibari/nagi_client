@@ -14,6 +14,7 @@
 		ariaLabel,
 		disabled = false,
 		onsubmit,
+		onpaste,
 		tools,
 	}: {
 		value?: string;
@@ -23,6 +24,7 @@
 		ariaLabel?: string;
 		disabled?: boolean;
 		onsubmit?: () => void;
+		onpaste?: (event: ClipboardEvent) => void;
 		tools?: Snippet;
 	} = $props();
 
@@ -66,6 +68,7 @@
 		{ariaLabel}
 		{disabled}
 		{onsubmit}
+		{onpaste}
 	/>
 	<div class="composer-tools" class:with-leading={tools}>
 		{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}

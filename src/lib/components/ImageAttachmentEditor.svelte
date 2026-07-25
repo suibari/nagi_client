@@ -28,30 +28,56 @@
 	});
 
 	function errorMessage(file: File, error: unknown) {
-		if (!(error instanceof ImageProcessingError))
-			return m.imageProcessFailedNamed({ name: file.name });
-		if (error.code === 'type') return m.postImageTypeError({ name: file.name });
-		if (error.code === 'input-size') return m.postImageInputSizeError({ name: file.name });
-		if (error.code === 'gif-size') return m.postGifSizeError({ name: file.name });
-		return m.postImageCompressError({ name: file.name });
+		const name = file.name || m.postPastedImageName();
+		if (!(error instanceof ImageProcessingError)) return m.imageProcessFailedNamed({ name });
+		if (error.code === 'type') return m.postImageTypeError({ name });
+		if (error.code === 'input-size') return m.postImageInputSizeError({ name });
+		if (error.code === 'gif-size') return m.postGifSizeError({ name });
+		return m.postImageCompressError({ name });
 	}
 
-	async function choose(event: Event) {
-		const files = [...((event.currentTarget as HTMLInputElement).files ?? [])];
+	async function addFiles(files: File[]) {
 		if (!files.length || processing) return;
 		errors = [];
 		const available = MAX_IMAGE_COUNT - attachments.length;
 		if (files.length > available) errors = [m.postImageCountError()];
+		if (available <= 0) return;
 		processing = true;
-		for (const file of files.slice(0, available)) {
-			try {
-				attachments = [...attachments, await processImage(file)];
-			} catch (error) {
-				errors = [...errors, errorMessage(file, error)];
+		try {
+			for (const file of files.slice(0, available)) {
+				try {
+					attachments = [...attachments, await processImage(file)];
+				} catch (error) {
+					errors = [...errors, errorMessage(file, error)];
+				}
 			}
+		} finally {
+			processing = false;
 		}
-		processing = false;
+	}
+
+	async function choose(event: Event) {
+		const files = [...((event.currentTarget as HTMLInputElement).files ?? [])];
+		await addFiles(files);
 		input.value = '';
+	}
+
+	export function handlePaste(event: ClipboardEvent) {
+		if (disabled || !event.clipboardData) return;
+		const itemFiles = [...event.clipboardData.items]
+			.filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+			.flatMap((item) => {
+				const file = item.getAsFile();
+				return file ? [file] : [];
+			});
+		const files = itemFiles.length
+			? itemFiles
+			: [...event.clipboardData.files].filter((file) => file.type.startsWith('image/'));
+		if (!files.length) return;
+		// 画像と一緒に入っている HTML や代替テキストを本文へ貼り付けない。
+		event.preventDefault();
+		if (processing) return;
+		void addFiles(files);
 	}
 
 	function remove(id: string) {

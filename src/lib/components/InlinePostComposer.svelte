@@ -38,6 +38,7 @@
 	} = $props();
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
+	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 </script>
 
 <div class="post-row mine composer-row">
@@ -47,7 +48,7 @@
 	<section class="bubble post-composer">
 		<label for={id}>{label}</label>
 		{#snippet editorTools()}
-			<ImageAttachmentEditor bind:attachments disabled={busy} />
+			<ImageAttachmentEditor bind:this={imageEditor} bind:attachments disabled={busy} />
 		{/snippet}
 		<ComposerEditor
 			{id}
@@ -56,6 +57,7 @@
 			{placeholder}
 			disabled={busy}
 			{onsubmit}
+			onpaste={(event) => imageEditor?.handlePaste(event)}
 			tools={editorTools}
 		/>
 		<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />

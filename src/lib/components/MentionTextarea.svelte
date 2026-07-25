@@ -15,6 +15,7 @@
 		ariaLabel,
 		disabled = false,
 		onsubmit,
+		onpaste,
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
@@ -23,6 +24,7 @@
 		ariaLabel?: string;
 		disabled?: boolean;
 		onsubmit?: () => void;
+		onpaste?: (event: ClipboardEvent) => void;
 	} = $props();
 
 	let textarea: HTMLTextAreaElement;
@@ -236,6 +238,7 @@
 			if (!['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(event.key)) detectToken();
 		}}
 		onkeydown={handleKeydown}
+		{onpaste}
 		onblur={() => setTimeout(close, 150)}
 	></textarea>
 	{#if token}
