@@ -189,3 +189,63 @@ export type ChannelsPage = { channels: ChannelView[]; cursor?: string; hasMore: 
 export type MuteSubjectType = 'actor' | 'channel';
 /** 自分のミュート一覧。AppView は本人のリクエストにしか返さない。 */
 export type MutesView = { actors: ActorView[]; channels: ChannelView[] };
+
+// ---------------------------------------------------------------------------
+// 全肯定カード（1日1回引けるトレカ）
+// ---------------------------------------------------------------------------
+/** N < R < SR < UR < AAR(All-Affirmation Rare)。 */
+export type CardRarity = 'N' | 'R' | 'SR' | 'UR' | 'AAR';
+export type CardAttribute = 'light' | 'dark' | 'fire' | 'water' | 'wind' | 'earth';
+/**
+ * カード1枚。未所持でも定義部分は返るので、コレクションは常に全30枠を描ける。
+ * ja/en 双方が入っているのは、ロケール切替を再フェッチ無しで効かせるため。
+ */
+export type CardView = {
+	/** 段内の通し番号。カードの同一性は (volume, id) の組で決まる。表示は v1-001 形式。 */
+	id: number;
+	/** カード段（初段=1）。 */
+	volume: number;
+	rarity: CardRarity;
+	attribute: CardAttribute;
+	atk: number;
+	def: number;
+	nameJa: string;
+	nameEn: string;
+	raceJa: string;
+	raceEn: string;
+	textJa: string;
+	textEn: string;
+	owned: boolean;
+	/** 以下は owned のときだけ入る。 */
+	instanceId?: string;
+	/** 引いた瞬間に botたんが付けたコメント。生成中は未定義。 */
+	commentJa?: string;
+	commentEn?: string;
+	/** 同じカードを引いた回数（初回=1）。 */
+	duplicateCount?: number;
+	acquiredAt?: string;
+	firstOwnerDid?: string;
+};
+/** 本日引けるか。自分のコレクションを見ているときだけ返る。 */
+export type CardDrawStatus = {
+	canDraw: boolean;
+	/** 次に引ける時刻（ISO8601）。JST 4:00 が境界。 */
+	nextDrawAt: string;
+	todayCardVolume?: number;
+	todayCardId?: number;
+};
+export type CardCollectionView = {
+	cards: CardView[];
+	ownedCount: number;
+	totalCount: number;
+	drawStatus?: CardDrawStatus;
+};
+export type DrawCardResult = {
+	card: CardView;
+	/** true なら本日は引き済みで、返っているのはその日のカード。 */
+	alreadyDrawn: boolean;
+	isNew: boolean;
+	/** true の間は botたんコメントを生成中。getCards で取り直す。 */
+	commentPending: boolean;
+	drawStatus: CardDrawStatus;
+};

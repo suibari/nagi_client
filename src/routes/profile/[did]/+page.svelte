@@ -14,6 +14,7 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import ActorBadges from '$lib/components/ActorBadges.svelte';
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
+	import CardCollection from '$lib/components/CardCollection.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -23,14 +24,15 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
 
-	// 日記はポストではないので Feed には載らない。タブだけ同じ並びに足す。
-	type ProfileTab = ProfileFeedFilter | 'diary';
+	// 日記・カードはポストではないので Feed には載らない。タブだけ同じ並びに足す。
+	type ProfileTab = ProfileFeedFilter | 'diary' | 'cards';
 	const tabs: Array<{ id: ProfileTab; label: () => string }> = [
 		{ id: 'posts', label: m.profileTabPosts },
 		{ id: 'replies', label: m.profileTabReplies },
 		{ id: 'media', label: m.profileTabMedia },
 		{ id: 'reactions', label: m.profileTabReactions },
 		{ id: 'diary', label: m.profileTabDiary },
+		{ id: 'cards', label: m.profileTabCards },
 	];
 	let did = $derived(page.params.did ?? '');
 	// 通知から ?tab=diary&date=YYYY-MM-DD で該当日を開く。
@@ -67,8 +69,8 @@
 	$effect(() => {
 		const actor = did;
 		const locale = i18n.locale;
-		// 日記タブでもプロフィール欄は要るので、投稿フィードは読んでおく。
-		const filter: ProfileFeedFilter = tab === 'diary' ? 'posts' : tab;
+		// 日記・カードタブでもプロフィール欄は要るので、投稿フィードは読んでおく。
+		const filter: ProfileFeedFilter = tab === 'diary' || tab === 'cards' ? 'posts' : tab;
 		if (!actor) return;
 		if (filter === 'reactions') {
 			const key = `${actor}:reactions:${locale}`;
@@ -210,6 +212,10 @@
 	{#if tab === 'diary'}
 		<section class="timeline">
 			<DiaryCalendar {did} initialDate={initialDiaryDate} botActor={feed?.botActor} />
+		</section>
+	{:else if tab === 'cards'}
+		<section class="timeline">
+			<CardCollection {did} isSelf={$session?.did === did} />
 		</section>
 	{:else if tab === 'reactions'}
 		<section class="timeline" aria-busy={reactionFeed?.loading}>

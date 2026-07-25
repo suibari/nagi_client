@@ -89,6 +89,26 @@
 	/* layout */
 	--mobile-header-h: 56px;
 
+	/* semantic: 全肯定カード — レアリティの枠色と、属性のアイコン色 */
+	--card-face: #fbfdfd;
+	--card-face-band: #f0f7f8;
+	--card-ink: #23303a;
+	--card-ink-muted: #5d6d78;
+	--card-rarity-n: #9fb2bb;
+	--card-rarity-r: #4f9dd6;
+	--card-rarity-sr: #b087e0;
+	--card-rarity-ur: #e0a53c;
+	--card-rarity-aar: #ff6fc8;
+	--card-foil-ur: linear-gradient(135deg, #ffe9a8, #e0a53c, #fff6d8, #c98a1f);
+	--card-foil-aar: linear-gradient(135deg, #ff9ff3, #48dbfb, #ffe9a8, #00ced1, #ff6fc8);
+	--card-locked: #dbe6ea;
+	--card-attr-light: #e0a300;
+	--card-attr-dark: #6b4fa8;
+	--card-attr-fire: #d64528;
+	--card-attr-water: #1f7fc4;
+	--card-attr-wind: #16906d;
+	--card-attr-earth: #8a6236;
+
 	/* radii */
 	--radius-s: 10px;
 	--radius-m: 14px;
@@ -166,6 +186,24 @@
 	--bubble-bot-bg: linear-gradient(145deg, #163d33, #27624f);
 	--bubble-bot-border: #3b8f75;
 
+	--card-face: #333e49;
+	--card-face-band: #2a343e;
+	--card-ink: #eef3f6;
+	--card-ink-muted: #a9b8c3;
+	--card-rarity-n: #7b8b95;
+	--card-rarity-r: #63b6ec;
+	--card-rarity-sr: #c3a0f0;
+	--card-rarity-ur: #ffc76b;
+	--card-rarity-aar: #ff8fd6;
+	--card-foil-ur: linear-gradient(135deg, #ffdf9a, #c98a1f, #fff2c9, #a8721a);
+	--card-foil-aar: linear-gradient(135deg, #fda7df, #00e5ff, #ffdf9a, #1dd1a1, #ff8fd6);
+	--card-locked: #3d4956;
+	--card-attr-light: #ffd257;
+	--card-attr-dark: #b79bff;
+	--card-attr-fire: #ff8a6b;
+	--card-attr-water: #6cc2f5;
+	--card-attr-wind: #59dcb0;
+	--card-attr-earth: #d3a874;
 	--shadow-card: 0 12px 38px rgba(8, 12, 9, 0.3);
 	--shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
@@ -232,6 +270,24 @@
 		--bubble-mine-border: #3978ad;
 		--bubble-bot-bg: linear-gradient(145deg, #163d33, #27624f);
 		--bubble-bot-border: #3b8f75;
+		--card-face: #333e49;
+		--card-face-band: #2a343e;
+		--card-ink: #eef3f6;
+		--card-ink-muted: #a9b8c3;
+		--card-rarity-n: #7b8b95;
+		--card-rarity-r: #63b6ec;
+		--card-rarity-sr: #c3a0f0;
+		--card-rarity-ur: #ffc76b;
+		--card-rarity-aar: #ff8fd6;
+		--card-foil-ur: linear-gradient(135deg, #ffdf9a, #c98a1f, #fff2c9, #a8721a);
+		--card-foil-aar: linear-gradient(135deg, #fda7df, #00e5ff, #ffdf9a, #1dd1a1, #ff8fd6);
+		--card-locked: #3d4956;
+		--card-attr-light: #ffd257;
+		--card-attr-dark: #b79bff;
+		--card-attr-fire: #ff8a6b;
+		--card-attr-water: #6cc2f5;
+		--card-attr-wind: #59dcb0;
+		--card-attr-earth: #d3a874;
 		--shadow-card: 0 12px 38px rgba(8, 12, 9, 0.3);
 		--shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.45);
 	}

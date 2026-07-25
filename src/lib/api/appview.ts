@@ -4,9 +4,11 @@ import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { env } from '$env/dynamic/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
+	CardCollectionView,
 	ChannelsPage,
 	ChannelView,
 	DiaryPage,
+	DrawCardResult,
 	EmojiView,
 	MuteSubjectType,
 	MutesView,
@@ -316,6 +318,26 @@ export const setMute = (subjectType: MuteSubjectType, subject: string, muted: bo
 		'com.suibari.nagi.setMute',
 		'/xrpc/com.suibari.nagi.setMute',
 		{ method: 'POST', body: JSON.stringify({ subjectType, subject, muted }) },
+		'required',
+	);
+// カードの所持状況は公開情報なので、他人のプロフィールでも見える。ただし自分のときだけ
+// drawStatus（今日引けるか）が付くので、ログイン中は認証付きで叩く必要がある。
+// permission-set のキャッシュ未反映で弾かれたら公開取得へ落とす（drawStatus が消えるだけで
+// コレクション自体は見える）。
+export const getCards = (actor: string) =>
+	withPublicFallback<CardCollectionView>(
+		'com.suibari.nagi.getCards',
+		`/xrpc/com.suibari.nagi.getCards?actor=${encodeURIComponent(actor)}`,
+	);
+/**
+ * 今日のカードを1枚引く。抽選はサーバ側なので入力は無い。
+ * 既に引いている日に呼んでもエラーにはならず、その日のカードが alreadyDrawn=true で返る。
+ */
+export const drawCard = () =>
+	call<DrawCardResult>(
+		'com.suibari.nagi.drawCard',
+		'/xrpc/com.suibari.nagi.drawCard',
+		{ method: 'POST' },
 		'required',
 	);
 export const updateSeen = (seenAt: string) =>
