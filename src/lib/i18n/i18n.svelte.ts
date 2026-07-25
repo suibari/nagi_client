@@ -112,3 +112,36 @@ export const m = Object.fromEntries(
 		},
 	]),
 ) as MessageAccessors;
+
+const keyOfDate = (date: Date) =>
+	`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+/** ローカル時刻の日付キー。空文字や不正な ISO は undefined（掲載終了ニュースのプレースホルダ対策）。 */
+export function dayKey(iso?: string): string | undefined {
+	if (!iso) return undefined;
+	const date = new Date(iso);
+	return Number.isNaN(date.getTime()) ? undefined : keyOfDate(date);
+}
+
+/** 「今日 / 昨日 / 7月23日(水)」の日付見出し。年が違うときだけ年を足す。 */
+export function dayHeading(iso: string): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return '';
+	const today = new Date();
+	const yesterday = new Date(today);
+	yesterday.setDate(today.getDate() - 1);
+	const key = keyOfDate(date);
+	if (key === keyOfDate(today)) return m.dateToday();
+	if (key === keyOfDate(yesterday)) return m.dateYesterday();
+	const locale = dateLocale();
+	const sameYear = date.getFullYear() === today.getFullYear();
+	return m.dateWithWeekday({
+		date: date.toLocaleDateString(
+			locale,
+			sameYear
+				? { month: 'short', day: 'numeric' }
+				: { year: 'numeric', month: 'short', day: 'numeric' },
+		),
+		weekday: date.toLocaleDateString(locale, { weekday: 'short' }),
+	});
+}

@@ -1699,6 +1699,14 @@
 	background: var(--accent-softer);
 	box-shadow: inset 3px 0 0 var(--accent);
 }
+/* フィードも同じ見た目。マークはスレッド単位なので、カード1枚につきバーは1本だけ。
+   カード自身の影は保つ。 */
+.thread-unit.unread {
+	background: var(--accent-softer);
+	box-shadow:
+		inset 3px 0 0 var(--accent),
+		var(--shadow-card);
+}
 .notification-main {
 	min-width: 0;
 	flex: 1;

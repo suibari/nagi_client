@@ -14,6 +14,9 @@ export const en: Messages = {
 	postCreated: 'Posted',
 	viewCreatedPost: 'View post',
 	dismissNotice: 'Dismiss notification',
+	dateToday: 'Today',
+	dateYesterday: 'Yesterday',
+	dateWithWeekday: (p) => `${p.date} (${p.weekday})`,
 
 	navFeed: 'Feed',
 	navGlobal: 'Global',

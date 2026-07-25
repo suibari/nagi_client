@@ -22,7 +22,7 @@
 			>
 				<span class="nav-icon">
 					<Icon name={item.icon} />
-					{#if item.href === '/' && $unreadNews}
+					{#if item.href === '/news' && $unreadNews}
 						<span class="news-unread-dot"
 							><span class="visually-hidden">{m.newsUnreadAria()}</span></span
 						>

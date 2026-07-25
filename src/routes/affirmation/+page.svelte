@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { getAffirmation } from '$lib/api/appview';
 	import { Feed } from '$lib/feed/feed.svelte';
+	import { affirmationFeedRead } from '$lib/feed/unread.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Composer from '$lib/components/Composer.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
@@ -11,6 +12,7 @@
 	const feed = new Feed(
 		(cursor) => getAffirmation(cursor),
 		(item) => item.isAffirmation && !item.threadKossori,
+		affirmationFeedRead,
 	);
 	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {
@@ -64,6 +66,7 @@
 		</div>
 	{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
 				{item}
+				unread={feed.isUnread(item, $session?.did)}
 				botActor={feed.botActor}
 				ondeleted={(uri) => feed.removePost(uri)}
 				onposted={() => feed.refresh()}

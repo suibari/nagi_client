@@ -204,15 +204,6 @@
 	background: var(--accent);
 	transform: translateX(-50%);
 }
-.feed-tab-label {
-	position: relative;
-	display: inline-flex;
-}
-.feed-tab-label .news-unread-dot {
-	top: -2px;
-	right: -11px;
-}
-
 /* --- mobile top bar & bottom nav (hidden on desktop) --- */
 .mobile-top,
 .mobile-nav {
@@ -318,6 +309,8 @@
 	}
 	.mobile-nav a {
 		flex: 1;
+		/* 5項目でも縮められるように、コンテンツ幅より小さくなることを許す。 */
+		min-width: 0;
 		display: grid;
 		justify-items: center;
 		gap: 2px;
@@ -327,10 +320,24 @@
 		font-weight: 700;
 		color: var(--text-muted);
 	}
+	/* 長いラベル（英語の Notifications など）は折り返さず省略する。 */
+	.mobile-nav a > span:last-child {
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 	.mobile-nav a.active {
 		color: var(--accent-strong);
 	}
 	.feed-tabs {
 		top: calc(var(--mobile-header-h) + 6px);
+	}
+}
+
+/* 5項目が並ぶ細い端末ではラベルをもう一段小さくする。 */
+@media (max-width: 380px) {
+	.mobile-nav a {
+		font-size: 9px;
 	}
 }

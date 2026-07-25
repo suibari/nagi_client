@@ -14,7 +14,16 @@
 	import ChatBubble from './ChatBubble.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
 	import ReactionBar from './ReactionBar.svelte';
-	let { news, botActor }: { news: NewsView; botActor?: ActorView } = $props();
+	let {
+		news,
+		botActor,
+		unread = false,
+	}: {
+		news: NewsView;
+		botActor?: ActorView;
+		/** 前回ニュース一覧を見た時点より新しいか。カード左端にマークを出す。 */
+		unread?: boolean;
+	} = $props();
 	let composing = $state(false),
 		text = $state(''),
 		busy = $state(false),
@@ -106,7 +115,7 @@
 	}
 </script>
 
-<article class="news-card">
+<article class="news-card" class:unread>
 	<div class="news-meta">
 		<span>{news.sourceName ?? m.newsSourceUnknown()}</span>{#if news.publishedAt}<time
 				>{new Date(news.publishedAt).toLocaleString(dateLocale(), {
@@ -117,7 +126,7 @@
 				})}</time
 			>{/if}
 	</div>
-	<h2>{news.title}</h2>
+	<h3>{news.title}</h3>
 	<ChatBubble post={botPost} displayOnly />
 	<ReactionBar uri={news.uri} cid={news.cid} reactions={news.reactions} />
 	<div class="news-actions">
@@ -168,6 +177,13 @@
 		background: var(--bg-raised);
 		box-shadow: var(--shadow-card);
 	}
+	/* 未読は通知カードと同じ左のアクセントバー＋淡い地色。既読化後も表示中は残る。 */
+	.news-card.unread {
+		background: var(--accent-softer);
+		box-shadow:
+			inset 3px 0 0 var(--accent),
+			var(--shadow-card);
+	}
 	.news-meta {
 		display: flex;
 		gap: 0.65rem;
@@ -182,7 +198,7 @@
 	.news-meta time {
 		margin-left: auto;
 	}
-	h2 {
+	h3 {
 		font-size: 1.08rem;
 		line-height: 1.55;
 		margin: 0.45rem 0 0.75rem;

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { getTimeline } from '$lib/api/appview';
 	import { Feed } from '$lib/feed/feed.svelte';
+	import { globalFeedRead } from '$lib/feed/unread.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Composer from '$lib/components/Composer.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
@@ -12,6 +13,7 @@
 	const feed = new Feed(
 		(cursor) => getTimeline(cursor),
 		(item) => !item.threadKossori,
+		globalFeedRead,
 	);
 	let lastDid = $state<string | undefined>(undefined);
 	onMount(() => {
@@ -82,6 +84,7 @@
 		</div>
 	{:else}{#each feed.visibleItems as item (item.conversation?.threadRootUri ?? item.uri)}<ThreadUnit
 				{item}
+				unread={feed.isUnread(item, $session?.did)}
 				botActor={feed.botActor}
 				ondeleted={(uri) => feed.removePost(uri)}
 				onposted={() => feed.refresh()}

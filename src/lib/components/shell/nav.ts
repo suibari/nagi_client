@@ -6,11 +6,12 @@ export const formatUnread = (count: number) => (count > 99 ? '99+' : String(coun
 export const navItems: NavItem[] = [
 	{ href: '/', label: m.navFeed, icon: 'home' },
 	{ href: '/channels', label: m.navChannels, icon: 'hash' },
+	{ href: '/news', label: m.navNews, icon: 'newspaper' },
 	{ href: '/notifications', label: m.navNotifications, icon: 'bell' },
 	{ href: '/settings', label: m.navSettings, icon: 'settings' },
 ];
-/** 3つのフィードタブではホームを active にする。 */
+/** 2つのフィードタブ（グローバル/全肯定）ではホームを active にする。ニュースは独立項目。 */
 export const isActive = (pathname: string, href: string) =>
 	href === '/'
-		? pathname === '/' || pathname.startsWith('/affirmation') || pathname.startsWith('/news')
+		? pathname === '/' || pathname.startsWith('/affirmation')
 		: pathname === href || pathname.startsWith(`${href}/`);

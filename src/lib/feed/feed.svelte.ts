@@ -1,5 +1,6 @@
 import type { ActorView, FeedItem, Page, PostView } from '$lib/api/types';
 import { m } from '$lib/i18n/i18n.svelte';
+import type { ReadWatermark, UnreadView } from '$lib/unread/watermark.svelte';
 import { optimisticPosts } from './optimistic-posts.svelte';
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
@@ -31,14 +32,19 @@ export class Feed {
 	botActor = $state<ActorView>();
 	#fetcher: (cursor?: string) => Promise<Page<FeedItem>>;
 	#optimisticFilter: (item: FeedItem) => boolean;
+	#unread: UnreadView | undefined;
 	#refreshing = false;
 	#loadRequest = 0;
 	constructor(
 		fetcher: (cursor?: string) => Promise<Page<FeedItem>>,
 		optimisticFilter: (item: FeedItem) => boolean = () => true,
+		watermark?: ReadWatermark,
 	) {
 		this.#fetcher = fetcher;
 		this.#optimisticFilter = optimisticFilter;
+		// 既読基準はこのインスタンスを作った時点で凍結する。load() は画面ごとに複数回
+		// 走る（onMount + oauthReady）ので、凍結を load() 側に置くとマークが即消える。
+		this.#unread = watermark?.openView();
 	}
 	get visibleItems() {
 		const pending = optimisticPosts.items.filter(this.#optimisticFilter);
@@ -52,6 +58,18 @@ export class Feed {
 	hasOptimistic() {
 		return optimisticPosts.items.some(this.#optimisticFilter);
 	}
+	/**
+	 * 未読マーク対象か。マークはスレッド単位（カード1枚に1本）なので、判定も代表投稿
+	 * （＝そのスレッドの最新の人間投稿）で行う。楽観カードと自分の投稿には付けない。
+	 */
+	isUnread(item: FeedItem, selfDid?: string) {
+		return Boolean(
+			this.#unread &&
+			!item.optimisticState &&
+			item.author.did !== selfDid &&
+			this.#unread.isUnread(item),
+		);
+	}
 	async load() {
 		const request = ++this.#loadRequest;
 		this.loading = true;
@@ -60,6 +78,8 @@ export class Feed {
 			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
 			if (request !== this.#loadRequest) return;
 			this.items = page.items;
+			// 表示した最新分までを既読にする。未読マークは凍結した基準で判定するので消えない。
+			this.#unread?.advance(page.items[0]);
 			this.botActor = page.botActor ?? this.botActor;
 			this.cursor = page.cursor;
 			this.hasMore = page.hasMore;
@@ -98,6 +118,7 @@ export class Feed {
 			const seen = new Set(this.items.map(feedKey));
 			const fresh = page.items.filter((i) => !seen.has(feedKey(i)));
 			this.items = [...fresh, ...this.items.map((i) => incoming.get(feedKey(i)) ?? i)];
+			this.#unread?.advance(page.items[0]);
 			this.botActor = page.botActor ?? this.botActor;
 			if (!this.cursor) {
 				this.cursor = page.cursor;
@@ -134,9 +155,7 @@ export class Feed {
 				{
 					...item,
 					...(item.replyParent?.uri === uri ? { replyParent: undefined } : {}),
-					...(item.botReply?.uri === uri
-						? { botReply: undefined, botReplyState: undefined }
-						: {}),
+					...(item.botReply?.uri === uri ? { botReply: undefined, botReplyState: undefined } : {}),
 				},
 			];
 		});

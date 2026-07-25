@@ -16,6 +16,7 @@
 		hiddenPostUri,
 		pinBusy = false,
 		ontogglepin,
+		unread = false,
 	}: {
 		item: FeedItem;
 		botActor?: ActorView;
@@ -29,6 +30,8 @@
 		hiddenPostUri?: string;
 		pinBusy?: boolean;
 		ontogglepin?: (post: PostView) => void | Promise<void>;
+		/** 前回このフィードを見た時点より新しいスレッドか。カード全体に1本だけマークを出す。 */
+		unread?: boolean;
 	} = $props();
 	const STALE_MS = 3 * 60 * 1000;
 	const LONG_WAIT_MS = 10 * 1000;
@@ -75,6 +78,7 @@
 {#if conv}
 	<article
 		class="thread-unit"
+		class:unread
 		class:optimistic={Boolean(item.optimisticState)}
 		data-post-uri={item.uri}
 		data-optimistic-key={item.optimisticKey}
@@ -90,11 +94,16 @@
 			{pinBusy}
 			{ontogglepin}
 		/>
-		{#if conv.hiddenCount > 0}<a class="thread-gap" href={fullThreadHref} aria-label={m.threadViewAll()}
-				>{m.threadMore({ count: conv.hiddenCount })}</a
+		{#if conv.hiddenCount > 0}<a
+				class="thread-gap"
+				href={fullThreadHref}
+				aria-label={m.threadViewAll()}>{m.threadMore({ count: conv.hiddenCount })}</a
 			>{/if}
 		{#each conv.bubbles as bubble (bubble.post.uri)}
-			<div class="thread-reply" style="--reply-indent: {Math.min(Math.max(0, bubble.depth - 1), 5)}">
+			<div
+				class="thread-reply"
+				style="--reply-indent: {Math.min(Math.max(0, bubble.depth - 1), 5)}"
+			>
 				<ChatBubble
 					post={bubble.post}
 					{botActor}
@@ -126,6 +135,7 @@
 {:else if hasVisiblePost}
 	<article
 		class="thread-unit"
+		class:unread
 		class:optimistic={Boolean(item.optimisticState)}
 		data-post-uri={item.uri}
 		data-optimistic-key={item.optimisticKey}

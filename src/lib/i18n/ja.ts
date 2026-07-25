@@ -15,6 +15,9 @@ export const ja = {
 	postCreated: '投稿しました',
 	viewCreatedPost: '投稿を見る',
 	dismissNotice: '通知を閉じる',
+	dateToday: '今日',
+	dateYesterday: '昨日',
+	dateWithWeekday: (p: { date: string; weekday: string }) => `${p.date}(${p.weekday})`,
 
 	// nav
 	navFeed: 'フィード',
