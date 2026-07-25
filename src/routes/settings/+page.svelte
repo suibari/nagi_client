@@ -50,6 +50,12 @@
 			description={m.settingsCrosspostDescription()}
 		/>
 		<SettingsCategoryCard
+			href="/settings/mute"
+			icon="hide"
+			title={m.settingsMuteTitle()}
+			description={m.settingsMuteDescription()}
+		/>
+		<SettingsCategoryCard
 			href="/settings/app-links"
 			icon="apps"
 			title={m.settingsAppLinksTitle()}

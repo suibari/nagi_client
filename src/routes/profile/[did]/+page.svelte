@@ -21,6 +21,7 @@
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 	import { onMount } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import { mutes } from '$lib/mute/mutes.svelte';
 
 	// 日記はポストではないので Feed には載らない。タブだけ同じ並びに足す。
 	type ProfileTab = ProfileFeedFilter | 'diary';
@@ -36,6 +37,21 @@
 	const initialDiaryDate = $derived(page.url.searchParams.get('date') ?? undefined);
 	let tab = $state<ProfileTab>('posts');
 	let profile = $state<ProfileDetail>();
+	let muteError = $state('');
+	async function toggleMute() {
+		if (!profile) return;
+		muteError = '';
+		try {
+			await mutes.toggleActor({
+				did,
+				handle: profile.handle,
+				...(profile.displayName ? { displayName: profile.displayName } : {}),
+				...(profile.avatar ? { avatar: profile.avatar } : {}),
+			});
+		} catch {
+			muteError = m.muteUpdateFailed();
+		}
+	}
 	// per-(did, tab) feed cache so switching tabs back doesn't refetch
 	const feeds = new Map<string, Feed>();
 	const reactionFeeds = new Map<string, ProfileReactionFeed>();
@@ -151,8 +167,22 @@
 					<div class="profile-badges"><ActorBadges actor={profile} /></div>
 				{/if}
 			</div>
-			{#if $session?.did === did}<a class="edit" href="/settings/profile">{m.profileEdit()}</a>{/if}
+			{#if $session?.did === did}
+				<a class="edit" href="/settings/profile">{m.profileEdit()}</a>
+			{:else if $session && profile}
+				<!-- ミュートしても、このプロフィールの投稿は今までどおり見える（自分で開いたので）。
+				     効くのはTL・検索・通知のほう。 -->
+				<button
+					type="button"
+					class="edit"
+					disabled={mutes.isPending(did)}
+					onclick={() => void toggleMute()}
+				>
+					{mutes.hasActor(did) ? m.unmuteUser() : m.muteUser()}
+				</button>
+			{/if}
 		</div>
+		{#if muteError}<p class="mute-error" role="alert">{muteError}</p>{/if}
 		{#if profile?.description}<p class="description">{profile.description}</p>{/if}
 		<div class="profile-stats">
 			<span

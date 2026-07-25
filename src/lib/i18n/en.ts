@@ -327,6 +327,29 @@ export const en: Messages = {
 	settingsAboutDescription: 'What you can do on Nagi, terms, and privacy',
 	settingsDeleteTitle: 'Delete all data',
 	settingsDeleteDescription: 'Permanently delete your data from Nagi',
+	// mute
+	settingsMuteTitle: 'Mute',
+	settingsMuteDescription: 'Users and channels you do not want to see',
+	muteUser: 'Mute',
+	unmuteUser: 'Unmute',
+	muteChannel: 'Mute this channel',
+	unmuteChannel: 'Unmute',
+	mutedBadge: 'Muted',
+	muteUsersLegend: 'Muted users',
+	muteChannelsLegend: 'Muted channels',
+	muteHelp:
+		'Muting hides that person or channel from your timeline and search results, and stops their notifications. They are never told.',
+	mutePrivateNote:
+		'Mutes are stored only on the Nagi server and are not visible to anyone else. They are never written as public PDS records.',
+	muteThreadNote:
+		'Threads started by a muted user are hidden entirely, including replies from other people.',
+	muteVisibleNote:
+		'Opening a muted person’s profile or a thread directly still shows everything, and a muted channel is still visible from its URL.',
+	muteUsersEmpty: 'You have not muted anyone.',
+	muteChannelsEmpty: 'You have not muted any channels.',
+	muteSignInRequired: 'Sign in to manage mutes.',
+	muteLoadFailed: 'Could not load your mute list.',
+	muteUpdateFailed: 'Could not update the mute. Please try again.',
 	signOutDescription: 'Sign out of your account on this device',
 	settingsNotificationsTitle: 'Notifications',
 	settingsNotificationsDescription: 'Push notifications to your device',

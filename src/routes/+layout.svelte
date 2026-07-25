@@ -14,9 +14,19 @@
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
 	import { startUnreadNewsPolling } from '$lib/news/unread.svelte';
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
+	import { mutes } from '$lib/mute/mutes.svelte';
 
 	let { children } = $props();
 	let checkedDid: string | undefined;
+	let mutesDid: string | undefined;
+	// ミュート一覧はサインインごとに1回だけ読み、サインアウトで捨てる。
+	$effect(() => {
+		const did = $session?.did;
+		if (!$oauthReady || mutesDid === did) return;
+		mutesDid = did;
+		if (did) void mutes.load();
+		else mutes.clear();
+	});
 	onMount(() => {
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
 		void initOAuth().then(() => resolveCrosspostPending());

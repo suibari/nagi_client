@@ -348,6 +348,29 @@ export const ja = {
 	settingsAboutDescription: 'Nagiでできること、利用規約、プライバシー',
 	settingsDeleteTitle: '全データ削除',
 	settingsDeleteDescription: 'Nagiに保存されたデータを完全に削除',
+	// mute (ユーザー/チャンネルのミュート)
+	settingsMuteTitle: 'ミュート',
+	settingsMuteDescription: '表示したくないユーザーとチャンネル',
+	muteUser: 'ミュートする',
+	unmuteUser: 'ミュート解除',
+	muteChannel: 'このチャンネルをミュート',
+	unmuteChannel: 'ミュート解除',
+	mutedBadge: 'ミュート中',
+	muteUsersLegend: 'ミュートしたユーザー',
+	muteChannelsLegend: 'ミュートしたチャンネル',
+	muteHelp:
+		'ミュートすると、その相手やチャンネルの投稿がタイムラインと検索から消え、通知も届かなくなります。相手には知られません。',
+	mutePrivateNote:
+		'ミュートの内容はNagiのサーバーにのみ保存され、他のユーザーからは見えません。PDSの公開レコードにはなりません。',
+	muteThreadNote:
+		'ミュートしたユーザーが立てたスレッドは、他の人の返信もふくめて表示されなくなります。',
+	muteVisibleNote:
+		'相手のプロフィールやスレッドを直接ひらいた場合と、ミュートしたチャンネルをURLからひらいた場合は、これまでどおり表示されます。',
+	muteUsersEmpty: 'ミュートしたユーザーはいません。',
+	muteChannelsEmpty: 'ミュートしたチャンネルはありません。',
+	muteSignInRequired: 'ミュートを設定するにはログインしてください。',
+	muteLoadFailed: 'ミュート一覧を取得できませんでした。',
+	muteUpdateFailed: 'ミュートを更新できませんでした。もう一度お試しください。',
 	signOutDescription: 'この端末からアカウントをサインアウト',
 	settingsNotificationsTitle: '通知',
 	settingsNotificationsDescription: 'デバイスへのプッシュ通知',

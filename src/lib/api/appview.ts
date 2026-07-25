@@ -8,6 +8,8 @@ import type {
 	ChannelView,
 	DiaryPage,
 	EmojiView,
+	MuteSubjectType,
+	MutesView,
 	NotificationView,
 	NewsPage,
 	Page,
@@ -91,6 +93,28 @@ async function call<T>(
 	}
 	return response.json();
 }
+/**
+ * ログイン中は認証付き（PDS プロキシ経由 = viewerDid が AppView へ届く）で取得し、
+ * 認証だけが拒否されたら公開取得へ落とす。permission-set を publish しても認可サーバの
+ * キャッシュが最大24h残るため、これが無いと publish 直後に該当画面が丸ごと壊れる。
+ * 公開コンテンツを返すエンドポイント専用（ミュート等のビューア依存部分が効かなくなるだけ）。
+ */
+async function withPublicFallback<T>(lxm: string, path: string): Promise<T> {
+	try {
+		return await call<T>(lxm, path);
+	} catch (error) {
+		if (
+			get(session) &&
+			error instanceof ApiRequestError &&
+			(error.status === 401 ||
+				error.status === 403 ||
+				(error.status === 400 && /scope|permission/i.test(error.message)))
+		) {
+			return call<T>(lxm, path, {}, 'none');
+		}
+		throw error;
+	}
+}
 export const getTimeline = (cursor?: string) =>
 	call<TimelinePage>(
 		'com.suibari.nagi.getTimeline',
@@ -104,21 +128,10 @@ export const getAffirmation = (cursor?: string) =>
 export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ limit: '20', lang });
 	if (cursor) params.set('cursor', cursor);
-	const path = `/xrpc/com.suibari.nagi.getPositiveNews?${params}`;
-	return call<NewsPage>('com.suibari.nagi.getPositiveNews', path).catch((error) => {
-		// permission-set のpublish直後はPDSのキャッシュが古い場合がある。
-		// 認証だけが拒否されたときは公開取得へ戻し、ニュース閲覧を止めない。
-		if (
-			get(session) &&
-			error instanceof ApiRequestError &&
-			(error.status === 401 ||
-				error.status === 403 ||
-				(error.status === 400 && /scope|permission/i.test(error.message)))
-		) {
-			return call<NewsPage>('com.suibari.nagi.getPositiveNews', path, {}, 'none');
-		}
-		throw error;
-	});
+	return withPublicFallback<NewsPage>(
+		'com.suibari.nagi.getPositiveNews',
+		`/xrpc/com.suibari.nagi.getPositiveNews?${params}`,
+	);
 };
 /** 未読確認用。本文を描画しない画面では最新の1件だけを取得する。 */
 export const getLatestPositiveNews = (lang: 'ja' | 'en') => {
@@ -135,69 +148,57 @@ export const getThread = (uri: string) =>
 		'com.suibari.nagi.getThread',
 		`/xrpc/com.suibari.nagi.getThread?uri=${encodeURIComponent(uri)}`,
 	);
-// チャンネル閲覧は公開コンテンツ。PDS プロキシを経由せず AppView を直接叩く（auth:'none'）。
-// これにより permission-set への rpc スコープ追加（goat lex publish）の反映を待たずに閲覧できる。
-// 未ログイン閲覧にも対応でき、getLatestPositiveNews / getDiaries と同じ方針。
-// 代わりにログイン中でも viewerDid が渡らないため、CH TL では自分のリアクション強調（reactedByMe）は付かない。
+// チャンネル閲覧・検索は公開コンテンツだが、ミュートを効かせるには viewerDid が要る。
+// viewerDid は PDS プロキシ経由の service-auth JWT からしか取れないので、ログイン中は
+// 認証付きで叩き、permission-set のキャッシュ未反映で弾かれたときだけ公開取得へ落とす
+// （withPublicFallback）。未ログインは従来どおり AppView 直読みで、ミュートは元々効かない。
 export const getChannels = (cursor?: string) => {
 	const params = new URLSearchParams({ limit: '50' });
 	if (cursor) params.set('cursor', cursor);
-	return call<ChannelsPage>(
+	return withPublicFallback<ChannelsPage>(
 		'com.suibari.nagi.getChannels',
 		`/xrpc/com.suibari.nagi.getChannels?${params}`,
-		{},
-		'none',
 	);
 };
 export const getChannel = (uri: string) =>
-	call<{ channel: ChannelView }>(
+	withPublicFallback<{ channel: ChannelView }>(
 		'com.suibari.nagi.getChannel',
 		`/xrpc/com.suibari.nagi.getChannel?uri=${encodeURIComponent(uri)}`,
-		{},
-		'none',
 	);
 export const getChannelTimeline = (uri: string, cursor?: string) => {
 	const params = new URLSearchParams({ uri });
 	if (cursor) params.set('cursor', cursor);
-	return call<TimelinePage>(
+	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.getChannelTimeline',
 		`/xrpc/com.suibari.nagi.getChannelTimeline?${params}`,
-		{},
-		'none',
 	);
 };
-// タグ投稿の検索。公開コンテンツなので getChannelTimeline と同じく AppView 直読み（auth:'none'）。
-// 将来のキーワード検索も同じ /search 画面・同系エンドポイントへ相乗りできるよう tag を明示パラメータにする。
+// タグ投稿の検索。将来のキーワード検索も同じ /search 画面・同系エンドポイントへ相乗りできるよう
+// tag を明示パラメータにする。
 export const searchPosts = (tag: string, cursor?: string) => {
 	const params = new URLSearchParams({ tag });
 	if (cursor) params.set('cursor', cursor);
-	return call<TimelinePage>(
+	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.searchPosts',
 		`/xrpc/com.suibari.nagi.searchPosts?${params}`,
-		{},
-		'none',
 	);
 };
 // 自由文キーワード検索（意味検索＋語彙一致のハイブリッド）。tag 検索と同じ /search 画面に相乗り。
 export const searchPostsByQuery = (q: string, cursor?: string) => {
 	const params = new URLSearchParams({ q });
 	if (cursor) params.set('cursor', cursor);
-	return call<TimelinePage>(
+	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.searchPosts',
 		`/xrpc/com.suibari.nagi.searchPosts?${params}`,
-		{},
-		'none',
 	);
 };
-// チャンネルの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
+// チャンネルの自由文検索（意味検索＋語彙一致）。
 export const searchChannelsByQuery = (q: string, cursor?: string) => {
 	const params = new URLSearchParams({ q });
 	if (cursor) params.set('cursor', cursor);
-	return call<ChannelsPage>(
+	return withPublicFallback<ChannelsPage>(
 		'com.suibari.nagi.searchChannels',
 		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
-		{},
-		'none',
 	);
 };
 // ニュースの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
@@ -305,6 +306,16 @@ export const getUnreadCount = () =>
 		'com.suibari.nagi.getUnreadCount',
 		'/xrpc/com.suibari.nagi.getUnreadCount',
 		{},
+		'required',
+	);
+// ミュートは非公開情報なので必ず認証必須（公開フォールバックは付けない）。
+export const getMutes = () =>
+	call<MutesView>('com.suibari.nagi.getMutes', '/xrpc/com.suibari.nagi.getMutes', {}, 'required');
+export const setMute = (subjectType: MuteSubjectType, subject: string, muted: boolean) =>
+	call<{ muted: boolean }>(
+		'com.suibari.nagi.setMute',
+		'/xrpc/com.suibari.nagi.setMute',
+		{ method: 'POST', body: JSON.stringify({ subjectType, subject, muted }) },
 		'required',
 	);
 export const updateSeen = (seenAt: string) =>

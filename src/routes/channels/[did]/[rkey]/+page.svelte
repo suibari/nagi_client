@@ -12,6 +12,7 @@
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
+	import { mutes } from '$lib/mute/mutes.svelte';
 	import { m, relativeTime } from '$lib/i18n/i18n.svelte';
 
 	const CHANNEL = 'com.suibari.nagi.channel';
@@ -80,6 +81,19 @@
 	});
 
 	let isOwner = $derived(Boolean($session && channel && channel.did === $session.did));
+	// ストアが読めていればそちらを、まだならサーバが付けた viewerMuted を使う（直リンク対策）。
+	let muted = $derived(
+		channel ? (mutes.loaded ? mutes.hasChannel(channel.uri) : Boolean(channel.viewerMuted)) : false,
+	);
+	async function toggleMute() {
+		if (!channel) return;
+		headError = '';
+		try {
+			await mutes.toggleChannel(channel);
+		} catch {
+			headError = m.muteUpdateFailed();
+		}
+	}
 	let composerChannel = $derived(
 		channel ? { uri: channel.uri, cid: channel.cid, name: channel.name } : undefined,
 	);
@@ -271,24 +285,38 @@
 				{#if channel.banner}<img src={resolve(channel.banner)} alt={m.channelBannerAlt()} />{/if}
 			</span>
 			<h1 class="channel-card-name">{channel.name}</h1>
-			{#if isOwner}
+			{#if isOwner || $session}
 				<div class="channel-hero-actions">
-					<button
-						class="channel-hero-action"
-						type="button"
-						aria-label={m.channelEdit()}
-						title={m.channelEdit()}
-						onclick={openEdit}><Icon name="edit" size={18} /></button
-					>
-					<button
-						class="channel-hero-action"
-						type="button"
-						aria-label={m.channelDelete()}
-						title={m.channelDelete()}
-						onclick={() => (deleteOpen = true)}><Icon name="trash" size={18} /></button
-					>
+					{#if isOwner}
+						<button
+							class="channel-hero-action"
+							type="button"
+							aria-label={m.channelEdit()}
+							title={m.channelEdit()}
+							onclick={openEdit}><Icon name="edit" size={18} /></button
+						>
+						<button
+							class="channel-hero-action"
+							type="button"
+							aria-label={m.channelDelete()}
+							title={m.channelDelete()}
+							onclick={() => (deleteOpen = true)}><Icon name="trash" size={18} /></button
+						>
+					{:else}
+						<!-- ミュートしてもこのページからは今までどおり見える（URL を開いたので）。
+						     効くのはCH一覧・CH検索・TL・検索のほう。 -->
+						<button
+							class="channel-hero-action"
+							type="button"
+							aria-label={muted ? m.unmuteChannel() : m.muteChannel()}
+							title={muted ? m.unmuteChannel() : m.muteChannel()}
+							disabled={mutes.isPending(channel.uri)}
+							onclick={() => void toggleMute()}><Icon name="hide" size={18} /></button
+						>
+					{/if}
 				</div>
 			{/if}
+			{#if muted}<span class="channel-muted-badge">{m.mutedBadge()}</span>{/if}
 			<span class="channel-card-foot">
 				{#if channel.description}<span class="channel-card-desc">{channel.description}</span>{/if}
 				<span class="channel-card-updated"

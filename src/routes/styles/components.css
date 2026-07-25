@@ -1465,6 +1465,21 @@
 	font-size: 13px;
 	font-weight: 700;
 }
+/* .edit は自分のときの編集リンクと、他人のときのミュートボタンで共用する。
+   button 既定の背景とカーソルだけ揃える。 */
+.profile-header button.edit {
+	background: none;
+	cursor: pointer;
+}
+.profile-header button.edit:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+.profile-header .mute-error {
+	margin: 0;
+	font-size: 13px;
+	color: var(--danger);
+}
 .profile-header .description {
 	margin: 0;
 	white-space: pre-wrap;
@@ -2191,6 +2206,22 @@ button.settings-category {
 }
 .channel-hero-action:hover {
 	background: rgb(0 0 0 / 0.6);
+}
+.channel-hero-action:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+/* ミュート中の CH は一覧・検索から消えるので、URL で開いたときだけ状態が分かるようにする。 */
+.channel-muted-badge {
+	position: absolute;
+	inset-block-start: 12px;
+	inset-inline-start: 12px;
+	padding: 3px 10px;
+	border-radius: var(--radius-pill);
+	background: rgb(0 0 0 / 0.55);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 700;
 }
 .channel-hero .channel-card-name {
 	max-inline-size: calc(100% - 100px);

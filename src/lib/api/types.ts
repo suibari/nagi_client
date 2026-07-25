@@ -178,5 +178,14 @@ export type ChannelView = {
 	pinnedPostRef?: StrongRef;
 	/** 非削除かつこのチャンネル所属であることを確認済みのピン投稿。 */
 	pinnedPost?: PostView;
+	/**
+	 * 自分がこの CH をミュートしているか。ミュート済み CH は一覧・検索から消えるが URL 直打ち
+	 * では開けるので、そのページで解除できるように getChannel だけが返す。
+	 */
+	viewerMuted?: boolean;
 };
 export type ChannelsPage = { channels: ChannelView[]; cursor?: string; hasMore: boolean };
+/** ミュート対象の種別。actor は相手の DID、channel はチャンネルの AT-URI を指す。 */
+export type MuteSubjectType = 'actor' | 'channel';
+/** 自分のミュート一覧。AppView は本人のリクエストにしか返さない。 */
+export type MutesView = { actors: ActorView[]; channels: ChannelView[] };
