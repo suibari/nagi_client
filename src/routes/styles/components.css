@@ -2114,44 +2114,6 @@
 	.hero {
 		padding-top: 18px;
 	}
-	.about-page {
-		gap: 26px;
-	}
-	/* イラストを上、コピーを下に積み、中央寄せにする。 */
-	.about-hero {
-		grid-template-columns: minmax(0, 1fr);
-		padding: 20px 18px 26px;
-		border-radius: 24px;
-		text-align: center;
-	}
-	.about-hero-figure {
-		inline-size: min(230px, 68%);
-	}
-	.about-hero-copy {
-		justify-items: center;
-	}
-	.about-cta {
-		justify-items: center;
-	}
-	.about-final {
-		padding: 26px 18px 28px;
-		border-radius: 24px;
-	}
-	/* 比較表: 3列だと1列あたりが狭すぎるので、ラベルを1行に出して値を2列に畳む。
-	   ヘッダ行が消えるぶん、各セルに小見出し(.about-compare-caption)を出す。 */
-	.about-compare-head {
-		display: none;
-	}
-	.about-compare-row {
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 8px 10px;
-	}
-	.about-compare-label {
-		grid-column: 1 / -1;
-	}
-	.about-compare-caption {
-		display: block;
-	}
 	.profile-header {
 		padding: 16px;
 	}
@@ -2765,6 +2727,149 @@ a.about-feature:focus-visible {
 }
 .about-final .about-cta {
 	justify-items: center;
+}
+
+/* --- about page: 狭幅 --- */
+/* この節は about の基本ルールより後に置くこと。詳細度が同じなので、
+   ファイル冒頭側のメディアクエリに書くと後続の基本ルールに打ち消される。 */
+@media (max-width: 900px) {
+	/* ヒーローの2カラムは、イラスト270px + 本文 では本文側が潰れる。縦積みに切り替える。 */
+	.about-hero {
+		grid-template-columns: minmax(0, 1fr);
+		justify-items: center;
+		text-align: center;
+		gap: 14px;
+		padding: 24px 22px 28px;
+		border-radius: 26px;
+	}
+	.about-hero-figure {
+		inline-size: min(220px, 62%);
+	}
+	.about-hero-copy {
+		justify-items: center;
+	}
+	.about-cta {
+		justify-items: center;
+	}
+	/* 比較表: 3列だと1列あたりが狭すぎて2列目以降が読めなくなる。
+	   ラベルを1行に出し、値を2列に畳む。ヘッダ行が消えるぶん各セルに小見出しを出す。 */
+	.about-compare-head {
+		display: none;
+	}
+	.about-compare-row {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 6px 12px;
+	}
+	.about-compare-label {
+		grid-column: 1 / -1;
+	}
+	.about-compare-caption {
+		display: block;
+		margin-bottom: 2px;
+	}
+	.about-compare-old,
+	.about-compare-nagi {
+		display: grid;
+		align-content: start;
+	}
+}
+
+@media (max-width: 767px) {
+	.about-page {
+		gap: 26px;
+	}
+	.about-hero {
+		padding: 20px 16px 24px;
+		border-radius: 22px;
+	}
+	.about-hero-figure {
+		inline-size: min(180px, 56%);
+	}
+	/* 理由・ステップは1枚あたりを低くして、縦の間延びを抑える。 */
+	.about-reasons,
+	.about-steps {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 10px;
+	}
+	.about-reason,
+	.about-step {
+		padding: 16px 12px;
+		gap: 6px;
+		border-radius: 18px;
+	}
+	.about-reason-icon {
+		inline-size: 44px;
+		block-size: 44px;
+	}
+	.about-step-num {
+		inline-size: 36px;
+		block-size: 36px;
+		font-size: 1rem;
+	}
+	.about-reason h3,
+	.about-step h3 {
+		font-size: 0.92rem;
+	}
+	.about-reason p,
+	.about-step p {
+		font-size: 0.8rem;
+		line-height: 1.65;
+	}
+	/* 機能カードは1列だと9枚で縦に間延びする。2列に詰めてアイコンも小さくする。 */
+	.about-features {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.about-feature {
+		gap: 5px;
+		padding: 12px 12px 14px;
+		border-radius: var(--radius-m);
+	}
+	.about-feature-icon {
+		inline-size: 32px;
+		block-size: 32px;
+		border-radius: 10px;
+	}
+	.about-feature h3 {
+		font-size: 0.88rem;
+	}
+	.about-feature p {
+		font-size: 0.78rem;
+		line-height: 1.5;
+	}
+	.about-compare-row {
+		padding: 12px 14px;
+		font-size: 0.82rem;
+	}
+	.about-final {
+		padding: 26px 16px 28px;
+		border-radius: 22px;
+	}
+}
+
+/* 3枚並びの理由・ステップは、2列にすると最後の1枚が半端に残る。全幅に伸ばす。 */
+@media (max-width: 767px) {
+	.about-reasons > :last-child:nth-child(odd),
+	.about-steps > :last-child:nth-child(odd) {
+		grid-column: 1 / -1;
+	}
+}
+
+@media (max-width: 380px) {
+	/* 2列にすると1枚あたりが狭すぎるので、ここだけ1列に戻す。 */
+	.about-reasons,
+	.about-steps,
+	.about-features {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.about-feature {
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: center;
+		column-gap: 12px;
+	}
+	.about-feature-icon {
+		grid-row: span 2;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
