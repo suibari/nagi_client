@@ -12,6 +12,17 @@ export type ImageAttachment = {
 	aspectRatio: { width: number; height: number };
 };
 
+export type PostEditImage =
+	| {
+			kind: 'existing';
+			id: string;
+			sourceIndex: number;
+			previewUrl: string;
+			alt: string;
+			aspectRatio?: { width: number; height: number };
+	  }
+	| ({ kind: 'new' } & ImageAttachment);
+
 export class ImageProcessingError extends Error {
 	constructor(
 		message: string,

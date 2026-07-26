@@ -3,8 +3,8 @@ import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
 import { parsePostText, type MentionSelection } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
-import type { ImageAttachment } from '$lib/images';
-import type { EmojiView } from '$lib/api/types';
+import type { ImageAttachment, PostEditImage } from '$lib/images';
+import type { EmojiView, PostImage } from '$lib/api/types';
 import { BLUEMOJI_ITEM, bluemojiRefOf } from './bluemoji';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
@@ -244,13 +244,31 @@ export async function setPostKossori(rkey: string, kossori: boolean) {
 		record,
 	});
 }
+type StoredPostImage = {
+	image: unknown;
+	alt: string;
+	aspectRatio?: { width: number; height: number };
+};
+
+function blobCid(blob: unknown): string | undefined {
+	if (!blob || typeof blob !== 'object') return undefined;
+	const ref = (blob as { ref?: unknown }).ref;
+	if (typeof ref === 'object' && ref !== null && '$link' in ref) {
+		const link = (ref as { $link?: unknown }).$link;
+		if (typeof link === 'string') return link;
+	}
+	if (ref && typeof (ref as { toString?: unknown }).toString === 'function') {
+		const cid = (ref as { toString: () => string }).toString();
+		if (cid && cid !== '[object Object]') return cid;
+	}
+	return undefined;
+}
+
 /**
- * 既存投稿の本文を編集する（投稿後編集）。text/facets/langs だけ差し替え、
- * createdAt・embed・reply・channel・kossori 等は getRecord した値を保持したまま putRecord で
- * 書き戻す（同一 rkey → uri 不変・cid 変化）。Lexicon は変更していないため record に編集用
- * フィールドは足さない。「編集済み」判定は AppView が cid 変化を検知して行う。
+ * 既存投稿の本文と画像を編集する。既存画像は getRecord した BlobRef を再利用し、
+ * 新規画像だけアップロードする。createdAt・reply・channel・kossori 等のフィールドは保持する。
  */
-export async function updatePost(rkey: string, draft: PostDraft) {
+export async function updatePost(rkey: string, draft: PostDraft, images?: PostEditImage[]) {
 	const s = current();
 	const agent = new Agent(s);
 	const { data } = await agent.com.atproto.repo.getRecord({
@@ -265,13 +283,102 @@ export async function updatePost(rkey: string, draft: PostDraft) {
 		facets: draft.facets,
 		langs: draft.langs,
 	};
-	return agent.com.atproto.repo.putRecord({
+	let imageViews: PostImage[] | undefined;
+	if (images !== undefined) {
+		if (images.length > 4) throw new Error('A post can contain at most four images');
+		const embed =
+			record.embed && typeof record.embed === 'object'
+				? ({ ...(record.embed as Record<string, unknown>) } as Record<string, unknown>)
+				: undefined;
+		const embedType = typeof embed?.$type === 'string' ? embed.$type : undefined;
+		const storedImages = Array.isArray(embed?.images) ? (embed.images as StoredPostImage[]) : [];
+		const existingIndexes = images
+			.filter(
+				(image): image is Extract<PostEditImage, { kind: 'existing' }> => image.kind === 'existing',
+			)
+			.map((image) => image.sourceIndex);
+		if (
+			new Set(existingIndexes).size !== existingIndexes.length ||
+			existingIndexes.some(
+				(index) => !Number.isInteger(index) || index < 0 || index >= storedImages.length,
+			)
+		) {
+			throw new Error('The existing image order is invalid');
+		}
+
+		const uploaded = new Map<string, { stored: StoredPostImage; view: PostImage }>();
+		await Promise.all(
+			images
+				.filter((image): image is Extract<PostEditImage, { kind: 'new' }> => image.kind === 'new')
+				.map(async (image) => {
+					const response = await agent.com.atproto.repo.uploadBlob(image.blob, {
+						encoding: image.blob.type,
+					});
+					const cid = blobCid(response.data.blob);
+					if (!cid) throw new Error('Could not resolve the uploaded image');
+					uploaded.set(image.id, {
+						stored: {
+							image: response.data.blob,
+							alt: image.alt,
+							aspectRatio: image.aspectRatio,
+						},
+						view: {
+							url: `/api/blob/${encodeURIComponent(s.did)}/${encodeURIComponent(cid)}`,
+							alt: image.alt,
+							aspectRatio: image.aspectRatio,
+						},
+					});
+				}),
+		);
+
+		const orderedImages = images.map((image): StoredPostImage => {
+			if (image.kind === 'new') {
+				const result = uploaded.get(image.id);
+				if (!result) throw new Error('The uploaded image is unavailable');
+				return result.stored;
+			}
+			const stored = storedImages[image.sourceIndex];
+			return {
+				...stored,
+				alt: image.alt,
+				...(image.aspectRatio ? { aspectRatio: image.aspectRatio } : {}),
+			};
+		});
+		imageViews = images.map((image): PostImage => {
+			if (image.kind === 'new') {
+				const result = uploaded.get(image.id);
+				if (!result) throw new Error('The uploaded image is unavailable');
+				return result.view;
+			}
+			return {
+				url: image.previewUrl,
+				alt: image.alt,
+				...(image.aspectRatio ? { aspectRatio: image.aspectRatio } : {}),
+			};
+		});
+
+		if (embed && embedType === `${POST}#quote`) {
+			if (orderedImages.length) embed.images = orderedImages;
+			else delete embed.images;
+			record.embed = embed;
+		} else if (orderedImages.length) {
+			if (embedType && embedType !== `${POST}#images`) {
+				throw new Error('This post embed does not support images');
+			}
+			record.embed = { $type: `${POST}#images`, images: orderedImages };
+		} else if (embedType === `${POST}#images`) {
+			delete record.embed;
+		}
+	}
+
+	const response = await agent.com.atproto.repo.putRecord({
 		repo: s.did,
 		collection: POST,
 		rkey,
 		validate: false,
 		record,
 	});
+	return { response, imageViews };
 }
 export async function createReaction(
 	subject: { uri: string; cid: string },

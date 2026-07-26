@@ -127,6 +127,8 @@ export const ja = {
 	postImageAdd: '画像を追加',
 	postImageProcessing: '画像を処理中…',
 	postImageRemove: '画像を削除',
+	postImageReorder: (p: { index: number }) => `${p.index}枚目の画像を並べ替え`,
+	postImageMoved: (p: { position: number }) => `画像を${p.position}番目へ移動しました`,
 	postPastedImageName: '貼り付け画像',
 	postImageAltLabel: '画像の説明（任意）',
 	postImageAltPlaceholder: '画像の内容を説明してください',

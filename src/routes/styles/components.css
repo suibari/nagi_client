@@ -1451,11 +1451,59 @@
 	gap: 8px;
 }
 .attachment-item {
+	position: relative;
 	min-width: 0;
 	padding: 7px;
 	background: var(--bg-inset);
 	border: 1px solid var(--line);
 	border-radius: var(--radius-m);
+	transition:
+		border-color 120ms ease,
+		box-shadow 120ms ease,
+		opacity 120ms ease;
+}
+.attachment-item.dragging {
+	z-index: 2;
+	opacity: 0.28;
+	border-color: var(--accent);
+}
+.attachment-item.drop-target {
+	border-color: var(--accent-strong);
+	box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.attachment-drag-ghost {
+	position: fixed;
+	z-index: 10000;
+	margin: 0;
+	opacity: 0.78;
+	box-shadow: 0 14px 32px rgb(0 0 0 / 28%);
+	pointer-events: none;
+	transform: rotate(1.5deg) scale(1.02);
+	transform-origin: center;
+}
+.attachment-drag-handle {
+	position: absolute;
+	z-index: 2;
+	top: 5px;
+	left: 5px;
+	display: grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: white;
+	background: rgb(0 0 0 / 68%);
+	border: 0;
+	border-radius: 50%;
+	cursor: grab;
+	touch-action: none;
+}
+.attachment-drag-handle:active {
+	cursor: grabbing;
+}
+.attachment-drag-handle:disabled {
+	cursor: default;
+	opacity: 0.45;
 }
 .attachment-preview {
 	position: relative;

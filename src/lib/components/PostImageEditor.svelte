@@ -1,29 +1,38 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { APPVIEW_URL } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		ImageProcessingError,
 		MAX_IMAGE_COUNT,
 		processImage,
 		releaseImage,
-		type ImageAttachment,
+		type PostEditImage,
 	} from '$lib/images';
 	import Icon from './shell/Icon.svelte';
 	import SortableImageList from './SortableImageList.svelte';
 
 	let {
-		attachments = $bindable(),
+		images = $bindable(),
 		disabled = false,
-	}: { attachments: ImageAttachment[]; disabled?: boolean } = $props();
-	let processing = $state(false);
+		processing = $bindable(false),
+	}: { images: PostEditImage[]; disabled?: boolean; processing?: boolean } = $props();
+
 	let errors = $state<string[]>([]);
 	let input: HTMLInputElement;
-	let tracked = new Map<string, ImageAttachment>();
+	let tracked = new Map<string, Extract<PostEditImage, { kind: 'new' }>>();
+	let destroyed = false;
+
+	const resolve = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 
 	$effect(() => {
-		const current = new Map(attachments.map((attachment) => [attachment.id, attachment]));
-		for (const [id, attachment] of tracked) {
-			if (!current.has(id)) releaseImage(attachment);
+		const current = new Map(
+			images
+				.filter((image): image is Extract<PostEditImage, { kind: 'new' }> => image.kind === 'new')
+				.map((image) => [image.id, image]),
+		);
+		for (const [id, image] of tracked) {
+			if (!current.has(id)) releaseImage(image);
 		}
 		tracked = current;
 	});
@@ -40,20 +49,26 @@
 	async function addFiles(files: File[]) {
 		if (!files.length || processing) return;
 		errors = [];
-		const available = MAX_IMAGE_COUNT - attachments.length;
+		const available = MAX_IMAGE_COUNT - images.length;
 		if (files.length > available) errors = [m.postImageCountError()];
 		if (available <= 0) return;
 		processing = true;
 		try {
 			for (const file of files.slice(0, available)) {
 				try {
-					attachments = [...attachments, await processImage(file)];
+					const image = await processImage(file);
+					if (destroyed) {
+						releaseImage(image);
+						break;
+					}
+					images = [...images, { kind: 'new', ...image }];
 				} catch (error) {
+					if (destroyed) break;
 					errors = [...errors, errorMessage(file, error)];
 				}
 			}
 		} finally {
-			processing = false;
+			if (!destroyed) processing = false;
 		}
 	}
 
@@ -75,14 +90,13 @@
 			? itemFiles
 			: [...event.clipboardData.files].filter((file) => file.type.startsWith('image/'));
 		if (!files.length) return;
-		// 画像と一緒に入っている HTML や代替テキストを本文へ貼り付けない。
 		event.preventDefault();
 		if (processing) return;
 		void addFiles(files);
 	}
 
 	function remove(id: string) {
-		attachments = attachments.filter((item) => item.id !== id);
+		images = images.filter((image) => image.id !== id);
 	}
 
 	function setAlt(id: string, alt: string) {
@@ -90,13 +104,17 @@
 			.slice(0, 1000)
 			.map((segment) => segment.segment)
 			.join('');
-		attachments = attachments.map((item) => (item.id === id ? { ...item, alt: limited } : item));
+		images = images.map((image) => (image.id === id ? { ...image, alt: limited } : image));
 	}
 
-	onDestroy(() => tracked.forEach(releaseImage));
+	onDestroy(() => {
+		destroyed = true;
+		processing = false;
+		tracked.forEach(releaseImage);
+	});
 </script>
 
-<div class="attachment-editor">
+<div class="attachment-editor post-image-editor">
 	<input
 		class="visually-hidden"
 		bind:this={input}
@@ -108,36 +126,38 @@
 	<button
 		class="ghost attachment-add"
 		type="button"
-		disabled={disabled || processing || attachments.length >= MAX_IMAGE_COUNT}
+		disabled={disabled || processing || images.length >= MAX_IMAGE_COUNT}
 		aria-label={processing ? m.postImageProcessing() : m.postImageAdd()}
 		title={processing ? m.postImageProcessing() : m.postImageAdd()}
 		onclick={() => input.click()}
 	>
 		<Icon name="image" size={18} />
-		<span>{attachments.length}/{MAX_IMAGE_COUNT}</span>
+		<span>{images.length}/{MAX_IMAGE_COUNT}</span>
 	</button>
-	{#if attachments.length}
-		<SortableImageList bind:items={attachments} {disabled}>
-			{#snippet children(attachment)}
+	{#if images.length}
+		<SortableImageList bind:items={images} {disabled}>
+			{#snippet children(image)}
 				<div class="attachment-preview">
-					<img src={attachment.previewUrl} alt="" />
+					<img
+						src={image.kind === 'existing' ? resolve(image.previewUrl) : image.previewUrl}
+						alt=""
+					/>
 					<button
 						class="attachment-remove"
 						type="button"
 						aria-label={m.postImageRemove()}
 						{disabled}
-						onclick={() => remove(attachment.id)}><Icon name="close" size={16} /></button
+						onclick={() => remove(image.id)}><Icon name="close" size={16} /></button
 					>
 				</div>
 				<label>
 					<span>{m.postImageAltLabel()}</span>
 					<input
 						type="text"
-						value={attachment.alt}
+						value={image.alt}
 						maxlength="10000"
 						{disabled}
-						oninput={(event) =>
-							setAlt(attachment.id, (event.currentTarget as HTMLInputElement).value)}
+						oninput={(event) => setAlt(image.id, (event.currentTarget as HTMLInputElement).value)}
 						placeholder={m.postImageAltPlaceholder()}
 					/>
 				</label>

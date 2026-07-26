@@ -205,6 +205,22 @@
 			onsubmit?.();
 			return;
 		}
+		if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.isComposing) {
+			const key = event.key.toLowerCase();
+			const format =
+				key === 'b' && !event.shiftKey
+					? 'bold'
+					: key === 'i' && !event.shiftKey
+						? 'italic'
+						: key === 's' && event.shiftKey
+							? 'strike'
+							: undefined;
+			if (format) {
+				event.preventDefault();
+				applyMarkdown(format);
+				return;
+			}
+		}
 		if (!suggest.actors.length || !token) {
 			if (event.key === 'Escape') close();
 			return;

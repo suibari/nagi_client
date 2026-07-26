@@ -18,7 +18,7 @@
 		updatePost,
 	} from '$lib/atproto/records';
 	import ImageGallery from './ImageGallery.svelte';
-	import type { ImageAttachment } from '$lib/images';
+	import type { ImageAttachment, PostEditImage } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCard from './LinkCard.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
@@ -32,6 +32,7 @@
 	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
 	import { tick } from 'svelte';
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
+	import PostImageEditor from './PostImageEditor.svelte';
 	let {
 		post,
 		botActor,
@@ -73,8 +74,11 @@
 	let editing = $state(false);
 	let editText = $state('');
 	let editMentions = $state<MentionSelection[]>([]);
+	let editImages = $state<PostEditImage[]>([]);
+	let editImageProcessing = $state(false);
 	let editBusy = $state(false);
 	let editError = $state('');
+	let editImageEditor = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 	let reactionPickerOpen = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
 	let actionMenuOpen = $state(false);
@@ -93,6 +97,9 @@
 			translateSourceLang !== languagePreferences.translationLanguage,
 	);
 	let hasSecondaryActions = $derived(canTranslateExternally || canPin || mine);
+	let editHasContent = $derived(
+		Boolean(editText.trim() || editImages.length || post.linkCards?.length || post.quote),
+	);
 	$effect(() => {
 		if (!actionMenuOpen) return;
 		const closeFromOutside = (event: PointerEvent) => {
@@ -183,12 +190,23 @@
 		const restored = restorePostEditState(post.text, post.facets);
 		editText = restored.text;
 		editMentions = restored.mentions;
+		editImageProcessing = false;
+		editImages = (post.images ?? []).map((image, sourceIndex) => ({
+			kind: 'existing',
+			id: `${post.cid}-${sourceIndex}`,
+			sourceIndex,
+			previewUrl: image.url,
+			alt: image.alt,
+			aspectRatio: image.aspectRatio,
+		}));
 		editing = true;
 	}
 	function cancelEdit() {
 		editing = false;
 		editText = '';
 		editMentions = [];
+		editImages = [];
+		editImageProcessing = false;
 		editError = '';
 	}
 	const postHref = (uri: string) => {
@@ -202,26 +220,29 @@
 	}
 	async function submitEdit() {
 		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
-		if (!editText.trim() || editBusy || !$session) return;
+		if (!editHasContent || editImageProcessing || editBusy || !$session) return;
 		if (!match) {
 			editError = m.editPostFailed();
 			return;
 		}
-		// 編集は本文（text/facets/langs）だけ差し替え、createdAt・embed 等は既存値を保持する。
 		const draft = preparePostDraft(editText, undefined, undefined, [], [], editMentions);
 		editBusy = true;
 		editError = '';
 		try {
-			await updatePost(match[2], draft);
-			// 楽観反映: このカードの本文/facets を差し替え「編集済み」を立てる。AppView が
+			const result = await updatePost(match[2], draft, editImages);
+			// 楽観反映: このカードの本文/facets/画像を差し替え「編集済み」を立てる。AppView が
 			// putRecord を取り込むと同じ内容へ収束するため、即時 refresh は呼ばない
 			// （取り込み前は旧本文が返り楽観反映を打ち消してしまうため）。
 			post.text = draft.text;
 			post.facets = draft.facets as PostView['facets'];
+			post.langs = draft.langs;
+			post.images = result.imageViews?.length ? result.imageViews : undefined;
 			post.edited = true;
 			editing = false;
 			editText = '';
 			editMentions = [];
+			editImages = [];
+			editImageProcessing = false;
 		} catch (error) {
 			editError = error instanceof Error ? error.message : m.editPostFailed();
 		} finally {
@@ -367,6 +388,14 @@
 		</div>
 		{#if editing}
 			<div class="inline-edit">
+				{#snippet editTools()}
+					<PostImageEditor
+						bind:this={editImageEditor}
+						bind:images={editImages}
+						bind:processing={editImageProcessing}
+						disabled={editBusy}
+					/>
+				{/snippet}
 				<ComposerEditor
 					id={`edit-${post.cid}`}
 					bind:value={editText}
@@ -374,13 +403,15 @@
 					placeholder={m.editPlaceholder()}
 					disabled={editBusy}
 					onsubmit={() => void submitEdit()}
+					onpaste={(event) => editImageEditor?.handlePaste(event)}
+					tools={editTools}
 				/>
 				<div class="post-composer-foot">
 					{#if editError}<span class="error" role="alert">{editError}</span>{/if}
 					<button
 						class="primary icon-action primary-icon"
 						type="button"
-						disabled={editBusy || !editText.trim()}
+						disabled={editBusy || editImageProcessing || !editHasContent}
 						aria-label={editBusy ? m.composerSubmitting() : m.composerSubmit()}
 						title={editBusy ? m.composerSubmitting() : m.composerSubmit()}
 						onclick={() => void submitEdit()}
@@ -402,7 +433,7 @@
 			{#if overflowing || expanded}<button class="read" onclick={() => (expanded = !expanded)}
 					>{expanded ? m.readLess() : m.readMore()}</button
 				>{/if}
-		{/if}{#if post.images?.length}<ImageGallery
+		{/if}{#if !editing && post.images?.length}<ImageGallery
 				images={post.images}
 			/>{/if}{#if post.linkCards?.length}<div class="link-cards">
 				{#each post.linkCards as card}<LinkCard {card} />{/each}

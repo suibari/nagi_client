@@ -121,6 +121,8 @@ export const en: Messages = {
 	postImageAdd: 'Add images',
 	postImageProcessing: 'Processing image…',
 	postImageRemove: 'Remove image',
+	postImageReorder: (p) => `Reorder image ${p.index}`,
+	postImageMoved: (p) => `Moved image to position ${p.position}`,
 	postPastedImageName: 'Pasted image',
 	postImageAltLabel: 'Image description (optional)',
 	postImageAltPlaceholder: 'Describe the contents of this image',
