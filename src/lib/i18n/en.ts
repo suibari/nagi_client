@@ -314,6 +314,10 @@ export const en: Messages = {
 		'When on, Nagi is authorized to post to your Bluesky. You can change this later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
+	loginAgeNotice: 'Nagi is available only to people aged 18 or older.',
+	loginAgreeBefore: 'By logging in, you agree to the ',
+	loginAgreeSeparator: ' and the ',
+	loginAgreeAfter: '.',
 
 	onboardingBody:
 		'This is a place where words are embraced first. Posts to the public timeline can be read by anyone.',
@@ -495,7 +499,7 @@ export const en: Messages = {
 	imageTypeError: 'Please choose a JPEG, PNG, or WebP image',
 	imageSizeError: 'Please choose an image no larger than 25MB',
 	deleteDataWarning:
-		'Permanently delete your Nagi posts, reactions, profile, and related AppView data. This cannot be undone.',
+		"Permanently delete all of your data on Nagi's servers — posts, reactions, profile, channels, cards, notifications, your conversation history with Bot-tan, and AI-generated analysis and diaries. This cannot be undone. Records in your PDS are not deleted, so removing them completely also requires deleting them from your PDS.",
 	deleteDataInstruction: 'To continue, enter the following text.',
 	deleteDataPhrase: 'Delete all my Nagi data',
 	deleteDataButton: 'Delete all data',

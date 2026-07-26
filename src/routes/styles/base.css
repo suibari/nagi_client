@@ -227,17 +227,151 @@ img.mark {
 	font-size: 24px;
 	color: var(--text-strong);
 }
+/* 章の切れ目に罫線を引く。規約・ポリシーは章が多いので、見出しの大きさだけでは
+   どこで話が変わったのか目で追えない。 */
 .prose h2 {
 	font-size: 17px;
 	color: var(--text-strong);
-	margin-top: 28px;
+	margin-top: 38px;
+	padding-top: 22px;
+	border-top: 1px solid var(--line);
+	/* 目次から飛んだとき、モバイルの固定ヘッダーに見出しが潜らないようにする。 */
+	scroll-margin-top: 72px;
+}
+.prose h3 {
+	font-size: 15px;
+	color: var(--accent-strong);
+	margin-top: 24px;
+	margin-bottom: 4px;
 }
 .prose p,
 .prose li {
 	color: var(--text);
 	font-size: 14px;
 }
+.prose strong {
+	color: var(--text-strong);
+	font-weight: 700;
+}
+/* Tailwind の preflight が ol/ul のマーカーと余白を落とすので、.post-text と同じく
+   明示的に戻す。規約・ポリシーは箇条書きが主役なので点が見えないと読めない。 */
+.prose ul,
+.prose ol {
+	padding-left: 1.35em;
+	margin: 10px 0;
+}
+.prose ul {
+	list-style: disc;
+}
+.prose ol {
+	list-style: decimal;
+}
+.prose li {
+	margin: 6px 0;
+}
+.prose li::marker {
+	color: var(--text-faint);
+}
 .prose .updated {
 	color: var(--text-faint);
 	font-size: 12px;
+}
+.prose a {
+	color: var(--accent-strong);
+	text-decoration: underline;
+}
+
+/* 冒頭の要点まとめ。全文を読まない人にも最低限そこだけは伝わるようにする。 */
+.prose .summary {
+	margin: 22px 0;
+	padding: 16px 18px;
+	border: 1px solid var(--accent-border);
+	border-radius: 12px;
+	background: var(--accent-softer);
+}
+.prose .summary h2 {
+	margin: 0 0 8px;
+	padding: 0;
+	border: 0;
+	font-size: 15px;
+}
+.prose .summary ul {
+	margin: 0;
+}
+
+/* 目次。章数が多いので、どこに何が書いてあるか最初に見せる。 */
+.prose .toc {
+	margin: 22px 0;
+	padding: 14px 18px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--bg-inset);
+}
+.prose .toc h2 {
+	margin: 0 0 6px;
+	padding: 0;
+	border: 0;
+	font-size: 13px;
+	color: var(--text-faint);
+	font-weight: 600;
+}
+.prose .toc ol {
+	margin: 0;
+	padding-left: 1.5em;
+}
+.prose .toc li {
+	margin: 2px 0;
+	font-size: 13px;
+}
+.prose .toc a {
+	text-decoration: none;
+}
+.prose .toc a:hover {
+	text-decoration: underline;
+}
+
+/* 見落とすと困ることを囲む枠。.callout.warn は誤解しやすい点（こっそり投稿は
+   秘密ではない、など）に使う。 */
+.prose .callout {
+	margin: 14px 0;
+	padding: 12px 16px;
+	border-left: 3px solid var(--accent-border);
+	border-radius: 0 8px 8px 0;
+	background: var(--accent-softer);
+}
+.prose .callout.warn {
+	border-left-color: var(--warning);
+	background: var(--warning-soft);
+}
+.prose .callout > :first-child {
+	margin-top: 0;
+}
+.prose .callout > :last-child {
+	margin-bottom: 0;
+}
+/* 規約・ポリシーの表。狭い画面でも本文側を横スクロールさせないよう、表だけを
+   スクロールさせる入れ物に包む前提のスタイル。 */
+.prose .table-scroll {
+	overflow-x: auto;
+	margin: 12px 0;
+}
+.prose table {
+	border-collapse: collapse;
+	width: 100%;
+	min-width: 420px;
+	font-size: 13px;
+}
+.prose th,
+.prose td {
+	border: 1px solid var(--line);
+	padding: 7px 10px;
+	text-align: left;
+	vertical-align: top;
+	color: var(--text);
+}
+.prose th {
+	background: var(--bg-inset);
+	color: var(--text-strong);
+	font-weight: 600;
+	white-space: nowrap;
 }

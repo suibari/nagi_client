@@ -2,6 +2,8 @@
   "client_id": "https://nagi.suibari.com/client-metadata.json",
   "client_name": "Nagi",
   "client_uri": "https://nagi.suibari.com",
+  "tos_uri": "https://nagi.suibari.com/terms",
+  "policy_uri": "https://nagi.suibari.com/privacy",
   "redirect_uris": ["https://nagi.suibari.com/oauth/callback"],
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],

@@ -57,7 +57,14 @@
 	</div>
 	<button disabled={busy || !handle.trim()} onclick={submit}
 		>{busy ? m.loginRedirecting() : m.loginSubmit()}</button
-	>{#if $oauthError}<p class="error">{$oauthError}</p>{/if}<a href="/">{m.loginBrowse()}</a>
+	>{#if $oauthError}<p class="error">{$oauthError}</p>{/if}
+	<p class="legal-note">
+		{m.loginAgeNotice()}
+		{m.loginAgreeBefore()}<a href="/terms">{m.termsLink()}</a>{m.loginAgreeSeparator()}<a
+			href="/privacy">{m.privacyLink()}</a
+		>{m.loginAgreeAfter()}
+	</p>
+	<a href="/">{m.loginBrowse()}</a>
 </section>
 
 <style>
@@ -71,5 +78,16 @@
 		margin-top: 6px;
 		text-align: left;
 		font-size: 12px;
+	}
+	/* 18歳以上の告知と規約同意。ログインボタンの直下に置いて、押す前に目に入るようにする。 */
+	.legal-note {
+		margin-top: 14px;
+		font-size: 12px;
+		color: var(--text-faint);
+		line-height: 1.7;
+	}
+	.legal-note a {
+		color: var(--accent-strong);
+		text-decoration: underline;
 	}
 </style>

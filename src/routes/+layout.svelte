@@ -32,12 +32,14 @@
 		},
 		'/terms': {
 			title: 'Nagi 利用規約',
-			description: '全肯定SNS Nagi（ナギ）の利用規約です。',
+			description:
+				'全肯定SNS Nagi（ナギ）の利用規約とコミュニティガイドライン。利用資格、禁止事項、保護される表現、違反への対応、AI機能の取り扱いについて記載しています。',
 			canonical: 'https://nagi.suibari.com/terms',
 		},
 		'/privacy': {
 			title: 'Nagi プライバシーポリシー',
-			description: '全肯定SNS Nagi（ナギ）のプライバシーポリシーです。',
+			description:
+				'全肯定SNS Nagi（ナギ）のプライバシーポリシー。どの情報をあなたのPDSとNagiのサーバのどちらに保存するか、AI機能でGoogleに何を送信するか、削除の方法を記載しています。',
 			canonical: 'https://nagi.suibari.com/privacy',
 		},
 	};

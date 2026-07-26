@@ -331,6 +331,11 @@ export const ja = {
 	loginCrosspostLabel: 'Blueskyにもクロスポストする',
 	loginCrosspostNote:
 		'ONにすると、あなたのBlueskyへ投稿する権限を認可します。あとから設定で変更できます。',
+	// AI機能に使っている Gemini API の規約が18歳以上を要件にしているので、入口で告知する。
+	loginAgeNotice: '本サービスは18歳以上の方のみご利用いただけます。',
+	loginAgreeBefore: 'ログインすると、',
+	loginAgreeSeparator: 'と',
+	loginAgreeAfter: 'に同意したものとみなされます。',
 
 	// onboarding
 	onboardingBody:
@@ -514,7 +519,7 @@ export const ja = {
 	imageTypeError: 'JPEG、PNG、WebPの画像を選択してください',
 	imageSizeError: '25MB以下の画像を選択してください',
 	deleteDataWarning:
-		'Nagiの投稿、リアクション、プロフィールとAppView上の関連データを完全に削除します。この操作は取り消せません。',
+		'Nagiのサーバに保存されたあなたのデータ（投稿・リアクション・プロフィール・チャンネル・カード・通知・botたんとの会話履歴・AIが生成した分析や日記）をすべて削除します。この操作は取り消せません。PDS上のレコードは削除されないため、完全に消すにはPDS側での削除も必要です。',
 	deleteDataInstruction: '続行するには、次の文字を入力してください。',
 	deleteDataPhrase: 'Nagiの全データを削除',
 	deleteDataButton: '全データを削除する',
