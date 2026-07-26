@@ -556,7 +556,7 @@ export const en: Messages = {
 	imageTypeError: 'Please choose a JPEG, PNG, or WebP image',
 	imageSizeError: 'Please choose an image no larger than 25MB',
 	deleteDataWarning:
-		"Permanently delete all of your data on Nagi's servers — posts, reactions, profile, channels, cards, notifications, your conversation history with Bot-tan, and AI-generated analysis and diaries. This cannot be undone. Records in your PDS are not deleted, so removing them completely also requires deleting them from your PDS.",
+		"Permanently delete all of your data on Nagi's servers. Nagi posts, reactions, and profile records in your PDS are also deleted, along with Bluemoji that have a marker showing they were created by Nagi. Bluemoji created by other apps and Bluemoji created before marker tracking are not deleted. This cannot be undone.",
 	deleteDataInstruction: 'To continue, enter the following text.',
 	deleteDataPhrase: 'Delete all my Nagi data',
 	deleteDataButton: 'Delete all data',

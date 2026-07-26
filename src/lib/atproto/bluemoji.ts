@@ -6,6 +6,8 @@ import { APPVIEW_URL } from '$lib/api/appview';
 
 /** Bluemoji の絵文字定義レコード。カスタム絵文字はユーザー自身の PDS に置く。 */
 export const BLUEMOJI_ITEM = 'blue.moji.collection.item';
+/** Nagi で作成した Bluemoji を識別する、同じ rkey のサイドカーレコード。 */
+export const NAGI_BLUEMOJI = 'com.suibari.nagi.bluemoji';
 /** ラスタ形式は長辺 128px。1 ページに多数並ぶため blob も小さく保つ。 */
 export const EMOJI_SIZE = 128;
 export const MAX_EMOJI_BLOB_SIZE = 128_000;
@@ -35,6 +37,14 @@ const current = () => {
 	if (!value) throw new Error('Authentication required');
 	return value;
 };
+
+const isRecordNotFound = (error: unknown) =>
+	typeof error === 'object' &&
+	error !== null &&
+	(('error' in error && (error as { error?: unknown }).error === 'RecordNotFound') ||
+		('message' in error &&
+			typeof (error as { message?: unknown }).message === 'string' &&
+			(error as { message: string }).message.includes('RecordNotFound')));
 
 export const resolveEmojiUrl = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 export const displayEmojiName = (name: string) => name.replace(/^:|:$/g, '');
@@ -143,33 +153,66 @@ export async function createBluemojiItem(name: string, blob: Blob, alt = '') {
 	const formatKey = FORMAT_KEY[blob.type];
 	if (!formatKey) throw new EmojiProcessingError('Unsupported image type', 'type');
 	const alias = `:${name}:`;
-	return agent.com.atproto.repo.putRecord({
+	const createdAt = new Date().toISOString();
+	const subject = `at://${s.did}/${BLUEMOJI_ITEM}/${name}`;
+	return agent.com.atproto.repo.applyWrites({
 		repo: s.did,
-		collection: BLUEMOJI_ITEM,
-		rkey: name,
 		validate: false,
-		record: {
-			$type: BLUEMOJI_ITEM,
-			name: alias,
-			...(alt ? { alt } : {}),
-			adultOnly: false,
-			fallbackText: alias,
-			createdAt: new Date().toISOString(),
-			formats: {
-				$type: `${BLUEMOJI_ITEM}#formats_v1`,
-				[formatKey]: uploaded.data.blob,
+		writes: [
+			{
+				$type: 'com.atproto.repo.applyWrites#create',
+				collection: BLUEMOJI_ITEM,
+				rkey: name,
+				value: {
+					$type: BLUEMOJI_ITEM,
+					name: alias,
+					...(alt ? { alt } : {}),
+					adultOnly: false,
+					fallbackText: alias,
+					createdAt,
+					formats: {
+						$type: `${BLUEMOJI_ITEM}#formats_v1`,
+						[formatKey]: uploaded.data.blob,
+					},
+				},
 			},
-		},
+			{
+				$type: 'com.atproto.repo.applyWrites#create',
+				collection: NAGI_BLUEMOJI,
+				rkey: name,
+				value: {
+					$type: NAGI_BLUEMOJI,
+					subject,
+					createdAt,
+				},
+			},
+		],
 	});
 }
 
 export async function deleteBluemoji(rkey: string) {
 	const s = current();
-	return new Agent(s).com.atproto.repo.deleteRecord({
-		repo: s.did,
-		collection: BLUEMOJI_ITEM,
-		rkey,
-	});
+	const agent = new Agent(s);
+	try {
+		await agent.com.atproto.repo.deleteRecord({
+			repo: s.did,
+			collection: BLUEMOJI_ITEM,
+			rkey,
+		});
+	} catch (error) {
+		// 前回、本体削除後にサイドカーの削除だけ失敗した場合も再試行できるようにする。
+		if (!isRecordNotFound(error)) throw error;
+	}
+	try {
+		await agent.com.atproto.repo.deleteRecord({
+			repo: s.did,
+			collection: NAGI_BLUEMOJI,
+			rkey,
+		});
+	} catch (error) {
+		// 他アプリ作成分と導入前の Nagi 作成分にはサイドカーがない。
+		if (!isRecordNotFound(error)) throw error;
+	}
 }
 
 /** リアクションレコードに載せる参照。formats は AppView がインデックスから補う。 */

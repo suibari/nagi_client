@@ -5,7 +5,7 @@ import { parsePostText, type MentionSelection } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment, PostEditImage } from '$lib/images';
 import type { EmojiView, PostImage } from '$lib/api/types';
-import { BLUEMOJI_ITEM, bluemojiRefOf } from './bluemoji';
+import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
 import { hasOptInScope } from '$lib/optin/scope-optin';
 import { forgetPublicationCache } from '$lib/standardsite/cache';
 import { deleteNagiStandardSiteRecords } from '$lib/standardsite/repo';
@@ -506,7 +506,45 @@ export async function deleteChannel(rkey: string) {
 export async function deleteAllNagiRecords() {
 	const s = current();
 	const agent = new Agent(s);
-	for (const collection of [POST, REACTION, PROFILE, BLUEMOJI_ITEM]) {
+	const trackedBluemoji: Array<{ rkey: string; subject?: unknown }> = [];
+	let bluemojiCursor: string | undefined;
+	do {
+		const response = await agent.com.atproto.repo.listRecords({
+			repo: s.did,
+			collection: NAGI_BLUEMOJI,
+			limit: 100,
+			cursor: bluemojiCursor,
+		});
+		for (const record of response.data.records) {
+			trackedBluemoji.push({
+				rkey: record.uri.slice(record.uri.lastIndexOf('/') + 1),
+				subject: (record.value as { subject?: unknown }).subject,
+			});
+		}
+		bluemojiCursor = response.data.cursor;
+	} while (bluemojiCursor);
+	for (const marker of trackedBluemoji) {
+		const expectedSubject = `at://${s.did}/${BLUEMOJI_ITEM}/${marker.rkey}`;
+		// 壊れた、または別レコードを指すサイドカーから無関係な Bluemoji を消さない。
+		if (marker.subject === expectedSubject) {
+			try {
+				await agent.com.atproto.repo.deleteRecord({
+					repo: s.did,
+					collection: BLUEMOJI_ITEM,
+					rkey: marker.rkey,
+				});
+			} catch (error) {
+				// 本体を個別削除済みなら、孤立したサイドカーの掃除だけ続ける。
+				if (!isRecordNotFound(error)) throw error;
+			}
+		}
+		await agent.com.atproto.repo.deleteRecord({
+			repo: s.did,
+			collection: NAGI_BLUEMOJI,
+			rkey: marker.rkey,
+		});
+	}
+	for (const collection of [POST, REACTION, PROFILE]) {
 		let cursor: string | undefined;
 		do {
 			const response = await agent.com.atproto.repo.listRecords({

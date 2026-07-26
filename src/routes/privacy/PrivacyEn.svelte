@@ -285,6 +285,8 @@
 <h3>What is deleted</h3>
 <ul>
 	<li>Copies of your posts, reactions, profile, and channels</li>
+	<li>Nagi post, reaction, and profile records in your PDS</li>
+	<li>Custom emoji in your PDS that have a marker showing they were created by Nagi</li>
 	<li>Semantic vectors used for search</li>
 	<li>AI-generated analysis, diaries, and card comments</li>
 	<li>Your conversation history with Bot-tan</li>
@@ -294,8 +296,9 @@
 <h3>What is not deleted</h3>
 <ul>
 	<li>
-		<strong>Records in your PDS.</strong> The Service cannot delete them. To remove them completely you
-		must delete them from your PDS yourself.
+		<strong>Other records in your PDS.</strong> This includes Bluemoji created by other apps and Bluemoji
+		registered before Nagi introduced creation markers. To remove them completely, you must delete them
+		from your PDS yourself.
 	</li>
 	<li>Logs Google keeps for abuse detection (deleted within 55 days).</li>
 	<li>
@@ -303,6 +306,10 @@
 		outside the operator's control.
 	</li>
 </ul>
+<p>
+	Reactions by other users that used your custom emoji remain as those users' data. After the
+	Service's copy of the emoji is deleted, its fallback name is displayed instead of the image.
+</p>
 <p>
 	We keep a record of how often features are used for statistical purposes; when you delete your
 	data, we unlink those records from your DID.

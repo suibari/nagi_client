@@ -586,7 +586,7 @@ export const ja = {
 	imageTypeError: 'JPEG、PNG、WebPの画像を選択してください',
 	imageSizeError: '25MB以下の画像を選択してください',
 	deleteDataWarning:
-		'Nagiのサーバに保存されたあなたのデータ（投稿・リアクション・プロフィール・チャンネル・カード・通知・botたんとの会話履歴・AIが生成した分析や日記）をすべて削除します。この操作は取り消せません。PDS上のレコードは削除されないため、完全に消すにはPDS側での削除も必要です。',
+		'Nagiのサーバに保存されたあなたのデータをすべて削除します。PDS上のNagiの投稿・リアクション・プロフィールと、Nagiで作成したことを示す管理レコードがあるBluemojiも削除されます。他アプリで作成したBluemojiと、管理レコード導入前のBluemojiは削除されません。この操作は取り消せません。',
 	deleteDataInstruction: '続行するには、次の文字を入力してください。',
 	deleteDataPhrase: 'Nagiの全データを削除',
 	deleteDataButton: '全データを削除する',
