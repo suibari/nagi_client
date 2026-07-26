@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import jaI18n from 'emoji-picker-element/i18n/ja';
 	import enI18n from 'emoji-picker-element/i18n/en';
 	import emojiDataUrlJa from 'emoji-picker-element-data/ja/emojibase/data.json?url';
@@ -13,15 +14,20 @@
 		type UnicodeEmoji,
 	} from '$lib/emoji/unicodeSearch';
 	import type { EmojiView } from '$lib/api/types';
+	import { reactionChoiceKey, type ReactionChoice } from '$lib/emoji/reactionUsage';
 
 	let {
 		anchor,
 		select,
 		close,
+		frequent = [],
+		oncustomunavailable,
 	}: {
 		anchor: HTMLElement;
 		select: (emoji: string | EmojiView) => void;
 		close: () => void;
+		frequent?: ReactionChoice[];
+		oncustomunavailable?: (uri: string) => void;
 	} = $props();
 	let host: HTMLDivElement;
 	let unicodeHost = $state<HTMLDivElement>();
@@ -42,6 +48,9 @@
 	const unicodeSearching = $derived(unicodeQuery.trim().length > 0);
 	const unicodeResults = $derived(
 		unicodeSearching ? searchUnicodeEmojis(unicodeIndex, unicodeQuery, 60) : [],
+	);
+	const addCustomHref = $derived(
+		`/settings/emoji?returnTo=${encodeURIComponent(`${page.url.pathname}${page.url.search}`)}`,
 	);
 
 	// 検索データ（ja+en）は初回入力時にだけ取りに行く。以降はメモリ上で絞り込む。
@@ -156,9 +165,9 @@
 				if (emoji) select(emoji);
 			});
 			unicodeHost.append(picker);
-			// 検索は自前で行うので内蔵の検索バーは隠す。
+			// 検索と頻出履歴は Nagi 側で Unicode・カスタム共通に扱うため内蔵UIを隠す。
 			const hideSearchRow = document.createElement('style');
-			hideSearchRow.textContent = '.search-row { display: none; }';
+			hideSearchRow.textContent = '.search-row, .favorites { display: none; }';
 			picker.shadowRoot?.append(hideSearchRow);
 			requestAnimationFrame(() => unicodeInput?.focus());
 		});
@@ -262,6 +271,34 @@
 					{/each}
 				</div>
 			{/if}
+			<a class="emoji-custom-add" href={addCustomHref}>{m.emojiAddCustom()}</a>
+		</div>
+	{/if}
+	{#if frequent.length}
+		<div class="emoji-frequent">
+			<span>{m.emojiFavoritesLabel()}</span>
+			<div class="emoji-frequent-grid">
+				{#each frequent as item (reactionChoiceKey(item))}
+					<button
+						class="emoji-frequent-item"
+						aria-label={m.reactWithAria({
+							emoji: item.kind === 'custom' ? displayEmojiName(item.emoji.name) : item.emoji,
+						})}
+						onclick={() => select(item.emoji)}
+					>
+						{#if item.kind === 'custom'}
+							<img
+								src={resolveEmojiUrl(item.emoji.url)}
+								alt={item.emoji.alt ?? displayEmojiName(item.emoji.name)}
+								title={displayEmojiName(item.emoji.name)}
+								onerror={() => oncustomunavailable?.(item.emoji.uri)}
+							/>
+						{:else}
+							{item.emoji}
+						{/if}
+					</button>
+				{/each}
+			</div>
 		</div>
 	{/if}
 </div>

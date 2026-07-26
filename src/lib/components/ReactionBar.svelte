@@ -8,7 +8,18 @@
 	import Avatar from './Avatar.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
+	import {
+		buildQuickReactionChoices,
+		frequentReactionChoices,
+		loadCustomSuggestionPool,
+		loadReactionUsage,
+		reactionChoiceKey,
+		recordReactionUsage,
+		SAFE_UNICODE_REACTIONS,
+		type ReactionChoice,
+		type ReactionUsage,
+	} from '$lib/emoji/reactionUsage';
 	let {
 		uri,
 		cid,
@@ -23,9 +34,6 @@
 		pickerAnchor?: HTMLElement;
 	} = $props();
 	const REACTION = 'com.suibari.nagi.reaction';
-	const RECENTS_KEY = 'nagi:reaction-recents:v1';
-	const DEFAULT_QUICK_REACTIONS = ['😊', '🙌', '🎉', '👀', '🙏', '✨'];
-	type RecentReaction = { kind: 'unicode'; emoji: string } | { kind: 'custom'; emoji: EmojiView };
 	// The appview only learns about reactions via jetstream (a few seconds behind),
 	// so we keep an optimistic local copy and ignore prop-driven resets for a while
 	// after a local toggle — otherwise the next feed refresh would undo the click.
@@ -35,42 +43,36 @@
 	let holdUntil = 0;
 	let busy = $state(false);
 	let fullPickerOpen = $state(false);
-	let recents = $state<RecentReaction[]>([]);
+	let usage = $state<ReactionUsage[]>([]);
 	let failedCustomUris = $state<string[]>([]);
 	let quickPickerStyle = $state('');
-	let quickItems = $derived.by(() => {
-		const items: RecentReaction[] = [...recents];
-		for (const emoji of DEFAULT_QUICK_REACTIONS) {
-			if (!items.some((item) => item.kind === 'unicode' && item.emoji === emoji)) {
-				items.push({ kind: 'unicode', emoji });
-			}
-		}
-		return items
-			.filter((item) => item.kind === 'unicode' || !failedCustomUris.includes(item.emoji.uri))
-			.slice(0, 8);
-	});
+	let quickItems = $state<ReactionChoice[]>([]);
+	let quickLoading = $state(false);
+	let pickerGeneration = 0;
+	let frequentItems = $derived(frequentReactionChoices(usage, 8, failedCustomUris));
 	onMount(() => {
-		try {
-			const parsed = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]');
-			if (!Array.isArray(parsed)) return;
-			recents = parsed
-				.filter((item): item is RecentReaction =>
-					Boolean(
-						item &&
-						((item.kind === 'unicode' && typeof item.emoji === 'string') ||
-							(item.kind === 'custom' &&
-								typeof item.emoji?.uri === 'string' &&
-								typeof item.emoji?.url === 'string')),
-					),
-				)
-				.slice(0, 8);
-		} catch {
-			localStorage.removeItem(RECENTS_KEY);
-		}
+		usage = loadReactionUsage();
 	});
 	$effect(() => {
 		const incoming = reactions;
 		if (Date.now() >= holdUntil) local = [...incoming];
+	});
+	$effect(() => {
+		if (!pickerOpen || fullPickerOpen) return;
+		const generation = ++pickerGeneration;
+		const usageSnapshot = untrack(loadReactionUsage);
+		usage = usageSnapshot;
+		const failedSnapshot = untrack(() => failedCustomUris);
+		quickItems = [];
+		quickLoading = true;
+		void loadCustomSuggestionPool().then((customPool) => {
+			if (generation !== pickerGeneration || !pickerOpen || fullPickerOpen) return;
+			quickItems = buildQuickReactionChoices(usageSnapshot, customPool, failedSnapshot);
+			quickLoading = false;
+		});
+		return () => {
+			pickerGeneration += 1;
+		};
 	});
 	$effect(() => {
 		if (!pickerOpen || !pickerAnchor || fullPickerOpen) return;
@@ -79,7 +81,7 @@
 			const margin = 12;
 			const width = Math.min(336, window.innerWidth - margin * 2);
 			const left = Math.min(Math.max(margin, rect.left), window.innerWidth - margin - width);
-			const estimatedHeight = quickItems.length > 6 ? 132 : 86;
+			const estimatedHeight = 100;
 			const openAbove = rect.top > estimatedHeight + margin;
 			const top = openAbove ? rect.top - estimatedHeight - 8 : rect.bottom + 8;
 			quickPickerStyle = `top:${Math.max(margin, top)}px;left:${left}px;width:${width}px;`;
@@ -105,23 +107,6 @@
 		Boolean($session?.did && reaction.reactors.some((actor) => actor.did === $session?.did));
 	const labelOf = (reaction: ReactionView) =>
 		reaction.bluemoji ? displayEmojiName(reaction.bluemoji.name) : reaction.emoji;
-	const quickKey = (reaction: RecentReaction) =>
-		reaction.kind === 'custom' ? reaction.emoji.uri : reaction.emoji;
-	function rememberReaction(raw: string | EmojiView) {
-		const item: RecentReaction =
-			typeof raw === 'string'
-				? { kind: 'unicode', emoji: raw.normalize('NFC') }
-				: { kind: 'custom', emoji: raw };
-		recents = [item, ...recents.filter((recent) => quickKey(recent) !== quickKey(item))].slice(
-			0,
-			8,
-		);
-		try {
-			localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
-		} catch {
-			// Storage can be unavailable in privacy modes. Reactions still work without history.
-		}
-	}
 	function closePicker() {
 		pickerOpen = false;
 		fullPickerOpen = false;
@@ -129,6 +114,19 @@
 	}
 	function markCustomUnavailable(uri: string) {
 		if (!failedCustomUris.includes(uri)) failedCustomUris = [...failedCustomUris, uri];
+		const failedIndex = quickItems.findIndex(
+			(item) => item.kind === 'custom' && item.emoji.uri === uri,
+		);
+		if (failedIndex < 0) return;
+		const remaining = quickItems.filter((item) => item.kind !== 'custom' || item.emoji.uri !== uri);
+		const used = new Set(remaining.map(reactionChoiceKey));
+		const fallback = SAFE_UNICODE_REACTIONS.find((emoji) => !used.has(emoji));
+		if (!fallback) {
+			quickItems = remaining;
+			return;
+		}
+		remaining.splice(failedIndex, 0, { kind: 'unicode', emoji: fallback });
+		quickItems = remaining.slice(0, 6);
 	}
 	async function toggle(raw: string | EmojiView) {
 		if (!$session) {
@@ -136,7 +134,6 @@
 			return;
 		}
 		if (busy) return;
-		rememberReaction(raw);
 		pickerOpen = false;
 		fullPickerOpen = false;
 		const custom = typeof raw === 'string' ? undefined : raw;
@@ -201,6 +198,7 @@
 							},
 						];
 				const res = await createReaction({ uri, cid }, custom ?? emoji);
+				usage = recordReactionUsage(loadReactionUsage(), raw);
 				local = local.map((r) =>
 					keyOf(r) === key ? { ...r, viewerReactionUri: res.data.uri } : r,
 				);
@@ -259,7 +257,13 @@
 	{#if fullPickerOpen}
 		<button class="emoji-picker-backdrop" aria-label={m.closeEmojiAria()} onclick={closePicker}
 		></button>
-		<EmojiPicker anchor={pickerAnchor} select={toggle} close={closePicker} />
+		<EmojiPicker
+			anchor={pickerAnchor}
+			select={toggle}
+			close={closePicker}
+			frequent={frequentItems}
+			oncustomunavailable={markCustomUnavailable}
+		/>
 	{:else}
 		<button class="reaction-picker-backdrop" aria-label={m.closeEmojiAria()} onclick={closePicker}
 		></button>
@@ -268,29 +272,34 @@
 			style={quickPickerStyle}
 			role="dialog"
 			aria-label={m.quickReactionAria()}
+			aria-busy={quickLoading}
 		>
-			<div class="reaction-quick-grid">
-				{#each quickItems as item (quickKey(item))}
-					<button
-						class="reaction-quick-item"
-						aria-label={m.reactWithAria({
-							emoji: item.kind === 'custom' ? displayEmojiName(item.emoji.name) : item.emoji,
-						})}
-						onclick={() => toggle(item.emoji)}
-					>
-						{#if item.kind === 'custom'}
-							<img
-								src={resolveEmojiUrl(item.emoji.url)}
-								alt={item.emoji.alt ?? displayEmojiName(item.emoji.name)}
-								title={displayEmojiName(item.emoji.name)}
-								onerror={() => markCustomUnavailable(item.emoji.uri)}
-							/>
-						{:else}
-							{item.emoji}
-						{/if}
-					</button>
-				{/each}
-			</div>
+			{#if quickLoading}
+				<div class="reaction-quick-loading" role="status">{m.loading()}</div>
+			{:else}
+				<div class="reaction-quick-grid">
+					{#each quickItems as item (reactionChoiceKey(item))}
+						<button
+							class="reaction-quick-item"
+							aria-label={m.reactWithAria({
+								emoji: item.kind === 'custom' ? displayEmojiName(item.emoji.name) : item.emoji,
+							})}
+							onclick={() => toggle(item.emoji)}
+						>
+							{#if item.kind === 'custom'}
+								<img
+									src={resolveEmojiUrl(item.emoji.url)}
+									alt={item.emoji.alt ?? displayEmojiName(item.emoji.name)}
+									title={displayEmojiName(item.emoji.name)}
+									onerror={() => markCustomUnavailable(item.emoji.uri)}
+								/>
+							{:else}
+								{item.emoji}
+							{/if}
+						</button>
+					{/each}
+				</div>
+			{/if}
 			<button class="reaction-show-all" onclick={() => (fullPickerOpen = true)}>
 				<Icon name="emoji" size={17} />
 				<span>{m.showAllReactions()}</span>

@@ -235,6 +235,8 @@ export const ja = {
 	emojiCustomEmpty: 'カスタム絵文字が見つかりません',
 	emojiUnicodeEmpty: '絵文字が見つかりません',
 	emojiSearchFailed: '絵文字を読み込めませんでした',
+	emojiAddCustom: 'カスタム絵文字を追加',
+	emojiBackToSource: '元の画面に戻る',
 	morePostActions: 'その他の投稿操作',
 
 	// custom emoji settings

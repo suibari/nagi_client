@@ -227,6 +227,8 @@ export const en: Messages = {
 	emojiCustomEmpty: 'No custom emoji found',
 	emojiUnicodeEmpty: 'No emoji found',
 	emojiSearchFailed: 'Could not load emoji',
+	emojiAddCustom: 'Add custom emoji',
+	emojiBackToSource: 'Back to where you were',
 	morePostActions: 'More post actions',
 
 	// custom emoji settings

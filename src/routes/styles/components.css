@@ -1113,6 +1113,13 @@
 	grid-template-columns: repeat(6, minmax(36px, 1fr));
 	gap: 4px;
 }
+.reaction-quick-loading {
+	display: grid;
+	place-items: center;
+	height: 38px;
+	color: var(--text-faint);
+	font-size: 12px;
+}
 .reaction-quick-item {
 	display: grid;
 	place-items: center;
@@ -1260,8 +1267,12 @@
 	font-size: 13px;
 }
 .emoji-custom-grid {
+	flex: 1;
+	min-height: 0;
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+	grid-auto-rows: 40px;
+	align-content: start;
 	gap: 4px;
 	overflow-y: auto;
 }
@@ -1276,6 +1287,60 @@
 }
 .emoji-custom-item:hover {
 	background: var(--bg-hover);
+}
+.emoji-custom-add {
+	flex: 0 0 auto;
+	display: block;
+	padding: 7px 8px;
+	border-radius: 8px;
+	color: var(--accent-strong);
+	font-size: 12px;
+	font-weight: 700;
+	text-align: center;
+	text-decoration: none;
+}
+.emoji-custom-add:hover,
+.emoji-custom-add:focus-visible {
+	background: var(--accent-softer);
+}
+.emoji-frequent {
+	flex: 0 0 auto;
+	padding: 7px 8px 8px;
+	border-top: 1px solid var(--line);
+}
+.emoji-frequent > span {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--text-faint);
+	font-size: 11px;
+	font-weight: 700;
+}
+.emoji-frequent-grid {
+	display: grid;
+	grid-template-columns: repeat(8, minmax(30px, 1fr));
+	gap: 3px;
+}
+.emoji-frequent-item {
+	display: grid;
+	place-items: center;
+	min-width: 0;
+	height: 32px;
+	padding: 2px;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	font-size: 20px;
+}
+.emoji-frequent-item:hover,
+.emoji-frequent-item:focus-visible {
+	background: var(--bg-hover);
+}
+.emoji-frequent-item img {
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 24px;
+	object-fit: contain;
 }
 /* 正方形セルは崩さず、その中でアスペクト比を保つ（横長は縦が縮む）。 */
 .emoji-custom-item img {
@@ -1308,6 +1373,12 @@
 	height: 48px;
 	max-width: 160px;
 	object-fit: contain;
+}
+.emoji-return {
+	display: inline-block;
+	margin-left: 8px;
+	color: var(--accent-strong);
+	font-weight: 700;
 }
 .emoji-list {
 	display: grid;

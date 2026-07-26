@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { page } from '$app/state';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
@@ -22,6 +23,20 @@
 	let busy = $state(false);
 	let status = $state('');
 	let error = $state('');
+	const safeInternalReturnTo = (value: string | null) => {
+		if (!value?.startsWith('/') || value.startsWith('//')) return undefined;
+		try {
+			const base = new URL('https://nagi.local');
+			const resolved = new URL(value, base);
+			if (resolved.origin !== base.origin) return undefined;
+			return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+		} catch {
+			return undefined;
+		}
+	};
+	const returnTo = $derived(safeInternalReturnTo(page.url.searchParams.get('returnTo')));
+	const backHref = $derived(returnTo ?? '/settings');
+	const backLabel = $derived(returnTo ? m.emojiBackToSource() : m.backToSettings());
 
 	onDestroy(() => {
 		if (preview) URL.revokeObjectURL(preview);
@@ -112,7 +127,7 @@
 </script>
 
 <section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
+	<a class="settings-back" href={backHref}>← {backLabel}</a>
 	<h1>{m.emojiSettingsTitle()}</h1>
 	<p>{m.emojiSettingsNote()}</p>
 	{#if !$session && $oauthReady}
@@ -139,7 +154,11 @@
 		<button disabled={busy || !file || !nameValid || taken.has(name)} onclick={upload}
 			>{busy ? m.saving() : m.emojiUpload()}</button
 		>
-		{#if status}<p>{status}</p>{/if}{#if error}<p class="error">{error}</p>{/if}
+		{#if status}<p>
+				{status}{#if returnTo}
+					<a class="emoji-return" href={returnTo}>{m.emojiBackToSource()}</a>
+				{/if}
+			</p>{/if}{#if error}<p class="error">{error}</p>{/if}
 
 		<h2>{m.emojiMineTitle()}</h2>
 		{#if !loaded}
