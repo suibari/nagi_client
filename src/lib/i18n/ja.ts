@@ -612,6 +612,7 @@ export const ja = {
 	cardAttributeWater: '水',
 	cardAttributeWind: '風',
 	cardAttributeEarth: '地',
+	cardFabLabel: '今日の1枚',
 	cardFabUndrawn: 'きょうのカード、まだ引いていないよ',
 	cardViewCollection: 'コレクションを見る',
 	cropperBannerTitle: 'バナーをトリミング',

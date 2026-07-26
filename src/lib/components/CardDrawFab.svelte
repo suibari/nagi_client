@@ -21,8 +21,8 @@
 	const hintId = $props.id();
 </script>
 
-<!-- ボタンそのものがカードの裏面（CardBack）。押した先のフリップ演出でめくれるのと
-     同じ絵なので、何が起きるかが押す前に分かる。 -->
+<!-- 見た目は浮遊するカードそのもの。操作要素としては button を保ち、押した先の
+     フリップ演出と同じ CardBack を見せて、何が起きるかを押す前から伝える。 -->
 <div class="card-fab-wrap" class:shifted>
 	{#if error}
 		<p class="card-fab-error" role="alert">
@@ -41,13 +41,10 @@
 		onclick={ondraw}
 	>
 		<span class="card-fab-card">
-			<CardBack mark="58%" frame={false} />
+			<CardBack />
+			{#if drawing}<span class="card-fab-spinner" aria-hidden="true"></span>{/if}
 		</span>
-		{#if drawing}
-			<span class="card-fab-spinner" aria-hidden="true"></span>
-		{:else}
-			<span class="card-fab-dot" aria-hidden="true"></span>
-		{/if}
+		<span class="card-fab-label">{drawing ? m.cardDrawing() : m.cardFabLabel()}</span>
 		<span id={hintId} class="visually-hidden">{m.cardFabUndrawn()}</span>
 	</button>
 </div>
@@ -61,14 +58,8 @@
 		display: grid;
 		justify-items: end;
 		gap: 8px;
-		/*
-		 * デスクトップは .sidebar-right 下端の .side-footer（利用規約などのリンク）のすぐ上。
-		 * footer は sidebar の padding-bottom 22px + padding-top 14px + 12px の 1〜2 行で、
-		 * 高さは概ね 53〜76px。ここを大きく空けると宙に浮いて見えるので詰める。リンクは
-		 * 左寄せで最長の行でも 200px 程度、FAB は右端 76px なので、多少食い込んでも文字には
-		 * かからない。
-		 */
-		bottom: 54px;
+		/* 縦長カードとラベルを .side-footer（高さは概ね 53〜76px）の上へ置く。 */
+		bottom: 84px;
 		/* ビューポートの隅まで飛ばすと読んでいる列から遠いので、.shell（最大 1240px）の
 		   右端あたりに張り付ける。狭い画面では max() で 24px に落ちる。 */
 		right: max(24px, calc(50vw - 620px + 20px));
@@ -81,49 +72,70 @@
 			transform: scale(0.9);
 		}
 	}
-	/*
-	 * ボタンは正方形の台座。カードそのものを正方形にすると（＝地色と枠だけ裏面にすると）
-	 * ただの角丸バッジに見えてカードだと伝わらないので、台座の中に縦長のカードを 1 枚置く。
-	 */
 	.card-fab {
 		position: relative;
 		display: grid;
 		place-items: center;
-		width: 56px;
-		height: 56px;
-		padding: 0;
-		border: 1px solid var(--line);
-		border-radius: var(--radius-m);
-		background: var(--bg-raised);
-		color: var(--text-on-accent);
-		box-shadow: var(--shadow-pop);
+		gap: 8px;
+		min-width: 68px;
+		padding: 0 4px 2px;
+		border: 0;
+		background: transparent;
+		color: var(--text);
 		cursor: pointer;
-		transition:
-			transform 0.14s ease,
-			box-shadow 0.14s ease;
+		transition: transform 0.14s ease;
 	}
 	/* 遊戯王リスペクトの 59/86。AffirmationCard と同じ比率にして図鑑の 1 枚に見せる。 */
 	.card-fab-card {
 		position: relative;
 		display: block;
-		inline-size: 32px;
+		inline-size: 52px;
 		aspect-ratio: 59 / 86;
-		border-radius: 5px;
-		/* 32px 幅に 2px 枠は太いので細くする。 */
-		--card-back-border: 1.5px;
+		border-radius: 8px;
+		box-shadow: var(--shadow-pop);
+		animation: card-fab-float 3.6s ease-in-out infinite;
+		transition:
+			box-shadow 0.18s ease,
+			filter 0.18s ease;
+	}
+	@keyframes card-fab-float {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-1.5deg);
+		}
+		50% {
+			transform: translateY(-5px) rotate(1deg);
+		}
+	}
+	.card-fab-label {
+		padding: 4px 9px;
+		border: 1px solid var(--line);
+		border-radius: var(--radius-pill);
+		background: var(--bg-raised);
+		box-shadow: var(--shadow-card);
+		color: var(--text-muted);
+		font-size: 11px;
+		font-weight: 800;
+		line-height: 1.2;
+		white-space: nowrap;
 	}
 	.card-fab:disabled {
 		cursor: progress;
 	}
-	/* ドロー中はスピナーと botたんが重なって読めないので、裏面の絵だけ引っ込める。 */
+	/* ドロー中は浮遊を止め、スピナーと重なる裏面の絵だけ引っ込める。 */
+	.card-fab[aria-busy='true'] .card-fab-card {
+		animation: none;
+	}
 	.card-fab[aria-busy='true'] :global(.card-back-mark) {
 		opacity: 0.2;
 	}
 	.card-fab:focus-visible {
-		outline: 2px solid var(--focus-ring);
-		outline-offset: 3px;
+		outline: none;
 	}
-	/* カードの上に重ねる。grid の流れに入れるとカードの下に段が増えてしまう。 */
+	.card-fab:focus-visible .card-fab-card {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 4px;
+	}
 	.card-fab-spinner {
 		position: absolute;
 		inset: 0;
@@ -140,21 +152,6 @@
 		to {
 			transform: rotate(360deg);
 		}
-	}
-
-	/* 未ドローの気づかせ。.news-unread-dot と同じ寸法・同じトークンだが、あちらは
-	   22px アイコン用に位置がハードコードされているので、ここに書き起こす。
-	   グラデーションの上でも輪郭が出るよう背景色のリングを足す。 */
-	.card-fab-dot {
-		position: absolute;
-		top: -5px;
-		right: -5px;
-		box-sizing: border-box;
-		width: 11px;
-		height: 11px;
-		border-radius: 50%;
-		background: var(--decorative-accent);
-		box-shadow: 0 0 0 2px var(--bg);
 	}
 
 	.card-fab-error {
@@ -202,6 +199,16 @@
 			bottom: calc(82px + env(safe-area-inset-bottom));
 			right: 16px;
 		}
+		.card-fab {
+			min-width: 64px;
+		}
+		.card-fab-card {
+			inline-size: 48px;
+		}
+		.card-fab-label {
+			padding-inline: 8px;
+			font-size: 10.5px;
+		}
 		/* 一時通知はこの幅だと画面幅いっぱいに出るので、その上へ逃がす。 */
 		.card-fab-wrap.shifted {
 			bottom: calc(148px + env(safe-area-inset-bottom));
@@ -212,28 +219,24 @@
 		.card-fab-wrap {
 			right: 12px;
 		}
-		.card-fab {
-			width: 52px;
-			height: 52px;
-		}
-		.card-fab-card {
-			inline-size: 30px;
-		}
 	}
 
 	@media (hover: hover) and (pointer: fine) {
 		.card-fab:hover {
 			transform: translateY(-2px);
-			box-shadow:
-				var(--shadow-pop),
-				0 0 0 4px var(--accent-softer);
+		}
+		.card-fab:hover .card-fab-card {
+			box-shadow: var(--shadow-pop);
+			filter: drop-shadow(0 0 8px var(--accent-soft));
 		}
 		.card-fab:active {
 			transform: translateY(0) scale(0.96);
 		}
 		.card-fab:disabled:hover {
 			transform: none;
-			box-shadow: var(--shadow-pop);
+		}
+		.card-fab:disabled:hover .card-fab-card {
+			filter: none;
 		}
 	}
 
@@ -243,6 +246,10 @@
 			animation: none;
 		}
 		.card-fab {
+			transition: none;
+		}
+		.card-fab-card {
+			animation: none;
 			transition: none;
 		}
 		.card-fab:hover,
