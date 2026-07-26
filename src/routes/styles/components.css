@@ -111,6 +111,28 @@
 	color: var(--text-muted);
 	font-size: 12px;
 }
+.composer-status {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	min-width: 0;
+	margin-right: auto;
+}
+.composer-status > span:first-child {
+	flex: 0 0 auto;
+}
+.composer-crosspost {
+	flex: 0 1 auto;
+	overflow: hidden;
+	padding: 2px 7px;
+	border-radius: var(--radius-pill);
+	background: var(--accent-softer);
+	color: var(--text-muted);
+	font-size: 10px;
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 /* standard.site の投稿ごとオプトイン。条件を満たす長文のときだけ現れる。 */
 .composer-article {
 	display: grid;
@@ -151,9 +173,6 @@
 .composer .submit:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
-}
-.composer-foot > span:first-child {
-	margin-right: auto;
 }
 .composer-foot .draft-save:disabled {
 	opacity: 0.45;

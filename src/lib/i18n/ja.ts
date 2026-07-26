@@ -456,6 +456,7 @@ export const ja = {
 	crosspostDeviceNote: 'この設定は、この端末でのみ有効です。',
 	crosspostBotNote: 'クロスポストされた投稿には、Bluesky側のBotたんは返信しません。',
 	crosspostEnableLabel: 'Blueskyにもクロスポストする',
+	crosspostComposerStatus: 'Blueskyにも投稿されます',
 	crosspostReauthNote:
 		'クロスポストにはBlueskyへの投稿権限が必要です。下のボタンから追加の権限を付与してください（Blueskyの認可画面が開きます）。',
 	crosspostReauthSubmit: '追加の権限を付与する',

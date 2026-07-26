@@ -49,6 +49,7 @@
 	let draftError = $state('');
 	let pendingRestoreId = $state<string | null>(null);
 	let loadedDid = $state<string | undefined>(undefined);
+	let crosspostReady = $state(false);
 	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
@@ -63,6 +64,7 @@
 	let standardSite = $state(false);
 	let articleTitle = $state('');
 	const articleCandidate = $derived(isArticleCandidate({ kossori, channel }));
+	const willCrosspost = $derived(crosspostReady && !channel && !kossori && !standardSite);
 	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
 	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
 	const needsArticleTitle = $derived(standardSiteReady && standardSite && !headingTitle);
@@ -77,7 +79,13 @@
 		if (did !== loadedDid) {
 			loadedDid = did;
 			void drafts.load(did);
+			crosspostReady = false;
 			standardSiteReady = false;
+			if (did && getCrosspostEnabled()) {
+				void hasCrosspostScope().then((granted) => {
+					if ($session?.did === did) crosspostReady = granted;
+				});
+			}
 			if (did && getStandardSiteEnabled()) {
 				void hasStandardSiteScope().then((granted) => {
 					if ($session?.did === did) standardSiteReady = granted;
@@ -244,7 +252,14 @@
 			</div>
 		{/if}
 		<div class="composer-foot">
-			<span>{graphemes} / 3000</span>
+			<div class="composer-status">
+				<span>{graphemes} / 3000</span>
+				{#if willCrosspost}
+					<span class="composer-crosspost" title={m.crosspostComposerStatus()}
+						>{m.crosspostComposerStatus()}</span
+					>
+				{/if}
+			</div>
 			<!-- チャンネル投稿は記事にしないので、CH の投稿欄ではボタンごと出さない。
 			     こっそりに切り替えたときは押せなくなるだけにして、位置は動かさない。 -->
 			{#if standardSiteReady && !channel}

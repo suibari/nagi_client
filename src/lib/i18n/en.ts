@@ -427,6 +427,7 @@ export const en: Messages = {
 	crosspostDeviceNote: 'This setting applies to this device only.',
 	crosspostBotNote: 'Bot-tan does not reply to crossposted posts on Bluesky.',
 	crosspostEnableLabel: 'Crosspost to Bluesky',
+	crosspostComposerStatus: 'Also posts to Bluesky',
 	crosspostReauthNote:
 		'Crossposting needs permission to post on Bluesky. Grant the additional permission below (the Bluesky authorization screen will open).',
 	crosspostReauthSubmit: 'Grant additional permission',
