@@ -1,7 +1,8 @@
 import { writable, get } from 'svelte/store';
-import { BASE_SCOPE, FULL_SCOPE, oauthClient } from './client';
+import type { BrowserOAuthClient } from '@atproto/oauth-client-browser';
+import { BASE_SCOPE, FULL_SCOPE, getOAuthClient } from './client';
 import { normalizeHandle } from '$lib/atproto/handle';
-export type OAuthSession = Awaited<ReturnType<typeof oauthClient.restore>>;
+export type OAuthSession = Awaited<ReturnType<BrowserOAuthClient['restore']>>;
 export const session = writable<OAuthSession | null>(null);
 export const oauthReady = writable(false);
 export const oauthError = writable<string | null>(null);
@@ -29,6 +30,7 @@ export function consumeOAuthReturnTo(): string | null {
 
 export async function initOAuth() {
 	try {
+		const oauthClient = getOAuthClient();
 		const result = await oauthClient.init();
 		if (result?.session) session.set(result.session);
 		else {
@@ -48,7 +50,7 @@ export async function signIn(
 	// クロスポストはオプトインなので、有効化するときだけ Bluesky への
 	// 書き込み権限を含むスコープで認可し直す。
 	// 先頭 @ や大文字・前後空白を落として handle 解決の失敗を防ぐ。
-	await oauthClient.signIn(normalizeHandle(handle), {
+	await getOAuthClient().signIn(normalizeHandle(handle), {
 		scope: options.crosspost ? FULL_SCOPE : BASE_SCOPE,
 		...(options.refreshPermissions ? { prompt: 'consent' as const } : {}),
 	});

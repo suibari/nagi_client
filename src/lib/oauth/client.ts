@@ -1,6 +1,4 @@
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-const production = typeof location !== 'undefined' && location.hostname === 'nagi.suibari.com';
-const origin = typeof location !== 'undefined' ? location.origin : 'http://127.0.0.1';
 /** クロスポスト対象コレクション。付与判定の前方一致にも使う。 */
 export const CROSSPOST_COLLECTION_SCOPE = 'repo:app.bsky.feed.post';
 // Nagi は Bluesky 投稿を作成するだけで、更新・削除は一切行わない（cf. crosspost/bluesky.ts）。
@@ -23,31 +21,48 @@ const baseScopes = [
 export const BASE_SCOPE = baseScopes.join(' ');
 export const FULL_SCOPE = [...baseScopes, CROSSPOST_SCOPE].join(' ');
 const scope = FULL_SCOPE;
-export const oauthClient = new BrowserOAuthClient({
-	clientMetadata: production
-		? {
-				client_id: 'https://nagi.suibari.com/client-metadata.json',
-				client_name: 'Nagi',
-				client_uri: 'https://nagi.suibari.com',
-				redirect_uris: ['https://nagi.suibari.com/oauth/callback'],
-				grant_types: ['authorization_code', 'refresh_token'],
-				response_types: ['code'],
-				scope,
-				token_endpoint_auth_method: 'none',
-				application_type: 'web',
-				dpop_bound_access_tokens: true,
-			}
-		: {
-				client_id: `http://localhost?redirect_uri=${encodeURIComponent(`${origin}/oauth/callback`)}&scope=${encodeURIComponent(scope)}`,
-				client_name: 'Nagi (local development)',
-				client_uri: origin,
-				redirect_uris: [`${origin}/oauth/callback`],
-				grant_types: ['authorization_code', 'refresh_token'],
-				response_types: ['code'],
-				scope,
-				token_endpoint_auth_method: 'none',
-				application_type: 'native',
-				dpop_bound_access_tokens: true,
-			},
-	handleResolver: 'https://bsky.social',
-});
+
+let oauthClient: BrowserOAuthClient | undefined;
+
+/**
+ * BrowserOAuthClient は生成時に IndexedDB を開くため、プリレンダリング中には生成しない。
+ * 公開ページを静的HTMLにしつつ、ブラウザでは従来どおり単一のクライアントを共有する。
+ */
+export function getOAuthClient(): BrowserOAuthClient {
+	if (typeof location === 'undefined') {
+		throw new Error('OAuth client is only available in the browser');
+	}
+	if (oauthClient) return oauthClient;
+
+	const production = location.hostname === 'nagi.suibari.com';
+	const origin = location.origin;
+	oauthClient = new BrowserOAuthClient({
+		clientMetadata: production
+			? {
+					client_id: 'https://nagi.suibari.com/client-metadata.json',
+					client_name: 'Nagi',
+					client_uri: 'https://nagi.suibari.com',
+					redirect_uris: ['https://nagi.suibari.com/oauth/callback'],
+					grant_types: ['authorization_code', 'refresh_token'],
+					response_types: ['code'],
+					scope,
+					token_endpoint_auth_method: 'none',
+					application_type: 'web',
+					dpop_bound_access_tokens: true,
+				}
+			: {
+					client_id: `http://localhost?redirect_uri=${encodeURIComponent(`${origin}/oauth/callback`)}&scope=${encodeURIComponent(scope)}`,
+					client_name: 'Nagi (local development)',
+					client_uri: origin,
+					redirect_uris: [`${origin}/oauth/callback`],
+					grant_types: ['authorization_code', 'refresh_token'],
+					response_types: ['code'],
+					scope,
+					token_endpoint_auth_method: 'none',
+					application_type: 'native',
+					dpop_bound_access_tokens: true,
+				},
+		handleResolver: 'https://bsky.social',
+	});
+	return oauthClient;
+}

@@ -13,7 +13,9 @@ export function isLocalePreference(value: unknown): value is LocalePreference {
 }
 
 function detectLocale(): Locale {
-	if (typeof navigator === 'undefined') return 'en';
+	// 公開ページのプリレンダリングは、日本語を正規の初期言語として出力する。
+	// Node.js にも navigator があるため、ブラウザ判定には window を使う。
+	if (typeof window === 'undefined') return 'ja';
 	return navigator.language?.toLowerCase().startsWith('ja') ? 'ja' : 'en';
 }
 
@@ -28,14 +30,19 @@ function getStoredPreference(): LocalePreference {
 	}
 }
 
-const prefs = $state({ preference: getStoredPreference() });
+// プリレンダリングした日本語HTMLと初回 hydration を一致させ、マウント直後に端末設定へ切り替える。
+const prefs = $state({ preference: 'system' as LocalePreference, browserReady: false });
 
 export const i18n = {
 	get preference(): LocalePreference {
 		return prefs.preference;
 	},
 	get locale(): Locale {
-		return prefs.preference === 'system' ? detectLocale() : prefs.preference;
+		return prefs.browserReady && prefs.preference === 'system'
+			? detectLocale()
+			: prefs.preference === 'system'
+				? 'ja'
+				: prefs.preference;
 	},
 };
 
@@ -44,8 +51,16 @@ function applyLang(): void {
 	document.documentElement.lang = i18n.locale;
 }
 
+export function initLocale(): void {
+	if (prefs.browserReady || typeof window === 'undefined') return;
+	prefs.preference = getStoredPreference();
+	prefs.browserReady = true;
+	applyLang();
+}
+
 export function setLocalePreference(preference: LocalePreference): void {
 	prefs.preference = preference;
+	prefs.browserReady = true;
 	if (typeof window !== 'undefined') {
 		try {
 			window.localStorage.setItem(LOCALE_STORAGE_KEY, preference);
@@ -58,6 +73,7 @@ export function setLocalePreference(preference: LocalePreference): void {
 
 export function clearLocalePreference(): void {
 	prefs.preference = 'system';
+	prefs.browserReady = true;
 	if (typeof window !== 'undefined') window.localStorage.removeItem(LOCALE_STORAGE_KEY);
 	applyLang();
 }

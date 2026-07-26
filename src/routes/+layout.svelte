@@ -5,7 +5,7 @@
 	import MobileHeader from '$lib/components/shell/MobileHeader.svelte';
 	import MobileNav from '$lib/components/shell/MobileNav.svelte';
 	import { initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
-	import { m } from '$lib/i18n/i18n.svelte';
+	import { initLocale, m } from '$lib/i18n/i18n.svelte';
 	import { getOwnNagiProfile } from '$lib/atproto/records';
 	import { resolveCrosspostPending } from '$lib/crosspost/preferences';
 	import { goto } from '$app/navigation';
@@ -17,7 +17,33 @@
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import { refreshPushState } from '$lib/notifications/push.svelte';
 
+	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
+		'/': {
+			title: 'Nagi（ナギ）— やさしい言葉が凪ぐ全肯定SNS',
+			description:
+				'Nagi（ナギ）は、全肯定botたんが言葉を受け止める、AT Protocol上の全肯定SNSです。いいねやフォローを気にせず、自由に気持ちを投稿できます。',
+			canonical: 'https://nagi.suibari.com/',
+		},
+		'/about': {
+			title: 'Nagiについて — 全肯定SNS Nagi（ナギ）',
+			description:
+				'全肯定SNS Nagi（ナギ）の特徴と使い方。全肯定botたん、いいね・フォローのないタイムライン、AT Protocolによるデータ管理について紹介します。',
+			canonical: 'https://nagi.suibari.com/about',
+		},
+		'/terms': {
+			title: 'Nagi 利用規約',
+			description: '全肯定SNS Nagi（ナギ）の利用規約です。',
+			canonical: 'https://nagi.suibari.com/terms',
+		},
+		'/privacy': {
+			title: 'Nagi プライバシーポリシー',
+			description: '全肯定SNS Nagi（ナギ）のプライバシーポリシーです。',
+			canonical: 'https://nagi.suibari.com/privacy',
+		},
+	};
+
 	let { children } = $props();
+	const publicSeo = $derived(PUBLIC_SEO[page.url.pathname]);
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let pushSyncedDid: string | undefined;
@@ -42,6 +68,8 @@
 		void refreshPushState();
 	});
 	onMount(() => {
+		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
+		initLocale();
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
 		void initOAuth().then(() => resolveCrosspostPending());
 		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。
@@ -66,10 +94,20 @@
 </script>
 
 <svelte:head>
-	<title>{m.appTitle()}</title>
-	<!-- OGP・favicon などクローラ向けの静的メタは app.html にある（SPA なので
-	     ここに書くと JS 実行後にしか現れない）。ここは i18n で変わるものだけ。 -->
+	<title>{publicSeo?.title ?? m.appTitle()}</title>
+	<meta name="description" content={publicSeo?.description ?? m.appDescription()} />
+	<meta name="robots" content={publicSeo ? 'index,follow' : 'noindex,follow'} />
+	<meta property="og:title" content={publicSeo?.title ?? m.appTitle()} />
+	<meta property="og:description" content={publicSeo?.description ?? m.appDescription()} />
+	<meta
+		property="og:url"
+		content={publicSeo?.canonical ?? `https://nagi.suibari.com${page.url.pathname}`}
+	/>
+	<meta name="twitter:title" content={publicSeo?.title ?? m.appTitle()} />
+	<meta name="twitter:description" content={publicSeo?.description ?? m.appDescription()} />
+	{#if publicSeo}<link rel="canonical" href={publicSeo.canonical} />{/if}
 </svelte:head>
+
 <MobileHeader />
 <div class="shell">
 	<SidebarLeft />

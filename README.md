@@ -1,45 +1,31 @@
-# sv
+# Nagi
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+[Nagi（ナギ）](https://nagi.suibari.com/)は、全肯定botたんが言葉を受け止める、AT
+Protocol上の全肯定SNSです。いいねやフォローの数を気にせず、自由に気持ちを投稿できます。
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.16.3 create --template minimal --types ts --add tailwindcss="plugins:none" --install npm nagi-client
-```
+[Nagiについて](https://nagi.suibari.com/about)
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+依存関係をインストールし、開発サーバーを起動します。
 
 ```sh
 npm run dev
 
-# or start the server and open the app in a new browser tab
+# ブラウザも開く場合
 npm run dev -- --open
 ```
 
 ## Building
 
-To create a production version of your app:
+型チェックと本番ビルド:
 
 ```sh
+npm run check
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+生成物は `npm run preview` で確認できます。
 
 ## 横幅が可変なレイアウトの実装ルール
 

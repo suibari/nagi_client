@@ -62,7 +62,7 @@
 			description={m.settingsAppLinksDescription()}
 		/>
 		<SettingsCategoryCard
-			href="/settings/about"
+			href="/about"
 			icon="info"
 			title={m.settingsAboutTitle()}
 			description={m.settingsAboutDescription()}
