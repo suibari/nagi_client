@@ -75,6 +75,11 @@
 	let editMentions = $state<MentionSelection[]>([]);
 	let editBusy = $state(false);
 	let editError = $state('');
+	let reactionPickerOpen = $state(false);
+	let reactionButton = $state<HTMLButtonElement>();
+	let actionMenuOpen = $state(false);
+	let actionMenuTrigger = $state<HTMLButtonElement>();
+	let actionMenu = $state<HTMLDivElement>();
 	let postRow: HTMLDivElement;
 	let mine = $derived($session?.did === post.author.did);
 	let topLevel = $derived(!post.reply);
@@ -87,6 +92,61 @@
 			Boolean(translateSourceLang) &&
 			translateSourceLang !== languagePreferences.translationLanguage,
 	);
+	let hasSecondaryActions = $derived(canTranslateExternally || canPin || mine);
+	$effect(() => {
+		if (!actionMenuOpen) return;
+		const closeFromOutside = (event: PointerEvent) => {
+			const target = event.target as Node;
+			if (!actionMenu?.contains(target) && !actionMenuTrigger?.contains(target)) {
+				actionMenuOpen = false;
+			}
+		};
+		const closeFromEscape = (event: KeyboardEvent) => {
+			if (event.key !== 'Escape') return;
+			actionMenuOpen = false;
+			requestAnimationFrame(() => actionMenuTrigger?.focus());
+		};
+		document.addEventListener('pointerdown', closeFromOutside);
+		document.addEventListener('keydown', closeFromEscape);
+		return () => {
+			document.removeEventListener('pointerdown', closeFromOutside);
+			document.removeEventListener('keydown', closeFromEscape);
+		};
+	});
+	function toggleActionMenu() {
+		actionMenuOpen = !actionMenuOpen;
+		if (actionMenuOpen) {
+			void tick().then(() =>
+				actionMenu?.querySelector<HTMLButtonElement>('[role^="menuitem"]')?.focus(),
+			);
+		}
+	}
+	function handleActionMenuKeydown(event: KeyboardEvent) {
+		const items = [
+			...(actionMenu?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]') ?? []),
+		];
+		if (!items.length) return;
+		const current = Math.max(0, items.indexOf(document.activeElement as HTMLButtonElement));
+		let next: number | undefined;
+		if (event.key === 'ArrowDown') next = (current + 1) % items.length;
+		if (event.key === 'ArrowUp') next = (current - 1 + items.length) % items.length;
+		if (event.key === 'Home') next = 0;
+		if (event.key === 'End') next = items.length - 1;
+		if (next === undefined) return;
+		event.preventDefault();
+		items[next]?.focus();
+	}
+	function runSecondaryAction(
+		action: () => void,
+		focusAfter: 'trigger' | 'editor' | 'none' = 'trigger',
+	) {
+		actionMenuOpen = false;
+		action();
+		void tick().then(() => {
+			if (focusAfter === 'trigger') actionMenuTrigger?.focus();
+			if (focusAfter === 'editor') postRow?.querySelector<HTMLTextAreaElement>('textarea')?.focus();
+		});
+	}
 	function openExternalTranslation() {
 		const url = buildExternalTranslationUrl(languagePreferences.translationProvider, {
 			text: post.text,
@@ -354,72 +414,131 @@
 					<span>{m.postSending()}</span>
 				</div>
 			{:else}
-				<ReactionBar uri={post.uri} cid={post.cid} reactions={post.reactions} />
+				<ReactionBar
+					uri={post.uri}
+					cid={post.cid}
+					reactions={post.reactions}
+					bind:pickerOpen={reactionPickerOpen}
+					pickerAnchor={reactionButton}
+				/>
 			{/if}{/if}
 		{#if !displayOnly && !post.deleted && !optimistic}
 			<div class="post-actions">
 				<button
-					class="ghost"
+					class="ghost timeline-action"
 					class:active={composeMode === 'reply'}
 					type="button"
 					aria-label={m.replyPost()}
 					title={m.replyPost()}
 					onclick={() => openComposer('reply')}><Icon name="reply" size={17} /></button
 				>
-				{#if canTranslateExternally}<button
-						class="ghost"
-						type="button"
-						aria-label={m.translateExternally()}
-						title={m.translateExternally()}
-						onclick={openExternalTranslation}><Icon name="language" size={17} /></button
-					>{/if}
 				{#if post.isBot}<button
-						class="ghost"
+						class="ghost timeline-action"
 						class:active={composeMode === 'quote'}
 						type="button"
 						aria-label={m.quotePost()}
 						title={m.quotePost()}
 						onclick={() => openComposer('quote')}><Icon name="quote" size={17} /></button
 					>{/if}
-				{#if canPin}<button
-						class="ghost"
-						class:active={pinned}
-						type="button"
-						disabled={pinBusy}
-						aria-pressed={pinned}
-						aria-label={pinned ? m.channelUnpinPost() : m.channelPinPost()}
-						title={pinned ? m.channelUnpinPost() : m.channelPinPost()}
-						onclick={() => void ontogglepin?.(post)}><Icon name="pin" size={17} /></button
-					>{/if}
-				{#if mine}<button
-						class="ghost"
-						class:active={editing}
-						type="button"
-						aria-label={m.editPostAria()}
-						title={m.editPost()}
-						onclick={() => (editing ? cancelEdit() : startEdit())}
-						><Icon name="edit" size={17} /></button
-					>{/if}
-				{#if mine && topLevel}<button
-						class="ghost"
-						class:active={post.kossori}
-						type="button"
-						disabled={kossoriBusy}
-						aria-pressed={Boolean(post.kossori)}
-						aria-label={post.kossori ? m.kossoriDisableAria() : m.kossoriEnableAria()}
-						title={post.kossori ? m.kossoriDisable() : m.kossoriEnable()}
-						onclick={toggleKossori}><Icon name="hide" size={17} /></button
-					>{/if}
-				{#if mine}<button
-						class="ghost danger"
-						type="button"
-						aria-label={m.deletePostAria()}
-						title={m.deletePost()}
-						onclick={() => {
-							deleteError = '';
-							deleteOpen = true;
-						}}><Icon name="trash" size={17} /></button
-					>{/if}
+				<button
+					bind:this={reactionButton}
+					class="ghost timeline-action"
+					class:active={reactionPickerOpen}
+					type="button"
+					aria-label={m.addReactionAria()}
+					title={m.addReactionAria()}
+					aria-expanded={reactionPickerOpen}
+					onclick={() => (reactionPickerOpen = !reactionPickerOpen)}
+				>
+					<Icon name="emojiPlus" size={18} />
+				</button>
+				{#if hasSecondaryActions}
+					<div class="post-action-menu-wrap">
+						<button
+							bind:this={actionMenuTrigger}
+							class="ghost timeline-action"
+							class:active={actionMenuOpen}
+							type="button"
+							aria-label={m.morePostActions()}
+							title={m.morePostActions()}
+							aria-haspopup="menu"
+							aria-expanded={actionMenuOpen}
+							onclick={toggleActionMenu}><Icon name="moreHorizontal" size={18} /></button
+						>
+						{#if actionMenuOpen}
+							<div
+								bind:this={actionMenu}
+								class="post-action-menu"
+								role="menu"
+								tabindex="-1"
+								aria-label={m.morePostActions()}
+								onkeydown={handleActionMenuKeydown}
+							>
+								{#if canTranslateExternally}
+									<button
+										role="menuitem"
+										onclick={() => runSecondaryAction(openExternalTranslation)}
+									>
+										<Icon name="language" size={17} />
+										<span>{m.translateExternally()}</span>
+									</button>
+								{/if}
+								{#if canPin}
+									<button
+										role="menuitemcheckbox"
+										class:active={pinned}
+										disabled={pinBusy}
+										aria-checked={pinned}
+										onclick={() => runSecondaryAction(() => void ontogglepin?.(post))}
+									>
+										<Icon name="pin" size={17} />
+										<span>{pinned ? m.channelUnpinPost() : m.channelPinPost()}</span>
+									</button>
+								{/if}
+								{#if mine}
+									<button
+										role="menuitem"
+										class:active={editing}
+										onclick={() =>
+											runSecondaryAction(
+												editing ? cancelEdit : startEdit,
+												editing ? 'trigger' : 'editor',
+											)}
+									>
+										<Icon name="edit" size={17} />
+										<span>{editing ? m.cancel() : m.editPost()}</span>
+									</button>
+								{/if}
+								{#if mine && topLevel}
+									<button
+										role="menuitemcheckbox"
+										class:active={post.kossori}
+										disabled={kossoriBusy}
+										aria-checked={Boolean(post.kossori)}
+										onclick={() => runSecondaryAction(() => void toggleKossori())}
+									>
+										<Icon name="hide" size={17} />
+										<span>{post.kossori ? m.kossoriDisable() : m.kossoriEnable()}</span>
+									</button>
+								{/if}
+								{#if mine}
+									<button
+										class="danger"
+										role="menuitem"
+										onclick={() =>
+											runSecondaryAction(() => {
+												deleteError = '';
+												deleteOpen = true;
+											}, 'none')}
+									>
+										<Icon name="trash" size={17} />
+										<span>{m.deletePost()}</span>
+									</button>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/if}
 			</div>
 		{/if}
 		{#if postError && !composeMode}<p class="error" role="alert">{postError}</p>{/if}

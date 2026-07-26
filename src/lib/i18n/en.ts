@@ -215,7 +215,9 @@ export const en: Messages = {
 	reactWithAria: (p) => `React with ${p.emoji}`,
 	viewProfileOfAria: (p) => `View ${p.name}'s profile`,
 	moreReactorsAria: 'More people have reacted',
-	addReactionAria: 'Add a reaction',
+	addReactionAria: 'React',
+	quickReactionAria: 'Quick reactions',
+	showAllReactions: 'See all',
 	closeEmojiAria: 'Close emoji palette',
 	emojiPickerAria: 'Choose a reaction',
 	emojiFavoritesLabel: 'Frequently used',
@@ -225,6 +227,7 @@ export const en: Messages = {
 	emojiCustomEmpty: 'No custom emoji found',
 	emojiUnicodeEmpty: 'No emoji found',
 	emojiSearchFailed: 'Could not load emoji',
+	morePostActions: 'More post actions',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'Custom emoji',

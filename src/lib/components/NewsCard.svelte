@@ -32,6 +32,8 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
+	let reactionPickerOpen = $state(false);
+	let reactionButton = $state<HTMLButtonElement>();
 	let safeUrl = $derived.by(() => {
 		try {
 			const u = new URL(news.url);
@@ -128,7 +130,13 @@
 	</div>
 	<h3>{news.title}</h3>
 	<ChatBubble post={botPost} displayOnly />
-	<ReactionBar uri={news.uri} cid={news.cid} reactions={news.reactions} />
+	<ReactionBar
+		uri={news.uri}
+		cid={news.cid}
+		reactions={news.reactions}
+		bind:pickerOpen={reactionPickerOpen}
+		pickerAnchor={reactionButton}
+	/>
 	<div class="news-actions">
 		{#if safeUrl}<a
 				class="primary news-read"
@@ -137,14 +145,26 @@
 				rel="noopener noreferrer">{m.newsReadArticle()}</a
 			>{/if}
 		<button
-			class="ghost icon-action"
+			class="ghost icon-action timeline-action"
 			type="button"
 			onclick={openQuote}
 			aria-label={m.newsQuote()}
 			title={m.newsQuote()}><Icon name="quote" size={18} /></button
 		>
 		<button
-			class="ghost icon-action"
+			bind:this={reactionButton}
+			class="ghost icon-action timeline-action"
+			class:active={reactionPickerOpen}
+			type="button"
+			aria-label={m.addReactionAria()}
+			title={m.addReactionAria()}
+			aria-expanded={reactionPickerOpen}
+			onclick={() => (reactionPickerOpen = !reactionPickerOpen)}
+		>
+			<Icon name="emojiPlus" size={18} />
+		</button>
+		<button
+			class="ghost icon-action timeline-action"
 			type="button"
 			onclick={share}
 			aria-label={shared ? m.newsCopied() : m.newsShare()}
@@ -171,7 +191,7 @@
 	.news-card {
 		min-inline-size: 0;
 		max-inline-size: 100%;
-		padding: 1rem 1.1rem;
+		padding: 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-l);
 		background: var(--bg-raised);
@@ -209,7 +229,7 @@
 		align-items: center;
 		gap: 0.4rem;
 		flex-wrap: wrap;
-		margin-top: 0.85rem;
+		margin-top: 0.5rem;
 	}
 	.news-actions .news-read {
 		display: inline-flex;

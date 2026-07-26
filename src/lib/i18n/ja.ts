@@ -223,7 +223,9 @@ export const ja = {
 	reactWithAria: (p: { emoji: string }) => `${p.emoji} でリアクション`,
 	viewProfileOfAria: (p: { name: string }) => `${p.name}のプロフィールを見る`,
 	moreReactorsAria: 'ほかにもリアクションした人がいます',
-	addReactionAria: 'リアクションを追加',
+	addReactionAria: 'リアクションする',
+	quickReactionAria: 'クイックリアクション',
+	showAllReactions: 'すべて見る',
 	closeEmojiAria: '絵文字パレットを閉じる',
 	emojiPickerAria: 'リアクションを選択',
 	emojiFavoritesLabel: 'よく使う絵文字',
@@ -233,6 +235,7 @@ export const ja = {
 	emojiCustomEmpty: 'カスタム絵文字が見つかりません',
 	emojiUnicodeEmpty: '絵文字が見つかりません',
 	emojiSearchFailed: '絵文字を読み込めませんでした',
+	morePostActions: 'その他の投稿操作',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'カスタム絵文字',
