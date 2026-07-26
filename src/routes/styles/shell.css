@@ -10,6 +10,10 @@
 	min-height: 100dvh;
 	align-items: start;
 }
+/* ランディング用（/about）。右サイドバーを畳んで本文を広く取る。 */
+.shell.wide {
+	grid-template-columns: 260px minmax(0, 900px);
+}
 .shell > main {
 	min-width: 0;
 	padding: 16px 0 90px;
@@ -215,6 +219,9 @@
 	.shell {
 		grid-template-columns: 76px minmax(0, 600px);
 		gap: 16px;
+	}
+	.shell.wide {
+		grid-template-columns: 76px minmax(0, 900px);
 	}
 	.sidebar-right {
 		display: none;

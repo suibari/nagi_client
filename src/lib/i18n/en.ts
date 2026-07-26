@@ -37,58 +37,88 @@ export const en: Messages = {
 	newsSourceUnknown: 'Unknown source',
 	newsUnavailable: 'This news story is no longer available',
 
-	aboutBeforeLink: 'When you post on Nagi, ',
+	aboutBeforeLink: 'No likes, no follows. Whatever you write, ',
 	aboutLinkText: 'the fully affirming Bot-tan',
-	aboutAfterLink:
-		' embraces your words and replies with warmth. May every feeling find its calm here first.',
+	aboutAfterLink: ' takes it in whole.',
 	termsLink: 'Terms of Service',
 	privacyLink: 'Privacy Policy',
 	aboutLink: 'About Nagi',
 
-	aboutFeaturesHeading: 'What you can do on Nagi',
+	aboutHeroEyebrow: 'A FULLY AFFIRMING SOCIAL NETWORK ON THE AT PROTOCOL',
+	aboutHeroTitle: 'A place that makes you want to write more',
+	aboutHeroCta: 'Get started',
+	aboutHeroCtaNote: 'Free. Your posts live in your own PDS.',
+	aboutHeroImageAlt: 'Bot-tan waving hello',
+
+	aboutWhyHeading: 'Why Nagi?',
+	aboutWhyLead: 'Things you probably won’t find on another social network.',
+	aboutBotTitle: 'Always received',
+	aboutBotBody: 'Post anything and Bot-tan always replies. Nothing is met with silence.',
+	aboutNoLikesTitle: 'No numbers to chase',
+	aboutNoLikesBody: 'No likes, no follows. “It didn’t do well” can’t happen here.',
+	aboutLongPostTitle: 'Room to write',
+	aboutLongPostBody: 'Up to 3,000 characters in Markdown — and you can rewrite it later.',
+
+	aboutStepsHeading: 'How to start',
+	aboutStep1Title: 'Sign in',
+	aboutStep1Body: 'Just your Bluesky or AT Protocol handle. Your password stays yours.',
+	aboutStep2Title: 'Write',
+	aboutStep2Body: 'Up to 3,000 characters, in Markdown, with images.',
+	aboutStep3Title: 'Be received',
+	aboutStep3Body: 'Bot-tan replies, and your post joins everyone’s timeline.',
+
+	aboutFeaturesHeading: 'And a few more things',
 	aboutFeaturesLead: 'Features that make Nagi a little different from Bluesky.',
-	aboutBotTitle: 'Bot-tan always replies',
-	aboutBotBody:
-		'When you post, the fully affirming Bot-tan takes in your words and replies. You can see when a reply is on its way.',
-	aboutNoLikesTitle: 'No likes, no follows',
-	aboutNoLikesBody:
-		'Nothing is measured in numbers, and nothing depends on who follows whom. Everyone’s posts flow through a single timeline.',
 	aboutChannelsTitle: 'Channels',
-	aboutChannelsBody:
-		'Places where people who share an interest gather. You can’t follow anyone, but you can stay loosely connected through a channel. Posts still flow to the global timeline, giving you a sense of belonging.',
+	aboutChannelsBody: 'Where people who share an interest gather',
 	aboutChannelsLink: 'Browse channels',
 	aboutReactionTitle: 'Emoji reactions',
-	aboutReactionBody:
-		'React with any emoji you like. You can also see who reacted, right next to the emoji.',
+	aboutReactionBody: 'React with any emoji you like',
 	aboutCustomEmojiTitle: 'Custom emoji',
-	aboutCustomEmojiBody:
-		'Register emoji of your own. Once registered, everyone on Nagi can use them in reactions.',
+	aboutCustomEmojiBody: 'Register emoji of your own',
 	aboutCustomEmojiLink: 'Register custom emoji',
-	aboutMarkdownTitle: 'Markdown works here',
-	aboutMarkdownBody:
-		'Headings, bullet lists, numbered lists, quotes, bold, italic, and strikethrough. The preview tab in the composer shows how it will look.',
-	aboutLongPostTitle: 'Write up to 3,000 characters',
-	aboutLongPostBody:
-		'A single post can hold up to 3,000 characters, so long feelings can stay in one piece.',
-	aboutEditTitle: 'Edit posts after sharing',
-	aboutEditBody:
-		'You can rewrite a post even after sharing it. Edited posts are marked as “Edited,” so the change is always clear.',
-	aboutTranslateTitle: 'Translated automatically',
-	aboutTranslateBody:
-		'Posts in other languages are translated into your language automatically, and the original is always one tap away. The target language follows your browser by default and can be changed in settings.',
+	aboutMarkdownTitle: 'Markdown',
+	aboutMarkdownBody: 'Headings, lists, and quotes all work',
+	aboutEditTitle: 'Edit later',
+	aboutEditBody: 'Rewrite a post even after sharing it',
+	aboutTranslateTitle: 'Auto translation',
+	aboutTranslateBody: 'Other languages, shown in yours',
 	aboutTranslateLink: 'Set your translation language',
 	aboutCrosspostTitle: 'Crosspost to Bluesky',
-	aboutCrosspostBody:
-		'Post to Nagi and Bluesky at the same time. Posts over 300 characters are split into a thread on Bluesky.',
+	aboutCrosspostBody: 'Post to Nagi and Bluesky at once',
 	aboutCrosspostLink: 'Set up crossposting',
-	aboutProfileTitle: 'A profile separate from Bluesky',
-	aboutProfileBody:
-		'Your Nagi display name, bio, and avatar are independent from Bluesky. You can look however you like here.',
+	aboutStandardSiteTitle: 'Publish as a blog',
+	aboutStandardSiteBody: 'Posts can go out as standard.site articles',
+	aboutProfileTitle: 'A separate profile',
+	aboutProfileBody: 'Independent from your Bluesky one',
 	aboutProfileLink: 'Edit your profile',
 	aboutDataTitle: 'Your data stays yours',
-	aboutDataBody:
-		'Your posts are stored in your own PDS. Sign-in uses OAuth, so Nagi never receives your password, and you can delete all of your data at any time.',
+	aboutDataBody: 'Posts are stored in your own PDS',
 	aboutDataLink: 'Delete all of your data',
+
+	aboutAtprotoHeading: 'Why the AT Protocol?',
+	aboutAtprotoLead: 'Nagi doesn’t hold onto your words. They live in a PDS that belongs to you.',
+	aboutAtprotoColOld: 'Traditional social networks',
+	aboutAtprotoColNagi: 'Nagi + AT Protocol',
+	aboutAtprotoAccountLabel: 'Your account',
+	aboutAtprotoAccountOld: 'Belongs to the service',
+	aboutAtprotoAccountNagi: 'Your own DID',
+	aboutAtprotoDataLabel: 'Your posts',
+	aboutAtprotoDataOld: 'Inside the service’s database',
+	aboutAtprotoDataNagi: 'Inside your own PDS',
+	aboutAtprotoShutdownLabel: 'If the service shuts down',
+	aboutAtprotoShutdownOld: 'Everything disappears',
+	aboutAtprotoShutdownNagi: 'It stays with you, readable by other apps',
+	aboutAtprotoLoginLabel: 'Signing in',
+	aboutAtprotoLoginOld: 'You hand over your password',
+	aboutAtprotoLoginNagi: 'OAuth — Nagi never receives it',
+	aboutAtprotoMoveLabel: 'Moving elsewhere',
+	aboutAtprotoMoveOld: 'Not possible',
+	aboutAtprotoMoveNagi: 'Always possible',
+	aboutAtprotoNote: 'If it isn’t for you, walk away and take everything you wrote with you.',
+
+	aboutFinalHeading: 'Ready to start?',
+	aboutFinalBody: 'A single line is enough. Bot-tan is waiting.',
 
 	myProfileAria: 'Your profile',
 	meFallback: 'Me',
@@ -309,9 +339,9 @@ export const en: Messages = {
 	loginBody: 'Log in with your Bluesky or AT Protocol handle. Nagi never receives your password.',
 	loginHandleLabel: 'Handle',
 	loginSubmit: 'Log in with OAuth',
-	loginCrosspostLabel: 'Also crosspost to Bluesky',
-	loginCrosspostNote:
-		'When on, Nagi is authorized to post to your Bluesky. You can change this later in settings.',
+	loginFederateLabel: 'Also post to other AT Protocol services',
+	loginFederateNote:
+		'When on, Nagi can crosspost to Bluesky and publish blog posts (standard.site). It authorizes writing those records to your PDS. You can change this later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
 	loginAgeNotice: 'Nagi is available only to people aged 18 or older.',
@@ -405,6 +435,33 @@ export const en: Messages = {
 	crosspostFailed: 'Could not crosspost to Bluesky',
 	crosspostWarning: (p: { reason: string }) =>
 		`Posted to Nagi, but crossposting to Bluesky failed: ${p.reason}`,
+
+	settingsStandardSiteTitle: 'Publish as a blog',
+	settingsStandardSiteDescription: 'Let posts go out as standard.site articles too',
+	standardSiteLegend: 'Publish as a blog (standard.site)',
+	standardSiteHelp:
+		'standard.site is a shared format for blogs and articles on the AT Protocol. Articles can be read by apps that support it, and links to them get an article treatment on Bluesky.',
+	standardSiteOptInNote:
+		'Not every post becomes a blog post. A button in the composer turns it on per post, and it starts off. Kossori posts and channel posts are never included.',
+	standardSiteCrosspostNote:
+		'Posts published as blog posts are not crossposted to Bluesky, so a long piece never turns into a chain of split posts there.',
+	standardSiteDeviceNote: 'This setting applies to this device only.',
+	standardSiteEnableLabel: 'Allow publishing as blog posts',
+	standardSiteDiscoverLabel: 'Show in discovery feeds',
+	standardSiteDiscoverNote:
+		'Turn this off to stay out of the “recently published” lists in standard.site apps. Your articles stay public either way.',
+	standardSitePublicationName: (p: { name: string }) => `Publication name: ${p.name}`,
+	standardSiteSyncProfile: 'Update from your Nagi profile',
+	standardSiteReauthNote:
+		'Publishing blog posts needs permission to write standard.site records to your PDS. Grant the extra permission with the button below.',
+	standardSiteReauthSubmit: 'Grant the extra permission',
+	standardSiteReauthPending: 'Redirecting…',
+	standardSiteSignInRequired: 'Sign in to set up blog publishing.',
+	standardSiteFailed: 'Could not publish as a blog post',
+	standardSiteComposerLabel: 'Also publish as a blog post',
+	standardSiteTitleLabel: 'Blog post title',
+	standardSiteTitlePlaceholder: 'Enter a title',
+	standardSiteTitleHint: 'Start your post with “# Heading” and the title is taken from there.',
 
 	// app links (arbitrary Atmosphere app integration)
 	settingsAppLinksTitle: 'Connected apps',

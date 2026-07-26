@@ -7,7 +7,7 @@
 	import { initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
 	import { initLocale, m } from '$lib/i18n/i18n.svelte';
 	import { getOwnNagiProfile } from '$lib/atproto/records';
-	import { resolveCrosspostPending } from '$lib/crosspost/preferences';
+	import { resolvePendingOptIns } from '$lib/optin/scope-optin';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -27,7 +27,7 @@
 		'/about': {
 			title: 'Nagiについて — 全肯定SNS Nagi（ナギ）',
 			description:
-				'全肯定SNS Nagi（ナギ）の特徴と使い方。全肯定botたん、いいね・フォローのないタイムライン、AT Protocolによるデータ管理について紹介します。',
+				'全肯定SNS Nagi（ナギ）が選ばれる理由と、はじめかた。全肯定botたんが必ず返信し、いいねもフォローもなく、3000文字のMarkdownで長く書けます。投稿はAT Protocolであなた自身のPDSに残ります。',
 			canonical: 'https://nagi.suibari.com/about',
 		},
 		'/terms': {
@@ -46,6 +46,7 @@
 
 	let { children } = $props();
 	const publicSeo = $derived(PUBLIC_SEO[page.url.pathname]);
+	const wideLayout = $derived(page.url.pathname === '/about');
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let pushSyncedDid: string | undefined;
@@ -73,7 +74,7 @@
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
-		void initOAuth().then(() => resolveCrosspostPending());
+		void initOAuth().then(() => resolvePendingOptIns());
 		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。
 		startUnreadPolling();
 		// 公開ニュースの新着有無を端末内の既読基準と照合する。
@@ -111,10 +112,11 @@
 </svelte:head>
 
 <MobileHeader />
-<div class="shell">
+<!-- /about はサービス紹介のランディングなので、右サイドバーを畳んで本文を広く取る。 -->
+<div class="shell" class:wide={wideLayout}>
 	<SidebarLeft />
 	<main>{@render children()}</main>
-	<SidebarRight />
+	{#if !wideLayout}<SidebarRight />{/if}
 </div>
 <MobileNav />
 <PostFollowNotice />

@@ -6,6 +6,9 @@ import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment, PostEditImage } from '$lib/images';
 import type { EmojiView, PostImage } from '$lib/api/types';
 import { BLUEMOJI_ITEM, bluemojiRefOf } from './bluemoji';
+import { hasOptInScope } from '$lib/optin/scope-optin';
+import { forgetPublicationCache } from '$lib/standardsite/cache';
+import { deleteNagiStandardSiteRecords } from '$lib/standardsite/repo';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
@@ -519,6 +522,13 @@ export async function deleteAllNagiRecords() {
 			cursor = response.data.cursor;
 		} while (cursor);
 	}
+	// standard.site は Nagi 専用のコレクションではなく、他アプリ（blento.app など）の
+	// publication / document が同居しうる。コレクションごと消さず、Nagi が作った分だけ消す。
+	// 権限が無いユーザーでは listRecords/deleteRecord が失敗するため、事前に判定する。
+	if (await hasOptInScope('standardSite')) {
+		await deleteNagiStandardSiteRecords();
+	}
+	forgetPublicationCache(s.did);
 }
 export async function putProfile(displayName: string, description: string, draft?: ProfileDraft) {
 	const s = current();

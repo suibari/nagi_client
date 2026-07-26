@@ -1,62 +1,20 @@
-import { get } from 'svelte/store';
-import { CROSSPOST_COLLECTION_SCOPE } from '$lib/oauth/client';
-import { session } from '$lib/oauth/session.svelte';
+import {
+	clearOptInPending,
+	getOptIn,
+	hasOptInScope,
+	isOptInPending,
+	markOptInPending,
+	setOptIn,
+} from '$lib/optin/scope-optin';
 
-export const CROSSPOST_STORAGE_KEY = 'nagi-crosspost-bluesky';
-export const CROSSPOST_PENDING_STORAGE_KEY = 'nagi-crosspost-pending';
+// クロスポスト固有の入口。実体は optin/scope-optin.ts（standard.site と共通）。
+// 呼び出し側の差分を増やさないため、従来の関数名をそのまま残している。
+export const getCrosspostEnabled = () => getOptIn('crosspost');
+export const setCrosspostEnabled = (enabled: boolean) => setOptIn('crosspost', enabled);
 
-const read = (key: string) => {
-	if (typeof window === 'undefined') return null;
-	try {
-		return window.localStorage.getItem(key);
-	} catch {
-		return null;
-	}
-};
-
-const write = (key: string, value: string | null) => {
-	if (typeof window === 'undefined') return;
-	try {
-		if (value === null) window.localStorage.removeItem(key);
-		else window.localStorage.setItem(key, value);
-	} catch {
-		// クロスポスト設定は保存できなくても投稿自体には影響しない。
-	}
-};
-
-export const getCrosspostEnabled = () => read(CROSSPOST_STORAGE_KEY) === 'true';
-export const setCrosspostEnabled = (enabled: boolean) =>
-	write(CROSSPOST_STORAGE_KEY, enabled ? 'true' : 'false');
-
-export const isCrosspostPending = () => read(CROSSPOST_PENDING_STORAGE_KEY) === 'true';
-export const markCrosspostPending = () => write(CROSSPOST_PENDING_STORAGE_KEY, 'true');
-export const clearCrosspostPending = () => write(CROSSPOST_PENDING_STORAGE_KEY, null);
+export const isCrosspostPending = () => isOptInPending('crosspost');
+export const markCrosspostPending = () => markOptInPending('crosspost');
+export const clearCrosspostPending = () => clearOptInPending('crosspost');
 
 /** 現在のセッションに Bluesky への書き込み権限が付与されているか。 */
-export async function hasCrosspostScope(): Promise<boolean> {
-	const current = get(session);
-	if (!current) return false;
-	try {
-		const info = await current.getTokenInfo();
-		// 旧セッションは action 無し（全操作許可）の広いスコープを保持しているため、
-		// 完全一致だと既存ユーザーのクロスポストが黙って止まる。コレクション単位で判定する。
-		return info.scope
-			.split(' ')
-			.some(
-				(s) => s === CROSSPOST_COLLECTION_SCOPE || s.startsWith(`${CROSSPOST_COLLECTION_SCOPE}?`),
-			);
-	} catch {
-		return false;
-	}
-}
-
-/**
- * 再サインインから戻ってきた直後の確定処理。
- * 保留フラグが立っていて実際にスコープが付与されていれば有効化する。
- */
-export async function resolveCrosspostPending(): Promise<void> {
-	if (!isCrosspostPending()) return;
-	const granted = await hasCrosspostScope();
-	if (granted) setCrosspostEnabled(true);
-	clearCrosspostPending();
-}
+export const hasCrosspostScope = () => hasOptInScope('crosspost');

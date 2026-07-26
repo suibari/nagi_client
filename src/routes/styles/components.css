@@ -111,6 +111,43 @@
 	color: var(--text-muted);
 	font-size: 12px;
 }
+/* standard.site の投稿ごとオプトイン。条件を満たす長文のときだけ現れる。 */
+.composer-article {
+	display: grid;
+	gap: 6px;
+	margin-top: 6px;
+	padding: 4px 10px 8px;
+	background: var(--bg-inset);
+	border-radius: var(--radius-m);
+	min-inline-size: 0;
+}
+.composer-article-title {
+	display: grid;
+	gap: 5px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--text-muted);
+}
+.composer-article-title input {
+	inline-size: 100%;
+	min-inline-size: 0;
+	padding: 9px 11px;
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-s);
+	background: var(--bg-raised);
+	color: var(--text);
+	font: inherit;
+	outline: none;
+}
+.composer-article-title input:focus {
+	border-color: var(--accent);
+}
+.composer-article-note {
+	margin: 0;
+	font-size: 11px;
+	color: var(--text-faint);
+	overflow-wrap: anywhere;
+}
 .composer .submit:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
@@ -714,9 +751,14 @@
 	color: var(--accent-strong);
 	background: var(--accent-softer);
 }
-.icon-action.kossori-toggle.active {
+.icon-action.kossori-toggle.active,
+.icon-action.article-toggle.active {
 	color: var(--accent-strong);
 	background: var(--accent-softer);
+}
+.icon-action.article-toggle:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
 }
 .icon-action.primary-icon {
 	color: var(--text-on-accent);
@@ -2072,6 +2114,44 @@
 	.hero {
 		padding-top: 18px;
 	}
+	.about-page {
+		gap: 26px;
+	}
+	/* イラストを上、コピーを下に積み、中央寄せにする。 */
+	.about-hero {
+		grid-template-columns: minmax(0, 1fr);
+		padding: 20px 18px 26px;
+		border-radius: 24px;
+		text-align: center;
+	}
+	.about-hero-figure {
+		inline-size: min(230px, 68%);
+	}
+	.about-hero-copy {
+		justify-items: center;
+	}
+	.about-cta {
+		justify-items: center;
+	}
+	.about-final {
+		padding: 26px 18px 28px;
+		border-radius: 24px;
+	}
+	/* 比較表: 3列だと1列あたりが狭すぎるので、ラベルを1行に出して値を2列に畳む。
+	   ヘッダ行が消えるぶん、各セルに小見出し(.about-compare-caption)を出す。 */
+	.about-compare-head {
+		display: none;
+	}
+	.about-compare-row {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 8px 10px;
+	}
+	.about-compare-label {
+		grid-column: 1 / -1;
+	}
+	.about-compare-caption {
+		display: block;
+	}
 	.profile-header {
 		padding: 16px;
 	}
@@ -2243,67 +2323,461 @@ button.settings-category {
 	margin-bottom: 0;
 }
 
-/* --- about page (Nagi ならではの機能一覧) --- */
+/* --- about page (ランディング構成: ヒーロー → 理由 → 使い方 → 機能 → AT Protocol → CTA) --- */
+/* 設定配下の .auth-card(450px) ではなく、shell.wide が広げたメインカラムをそのまま使う。
+   文章は各ブロック1〜2行に抑え、情報量ではなく図で伝える。 */
+.about-page {
+	display: grid;
+	gap: 36px;
+	margin: 8px 0 48px;
+	min-inline-size: 0;
+}
+.about-section {
+	display: grid;
+	gap: 18px;
+	min-inline-size: 0;
+}
 .about-heading {
-	margin: 6px 0 0;
-	font-size: 1.05rem;
+	margin: 0;
+	font-size: 1.2rem;
 	color: var(--text-strong);
+	overflow-wrap: anywhere;
+}
+/* 見出し直後のリードは見出しにぶら下げる。about-section の gap を打ち消す。 */
+.about-heading + .about-lead {
+	margin-top: -14px;
 }
 .about-lead {
-	margin: -12px 0 0;
-	font-size: 0.86rem;
+	margin: 0;
+	font-size: 0.9rem;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
 }
-.about-features {
+
+/* --- hero --- */
+.about-hero {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
 	display: grid;
+	grid-template-columns: minmax(0, 270px) minmax(0, 1fr);
+	align-items: center;
+	gap: 10px 30px;
+	padding: 30px 36px;
+	background: var(--bg-raised);
+	border-radius: 32px;
+	box-shadow: var(--shadow-pop);
+	min-inline-size: 0;
+}
+/* 「凪」らしいやわらかさを出す泡。装飾のみで、内容には一切かからない。 */
+.about-bubbles {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+}
+.about-bubble {
+	position: absolute;
+	border-radius: 50%;
+	background: var(--accent-soft);
+	opacity: 0.75;
+	animation: about-float 11s ease-in-out infinite;
+}
+.about-bubble.b1 {
+	inline-size: 96px;
+	block-size: 96px;
+	inset-inline-start: -18px;
+	inset-block-start: 8%;
+}
+.about-bubble.b2 {
+	inline-size: 52px;
+	block-size: 52px;
+	inset-inline-start: 26%;
+	inset-block-start: -14px;
+	background: var(--decorative-accent-soft);
+	animation-delay: -2.5s;
+}
+.about-bubble.b3 {
+	inline-size: 130px;
+	block-size: 130px;
+	inset-inline-end: -34px;
+	inset-block-start: 4%;
+	background: var(--secondary-soft);
+	animation-delay: -5s;
+}
+.about-bubble.b4 {
+	inline-size: 40px;
+	block-size: 40px;
+	inset-inline-end: 22%;
+	inset-block-end: 12%;
+	animation-delay: -1.5s;
+}
+.about-bubble.b5 {
+	inline-size: 72px;
+	block-size: 72px;
+	inset-inline-start: 30%;
+	inset-block-end: -26px;
+	background: var(--decorative-accent-soft);
+	animation-delay: -7s;
+}
+.about-bubble.b6 {
+	inline-size: 30px;
+	block-size: 30px;
+	inset-inline-start: 15%;
+	inset-block-end: 22%;
+	background: var(--secondary-soft);
+	animation-delay: -4s;
+}
+@keyframes about-float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-18px);
+	}
+}
+@keyframes about-bob {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
+}
+.about-hero-figure {
+	justify-self: center;
+	inline-size: min(270px, 100%);
+}
+/* イラストの背景（白〜水色）が焼き込まれているため、そのまま置くとダークテーマで
+   白い箱として浮く。四辺をマスクでフェードさせ、地の色に溶かす。楕円1枚だと
+   キャラの髪や脚まで抜けてしまうので、縦横のグラデーションを intersect で重ねて
+   「外周だけ」を薄くする。色ではなくアルファの指定なので生の #000 でよい。 */
+.about-hero-figure img {
+	display: block;
+	inline-size: 100%;
+	block-size: auto;
+	-webkit-mask-image:
+		linear-gradient(to bottom, transparent 0%, #000 13%, #000 72%, transparent 100%),
+		linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
+	mask-image:
+		linear-gradient(to bottom, transparent 0%, #000 13%, #000 72%, transparent 100%),
+		linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
+	-webkit-mask-composite: source-in;
+	mask-composite: intersect;
+	animation: about-bob 7s ease-in-out infinite;
+}
+.about-hero-copy {
+	display: grid;
+	gap: 12px;
+	justify-items: start;
+	min-inline-size: 0;
+}
+.about-hero-copy .eyebrow {
+	margin: 0;
+}
+.about-hero h1 {
+	margin: 0;
+	font-size: clamp(26px, 3.6vw, 40px);
+	line-height: 1.24;
+	letter-spacing: 0.03em;
+	color: var(--text-strong);
+	overflow-wrap: anywhere;
+}
+.about-hero-body {
+	margin: 0;
+	max-width: 34em;
+	font-size: 1rem;
+	line-height: 1.9;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+.about-cta {
+	display: grid;
+	justify-items: start;
+	gap: 10px;
+	margin-top: 6px;
+}
+.about-cta a.primary {
+	display: inline-block;
+	padding: 14px 38px;
+	font-size: 1rem;
+	box-shadow: var(--shadow-card);
+	transition: transform 0.15s ease;
+}
+.about-cta a.primary:hover {
+	transform: translateY(-2px);
+}
+.about-cta-note {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--text-faint);
+	overflow-wrap: anywhere;
+}
+.about-browse {
+	font-size: 0.86rem;
+	color: var(--accent-strong);
+}
+.about-browse:hover {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+/* --- 選ばれる理由 --- */
+.about-reasons {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 	gap: 14px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
-	text-align: left;
+}
+.about-reason {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
+	padding: 24px 20px;
+	text-align: center;
+	background: var(--bg-raised);
+	border-radius: 24px;
+	box-shadow: var(--shadow-card);
+	min-inline-size: 0;
+}
+.about-reason-icon {
+	display: grid;
+	place-items: center;
+	inline-size: 56px;
+	block-size: 56px;
+	margin-bottom: 2px;
+	color: var(--accent-strong);
+	background: var(--accent-soft);
+	border-radius: 50%;
+}
+.about-reason h3 {
+	margin: 0;
+	font-size: 1.02rem;
+	color: var(--text-strong);
+	overflow-wrap: anywhere;
+}
+.about-reason p {
+	margin: 0;
+	font-size: 0.86rem;
+	line-height: 1.75;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+
+/* --- 使い方(3ステップ) --- */
+.about-steps {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 14px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.about-step {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
+	padding: 22px 20px;
+	text-align: center;
+	background: var(--bg-raised);
+	border-radius: 24px;
+	box-shadow: var(--shadow-card);
+	min-inline-size: 0;
+}
+.about-step-num {
+	display: grid;
+	place-items: center;
+	inline-size: 44px;
+	block-size: 44px;
+	border-radius: 50%;
+	background: var(--brand-gradient);
+	color: var(--text-on-accent);
+	font-weight: 800;
+	font-size: 1.15rem;
+}
+.about-step h3 {
+	margin: 0;
+	font-size: 1rem;
+	color: var(--text-strong);
+	overflow-wrap: anywhere;
+}
+.about-step p {
+	margin: 0;
+	font-size: 0.86rem;
+	line-height: 1.75;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+
+/* --- 機能一覧 --- */
+/* 縦に長い箇条書きだと圧倒されるので、1枚 = アイコン + 見出し + 1行のカードに畳む。 */
+.about-features {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.about-features > li {
+	min-inline-size: 0;
+	display: grid;
 }
 .about-feature {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	gap: 14px;
-	align-items: start;
-}
-.about-feature > div {
+	gap: 7px;
+	padding: 16px 18px;
+	color: var(--text);
+	background: var(--bg-raised);
+	border-radius: var(--radius-l);
+	box-shadow: var(--shadow-card);
 	min-inline-size: 0;
+	transition:
+		background 0.15s ease,
+		transform 0.15s ease;
+}
+a.about-feature:hover {
+	background: var(--bg-hover);
+	transform: translateY(-2px);
+}
+a.about-feature:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
 }
 .about-feature-icon {
 	display: grid;
 	place-items: center;
-	width: 40px;
-	height: 40px;
+	inline-size: 38px;
+	block-size: 38px;
 	color: var(--accent-strong);
 	background: var(--accent-soft);
 	border-radius: 12px;
 }
 .about-feature h3 {
-	margin: 2px 0 4px;
-	font-size: 0.98rem;
+	margin: 0;
+	font-size: 0.95rem;
 	color: var(--text-strong);
 	overflow-wrap: anywhere;
 }
 .about-feature p {
 	margin: 0;
-	font-size: 0.86rem;
-	line-height: 1.8;
+	font-size: 0.82rem;
+	line-height: 1.6;
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
 }
-.about-feature-link {
-	display: inline-block;
-	margin-top: 6px;
-	font-size: 0.84rem;
-	font-weight: 600;
+
+/* --- AT Protocol 比較 --- */
+/* テーブル要素を使わずグリッドで組む。狭幅ではラベル1行 + 値2列に畳んで
+   横スクロールを出さない。 */
+.about-compare {
+	display: grid;
+	gap: 8px;
+	min-inline-size: 0;
+}
+.about-compare-head,
+.about-compare-row {
+	display: grid;
+	grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
+	gap: 10px;
+	align-items: start;
+	min-inline-size: 0;
+}
+.about-compare-head {
+	padding: 0 18px;
+	font-size: 0.74rem;
+	font-weight: 800;
+	letter-spacing: 0.06em;
+	color: var(--text-faint);
+}
+.about-compare-head .is-nagi {
 	color: var(--accent-strong);
+}
+.about-compare-row {
+	padding: 14px 18px;
+	background: var(--bg-raised);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-card);
+	font-size: 0.86rem;
+	line-height: 1.6;
 	overflow-wrap: anywhere;
 }
-.about-feature-link:hover {
-	text-decoration: underline;
-	text-underline-offset: 3px;
+.about-compare-label {
+	font-weight: 700;
+	color: var(--text-strong);
 }
+.about-compare-old {
+	color: var(--text-faint);
+}
+.about-compare-nagi {
+	color: var(--text);
+	font-weight: 600;
+}
+/* 各セルの見出し。広い画面ではヘッダ行が担うので隠す。 */
+.about-compare-caption {
+	display: none;
+	font-size: 0.7rem;
+	font-weight: 800;
+	letter-spacing: 0.06em;
+	color: var(--text-faint);
+}
+.about-note {
+	margin: 0;
+	padding: 16px 18px;
+	background: var(--accent-softer);
+	border-radius: var(--radius-m);
+	font-size: 0.88rem;
+	line-height: 1.8;
+	color: var(--text);
+	overflow-wrap: anywhere;
+}
+
+/* --- 締めのCTA --- */
+.about-final {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+	display: grid;
+	justify-items: center;
+	gap: 10px;
+	text-align: center;
+	padding: 34px 24px 36px;
+	background: var(--bg-raised);
+	border-radius: 32px;
+	box-shadow: var(--shadow-card);
+	min-inline-size: 0;
+}
+.about-final h2 {
+	margin: 0;
+	font-size: 1.35rem;
+	color: var(--text-strong);
+	overflow-wrap: anywhere;
+}
+.about-final p {
+	margin: 0;
+	font-size: 0.9rem;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+.about-final .about-cta {
+	justify-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.about-bubble,
+	.about-hero-figure img {
+		animation: none;
+	}
+	.about-cta a.primary,
+	a.about-feature {
+		transition: none;
+	}
+}
+
 .delete-data-page strong {
 	display: block;
 	margin: 8px 0;

@@ -2,26 +2,30 @@
 	import { signIn, oauthError } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { getCrosspostEnabled, markCrosspostPending } from '$lib/crosspost/preferences';
+	import { getStandardSiteEnabled, markStandardSitePending } from '$lib/standardsite/preferences';
 	import HandleInput from '$lib/components/HandleInput.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 	let handle = $state('');
 	let busy = $state(false);
-	let crosspostOptIn = $state(false);
+	// 他サービス連携（Blueskyクロスポスト / standard.site）はまとめて1つのスイッチで扱う。
+	// 権限は初回にまとめて渡し、どちらを実際に使うかは設定画面で切り替える方針。
+	let federateOptIn = $state(false);
 	onMount(() => {
-		// 前回クロスポストを有効にしていたら、スイッチの初期値も ON にして復元する。
+		// 前回どちらかを有効にしていたら、スイッチの初期値も ON にして復元する。
 		// enabled フラグはログアウトをまたいで残るので、うっかりログアウトや再ログインでも
 		// 1 回のサインインで元の状態に戻せる。
-		crosspostOptIn = getCrosspostEnabled();
+		federateOptIn = getCrosspostEnabled() || getStandardSiteEnabled();
 	});
 	async function submit() {
 		busy = true;
 		try {
-			if (crosspostOptIn) {
-				// クロスポスト有効でログインするときは、最初から Bluesky への投稿権限を含む
-				// スコープで認可し、復帰後に有効化を確定させるため保留フラグを立てておく。
+			if (federateOptIn) {
+				// 連携ありでログインするときは、最初から両方の書き込み権限を含むスコープで
+				// 認可し、復帰後に有効化を確定させるため保留フラグを立てておく。
 				markCrosspostPending();
-				await signIn(handle, { crosspost: true });
+				markStandardSitePending();
+				await signIn(handle, { crosspost: true, standardSite: true });
 			} else {
 				await signIn(handle);
 			}
@@ -46,14 +50,14 @@
 			onsubmit={submit}
 		/></label
 	>
-	<div class="crosspost-optin">
+	<div class="federate-optin">
 		<ToggleSwitch
-			checked={crosspostOptIn}
-			label={m.loginCrosspostLabel()}
+			checked={federateOptIn}
+			label={m.loginFederateLabel()}
 			disabled={busy}
-			onchange={(next) => (crosspostOptIn = next)}
+			onchange={(next) => (federateOptIn = next)}
 		/>
-		<p class="hint">{m.loginCrosspostNote()}</p>
+		<p class="hint">{m.loginFederateNote()}</p>
 	</div>
 	<button disabled={busy || !handle.trim()} onclick={submit}
 		>{busy ? m.loginRedirecting() : m.loginSubmit()}</button
@@ -70,7 +74,7 @@
 <style>
 	/* ToggleSwitch は内部で <button> を描画するため、.auth-card 直下に置くと
 	   .auth-card > button のプライマリボタン装飾を拾ってしまう。div で包んで直下 button を回避する。 */
-	.crosspost-optin {
+	.federate-optin {
 		margin: 24px 0;
 	}
 	/* トグル直下の補足文。カード内の他の段落より小さく、左寄せでトグルと揃える。 */

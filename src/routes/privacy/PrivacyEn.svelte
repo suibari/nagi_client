@@ -6,9 +6,7 @@
 <h1>Privacy Policy</h1>
 <p class="updated">Last updated: {LEGAL_LAST_UPDATED_EN}</p>
 
-<p>
-	This Privacy Policy (the "Policy") describes how Nagi (the "Service") handles information.
-</p>
+<p>This Privacy Policy (the "Policy") describes how Nagi (the "Service") handles information.</p>
 <div class="summary">
 	<h2>The short version</h2>
 	<ul>
@@ -106,13 +104,14 @@
 	<li><strong>Email addresses</strong>: Not needed to sign up, so we do not collect them.</li>
 	<li><strong>Payment details, phone numbers, location</strong>: Not collected.</li>
 	<li>
-		<strong>Advertising or analytics tracking</strong>: The Service carries no advertising and uses no
-		analytics tools. It does not use cookies.
+		<strong>Advertising or analytics tracking</strong>: The Service carries no advertising and uses
+		no analytics tools. It does not use cookies.
 	</li>
 	<li>
 		<strong>IP addresses</strong>: Held briefly in memory to rate-limit excessive access, never
-		written to our database. They do appear in our hosting provider's access records
-		(<a href="#p6">Section 6</a>).
+		written to our database. They do appear in our hosting provider's access records (<a href="#p6"
+			>Section 6</a
+		>).
 	</li>
 </ul>
 
@@ -135,9 +134,7 @@
 <ul>
 	<li>The text of your posts and any attached images</li>
 	<li>Your profile display name and bio</li>
-	<li>
-		As context for a reply, your earlier posts and related public posts from other users
-	</li>
+	<li>As context for a reply, your earlier posts and related public posts from other users</li>
 	<li>Your conversation history with Bot-tan</li>
 	<li>Links contained in your posts (Google fetches the content at those URLs)</li>
 	<li>
@@ -196,8 +193,8 @@
 			<tr>
 				<td>Our hosting provider (Vercel)</td>
 				<td>
-					Serving the site. As part of that, access records such as IP addresses and browser type are
-					retained for a limited period
+					Serving the site. As part of that, access records such as IP addresses and browser type
+					are retained for a limited period
 				</td>
 			</tr>
 			<tr>
@@ -218,8 +215,8 @@
 			<tr>
 				<td>External translation services (Kagi, DeepL, Google)</td>
 				<td>
-					Only when you choose "translate with another service". The site opens with the post text in
-					the URL
+					Only when you choose "translate with another service". The site opens with the post text
+					in the URL
 				</td>
 			</tr>
 			<tr>
@@ -236,6 +233,14 @@
 	We do not provide your information to third parties other than the above.
 	<strong>We do not provide information to advertising or analytics companies.</strong> This does not
 	apply where disclosure is required by law.
+</p>
+<p>
+	Features you opt into also <strong>create additional records in your own PDS.</strong> Bluesky
+	crossposting creates <code>app.bsky.feed.post</code>; publishing to standard.site creates
+	<code>site.standard.publication</code> and <code>site.standard.document</code>. All of these are
+	public records, and you are asked to authorize them when you turn the feature on. Editing or
+	deleting a post on Nagi updates or removes the matching record, and deleting all of your data from
+	Settings removes them as well.
 </p>
 
 <h2 id="p7">7. What is stored on your device</h2>
@@ -294,8 +299,8 @@
 	</li>
 	<li>Logs Google keeps for abuse detection (deleted within 55 days).</li>
 	<li>
-		Copies of public records fetched or cached by other AppViews or search engines. These are outside
-		the operator's control.
+		Copies of public records fetched or cached by other AppViews or search engines. These are
+		outside the operator's control.
 	</li>
 </ul>
 <p>
@@ -305,14 +310,15 @@
 
 <h2 id="p10">10. People under 18</h2>
 <p>
-	The Service is for people aged 18 or older, and we do not knowingly collect information from anyone
-	under 18. If we learn that information from someone under 18 is held, we will delete it promptly.
+	The Service is for people aged 18 or older, and we do not knowingly collect information from
+	anyone under 18. If we learn that information from someone under 18 is held, we will delete it
+	promptly.
 </p>
 
 <h2 id="p11">11. Changes to this Policy</h2>
 <p>
-	This Policy may change. Where a change materially affects what information we handle or where it is
-	sent, we will announce it on the Service.
+	This Policy may change. Where a change materially affects what information we handle or where it
+	is sent, we will announce it on the Service.
 </p>
 
 <h2 id="p12">12. Contact</h2>
@@ -329,6 +335,6 @@
 
 <h2 id="p13">13. Governing language</h2>
 <p>
-	This English text is provided for convenience. If there is any discrepancy between the Japanese and
-	English versions, the original Japanese version prevails.
+	This English text is provided for convenience. If there is any discrepancy between the Japanese
+	and English versions, the original Japanese version prevails.
 </p>

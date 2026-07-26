@@ -39,60 +39,95 @@ export const ja = {
 	newsSourceUnknown: '媒体不明',
 	newsUnavailable: 'このニュースは掲載終了しました',
 
-	// sidebar footer / about page intro
-	aboutBeforeLink: 'Nagiに投稿すると、',
+	// sidebar footer / about page hero（本文中にキャラ紹介ページへのリンクを挟むため3分割）
+	aboutBeforeLink: 'いいねもフォローもありません。書いた言葉は、',
 	aboutLinkText: '全肯定botたん',
-	aboutAfterLink:
-		'があなたの言葉をまるごと受け止めて返信してくれます。どんな気持ちも、まずここで凪ぎますように。',
+	aboutAfterLink: 'がまるごと受け止めます。',
 	termsLink: '利用規約',
 	privacyLink: 'プライバシーポリシー',
 	aboutLink: 'Nagiについて',
 
-	// about page — Nagi ならではの機能一覧
-	aboutFeaturesHeading: 'Nagiでできること',
+	// about page — ヒーロー
+	aboutHeroEyebrow: 'AT PROTOCOL上の全肯定SNS',
+	aboutHeroTitle: 'もっと書きたくなる場所',
+	aboutHeroCta: 'Nagiをはじめる',
+	aboutHeroCtaNote: '無料。投稿はあなた自身のPDSへ。',
+	aboutHeroImageAlt: '手を振る全肯定botたん',
+
+	// about page — 選ばれる理由（優位性）。ここだけは 2 文まで許し、以降は 1 行に抑える。
+	aboutWhyHeading: 'なぜNagiなのか',
+	aboutWhyLead: 'ほかのSNSでは、たぶん手に入らないものです。',
+	aboutBotTitle: '必ず受け止められる',
+	aboutBotBody: '投稿すれば、全肯定botたんが必ず返信します。反応がゼロで終わりません。',
+	aboutNoLikesTitle: '数に追われない',
+	aboutNoLikesBody: 'いいねもフォローもありません。「伸びなかった」が起きない場所です。',
+	aboutLongPostTitle: '長く書ける',
+	aboutLongPostBody: '3000文字まで、Markdownで。あとから書き直すこともできます。',
+
+	// about page — 使い方のイメージ（3ステップ）。各1文。
+	aboutStepsHeading: 'はじめかた',
+	aboutStep1Title: 'サインイン',
+	aboutStep1Body: 'BlueskyかAT Protocolのハンドルを入れるだけ。パスワードは渡しません。',
+	aboutStep2Title: '書く',
+	aboutStep2Body: '3000文字まで、Markdownで。画像も添えられます。',
+	aboutStep3Title: '受け止められる',
+	aboutStep3Body: 'botたんが返信し、みんなのタイムラインに流れます。',
+
+	// about page — Nagi ならではの機能一覧。カード化するので本文は1行に抑える。
+	aboutFeaturesHeading: 'ほかにもできること',
 	aboutFeaturesLead: 'Blueskyとは少し違う、Nagiならではの機能です。',
-	aboutBotTitle: 'botたんが返信します',
-	aboutBotBody:
-		'投稿すると、全肯定botたんがあなたの言葉を受け止めて返信します。返信を書いている間はその様子も表示されます。',
-	aboutNoLikesTitle: 'いいねもフォローもありません',
-	aboutNoLikesBody:
-		'数で評価されることも、フォロー関係に縛られることもありません。みんなの投稿がひとつのタイムラインに流れます。',
 	aboutChannelsTitle: 'チャンネル',
-	aboutChannelsBody:
-		'同じ興味の人が集まる場所です。フォローはできませんが、チャンネルでゆるくつながれます。投稿はグローバルにも流れるので、居場所と安心感だけを持てます。',
+	aboutChannelsBody: '同じ興味の人が集まる場所',
 	aboutChannelsLink: 'チャンネルを見る',
 	aboutReactionTitle: '絵文字リアクション',
-	aboutReactionBody:
-		'好きな絵文字でリアクションできます。だれがリアクションしたかもアイコンで見えます。',
+	aboutReactionBody: '好きな絵文字で反応できます',
 	aboutCustomEmojiTitle: 'カスタム絵文字',
-	aboutCustomEmojiBody:
-		'自分だけの絵文字を登録できます。登録した絵文字はNagiのみんながリアクションに使えます。',
+	aboutCustomEmojiBody: '自分だけの絵文字を登録できます',
 	aboutCustomEmojiLink: 'カスタム絵文字を登録する',
-	aboutMarkdownTitle: 'Markdown記法が使えます',
-	aboutMarkdownBody:
-		'見出し・箇条書き・番号付きリスト・引用・太字・斜体・打ち消しが使えます。投稿欄のプレビュータブで仕上がりを確認できます。',
-	aboutLongPostTitle: '3000文字まで書けます',
-	aboutLongPostBody:
-		'ひとつの投稿に3000文字まで書けます。長くなった気持ちも、区切らずそのまま置いていけます。',
-	aboutEditTitle: '投稿を後から編集できます',
-	aboutEditBody:
-		'投稿したあとでも本文を書き直せます。編集した投稿には「編集済み」と表示されるので、直したことはちゃんと伝わります。',
-	aboutTranslateTitle: '自動で翻訳されます',
-	aboutTranslateBody:
-		'ほかの言語の投稿は、あなたの言語に自動で翻訳されて表示されます。原文もその場で開けます。翻訳先の言語は、初期設定ではブラウザの言語で、設定から変更できます。',
+	aboutMarkdownTitle: 'Markdown記法',
+	aboutMarkdownBody: '見出し・箇条書き・引用が使えます',
+	aboutEditTitle: '後から編集',
+	aboutEditBody: '投稿したあとでも書き直せます',
+	aboutTranslateTitle: '自動で翻訳',
+	aboutTranslateBody: 'ほかの言語の投稿もあなたの言語で',
 	aboutTranslateLink: '翻訳言語を設定する',
-	aboutCrosspostTitle: 'Blueskyへのクロスポスト',
-	aboutCrosspostBody:
-		'Nagiへの投稿をBlueskyにも同時に投稿できます。300文字を超える投稿は、Blueskyでは分割されてスレッドになります。',
+	aboutCrosspostTitle: 'Blueskyへクロスポスト',
+	aboutCrosspostBody: 'Blueskyにも同時に投稿できます',
 	aboutCrosspostLink: 'クロスポストを設定する',
-	aboutProfileTitle: 'Bluesky とは別のプロフィール',
-	aboutProfileBody:
-		'Nagiの表示名・自己紹介・アイコンはBlueskyとは独立しています。ここだけの姿でいられます。',
+	aboutStandardSiteTitle: 'ブログとして公開',
+	aboutStandardSiteBody: '投稿をstandard.siteの記事にもできます',
+	aboutProfileTitle: '別のプロフィール',
+	aboutProfileBody: 'Blueskyとは独立した姿でいられます',
 	aboutProfileLink: 'プロフィールを編集する',
-	aboutDataTitle: 'データはあなたのものです',
-	aboutDataBody:
-		'投稿はあなた自身のPDSに保存されます。ログインはOAuthなので、パスワードをNagiが受け取ることはありません。いつでも全データを削除できます。',
+	aboutDataTitle: 'データはあなたのもの',
+	aboutDataBody: '投稿はあなた自身のPDSに残ります',
 	aboutDataLink: '全データを削除する',
+
+	// about page — なぜ AT Protocol なのか（従来のSNSとの比較）
+	aboutAtprotoHeading: 'なぜAT Protocolなのか',
+	aboutAtprotoLead: 'Nagiは、あなたの言葉を預かりません。置き場所はあなた自身のPDSです。',
+	aboutAtprotoColOld: '従来のSNS',
+	aboutAtprotoColNagi: 'Nagi + AT Protocol',
+	aboutAtprotoAccountLabel: 'アカウント',
+	aboutAtprotoAccountOld: 'サービスのもの',
+	aboutAtprotoAccountNagi: 'あなたのDID',
+	aboutAtprotoDataLabel: '投稿データ',
+	aboutAtprotoDataOld: 'サービスのデータベースの中',
+	aboutAtprotoDataNagi: 'あなた自身のPDS',
+	aboutAtprotoShutdownLabel: 'サービスが終わったら',
+	aboutAtprotoShutdownOld: 'すべて消える',
+	aboutAtprotoShutdownNagi: '手元に残り、ほかのアプリからも読める',
+	aboutAtprotoLoginLabel: 'ログイン',
+	aboutAtprotoLoginOld: 'パスワードを預ける',
+	aboutAtprotoLoginNagi: 'OAuth。Nagiは受け取らない',
+	aboutAtprotoMoveLabel: '引っ越し',
+	aboutAtprotoMoveOld: 'できない',
+	aboutAtprotoMoveNagi: 'できる',
+	aboutAtprotoNote: '合わなければ、書いたものを持ったまま出ていけます。',
+
+	// about page — 締めの導線
+	aboutFinalHeading: 'はじめてみませんか',
+	aboutFinalBody: 'まずは一言でも。botたんが待っています。',
 
 	// account card / mobile header
 	myProfileAria: '自分のプロフィール',
@@ -328,9 +363,11 @@ export const ja = {
 	loginSubmit: 'OAuthでログイン',
 	loginRedirecting: '移動しています…',
 	loginBrowse: 'ログインせずに見る',
-	loginCrosspostLabel: 'Blueskyにもクロスポストする',
-	loginCrosspostNote:
-		'ONにすると、あなたのBlueskyへ投稿する権限を認可します。あとから設定で変更できます。',
+	// クロスポストとブログ公開の権限は入口でまとめて渡し、どちらを実際に使うかは
+	// 設定画面で切り替える。入口でスイッチを2つ並べない。
+	loginFederateLabel: 'ほかのAT Protocolサービスにも投稿する',
+	loginFederateNote:
+		'ONにすると、Blueskyへのクロスポストと、ブログ（standard.site）としての公開ができるようになります。あなたのPDSへ書き込む権限を認可します。あとから設定で変更できます。',
 	// AI機能に使っている Gemini API の規約が18歳以上を要件にしているので、入口で告知する。
 	loginAgeNotice: '本サービスは18歳以上の方のみご利用いただけます。',
 	loginAgreeBefore: 'ログインすると、',
@@ -427,6 +464,36 @@ export const ja = {
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
 	crosspostWarning: (p: { reason: string }) =>
 		`Nagiには投稿しましたが、Blueskyへのクロスポストに失敗しました: ${p.reason}`,
+	// standard.site（AT Protocol 共通の長文記事 lexicon）へのオプトイン公開。
+	// standard.site という名前の知名度が低いので、UI 上は「ブログ」と呼ぶ。
+	settingsStandardSiteTitle: 'ブログとして公開',
+	settingsStandardSiteDescription: '投稿をstandard.siteの記事としても出せるようにする',
+	standardSiteLegend: 'ブログとして公開（standard.site）',
+	standardSiteHelp:
+		'standard.siteは、AT Protocol上のブログ・記事の共通フォーマットです。対応したアプリから読まれたり、Blueskyでリンクを貼ったときに記事として表示されたりします。',
+	standardSiteOptInNote:
+		'すべての投稿がブログになるわけではありません。投稿欄のボタンで、投稿ごとにオン/オフを選べます（既定はオフ）。こっそり投稿とチャンネル投稿は対象外です。',
+	// クロスポストは300文字ごとの分割スレッドなので、長文記事と併用すると Bluesky が連投で埋まる。
+	// どちらの設定画面からも同じ文言で説明する。
+	standardSiteCrosspostNote:
+		'ブログとして出した投稿は、Blueskyへのクロスポストを行いません。長文が分割されて連投になるのを避けるためです。',
+	standardSiteDeviceNote: 'この設定は、この端末でのみ有効です。',
+	standardSiteEnableLabel: 'ブログとして出せるようにする',
+	standardSiteDiscoverLabel: '発見フィードに掲載する',
+	standardSiteDiscoverNote:
+		'オフにすると、standard.site対応アプリの新着一覧には出ません。記事そのものは公開されたままです。',
+	standardSitePublicationName: (p: { name: string }) => `記事のまとまりの名前: ${p.name}`,
+	standardSiteSyncProfile: 'Nagiのプロフィールから更新する',
+	standardSiteReauthNote:
+		'ブログとして出すには、あなたのPDSにstandard.siteのレコードを書く権限が必要です。下のボタンから追加の権限を付与してください。',
+	standardSiteReauthSubmit: '追加の権限を付与する',
+	standardSiteReauthPending: '移動しています…',
+	standardSiteSignInRequired: 'ブログ公開を設定するにはログインしてください。',
+	standardSiteFailed: 'ブログとしての公開に失敗しました',
+	standardSiteComposerLabel: 'ブログとしても投稿する',
+	standardSiteTitleLabel: 'ブログのタイトル',
+	standardSiteTitlePlaceholder: 'タイトルを入力',
+	standardSiteTitleHint: '本文の先頭を「# 見出し」にすると、そこから自動で決まります。',
 	// app links (任意 Atmosphere アプリ連携)
 	settingsAppLinksTitle: '連携アプリ',
 	settingsAppLinksDescription: '任意のAtmosphereアプリをプロフィールに並べる',

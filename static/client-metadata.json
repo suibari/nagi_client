@@ -7,7 +7,7 @@
   "redirect_uris": ["https://nagi.suibari.com/oauth/callback"],
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
-  "scope": "atproto blob:image/* include:com.suibari.nagi.appviewAccess repo:blue.moji.collection.item repo:app.bsky.feed.post?action=create",
+  "scope": "atproto blob:image/* include:com.suibari.nagi.appviewAccess repo:blue.moji.collection.item repo:app.bsky.feed.post?action=create repo:site.standard.publication repo:site.standard.document",
   "token_endpoint_auth_method": "none",
   "application_type": "web",
   "dpop_bound_access_tokens": true

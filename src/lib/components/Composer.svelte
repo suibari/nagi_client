@@ -17,6 +17,17 @@
 	import { drafts } from '$lib/drafts/drafts.svelte';
 	import { DraftStorageError } from '$lib/drafts/storage';
 	import DraftListDialog from './DraftListDialog.svelte';
+	import { extractTitle } from '$lib/atproto/markdown';
+	import {
+		getStandardSiteEnabled,
+		hasStandardSiteScope,
+		isArticleCandidate,
+	} from '$lib/standardsite/preferences';
+	import {
+		publishStandardSiteDocument,
+		tagsFromFacets,
+		usableAsCoverImage,
+	} from '$lib/standardsite/document';
 	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は kossori（目アイコン）で表現。
 	let {
 		onposted,
@@ -41,12 +52,37 @@
 	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
+	let graphemes = $derived(
+		[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length,
+	);
+
+	// --- standard.site（ブログとしての公開）へのオプトイン --------------------
+	// 権限はサインイン時にまとめて渡し、機能の有効化は設定ページ、投稿ごとの ON/OFF は
+	// こっそりモードと同じアイコンボタンで行う。既定は常に OFF。
+	let standardSiteReady = $state(false);
+	let standardSite = $state(false);
+	let articleTitle = $state('');
+	const articleCandidate = $derived(isArticleCandidate({ kossori, channel }));
+	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
+	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
+	const needsArticleTitle = $derived(standardSiteReady && standardSite && !headingTitle);
+	const articleTitleMissing = $derived(needsArticleTitle && !articleTitle.trim());
+	// こっそり／チャンネル投稿に切り替わったら黙って落とす（意図せぬ公開を作らない）。
+	$effect(() => {
+		if (!articleCandidate && standardSite) standardSite = false;
+	});
 
 	$effect(() => {
 		const did = $session?.did;
 		if (did !== loadedDid) {
 			loadedDid = did;
 			void drafts.load(did);
+			standardSiteReady = false;
+			if (did && getStandardSiteEnabled()) {
+				void hasStandardSiteScope().then((granted) => {
+					if ($session?.did === did) standardSiteReady = granted;
+				});
+			}
 		}
 	});
 
@@ -57,6 +93,8 @@
 		mentions = [];
 		dismissedUrls = [];
 		kossori = false;
+		standardSite = false;
+		articleTitle = '';
 	}
 
 	async function saveDraft() {
@@ -106,7 +144,9 @@
 	}
 
 	async function submit() {
-		if (empty || busy || !$session) return;
+		if (empty || busy || !$session || articleTitleMissing) return;
+		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
+		const article = standardSite ? { title: (headingTitle ?? articleTitle).trim() } : undefined;
 		const draft = preparePostDraft(
 			text,
 			undefined,
@@ -132,11 +172,30 @@
 			optimisticPosts.markCreated(optimisticId, response.data);
 			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
 			// エラーではなく警告として伝える。
-			if (getCrosspostEnabled() && (await hasCrosspostScope())) {
+			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの
+			// 分割スレッドなので、長文記事だと Bluesky 側が連投で埋まってしまう。
+			if (!article && getCrosspostEnabled() && (await hasCrosspostScope())) {
 				try {
 					await crosspostToBluesky(draft, assets);
 				} catch (e) {
 					warning = e instanceof Error ? e.message : m.crosspostFailed();
+				}
+			}
+			// standard.site も同じ扱い。document の rkey は Nagi 投稿の rkey を使い回す。
+			if (article) {
+				try {
+					const uri = response.data.uri;
+					const cover = assets.images[0]?.image;
+					await publishStandardSiteDocument({
+						rkey: uri.slice(uri.lastIndexOf('/') + 1),
+						title: article.title,
+						markdown: draft.text,
+						publishedAt: draft.createdAt,
+						tags: tagsFromFacets(draft.facets),
+						...(usableAsCoverImage(cover) ? { coverImage: cover } : {}),
+					});
+				} catch (e) {
+					warning = e instanceof Error ? e.message : m.standardSiteFailed();
 				}
 			}
 			await Promise.resolve(onposted()).catch(() => undefined);
@@ -168,10 +227,38 @@
 			tools={editorTools}
 		/>
 		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+		{#if needsArticleTitle}
+			<!-- 本文の先頭が見出しでないときだけ。standard.site の document.title は必須。 -->
+			<div class="composer-article">
+				<label class="composer-article-title">
+					<span>{m.standardSiteTitleLabel()}</span>
+					<input
+						type="text"
+						bind:value={articleTitle}
+						maxlength="200"
+						disabled={busy}
+						placeholder={m.standardSiteTitlePlaceholder()}
+					/>
+				</label>
+				<p class="composer-article-note">{m.standardSiteTitleHint()}</p>
+			</div>
+		{/if}
 		<div class="composer-foot">
-			<span
-				>{[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length} / 3000</span
-			>
+			<span>{graphemes} / 3000</span>
+			<!-- チャンネル投稿は記事にしないので、CH の投稿欄ではボタンごと出さない。
+			     こっそりに切り替えたときは押せなくなるだけにして、位置は動かさない。 -->
+			{#if standardSiteReady && !channel}
+				<button
+					class="icon-action article-toggle"
+					class:active={standardSite}
+					type="button"
+					disabled={busy || !articleCandidate}
+					aria-pressed={standardSite}
+					aria-label={m.standardSiteComposerLabel()}
+					title={m.standardSiteComposerLabel()}
+					onclick={() => (standardSite = !standardSite)}><Icon name="newspaper" size={18} /></button
+				>
+			{/if}
 			<button
 				class="icon-action kossori-toggle"
 				class:active={kossori}
@@ -203,7 +290,7 @@
 			><button
 				class="submit icon-action primary-icon"
 				type="button"
-				disabled={busy || empty}
+				disabled={busy || empty || articleTitleMissing}
 				aria-label={busy ? m.composerSubmitting() : m.composerSubmit()}
 				title={busy ? m.composerSubmitting() : m.composerSubmit()}
 				onclick={submit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button

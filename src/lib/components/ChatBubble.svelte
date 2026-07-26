@@ -33,6 +33,13 @@
 	import { tick } from 'svelte';
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
+	import { extractTitle } from '$lib/atproto/markdown';
+	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
+	import {
+		deleteStandardSiteDocument,
+		tagsFromFacets,
+		updateStandardSiteDocument,
+	} from '$lib/standardsite/document';
 	let {
 		post,
 		botActor,
@@ -218,6 +225,32 @@
 	function scrollTo(element?: Element | null) {
 		element?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
 	}
+	/**
+	 * 投稿の編集・削除に standard.site の記事を追従させる。
+	 * 権限が無い／記事化していない場合は黙って何もしない（Nagi 側の操作は成立している）。
+	 */
+	async function syncStandardSiteDocument(
+		rkey: string,
+		text?: string,
+		facets?: PostView['facets'],
+	) {
+		try {
+			if (!(await hasStandardSiteScope())) return;
+			if (text === undefined) {
+				await deleteStandardSiteDocument(rkey);
+				return;
+			}
+			// タイトルは本文先頭の見出しから引き直す。無ければ既存のタイトルを残す。
+			await updateStandardSiteDocument(rkey, {
+				...(extractTitle(text) ? { title: extractTitle(text) } : {}),
+				markdown: text,
+				tags: tagsFromFacets(facets ?? []),
+			});
+		} catch {
+			// 記事側の同期失敗で Nagi の編集・削除を巻き戻すことはしない。
+		}
+	}
+
 	async function submitEdit() {
 		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
 		if (!editHasContent || editImageProcessing || editBusy || !$session) return;
@@ -243,6 +276,9 @@
 			editMentions = [];
 			editImages = [];
 			editImageProcessing = false;
+			// standard.site の記事にしてある投稿なら本文を追従させる。記事化していない
+			// 投稿では何も起きない（編集をきっかけに勝手に公開はしない）。
+			void syncStandardSiteDocument(match[2], draft.text, draft.facets);
 		} catch (error) {
 			editError = error instanceof Error ? error.message : m.editPostFailed();
 		} finally {
@@ -329,6 +365,8 @@
 		deleteError = '';
 		try {
 			await deleteRecord(match[1], match[2]);
+			// 記事にしてある投稿なら standard.site 側も消す。
+			void syncStandardSiteDocument(match[2]);
 			deleteOpen = false;
 			ondeleted?.(post.uri);
 		} catch (error) {

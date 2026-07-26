@@ -50,6 +50,12 @@
 			description={m.settingsCrosspostDescription()}
 		/>
 		<SettingsCategoryCard
+			href="/settings/standard-site"
+			icon="link"
+			title={m.settingsStandardSiteTitle()}
+			description={m.settingsStandardSiteDescription()}
+		/>
+		<SettingsCategoryCard
 			href="/settings/mute"
 			icon="hide"
 			title={m.settingsMuteTitle()}

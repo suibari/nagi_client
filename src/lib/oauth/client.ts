@@ -5,6 +5,15 @@ export const CROSSPOST_COLLECTION_SCOPE = 'repo:app.bsky.feed.post';
 // action 未指定は create/update/delete 全許可になるため、明示的に create のみへ絞る。
 export const CROSSPOST_SCOPE = `${CROSSPOST_COLLECTION_SCOPE}?action=create`;
 export const BLUEMOJI_SCOPE = 'repo:blue.moji.collection.item';
+// standard.site（長文記事の共通 lexicon）へのオプトイン公開に使うコレクション。
+// 記事は作成だけでなく編集(putRecord)・削除も Nagi の投稿に追従させるため、
+// crosspost と違って action は絞らない。
+// site.standard.authFull という permission set も公開されているが、
+// subscription / recommend まで含む過剰な束なので採らない。
+export const STANDARD_SITE_COLLECTION_SCOPES = [
+	'repo:site.standard.publication',
+	'repo:site.standard.document',
+];
 // Nagi namespace の repo/rpc 権限は permission set に集約し、公開済み lexicon を真実源にする。
 // 定義: bsky-affirmative-bot/packages/nagi-lexicon/lexicons/com/suibari/nagi/appviewAccess.json
 // blob と別 namespace の Bluemoji repo 権限は permission set に入れられないため直接スコープで残す。
@@ -16,10 +25,25 @@ const baseScopes = [
 	'include:com.suibari.nagi.appviewAccess',
 	BLUEMOJI_SCOPE,
 ];
-// クロスポストはオプトインのため、通常のサインインでは base のみを要求する。
-// クライアントメタデータには宣言可能な最大集合として crosspost も含める。
-export const BASE_SCOPE = baseScopes.join(' ');
-export const FULL_SCOPE = [...baseScopes, CROSSPOST_SCOPE].join(' ');
+/** サインイン時に追加で要求するオプトイン権限。どちらも既定は要求しない。 */
+export type ScopeOptIns = { crosspost?: boolean; standardSite?: boolean };
+
+/**
+ * オプトインの組み合わせからスコープ文字列を組み立てる。
+ * 有効化済みのものを落とすと黙って機能が止まるので、呼び出し側は
+ * 「今付与されているもの + 今回追加するもの」を渡すこと（cf. lib/optin/scope-optin.ts）。
+ */
+export function buildScope(optIns: ScopeOptIns = {}): string {
+	const scopes = [...baseScopes];
+	if (optIns.crosspost) scopes.push(CROSSPOST_SCOPE);
+	if (optIns.standardSite) scopes.push(...STANDARD_SITE_COLLECTION_SCOPES);
+	return scopes.join(' ');
+}
+
+// クロスポストと standard.site はオプトインのため、通常のサインインでは base のみを要求する。
+// クライアントメタデータには宣言可能な最大集合として両方を含める。
+export const BASE_SCOPE = buildScope();
+export const FULL_SCOPE = buildScope({ crosspost: true, standardSite: true });
 const scope = FULL_SCOPE;
 
 let oauthClient: BrowserOAuthClient | undefined;

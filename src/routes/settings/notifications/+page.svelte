@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
+	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import {
 		pushState,
@@ -50,7 +51,8 @@
 		reauthBusy = true;
 		setOAuthReturnTo('/settings/notifications');
 		try {
-			await signIn($session.did, { refreshPermissions: true });
+			// 権限の取り直しでオプトイン済みの機能を落とさないよう、現状を含めて要求する。
+			await signIn($session.did, { ...(await grantedOptIns()), refreshPermissions: true });
 		} finally {
 			reauthBusy = false;
 		}

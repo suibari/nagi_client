@@ -292,6 +292,20 @@ export function parseRichText(source: string, facets: Facet[] = []): Block[] {
 	return blocks.filter((block) => ('runs' in block ? block.runs.length : block.items.length));
 }
 
+/**
+ * 本文の先頭が `# 見出し` ならタイトルとして取り出す。
+ * standard.site の document.title は必須なので、これが無いときは投稿側で入力を促す。
+ */
+export function extractTitle(source: string): string | undefined {
+	const first = parseRichText(source)[0];
+	if (!first || first.type !== 'h1') return undefined;
+	const title = first.runs
+		.map((run) => run.text)
+		.join('')
+		.trim();
+	return title || undefined;
+}
+
 /** 通知の 1 行プレビュー向けに、記法マーカーを落とした素のテキストを返す。 */
 export function stripMarkdown(source: string): string {
 	const flatten = (runs: InlineRun[]) => runs.map((run) => run.text).join('');

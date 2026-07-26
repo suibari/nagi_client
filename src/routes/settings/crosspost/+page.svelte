@@ -7,6 +7,7 @@
 		markCrosspostPending,
 		setCrosspostEnabled,
 	} from '$lib/crosspost/preferences';
+	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 
@@ -29,7 +30,8 @@
 		// 復帰後に有効化を確定させるため、リダイレクト前に保留フラグを立てる。
 		markCrosspostPending();
 		try {
-			await signIn($session.did, { crosspost: true });
+			// standard.site など、すでに付与されている権限を落とさないよう現状を含めて要求する。
+			await signIn($session.did, { ...(await grantedOptIns()), crosspost: true });
 		} finally {
 			busy = false;
 		}
@@ -44,6 +46,7 @@
 		<p>{m.crosspostHelp()}</p>
 		<p>{m.crosspostSplitNote()}</p>
 		<p>{m.crosspostBotNote()}</p>
+		<p>{m.standardSiteCrosspostNote()}</p>
 		<p>{m.crosspostDeviceNote()}</p>
 		{#if !$session && $oauthReady}
 			<p>{m.crosspostSignInRequired()}</p>

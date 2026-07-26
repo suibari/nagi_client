@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
 import type { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-import { BASE_SCOPE, FULL_SCOPE, getOAuthClient } from './client';
+import { buildScope, getOAuthClient, type ScopeOptIns } from './client';
 import { normalizeHandle } from '$lib/atproto/handle';
 export type OAuthSession = Awaited<ReturnType<BrowserOAuthClient['restore']>>;
 export const session = writable<OAuthSession | null>(null);
@@ -45,13 +45,14 @@ export async function initOAuth() {
 }
 export async function signIn(
 	handle: string,
-	options: { crosspost?: boolean; refreshPermissions?: boolean } = {},
+	options: ScopeOptIns & { refreshPermissions?: boolean } = {},
 ) {
-	// クロスポストはオプトインなので、有効化するときだけ Bluesky への
-	// 書き込み権限を含むスコープで認可し直す。
+	// クロスポストと standard.site はオプトインなので、有効化するときだけ
+	// 対応する書き込み権限を含むスコープで認可し直す。片方を有効化するときに
+	// もう片方を落とさないよう、呼び出し側が現在の付与状況を含めて渡す。
 	// 先頭 @ や大文字・前後空白を落として handle 解決の失敗を防ぐ。
 	await getOAuthClient().signIn(normalizeHandle(handle), {
-		scope: options.crosspost ? FULL_SCOPE : BASE_SCOPE,
+		scope: buildScope(options),
 		...(options.refreshPermissions ? { prompt: 'consent' as const } : {}),
 	});
 }
