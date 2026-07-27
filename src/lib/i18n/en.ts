@@ -226,6 +226,7 @@ export const en: Messages = {
 	editedBadge: 'Edited',
 	editedBadgeAria: 'Edited post',
 	translating: 'Translating…',
+	translatingTo: (p: { language: string }) => `Translating into ${p.language}…`,
 	translationLabel: 'Automatic translation',
 	showOriginalText: 'Show original',
 	hideOriginalText: 'Hide original',

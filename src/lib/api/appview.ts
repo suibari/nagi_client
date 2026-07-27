@@ -387,13 +387,27 @@ export const translatePost = (uri: string, targetLang: string) =>
 		{ method: 'POST', body: JSON.stringify({ uri, targetLang }) },
 		'none',
 	);
-export const translatePosts = (uris: string[], targetLang: string) =>
+export const translatePosts = (
+	uris: string[],
+	targetLang: string,
+	options: { cacheOnly?: boolean; signal?: AbortSignal } = {},
+) =>
 	call<TranslationBatchResult>(
 		'com.suibari.nagi.translatePosts',
 		'/xrpc/com.suibari.nagi.translatePosts',
-		{ method: 'POST', body: JSON.stringify({ uris, targetLang }) },
+		{
+			method: 'POST',
+			body: JSON.stringify({
+				uris,
+				targetLang,
+				...(options.cacheOnly ? { cacheOnly: true } : {}),
+			}),
+			signal: options.signal,
+		},
 		'none',
 	);
+export const getCachedTranslations = (uris: string[], targetLang: string, signal?: AbortSignal) =>
+	translatePosts(uris, targetLang, { cacheOnly: true, signal });
 // 任意アプリ連携のフィールド選択補助。publish 済み Lexicon のスキーマを AppView 経由で解決する
 // （DNS TXT 解決はブラウザ不可のためサーバ側で行う）。未解決なら resolved:false。認証不要。
 export const resolveLexicon = (nsid: string) =>

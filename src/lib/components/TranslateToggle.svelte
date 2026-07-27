@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { m } from '$lib/i18n/i18n.svelte';
+	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import {
+		languageName,
 		languagePreferences,
 		normalizeSupportedLanguage,
 	} from '$lib/i18n/languagePreferences.svelte';
@@ -48,7 +49,13 @@
 	);
 	let translated = $derived(translation?.status === 'translated' ? translation.text : '');
 	let busy = $derived(translationEligible && (!translation || translation.status === 'loading'));
+	let englishFallback = $derived(
+		translation?.status === 'loading' ? translation.english : undefined,
+	);
 	let failed = $derived(translation?.status === 'failed');
+	let targetLanguageName = $derived(
+		languageName(languagePreferences.translationLanguage, i18n.locale),
+	);
 
 	// 内蔵翻訳が失敗した時のフォールバック用に、選択中プロバイダーの外部翻訳URLを組む。
 	let fallbackProvider = $derived(languagePreferences.translationProvider);
@@ -101,7 +108,19 @@
 
 <div class="translation" aria-live="polite">
 	{#if busy}
-		<p class="status">{m.translating()}</p>
+		{#if englishFallback}
+			<div class="translated">
+				<p class="label">{m.translatingTo({ language: targetLanguageName })}</p>
+				<div class="post-text text">
+					<RichText
+						text={englishFallback.text}
+						facets={englishFallback.original ? facets : undefined}
+					/>
+				</div>
+			</div>
+		{:else}
+			<p class="status">{m.translatingTo({ language: targetLanguageName })}</p>
+		{/if}
 	{:else if translated}
 		<div class="translated">
 			<p class="label">{m.translationLabel()}</p>

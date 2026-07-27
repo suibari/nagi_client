@@ -8,7 +8,7 @@
 	import { initLocale, m } from '$lib/i18n/i18n.svelte';
 	import { getOwnNagiProfile } from '$lib/atproto/records';
 	import { resolvePendingOptIns } from '$lib/optin/scope-optin';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
@@ -16,6 +16,8 @@
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import { refreshPushState } from '$lib/notifications/push.svelte';
+	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
+	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -50,6 +52,13 @@
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let pushSyncedDid: string | undefined;
+	beforeNavigate(() => postTranslations.cancelPending());
+	$effect(() => {
+		postTranslations.syncPreferences(
+			languagePreferences.translationLanguage,
+			languagePreferences.autoTranslate,
+		);
+	});
 	// ミュート一覧はサインインごとに1回だけ読み、サインアウトで捨てる。
 	$effect(() => {
 		const did = $session?.did;

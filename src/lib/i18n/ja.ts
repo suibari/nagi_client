@@ -237,6 +237,7 @@ export const ja = {
 	editedBadge: '編集済み',
 	editedBadgeAria: '編集済みの投稿',
 	translating: '翻訳中…',
+	translatingTo: (p: { language: string }) => `${p.language}に翻訳中…`,
 	translationLabel: '自動翻訳',
 	showOriginalText: '原文を表示',
 	hideOriginalText: '原文を閉じる',

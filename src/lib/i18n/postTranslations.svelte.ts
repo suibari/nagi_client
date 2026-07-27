@@ -1,4 +1,4 @@
-import { translatePosts } from '$lib/api/appview';
+import { getCachedTranslations, translatePosts } from '$lib/api/appview';
 import type { FeedItem, PostView } from '$lib/api/types';
 import {
 	languagePreferences,
@@ -7,12 +7,17 @@ import {
 } from './languagePreferences.svelte';
 
 export type PostTranslationState =
-	| { status: 'loading'; promise: Promise<void> }
+	| {
+			status: 'loading';
+			promise: Promise<void>;
+			english?: { text: string; original: boolean };
+	  }
 	| { status: 'translated'; text: string }
 	| { status: 'failed'; code?: string };
 export type TranslationPost = Pick<PostView, 'uri' | 'text'> & Partial<PostView>;
 
 const BATCH_SIZE = 4;
+const CACHE_BATCH_SIZE = 50;
 const MAX_CONCURRENT_BATCHES = 2;
 const POST_URI = /^at:\/\/did:(?:plc|web):[^/]+\/com\.suibari\.nagi\.post\/[^/]+$/;
 const keyOf = (uri: string, target: SupportedLanguage) => `${uri}\n${target}`;
@@ -56,9 +61,10 @@ class BatchRequestPool {
 	#active = 0;
 	#waiting: Array<() => void> = [];
 
-	async run<T>(task: () => Promise<T>): Promise<T> {
+	async run<T>(task: () => Promise<T>, signal?: AbortSignal): Promise<T> {
 		await this.#acquire();
 		try {
+			if (signal?.aborted) throw signal.reason ?? new DOMException('Aborted', 'AbortError');
 			return await task();
 		} finally {
 			this.#release();
@@ -89,6 +95,8 @@ class PostTranslations {
 	#queued = new Map<string, TranslationPost>();
 	#ensureScheduled = false;
 	#batchRequests = new BatchRequestPool();
+	#target: SupportedLanguage | undefined;
+	#controller: AbortController | undefined;
 
 	entry(uri: string, target = languagePreferences.translationLanguage) {
 		return this.#entries.get(keyOf(uri, target));
@@ -99,6 +107,57 @@ class PostTranslations {
 		if (state) next.set(key, state);
 		else next.delete(key);
 		this.#entries = next;
+	}
+
+	cancelPending() {
+		this.#controller?.abort();
+		this.#controller = undefined;
+		this.#target = undefined;
+		this.#entries = new Map([...this.#entries].filter(([, state]) => state.status !== 'loading'));
+	}
+
+	syncPreferences(target: SupportedLanguage, enabled: boolean) {
+		if (!enabled || (this.#target && this.#target !== target)) this.cancelPending();
+	}
+
+	#signal(target: SupportedLanguage) {
+		if (!this.#controller || this.#controller.signal.aborted || this.#target !== target) {
+			this.cancelPending();
+			this.#target = target;
+			this.#controller = new AbortController();
+		}
+		return this.#controller.signal;
+	}
+
+	async #prepareEnglishFallbacks(
+		posts: TranslationPost[],
+		target: SupportedLanguage,
+		signal: AbortSignal,
+	): Promise<void> {
+		const candidates = posts.filter((post) => normalizeSupportedLanguage(post.langs?.[0]) !== 'en');
+		for (let offset = 0; offset < candidates.length; offset += CACHE_BATCH_SIZE) {
+			const batch = candidates.slice(offset, offset + CACHE_BATCH_SIZE);
+			try {
+				const result = await getCachedTranslations(
+					batch.map((post) => post.uri),
+					'en',
+					signal,
+				);
+				if (signal.aborted) return;
+				for (const translated of result.translations) {
+					const key = keyOf(translated.uri, target);
+					const existing = this.#entries.get(key);
+					if (existing?.status !== 'loading') continue;
+					this.#replace(key, {
+						...existing,
+						english: { text: translated.text, original: false },
+					});
+				}
+			} catch {
+				if (signal.aborted) return;
+				// 英訳キャッシュが読めなくても、最終翻訳はそのまま継続する。
+			}
+		}
 	}
 
 	/** コンポーネントから同じtickに来た例外的な要求も、投稿ごとの個別APIに戻さずまとめる。 */
@@ -117,6 +176,7 @@ class PostTranslations {
 	async prepare(posts: TranslationPost[]): Promise<void> {
 		if (!languagePreferences.autoTranslate) return;
 		const target = languagePreferences.translationLanguage;
+		const signal = this.#signal(target);
 		const candidates = collectPostTranslations(posts).filter((post) =>
 			isTranslationCandidate(post, target),
 		);
@@ -133,18 +193,23 @@ class PostTranslations {
 		for (let offset = 0; offset < pending.length; offset += BATCH_SIZE) {
 			const batch = pending.slice(offset, offset + BATCH_SIZE);
 			const result = this.#batchRequests
-				.run(() =>
-					translatePosts(
-						batch.map((post) => post.uri),
-						target,
-					),
+				.run(
+					() =>
+						translatePosts(
+							batch.map((post) => post.uri),
+							target,
+							{ signal },
+						),
+					signal,
 				)
 				.then(
 					(response) => ({ ok: true as const, response }),
 					() => ({ ok: false as const }),
 				);
 			const request = previousBatch.then(async () => {
+				if (signal.aborted) return;
 				const outcome = await result;
+				if (signal.aborted) return;
 				if (outcome.ok) {
 					const translated = new Map(
 						outcome.response.translations.map((item) => [item.uri, item.text]),
@@ -167,10 +232,17 @@ class PostTranslations {
 			});
 			previousBatch = request;
 			for (const post of batch) {
-				this.#replace(keyOf(post.uri, target), { status: 'loading', promise: request });
+				this.#replace(keyOf(post.uri, target), {
+					status: 'loading',
+					promise: request,
+					...(normalizeSupportedLanguage(post.langs?.[0]) === 'en'
+						? { english: { text: post.text, original: true } }
+						: {}),
+				});
 			}
 			waiting.add(request);
 		}
+		if (target !== 'en') void this.#prepareEnglishFallbacks(pending, target, signal);
 		await Promise.all(waiting);
 	}
 
