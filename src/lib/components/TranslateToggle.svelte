@@ -1,10 +1,4 @@
-<script module lang="ts">
-	const requests = new Map<string, Promise<string>>();
-</script>
-
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { translatePost } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		languagePreferences,
@@ -16,6 +10,7 @@
 	} from '$lib/i18n/translationProviders';
 	import type { Facet } from '$lib/api/types';
 	import RichText from './RichText.svelte';
+	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 
 	let {
 		uri,
@@ -36,14 +31,24 @@
 		disabled?: boolean;
 		onoverflowchange?: (overflowing: boolean) => void;
 	} = $props();
-	let root: HTMLDivElement;
 	let body = $state<HTMLElement>();
-	let visible = $state(false);
-	let translated = $state('');
-	let busy = $state(false);
-	let failed = $state(false);
 	let originalExpanded = $state(false);
-	let attempt = $state(0);
+	let translationEligible = $derived(
+		!disabled &&
+			languagePreferences.autoTranslate &&
+			isTranslationCandidate(
+				{ uri, text, langs, facets, deleted },
+				languagePreferences.translationLanguage,
+			),
+	);
+	let translation = $derived(
+		translationEligible
+			? postTranslations.entry(uri, languagePreferences.translationLanguage)
+			: undefined,
+	);
+	let translated = $derived(translation?.status === 'translated' ? translation.text : '');
+	let busy = $derived(translationEligible && (!translation || translation.status === 'loading'));
+	let failed = $derived(translation?.status === 'failed');
 
 	// 内蔵翻訳が失敗した時のフォールバック用に、選択中プロバイダーの外部翻訳URLを組む。
 	let fallbackProvider = $derived(languagePreferences.translationProvider);
@@ -56,90 +61,25 @@
 		});
 	});
 
-	function retry() {
-		requests.delete(`${uri}\n${languagePreferences.translationLanguage}`);
-		failed = false;
-		attempt += 1;
-	}
-
-	function requestTranslation(postUri: string, targetLang: string): Promise<string> {
-		const key = `${postUri}\n${targetLang}`;
-		const existing = requests.get(key);
-		if (existing) return existing;
-		const request = translatePost(postUri, targetLang)
-			.then((response) => response.text)
-			.catch((error) => {
-				requests.delete(key);
-				throw error;
-			});
-		requests.set(key, request);
-		return request;
-	}
-
-	onMount(() => {
-		if (!('IntersectionObserver' in window)) {
-			visible = true;
-			return;
-		}
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries.some((entry) => entry.isIntersecting)) {
-					visible = true;
-					observer.disconnect();
-				}
-			},
-			{ rootMargin: '200px' },
-		);
-		observer.observe(root);
-		return () => observer.disconnect();
-	});
-
 	$effect(() => {
 		const targetLang = languagePreferences.translationLanguage;
-		const sourceLang = normalizeSupportedLanguage(langs?.[0]);
-		const autoTranslate = languagePreferences.autoTranslate;
-		void attempt;
+		void uri;
+		void targetLang;
 		originalExpanded = false;
-		if (
-			disabled ||
-			!autoTranslate ||
-			!visible ||
-			deleted ||
-			!text.trim() ||
-			!sourceLang ||
-			sourceLang === targetLang
-		) {
-			translated = '';
-			busy = false;
-			failed = false;
-			return;
-		}
-
-		let current = true;
-		translated = '';
-		busy = true;
-		failed = false;
-		requestTranslation(uri, targetLang)
-			.then((result) => {
-				if (current) translated = result;
-			})
-			.catch(() => {
-				if (current) failed = true;
-			})
-			.finally(() => {
-				if (current) busy = false;
-			});
-		return () => {
-			current = false;
-		};
+		if (!translationEligible || translation) return;
+		postTranslations.ensure({ uri, text, langs, facets, deleted });
 	});
+
+	function retry() {
+		void postTranslations.retry({ uri, text, langs, facets, deleted });
+	}
 
 	// 文字数ではなく実際の行数で「続きを読む」の要否を決める。
 	// overflow: hidden でも scrollHeight は全文の高さを返すので、
 	// 折りたたみ中／展開中どちらでも同じ判定になる。
 	$effect(() => {
 		const target = body;
-		if (!target) {
+		if (!target || translated || busy) {
 			onoverflowchange?.(false);
 			return;
 		}
@@ -159,7 +99,7 @@
 	});
 </script>
 
-<div class="translation" bind:this={root} aria-live="polite">
+<div class="translation" aria-live="polite">
 	{#if busy}
 		<p class="status">{m.translating()}</p>
 	{:else if translated}
@@ -176,7 +116,7 @@
 		>
 		{#if originalExpanded}
 			<div class="original separated">
-				<div class="post-text" class:collapsed><RichText {text} {facets} /></div>
+				<div class="post-text"><RichText {text} {facets} /></div>
 			</div>
 		{/if}
 	{:else if failed}
@@ -196,7 +136,7 @@
 			</div>
 		</div>
 	{/if}
-	{#if !translated}
+	{#if !translated && !busy}
 		<div class="original" class:separated={busy || failed}>
 			<div class="post-text" class:collapsed bind:this={body}>
 				{#if deleted}<p>{m.postDeleted()}</p>{:else}<RichText {text} {facets} />{/if}

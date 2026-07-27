@@ -1,5 +1,12 @@
-import type { ActorView, Page, ProfileFeedItem, ProfileNewsReactionItem } from '$lib/api/types';
+import type {
+	ActorView,
+	FeedItem,
+	Page,
+	ProfileFeedItem,
+	ProfileNewsReactionItem,
+} from '$lib/api/types';
 import { m } from '$lib/i18n/i18n.svelte';
+import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 
 const message = (error: unknown) => (error instanceof Error ? error.message : m.loadFailed());
 
@@ -8,6 +15,8 @@ export const isNewsReactionItem = (item: ProfileFeedItem): item is ProfileNewsRe
 
 export const reactionItemUri = (item: ProfileFeedItem) =>
 	isNewsReactionItem(item) ? item.news.uri : item.uri;
+const reactionPosts = (items: ProfileFeedItem[]) =>
+	items.filter((item): item is FeedItem => !isNewsReactionItem(item));
 
 /** 投稿専用の楽観Feedへニュースを混ぜずに扱う、プロフィール用の軽量ページング状態。 */
 export class ProfileReactionFeed {
@@ -29,6 +38,7 @@ export class ProfileReactionFeed {
 		this.loading = true;
 		try {
 			const page = await this.#fetcher();
+			void postTranslations.prepare(reactionPosts(page.items));
 			if (request !== this.#request) return;
 			this.items = page.items;
 			this.cursor = page.cursor;
@@ -47,6 +57,7 @@ export class ProfileReactionFeed {
 		this.loading = true;
 		try {
 			const page = await this.#fetcher(this.cursor);
+			void postTranslations.prepare(reactionPosts(page.items));
 			const known = new Set(this.items.map(reactionItemUri));
 			this.items = [
 				...this.items,

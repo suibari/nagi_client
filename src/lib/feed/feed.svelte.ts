@@ -2,6 +2,7 @@ import type { ActorView, FeedItem, Page, PostView } from '$lib/api/types';
 import { m } from '$lib/i18n/i18n.svelte';
 import type { ReadWatermark, UnreadView } from '$lib/unread/watermark.svelte';
 import { optimisticPosts } from './optimistic-posts.svelte';
+import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 
@@ -75,6 +76,7 @@ export class Feed {
 		this.loading = true;
 		try {
 			const page = await this.#fetcher();
+			void postTranslations.prepare(page.items);
 			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
 			if (request !== this.#loadRequest) return;
 			this.items = page.items;
@@ -95,6 +97,7 @@ export class Feed {
 		if (!this.cursor || this.loading) return;
 		try {
 			const page = await this.#fetcher(this.cursor);
+			void postTranslations.prepare(page.items);
 			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
 			const seen = new Set(this.items.map(feedKey));
 			const unseen = page.items.filter((p) => !seen.has(feedKey(p)));
@@ -111,6 +114,7 @@ export class Feed {
 		this.#refreshing = true;
 		try {
 			const page = await this.#fetcher();
+			void postTranslations.prepare(page.items);
 			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
 			// スレッドキーでマージ。新リプライで代表 uri が変わっても同スレッドは in-place 更新され、
 			// 二重表示されない。既存スレッドは位置固定（no-jump）、新規スレッドだけ prepend。

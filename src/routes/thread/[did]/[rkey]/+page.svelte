@@ -8,11 +8,13 @@
 	import { goto } from '$app/navigation';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
+	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 	let thread = $state<ThreadView>();
 	let error = $state('');
 	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
 	async function refreshThread() {
 		const next = (await getThread(uri)).thread;
+		void postTranslations.prepare([next.post, ...next.replies]);
 		optimisticPosts.reconcile([next.post, ...next.replies]);
 		thread = next;
 	}

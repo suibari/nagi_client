@@ -38,6 +38,11 @@ const APPVIEW_DIRECT = dev && env.PUBLIC_APPVIEW_DIRECT === 'true';
 // ブラウザからローカル AppView への通信と画像取得を拒否されない。
 const browserBase = APPVIEW_DIRECT ? '' : base;
 export type LinkMetadata = { uri: string; title: string; description?: string; image?: string };
+export type TranslationBatchResult = {
+	translations: Array<{ uri: string; text: string }>;
+	failures: Array<{ uri: string; code: string }>;
+};
+const POST_PAGE_LIMIT = '10';
 
 /** AppView が返したHTTPステータスとエラーコードを、呼び出し側で判定できる形で保持する。 */
 export class ApiRequestError extends Error {
@@ -120,12 +125,12 @@ async function withPublicFallback<T>(lxm: string, path: string): Promise<T> {
 export const getTimeline = (cursor?: string) =>
 	call<TimelinePage>(
 		'com.suibari.nagi.getTimeline',
-		`/xrpc/com.suibari.nagi.getTimeline${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
+		`/xrpc/com.suibari.nagi.getTimeline?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
 	);
 export const getAffirmation = (cursor?: string) =>
 	call<TimelinePage>(
 		'com.suibari.nagi.getAffirmation',
-		`/xrpc/com.suibari.nagi.getAffirmation${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
+		`/xrpc/com.suibari.nagi.getAffirmation?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
 	);
 export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ limit: '20', lang });
@@ -179,7 +184,7 @@ export const getChannel = (uri: string) =>
 		`/xrpc/com.suibari.nagi.getChannel?uri=${encodeURIComponent(uri)}`,
 	);
 export const getChannelTimeline = (uri: string, cursor?: string) => {
-	const params = new URLSearchParams({ uri });
+	const params = new URLSearchParams({ uri, limit: POST_PAGE_LIMIT });
 	if (cursor) params.set('cursor', cursor);
 	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.getChannelTimeline',
@@ -189,7 +194,7 @@ export const getChannelTimeline = (uri: string, cursor?: string) => {
 // タグ投稿の検索。将来のキーワード検索も同じ /search 画面・同系エンドポイントへ相乗りできるよう
 // tag を明示パラメータにする。
 export const searchPosts = (tag: string, cursor?: string) => {
-	const params = new URLSearchParams({ tag });
+	const params = new URLSearchParams({ tag, limit: POST_PAGE_LIMIT });
 	if (cursor) params.set('cursor', cursor);
 	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.searchPosts',
@@ -198,7 +203,7 @@ export const searchPosts = (tag: string, cursor?: string) => {
 };
 // 自由文キーワード検索（意味検索＋語彙一致のハイブリッド）。tag 検索と同じ /search 画面に相乗り。
 export const searchPostsByQuery = (q: string, cursor?: string) => {
-	const params = new URLSearchParams({ q });
+	const params = new URLSearchParams({ q, limit: POST_PAGE_LIMIT });
 	if (cursor) params.set('cursor', cursor);
 	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.searchPosts',
@@ -245,7 +250,7 @@ export function getProfile(actor: string, opts: GetProfileOptions = {}) {
 	const params = new URLSearchParams({ actor });
 	if (opts.filter) params.set('filter', opts.filter);
 	if (opts.cursor) params.set('cursor', opts.cursor);
-	if (opts.limit) params.set('limit', String(opts.limit));
+	params.set('limit', String(opts.limit ?? POST_PAGE_LIMIT));
 	if (opts.lang) params.set('lang', opts.lang);
 	return call<ProfilePage | ProfileReactionPage>(
 		'com.suibari.nagi.getProfile',
@@ -380,6 +385,13 @@ export const translatePost = (uri: string, targetLang: string) =>
 		'com.suibari.nagi.translatePost',
 		'/xrpc/com.suibari.nagi.translatePost',
 		{ method: 'POST', body: JSON.stringify({ uri, targetLang }) },
+		'none',
+	);
+export const translatePosts = (uris: string[], targetLang: string) =>
+	call<TranslationBatchResult>(
+		'com.suibari.nagi.translatePosts',
+		'/xrpc/com.suibari.nagi.translatePosts',
+		{ method: 'POST', body: JSON.stringify({ uris, targetLang }) },
 		'none',
 	);
 // 任意アプリ連携のフィールド選択補助。publish 済み Lexicon のスキーマを AppView 経由で解決する
