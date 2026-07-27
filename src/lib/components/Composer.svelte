@@ -9,6 +9,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import Icon from './shell/Icon.svelte';
 	import Avatar from './Avatar.svelte';
@@ -178,6 +179,7 @@
 			const assets = await uploadPostAssets(draft);
 			const response = await createPost(draft, assets);
 			optimisticPosts.markCreated(optimisticId, response.data);
+			await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
 			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
 			// エラーではなく警告として伝える。
 			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの

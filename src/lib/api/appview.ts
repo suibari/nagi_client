@@ -150,6 +150,17 @@ export const getThread = (uri: string) =>
 		'com.suibari.nagi.getThread',
 		`/xrpc/com.suibari.nagi.getThread?uri=${encodeURIComponent(uri)}`,
 	);
+export const ensureRecord = (uri: string, cid: string) =>
+	call<{ uri: string; cid: string; indexed: true }>(
+		'com.suibari.nagi.ensureRecord',
+		'/xrpc/com.suibari.nagi.ensureRecord',
+		{
+			method: 'POST',
+			body: JSON.stringify({ uri, cid }),
+			signal: AbortSignal.timeout(3_000),
+		},
+		'required',
+	);
 // チャンネル閲覧・検索は公開コンテンツだが、ミュートを効かせるには viewerDid が要る。
 // viewerDid は PDS プロキシ経由の service-auth JWT からしか取れないので、ログイン中は
 // 認証付きで叩き、permission-set のキャッシュ未反映で弾かれたときだけ公開取得へ落とす

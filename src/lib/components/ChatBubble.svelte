@@ -22,6 +22,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCard from './LinkCard.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
 	import { restorePostEditState, type MentionSelection } from '$lib/atproto/facets';
@@ -339,6 +340,7 @@
 			// 返信・引用はNagi内の投稿文脈を参照するため、Blueskyへはクロスポストしない。
 			const response = await createPost(draft);
 			optimisticPosts.markCreated(optimisticId, response.data);
+			await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
 			await Promise.resolve(onposted?.()).catch(() => undefined);
 			if (!followedImmediately) {
 				// フィルター外の投稿で画面を自動遷移すると閲覧中の文脈を失うため、
