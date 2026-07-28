@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ActorView, PostView } from '$lib/api/types';
 	import ReactionBar from './ReactionBar.svelte';
-	import Avatar from './Avatar.svelte';
+	import AvatarLink from './AvatarLink.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import TranslateToggle from './TranslateToggle.svelte';
@@ -398,9 +398,8 @@
 </script>
 
 <div class="post-row" class:mine class:bot={post.isBot} bind:this={postRow}>
-	<a href={`/profile/${post.author.did}`} aria-label={m.viewProfileAria()}
-		><Avatar actor={post.author} /></a
-	>
+	<!-- ホバーで名刺、クリックで従来どおりプロフィールへ。 -->
+	<AvatarLink actor={post.author} />
 	<div class="bubble" class:sending={optimistic}>
 		<div class="meta">
 			<div class="meta-author">

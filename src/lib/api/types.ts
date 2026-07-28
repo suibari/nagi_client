@@ -122,6 +122,15 @@ export type ProfileDetail = ActorView & {
 	joinedAt?: string;
 	/** botたんの自動分析コメント。閲覧者の言語に合わせた本文（無ければ undefined）。 */
 	comment?: string;
+	/**
+	 * 名刺カード用の短いひとこと。閲覧者の言語に合わせた本文。
+	 * 分析が v1 プロンプト時代のままの相手では付かないので、名刺側は comment から詰める。
+	 */
+	tagline?: string;
+	/** 名刺カードに載せる、ユーザーを表すハッシュタグ3つ（'#' は含まない）。 */
+	tags?: string[];
+	/** 名刺の更新日（= 分析の更新日時）。 */
+	cardUpdatedAt?: string;
 };
 export type ProfileNewsReactionItem = { kind: 'news'; news: NewsView };
 export type ProfileFeedItem = FeedItem | ProfileNewsReactionItem;
@@ -149,7 +158,8 @@ export type DiaryView = {
 export type DiaryPage = { items: DiaryView[]; cursor?: string; hasMore: boolean };
 export type NotificationView = {
 	id: string;
-	type: 'reply' | 'reaction' | 'mention' | 'diary';
+	/** 'analysis' は名刺（自動分析）の更新。actor は常に botたん、post も diary も付かない。 */
+	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis';
 	actor: ActorView;
 	post?: PostView;
 	/** type が 'diary' のときの日記本体。post は付かない。 */

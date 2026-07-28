@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { getProfile } from '$lib/api/appview';
-	import type { PostView, ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
+	import type { ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import {
 		isNewsReactionItem,
@@ -10,8 +10,10 @@
 	} from '$lib/profile/reaction-feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
-	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import BusinessCardDialog from '$lib/components/BusinessCardDialog.svelte';
+	import { cardFromProfile } from '$lib/card/data';
+	import { browser } from '$app/environment';
 	import ActorBadges from '$lib/components/ActorBadges.svelte';
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
 	import CardCollection from '$lib/components/CardCollection.svelte';
@@ -114,29 +116,11 @@
 		feed = f;
 	});
 	const badges = $derived(actorBadges(profile));
-	// botたんの自動分析コメントを、NewsCard と同じく合成 PostView にして吹き出し表示する。
-	const commentBotPost = $derived<PostView | undefined>(
-		profile?.comment
-			? {
-					uri: `at://${profile.did}/#bot-comment`,
-					cid: 'bot-comment',
-					author: feed?.botActor ??
-						reactionFeed?.botActor ?? {
-							did: 'did:unknown:bot-tan',
-							handle: 'bot-tan',
-							displayName: 'Botたん',
-							isBot: true,
-						},
-					text: profile.comment,
-					langs: [i18n.locale],
-					createdAt: profile.joinedAt ?? new Date().toISOString(),
-					indexedAt: profile.joinedAt ?? new Date().toISOString(),
-					reactions: [],
-					isBot: true,
-					isAffirmation: false,
-				}
-			: undefined,
-	);
+	// 名刺はヘッダーに並べず、アバターを押して開くモーダルに入れる。
+	// アバター・表示名・ハンドルはプロフィール上部と丸ごと重複するので、
+	// 常時出すとヘッダーが同じ情報で縦に伸びるだけになる。
+	const cardData = $derived(browser ? cardFromProfile(profile, location.origin) : undefined);
+	let cardDialogOpen = $state(false);
 	const joined = $derived(
 		profile?.joinedAt
 			? new Date(profile.joinedAt).toLocaleDateString(dateLocale(), {
@@ -162,7 +146,19 @@
 {:else}
 	<header class="profile-header card">
 		<div class="top">
-			<Avatar actor={profile} size="large" />
+			{#if cardData}
+				<!-- 名刺があることは、アバターの周りを回る光で示す。押すと名刺が開く。 -->
+				<button
+					type="button"
+					class="avatar-card-button"
+					aria-label={m.nameCardOpenAria()}
+					onclick={() => (cardDialogOpen = true)}
+				>
+					<Avatar actor={profile} size="large" />
+				</button>
+			{:else}
+				<Avatar actor={profile} size="large" />
+			{/if}
 			<div class="names">
 				<h1>{profile?.displayName ?? profile?.handle ?? did}</h1>
 				<span class="handle">@{profile?.handle ?? did}</span>
@@ -195,11 +191,6 @@
 			{#if joined}<span>{m.profileJoinedSince({ date: joined })}</span>{/if}
 		</div>
 		<ProfileAppLinks did={profile?.did} />
-		{#if commentBotPost}
-			<div class="profile-comment">
-				<ChatBubble post={commentBotPost} displayOnly />
-			</div>
-		{/if}
 	</header>
 	<nav class="profile-tabs" aria-label={m.profileTabsAria()}>
 		{#each tabs as t (t.id)}
@@ -285,8 +276,11 @@
 	{/if}
 {/if}
 
-<style>
-	.profile-comment {
-		margin-top: 0.75rem;
-	}
-</style>
+{#if cardDialogOpen && cardData}
+	<BusinessCardDialog
+		data={cardData}
+		comment={profile?.comment}
+		botActor={feed?.botActor ?? reactionFeed?.botActor}
+		onclose={() => (cardDialogOpen = false)}
+	/>
+{/if}

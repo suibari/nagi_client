@@ -343,7 +343,21 @@ export const ja = {
 	notifReactedWithSuffix: 'でリアクションしました',
 	notifMentionedSuffix: 'さんがあなたをメンションしました',
 	notifDiarySuffix: 'さんが今日の日記を書いてくれました',
+	notifAnalysisSuffix: 'さんがあなたの名刺を更新しました',
 	notifUnreadBadgeAria: (p: { count: number }) => `未読通知 ${p.count} 件`,
+
+	// 名刺カード
+	nameCardTitle: '名刺',
+	nameCardClose: '閉じる',
+	nameCardOpenAria: '名刺を大きく表示する',
+	nameCardJoinedAt: (p: { date: string }) => `Nagi 登録 ${p.date}`,
+	nameCardUpdatedAt: (p: { date: string }) => `名刺更新 ${p.date}`,
+	nameCardSaveImage: '画像を保存',
+	nameCardShare: '共有',
+	nameCardCopied: 'URLをコピーしました',
+	nameCardImageAlt: (p: { name: string }) => `${p.name} さんの Nagi 名刺`,
+	nameCardRenderFailed: '名刺の画像を作れませんでした',
+	nameCardShareFailed: '共有できませんでした',
 
 	// thread page
 	threadEyebrow: '会話',

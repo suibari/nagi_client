@@ -40,11 +40,16 @@
 		const [, , did, , rkey] = uri.split('/');
 		return `/thread/${did}/${rkey}`;
 	};
-	/** 日記はスレッドが無いので、本人のプロフィールの日記タブに飛ばす。 */
+	/**
+	 * 日記はスレッドが無いので、本人のプロフィールの日記タブに飛ばす。
+	 * 名刺の更新も同じくポストが無いので、名刺が置いてある自分のプロフィールへ。
+	 */
 	const notificationHref = (item: NotificationView) =>
 		item.type === 'diary'
 			? `/profile/${item.diary?.subject ?? $session?.did}?tab=diary${item.diary ? `&date=${item.diary.date}` : ''}`
-			: threadHref(item.subjectUri);
+			: item.type === 'analysis'
+				? `/profile/${$session?.did}`
+				: threadHref(item.subjectUri);
 	const resolveImage = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 	const relativeTime = (createdAt: string) => {
 		const differenceSeconds = (new Date(createdAt).valueOf() - relativeTimeBase) / 1000;
@@ -84,7 +89,7 @@
 							<strong>{item.actor.displayName ?? item.actor.handle}</strong
 							>{#if item.type === 'reaction' && item.reaction}{m.notifReactedWithPrefix()}{@render reactionEmoji(
 									item.reaction,
-								)}{m.notifReactedWithSuffix()}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{m.notifReactedSuffix()}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else}{m.notifMentionedSuffix()}{/if}
+								)}{m.notifReactedWithSuffix()}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{m.notifReactedSuffix()}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
 						</span>
 						<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
 					</div>

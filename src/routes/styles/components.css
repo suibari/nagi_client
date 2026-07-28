@@ -3253,3 +3253,288 @@ a.about-feature:focus-visible {
 .draft-dialog .field .avatar-select {
 	align-self: start;
 }
+
+/* ---------------------------------------------------------------
+ * 名刺カード（BusinessCard.svelte）
+ * 見た目は $lib/card/render.ts（Canvas 版・共有画像用）と対。片方だけ直すとズレる。
+ * こちらはテーマ追従、あちらはライト固定という違いだけが意図的な差。
+ * --------------------------------------------------------------- */
+.business-card {
+	position: relative;
+	display: block;
+	inline-size: 100%;
+	/* QR を外したぶん横に間延びするので、読みやすい幅で止める。 */
+	max-inline-size: 30rem;
+	/* flex/grid の子になったとき、中身の幅までトラックが広がるのを防ぐ
+	   （長いハンドルでカードごと横に伸びていた）。 */
+	min-inline-size: 0;
+	padding: 16px 18px 16px 22px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: var(--bg-raised);
+	color: var(--text);
+	text-align: start;
+	font: inherit;
+	overflow: hidden;
+}
+/*
+ * 左端のブランドバー。Canvas 版は上から下へ accent→decorative の縦グラデーション。
+ * border-image / border-box グラデーションで代用すると、幅4pxの帯がグラデーション全体の
+ * ごく一部しか通らず単色に見えてしまうので、専用の要素を敷いて縦方向に効かせる。
+ */
+.business-card::before {
+	content: '';
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: 0;
+	inline-size: 5px;
+	background: linear-gradient(180deg, var(--accent), var(--decorative-accent));
+}
+.business-card.interactive {
+	cursor: pointer;
+	transition:
+		box-shadow 0.15s ease,
+		transform 0.15s ease;
+}
+.business-card.interactive:hover {
+	box-shadow: var(--shadow-card);
+	transform: translateY(-1px);
+}
+.business-card.interactive:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
+}
+.bc-head {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+/* 名刺ではアバターが主役。既存の .avatar.large(76px) より一段大きく見せる。 */
+.business-card .avatar {
+	inline-size: 92px;
+	block-size: 92px;
+	width: 92px;
+	height: 92px;
+	font-size: 36px;
+}
+.bc-names {
+	display: flex;
+	flex-direction: column;
+	/* 省略記号を効かせるには、縮められる指定と min-*: 0 の両方が要る。 */
+	flex: 1 1 auto;
+	min-inline-size: 0;
+}
+.bc-names strong {
+	color: var(--text-strong);
+	font-size: 1.05rem;
+	/* 長い表示名でカードを横に広げない。 */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.bc-handle {
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.bc-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 8px 0 0;
+	padding: 0;
+	list-style: none;
+}
+.bc-tags li {
+	padding: 3px 10px;
+	border-radius: var(--radius-pill);
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+.bc-tagline {
+	margin: 12px 0 0;
+	font-size: 0.9rem;
+	line-height: 1.65;
+	/* tagline は最大120文字。Canvas 版も5行で止めるので揃える。 */
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 5;
+	line-clamp: 5;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+.bc-dates {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 14px;
+	margin-top: 10px;
+	color: var(--text-muted);
+	font-size: 0.72rem;
+}
+.business-card.compact {
+	padding: 13px 15px 13px 19px;
+}
+.business-card.compact .avatar {
+	inline-size: 68px;
+	block-size: 68px;
+	width: 68px;
+	height: 68px;
+	font-size: 27px;
+}
+.business-card.compact .bc-tagline {
+	font-size: 0.88rem;
+}
+
+/*
+ * プロフィールのアバター。名刺を持っている人は、周りを光がうねうね回る。
+ * 「押せる」ことを示すのが目的なので、名刺が無いユーザーには付けない（+page.svelte 側で分岐）。
+ */
+.avatar-card-button {
+	position: relative;
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+	padding: 5px;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	cursor: pointer;
+	line-height: 0;
+}
+/* 回る光の帯。radial マスクでリング状に抜く。 */
+.avatar-card-button::before,
+.avatar-card-button::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+	mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+	animation: nagi-halo-spin 6s linear infinite;
+}
+.avatar-card-button::before {
+	background: conic-gradient(
+		var(--accent),
+		var(--decorative-accent),
+		var(--color-secondary),
+		var(--accent)
+	);
+}
+/*
+ * 2枚目を逆回転・低速で重ねると、明るいところが行ったり来たりして「うねり」に見える。
+ * 1枚だけだと等速で回るだけの輪になる。
+ */
+.avatar-card-button::after {
+	background: conic-gradient(
+		transparent,
+		var(--color-secondary),
+		transparent,
+		var(--decorative-accent),
+		transparent
+	);
+	opacity: 0.75;
+	animation-duration: 9s;
+	animation-direction: reverse;
+}
+.avatar-card-button:hover::before,
+.avatar-card-button:focus-visible::before {
+	animation-duration: 2.5s;
+}
+.avatar-card-button:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 3px;
+}
+@keyframes nagi-halo-spin {
+	to {
+		transform: rotate(1turn);
+	}
+}
+/* 動きが苦手な人には回さない。名刺があること自体は静止したリングで伝わる。 */
+@media (prefers-reduced-motion: reduce) {
+	.avatar-card-button::before,
+	.avatar-card-button::after {
+		animation: none;
+	}
+}
+
+/* 名刺の拡大モーダル。既存ダイアログと同じ手書き規約（backdrop + role="dialog"）。 */
+.card-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 120;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	background: var(--bg-veil);
+}
+.card-dialog {
+	inline-size: min(31rem, 100%);
+	max-block-size: 90dvh;
+	overflow-y: auto;
+	padding: 18px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-l);
+	background: var(--bg-raised);
+	box-shadow: var(--shadow-pop);
+}
+.card-dialog-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+.card-dialog-head h2 {
+	margin: 0;
+	font-size: 1rem;
+}
+.card-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 14px;
+}
+/* テキストだけだと押せると分からないので、アイコンを添えてボタンらしくする。 */
+.card-actions button {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 9px 16px;
+	border-radius: var(--radius-pill);
+	font-weight: 600;
+}
+.card-actions button svg {
+	flex: none;
+}
+/*
+ * botたんの長文分析。名刺には短い tagline しか載らないので全文はここで読む。
+ * 見た目は元のプロフィール表示と同じ botたんの吹き出し（ChatBubble）に戻してある。
+ */
+.card-comment {
+	margin-top: 16px;
+	padding-top: 14px;
+	border-top: 1px solid var(--line);
+}
+.card-preview {
+	display: block;
+	inline-size: 100%;
+	margin-top: 12px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-s);
+}
+
+/* アバターホバーで出る名刺ポップオーバー。 */
+.hover-card {
+	position: fixed;
+	z-index: 130;
+	inline-size: min(340px, calc(100vw - 24px));
+	filter: drop-shadow(0 6px 18px rgb(0 0 0 / 0.18));
+}
+.avatar-link {
+	display: inline-flex;
+	border-radius: 50%;
+}
