@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { MentionSelection } from '$lib/atproto/facets';
+	import type { ChannelSelection, MentionSelection } from '$lib/atproto/facets';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import type { ImageAttachment } from '$lib/images';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -17,6 +17,8 @@
 		placeholder,
 		text = $bindable(),
 		mentions = $bindable(),
+		channels = $bindable<ChannelSelection[]>([]),
+		channelSuggestionsEnabled = false,
 		attachments = $bindable(),
 		linkCards = $bindable(),
 		busy = false,
@@ -29,6 +31,8 @@
 		placeholder: string;
 		text: string;
 		mentions: MentionSelection[];
+		channels?: ChannelSelection[];
+		channelSuggestionsEnabled?: boolean;
 		attachments: ImageAttachment[];
 		linkCards: LinkCardDraft[];
 		busy?: boolean;
@@ -54,6 +58,8 @@
 			{id}
 			bind:value={text}
 			bind:mentions
+			bind:channels
+			{channelSuggestionsEnabled}
 			{placeholder}
 			disabled={busy}
 			{onsubmit}

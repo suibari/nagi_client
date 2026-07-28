@@ -1,15 +1,18 @@
 <script lang="ts">
-	import { searchActors } from '$lib/api/appview';
+	import { searchActors, searchChannelsTypeahead } from '$lib/api/appview';
 	import { createActorSearch } from '$lib/api/useActorSearch.svelte';
-	import type { ActorView } from '$lib/api/types';
-	import type { MentionSelection } from '$lib/atproto/facets';
+	import type { ActorView, ChannelView } from '$lib/api/types';
+	import type { ChannelSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
+	import ChannelSuggestionList from './ChannelSuggestionList.svelte';
 	import type { MarkdownFormat } from './MarkdownPalette.svelte';
 
 	let {
 		value = $bindable(''),
 		mentions = $bindable<MentionSelection[]>([]),
+		channels = $bindable<ChannelSelection[]>([]),
+		channelSuggestionsEnabled = false,
 		id,
 		placeholder,
 		ariaLabel,
@@ -19,6 +22,8 @@
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
+		channels?: ChannelSelection[];
+		channelSuggestionsEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
 		ariaLabel?: string;
@@ -28,11 +33,33 @@
 	} = $props();
 
 	let textarea: HTMLTextAreaElement;
-	const suggest = createActorSearch(searchActors);
+	// Composer は最初の1文字を即時検索し、連続入力だけ短くまとめる。
+	const suggest = createActorSearch(searchActors, { debounceMs: 80, leading: true });
+	let suggestedChannels = $state<ChannelView[]>([]);
+	let channelTimer: ReturnType<typeof setTimeout> | undefined;
+	let channelRequestId = 0;
+	let channelSearchStarted = false;
 	let activeIndex = $state(0);
-	let token = $state<{ start: number; end: number; query: string }>();
+	let token = $state<
+		| { kind: 'mention'; start: number; end: number; query: string }
+		| { kind: 'channel'; start: number; end: number; query: string; marker: '#' | '＃' }
+	>();
 
-	function updateMentionRanges(previous: string, next: string) {
+	function shiftedSelections<T extends { start: number; end: number }>(
+		selections: T[],
+		prefix: number,
+		oldEnd: number,
+		delta: number,
+	): T[] {
+		return selections.flatMap((selection) => {
+			if (selection.end <= prefix) return [selection];
+			if (selection.start >= oldEnd)
+				return [{ ...selection, start: selection.start + delta, end: selection.end + delta }];
+			return [];
+		});
+	}
+
+	function updateSelectionRanges(previous: string, next: string) {
 		let prefix = 0;
 		while (prefix < previous.length && prefix < next.length && previous[prefix] === next[prefix])
 			prefix++;
@@ -45,34 +72,78 @@
 			suffix++;
 		const oldEnd = previous.length - suffix;
 		const delta = next.length - previous.length;
-		mentions = mentions.flatMap((mention) => {
-			if (mention.end <= prefix) return [mention];
-			if (mention.start >= oldEnd)
-				return [{ ...mention, start: mention.start + delta, end: mention.end + delta }];
-			return [];
-		});
+		mentions = shiftedSelections(mentions, prefix, oldEnd, delta);
+		channels = shiftedSelections(channels, prefix, oldEnd, delta);
+	}
+
+	function resetChannelSearch() {
+		suggestedChannels = [];
+		channelRequestId++;
+		if (channelTimer) clearTimeout(channelTimer);
+		channelTimer = undefined;
+		channelSearchStarted = false;
 	}
 
 	function close() {
 		token = undefined;
 		suggest.reset();
+		resetChannelSearch();
 		activeIndex = 0;
+	}
+
+	function searchChannels(query: string) {
+		const current = ++channelRequestId;
+		if (channelTimer) clearTimeout(channelTimer);
+		const delay = channelSearchStarted ? 80 : 0;
+		channelSearchStarted = true;
+		channelTimer = setTimeout(async () => {
+			channelTimer = undefined;
+			try {
+				const result = await searchChannelsTypeahead(query);
+				if (current !== channelRequestId) return;
+				suggestedChannels = result.channels;
+				activeIndex = 0;
+			} catch {
+				if (current === channelRequestId) suggestedChannels = [];
+			}
+		}, delay);
 	}
 
 	function detectToken() {
 		const caret = textarea.selectionStart;
 		const match = /(^|[\s(\[{])@([^\s@]*)$/.exec(value.slice(0, caret));
-		if (!match || !match[2]) {
-			close();
+		if (match?.[2]) {
+			token = {
+				kind: 'mention',
+				start: caret - match[2].length - 1,
+				end: caret,
+				query: match[2],
+			};
+			resetChannelSearch();
+			suggest.search(match[2], () => (activeIndex = 0));
 			return;
 		}
-		token = { start: caret - match[2].length - 1, end: caret, query: match[2] };
-		suggest.search(match[2], () => (activeIndex = 0));
+		const channelMatch = channelSuggestionsEnabled
+			? /(^|[\s(\[{])([#＃])([^\s#＃]*)$/.exec(value.slice(0, caret))
+			: undefined;
+		if (channelMatch?.[3]) {
+			token = {
+				kind: 'channel',
+				start: caret - channelMatch[3].length - 1,
+				end: caret,
+				query: channelMatch[3],
+				marker: channelMatch[2] as '#' | '＃',
+			};
+			suggest.reset();
+			searchChannels(channelMatch[3]);
+			return;
+		}
+		close();
 	}
 
 	function handleInput(event: Event) {
 		const next = (event.currentTarget as HTMLTextAreaElement).value;
-		updateMentionRanges(value, next);
+		updateSelectionRanges(value, next);
 		value = next;
 		detectToken();
 	}
@@ -85,21 +156,33 @@
 		for (const insertion of ordered) {
 			next = `${next.slice(0, insertion.at)}${insertion.text}${next.slice(insertion.at)}`;
 		}
-		mentions = mentions.flatMap((mention) => {
-			if (
-				insertions.some((insertion) => insertion.at > mention.start && insertion.at < mention.end)
-			)
-				return [];
-			const startShift = insertions.reduce(
-				(total, insertion) => total + (insertion.at <= mention.start ? insertion.text.length : 0),
-				0,
-			);
-			const endShift = insertions.reduce(
-				(total, insertion) => total + (insertion.at < mention.end ? insertion.text.length : 0),
-				0,
-			);
-			return [{ ...mention, start: mention.start + startShift, end: mention.end + endShift }];
-		});
+		const shiftForInsertions = <T extends { start: number; end: number }>(selections: T[]): T[] =>
+			selections.flatMap((selection) => {
+				if (
+					insertions.some(
+						(insertion) => insertion.at > selection.start && insertion.at < selection.end,
+					)
+				)
+					return [];
+				const startShift = insertions.reduce(
+					(total, insertion) =>
+						total + (insertion.at <= selection.start ? insertion.text.length : 0),
+					0,
+				);
+				const endShift = insertions.reduce(
+					(total, insertion) => total + (insertion.at < selection.end ? insertion.text.length : 0),
+					0,
+				);
+				return [
+					{
+						...selection,
+						start: selection.start + startShift,
+						end: selection.end + endShift,
+					},
+				];
+			});
+		mentions = shiftForInsertions(mentions);
+		channels = shiftForInsertions(channels);
 		value = next;
 		close();
 		requestAnimationFrame(() => {
@@ -173,7 +256,7 @@
 	}
 
 	function choose(actor: ActorView) {
-		if (!token) return;
+		if (!token || token.kind !== 'mention') return;
 		const label = `@${actor.handle}`;
 		const suffix = value.slice(token.end);
 		const trailingSpace = suffix.startsWith(' ') ? '' : ' ';
@@ -188,6 +271,36 @@
 				return [];
 			}),
 			{ start: token.start, end: token.start + label.length, did: actor.did, handle: actor.handle },
+		].sort((a, b) => a.start - b.start);
+		channels = shiftedSelections(channels, token.start, token.end, delta);
+		const caret = token.start + label.length + trailingSpace.length;
+		close();
+		requestAnimationFrame(() => {
+			textarea.focus();
+			textarea.setSelectionRange(caret, caret);
+		});
+	}
+
+	function chooseChannel(channel: ChannelView) {
+		if (!token || token.kind !== 'channel') return;
+		const label = `${token.marker}${channel.name}`;
+		const suffix = value.slice(token.end);
+		const trailingSpace = suffix.startsWith(' ') ? '' : ' ';
+		const replacementLength = label.length + trailingSpace.length;
+		const delta = replacementLength - (token.end - token.start);
+		value = `${value.slice(0, token.start)}${label}${trailingSpace}${suffix}`;
+		mentions = shiftedSelections(mentions, token.start, token.end, delta);
+		channels = [
+			...shiftedSelections(channels, token.start, token.end, delta),
+			{
+				start: token.start,
+				end: token.start + label.length,
+				uri: channel.uri,
+				cid: channel.cid,
+				name: channel.name,
+				banner: channel.banner,
+				description: channel.description,
+			},
 		].sort((a, b) => a.start - b.start);
 		const caret = token.start + label.length + trailingSpace.length;
 		close();
@@ -221,17 +334,20 @@
 				return;
 			}
 		}
-		if (!suggest.actors.length || !token) {
+		const suggestionCount =
+			token?.kind === 'channel' ? suggestedChannels.length : suggest.actors.length;
+		if (!suggestionCount || !token) {
 			if (event.key === 'Escape') close();
 			return;
 		}
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 			event.preventDefault();
 			const direction = event.key === 'ArrowDown' ? 1 : -1;
-			activeIndex = (activeIndex + direction + suggest.actors.length) % suggest.actors.length;
+			activeIndex = (activeIndex + direction + suggestionCount) % suggestionCount;
 		} else if (event.key === 'Enter' || event.key === 'Tab') {
 			event.preventDefault();
-			choose(suggest.actors[activeIndex]);
+			if (token.kind === 'channel') chooseChannel(suggestedChannels[activeIndex]);
+			else choose(suggest.actors[activeIndex]);
 		} else if (event.key === 'Escape') {
 			event.preventDefault();
 			close();
@@ -257,7 +373,9 @@
 		{onpaste}
 		onblur={() => setTimeout(close, 150)}
 	></textarea>
-	{#if token}
+	{#if token?.kind === 'mention'}
 		<ActorSuggestionList actors={suggest.actors} {activeIndex} onchoose={choose} />
+	{:else if token?.kind === 'channel'}
+		<ChannelSuggestionList channels={suggestedChannels} {activeIndex} onchoose={chooseChannel} />
 	{/if}
 </div>

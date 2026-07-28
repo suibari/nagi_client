@@ -104,6 +104,28 @@
 .mention-suggestions button small {
 	color: var(--text-muted);
 }
+.channel-suggestions button {
+	align-items: stretch;
+}
+.channel-suggestions .channel-suggestion-header {
+	display: grid;
+	flex: 0 0 76px;
+	place-items: center;
+	overflow: hidden;
+	min-width: 76px;
+	height: 44px;
+	border-radius: var(--radius-s);
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+}
+.channel-suggestions .channel-suggestion-header img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.channel-suggestions .channel-suggestion-copy {
+	align-content: center;
+}
 .composer-foot {
 	display: flex;
 	align-items: center;

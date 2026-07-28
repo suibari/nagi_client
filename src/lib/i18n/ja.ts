@@ -667,6 +667,7 @@ export const ja = {
 	channelEditFailed: 'チャンネルを保存できませんでした',
 	channelBannerRemove: '画像を削除',
 	channelTimelineEmpty: 'このチャンネルにはまだ投稿がありません。最初の一言をどうぞ。',
+	channelSuggestions: 'チャンネル候補',
 	channelBadge: (o: { name: string }) => `#${o.name}`,
 	channelBadgeAria: (o: { name: string }) => `チャンネル「${o.name}」の投稿`,
 	// search（ハッシュタグ検索。将来のキーワード検索も同画面に相乗り）

@@ -219,6 +219,14 @@ export const searchChannelsByQuery = (q: string, cursor?: string) => {
 		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
 	);
 };
+// Composer の #チャンネル候補。意味検索を走らせない軽量な name 検索を明示する。
+export const searchChannelsTypeahead = (q: string) => {
+	const params = new URLSearchParams({ q, limit: '10', typeahead: 'true' });
+	return withPublicFallback<ChannelsPage>(
+		'com.suibari.nagi.searchChannels',
+		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
+	);
+};
 // ニュースの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
 export const searchNewsByQuery = (q: string, lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ q, lang });

@@ -14,7 +14,11 @@
 	import Icon from './shell/Icon.svelte';
 	import Avatar from './Avatar.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
-	import type { MentionSelection } from '$lib/atproto/facets';
+	import {
+		validChannelSelections,
+		type ChannelSelection,
+		type MentionSelection,
+	} from '$lib/atproto/facets';
 	import { drafts } from '$lib/drafts/drafts.svelte';
 	import { DraftStorageError } from '$lib/drafts/storage';
 	import DraftListDialog from './DraftListDialog.svelte';
@@ -44,6 +48,7 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
+	let channels = $state<ChannelSelection[]>([]);
 	let kossori = $state(false);
 	let dismissedUrls = $state<string[]>([]);
 	let draftListOpen = $state(false);
@@ -64,8 +69,19 @@
 	let standardSiteReady = $state(false);
 	let standardSite = $state(false);
 	let articleTitle = $state('');
-	const articleCandidate = $derived(isArticleCandidate({ kossori, channel }));
-	const willCrosspost = $derived(crosspostReady && !channel && !kossori && !standardSite);
+	const selectedChannel = $derived(validChannelSelections(text, channels)[0]);
+	const effectiveChannel = $derived(
+		channel ??
+			(selectedChannel
+				? {
+						uri: selectedChannel.uri,
+						cid: selectedChannel.cid,
+						name: selectedChannel.name,
+					}
+				: undefined),
+	);
+	const articleCandidate = $derived(isArticleCandidate({ kossori, channel: effectiveChannel }));
+	const willCrosspost = $derived(crosspostReady && !effectiveChannel && !kossori && !standardSite);
 	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
 	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
 	const needsArticleTitle = $derived(standardSiteReady && standardSite && !headingTitle);
@@ -100,6 +116,7 @@
 		attachments = [];
 		linkCards = [];
 		mentions = [];
+		channels = [];
 		dismissedUrls = [];
 		kossori = false;
 		standardSite = false;
@@ -110,7 +127,14 @@
 		if (empty || busy || !$session) return;
 		draftError = '';
 		try {
-			await drafts.save($session.did, { text, attachments, linkCards, mentions, dismissedUrls });
+			await drafts.save($session.did, {
+				text,
+				attachments,
+				linkCards,
+				mentions,
+				channels,
+				dismissedUrls,
+			});
 			clearComposer();
 		} catch (e) {
 			draftError =
@@ -134,6 +158,7 @@
 		// ImageAttachmentEditor / LinkCardEditor の既存ライフサイクルに任せる。
 		text = draft.text;
 		mentions = [...draft.mentions];
+		channels = [...(draft.channels ?? [])];
 		attachments = draft.images.map((image) => ({
 			...image,
 			previewUrl: URL.createObjectURL(image.blob),
@@ -163,11 +188,12 @@
 			attachments,
 			linkCards,
 			mentions,
+			channels,
 			kossori,
-			channel ? { uri: channel.uri, cid: channel.cid } : undefined,
+			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
-			...(channel && { channel }),
+			...(effectiveChannel && { channel: effectiveChannel }),
 			threadKossori: kossori,
 		});
 		busy = true;
@@ -229,6 +255,8 @@
 		<ComposerEditor
 			bind:value={text}
 			bind:mentions
+			bind:channels
+			channelSuggestionsEnabled={!channel}
 			placeholder={m.composerPlaceholder()}
 			ariaLabel={m.composerAria()}
 			disabled={busy}
@@ -264,7 +292,7 @@
 			</div>
 			<!-- チャンネル投稿は記事にしないので、CH の投稿欄ではボタンごと出さない。
 			     こっそりに切り替えたときは押せなくなるだけにして、位置は動かさない。 -->
-			{#if standardSiteReady && !channel}
+			{#if standardSiteReady && !effectiveChannel}
 				<button
 					class="icon-action article-toggle"
 					class:active={standardSite}
@@ -282,8 +310,8 @@
 				type="button"
 				disabled={busy}
 				aria-pressed={kossori}
-				aria-label={channel ? m.composerChannelOnly() : m.composerKossoriAria()}
-				title={channel ? m.composerChannelOnly() : m.composerKossoriAria()}
+				aria-label={effectiveChannel ? m.composerChannelOnly() : m.composerKossoriAria()}
+				title={effectiveChannel ? m.composerChannelOnly() : m.composerKossoriAria()}
 				onclick={() => (kossori = !kossori)}><Icon name="hide" size={18} /></button
 			>
 			{#if drafts.count}

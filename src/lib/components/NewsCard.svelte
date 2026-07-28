@@ -6,7 +6,11 @@
 		uploadPostAssets,
 		type LinkCardDraft,
 	} from '$lib/atproto/records';
-	import type { MentionSelection } from '$lib/atproto/facets';
+	import {
+		validChannelSelections,
+		type ChannelSelection,
+		type MentionSelection,
+	} from '$lib/atproto/facets';
 	import type { ImageAttachment } from '$lib/images';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
@@ -32,6 +36,7 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
+	let channels = $state<ChannelSelection[]>([]);
 	let reactionPickerOpen = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
 	let safeUrl = $derived.by(() => {
@@ -86,6 +91,7 @@
 		attachments = [];
 		linkCards = [];
 		mentions = [];
+		channels = [];
 	}
 	function cancelQuote() {
 		composing = false;
@@ -95,6 +101,7 @@
 		if (!$session || (!text.trim() && !attachments.length && !linkCards.length) || busy) return;
 		busy = true;
 		error = '';
+		const selectedChannel = validChannelSelections(text, channels)[0];
 		const draft = preparePostDraft(
 			text,
 			undefined,
@@ -102,6 +109,9 @@
 			attachments,
 			linkCards,
 			mentions,
+			channels,
+			false,
+			selectedChannel ? { uri: selectedChannel.uri, cid: selectedChannel.cid } : undefined,
 		);
 		try {
 			const assets = await uploadPostAssets(draft);
@@ -177,6 +187,8 @@
 			placeholder={m.quotePlaceholder()}
 			bind:text
 			bind:mentions
+			bind:channels
+			channelSuggestionsEnabled
 			bind:attachments
 			bind:linkCards
 			{busy}

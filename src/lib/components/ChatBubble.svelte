@@ -25,7 +25,12 @@
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
-	import { restorePostEditState, type MentionSelection } from '$lib/atproto/facets';
+	import {
+		restorePostEditState,
+		validChannelSelections,
+		type ChannelSelection,
+		type MentionSelection,
+	} from '$lib/atproto/facets';
 	import {
 		languagePreferences,
 		normalizeSupportedLanguage,
@@ -77,6 +82,7 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
+	let channels = $state<ChannelSelection[]>([]);
 	let kossoriBusy = $state(false);
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
 	let editing = $state(false);
@@ -179,6 +185,7 @@
 		if (composeMode === mode) {
 			cancelComposer();
 		} else {
+			if (mode === 'reply') channels = [];
 			composeMode = mode;
 		}
 	}
@@ -188,6 +195,7 @@
 		attachments = [];
 		linkCards = [];
 		mentions = [];
+		channels = [];
 	}
 	function startEdit() {
 		if (!$session) {
@@ -307,6 +315,11 @@
 			mode === 'reply' && post.channel?.cid
 				? { uri: post.channel.uri, cid: post.channel.cid }
 				: undefined;
+		const selectedChannel =
+			mode === 'quote' ? validChannelSelections(composeText, channels)[0] : undefined;
+		const targetChannel =
+			inheritedChannel ??
+			(selectedChannel ? { uri: selectedChannel.uri, cid: selectedChannel.cid } : undefined);
 		const draft = preparePostDraft(
 			composeText,
 			reply,
@@ -314,14 +327,25 @@
 			attachments,
 			linkCards,
 			mentions,
+			mode === 'quote' ? channels : [],
 			// こっそりはスレッドルートだけが所有するため、返信レコードへ複製しない。
 			false,
-			inheritedChannel,
+			targetChannel,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),
 			...(mode === 'quote' ? { quote: post } : {}),
-			...(inheritedChannel && post.channel ? { channel: post.channel } : {}),
+			...(inheritedChannel && post.channel
+				? { channel: post.channel }
+				: selectedChannel
+					? {
+							channel: {
+								uri: selectedChannel.uri,
+								cid: selectedChannel.cid,
+								name: selectedChannel.name,
+							},
+						}
+					: {}),
 			threadKossori:
 				mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori ?? post.channelOnly) : false,
 		});
@@ -331,6 +355,7 @@
 		attachments = [];
 		linkCards = [];
 		mentions = [];
+		channels = [];
 		composeMode = undefined;
 		await tick();
 		const optimisticTarget = document.querySelector(`[data-optimistic-key="${optimisticId}"]`);
@@ -622,6 +647,8 @@
 		placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
 		bind:text={composeText}
 		bind:mentions
+		bind:channels
+		channelSuggestionsEnabled={composeMode === 'quote'}
 		bind:attachments
 		bind:linkCards
 		busy={posting}

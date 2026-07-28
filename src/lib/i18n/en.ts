@@ -638,6 +638,7 @@ export const en: Messages = {
 	channelEditFailed: 'Could not save the channel',
 	channelBannerRemove: 'Remove image',
 	channelTimelineEmpty: 'No posts in this channel yet. Say the first word.',
+	channelSuggestions: 'Channel suggestions',
 	channelBadge: (o: { name: string }) => `#${o.name}`,
 	channelBadgeAria: (o: { name: string }) => `Posts in channel "${o.name}"`,
 	// search (hashtag search; future keyword search shares this screen)

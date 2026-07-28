@@ -8,6 +8,15 @@ export type Facet = {
 };
 
 export type MentionSelection = { start: number; end: number; did: string; handle: string };
+export type ChannelSelection = {
+	start: number;
+	end: number;
+	uri: string;
+	cid: string;
+	name: string;
+	banner?: string;
+	description?: string;
+};
 export type ParsedPostText = { text: string; facets: Facet[]; urls: string[] };
 type StoredFacet = {
 	index: { byteStart: number; byteEnd: number };
@@ -20,6 +29,20 @@ const decoder = new TextDecoder('utf-8', { fatal: true });
 const byteLength = (value: string) => encoder.encode(value).length;
 // Bluesky detectFacets のタグ本体クラス: 先頭のゼロ幅系を除外し、数字のみのタグを弾く。
 const TAG_BODY = /^[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20E2]*[^\d\s]\S*/u;
+export const validChannelSelections = (
+	source: string,
+	channelSelections: ChannelSelection[],
+): ChannelSelection[] =>
+	[...channelSelections]
+		.filter(
+			(channel) =>
+				channel.start >= 0 &&
+				channel.end > channel.start &&
+				['#', '＃'].some(
+					(marker) => source.slice(channel.start, channel.end) === `${marker}${channel.name}`,
+				),
+		)
+		.sort((a, b) => a.start - b.start);
 export const httpUrl = (value: string) => {
 	try {
 		const url = new URL(value);
@@ -120,6 +143,7 @@ export function restorePostEditState(
 export function parsePostText(
 	source: string,
 	mentionSelections: MentionSelection[] = [],
+	channelSelections: ChannelSelection[] = [],
 ): ParsedPostText {
 	let text = '';
 	const facets: Facet[] = [];
@@ -141,10 +165,26 @@ export function parsePostText(
 				source.slice(mention.start, mention.end) === `@${mention.handle}`,
 		)
 		.sort((a, b) => a.start - b.start);
+	const channels = validChannelSelections(source, channelSelections);
 	let mentionIndex = 0;
+	let channelIndex = 0;
 
 	for (let index = 0; index < source.length;) {
 		while (mentions[mentionIndex]?.start < index) mentionIndex++;
+		while (channels[channelIndex]?.start < index) channelIndex++;
+		const channel = channels[channelIndex];
+		if (channel?.start === index) {
+			const label = source.slice(channel.start, channel.end);
+			const byteStart = byteLength(text);
+			text += label;
+			facets.push({
+				index: { byteStart, byteEnd: byteStart + byteLength(label) },
+				features: [{ $type: 'app.bsky.richtext.facet#tag', tag: channel.name }],
+			});
+			index = channel.end;
+			channelIndex++;
+			continue;
+		}
 		const mention = mentions[mentionIndex];
 		if (mention?.start === index) {
 			const label = source.slice(mention.start, mention.end);

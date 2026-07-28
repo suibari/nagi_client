@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { parsePostText, type MentionSelection } from '$lib/atproto/facets';
+	import { parsePostText, type ChannelSelection, type MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import MarkdownPalette, { type MarkdownFormat } from './MarkdownPalette.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
@@ -9,6 +9,8 @@
 	let {
 		value = $bindable(''),
 		mentions = $bindable<MentionSelection[]>([]),
+		channels = $bindable<ChannelSelection[]>([]),
+		channelSuggestionsEnabled = false,
 		id,
 		placeholder,
 		ariaLabel,
@@ -19,6 +21,8 @@
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
+		channels?: ChannelSelection[];
+		channelSuggestionsEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
 		ariaLabel?: string;
@@ -31,7 +35,7 @@
 	let preview = $state(false);
 	let editor = $state<{ applyMarkdown: (format: MarkdownFormat) => void }>();
 	// 投稿時と同じ変換をかけ、[ラベル](URL)・生URL・メンションが facet になった状態を見せる
-	let parsed = $derived(preview ? parsePostText(value, mentions) : undefined);
+	let parsed = $derived(preview ? parsePostText(value, mentions, channels) : undefined);
 </script>
 
 <div class="composer-tabs" role="tablist" aria-label={m.composerTabsAria()}>
@@ -63,6 +67,8 @@
 		bind:this={editor}
 		bind:value
 		bind:mentions
+		bind:channels
+		{channelSuggestionsEnabled}
 		{id}
 		{placeholder}
 		{ariaLabel}
