@@ -2871,6 +2871,29 @@ a.about-feature:focus-visible {
 .about-final .about-cta {
 	justify-items: center;
 }
+.about-suibari-brand {
+	justify-self: center;
+	display: block;
+	inline-size: min(200px, 60%);
+	padding: 4px;
+	border-radius: var(--radius-s);
+	transition: opacity 0.18s ease;
+}
+.about-suibari-brand:hover {
+	opacity: 0.72;
+}
+.about-suibari-brand:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+.about-suibari-brand img {
+	display: block;
+	inline-size: 100%;
+	block-size: auto;
+}
+.about-page > .legal-links {
+	margin-top: -22px;
+}
 
 /* --- about page: 狭幅 --- */
 /* この節は about の基本ルールより後に置くこと。詳細度が同じなので、
@@ -3021,7 +3044,8 @@ a.about-feature:focus-visible {
 		animation: none;
 	}
 	.about-cta a.primary,
-	a.about-feature {
+	a.about-feature,
+	.about-suibari-brand {
 		transition: none;
 	}
 }

@@ -12,6 +12,7 @@ import { qrMatrix } from './qr';
  *
  * ⚠ この関数は BusinessCard.svelte（DOM 版）と同じ見た目を手で再現している。片方だけ
  *    直すとズレるので、レイアウトを変えるときは必ず両方を直し、/dev/name-card で並べて確認すること。
+ *    ただし、QR と suibari.com のブランドロゴは共有用の PNG 版にだけ描画する。
  *
  * ⚠ テーマは追従させない。共有された画像は相手のテーマで見られるので、
  *    閲覧者ごとに色が変わると「送ったものと違う絵」になる。ライト基調で固定する。
@@ -30,6 +31,9 @@ const COL_X = PAD + AVATAR_SIZE + 40;
  * 1モジュール約4pxで、写真に撮っても読める大きさになる。小さくしすぎると潰れる。
  */
 const QR_SIZE = 200;
+/** 右下のブランドロゴ。透明余白を除いた画像の比率（737:158）を維持する。 */
+const BRAND_LOGO_WIDTH = 280;
+const BRAND_LOGO_HEIGHT = (BRAND_LOGO_WIDTH * 158) / 737;
 /** アバター下端(PAD + AVATAR_SIZE = 288)より下から始める。 */
 const TAGLINE_TOP = 316;
 /**
@@ -79,6 +83,7 @@ export async function renderBusinessCard(data: BusinessCardData): Promise<Blob> 
 	drawTagline(ctx, data.tagline);
 	drawDates(ctx, data);
 	await drawQr(ctx, data.profileUrl);
+	await drawBrandLogo(ctx);
 
 	return await toBlob(canvas);
 }
@@ -258,7 +263,8 @@ function drawDates(ctx: CanvasRenderingContext2D, data: BusinessCardData) {
 async function drawQr(ctx: CanvasRenderingContext2D, url: string) {
 	const matrix = qrMatrix(url);
 	const x = W - PAD - QR_SIZE;
-	const y = H - PAD - QR_SIZE;
+	// 右下のブランドロゴとクワイエットゾーンが重ならない位置まで上げる。
+	const y = H - PAD - QR_SIZE - 88;
 	const modules = matrix.length;
 	const cell = QR_SIZE / modules;
 
@@ -293,15 +299,29 @@ async function drawQr(ctx: CanvasRenderingContext2D, url: string) {
 	ctx.drawImage(icon, ix, iy, iconBox, iconBox);
 }
 
-/** Nagi アイコンは static/ 配信で同一オリジンなので canvas を汚染しない。 */
-async function loadIcon(): Promise<HTMLImageElement | undefined> {
+async function drawBrandLogo(ctx: CanvasRenderingContext2D) {
+	const logo = await loadStaticImage('/suibari_logo.png');
+	if (!logo) return;
+	ctx.drawImage(
+		logo,
+		W - PAD - BRAND_LOGO_WIDTH,
+		H - PAD - BRAND_LOGO_HEIGHT,
+		BRAND_LOGO_WIDTH,
+		BRAND_LOGO_HEIGHT,
+	);
+}
+
+/** static/ 配信の画像は同一オリジンなので canvas を汚染しない。 */
+async function loadStaticImage(src: string): Promise<HTMLImageElement | undefined> {
 	return await new Promise<HTMLImageElement | undefined>((resolve) => {
 		const img = new Image();
 		img.onload = () => resolve(img);
 		img.onerror = () => resolve(undefined);
-		img.src = '/nagi_icon.png';
+		img.src = src;
 	});
 }
+
+const loadIcon = () => loadStaticImage('/nagi_icon.png');
 
 /**
  * 日本語には単語境界が無いので、CSS のような自動折り返しが使えない。

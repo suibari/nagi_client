@@ -212,6 +212,15 @@
 		</section>
 	{/if}
 
+	<a
+		class="about-suibari-brand"
+		href="https://suibari.com"
+		target="_blank"
+		rel="noreferrer noopener"
+	>
+		<img src="/suibari_logo.png" alt="suibari.com" width="737" height="158" />
+	</a>
+
 	<div class="legal-links">
 		<a href="/terms">{m.termsLink()}</a><a href="/privacy">{m.privacyLink()}</a>
 	</div>
