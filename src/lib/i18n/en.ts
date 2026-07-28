@@ -123,7 +123,7 @@ export const en: Messages = {
 	myProfileAria: 'Your profile',
 	meFallback: 'Me',
 	signOut: 'Log out',
-	loginHint: 'Join with your Bluesky account',
+	loginHint: 'Already use Bluesky?',
 	profileLink: 'Profile',
 
 	composerPlaceholder: 'How are you feeling right now?',
@@ -367,16 +367,23 @@ export const en: Messages = {
 	diaryAbout: "Bot-tan writes these entries from that day's posts.",
 
 	loginTitle: 'Join Nagi',
-	loginBody: 'Log in with your Bluesky or AT Protocol handle. Nagi never receives your password.',
+	loginBody:
+		'If you already use Bluesky, log in with that account. Other AT Protocol accounts are supported too.',
 	loginHandleLabel: 'Handle',
-	loginSubmit: 'Log in with OAuth',
+	loginSubmit: 'Log in',
+	loginSignupTitle: 'New to Nagi?',
+	loginSignupBody:
+		'You can start even if you do not use Bluesky. The account you create can also be used on Bluesky.',
+	loginSignupSubmit: 'Start using Nagi',
+	loginSignupRedirecting: 'Opening registration…',
+	loginStartFailed: 'Could not open the next screen. Please try again.',
 	loginFederateLabel: 'Also post to other AT Protocol services',
 	loginFederateNote:
 		'When on, Nagi can crosspost to Bluesky and publish blog posts (standard.site). It authorizes writing those records to your PDS. You can change this later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
 	loginAgeNotice: 'Nagi is available only to people aged 18 or older.',
-	loginAgreeBefore: 'By logging in, you agree to the ',
+	loginAgreeBefore: 'By continuing to log in or register, you agree to the ',
 	loginAgreeSeparator: ' and the ',
 	loginAgreeAfter: '.',
 

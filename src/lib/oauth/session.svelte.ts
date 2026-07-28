@@ -1,7 +1,8 @@
 import { writable, get } from 'svelte/store';
 import type { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-import { buildScope, getOAuthClient, type ScopeOptIns } from './client';
+import { BLUESKY_ENTRYWAY_URL, buildScope, getOAuthClient, type ScopeOptIns } from './client';
 import { normalizeHandle } from '$lib/atproto/handle';
+import { i18n } from '$lib/i18n/i18n.svelte';
 export type OAuthSession = Awaited<ReturnType<BrowserOAuthClient['restore']>>;
 export const session = writable<OAuthSession | null>(null);
 export const oauthReady = writable(false);
@@ -56,6 +57,19 @@ export async function signIn(
 		...(options.refreshPermissions ? { prompt: 'consent' as const } : {}),
 	});
 }
+
+/**
+ * アカウントをまだ持たない利用者向けに、Bluesky の Entryway から OAuth を開始する。
+ * PDS 側でアカウント作成後、そのまま通常の OAuth 認可と Nagi の callback へ進む。
+ */
+export async function signUp(options: ScopeOptIns = {}) {
+	await getOAuthClient().signIn(BLUESKY_ENTRYWAY_URL, {
+		scope: buildScope(options),
+		// PDS が対応していれば、現在の Nagi 表示言語を登録画面にも引き継ぐ。
+		ui_locales: i18n.locale,
+	});
+}
+
 export async function signOut() {
 	const current = get(session);
 	if (current) {

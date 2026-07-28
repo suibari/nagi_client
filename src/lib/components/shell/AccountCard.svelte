@@ -26,6 +26,8 @@
 	</div>
 {:else if $oauthReady}
 	<div class="account-login">
-		<a class="login" href="/login">{m.login()}</a><span>{m.loginHint()}</span>
+		<a class="login" href="/login">{m.login()}</a>
+		<span>{m.loginHint()}</span>
+		<a class="signup-link" href="/login#signup">{m.loginSignupSubmit()}</a>
 	</div>
 {/if}

@@ -1,4 +1,8 @@
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
+
+/** Bluesky が提供する PDS 群の共通 OAuth / アカウント作成入口。 */
+export const BLUESKY_ENTRYWAY_URL = 'https://bsky.social';
+
 /** クロスポスト対象コレクション。付与判定の前方一致にも使う。 */
 export const CROSSPOST_COLLECTION_SCOPE = 'repo:app.bsky.feed.post';
 // Nagi は Bluesky 投稿を作成するだけで、更新・削除は一切行わない（cf. crosspost/bluesky.ts）。
@@ -86,7 +90,7 @@ export function getOAuthClient(): BrowserOAuthClient {
 					application_type: 'native',
 					dpop_bound_access_tokens: true,
 				},
-		handleResolver: 'https://bsky.social',
+		handleResolver: BLUESKY_ENTRYWAY_URL,
 	});
 	return oauthClient;
 }

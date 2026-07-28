@@ -133,7 +133,7 @@ export const ja = {
 	myProfileAria: '自分のプロフィール',
 	meFallback: 'わたし',
 	signOut: 'ログアウト',
-	loginHint: 'Blueskyアカウントで参加できます',
+	loginHint: 'Blueskyをお使いの方',
 	profileLink: 'プロフィール',
 
 	// composer
@@ -390,10 +390,15 @@ export const ja = {
 	// login
 	loginTitle: 'Nagiに参加する',
 	loginBody:
-		'BlueskyまたはAT Protocolのハンドルでログインします。パスワードをNagiが受け取ることはありません。',
+		'すでにBlueskyをお使いの方は、そのアカウントでログインできます。Bluesky以外のAT Protocolアカウントも使えます。',
 	loginHandleLabel: 'ハンドル',
-	loginSubmit: 'OAuthでログイン',
+	loginSubmit: 'ログイン',
 	loginRedirecting: '移動しています…',
+	loginSignupTitle: 'はじめての方',
+	loginSignupBody: 'Blueskyを使っていなくても始められます。作ったアカウントはBlueskyでも使えます。',
+	loginSignupSubmit: 'Nagiをはじめる',
+	loginSignupRedirecting: '登録画面へ移動しています…',
+	loginStartFailed: '画面を開けませんでした。もう一度お試しください。',
 	loginBrowse: 'ログインせずに見る',
 	// クロスポストとブログ公開の権限は入口でまとめて渡し、どちらを実際に使うかは
 	// 設定画面で切り替える。入口でスイッチを2つ並べない。
@@ -402,7 +407,7 @@ export const ja = {
 		'ONにすると、Blueskyへのクロスポストと、ブログ（standard.site）としての公開ができるようになります。あなたのPDSへ書き込む権限を認可します。あとから設定で変更できます。',
 	// AI機能に使っている Gemini API の規約が18歳以上を要件にしているので、入口で告知する。
 	loginAgeNotice: '本サービスは18歳以上の方のみご利用いただけます。',
-	loginAgreeBefore: 'ログインすると、',
+	loginAgreeBefore: 'ログインまたは登録を続けると、',
 	loginAgreeSeparator: 'と',
 	loginAgreeAfter: 'に同意したものとみなされます。',
 
