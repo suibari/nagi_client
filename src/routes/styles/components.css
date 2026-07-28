@@ -1174,6 +1174,41 @@
 	grid-template-columns: repeat(6, minmax(36px, 1fr));
 	gap: 4px;
 }
+.reaction-quick-section + .reaction-quick-section {
+	margin-top: 6px;
+}
+.reaction-quick-label {
+	display: block;
+	margin-bottom: 3px;
+	color: var(--text-faint);
+	font-size: 11px;
+	font-weight: 700;
+}
+/* お気に入りは3行まで見せて、あふれた分はスクロールで届かせる。 */
+.reaction-quick-favorites {
+	max-height: 126px;
+	overflow-y: auto;
+}
+.reaction-quick-results {
+	max-height: 126px;
+	overflow-y: auto;
+}
+.reaction-quick-empty {
+	margin: 0;
+	padding: 8px 2px;
+	color: var(--text-faint);
+	font-size: 12px;
+}
+.reaction-quick-search {
+	width: 100%;
+	margin-top: 6px;
+	padding: 6px 10px;
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-m);
+	background: var(--bg-inset);
+	color: var(--text);
+	font-size: 13px;
+}
 .reaction-quick-loading {
 	display: grid;
 	place-items: center;
@@ -1364,44 +1399,111 @@
 .emoji-custom-add:focus-visible {
 	background: var(--accent-softer);
 }
-.emoji-frequent {
-	flex: 0 0 auto;
-	padding: 7px 8px 8px;
-	border-top: 1px solid var(--line);
+.emoji-favorites {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 8px;
+	overflow: hidden;
 }
-.emoji-frequent > span {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--text-faint);
-	font-size: 11px;
-	font-weight: 700;
-}
-.emoji-frequent-grid {
+.emoji-sort-grid {
+	flex: 1;
+	min-height: 0;
 	display: grid;
-	grid-template-columns: repeat(8, minmax(30px, 1fr));
-	gap: 3px;
+	grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+	grid-auto-rows: 40px;
+	align-content: start;
+	gap: 4px;
+	overflow-y: auto;
 }
-.emoji-frequent-item {
-	display: grid;
-	place-items: center;
-	min-width: 0;
-	height: 32px;
-	padding: 2px;
-	border: 0;
-	border-radius: 8px;
+/* ドラッグ中にページがスクロールへ持っていかれないようにする。 */
+.emoji-sort-item {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 4px;
+	border-radius: var(--radius-m);
 	background: transparent;
-	font-size: 20px;
+	font-size: 24px;
+	line-height: 1;
+	touch-action: none;
+	cursor: grab;
+	user-select: none;
 }
-.emoji-frequent-item:hover,
-.emoji-frequent-item:focus-visible {
+.emoji-sort-item:hover,
+.emoji-sort-item:focus-visible {
 	background: var(--bg-hover);
 }
-.emoji-frequent-item img {
+.emoji-sort-item.dragging {
+	opacity: 0.35;
+}
+.emoji-sort-item.drop-target {
+	background: var(--accent-softer);
+	box-shadow: inset 0 0 0 2px var(--accent);
+}
+.emoji-sort-item img {
 	width: auto;
 	height: auto;
 	max-width: 100%;
-	max-height: 24px;
+	max-height: 28px;
 	object-fit: contain;
+	pointer-events: none;
+}
+.emoji-sort-ghost {
+	position: fixed;
+	z-index: 60;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-m);
+	background: var(--bg-raised);
+	box-shadow: var(--shadow-pop);
+	font-size: 24px;
+	line-height: 1;
+	pointer-events: none;
+	opacity: 0.9;
+}
+.emoji-sort-remove {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	display: grid;
+	place-items: center;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--bg-pressed);
+	color: var(--text-muted);
+	opacity: 0;
+}
+.emoji-sort-item:hover .emoji-sort-remove,
+.emoji-sort-item:focus-within .emoji-sort-remove,
+.emoji-sort-remove:focus-visible {
+	opacity: 1;
+}
+@media (hover: none) {
+	.emoji-sort-remove {
+		opacity: 1;
+	}
+}
+.emoji-favorites-editor {
+	margin-top: 4px;
+}
+.emoji-favorites-editor .emoji-sort-grid {
+	grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+	grid-auto-rows: 44px;
+	gap: 6px;
+}
+.emoji-favorite-add {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	align-self: flex-start;
+	width: auto;
 }
 /* 正方形セルは崩さず、その中でアスペクト比を保つ（横長は縦が縮む）。 */
 .emoji-custom-item img {

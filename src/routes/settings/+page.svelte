@@ -20,6 +20,12 @@
 			description={m.settingsProfileDescription()}
 		/>
 		<SettingsCategoryCard
+			href="/settings/emoji-favorites"
+			icon="heart"
+			title={m.emojiFavoritesSettingsTitle()}
+			description={m.emojiFavoritesSettingsDescription()}
+		/>
+		<SettingsCategoryCard
 			href="/settings/emoji"
 			icon="emoji"
 			title={m.emojiSettingsTitle()}

@@ -15,25 +15,37 @@
 	} from '$lib/emoji/unicodeSearch';
 	import type { EmojiView } from '$lib/api/types';
 	import { reactionChoiceKey, type ReactionChoice } from '$lib/emoji/reactionUsage';
+	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
+	import SortableEmojiGrid from './SortableEmojiGrid.svelte';
 
 	let {
 		anchor,
 		select,
 		close,
-		frequent = [],
+		showFavorites = true,
 		oncustomunavailable,
 	}: {
 		anchor: HTMLElement;
 		select: (emoji: string | EmojiView) => void;
 		close: () => void;
-		frequent?: ReactionChoice[];
+		/** 設定画面から「お気に入りに追加する絵文字」を選ぶときは false。 */
+		showFavorites?: boolean;
 		oncustomunavailable?: (uri: string) => void;
 	} = $props();
+	type FavoriteItem = { id: string; choice: ReactionChoice };
+	// パレットを開いた時点のお気に入りを編集対象にし、並び替えのたびに保存する。
+	// svelte-ignore state_referenced_locally -- showFavorites は開いている間変わらない
+	const initialFavorites = showFavorites
+		? loadFavorites().map((choice) => ({ id: reactionChoiceKey(choice), choice }))
+		: [];
+	let favorites = $state<FavoriteItem[]>(initialFavorites);
 	let host: HTMLDivElement;
 	let unicodeHost = $state<HTMLDivElement>();
 	let positionStyle = $state('');
 	let positioned = $state(false);
-	let tab = $state<'unicode' | 'custom'>('unicode');
+	let tab = $state<'favorites' | 'unicode' | 'custom'>(
+		initialFavorites.length ? 'favorites' : 'unicode',
+	);
 	let query = $state('');
 	let customEmojis = $state<EmojiView[]>([]);
 	let customLoading = $state(false);
@@ -49,9 +61,12 @@
 	const unicodeResults = $derived(
 		unicodeSearching ? searchUnicodeEmojis(unicodeIndex, unicodeQuery, 60) : [],
 	);
-	const addCustomHref = $derived(
-		`/settings/emoji?returnTo=${encodeURIComponent(`${page.url.pathname}${page.url.search}`)}`,
-	);
+	const returnTo = $derived(encodeURIComponent(`${page.url.pathname}${page.url.search}`));
+	const addCustomHref = $derived(`/settings/emoji?returnTo=${returnTo}`);
+	const favoritesSettingsHref = $derived(`/settings/emoji-favorites?returnTo=${returnTo}`);
+
+	const persistFavorites = (items: FavoriteItem[]) =>
+		saveFavorites(items.map((item) => item.choice));
 
 	// 検索データ（ja+en）は初回入力時にだけ取りに行く。以降はメモリ上で絞り込む。
 	async function ensureUnicodeIndex() {
@@ -169,7 +184,7 @@
 			const hideSearchRow = document.createElement('style');
 			hideSearchRow.textContent = '.search-row, .favorites { display: none; }';
 			picker.shadowRoot?.append(hideSearchRow);
-			requestAnimationFrame(() => unicodeInput?.focus());
+			if (tab === 'unicode') requestAnimationFrame(() => unicodeInput?.focus());
 		});
 
 		return () => {
@@ -193,6 +208,14 @@
 	aria-label={m.emojiPickerAria()}
 >
 	<div class="emoji-tabs" role="tablist">
+		{#if showFavorites}
+			<button
+				role="tab"
+				aria-selected={tab === 'favorites'}
+				class:active={tab === 'favorites'}
+				onclick={() => (tab = 'favorites')}>{m.emojiTabFavorites()}</button
+			>
+		{/if}
 		<button
 			role="tab"
 			aria-selected={tab === 'unicode'}
@@ -206,6 +229,34 @@
 			onclick={() => (tab = 'custom')}>{m.emojiTabCustom()}</button
 		>
 	</div>
+	{#if tab === 'favorites'}
+		<div class="emoji-panel emoji-favorites">
+			{#if favorites.length}
+				<SortableEmojiGrid
+					bind:items={favorites}
+					onselect={(item) => select(item.choice.emoji)}
+					onreorder={persistFavorites}
+				>
+					{#snippet children(item)}
+						{#if item.choice.kind === 'custom'}
+							<img
+								src={resolveEmojiUrl(item.choice.emoji.url)}
+								alt={item.choice.emoji.alt ?? displayEmojiName(item.choice.emoji.name)}
+								title={displayEmojiName(item.choice.emoji.name)}
+								onerror={() =>
+									item.choice.kind === 'custom' && oncustomunavailable?.(item.choice.emoji.uri)}
+							/>
+						{:else}
+							{item.choice.emoji}
+						{/if}
+					{/snippet}
+				</SortableEmojiGrid>
+			{:else}
+				<p class="emoji-custom-empty">{m.emojiFavoritesEmpty()}</p>
+			{/if}
+			<a class="emoji-custom-add" href={favoritesSettingsHref}>{m.emojiFavoriteAdd()}</a>
+		</div>
+	{/if}
 	<div class="emoji-panel emoji-unicode" hidden={tab !== 'unicode'}>
 		<input
 			class="emoji-search"
@@ -272,33 +323,6 @@
 				</div>
 			{/if}
 			<a class="emoji-custom-add" href={addCustomHref}>{m.emojiAddCustom()}</a>
-		</div>
-	{/if}
-	{#if frequent.length}
-		<div class="emoji-frequent">
-			<span>{m.emojiFavoritesLabel()}</span>
-			<div class="emoji-frequent-grid">
-				{#each frequent as item (reactionChoiceKey(item))}
-					<button
-						class="emoji-frequent-item"
-						aria-label={m.reactWithAria({
-							emoji: item.kind === 'custom' ? displayEmojiName(item.emoji.name) : item.emoji,
-						})}
-						onclick={() => select(item.emoji)}
-					>
-						{#if item.kind === 'custom'}
-							<img
-								src={resolveEmojiUrl(item.emoji.url)}
-								alt={item.emoji.alt ?? displayEmojiName(item.emoji.name)}
-								title={displayEmojiName(item.emoji.name)}
-								onerror={() => oncustomunavailable?.(item.emoji.uri)}
-							/>
-						{:else}
-							{item.emoji}
-						{/if}
-					</button>
-				{/each}
-			</div>
 		</div>
 	{/if}
 </div>

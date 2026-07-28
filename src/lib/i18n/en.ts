@@ -263,6 +263,23 @@ export const en: Messages = {
 	emojiAddCustom: 'Add custom emoji',
 	emojiBackToSource: 'Back to where you were',
 	morePostActions: 'More post actions',
+	emojiTabFavorites: 'Favorites',
+	quickReactionFavorites: 'Favorites',
+	quickReactionRecent: 'Recently used',
+	emojiFavoriteReorder: (p: { index: number }) =>
+		`Favorite ${p.index}. Drag or use arrow keys to reorder`,
+	emojiFavoriteMoved: (p: { position: number }) => `Moved to position ${p.position}`,
+
+	// favorite emoji settings
+	emojiFavoritesSettingsTitle: 'Favorite emoji',
+	emojiFavoritesSettingsDescription: 'Pin the emoji you use most for one-tap reactions',
+	emojiFavoritesSettingsNote:
+		'Favorites appear first in the reaction palette, in this order. Drag (or use the arrow keys) to rearrange them. This setting is saved on this device only.',
+	emojiFavoritesEmpty: 'No favorites yet.',
+	emojiFavoritesEmptyHint: 'Emoji you add to favorites show up here',
+	emojiFavoriteAdd: 'Add emoji',
+	emojiFavoriteRemove: (p: { emoji: string }) => `Remove ${p.emoji} from favorites`,
+	emojiFavoritesFull: 'You can keep up to 32 favorites',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'Custom emoji',

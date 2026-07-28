@@ -276,6 +276,23 @@ export const ja = {
 	emojiAddCustom: 'カスタム絵文字を追加',
 	emojiBackToSource: '元の画面に戻る',
 	morePostActions: 'その他の投稿操作',
+	emojiTabFavorites: 'お気に入り',
+	quickReactionFavorites: 'お気に入り',
+	quickReactionRecent: '最近使った絵文字',
+	emojiFavoriteReorder: (p: { index: number }) =>
+		`${p.index}番目のお気に入り。ドラッグまたは矢印キーで並び替え`,
+	emojiFavoriteMoved: (p: { position: number }) => `${p.position}番目に移動しました`,
+
+	// favorite emoji settings
+	emojiFavoritesSettingsTitle: 'お気に入り絵文字',
+	emojiFavoritesSettingsDescription: 'よく使う絵文字を登録して、すぐ押せるようにする',
+	emojiFavoritesSettingsNote:
+		'ここで登録した絵文字が、リアクションパレットの先頭にこの並びで出ます。ドラッグ（または矢印キー）で並び替えできます。設定はこの端末にだけ保存されます。',
+	emojiFavoritesEmpty: 'まだお気に入りがありません。',
+	emojiFavoritesEmptyHint: 'お気に入りを登録すると、ここに出ます',
+	emojiFavoriteAdd: '絵文字を追加',
+	emojiFavoriteRemove: (p: { emoji: string }) => `${p.emoji} をお気に入りから外す`,
+	emojiFavoritesFull: 'お気に入りは32個までです',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'カスタム絵文字',

@@ -6,20 +6,26 @@
 	import { myProfile } from '$lib/profile/me.svelte';
 	import EmojiPicker from './EmojiPicker.svelte';
 	import Avatar from './Avatar.svelte';
-	import { m } from '$lib/i18n/i18n.svelte';
+	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { onMount, untrack } from 'svelte';
 	import {
 		buildQuickReactionChoices,
-		frequentReactionChoices,
 		loadCustomSuggestionPool,
 		loadReactionUsage,
 		reactionChoiceKey,
+		recentReactionChoices,
 		recordReactionUsage,
 		SAFE_UNICODE_REACTIONS,
 		type ReactionChoice,
 		type ReactionUsage,
 	} from '$lib/emoji/reactionUsage';
+	import { loadFavorites } from '$lib/emoji/favorites';
+	import {
+		loadUnicodeEmojiIndex,
+		searchUnicodeEmojis,
+		type UnicodeEmoji,
+	} from '$lib/emoji/unicodeSearch';
 	let {
 		uri,
 		cid,
@@ -49,10 +55,44 @@
 	let quickItems = $state<ReactionChoice[]>([]);
 	let quickLoading = $state(false);
 	let pickerGeneration = 0;
-	let frequentItems = $derived(frequentReactionChoices(usage, 8, failedCustomUris));
+	let favorites = $state<ReactionChoice[]>([]);
+	let recentItems = $state<ReactionChoice[]>([]);
+	let quickQuery = $state('');
+	let customPool = $state<EmojiView[]>([]);
+	let unicodeIndex = $state<UnicodeEmoji[]>([]);
+	let unicodeRequested = false;
+	// クイックパレットは1行6マス。お気に入りは最大3行まで見せて、あふれた分はスクロール。
+	const QUICK_COLUMNS = 6;
+	const QUICK_MAX_FAVORITE_ROWS = 3;
+	const quickSearching = $derived(quickQuery.trim().length > 0);
+	const quickResults = $derived.by(() => {
+		const q = quickQuery.trim();
+		if (!q) return [] as ReactionChoice[];
+		const needle = q.toLowerCase();
+		const custom: ReactionChoice[] = customPool
+			.filter((emoji) => displayEmojiName(emoji.name).toLowerCase().includes(needle))
+			.filter((emoji) => !failedCustomUris.includes(emoji.uri))
+			.slice(0, 12)
+			.map((emoji) => ({ kind: 'custom', emoji }));
+		const unicode: ReactionChoice[] = searchUnicodeEmojis(unicodeIndex, q, 24).map((item) => ({
+			kind: 'unicode',
+			emoji: item.emoji,
+		}));
+		return [...custom, ...unicode];
+	});
 	onMount(() => {
 		usage = loadReactionUsage();
 	});
+	// 検索データ（ja+en）は初回入力時にだけ取りに行く。
+	async function ensureUnicodeIndex() {
+		if (unicodeRequested) return;
+		unicodeRequested = true;
+		try {
+			unicodeIndex = await loadUnicodeEmojiIndex(i18n.locale);
+		} catch {
+			unicodeRequested = false;
+		}
+	}
 	$effect(() => {
 		const incoming = reactions;
 		if (Date.now() >= holdUntil) local = [...incoming];
@@ -63,17 +103,42 @@
 		const usageSnapshot = untrack(loadReactionUsage);
 		usage = usageSnapshot;
 		const failedSnapshot = untrack(() => failedCustomUris);
+		const favoriteSnapshot = untrack(loadFavorites);
+		const favoriteKeys = new Set(favoriteSnapshot.map(reactionChoiceKey));
+		favorites = favoriteSnapshot;
+		recentItems = recentReactionChoices(usageSnapshot, QUICK_COLUMNS, failedSnapshot).filter(
+			(item) => !favoriteKeys.has(reactionChoiceKey(item)),
+		);
+		quickQuery = '';
 		quickItems = [];
-		quickLoading = true;
-		void loadCustomSuggestionPool().then((customPool) => {
+		// お気に入りも履歴もない初回ユーザーだけ、おすすめ絵文字を出すためにプールを待つ。
+		quickLoading = favoriteSnapshot.length === 0 && recentItems.length === 0;
+		void loadCustomSuggestionPool().then((pool) => {
 			if (generation !== pickerGeneration || !pickerOpen || fullPickerOpen) return;
-			quickItems = buildQuickReactionChoices(usageSnapshot, customPool, failedSnapshot);
+			customPool = pool;
+			if (!favoriteSnapshot.length && !recentItems.length) {
+				quickItems = buildQuickReactionChoices(usageSnapshot, pool, failedSnapshot);
+			}
 			quickLoading = false;
 		});
 		return () => {
 			pickerGeneration += 1;
 		};
 	});
+	// 検索中も高さが変わらないよう、結果欄の最大高さ（3行分）を下限に見積もる。
+	const QUICK_CELL = 42;
+	const QUICK_LABEL = 17;
+	const QUICK_RESULTS_MAX = QUICK_CELL * 3;
+	function estimateQuickHeight() {
+		const favoriteRows = favorites.length
+			? Math.min(Math.ceil(favorites.length / QUICK_COLUMNS), QUICK_MAX_FAVORITE_ROWS)
+			: 0;
+		const recentRows = recentItems.length || quickItems.length ? 1 : 0;
+		const labels = (favoriteRows ? QUICK_LABEL : 0) + (recentItems.length ? QUICK_LABEL : 0);
+		const body = labels + (favoriteRows + recentRows) * QUICK_CELL;
+		// padding(16) + 本体 + 検索欄(40) + すべて見る(39)
+		return 16 + Math.max(body, QUICK_RESULTS_MAX) + 40 + 39;
+	}
 	$effect(() => {
 		if (!pickerOpen || !pickerAnchor || fullPickerOpen) return;
 		const updatePosition = () => {
@@ -81,7 +146,7 @@
 			const margin = 12;
 			const width = Math.min(336, window.innerWidth - margin * 2);
 			const left = Math.min(Math.max(margin, rect.left), window.innerWidth - margin - width);
-			const estimatedHeight = 100;
+			const estimatedHeight = estimateQuickHeight();
 			const openAbove = rect.top > estimatedHeight + margin;
 			const top = openAbove ? rect.top - estimatedHeight - 8 : rect.bottom + 8;
 			quickPickerStyle = `top:${Math.max(margin, top)}px;left:${left}px;width:${width}px;`;
@@ -114,6 +179,9 @@
 	}
 	function markCustomUnavailable(uri: string) {
 		if (!failedCustomUris.includes(uri)) failedCustomUris = [...failedCustomUris, uri];
+		const notFailed = (item: ReactionChoice) => item.kind !== 'custom' || item.emoji.uri !== uri;
+		favorites = favorites.filter(notFailed);
+		recentItems = recentItems.filter(notFailed);
 		const failedIndex = quickItems.findIndex(
 			(item) => item.kind === 'custom' && item.emoji.uri === uri,
 		);
@@ -211,6 +279,27 @@
 	}
 </script>
 
+{#snippet quickChoice(item: ReactionChoice)}
+	<button
+		class="reaction-quick-item"
+		aria-label={m.reactWithAria({
+			emoji: item.kind === 'custom' ? displayEmojiName(item.emoji.name) : item.emoji,
+		})}
+		onclick={() => toggle(item.emoji)}
+	>
+		{#if item.kind === 'custom'}
+			<img
+				src={resolveEmojiUrl(item.emoji.url)}
+				alt={item.emoji.alt ?? displayEmojiName(item.emoji.name)}
+				title={displayEmojiName(item.emoji.name)}
+				onerror={() => markCustomUnavailable(item.emoji.uri)}
+			/>
+		{:else}
+			{item.emoji}
+		{/if}
+	</button>
+{/snippet}
+
 {#if local.length}
 	<div class="reactions">
 		{#each local as reaction (keyOf(reaction))}
@@ -261,7 +350,6 @@
 			anchor={pickerAnchor}
 			select={toggle}
 			close={closePicker}
-			frequent={frequentItems}
 			oncustomunavailable={markCustomUnavailable}
 		/>
 	{:else}
@@ -274,32 +362,54 @@
 			aria-label={m.quickReactionAria()}
 			aria-busy={quickLoading}
 		>
-			{#if quickLoading}
+			{#if quickSearching}
+				<div class="reaction-quick-results">
+					{#if quickResults.length}
+						<div class="reaction-quick-grid">
+							{#each quickResults as item (reactionChoiceKey(item))}{@render quickChoice(
+									item,
+								)}{/each}
+						</div>
+					{:else}
+						<p class="reaction-quick-empty">{m.emojiUnicodeEmpty()}</p>
+					{/if}
+				</div>
+			{:else if quickLoading}
 				<div class="reaction-quick-loading" role="status">{m.loading()}</div>
 			{:else}
-				<div class="reaction-quick-grid">
-					{#each quickItems as item (reactionChoiceKey(item))}
-						<button
-							class="reaction-quick-item"
-							aria-label={m.reactWithAria({
-								emoji: item.kind === 'custom' ? displayEmojiName(item.emoji.name) : item.emoji,
-							})}
-							onclick={() => toggle(item.emoji)}
-						>
-							{#if item.kind === 'custom'}
-								<img
-									src={resolveEmojiUrl(item.emoji.url)}
-									alt={item.emoji.alt ?? displayEmojiName(item.emoji.name)}
-									title={displayEmojiName(item.emoji.name)}
-									onerror={() => markCustomUnavailable(item.emoji.uri)}
-								/>
-							{:else}
-								{item.emoji}
-							{/if}
-						</button>
-					{/each}
-				</div>
+				{#if favorites.length}
+					<div class="reaction-quick-section">
+						<span class="reaction-quick-label">{m.quickReactionFavorites()}</span>
+						<div class="reaction-quick-grid reaction-quick-favorites">
+							{#each favorites as item (reactionChoiceKey(item))}{@render quickChoice(item)}{/each}
+						</div>
+					</div>
+				{/if}
+				{#if recentItems.length}
+					<div class="reaction-quick-section">
+						<span class="reaction-quick-label">{m.quickReactionRecent()}</span>
+						<div class="reaction-quick-grid">
+							{#each recentItems as item (reactionChoiceKey(item))}{@render quickChoice(
+									item,
+								)}{/each}
+						</div>
+					</div>
+				{:else if quickItems.length}
+					<div class="reaction-quick-section">
+						<div class="reaction-quick-grid">
+							{#each quickItems as item (reactionChoiceKey(item))}{@render quickChoice(item)}{/each}
+						</div>
+					</div>
+				{/if}
 			{/if}
+			<input
+				class="reaction-quick-search"
+				type="search"
+				bind:value={quickQuery}
+				oninput={ensureUnicodeIndex}
+				placeholder={m.emojiSearchLabel()}
+				aria-label={m.emojiSearchLabel()}
+			/>
 			<button class="reaction-show-all" onclick={() => (fullPickerOpen = true)}>
 				<Icon name="emoji" size={17} />
 				<span>{m.showAllReactions()}</span>

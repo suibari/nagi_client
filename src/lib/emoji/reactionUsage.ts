@@ -50,7 +50,7 @@ export type ReactionUsage =
 export const reactionChoiceKey = (choice: ReactionChoice) =>
 	choice.kind === 'custom' ? choice.emoji.uri : choice.emoji;
 
-const validChoice = (value: unknown): value is ReactionChoice => {
+export const validChoice = (value: unknown): value is ReactionChoice => {
 	if (!value || typeof value !== 'object') return false;
 	const item = value as { kind?: unknown; emoji?: unknown };
 	if (item.kind === 'unicode') return typeof item.emoji === 'string' && item.emoji.length > 0;
@@ -152,6 +152,22 @@ export function frequentReactionChoices(
 	return usage
 		.filter((item) => item.kind === 'unicode' || !failedCustomUris.includes(item.emoji.uri))
 		.sort((a, b) => b.count - a.count || b.lastUsedAt - a.lastUsedAt)
+		.slice(0, limit)
+		.map((item) =>
+			item.kind === 'custom'
+				? { kind: 'custom', emoji: item.emoji }
+				: { kind: 'unicode', emoji: item.emoji },
+		);
+}
+
+export function recentReactionChoices(
+	usage: ReactionUsage[],
+	limit: number,
+	failedCustomUris: string[] = [],
+): ReactionChoice[] {
+	return usage
+		.filter((item) => item.kind === 'unicode' || !failedCustomUris.includes(item.emoji.uri))
+		.sort((a, b) => b.lastUsedAt - a.lastUsedAt)
 		.slice(0, limit)
 		.map((item) =>
 			item.kind === 'custom'
