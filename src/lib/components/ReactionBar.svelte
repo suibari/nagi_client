@@ -105,20 +105,24 @@
 		const failedSnapshot = untrack(() => failedCustomUris);
 		const favoriteSnapshot = untrack(loadFavorites);
 		const favoriteKeys = new Set(favoriteSnapshot.map(reactionChoiceKey));
+		// 代入した $state をこのエフェクト内で読み返すと依存に載って無限ループになるため、
+		// 判定にはローカルのスナップショットだけを使う。
+		const recentSnapshot = recentReactionChoices(
+			usageSnapshot,
+			QUICK_COLUMNS,
+			failedSnapshot,
+		).filter((item) => !favoriteKeys.has(reactionChoiceKey(item)));
+		const empty = favoriteSnapshot.length === 0 && recentSnapshot.length === 0;
 		favorites = favoriteSnapshot;
-		recentItems = recentReactionChoices(usageSnapshot, QUICK_COLUMNS, failedSnapshot).filter(
-			(item) => !favoriteKeys.has(reactionChoiceKey(item)),
-		);
+		recentItems = recentSnapshot;
 		quickQuery = '';
 		quickItems = [];
 		// お気に入りも履歴もない初回ユーザーだけ、おすすめ絵文字を出すためにプールを待つ。
-		quickLoading = favoriteSnapshot.length === 0 && recentItems.length === 0;
+		quickLoading = empty;
 		void loadCustomSuggestionPool().then((pool) => {
 			if (generation !== pickerGeneration || !pickerOpen || fullPickerOpen) return;
 			customPool = pool;
-			if (!favoriteSnapshot.length && !recentItems.length) {
-				quickItems = buildQuickReactionChoices(usageSnapshot, pool, failedSnapshot);
-			}
+			if (empty) quickItems = buildQuickReactionChoices(usageSnapshot, pool, failedSnapshot);
 			quickLoading = false;
 		});
 		return () => {
