@@ -126,6 +126,7 @@
 			? new Date(profile.joinedAt).toLocaleDateString(dateLocale(), {
 					year: 'numeric',
 					month: 'long',
+					day: 'numeric',
 				})
 			: undefined,
 	);

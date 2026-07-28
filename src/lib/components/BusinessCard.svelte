@@ -31,6 +31,7 @@
 					date: new Date(data.joinedAt).toLocaleDateString(dateLocale(), {
 						year: 'numeric',
 						month: 'long',
+						day: 'numeric',
 					}),
 				})
 			: undefined,

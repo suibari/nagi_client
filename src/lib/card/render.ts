@@ -244,7 +244,7 @@ function drawTagline(ctx: CanvasRenderingContext2D, tagline: string) {
 
 function drawDates(ctx: CanvasRenderingContext2D, data: BusinessCardData) {
 	const parts: string[] = [];
-	if (data.joinedAt) parts.push(m.nameCardJoinedAt({ date: formatMonth(data.joinedAt) }));
+	if (data.joinedAt) parts.push(m.nameCardJoinedAt({ date: formatDate(data.joinedAt) }));
 	if (data.updatedAt) parts.push(m.nameCardUpdatedAt({ date: formatDate(data.updatedAt) }));
 	if (!parts.length) return;
 
@@ -364,9 +364,6 @@ function roundRect(
 
 // 画像の色はテーマ非追従で固定するが、日付と文言は作った本人の言語に合わせる
 // （名刺を書き出すのは常に閲覧者自身なので、その人の読める表記が正しい）。
-const formatMonth = (iso: string) =>
-	new Date(iso).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long' });
-
 const formatDate = (iso: string) =>
 	new Date(iso).toLocaleDateString(dateLocale(), {
 		year: 'numeric',
