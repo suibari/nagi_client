@@ -14,6 +14,7 @@
 	import NewsCard from '$lib/components/NewsCard.svelte';
 	import ChannelCard from '$lib/components/ChannelCard.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { startVisiblePolling } from '$lib/polling';
@@ -80,7 +81,9 @@
 {#if q}
 	<section class="page-title"><h1>{q}</h1></section>
 {:else if tag}
-	<section class="page-title"><h1 aria-label={m.searchTagAria({ tag })}>{m.searchTagTitle({ tag })}</h1></section>
+	<section class="page-title">
+		<h1 aria-label={m.searchTagAria({ tag })}>{m.searchTagTitle({ tag })}</h1>
+	</section>
 {/if}
 
 {#if !hasQuery}
@@ -137,15 +140,29 @@
 				</div>
 			{:else if feed.error && !feed.visibleItems.length}
 				<div class="state error">
-					{feed.error}<button class="icon-action" type="button" aria-label={m.retry()} title={m.retry()} onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button>
+					{feed.error}<button
+						class="icon-action"
+						type="button"
+						aria-label={m.retry()}
+						title={m.retry()}
+						onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+					>
 				</div>
 			{:else}
 				{#each feed.visibleItems as item (item.uri)}
-					<ThreadUnit {item} botActor={feed.botActor} ondeleted={(u) => feed?.removePost(u)} onposted={() => feed?.refresh()} />
+					<ThreadUnit
+						{item}
+						botActor={feed.botActor}
+						ondeleted={(u) => feed?.removePost(u)}
+						onposted={() => feed?.refresh()}
+					/>
 				{/each}
-				{#if feed.hasMore}
-					<button class="more icon-action" type="button" aria-label={m.loadMore()} title={m.loadMore()} onclick={() => feed?.loadMore()}><Icon name="more" size={20} /></button>
-				{/if}
+				<InfiniteScroll
+					hasMore={feed.hasMore}
+					loading={feed.loading}
+					error={feed.error}
+					onload={() => feed?.loadMore()}
+				/>
 			{/if}
 		{/if}
 	</section>
@@ -159,17 +176,31 @@
 				</div>
 			{:else if feed.error && !feed.visibleItems.length}
 				<div class="state error">
-					{feed.error}<button class="icon-action" type="button" aria-label={m.retry()} title={m.retry()} onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button>
+					{feed.error}<button
+						class="icon-action"
+						type="button"
+						aria-label={m.retry()}
+						title={m.retry()}
+						onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+					>
 				</div>
 			{:else if !feed.visibleItems.length}
 				<div class="state">{m.searchTagEmpty()}</div>
 			{:else}
 				{#each feed.visibleItems as item (item.uri)}
-					<ThreadUnit {item} botActor={feed.botActor} ondeleted={(u) => feed?.removePost(u)} onposted={() => feed?.refresh()} />
+					<ThreadUnit
+						{item}
+						botActor={feed.botActor}
+						ondeleted={(u) => feed?.removePost(u)}
+						onposted={() => feed?.refresh()}
+					/>
 				{/each}
-				{#if feed.hasMore}
-					<button class="more icon-action" type="button" aria-label={m.loadMore()} title={m.loadMore()} onclick={() => feed?.loadMore()}><Icon name="more" size={20} /></button>
-				{/if}
+				<InfiniteScroll
+					hasMore={feed.hasMore}
+					loading={feed.loading}
+					error={feed.error}
+					onload={() => feed?.loadMore()}
+				/>
 			{/if}
 		{/if}
 	</section>

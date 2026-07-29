@@ -95,6 +95,8 @@ export class Feed {
 	}
 	async loadMore() {
 		if (!this.cursor || this.loading) return;
+		this.loading = true;
+		this.error = '';
 		try {
 			const page = await this.#fetcher(this.cursor);
 			void postTranslations.prepare(page.items);
@@ -105,8 +107,11 @@ export class Feed {
 			this.botActor = page.botActor ?? this.botActor;
 			this.cursor = page.cursor;
 			this.hasMore = page.hasMore;
+			this.error = '';
 		} catch (e) {
 			this.error = message(e, m.loadFailed());
+		} finally {
+			this.loading = false;
 		}
 	}
 	async refresh() {

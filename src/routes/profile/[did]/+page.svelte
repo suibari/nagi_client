@@ -18,6 +18,7 @@
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
 	import CardCollection from '$lib/components/CardCollection.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
+	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -234,15 +235,12 @@
 						<ThreadUnit {item} botActor={reactionFeed.botActor} ondeleted={postDeleted} />
 					{/if}
 				{/each}
-				{#if reactionFeed.hasMore}
-					<button
-						class="more icon-action"
-						type="button"
-						aria-label={m.loadMore()}
-						title={m.loadMore()}
-						onclick={() => reactionFeed?.loadMore()}><Icon name="more" size={20} /></button
-					>
-				{/if}
+				<InfiniteScroll
+					hasMore={reactionFeed.hasMore}
+					loading={reactionFeed.loading}
+					error={reactionFeed.error}
+					onload={() => reactionFeed?.loadMore()}
+				/>
 			{/if}
 		</section>
 	{:else}
@@ -265,14 +263,12 @@
 						botActor={feed.botActor}
 						ondeleted={postDeleted}
 						onposted={() => feed?.refresh()}
-					/>{/each}{#if feed.hasMore}
-					<button
-						class="more icon-action"
-						type="button"
-						aria-label={m.loadMore()}
-						title={m.loadMore()}
-						onclick={() => feed?.loadMore()}><Icon name="more" size={20} /></button
-					>{/if}{/if}
+					/>{/each}<InfiniteScroll
+					hasMore={feed.hasMore}
+					loading={feed.loading}
+					error={feed.error}
+					onload={() => feed?.loadMore()}
+				/>{/if}
 		</section>
 	{/if}
 {/if}

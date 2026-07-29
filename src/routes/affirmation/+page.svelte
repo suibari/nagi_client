@@ -6,6 +6,7 @@
 	import { startVisiblePolling } from '$lib/polling';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Composer from '$lib/components/Composer.svelte';
+	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
@@ -69,11 +70,10 @@
 				botActor={feed.botActor}
 				ondeleted={(uri) => feed.removePost(uri)}
 				onposted={() => feed.refresh()}
-			/>{/each}{#if feed.hasMore}<button
-				class="more icon-action"
-				type="button"
-				aria-label={m.loadMore()}
-				title={m.loadMore()}
-				onclick={() => feed.loadMore()}><Icon name="more" size={20} /></button
-			>{/if}{/if}
+			/>{/each}<InfiniteScroll
+			hasMore={feed.hasMore}
+			loading={feed.loading}
+			error={feed.error}
+			onload={() => feed.loadMore()}
+		/>{/if}
 </section>

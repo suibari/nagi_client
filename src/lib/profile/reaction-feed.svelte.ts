@@ -55,6 +55,7 @@ export class ProfileReactionFeed {
 	async loadMore() {
 		if (!this.cursor || this.loading) return;
 		this.loading = true;
+		this.error = '';
 		try {
 			const page = await this.#fetcher(this.cursor);
 			void postTranslations.prepare(reactionPosts(page.items));

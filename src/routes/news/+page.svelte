@@ -3,6 +3,7 @@
 	import { getPositiveNews } from '$lib/api/appview';
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import NewsCard from '$lib/components/NewsCard.svelte';
+	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m, dayHeading, dayKey } from '$lib/i18n/i18n.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
@@ -71,12 +72,7 @@
 				{news}
 				{botActor}
 				unread={unreadView.isUnread(news)}
-			/>{/each}{#if hasMore}<button
-				class="more icon-action"
-				disabled={loading}
-				onclick={() => load()}
-				aria-label={m.loadMore()}><Icon name="more" size={20} /></button
-			>{/if}{/if}
+			/>{/each}<InfiniteScroll {hasMore} {loading} {error} onload={() => load()} />{/if}
 </section>
 
 <style>

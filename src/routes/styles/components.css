@@ -1862,6 +1862,7 @@
 }
 .profile-header .names {
 	min-width: 0;
+	flex: 1 1 0;
 	display: grid;
 	gap: 2px;
 }
@@ -1883,6 +1884,7 @@
 	overflow-wrap: anywhere;
 }
 .profile-header .edit {
+	flex: 0 0 auto;
 	margin-left: auto;
 	align-self: flex-start;
 	white-space: nowrap;
@@ -2261,7 +2263,13 @@
 		padding: 16px;
 	}
 	.profile-header .top {
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+	.profile-header .edit {
+		grid-column: 1 / -1;
+		justify-self: end;
+		margin-left: 0;
 	}
 }
 .theme-settings {
