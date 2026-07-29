@@ -18,6 +18,9 @@
 		<li><strong>Bot-tan is an AI</strong>, not a human.</li>
 		<li><strong>Saying that things are hard is welcome here.</strong></li>
 		<li>What we prohibit is <strong>conduct that actually harms people</strong> — nothing more.</li>
+		<li>
+			<strong>Use a Content Warning (CW) when the content of your post calls for one.</strong>
+		</li>
 		<li><strong>"Kossori" (quiet) posts are not private posts.</strong></li>
 	</ul>
 </div>
@@ -188,9 +191,16 @@
 
 <h3>6.4 Adult and graphic content</h3>
 <p>
-	The Service does not currently have a content-labeling mechanism. Please refrain from posting
-	sexually explicit material or graphic depictions of violence or cruelty. Sexual depictions
-	involving anyone under 18 are prohibited without exception.
+	Sexually explicit material and graphic depictions of violence or cruelty are prohibited whether or
+	not they have a Content Warning (CW). Sexual depictions involving anyone under 18 are prohibited
+	without exception.
+</p>
+<p>
+	Even when content is not prohibited, add a CW to the relevant text or image if it specifically
+	depicts sexually suggestive material, injury or blood, violence, self-harm, or similar subject
+	matter that may cause severe distress or discomfort when encountered unexpectedly. A CW is not
+	required merely for expressing pain, weakness, or other feelings, and this requirement does not
+	narrow the expression protected under Section 7.
 </p>
 
 <h3>6.5 Attacks on the Service</h3>
@@ -233,14 +243,14 @@
 	<li>Satire and parody, and expression for educational, journalistic, or documentary purposes</li>
 </ul>
 <p>
-	Voicing pain and attacking someone are different things. The operator will draw that line carefully
-	and will try not to err toward over-removal.
+	Voicing pain and attacking someone are different things. The operator will draw that line
+	carefully and will try not to err toward over-removal.
 </p>
 
 <h2 id="t8">8. Enforcement</h2>
 <p>
-	Where a violation of these Terms is confirmed, the operator will respond in stages according to the
-	nature and severity of the violation. In urgent cases, steps may be skipped.
+	Where a violation of these Terms is confirmed, the operator will respond in stages according to
+	the nature and severity of the violation. In urgent cases, steps may be skipped.
 </p>
 <ol>
 	<li>Hiding the content on the Service</li>
@@ -287,12 +297,12 @@
 	<li>
 		<strong>
 			AI output is not medical, mental health, legal, financial, or other professional advice.
-		</strong> Do not rely on it to make decisions. If you need professional support, please consult a professional
-		or a public support service.
+		</strong> Do not rely on it to make decisions. If you need professional support, please consult a
+		professional or a public support service.
 	</li>
 	<li>
-		Identical or similar output may be provided to other users, and no exclusive rights arise in that
-		output.
+		Identical or similar output may be provided to other users, and no exclusive rights arise in
+		that output.
 	</li>
 	<li>
 		AI features may be changed or discontinued without notice, depending on availability and cost.
@@ -309,8 +319,8 @@
 	notice where we reasonably can, except in the case of outages or emergency maintenance.
 </p>
 <p>
-	Even if the Service shuts down, your posts remain in your PDS. That is a benefit of building on the
-	AT Protocol: in principle, your data is not lost when the Service ends.
+	Even if the Service shuts down, your posts remain in your PDS. That is a benefit of building on
+	the AT Protocol: in principle, your data is not lost when the Service ends.
 </p>
 
 <h2 id="t12">12. Disclaimer</h2>
@@ -366,6 +376,6 @@
 
 <h2 id="t18">18. Governing language</h2>
 <p>
-	This English text is provided for convenience. If there is any discrepancy between the Japanese and
-	English versions, the original Japanese version prevails.
+	This English text is provided for convenience. If there is any discrepancy between the Japanese
+	and English versions, the original Japanese version prevails.
 </p>

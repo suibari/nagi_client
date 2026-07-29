@@ -106,9 +106,15 @@
 			filter 140ms ease,
 			opacity 140ms ease;
 	}
-	.cw-mask:not(.revealed) .cw-content {
+	.cw-mask.text:not(.revealed) .cw-content {
 		filter: blur(7px);
 		opacity: 0.38;
+		user-select: none;
+		pointer-events: none;
+	}
+	.cw-mask.image:not(.revealed) .cw-content {
+		filter: blur(24px);
+		opacity: 0.18;
 		user-select: none;
 		pointer-events: none;
 	}
