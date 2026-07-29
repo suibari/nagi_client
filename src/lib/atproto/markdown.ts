@@ -2,7 +2,14 @@ import type { Facet } from '$lib/api/types';
 import { httpUrl } from './facets';
 
 export type Mark = 'bold' | 'italic' | 'strike' | 'code';
-export type InlineRun = { text: string; marks: Mark[]; href?: string; external?: boolean };
+export type InlineRun = {
+	text: string;
+	marks: Mark[];
+	href?: string;
+	external?: boolean;
+	contentWarning?: boolean;
+	contentWarningStart?: boolean;
+};
 export type Block =
 	| { type: 'p' | 'h1' | 'h2' | 'h3' | 'quote'; runs: InlineRun[] }
 	| { type: 'ul'; items: InlineRun[][] }
@@ -13,7 +20,7 @@ type LinkRange = { start: number; end: number; href?: string; external: boolean 
 type Piece = { text: string; map: number[] };
 
 const decoder = new TextDecoder();
-const ESCAPABLE = new Set(['\\', '*', '_', '~', '`', '#', '>', '-', '[', ']', '(', ')']);
+const ESCAPABLE = new Set(['\\', '*', '_', '~', '`', '#', '>', '-', '[', ']', '(', ')', '|']);
 const isSpace = (value: string | undefined) => value === undefined || /\s/.test(value);
 const isWord = (value: string | undefined) => value !== undefined && /[\p{L}\p{N}]/u.test(value);
 
@@ -65,6 +72,7 @@ function pushRuns(
 	to: number,
 	marks: Set<Mark>,
 	ranges: LinkRange[],
+	contentWarning?: { start: number; end: number },
 ) {
 	// marks 配列の参照を共有し、同一装飾かつ同一リンクの連続文字を 1 つの run にまとめる
 	const list = [...marks];
@@ -73,13 +81,25 @@ function pushRuns(
 		const range =
 			source >= 0 ? ranges.find((item) => source >= item.start && source < item.end) : undefined;
 		const last = out[out.length - 1];
-		if (last && last.marks === list && last.href === range?.href) last.text += piece.text[i];
+		const warning = Boolean(
+			contentWarning && source >= contentWarning.start && source < contentWarning.end,
+		);
+		if (
+			last &&
+			last.marks === list &&
+			last.href === range?.href &&
+			Boolean(last.contentWarning) === warning
+		)
+			last.text += piece.text[i];
 		else
 			out.push({
 				text: piece.text[i],
 				marks: list,
 				href: range?.href,
 				external: range?.external,
+				...(warning
+					? { contentWarning: true, contentWarningStart: source === contentWarning?.start }
+					: {}),
 			});
 	}
 }
@@ -110,18 +130,19 @@ function scanInline(
 	marks: Set<Mark>,
 	ranges: LinkRange[],
 	out: InlineRun[],
+	contentWarning?: { start: number; end: number },
 ) {
 	const { text } = piece;
 	let plain = from;
 	const flush = (end: number) => {
-		if (end > plain) pushRuns(out, piece, plain, end, marks, ranges);
+		if (end > plain) pushRuns(out, piece, plain, end, marks, ranges, contentWarning);
 	};
 	let i = from;
 	while (i < to) {
 		const char = text[i];
 		if (char === '\\' && i + 1 < to && ESCAPABLE.has(text[i + 1])) {
 			flush(i);
-			pushRuns(out, piece, i + 1, i + 2, marks, ranges);
+			pushRuns(out, piece, i + 1, i + 2, marks, ranges, contentWarning);
 			i += 2;
 			plain = i;
 			continue;
@@ -131,7 +152,15 @@ function scanInline(
 			if (close !== -1) {
 				flush(i);
 				// コード内では他の記法を解釈しない
-				pushRuns(out, piece, i + 1, close, new Set<Mark>([...marks, 'code']), ranges);
+				pushRuns(
+					out,
+					piece,
+					i + 1,
+					close,
+					new Set<Mark>([...marks, 'code']),
+					ranges,
+					contentWarning,
+				);
 				i = close + 1;
 				plain = i;
 				continue;
@@ -162,6 +191,7 @@ function scanInline(
 						new Set<Mark>([...marks, delim[1]]),
 						ranges,
 						out,
+						contentWarning,
 					);
 					i = close + delim[0].length;
 					plain = i;
@@ -174,15 +204,20 @@ function scanInline(
 	flush(to);
 }
 
-function inlineRuns(piece: Piece, ranges: LinkRange[]): InlineRun[] {
+function inlineRuns(
+	piece: Piece,
+	ranges: LinkRange[],
+	contentWarning?: { start: number; end: number },
+): InlineRun[] {
 	const out: InlineRun[] = [];
-	scanInline(piece, 0, piece.text.length, new Set(), ranges, out);
+	scanInline(piece, 0, piece.text.length, new Set(), ranges, out, contentWarning);
 	// エスケープ等で分断された、装飾もリンクも同じ run を最後にまとめる
 	return out.reduce<InlineRun[]>((merged, run) => {
 		const last = merged[merged.length - 1];
 		if (
 			last &&
 			last.href === run.href &&
+			Boolean(last.contentWarning) === Boolean(run.contentWarning) &&
 			last.marks.length === run.marks.length &&
 			last.marks.every((mark) => run.marks.includes(mark))
 		)
@@ -214,7 +249,11 @@ const QUOTE = /^>[ \t]?/;
 const BULLET = /^[-*][ \t]+(?=\S)/;
 const ORDERED = /^(\d{1,9})[.)][ \t]+(?=\S)/;
 
-export function parseRichText(source: string, facets: Facet[] = []): Block[] {
+export function parseRichText(
+	source: string,
+	facets: Facet[] = [],
+	contentWarning?: { start: number; end: number },
+): Block[] {
 	const ranges = linkRanges(source, facets);
 	const blocks: Block[] = [];
 	const lines: Array<{ start: number; end: number }> = [];
@@ -227,7 +266,7 @@ export function parseRichText(source: string, facets: Facet[] = []): Block[] {
 	}
 
 	const runs = (list: Array<{ start: number; end: number }>) =>
-		inlineRuns(toPiece(source, list), ranges);
+		inlineRuns(toPiece(source, list), ranges, contentWarning);
 
 	for (let index = 0; index < lines.length;) {
 		const line = lines[index];
@@ -289,7 +328,21 @@ export function parseRichText(source: string, facets: Facet[] = []): Block[] {
 		blocks.push({ type: 'p', runs: runs(body) });
 	}
 
-	return blocks.filter((block) => ('runs' in block ? block.runs.length : block.items.length));
+	const visibleBlocks = blocks.filter((block) =>
+		'runs' in block ? block.runs.length : block.items.length,
+	);
+	let foundWarning = false;
+	for (const block of visibleBlocks) {
+		const lists = 'runs' in block ? [block.runs] : block.items;
+		for (const list of lists) {
+			for (const run of list) {
+				if (!run.contentWarning) continue;
+				run.contentWarningStart = !foundWarning;
+				foundWarning = true;
+			}
+		}
+	}
+	return visibleBlocks;
 }
 
 /**

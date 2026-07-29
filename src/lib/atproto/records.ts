@@ -9,6 +9,7 @@ import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
 import { hasOptInScope } from '$lib/optin/scope-optin';
 import { forgetPublicationCache } from '$lib/standardsite/cache';
 import { deleteNagiStandardSiteRecords } from '$lib/standardsite/repo';
+import { hasContentWarning } from './contentWarning';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
@@ -48,6 +49,8 @@ export type PostDraft = {
 	channel?: { uri: string; cid: string };
 	/** true なら CH 限定＝グローバルTL非表示。 */
 	channelOnly?: boolean;
+	/** 作成時からCW運用であり、外部コピーを永久に作らない投稿。 */
+	cwRestricted?: boolean;
 };
 
 export function preparePostDraft(
@@ -86,6 +89,9 @@ export function preparePostDraft(
 		quote,
 		attachments: [...attachments],
 		linkCards: linkCards.slice(0, 4).map((card) => ({ ...card })),
+		...(hasContentWarning(parsed.text) || attachments.some((image) => image.contentWarning)
+			? { cwRestricted: true }
+			: {}),
 		...(kossori ? { kossori: true } : {}),
 		...(channel ? { channel } : {}),
 		...(channel && channelOnly ? { channelOnly: true } : {}),
@@ -159,7 +165,12 @@ export async function uploadAvatar(blob: Blob) {
  * 同じ blobRef を使い回すため、レコード作成とは分けて公開している。
  */
 export type PostAssets = {
-	images: { image: unknown; alt: string; aspectRatio: { width: number; height: number } }[];
+	images: {
+		image: unknown;
+		alt: string;
+		contentWarning?: boolean;
+		aspectRatio: { width: number; height: number };
+	}[];
 	cards: { uri: string; title: string; description?: string; thumb?: unknown }[];
 };
 
@@ -174,6 +185,7 @@ export async function uploadPostAssets(draft: PostDraft): Promise<PostAssets> {
 			return {
 				image: response.data.blob,
 				alt: attachment.alt,
+				...(attachment.contentWarning ? { contentWarning: true } : {}),
 				aspectRatio: attachment.aspectRatio,
 			};
 		}),
@@ -217,6 +229,7 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			facets: draft.facets,
 			langs: draft.langs,
 			createdAt: draft.createdAt,
+			...(draft.cwRestricted && { cwRestricted: true }),
 			...(draft.kossori && { kossori: true }),
 			...(draft.channel && { channel: draft.channel }),
 			...(draft.channel && draft.channelOnly && { channelOnly: true }),
@@ -256,6 +269,7 @@ export async function setPostKossori(rkey: string, kossori: boolean) {
 type StoredPostImage = {
 	image: unknown;
 	alt: string;
+	contentWarning?: boolean;
 	aspectRatio?: { width: number; height: number };
 };
 
@@ -292,6 +306,14 @@ export async function updatePost(rkey: string, draft: PostDraft, images?: PostEd
 		facets: draft.facets,
 		langs: draft.langs,
 	};
+	const cwRestricted = record.cwRestricted === true;
+	if (
+		!cwRestricted &&
+		(hasContentWarning(draft.text) || images?.some((image) => image.contentWarning))
+	) {
+		throw new Error('Content warnings can only be edited on posts that started with a warning');
+	}
+	if (cwRestricted) record.cwRestricted = true;
 	let imageViews: PostImage[] | undefined;
 	if (images !== undefined) {
 		if (images.length > 4) throw new Error('A post can contain at most four images');
@@ -329,11 +351,13 @@ export async function updatePost(rkey: string, draft: PostDraft, images?: PostEd
 						stored: {
 							image: response.data.blob,
 							alt: image.alt,
+							...(image.contentWarning ? { contentWarning: true } : {}),
 							aspectRatio: image.aspectRatio,
 						},
 						view: {
 							url: `/api/blob/${encodeURIComponent(s.did)}/${encodeURIComponent(cid)}`,
 							alt: image.alt,
+							...(image.contentWarning ? { contentWarning: true } : {}),
 							aspectRatio: image.aspectRatio,
 						},
 					});
@@ -347,11 +371,14 @@ export async function updatePost(rkey: string, draft: PostDraft, images?: PostEd
 				return result.stored;
 			}
 			const stored = storedImages[image.sourceIndex];
-			return {
+			const updated: StoredPostImage = {
 				...stored,
 				alt: image.alt,
 				...(image.aspectRatio ? { aspectRatio: image.aspectRatio } : {}),
 			};
+			if (image.contentWarning) updated.contentWarning = true;
+			else delete updated.contentWarning;
+			return updated;
 		});
 		imageViews = images.map((image): PostImage => {
 			if (image.kind === 'new') {
@@ -362,6 +389,7 @@ export async function updatePost(rkey: string, draft: PostDraft, images?: PostEd
 			return {
 				url: image.previewUrl,
 				alt: image.alt,
+				...(image.contentWarning ? { contentWarning: true } : {}),
 				...(image.aspectRatio ? { aspectRatio: image.aspectRatio } : {}),
 			};
 		});

@@ -7,6 +7,10 @@
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
 	import ChannelSuggestionList from './ChannelSuggestionList.svelte';
 	import type { MarkdownFormat } from './MarkdownPalette.svelte';
+	import {
+		applyContentWarning as wrapContentWarning,
+		remapContentWarningSelection,
+	} from '$lib/atproto/contentWarning';
 
 	let {
 		value = $bindable(''),
@@ -19,6 +23,7 @@
 		disabled = false,
 		onsubmit,
 		onpaste,
+		onselectionchange,
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
@@ -30,6 +35,7 @@
 		disabled?: boolean;
 		onsubmit?: () => void;
 		onpaste?: (event: ClipboardEvent) => void;
+		onselectionchange?: (selected: boolean) => void;
 	} = $props();
 
 	let textarea: HTMLTextAreaElement;
@@ -110,6 +116,7 @@
 	}
 
 	function detectToken() {
+		onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd);
 		const caret = textarea.selectionStart;
 		const match = /(^|[\s(\[{])@([^\s@]*)$/.exec(value.slice(0, caret));
 		if (match?.[2]) {
@@ -255,6 +262,27 @@
 		else applyLineFormat(format);
 	}
 
+	export function applyContentWarning() {
+		if (disabled) return;
+		const previous = value;
+		const result = wrapContentWarning(previous, textarea.selectionStart, textarea.selectionEnd);
+		if (result.text === previous) return;
+		const remap = <T extends { start: number; end: number }>(items: T[]) =>
+			items.map((item) => ({
+				...item,
+				...remapContentWarningSelection(previous, result, item.start, item.end),
+			}));
+		mentions = remap(mentions);
+		channels = remap(channels);
+		value = result.text;
+		close();
+		requestAnimationFrame(() => {
+			textarea.focus();
+			textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
+			onselectionchange?.(result.selectionStart !== result.selectionEnd);
+		});
+	}
+
 	function choose(actor: ActorView) {
 		if (!token || token.kind !== 'mention') return;
 		const label = `@${actor.handle}`;
@@ -366,6 +394,7 @@
 		{value}
 		oninput={handleInput}
 		onclick={detectToken}
+		onselect={() => onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd)}
 		onkeyup={(event) => {
 			if (!['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(event.key)) detectToken();
 		}}

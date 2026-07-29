@@ -11,12 +11,19 @@
 	} from '$lib/images';
 	import Icon from './shell/Icon.svelte';
 	import SortableImageList from './SortableImageList.svelte';
+	import ContentWarningMask from './ContentWarningMask.svelte';
 
 	let {
 		images = $bindable(),
 		disabled = false,
+		contentWarningEnabled = true,
 		processing = $bindable(false),
-	}: { images: PostEditImage[]; disabled?: boolean; processing?: boolean } = $props();
+	}: {
+		images: PostEditImage[];
+		disabled?: boolean;
+		contentWarningEnabled?: boolean;
+		processing?: boolean;
+	} = $props();
 
 	let errors = $state<string[]>([]);
 	let input: HTMLInputElement;
@@ -107,6 +114,12 @@
 		images = images.map((image) => (image.id === id ? { ...image, alt: limited } : image));
 	}
 
+	function toggleContentWarning(id: string) {
+		images = images.map((image) =>
+			image.id === id ? { ...image, contentWarning: !image.contentWarning || undefined } : image,
+		);
+	}
+
 	onDestroy(() => {
 		destroyed = true;
 		processing = false;
@@ -138,10 +151,19 @@
 		<SortableImageList bind:items={images} {disabled}>
 			{#snippet children(image)}
 				<div class="attachment-preview">
-					<img
-						src={image.kind === 'existing' ? resolve(image.previewUrl) : image.previewUrl}
-						alt=""
-					/>
+					{#if image.contentWarning}
+						<ContentWarningMask kind="image" interactive={false}
+							><img
+								src={image.kind === 'existing' ? resolve(image.previewUrl) : image.previewUrl}
+								alt=""
+							/></ContentWarningMask
+						>
+					{:else}
+						<img
+							src={image.kind === 'existing' ? resolve(image.previewUrl) : image.previewUrl}
+							alt=""
+						/>
+					{/if}
 					<button
 						class="attachment-remove"
 						type="button"
@@ -150,6 +172,15 @@
 						onclick={() => remove(image.id)}><Icon name="close" size={16} /></button
 					>
 				</div>
+				{#if contentWarningEnabled}<button
+						class="ghost attachment-cw"
+						class:active={image.contentWarning}
+						type="button"
+						aria-pressed={Boolean(image.contentWarning)}
+						{disabled}
+						onclick={() => toggleContentWarning(image.id)}
+						><Icon name="warning" size={16} /><span>{m.contentWarningImage()}</span></button
+					>{/if}
 				<label>
 					<span>{m.postImageAltLabel()}</span>
 					<input

@@ -46,6 +46,11 @@
 		tagsFromFacets,
 		updateStandardSiteDocument,
 	} from '$lib/standardsite/document';
+	import {
+		hasContentWarning,
+		parseContentWarning,
+		validContentWarningSyntax,
+	} from '$lib/atproto/contentWarning';
 	let {
 		post,
 		botActor,
@@ -114,6 +119,8 @@
 	let editHasContent = $derived(
 		Boolean(editText.trim() || editImages.length || post.linkCards?.length || post.quote),
 	);
+	let editContentWarningValid = $derived(validContentWarningSyntax(editText));
+	let composeContentWarningValid = $derived(validContentWarningSyntax(composeText));
 	$effect(() => {
 		if (!actionMenuOpen) return;
 		const closeFromOutside = (event: PointerEvent) => {
@@ -213,6 +220,7 @@
 			sourceIndex,
 			previewUrl: image.url,
 			alt: image.alt,
+			contentWarning: image.contentWarning,
 			aspectRatio: image.aspectRatio,
 		}));
 		editing = true;
@@ -245,6 +253,10 @@
 	) {
 		try {
 			if (!(await hasStandardSiteScope())) return;
+			if (post.cwRestricted) {
+				await deleteStandardSiteDocument(rkey);
+				return;
+			}
 			if (text === undefined) {
 				await deleteStandardSiteDocument(rkey);
 				return;
@@ -262,12 +274,20 @@
 
 	async function submitEdit() {
 		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
-		if (!editHasContent || editImageProcessing || editBusy || !$session) return;
+		if (!editHasContent || !editContentWarningValid || editImageProcessing || editBusy || !$session)
+			return;
 		if (!match) {
 			editError = m.editPostFailed();
 			return;
 		}
 		const draft = preparePostDraft(editText, undefined, undefined, [], [], editMentions);
+		if (
+			!post.cwRestricted &&
+			(hasContentWarning(draft.text) || editImages.some((image) => image.contentWarning))
+		) {
+			editError = m.contentWarningEditForbidden();
+			return;
+		}
 		editBusy = true;
 		editError = '';
 		try {
@@ -277,6 +297,9 @@
 			// （取り込み前は旧本文が返り楽観反映を打ち消してしまうため）。
 			post.text = draft.text;
 			post.facets = draft.facets as PostView['facets'];
+			const parsedContentWarning = parseContentWarning(draft.text);
+			post.contentWarning =
+				parsedContentWarning.status === 'valid' ? parsedContentWarning.range : undefined;
 			post.langs = draft.langs;
 			post.images = result.imageViews?.length ? result.imageViews : undefined;
 			post.edited = true;
@@ -299,6 +322,7 @@
 			!composeMode ||
 			(!composeText.trim() && !attachments.length && !linkCards.length) ||
 			posting ||
+			!composeContentWarningValid ||
 			!$session
 		)
 			return;
@@ -458,6 +482,7 @@
 						bind:images={editImages}
 						bind:processing={editImageProcessing}
 						disabled={editBusy}
+						contentWarningEnabled={Boolean(post.cwRestricted)}
 					/>
 				{/snippet}
 				<ComposerEditor
@@ -466,6 +491,7 @@
 					bind:mentions={editMentions}
 					placeholder={m.editPlaceholder()}
 					disabled={editBusy}
+					contentWarningEnabled={Boolean(post.cwRestricted)}
 					onsubmit={() => void submitEdit()}
 					onpaste={(event) => editImageEditor?.handlePaste(event)}
 					tools={editTools}
@@ -475,13 +501,19 @@
 					<button
 						class="primary icon-action primary-icon"
 						type="button"
-						disabled={editBusy || editImageProcessing || !editHasContent}
+						disabled={editBusy ||
+							editImageProcessing ||
+							!editHasContent ||
+							!editContentWarningValid}
 						aria-label={editBusy ? m.composerSubmitting() : m.composerSubmit()}
 						title={editBusy ? m.composerSubmitting() : m.composerSubmit()}
 						onclick={() => void submitEdit()}
 						><Icon name={editBusy ? 'refresh' : 'send'} size={18} /></button
 					>
 				</div>
+				{#if post.cwRestricted}<p class="cw-restricted-note">
+						{m.contentWarningRestricted()}
+					</p>{/if}
 			</div>
 		{:else}
 			<TranslateToggle
@@ -689,5 +721,10 @@
 	}
 	.inline-edit {
 		margin-top: 0.35rem;
+	}
+	.cw-restricted-note {
+		margin: 7px 0 0;
+		color: var(--text-muted);
+		font-size: 0.75rem;
 	}
 </style>

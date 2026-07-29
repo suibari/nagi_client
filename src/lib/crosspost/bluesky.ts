@@ -125,7 +125,7 @@ function buildEmbed(assets: PostAssets) {
 export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
 	// こっそり投稿、およびチャンネル投稿は Bluesky にクロスポストしない。
 	// チャンネルは通常/こっそり問わず常に無効（チャンネルのコンテキストを外部に漏らさないため）。
-	if (draft.kossori || draft.channel) return;
+	if (draft.kossori || draft.channel || draft.cwRestricted) return;
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);

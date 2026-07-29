@@ -10,6 +10,7 @@
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import Icon from './shell/Icon.svelte';
+	import { validContentWarningSyntax } from '$lib/atproto/contentWarning';
 
 	let {
 		id,
@@ -42,6 +43,7 @@
 	} = $props();
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
+	let contentWarningValid = $derived(validContentWarningSyntax(text));
 	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 </script>
 
@@ -80,7 +82,7 @@
 			<button
 				class="primary icon-action primary-icon"
 				type="button"
-				disabled={busy || empty}
+				disabled={busy || empty || !contentWarningValid}
 				aria-label={busy ? m.composerSubmitting() : m.composerSubmit()}
 				title={busy ? m.composerSubmitting() : m.composerSubmit()}
 				onclick={onsubmit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button

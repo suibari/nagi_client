@@ -46,6 +46,7 @@ class OptimisticPosts {
 			author: this.author(did),
 			text: draft.text,
 			facets: draft.facets,
+			...(draft.cwRestricted && { cwRestricted: true }),
 			langs: draft.langs,
 			createdAt: draft.createdAt,
 			indexedAt: draft.createdAt,
@@ -54,6 +55,7 @@ class OptimisticPosts {
 				images: draft.attachments.map((attachment) => ({
 					url: localUrl(attachment.blob)!,
 					alt: attachment.alt,
+					...(attachment.contentWarning ? { contentWarning: true } : {}),
 					aspectRatio: attachment.aspectRatio,
 				})),
 			}),

@@ -4,12 +4,23 @@
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
+	import ContentWarningMask from './ContentWarningMask.svelte';
 
 	let { images }: { images: PostImage[] } = $props();
 	let active = $state<number>();
 	let opener = $state<HTMLButtonElement>();
 	let closeButton = $state<HTMLButtonElement>();
+	let revealedWarnings = $state<boolean[]>([]);
+	let warningSignature = '';
 	const resolve = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
+	$effect(() => {
+		const next = images
+			.map((image) => `${image.url}\u0000${Boolean(image.contentWarning)}`)
+			.join('\u0001');
+		if (next === warningSignature) return;
+		warningSignature = next;
+		revealedWarnings = [];
+	});
 
 	async function open(index: number, button: HTMLButtonElement) {
 		opener = button;
@@ -52,21 +63,45 @@
 
 <div class="images" class:single={images.length === 1} data-count={images.length}>
 	{#each images as image, index}
-		<button
-			class="image-tile"
-			type="button"
-			aria-label={image.alt || m.postImageOpen({ index: index + 1 })}
-			onclick={(event) => void open(index, event.currentTarget)}
-		>
-			<img
-				src={resolve(image.url)}
-				alt={image.alt}
-				loading="lazy"
-				style:aspect-ratio={image.aspectRatio
-					? `${image.aspectRatio.width} / ${image.aspectRatio.height}`
-					: undefined}
-			/>
-		</button>
+		<div class="image-tile-wrap">
+			{#if image.contentWarning && !revealedWarnings[index]}
+				<ContentWarningMask kind="image" bind:revealed={revealedWarnings[index]}>
+					<img
+						src={resolve(image.url)}
+						alt=""
+						loading="lazy"
+						style:aspect-ratio={image.aspectRatio
+							? `${image.aspectRatio.width} / ${image.aspectRatio.height}`
+							: undefined}
+					/>
+				</ContentWarningMask>
+			{:else}
+				<button
+					class="image-tile"
+					type="button"
+					aria-label={image.alt || m.postImageOpen({ index: index + 1 })}
+					onclick={(event) => void open(index, event.currentTarget)}
+				>
+					<img
+						src={resolve(image.url)}
+						alt={image.alt}
+						loading="lazy"
+						style:aspect-ratio={image.aspectRatio
+							? `${image.aspectRatio.width} / ${image.aspectRatio.height}`
+							: undefined}
+					/>
+				</button>
+				{#if image.contentWarning}
+					<button
+						class="cw-rehide"
+						type="button"
+						aria-label={m.contentWarningHide()}
+						title={m.contentWarningHide()}
+						onclick={() => (revealedWarnings[index] = false)}><Icon name="hide" size={16} /></button
+					>
+				{/if}
+			{/if}
+		</div>
 	{/each}
 </div>
 

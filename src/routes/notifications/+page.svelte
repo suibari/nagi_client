@@ -7,6 +7,7 @@
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { markAllSeen } from '$lib/notifications/unread.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import ContentWarningMask from '$lib/components/ContentWarningMask.svelte';
 	let items = $state<NotificationView[]>([]);
 	let error = $state('');
 	let loading = $state(true);
@@ -95,12 +96,20 @@
 					</div>
 					{#if item.type === 'diary' && item.diary}<p class="notification-subject">
 							{stripMarkdown(item.diary.text)}
+						</p>{:else if item.post?.contentWarning}<p class="notification-subject">
+							{m.contentWarningNotification()}
 						</p>{:else if item.post?.text}<p class="notification-subject">
 							{stripMarkdown(item.post.text)}
 						</p>{/if}
 					{#if item.post?.images?.length}<div class="notification-thumbs">
 							{#each item.post.images.slice(0, MAX_THUMBS) as image}
-								<img src={resolveImage(image.url)} alt={image.alt} loading="lazy" />
+								{#if image.contentWarning}
+									<ContentWarningMask kind="image" interactive={false}
+										><img src={resolveImage(image.url)} alt="" loading="lazy" /></ContentWarningMask
+									>
+								{:else}
+									<img src={resolveImage(image.url)} alt={image.alt} loading="lazy" />
+								{/if}
 							{/each}
 						</div>{/if}
 				</div>

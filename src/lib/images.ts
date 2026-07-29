@@ -9,6 +9,7 @@ export type ImageAttachment = {
 	blob: Blob;
 	previewUrl: string;
 	alt: string;
+	contentWarning?: boolean;
 	aspectRatio: { width: number; height: number };
 };
 
@@ -19,6 +20,7 @@ export type PostEditImage =
 			sourceIndex: number;
 			previewUrl: string;
 			alt: string;
+			contentWarning?: boolean;
 			aspectRatio?: { width: number; height: number };
 	  }
 	| ({ kind: 'new' } & ImageAttachment);

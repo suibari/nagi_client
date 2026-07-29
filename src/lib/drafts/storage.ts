@@ -10,6 +10,7 @@ export type StoredDraftImage = {
 	id: string;
 	blob: Blob;
 	alt: string;
+	contentWarning?: boolean;
 	aspectRatio: { width: number; height: number };
 };
 export type StoredDraftLinkCard = {

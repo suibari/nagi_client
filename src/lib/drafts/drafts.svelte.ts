@@ -35,10 +35,11 @@ class Drafts {
 			text: snapshot.text,
 			mentions: snapshot.mentions,
 			channels: snapshot.channels,
-			images: snapshot.attachments.map(({ id, blob, alt, aspectRatio }) => ({
+			images: snapshot.attachments.map(({ id, blob, alt, contentWarning, aspectRatio }) => ({
 				id,
 				blob,
 				alt,
+				contentWarning,
 				aspectRatio,
 			})),
 			linkCards: snapshot.linkCards.map(({ uri, title, description, thumbnail }) => ({

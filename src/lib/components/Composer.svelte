@@ -33,6 +33,7 @@
 		tagsFromFacets,
 		usableAsCoverImage,
 	} from '$lib/standardsite/document';
+	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
 	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は kossori（目アイコン）で表現。
 	let {
 		onposted,
@@ -81,7 +82,13 @@
 				: undefined),
 	);
 	const articleCandidate = $derived(isArticleCandidate({ kossori, channel: effectiveChannel }));
-	const willCrosspost = $derived(crosspostReady && !effectiveChannel && !kossori && !standardSite);
+	const hasContentWarningSetting = $derived(
+		hasContentWarning(text) || attachments.some((image) => image.contentWarning),
+	);
+	const contentWarningValid = $derived(validContentWarningSyntax(text));
+	const willCrosspost = $derived(
+		crosspostReady && !effectiveChannel && !kossori && !standardSite && !hasContentWarningSetting,
+	);
 	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
 	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
 	const needsArticleTitle = $derived(standardSiteReady && standardSite && !headingTitle);
@@ -89,6 +96,9 @@
 	// こっそり／チャンネル投稿に切り替わったら黙って落とす（意図せぬ公開を作らない）。
 	$effect(() => {
 		if (!articleCandidate && standardSite) standardSite = false;
+	});
+	$effect(() => {
+		if (hasContentWarningSetting && standardSite) standardSite = false;
 	});
 
 	$effect(() => {
@@ -178,9 +188,12 @@
 	}
 
 	async function submit() {
-		if (empty || busy || !$session || articleTitleMissing) return;
+		if (empty || busy || !$session || articleTitleMissing || !contentWarningValid) return;
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
-		const article = standardSite ? { title: (headingTitle ?? articleTitle).trim() } : undefined;
+		const article =
+			standardSite && !hasContentWarningSetting
+				? { title: (headingTitle ?? articleTitle).trim() }
+				: undefined;
 		const draft = preparePostDraft(
 			text,
 			undefined,
@@ -210,7 +223,7 @@
 			// エラーではなく警告として伝える。
 			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの
 			// 分割スレッドなので、長文記事だと Bluesky 側が連投で埋まってしまう。
-			if (!article && getCrosspostEnabled() && (await hasCrosspostScope())) {
+			if (!draft.cwRestricted && !article && getCrosspostEnabled() && (await hasCrosspostScope())) {
 				try {
 					await crosspostToBluesky(draft, assets);
 				} catch (e) {
@@ -218,7 +231,7 @@
 				}
 			}
 			// standard.site も同じ扱い。document の rkey は Nagi 投稿の rkey を使い回す。
-			if (article) {
+			if (article && !draft.cwRestricted) {
 				try {
 					const uri = response.data.uri;
 					const cover = assets.images[0]?.image;
@@ -297,7 +310,7 @@
 					class="icon-action article-toggle"
 					class:active={standardSite}
 					type="button"
-					disabled={busy || !articleCandidate}
+					disabled={busy || !articleCandidate || hasContentWarningSetting}
 					aria-pressed={standardSite}
 					aria-label={m.standardSiteComposerLabel()}
 					title={m.standardSiteComposerLabel()}
@@ -335,7 +348,7 @@
 			><button
 				class="submit icon-action primary-icon"
 				type="button"
-				disabled={busy || empty || articleTitleMissing}
+				disabled={busy || empty || articleTitleMissing || !contentWarningValid}
 				aria-label={busy ? m.composerSubmitting() : m.composerSubmit()}
 				title={busy ? m.composerSubmitting() : m.composerSubmit()}
 				onclick={submit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button

@@ -32,7 +32,12 @@ export type ReactionView = {
 	viewerReactionUri?: string;
 };
 export type AspectRatio = { width: number; height: number };
-export type PostImage = { url: string; alt: string; aspectRatio?: AspectRatio };
+export type PostImage = {
+	url: string;
+	alt: string;
+	contentWarning?: boolean;
+	aspectRatio?: AspectRatio;
+};
 export type Facet = { index: { byteStart: number; byteEnd: number }; features: unknown[] };
 export type LinkCardView = { uri: string; title: string; description?: string; thumb?: string };
 export type StrongRef = { uri: string; cid: string };
@@ -58,6 +63,7 @@ export type PostView = {
 	author: ActorView;
 	text: string;
 	facets?: Facet[];
+	contentWarning?: { byteStart: number; byteEnd: number };
 	langs?: string[];
 	createdAt: string;
 	indexedAt: string;
@@ -68,6 +74,7 @@ export type PostView = {
 	reactions: ReactionView[];
 	isBot: boolean;
 	isAffirmation: boolean;
+	cwRestricted?: boolean;
 	/** このレコード自身のこっそり値。新規データではスレッドルートだけが持つ。 */
 	kossori?: boolean;
 	/** ルート投稿から解決した、スレッド全体の有効なこっそり状態。 */

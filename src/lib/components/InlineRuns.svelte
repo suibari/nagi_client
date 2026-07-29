@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { InlineRun } from '$lib/atproto/markdown';
-	let { runs }: { runs: InlineRun[] } = $props();
+	import ContentWarningMask from './ContentWarningMask.svelte';
+	let { runs, warningState }: { runs: InlineRun[]; warningState: { revealed: boolean } } = $props();
 </script>
 
 {#each runs as run}{#snippet body()}{#if run.href}<a
@@ -14,6 +15,9 @@
 				>{@render coded()}</s
 			>{:else}{@render coded()}{/if}{/snippet}{#snippet emphasized()}{#if run.marks.includes('italic')}<em
 				>{@render struck()}</em
-			>{:else}{@render struck()}{/if}{/snippet}{#if run.marks.includes('bold')}<strong
-			>{@render emphasized()}</strong
-		>{:else}{@render emphasized()}{/if}{/each}
+			>{:else}{@render struck()}{/if}{/snippet}{#snippet formatted()}{#if run.marks.includes('bold')}<strong
+				>{@render emphasized()}</strong
+			>{:else}{@render emphasized()}{/if}{/snippet}{#if run.contentWarning}<ContentWarningMask
+			bind:revealed={warningState.revealed}
+			showIcon={Boolean(run.contentWarningStart)}>{@render formatted()}</ContentWarningMask
+		>{:else}{@render formatted()}{/if}{/each}

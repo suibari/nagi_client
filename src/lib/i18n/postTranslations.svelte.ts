@@ -1,5 +1,6 @@
 import { getCachedTranslations, translatePosts } from '$lib/api/appview';
 import type { FeedItem, PostView } from '$lib/api/types';
+import { hasContentWarning } from '$lib/atproto/contentWarning';
 import {
 	languagePreferences,
 	normalizeSupportedLanguage,
@@ -28,6 +29,8 @@ export function isTranslationCandidate(post: TranslationPost, target: SupportedL
 		!post.optimisticState &&
 		!post.deleted &&
 		Boolean(post.text.trim()) &&
+		!post.contentWarning &&
+		!hasContentWarning(post.text) &&
 		Boolean(source) &&
 		source !== target
 	);

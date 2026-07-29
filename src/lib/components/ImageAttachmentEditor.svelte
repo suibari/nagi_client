@@ -10,6 +10,7 @@
 	} from '$lib/images';
 	import Icon from './shell/Icon.svelte';
 	import SortableImageList from './SortableImageList.svelte';
+	import ContentWarningMask from './ContentWarningMask.svelte';
 
 	let {
 		attachments = $bindable(),
@@ -93,6 +94,12 @@
 		attachments = attachments.map((item) => (item.id === id ? { ...item, alt: limited } : item));
 	}
 
+	function toggleContentWarning(id: string) {
+		attachments = attachments.map((item) =>
+			item.id === id ? { ...item, contentWarning: !item.contentWarning || undefined } : item,
+		);
+	}
+
 	onDestroy(() => tracked.forEach(releaseImage));
 </script>
 
@@ -120,7 +127,13 @@
 		<SortableImageList bind:items={attachments} {disabled}>
 			{#snippet children(attachment)}
 				<div class="attachment-preview">
-					<img src={attachment.previewUrl} alt="" />
+					{#if attachment.contentWarning}
+						<ContentWarningMask kind="image" interactive={false}
+							><img src={attachment.previewUrl} alt="" /></ContentWarningMask
+						>
+					{:else}
+						<img src={attachment.previewUrl} alt="" />
+					{/if}
 					<button
 						class="attachment-remove"
 						type="button"
@@ -129,6 +142,15 @@
 						onclick={() => remove(attachment.id)}><Icon name="close" size={16} /></button
 					>
 				</div>
+				<button
+					class="ghost attachment-cw"
+					class:active={attachment.contentWarning}
+					type="button"
+					aria-pressed={Boolean(attachment.contentWarning)}
+					{disabled}
+					onclick={() => toggleContentWarning(attachment.id)}
+					><Icon name="warning" size={16} /><span>{m.contentWarningImage()}</span></button
+				>
 				<label>
 					<span>{m.postImageAltLabel()}</span>
 					<input
