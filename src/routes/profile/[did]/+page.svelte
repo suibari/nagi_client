@@ -26,6 +26,7 @@
 	import { onMount } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
+	import { privateList } from '$lib/private-list/private-list.svelte';
 
 	// 日記・カードはポストではないので Feed には載らない。タブだけ同じ並びに足す。
 	type ProfileTab = ProfileFeedFilter | 'diary' | 'cards';
@@ -43,6 +44,7 @@
 	let tab = $state<ProfileTab>('posts');
 	let profile = $state<ProfileDetail>();
 	let muteError = $state('');
+	let homeListError = $state('');
 	async function toggleMute() {
 		if (!profile) return;
 		muteError = '';
@@ -55,6 +57,20 @@
 			});
 		} catch {
 			muteError = m.muteUpdateFailed();
+		}
+	}
+	async function toggleHomeList() {
+		if (!profile) return;
+		homeListError = '';
+		try {
+			await privateList.toggle({
+				did,
+				handle: profile.handle,
+				...(profile.displayName ? { displayName: profile.displayName } : {}),
+				...(profile.avatar ? { avatar: profile.avatar } : {}),
+			});
+		} catch {
+			homeListError = m.homeListUpdateFailed();
 		}
 	}
 	// per-(did, tab) feed cache so switching tabs back doesn't refetch
@@ -171,19 +187,39 @@
 			{#if $session?.did === did}
 				<a class="edit" href="/settings/profile">{m.profileEdit()}</a>
 			{:else if $session && profile}
-				<!-- ミュートしても、このプロフィールの投稿は今までどおり見える（自分で開いたので）。
-				     効くのはTL・検索・通知のほう。 -->
-				<button
-					type="button"
-					class="edit"
-					disabled={mutes.isPending(did)}
-					onclick={() => void toggleMute()}
-				>
-					{mutes.hasActor(did) ? m.unmuteUser() : m.muteUser()}
-				</button>
+				<div class="profile-actions">
+					{#if privateList.loaded && !profile.isBot}
+						<button
+							type="button"
+							class="edit"
+							disabled={privateList.isPending(did) ||
+								(!privateList.has(did) && privateList.members.length >= privateList.limit)}
+							onclick={() => void toggleHomeList()}
+						>
+							{privateList.has(did) ? m.homeListRemove() : m.homeListAdd()}
+						</button>
+					{/if}
+					<!-- ミュートしても、このプロフィールの投稿は今までどおり見える（自分で開いたので）。
+					     効くのはTL・検索・通知のほう。 -->
+					<button
+						type="button"
+						class="edit"
+						disabled={mutes.isPending(did)}
+						onclick={() => void toggleMute()}
+					>
+						{mutes.hasActor(did) ? m.unmuteUser() : m.muteUser()}
+					</button>
+				</div>
 			{/if}
 		</div>
 		{#if muteError}<p class="mute-error" role="alert">{muteError}</p>{/if}
+		{#if homeListError}<p class="mute-error" role="alert">{homeListError}</p>{/if}
+		{#if privateList.has(did) && mutes.hasActor(did)}
+			<p class="muted home-list-note">{m.homeListMutedNote()}</p>
+		{/if}
+		{#if privateList.loaded && !privateList.has(did) && privateList.members.length >= privateList.limit}
+			<p class="muted home-list-note">{m.homeListLimitReached()}</p>
+		{/if}
 		{#if profile?.description}<p class="description">{profile.description}</p>{/if}
 		<div class="profile-stats">
 			<span

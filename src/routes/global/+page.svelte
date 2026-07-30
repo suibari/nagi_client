@@ -1,6 +1,6 @@
 <script lang="ts">
 	import MainFeed from '$lib/components/MainFeed.svelte';
-	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import { oauthReady } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 </script>
 
@@ -9,7 +9,5 @@
 		<span class="spinner" aria-hidden="true"></span>
 	</div>
 {:else}
-	{#key $session?.did ?? 'guest'}
-		<MainFeed mode={$session ? 'home' : 'global'} />
-	{/key}
+	<MainFeed mode="global" />
 {/if}

@@ -42,8 +42,8 @@ export const navItems: NavItem[] = [
 	},
 	{ href: '/settings', label: m.navSettings, icon: 'settings' },
 ];
-/** 2つのフィードタブ（グローバル/全肯定）ではホームを active にする。ニュースは独立項目。 */
+/** 3つのフィードタブ（ホーム/グローバル/全肯定）ではフィードを active にする。 */
 export const isActive = (pathname: string, href: string) =>
 	href === '/'
-		? pathname === '/' || pathname.startsWith('/affirmation')
+		? pathname === '/' || pathname.startsWith('/global') || pathname.startsWith('/affirmation')
 		: pathname === href || pathname.startsWith(`${href}/`);

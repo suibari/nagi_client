@@ -18,6 +18,7 @@
 	import { refreshPushState } from '$lib/notifications/push.svelte';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
+	import { privateList } from '$lib/private-list/private-list.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -51,6 +52,7 @@
 	const wideLayout = $derived(page.url.pathname === '/about');
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
+	let privateListDid: string | undefined;
 	let pushSyncedDid: string | undefined;
 	beforeNavigate(() => postTranslations.cancelPending());
 	$effect(() => {
@@ -66,6 +68,15 @@
 		mutesDid = did;
 		if (did) void mutes.load();
 		else mutes.clear();
+	});
+	// ホームリストは本人だけの非公開状態。サインアウト時は同じtickで破棄し、
+	// 次の利用者へ前セッションの一覧を見せない。
+	$effect(() => {
+		const did = $session?.did;
+		if (!$oauthReady || privateListDid === did) return;
+		privateListDid = did;
+		if (did) void privateList.load();
+		else privateList.clear();
 	});
 	// プッシュ購読の状態同期。ブラウザ側の PushSubscription と AppView 側の購読行という
 	// 2つの真実を突き合わせる処理なので、特定のページではなくセッション確立に紐付ける。

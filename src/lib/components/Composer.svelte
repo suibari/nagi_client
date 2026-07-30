@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
 	import { crosspostToBluesky } from '$lib/crosspost/bluesky';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
@@ -38,9 +39,11 @@
 	let {
 		onposted,
 		channel,
+		defaultKossori = false,
 	}: {
 		onposted: () => void | Promise<void>;
 		channel?: { uri: string; cid: string; name?: string };
+		defaultKossori?: boolean;
 	} = $props();
 	let text = $state('');
 	let busy = $state(false);
@@ -50,7 +53,8 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let channels = $state<ChannelSelection[]>([]);
-	let kossori = $state(false);
+	// defaultKossori はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
+	let kossori = $state(untrack(() => defaultKossori));
 	let dismissedUrls = $state<string[]>([]);
 	let draftListOpen = $state(false);
 	let draftError = $state('');
@@ -86,8 +90,17 @@
 		hasContentWarning(text) || attachments.some((image) => image.contentWarning),
 	);
 	const contentWarningValid = $derived(validContentWarningSyntax(text));
-	const willCrosspost = $derived(
+	const crosspostEligible = $derived(
 		crosspostReady && !effectiveChannel && !kossori && !standardSite && !hasContentWarningSetting,
+	);
+	const crosspostDisabledReason = $derived(
+		kossori
+			? m.crosspostDisabledKossori()
+			: standardSite
+				? m.crosspostDisabledArticle()
+				: hasContentWarningSetting
+					? m.crosspostDisabledContentWarning()
+					: m.composerSubmitBluesky(),
 	);
 	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
 	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
@@ -128,7 +141,7 @@
 		mentions = [];
 		channels = [];
 		dismissedUrls = [];
-		kossori = false;
+		kossori = defaultKossori;
 		standardSite = false;
 		articleTitle = '';
 	}
@@ -187,7 +200,7 @@
 		await restoreDraft(id);
 	}
 
-	async function submit() {
+	async function submit(target: 'nagi' | 'nagi-and-bluesky' = 'nagi') {
 		if (empty || busy || !$session || articleTitleMissing || !contentWarningValid) return;
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
 		const article =
@@ -223,12 +236,21 @@
 			// エラーではなく警告として伝える。
 			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの
 			// 分割スレッドなので、長文記事だと Bluesky 側が連投で埋まってしまう。
-			if (!draft.cwRestricted && !article && getCrosspostEnabled() && (await hasCrosspostScope())) {
-				try {
-					await crosspostToBluesky(draft, assets);
-				} catch (e) {
-					warning = e instanceof Error ? e.message : m.crosspostFailed();
-				}
+			if (
+				target === 'nagi-and-bluesky' &&
+				!draft.kossori &&
+				!draft.channel &&
+				!draft.cwRestricted &&
+				!article
+			) {
+				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
+					warning = m.crosspostPermissionMissing();
+				else
+					try {
+						await crosspostToBluesky(draft, assets);
+					} catch (e) {
+						warning = e instanceof Error ? e.message : m.crosspostFailed();
+					}
 			}
 			// standard.site も同じ扱い。document の rkey は Nagi 投稿の rkey を使い回す。
 			if (article && !draft.cwRestricted) {
@@ -273,7 +295,7 @@
 			placeholder={m.composerPlaceholder()}
 			ariaLabel={m.composerAria()}
 			disabled={busy}
-			onsubmit={submit}
+			onsubmit={() => submit('nagi')}
 			onpaste={(event) => imageEditor?.handlePaste(event)}
 			tools={editorTools}
 		/>
@@ -297,11 +319,6 @@
 		<div class="composer-foot">
 			<div class="composer-status">
 				<span>{graphemes} / 3000</span>
-				{#if willCrosspost}
-					<span class="composer-crosspost" title={m.crosspostComposerStatus()}
-						>{m.crosspostComposerStatus()}</span
-					>
-				{/if}
 			</div>
 			<!-- チャンネル投稿は記事にしないので、CH の投稿欄ではボタンごと出さない。
 			     こっそりに切り替えたときは押せなくなるだけにして、位置は動かさない。 -->
@@ -345,14 +362,37 @@
 				aria-label={m.draftSave()}
 				title={m.draftSave()}
 				onclick={saveDraft}><Icon name="draft" size={18} /></button
-			><button
-				class="submit icon-action primary-icon"
-				type="button"
-				disabled={busy || empty || articleTitleMissing || !contentWarningValid}
-				aria-label={busy ? m.composerSubmitting() : m.composerSubmit()}
-				title={busy ? m.composerSubmitting() : m.composerSubmit()}
-				onclick={submit}><Icon name={busy ? 'refresh' : 'send'} size={18} /></button
 			>
+			<div class="composer-submit-actions">
+				{#if crosspostReady && !effectiveChannel}
+					<button
+						class="submit-secondary"
+						type="button"
+						disabled={busy ||
+							empty ||
+							articleTitleMissing ||
+							!contentWarningValid ||
+							!crosspostEligible}
+						aria-label={m.composerSubmitBluesky()}
+						title={busy ? m.composerSubmitting() : crosspostDisabledReason}
+						onclick={() => submit('nagi-and-bluesky')}
+					>
+						<Icon name="bluesky" size={17} />
+						<span>{m.composerSubmitBlueskyShort()}</span>
+					</button>
+				{/if}
+				<button
+					class="submit-primary"
+					type="button"
+					disabled={busy || empty || articleTitleMissing || !contentWarningValid}
+					aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
+					title={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
+					onclick={() => submit('nagi')}
+				>
+					<Icon name={busy ? 'refresh' : 'send'} size={18} />
+					<span>{busy ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
+				</button>
+			</div>
 		</div>
 		{#if error}<p class="error">{error}</p>{/if}{#if draftError}<p class="error">
 				{draftError}

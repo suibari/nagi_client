@@ -91,6 +91,10 @@
 		<strong>Mute settings.</strong> Visible only to you. We keep these on our servers rather than in your
 		PDS because records there are readable by anyone, which would make public who you have muted.
 	</li>
+	<li>
+		<strong>Your Home list.</strong> Visible only to you. We keep it on our servers rather than in your
+		PDS so the people you add are not made public.
+	</li>
 	<li><strong>Translation cache and card collection records.</strong></li>
 </ul>
 <p>
@@ -264,6 +268,7 @@
 		than the Service can fetch and display them.
 	</li>
 	<li>Mute settings are visible only to you. The person you muted is not notified.</li>
+	<li>Your Home list is visible only to you. People you add are not notified.</li>
 </ul>
 <div class="callout warn">
 	<p>
@@ -290,8 +295,9 @@
 	<li>Semantic vectors used for search</li>
 	<li>AI-generated analysis, diaries, and card comments</li>
 	<li>Your conversation history with Bot-tan</li>
-	<li>Notifications, push notification destinations, and mute settings</li>
+	<li>Notifications, push notification destinations, mute settings, and your Home list</li>
 </ul>
+<p>We also delete entries where another user had added you to their Home.</p>
 
 <h3>What is not deleted</h3>
 <ul>

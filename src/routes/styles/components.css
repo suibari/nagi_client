@@ -143,17 +143,61 @@
 .composer-status > span:first-child {
 	flex: 0 0 auto;
 }
-.composer-crosspost {
-	flex: 0 1 auto;
-	overflow: hidden;
-	padding: 2px 7px;
+.composer-submit-actions {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+.composer-submit-actions button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	min-height: 36px;
 	border-radius: var(--radius-pill);
-	background: var(--accent-softer);
-	color: var(--text-muted);
-	font-size: 10px;
+	font-size: 12px;
 	font-weight: 800;
-	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+.submit-primary {
+	padding: 7px 14px;
+	border: 1px solid var(--accent);
+	background: var(--accent);
+	color: var(--text-on-accent);
+}
+.submit-secondary {
+	padding: 7px 10px;
+	border: 1px solid var(--line-strong);
+	background: var(--bg-raised);
+	color: var(--text-muted);
+}
+.composer-submit-actions button:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
+}
+@media (hover: hover) and (pointer: fine) {
+	.submit-primary:not(:disabled):hover {
+		background: var(--accent-strong);
+	}
+	.submit-secondary:not(:disabled):hover {
+		border-color: var(--accent-border);
+		color: var(--accent-strong);
+	}
+}
+.composer-submit-actions button:not(:disabled):active {
+	transform: translateY(1px);
+}
+@media (max-width: 420px) {
+	.composer-foot {
+		flex-wrap: wrap;
+		gap: 7px 4px;
+	}
+	.composer-status {
+		flex-basis: 100%;
+	}
+	.composer-submit-actions {
+		margin-inline-start: auto;
+	}
 }
 /* standard.site の投稿ごとオプトイン。条件を満たす長文のときだけ現れる。 */
 .composer-article {
@@ -2111,6 +2155,16 @@
 	font-size: 13px;
 	font-weight: 700;
 }
+.profile-header .profile-actions {
+	display: flex;
+	flex: 0 0 auto;
+	align-self: flex-start;
+	gap: 7px;
+	margin-left: auto;
+}
+.profile-header .profile-actions .edit {
+	margin-left: 0;
+}
 /* .edit は自分のときの編集リンクと、他人のときのミュートボタンで共用する。
    button 既定の背景とカーソルだけ揃える。 */
 .profile-header button.edit {
@@ -2125,6 +2179,10 @@
 	margin: 0;
 	font-size: 13px;
 	color: var(--danger);
+}
+.profile-header .home-list-note {
+	margin: 0;
+	font-size: 12px;
 }
 .profile-header .description {
 	margin: 0;
@@ -2486,10 +2544,15 @@
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);
 	}
-	.profile-header .edit {
+	.profile-header .edit,
+	.profile-header .profile-actions {
 		grid-column: 1 / -1;
 		justify-self: end;
 		margin-left: 0;
+	}
+	.profile-header .profile-actions {
+		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
 }
 .theme-settings {

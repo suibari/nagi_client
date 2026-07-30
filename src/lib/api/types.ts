@@ -122,6 +122,8 @@ export type FeedItem = PostView & {
 };
 export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean; botActor?: ActorView };
 export type TimelinePage = Page<FeedItem>;
+/** 本人だけが取得できる、ホームに表示するユーザーの非公開一覧。 */
+export type PrivateListView = { members: ActorView[]; limit: 200 };
 export type NewsPage = Page<NewsView>;
 export type ProfileFeedFilter = 'posts' | 'replies' | 'media' | 'reactions';
 export type ProfileDetail = ActorView & {

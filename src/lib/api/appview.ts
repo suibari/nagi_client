@@ -18,6 +18,7 @@ import type {
 	ProfileFeedFilter,
 	ProfilePage,
 	ProfileReactionPage,
+	PrivateListView,
 	SearchActorsResult,
 	ThreadView,
 	TimelinePage,
@@ -126,6 +127,13 @@ export const getTimeline = (cursor?: string) =>
 	call<TimelinePage>(
 		'com.suibari.nagi.getTimeline',
 		`/xrpc/com.suibari.nagi.getTimeline?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
+	);
+export const getHomeTimeline = (cursor?: string) =>
+	call<TimelinePage>(
+		'com.suibari.nagi.getHomeTimeline',
+		`/xrpc/com.suibari.nagi.getHomeTimeline?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
+		{},
+		'required',
 	);
 export const getAffirmation = (cursor?: string) =>
 	call<TimelinePage>(
@@ -343,6 +351,21 @@ export const setMute = (subjectType: MuteSubjectType, subject: string, muted: bo
 		'com.suibari.nagi.setMute',
 		'/xrpc/com.suibari.nagi.setMute',
 		{ method: 'POST', body: JSON.stringify({ subjectType, subject, muted }) },
+		'required',
+	);
+// ホームリストは非公開情報。公開フォールバックや viewer DID パラメータを追加しないこと。
+export const getPrivateList = () =>
+	call<PrivateListView>(
+		'com.suibari.nagi.getPrivateList',
+		'/xrpc/com.suibari.nagi.getPrivateList',
+		{},
+		'required',
+	);
+export const setPrivateListMember = (memberDid: string, included: boolean) =>
+	call<{ memberDid: string; included: boolean }>(
+		'com.suibari.nagi.setPrivateListMember',
+		'/xrpc/com.suibari.nagi.setPrivateListMember',
+		{ method: 'POST', body: JSON.stringify({ memberDid, included }) },
 		'required',
 	);
 // カードの所持状況は公開情報なので、他人のプロフィールでも見える。ただし自分のときだけ

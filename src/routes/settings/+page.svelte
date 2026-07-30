@@ -68,6 +68,12 @@
 			description={m.settingsMuteDescription()}
 		/>
 		<SettingsCategoryCard
+			href="/settings/home-list"
+			icon="home"
+			title={m.settingsHomeListTitle()}
+			description={m.settingsHomeListDescription()}
+		/>
+		<SettingsCategoryCard
 			href="/settings/app-links"
 			icon="apps"
 			title={m.settingsAppLinksTitle()}

@@ -21,6 +21,7 @@ export const ja = {
 
 	// nav
 	navFeed: 'フィード',
+	navHome: 'ホーム',
 	navGlobal: 'グローバル',
 	navAffirmation: '全肯定',
 	navNews: 'ニュース',
@@ -71,7 +72,7 @@ export const ja = {
 	aboutStep2Title: '書く',
 	aboutStep2Body: '3000文字まで、Markdownで。画像も添えられます。',
 	aboutStep3Title: '受け止められる',
-	aboutStep3Body: 'botたんが返信し、みんなのタイムラインに流れます。',
+	aboutStep3Body: 'botたんが返信し、ホームなら自分のペースで言葉を残せます。',
 
 	// about page — Nagi ならではの機能一覧。カード化するので本文は1行に抑える。
 	aboutFeaturesHeading: 'ほかにもできること',
@@ -140,6 +141,13 @@ export const ja = {
 	composerPlaceholder: 'いま、どんな気持ち？',
 	composerAria: '投稿内容',
 	composerSubmit: '投稿する',
+	composerSubmitNagi: 'Nagiに投稿する',
+	composerSubmitNagiShort: 'Nagiへ',
+	composerSubmitBluesky: 'NagiとBlueskyに投稿する',
+	composerSubmitBlueskyShort: 'Blueskyにも',
+	crosspostDisabledKossori: 'こっそりを解除するとBlueskyにも投稿できます',
+	crosspostDisabledArticle: 'ブログとして公開する投稿はBlueskyへ投稿できません',
+	crosspostDisabledContentWarning: 'コンテンツ警告のある投稿はBlueskyへ投稿できません',
 	composerSubmitting: '送信中…',
 	composerTabsAria: '入力とプレビューの切り替え',
 	composerTabWrite: '書く',
@@ -353,6 +361,9 @@ export const ja = {
 	welcomeAboutLink: 'Nagiのことを知る',
 	feedWaiting: '波が届くのを待っています…',
 	feedEmpty: 'まだ静かな海です。最初の言葉を待っています。',
+	homeFeedEmpty: 'ホームはまだ静かです。投稿するか、ホームで見る人を追加してみましょう。',
+	homeFeedAuthRequired: 'ホームを表示するための権限を更新してください。',
+	homeFeedRefreshPermissions: 'ログインし直す',
 
 	// affirmation
 	affirmationEmpty: 'botたんがとくに強く肯定した投稿が、ここに集まります。',
@@ -463,6 +474,8 @@ export const ja = {
 	// mute (ユーザー/チャンネルのミュート)
 	settingsMuteTitle: 'ミュート',
 	settingsMuteDescription: '表示したくないユーザーとチャンネル',
+	settingsHomeListTitle: 'ホームで見る人',
+	settingsHomeListDescription: 'ホームに表示する人の非公開リスト',
 	muteUser: 'ミュートする',
 	unmuteUser: 'ミュート解除',
 	muteChannel: 'このチャンネルをミュート',
@@ -483,6 +496,16 @@ export const ja = {
 	muteSignInRequired: 'ミュートを設定するにはログインしてください。',
 	muteLoadFailed: 'ミュート一覧を取得できませんでした。',
 	muteUpdateFailed: 'ミュートを更新できませんでした。もう一度お試しください。',
+	homeListAdd: 'ホームに追加',
+	homeListRemove: 'ホームから外す',
+	homeListUpdateFailed: 'ホームのリストを更新できませんでした。もう一度お試しください。',
+	homeListMutedNote: 'この人はミュート中のため、追加してもホームには表示されません。',
+	homeListHelp: 'プロフィールから追加した人の公開投稿が、あなたのホームに表示されます。',
+	homeListPrivateNote: 'この一覧や追加したことは、相手を含むほかのユーザーには公開されません。',
+	homeListCount: (p: { count: number; limit: number }) => `${p.count} / ${p.limit}人`,
+	homeListEmpty: 'ホームに追加した人はいません。',
+	homeListSignInRequired: 'ホームのリストを見るにはログインしてください。',
+	homeListLimitReached: '追加できる人数の上限に達しています。',
 	signOutDescription: 'この端末からアカウントをサインアウト',
 	settingsNotificationsTitle: '通知',
 	settingsNotificationsDescription: 'デバイスへのプッシュ通知',
@@ -509,22 +532,22 @@ export const ja = {
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
 	settingsCrosspostTitle: 'Blueskyクロスポスト',
-	settingsCrosspostDescription: 'Nagiへの投稿をBlueskyにも投稿',
+	settingsCrosspostDescription: '投稿欄のBlueskyボタンを有効化',
 	crosspostLegend: 'Blueskyクロスポスト',
 	crosspostHelp:
-		'Nagiのタイムラインへの投稿を、Blueskyにも同時に投稿します。スレッドへの返信は対象外です。',
+		'投稿欄に「Blueskyにも」ボタンを表示し、選んだ投稿だけをBlueskyへ同時投稿できます。スレッドへの返信は対象外です。',
 	crosspostSplitNote:
 		'300文字を超える投稿は、Blueskyでは複数の投稿に分割され、スレッドとして繋がります。',
 	crosspostDeviceNote: 'この設定は、この端末でのみ有効です。',
 	crosspostBotNote: 'クロスポストされた投稿には、Bluesky側のBotたんは返信しません。',
-	crosspostEnableLabel: 'Blueskyにもクロスポストする',
-	crosspostComposerStatus: 'Blueskyにも投稿されます',
+	crosspostEnableLabel: '「Blueskyにも」ボタンを使う',
 	crosspostReauthNote:
 		'クロスポストにはBlueskyへの投稿権限が必要です。下のボタンから追加の権限を付与してください（Blueskyの認可画面が開きます）。',
 	crosspostReauthSubmit: '追加の権限を付与する',
 	crosspostReauthPending: '移動しています…',
 	crosspostSignInRequired: 'クロスポストを設定するにはログインしてください。',
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
+	crosspostPermissionMissing: 'Blueskyへの投稿権限を確認できませんでした',
 	crosspostWarning: (p: { reason: string }) =>
 		`Nagiには投稿しましたが、Blueskyへのクロスポストに失敗しました: ${p.reason}`,
 	// standard.site（AT Protocol 共通の長文記事 lexicon）へのオプトイン公開。
