@@ -1,10 +1,13 @@
 <script lang="ts">
 	import type { PostView } from '$lib/api/types';
+	import { m } from '$lib/i18n/i18n.svelte';
 	import TranslateToggle from './TranslateToggle.svelte';
 	import ImageGallery from './ImageGallery.svelte';
 	import LinkCard from './LinkCard.svelte';
 	import QuoteFrame from './QuoteFrame.svelte';
 	let { post }: { post: PostView } = $props();
+	let expanded = $state(false);
+	let overflowing = $state(false);
 	let threadHref = $derived.by(() => {
 		const [did, , rkey] = post.uri.slice('at://'.length).split('/');
 		return `/thread/${did}/${rkey}`;
@@ -23,7 +26,15 @@
 		facets={post.facets}
 		langs={post.langs}
 		deleted={post.deleted}
+		collapsed={!expanded}
+		onoverflowchange={(value) => (overflowing = value)}
 	/>
+	{#if overflowing || expanded}<button
+			class="read"
+			type="button"
+			aria-expanded={expanded}
+			onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
+		>{/if}
 	{#if post.images?.length}<ImageGallery images={post.images} />{/if}
 	{#if post.linkCards?.length}<div class="link-cards">
 			{#each post.linkCards as card}<LinkCard {card} />{/each}
