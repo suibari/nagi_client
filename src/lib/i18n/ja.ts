@@ -309,7 +309,8 @@ export const ja = {
 	emojiSettingsDescription: '自分の絵文字を登録して、みんなで使う',
 	emojiSettingsNote:
 		'登録した絵文字はあなたのPDSにBluemoji（blue.moji.collection.item）として保存され、Nagiのみんながリアクションに使えます。',
-	emojiUploadNote: 'PNG・WebP・GIF・APNG。長辺128pxに縮小します（GIF・APNGは128KBまで）。',
+	emojiUploadNote:
+		'PNG・WebP・GIF・APNG・Lottie。静止画は長辺128pxに縮小します。アニメーションは規格上限内のものを登録できます。',
 	emojiNameLabel: '絵文字名（半角英数字、_と-）',
 	emojiAltLabel: '説明（任意）',
 	emojiUpload: '登録する',
@@ -321,11 +322,25 @@ export const ja = {
 	emojiNameTaken: 'この名前の絵文字はすでに登録されています',
 	emojiTypeError: 'PNG、WebP、GIF、APNGの画像を選択してください',
 	emojiInputSizeError: '画像のサイズが大きすぎます',
-	emojiAnimatedSizeError: 'アニメーション画像は128KB以下にしてください',
+	emojiAnimatedSizeError: 'アニメーション画像がBluemoji規格の上限を超えています',
 	emojiCompressError: '画像を変換できませんでした',
 	emojiUploadFailed: '絵文字を登録できませんでした',
 	emojiDeleteFailed: '絵文字を削除できませんでした',
 	emojiLoadFailed: '絵文字を読み込めませんでした',
+	emojiDeleteConfirm: (p: { emoji: string }) => `${p.emoji} をPDSから削除しますか？`,
+	emojiBatchTitle: 'まとめて登録',
+	emojiBatchNote:
+		'フォルダはサブフォルダ内も読み込みます。ファイル名が絵文字名になります。登録前に名前を確認・修正できます。',
+	emojiSelectFolder: 'フォルダを選ぶ',
+	emojiSelectFiles: '複数ファイルを選ぶ',
+	emojiBatchIgnored: (p: { count: number }) => `未対応の${p.count}ファイルを除外しました`,
+	emojiBatchDuplicate: '選択したファイル内で名前が重複しています',
+	emojiBatchUpload: '登録できる絵文字をまとめて登録',
+	emojiBatchUploaded: (p: { count: number }) => `${p.count}個の絵文字を登録しました`,
+	emojiBatchStateReady: '登録できます',
+	emojiBatchStateProcessing: '登録中',
+	emojiBatchStateSuccess: '登録しました',
+	emojiBatchStateFailed: '登録できませんでした',
 
 	// home
 	heroEyebrow: 'AT PROTOCOLでつながる、全肯定SNS',

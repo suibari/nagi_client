@@ -7,7 +7,7 @@
 	import emojiDataUrlEn from 'emoji-picker-element-data/en/emojibase/data.json?url';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { searchEmojis } from '$lib/api/appview';
-	import { displayEmojiName, resolveEmojiUrl } from '$lib/atproto/bluemoji';
+	import { displayEmojiName } from '$lib/atproto/bluemoji';
 	import {
 		loadUnicodeEmojiIndex,
 		searchUnicodeEmojis,
@@ -17,6 +17,8 @@
 	import { reactionChoiceKey, type ReactionChoice } from '$lib/emoji/reactionUsage';
 	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
 	import SortableEmojiGrid from './SortableEmojiGrid.svelte';
+	import BluemojiMedia from './BluemojiMedia.svelte';
+	import InfiniteScroll from './InfiniteScroll.svelte';
 
 	let {
 		anchor,
@@ -50,6 +52,10 @@
 	let customEmojis = $state<EmojiView[]>([]);
 	let customLoading = $state(false);
 	let customError = $state(false);
+	let customCursor = $state<string>();
+	let customLoadingMore = $state(false);
+	let customMoreError = $state(false);
+	let customRequestId = 0;
 	let unicodeInput = $state<HTMLInputElement>();
 	let unicodeQuery = $state('');
 	let unicodeIndex = $state<UnicodeEmoji[]>([]);
@@ -95,19 +101,24 @@
 	$effect(() => {
 		if (tab !== 'custom') return;
 		const q = query.trim();
+		const requestId = ++customRequestId;
 		let cancelled = false;
 		customLoading = true;
+		customLoadingMore = false;
+		customCursor = undefined;
+		customMoreError = false;
 		const timer = setTimeout(async () => {
 			try {
 				const result = await searchEmojis({ q: q || undefined, limit: 60 });
-				if (!cancelled) {
+				if (!cancelled && requestId === customRequestId) {
 					customEmojis = result.emojis;
+					customCursor = result.cursor;
 					customError = false;
 				}
 			} catch {
-				if (!cancelled) customError = true;
+				if (!cancelled && requestId === customRequestId) customError = true;
 			} finally {
-				if (!cancelled) customLoading = false;
+				if (!cancelled && requestId === customRequestId) customLoading = false;
 			}
 		}, SEARCH_DEBOUNCE_MS);
 		return () => {
@@ -115,6 +126,26 @@
 			clearTimeout(timer);
 		};
 	});
+
+	async function loadMoreCustom() {
+		const cursor = customCursor;
+		if (!cursor || customLoadingMore) return;
+		const requestId = customRequestId;
+		customLoadingMore = true;
+		customMoreError = false;
+		try {
+			const q = query.trim();
+			const result = await searchEmojis({ q: q || undefined, limit: 60, cursor });
+			if (requestId !== customRequestId) return;
+			const known = new Set(customEmojis.map((emoji) => emoji.uri));
+			customEmojis = [...customEmojis, ...result.emojis.filter((emoji) => !known.has(emoji.uri))];
+			customCursor = result.cursor;
+		} catch {
+			if (requestId === customRequestId) customMoreError = true;
+		} finally {
+			if (requestId === customRequestId) customLoadingMore = false;
+		}
+	}
 
 	onMount(() => {
 		let disposed = false;
@@ -239,11 +270,9 @@
 				>
 					{#snippet children(item)}
 						{#if item.choice.kind === 'custom'}
-							<img
-								src={resolveEmojiUrl(item.choice.emoji.url)}
-								alt={item.choice.emoji.alt ?? displayEmojiName(item.choice.emoji.name)}
-								title={displayEmojiName(item.choice.emoji.name)}
-								onerror={() =>
+							<BluemojiMedia
+								emoji={item.choice.emoji}
+								onunavailable={() =>
 									item.choice.kind === 'custom' && oncustomunavailable?.(item.choice.emoji.uri)}
 							/>
 						{:else}
@@ -317,9 +346,15 @@
 							aria-label={m.reactWithAria({ emoji: displayEmojiName(emoji.name) })}
 							onclick={() => select(emoji)}
 						>
-							<img src={resolveEmojiUrl(emoji.url)} alt={emoji.alt ?? emoji.name} loading="lazy" />
+							<BluemojiMedia {emoji} />
 						</button>
 					{/each}
+					<InfiniteScroll
+						hasMore={Boolean(customCursor)}
+						loading={customLoadingMore}
+						error={customMoreError ? m.emojiSearchFailed() : ''}
+						onload={loadMoreCustom}
+					/>
 				</div>
 			{/if}
 			<a class="emoji-custom-add" href={addCustomHref}>{m.emojiAddCustom()}</a>

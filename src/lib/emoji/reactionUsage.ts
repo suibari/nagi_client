@@ -1,4 +1,4 @@
-import { searchEmojis } from '$lib/api/appview';
+import { ApiRequestError, getEmoji, searchEmojis } from '$lib/api/appview';
 import type { EmojiView } from '$lib/api/types';
 
 const USAGE_KEY = 'nagi:reaction-usage:v2';
@@ -56,12 +56,17 @@ export const validChoice = (value: unknown): value is ReactionChoice => {
 	if (item.kind === 'unicode') return typeof item.emoji === 'string' && item.emoji.length > 0;
 	if (item.kind !== 'custom' || !item.emoji || typeof item.emoji !== 'object') return false;
 	const emoji = item.emoji as Partial<EmojiView>;
+	// v1 保存済みのお気に入りは mediaType が無い。旧APIが返した値はすべて画像だったため移行する。
+	if (emoji.mediaType === undefined && typeof emoji.url === 'string')
+		emoji.mediaType = 'image/unknown';
 	return (
 		typeof emoji.uri === 'string' &&
 		typeof emoji.cid === 'string' &&
 		typeof emoji.did === 'string' &&
 		typeof emoji.name === 'string' &&
-		typeof emoji.url === 'string'
+		typeof emoji.url === 'string' &&
+		typeof emoji.mediaType === 'string' &&
+		(emoji.mediaType.startsWith('image/') || emoji.mediaType === 'application/lottie+zip')
 	);
 };
 
@@ -83,6 +88,57 @@ const saveUsage = (usage: ReactionUsage[]) => {
 		// Reactions remain available when storage is disabled.
 	}
 };
+
+type ResolvedStoredEmoji =
+	{ state: 'valid'; emoji: EmojiView } | { state: 'invalid' } | { state: 'unknown' };
+const storedEmojiResolutions = new Map<string, Promise<ResolvedStoredEmoji>>();
+
+const resolveStoredEmoji = (emoji: EmojiView): Promise<ResolvedStoredEmoji> => {
+	const cached = storedEmojiResolutions.get(emoji.uri);
+	if (cached) return cached;
+	const pending = getEmoji(emoji.uri)
+		.then(({ emoji: current }) => ({ state: 'valid' as const, emoji: current }))
+		.catch((cause) => {
+			if (cause instanceof ApiRequestError && cause.status === 404)
+				return { state: 'invalid' as const };
+			// 一時的な通信・サーバー障害ではローカル履歴を消さない。次回表示時に再試行する。
+			storedEmojiResolutions.delete(emoji.uri);
+			return { state: 'unknown' as const };
+		});
+	storedEmojiResolutions.set(emoji.uri, pending);
+	return pending;
+};
+
+/** 保存済みカスタム絵文字をAppViewで再解決し、規格外・削除済みだけを取り除く。 */
+export async function refreshReactionChoices(choices: ReactionChoice[]): Promise<ReactionChoice[]> {
+	return (
+		await Promise.all(
+			choices.map(async (choice) => {
+				if (choice.kind === 'unicode') return choice;
+				const resolved = await resolveStoredEmoji(choice.emoji);
+				if (resolved.state === 'invalid') return undefined;
+				return resolved.state === 'valid'
+					? ({ kind: 'custom', emoji: resolved.emoji } satisfies ReactionChoice)
+					: choice;
+			}),
+		)
+	).filter((choice): choice is ReactionChoice => choice !== undefined);
+}
+
+export async function refreshReactionUsage(usage: ReactionUsage[]): Promise<ReactionUsage[]> {
+	const refreshed = (
+		await Promise.all(
+			usage.map(async (item) => {
+				if (item.kind === 'unicode') return item;
+				const resolved = await resolveStoredEmoji(item.emoji);
+				if (resolved.state === 'invalid') return undefined;
+				return resolved.state === 'valid' ? { ...item, emoji: resolved.emoji } : item;
+			}),
+		)
+	).filter((item): item is ReactionUsage => item !== undefined);
+	saveUsage(refreshed);
+	return refreshed;
+}
 
 export function loadReactionUsage(): ReactionUsage[] {
 	try {

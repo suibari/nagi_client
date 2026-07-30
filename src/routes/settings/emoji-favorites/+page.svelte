@@ -2,13 +2,14 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { displayEmojiName, resolveEmojiUrl } from '$lib/atproto/bluemoji';
+	import { displayEmojiName } from '$lib/atproto/bluemoji';
 	import { addFavorite, favoritesFull, loadFavorites, saveFavorites } from '$lib/emoji/favorites';
 	import { reactionChoiceKey, type ReactionChoice } from '$lib/emoji/reactionUsage';
 	import type { EmojiView } from '$lib/api/types';
 	import EmojiPicker from '$lib/components/EmojiPicker.svelte';
 	import SortableEmojiGrid from '$lib/components/SortableEmojiGrid.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
+	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
 
 	type FavoriteItem = { id: string; choice: ReactionChoice };
 
@@ -81,12 +82,7 @@
 			<SortableEmojiGrid bind:items onreorder={persist}>
 				{#snippet children(item)}
 					{#if item.choice.kind === 'custom'}
-						<img
-							src={resolveEmojiUrl(item.choice.emoji.url)}
-							alt={item.choice.emoji.alt ?? labelOf(item.choice)}
-							title={labelOf(item.choice)}
-							loading="lazy"
-						/>
+						<BluemojiMedia emoji={item.choice.emoji} />
 					{:else}
 						{item.choice.emoji}
 					{/if}

@@ -23,6 +23,7 @@ export default defineConfig(({ command, mode }) => {
 						proxy: {
 							'/xrpc': { target: appViewTarget, changeOrigin: true },
 							'/api/blob': { target: appViewTarget, changeOrigin: true },
+							'/api/emoji-asset': { target: appViewTarget, changeOrigin: true },
 						},
 					}
 				: undefined,

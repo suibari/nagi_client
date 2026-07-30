@@ -2,7 +2,7 @@
 	import type { ActorView, EmojiView, ReactionView } from '$lib/api/types';
 	import { session } from '$lib/oauth/session.svelte';
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
-	import { displayEmojiName, resolveEmojiUrl } from '$lib/atproto/bluemoji';
+	import { displayEmojiName } from '$lib/atproto/bluemoji';
 	import { myProfile } from '$lib/profile/me.svelte';
 	import EmojiPicker from './EmojiPicker.svelte';
 	import Avatar from './Avatar.svelte';
@@ -16,11 +16,13 @@
 		reactionChoiceKey,
 		recentReactionChoices,
 		recordReactionUsage,
+		refreshReactionUsage,
 		SAFE_UNICODE_REACTIONS,
 		type ReactionChoice,
 		type ReactionUsage,
 	} from '$lib/emoji/reactionUsage';
-	import { loadFavorites } from '$lib/emoji/favorites';
+	import { loadFavorites, refreshFavorites } from '$lib/emoji/favorites';
+	import BluemojiMedia from './BluemojiMedia.svelte';
 	import {
 		loadUnicodeEmojiIndex,
 		searchUnicodeEmojis,
@@ -101,28 +103,31 @@
 		if (!pickerOpen || fullPickerOpen) return;
 		const generation = ++pickerGeneration;
 		const usageSnapshot = untrack(loadReactionUsage);
-		usage = usageSnapshot;
 		const failedSnapshot = untrack(() => failedCustomUris);
 		const favoriteSnapshot = untrack(loadFavorites);
-		const favoriteKeys = new Set(favoriteSnapshot.map(reactionChoiceKey));
-		// 代入した $state をこのエフェクト内で読み返すと依存に載って無限ループになるため、
-		// 判定にはローカルのスナップショットだけを使う。
-		const recentSnapshot = recentReactionChoices(
-			usageSnapshot,
-			QUICK_COLUMNS,
-			failedSnapshot,
-		).filter((item) => !favoriteKeys.has(reactionChoiceKey(item)));
-		const empty = favoriteSnapshot.length === 0 && recentSnapshot.length === 0;
-		favorites = favoriteSnapshot;
-		recentItems = recentSnapshot;
 		quickQuery = '';
+		favorites = [];
+		recentItems = [];
 		quickItems = [];
-		// お気に入りも履歴もない初回ユーザーだけ、おすすめ絵文字を出すためにプールを待つ。
-		quickLoading = empty;
-		void loadCustomSuggestionPool().then((pool) => {
+		quickLoading = true;
+		void Promise.all([
+			refreshReactionUsage(usageSnapshot),
+			refreshFavorites(favoriteSnapshot),
+			loadCustomSuggestionPool(),
+		]).then(([refreshedUsage, refreshedFavorites, pool]) => {
 			if (generation !== pickerGeneration || !pickerOpen || fullPickerOpen) return;
+			const favoriteKeys = new Set(refreshedFavorites.map(reactionChoiceKey));
+			const refreshedRecent = recentReactionChoices(
+				refreshedUsage,
+				QUICK_COLUMNS,
+				failedSnapshot,
+			).filter((item) => !favoriteKeys.has(reactionChoiceKey(item)));
+			const empty = refreshedFavorites.length === 0 && refreshedRecent.length === 0;
+			usage = refreshedUsage;
+			favorites = refreshedFavorites;
+			recentItems = refreshedRecent;
 			customPool = pool;
-			if (empty) quickItems = buildQuickReactionChoices(usageSnapshot, pool, failedSnapshot);
+			if (empty) quickItems = buildQuickReactionChoices(refreshedUsage, pool, failedSnapshot);
 			quickLoading = false;
 		});
 		return () => {
@@ -292,11 +297,9 @@
 		onclick={() => toggle(item.emoji)}
 	>
 		{#if item.kind === 'custom'}
-			<img
-				src={resolveEmojiUrl(item.emoji.url)}
-				alt={item.emoji.alt ?? displayEmojiName(item.emoji.name)}
-				title={displayEmojiName(item.emoji.name)}
-				onerror={() => markCustomUnavailable(item.emoji.uri)}
+			<BluemojiMedia
+				emoji={item.emoji}
+				onunavailable={() => markCustomUnavailable(item.emoji.uri)}
 			/>
 		{:else}
 			{item.emoji}
@@ -316,13 +319,7 @@
 					onclick={() => toggle(reaction.bluemoji ?? reaction.emoji)}
 				>
 					{#if reaction.bluemoji}
-						<img
-							class="reaction-image"
-							src={resolveEmojiUrl(reaction.bluemoji.url)}
-							alt={reaction.bluemoji.alt ?? labelOf(reaction)}
-							title={labelOf(reaction)}
-							loading="lazy"
-						/>
+						<BluemojiMedia class="reaction-image" emoji={reaction.bluemoji} />
 					{:else}
 						{reaction.emoji}
 					{/if}

@@ -14,7 +14,7 @@ export type ActorView = {
 	 */
 	currentTitle?: { ja: string; en: string };
 };
-/** カスタム絵文字（blue.moji.collection.item）のビュー。url は AppView の blob プロキシ。 */
+/** 固定 Bluemoji Lexicon に準拠したカスタム絵文字ビュー。 */
 export type EmojiView = {
 	uri: string;
 	cid: string;
@@ -22,6 +22,7 @@ export type EmojiView = {
 	name: string;
 	alt?: string;
 	url: string;
+	mediaType: `image/${string}` | 'application/lottie+zip';
 };
 export type ReactionView = {
 	emoji: string;

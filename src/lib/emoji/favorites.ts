@@ -1,5 +1,10 @@
 import type { EmojiView } from '$lib/api/types';
-import { reactionChoiceKey, validChoice, type ReactionChoice } from './reactionUsage';
+import {
+	reactionChoiceKey,
+	refreshReactionChoices,
+	validChoice,
+	type ReactionChoice,
+} from './reactionUsage';
 
 const FAVORITES_KEY = 'nagi:emoji-favorites:v1';
 const MAX_FAVORITES = 32;
@@ -21,6 +26,12 @@ export function saveFavorites(favorites: ReactionChoice[]) {
 	} catch {
 		// ストレージが使えなくてもリアクション自体は動かす。
 	}
+}
+
+export async function refreshFavorites(favorites: ReactionChoice[]): Promise<ReactionChoice[]> {
+	const refreshed = await refreshReactionChoices(favorites);
+	saveFavorites(refreshed);
+	return refreshed;
 }
 
 const toChoice = (raw: string | EmojiView): ReactionChoice =>

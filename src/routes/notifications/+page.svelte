@@ -3,7 +3,8 @@
 	import type { NotificationView } from '$lib/api/types';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import { stripMarkdown } from '$lib/atproto/markdown';
-	import { displayEmojiName, resolveEmojiUrl } from '$lib/atproto/bluemoji';
+	import { displayEmojiName } from '$lib/atproto/bluemoji';
+	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { markAllSeen } from '$lib/notifications/unread.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
@@ -66,12 +67,9 @@
 </script>
 
 {#snippet reactionEmoji(reaction: NonNullable<NotificationView['reaction']>)}
-	{#if reaction.bluemoji}<img
+	{#if reaction.bluemoji}<BluemojiMedia
 			class="notification-emoji"
-			src={resolveEmojiUrl(reaction.bluemoji.url)}
-			alt={reaction.bluemoji.alt ?? displayEmojiName(reaction.bluemoji.name)}
-			title={displayEmojiName(reaction.bluemoji.name)}
-			loading="lazy"
+			emoji={reaction.bluemoji}
 		/>{:else}{reaction.emoji}{/if}
 {/snippet}
 
