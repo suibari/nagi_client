@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActorView, EmojiView, ReactionView } from '$lib/api/types';
+	import { searchEmojis } from '$lib/api/appview';
 	import { session } from '$lib/oauth/session.svelte';
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
 	import { displayEmojiName } from '$lib/atproto/bluemoji';
@@ -61,6 +62,8 @@
 	let recentItems = $state<ReactionChoice[]>([]);
 	let quickQuery = $state('');
 	let customPool = $state<EmojiView[]>([]);
+	let quickCustomResults = $state<EmojiView[]>([]);
+	let quickSearchRequestId = 0;
 	let unicodeIndex = $state<UnicodeEmoji[]>([]);
 	let unicodeRequested = false;
 	// クイックパレットは1行6マス。お気に入りは最大3行まで見せて、あふれた分はスクロール。
@@ -70,9 +73,7 @@
 	const quickResults = $derived.by(() => {
 		const q = quickQuery.trim();
 		if (!q) return [] as ReactionChoice[];
-		const needle = q.toLowerCase();
-		const custom: ReactionChoice[] = customPool
-			.filter((emoji) => displayEmojiName(emoji.name).toLowerCase().includes(needle))
+		const custom: ReactionChoice[] = quickCustomResults
 			.filter((emoji) => !failedCustomUris.includes(emoji.uri))
 			.slice(0, 12)
 			.map((emoji) => ({ kind: 'custom', emoji }));
@@ -81,6 +82,23 @@
 			emoji: item.emoji,
 		}));
 		return [...custom, ...unicode];
+	});
+	// 500件以上でも先頭の候補プールだけに検索範囲を限定しないよう、Bluemojiは
+	// AppViewへ問い合わせる。Unicode索引は従来どおりクライアント内で検索する。
+	$effect(() => {
+		const q = quickQuery.trim();
+		const requestId = ++quickSearchRequestId;
+		quickCustomResults = [];
+		if (!q) return;
+		const timer = setTimeout(async () => {
+			try {
+				const result = await searchEmojis({ q, limit: 12 });
+				if (requestId === quickSearchRequestId) quickCustomResults = result.emojis;
+			} catch {
+				// Unicode検索は継続する。次の入力でBluemoji検索を再試行する。
+			}
+		}, 250);
+		return () => clearTimeout(timer);
 	});
 	onMount(() => {
 		usage = loadReactionUsage();
