@@ -16,12 +16,36 @@
 		onunavailable?: () => void;
 	} = $props();
 
+	let host = $state<HTMLSpanElement>();
 	let canvas = $state<HTMLCanvasElement>();
+	let nearViewport = $state(false);
 	const label = $derived(emoji.alt ?? displayEmojiName(emoji.name));
 	const lottie = $derived(emoji.mediaType === 'application/lottie+zip');
 
 	onMount(() => {
-		if (!lottie || !canvas) return;
+		if (loading === 'eager') {
+			nearViewport = true;
+			return;
+		}
+		if (nearViewport || !host) return;
+		if (!('IntersectionObserver' in window)) {
+			nearViewport = true;
+			return;
+		}
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (!entries.some((entry) => entry.isIntersecting)) return;
+				nearViewport = true;
+				observer.disconnect();
+			},
+			{ rootMargin: '120px' },
+		);
+		observer.observe(host);
+		return () => observer.disconnect();
+	});
+
+	$effect(() => {
+		if (!nearViewport || !lottie || !canvas) return;
 		const target = canvas;
 		const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 		let visible = false;
@@ -73,10 +97,10 @@
 	});
 </script>
 
-<span class={`bluemoji-media ${className}`} title={displayEmojiName(emoji.name)}>
+<span bind:this={host} class={`bluemoji-media ${className}`} title={displayEmojiName(emoji.name)}>
 	{#if lottie}
-		<canvas bind:this={canvas} aria-label={label}>{label}</canvas>
-	{:else}
+		{#if nearViewport}<canvas bind:this={canvas} aria-label={label}>{label}</canvas>{/if}
+	{:else if nearViewport}
 		<img src={resolveEmojiUrl(emoji.url)} alt={label} {loading} onerror={onunavailable} />
 	{/if}
 </span>

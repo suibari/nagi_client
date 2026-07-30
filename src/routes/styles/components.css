@@ -1645,6 +1645,10 @@
 	gap: 8px;
 	margin-top: 8px;
 }
+.emoji-settings-grid .infinite-scroll,
+.emoji-settings-grid .infinite-scroll-error {
+	grid-column: 1 / -1;
+}
 .emoji-settings-item {
 	position: relative;
 	display: grid;

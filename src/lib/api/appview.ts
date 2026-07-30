@@ -299,11 +299,12 @@ export const searchActorsTypeahead = async (
 	return res.json() as Promise<SearchActorsResult>;
 };
 export const searchEmojis = (
-	opts: { q?: string; repo?: string; limit?: number; cursor?: string } = {},
+	opts: { q?: string; repo?: string; excludeRepo?: string; limit?: number; cursor?: string } = {},
 ) => {
 	const params = new URLSearchParams();
 	if (opts.q) params.set('q', opts.q);
 	if (opts.repo) params.set('repo', opts.repo);
+	if (opts.excludeRepo) params.set('excludeRepo', opts.excludeRepo);
 	params.set('limit', String(Math.min(100, Math.max(1, opts.limit ?? 50))));
 	if (opts.cursor) params.set('cursor', opts.cursor);
 	return call<{ emojis: EmojiView[]; cursor?: string }>(

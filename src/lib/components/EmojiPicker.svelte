@@ -6,8 +6,11 @@
 	import emojiDataUrlJa from 'emoji-picker-element-data/ja/emojibase/data.json?url';
 	import emojiDataUrlEn from 'emoji-picker-element-data/en/emojibase/data.json?url';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
-	import { searchEmojis } from '$lib/api/appview';
-	import { displayEmojiName } from '$lib/atproto/bluemoji';
+	import {
+		displayEmojiName,
+		searchAvailableBluemoji,
+		type AvailableEmojiCursor,
+	} from '$lib/atproto/bluemoji';
 	import {
 		loadUnicodeEmojiIndex,
 		searchUnicodeEmojis,
@@ -52,7 +55,7 @@
 	let customEmojis = $state<EmojiView[]>([]);
 	let customLoading = $state(false);
 	let customError = $state(false);
-	let customCursor = $state<string>();
+	let customCursor = $state<AvailableEmojiCursor>();
 	let customLoadingMore = $state(false);
 	let customMoreError = $state(false);
 	let customRequestId = 0;
@@ -96,7 +99,7 @@
 	const PICKER_WIDTH = 352;
 	const PICKER_HEIGHT = 440;
 
-	// カスタムタブは AppView 検索。打鍵ごとに叩かないよう少し待ってから問い合わせる。
+	// 本人分はPDSキャッシュ、他ユーザー分はAppView検索。打鍵ごとに叩かないよう少し待つ。
 	const SEARCH_DEBOUNCE_MS = 250;
 	$effect(() => {
 		if (tab !== 'custom') return;
@@ -109,7 +112,7 @@
 		customMoreError = false;
 		const timer = setTimeout(async () => {
 			try {
-				const result = await searchEmojis({ q: q || undefined, limit: 60 });
+				const result = await searchAvailableBluemoji({ q: q || undefined, limit: 60 });
 				if (!cancelled && requestId === customRequestId) {
 					customEmojis = result.emojis;
 					customCursor = result.cursor;
@@ -135,7 +138,7 @@
 		customMoreError = false;
 		try {
 			const q = query.trim();
-			const result = await searchEmojis({ q: q || undefined, limit: 60, cursor });
+			const result = await searchAvailableBluemoji({ q: q || undefined, limit: 60, cursor });
 			if (requestId !== customRequestId) return;
 			const known = new Set(customEmojis.map((emoji) => emoji.uri));
 			customEmojis = [...customEmojis, ...result.emojis.filter((emoji) => !known.has(emoji.uri))];

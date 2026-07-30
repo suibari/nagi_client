@@ -3,6 +3,7 @@ import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
 import type { EmojiView } from '$lib/api/types';
 import { APPVIEW_URL, searchEmojis } from '$lib/api/appview';
+import { listRecords as pdsListRecords, resolvePdsUrl } from '$lib/atproto/pds';
 
 /** Bluemoji の絵文字定義レコード。カスタム絵文字はユーザー自身の PDS に置く。 */
 export const BLUEMOJI_ITEM = 'blue.moji.collection.item';
@@ -132,30 +133,228 @@ export type MyEmoji = {
 	cid: string;
 	name: string;
 	alt?: string;
+	adultOnly: boolean;
 	did: string;
 	url: string;
 	mediaType: EmojiView['mediaType'];
 };
 
-export async function listMyBluemoji(): Promise<MyEmoji[]> {
+type BlobRef = { ref?: { $link?: unknown }; mimeType?: unknown; size?: unknown };
+const graphemeCount = (value: string) =>
+	[...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(value)].length;
+const validSelfLabels = (value: unknown) => {
+	const labels = value as { $type?: unknown; values?: unknown };
+	return (
+		labels?.$type === 'com.atproto.label.defs#selfLabels' &&
+		Array.isArray(labels.values) &&
+		labels.values.length <= 20 &&
+		labels.values.every((label) => {
+			const val = (label as { val?: unknown })?.val;
+			return typeof val === 'string' && val.length > 0 && val.length <= 128;
+		})
+	);
+};
+const validAtUri = (value: unknown) =>
+	typeof value === 'string' && /^at:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+$/.test(value);
+const validBlob = (
+	value: BlobRef | undefined,
+	maxSize: number,
+	accept: (type: string) => boolean,
+) =>
+	typeof value?.ref?.$link === 'string' &&
+	typeof value.mimeType === 'string' &&
+	accept(value.mimeType) &&
+	Number.isInteger(value.size) &&
+	(value.size as number) >= 0 &&
+	(value.size as number) <= maxSize;
+const validBytes = (value: unknown) => {
+	const bytes = (value as { $bytes?: unknown })?.$bytes;
+	if (typeof bytes !== 'string' || !/^[A-Za-z0-9+/]*={0,2}$/.test(bytes)) return undefined;
+	try {
+		const decoded = atob(bytes);
+		if (
+			decoded.length > MAX_EMOJI_INLINE_SIZE ||
+			btoa(decoded).replace(/=+$/, '') !== bytes.replace(/=+$/, '')
+		)
+			return undefined;
+		return bytes;
+	} catch {
+		return undefined;
+	}
+};
+const pdsBlobUrl = (pds: string, did: string, cid: string) => {
+	const params = new URLSearchParams({ did, cid });
+	return `${pds}/xrpc/com.atproto.sync.getBlob?${params}`;
+};
+const directMediaOf = (
+	pds: string,
+	did: string,
+	raw: unknown,
+): Pick<MyEmoji, 'url' | 'mediaType'> | undefined => {
+	const formats = raw as Record<string, any>;
+	if (!formats || formats.$type !== FORMATS_V0) return undefined;
+	const lottie = validBytes(formats.lottie);
+	if (lottie)
+		return {
+			url: `data:application/lottie+zip;base64,${lottie}`,
+			mediaType: 'application/lottie+zip',
+		};
+	const apng = validBytes(formats.apng_128);
+	if (apng) return { url: `data:image/apng;base64,${apng}`, mediaType: 'image/apng' };
+	for (const [key, mediaType] of [
+		['gif_128', 'image/gif'],
+		['webp_128', 'image/webp'],
+		['png_128', 'image/png'],
+	] as const) {
+		const blob = formats[key] as BlobRef | undefined;
+		const link = blob?.ref?.$link;
+		if (validBlob(blob, MAX_EMOJI_BLOB_SIZE, (type) => type.length > 0) && typeof link === 'string')
+			return {
+				url: pdsBlobUrl(pds, did, link),
+				mediaType,
+			};
+	}
+	const original = formats.original as BlobRef | undefined;
+	if (
+		validBlob(
+			original,
+			MAX_EMOJI_ORIGINAL_SIZE,
+			(type) => type.startsWith('image/') || type === 'application/lottie+zip',
+		)
+	)
+		return {
+			url: pdsBlobUrl(pds, did, original!.ref!.$link as string),
+			mediaType: original!.mimeType as EmojiView['mediaType'],
+		};
+	return undefined;
+};
+
+let myEmojiCache: { did: string; promise: Promise<MyEmoji[]> } | undefined;
+
+export function invalidateMyBluemojiCache() {
+	myEmojiCache = undefined;
+}
+
+async function fetchMyBluemoji(): Promise<MyEmoji[]> {
 	const s = current();
+	const pds = await resolvePdsUrl(s.did);
 	const items: MyEmoji[] = [];
 	let cursor: string | undefined;
 	do {
-		const response = await searchEmojis({
-			repo: s.did,
-			limit: 100,
-			cursor,
-		});
-		for (const emoji of response.emojis) {
+		const response = await pdsListRecords(s.did, BLUEMOJI_ITEM, { limit: 100, cursor });
+		for (const record of response.records) {
+			const value = record.value as {
+				$type?: unknown;
+				name?: unknown;
+				alt?: unknown;
+				formats?: unknown;
+				fallbackText?: unknown;
+				createdAt?: unknown;
+				adultOnly?: unknown;
+				copyOf?: unknown;
+				labels?: unknown;
+			};
+			const media = directMediaOf(pds, s.did, value.formats);
+			if (
+				typeof record.cid !== 'string' ||
+				value.$type !== BLUEMOJI_ITEM ||
+				typeof value.name !== 'string' ||
+				(value.alt !== undefined && typeof value.alt !== 'string') ||
+				(value.adultOnly !== undefined && typeof value.adultOnly !== 'boolean') ||
+				(value.copyOf !== undefined && !validAtUri(value.copyOf)) ||
+				(value.labels !== undefined && !validSelfLabels(value.labels)) ||
+				typeof value.createdAt !== 'string' ||
+				Number.isNaN(Date.parse(value.createdAt)) ||
+				(value.fallbackText !== undefined &&
+					(typeof value.fallbackText !== 'string' ||
+						value.fallbackText.length > 10 ||
+						graphemeCount(value.fallbackText) > 1)) ||
+				!media
+			)
+				continue;
 			items.push({
-				...emoji,
-				rkey: emoji.uri.slice(emoji.uri.lastIndexOf('/') + 1),
+				rkey: record.uri.slice(record.uri.lastIndexOf('/') + 1),
+				uri: record.uri,
+				cid: record.cid,
+				name: value.name,
+				alt: typeof value.alt === 'string' ? value.alt : undefined,
+				adultOnly: value.adultOnly === true,
+				did: s.did,
+				...media,
 			});
 		}
 		cursor = response.cursor;
 	} while (cursor);
 	return items;
+}
+
+export function listMyBluemoji(): Promise<MyEmoji[]> {
+	const s = current();
+	if (myEmojiCache?.did === s.did) return myEmojiCache.promise;
+	const promise = fetchMyBluemoji().catch((error) => {
+		if (myEmojiCache?.promise === promise) myEmojiCache = undefined;
+		throw error;
+	});
+	myEmojiCache = { did: s.did, promise };
+	return promise;
+}
+
+export type AvailableEmojiCursor = {
+	ownOffset: number;
+	appviewCursor?: string;
+};
+
+/** 本人PDSを優先し、使い切った後だけAppViewから他ユーザー分を取得する。 */
+export async function searchAvailableBluemoji(opts: {
+	q?: string;
+	limit: number;
+	cursor?: AvailableEmojiCursor;
+}) {
+	const s = current();
+	const q = opts.q?.trim().toLowerCase() ?? '';
+	const own = (await listMyBluemoji()).filter((emoji) => {
+		if (emoji.adultOnly) return false;
+		if (!q) return true;
+		return (
+			displayEmojiName(emoji.name).toLowerCase().includes(q) || emoji.alt?.toLowerCase().includes(q)
+		);
+	});
+	const ownOffset = opts.cursor?.ownOffset ?? 0;
+	const emojis: EmojiView[] = own.slice(ownOffset, ownOffset + opts.limit);
+	const nextOwnOffset = ownOffset + emojis.length;
+	let appviewCursor = opts.cursor?.appviewCursor;
+	if (nextOwnOffset < own.length)
+		return {
+			emojis,
+			cursor: { ownOffset: nextOwnOffset, appviewCursor } satisfies AvailableEmojiCursor,
+		};
+	try {
+		const remaining = opts.limit - emojis.length;
+		if (remaining === 0)
+			return {
+				emojis,
+				cursor: { ownOffset: own.length, appviewCursor } satisfies AvailableEmojiCursor,
+			};
+		if (remaining > 0) {
+			const result = await searchEmojis({
+				q: opts.q,
+				excludeRepo: s.did,
+				limit: remaining,
+				cursor: appviewCursor,
+			});
+			emojis.push(...result.emojis);
+			appviewCursor = result.cursor;
+		}
+	} catch {
+		// 本人PDSの絵文字はAppView障害や429から独立して利用できるようにする。
+		appviewCursor = undefined;
+	}
+	return {
+		emojis,
+		cursor: appviewCursor
+			? ({ ownOffset: own.length, appviewCursor } satisfies AvailableEmojiCursor)
+			: undefined,
+	};
 }
 
 export async function createBluemojiItem(name: string, blob: Blob, alt = '') {
@@ -187,7 +386,7 @@ export async function createBluemojiItem(name: string, blob: Blob, alt = '') {
 	const createdAt = new Date().toISOString();
 	const rkey = createBluemojiRkey();
 	const subject = `at://${s.did}/${BLUEMOJI_ITEM}/${rkey}`;
-	return agent.com.atproto.repo.applyWrites({
+	const response = await agent.com.atproto.repo.applyWrites({
 		repo: s.did,
 		validate: false,
 		writes: [
@@ -217,6 +416,8 @@ export async function createBluemojiItem(name: string, blob: Blob, alt = '') {
 			},
 		],
 	});
+	invalidateMyBluemojiCache();
+	return response;
 }
 
 export async function deleteBluemoji(rkey: string) {
@@ -242,6 +443,7 @@ export async function deleteBluemoji(rkey: string) {
 		// 他アプリ作成分と導入前の Nagi 作成分にはサイドカーがない。
 		if (!isRecordNotFound(error)) throw error;
 	}
+	invalidateMyBluemojiCache();
 }
 
 /** リアクションレコードに載せる参照。formats は AppView がインデックスから補う。 */

@@ -1,4 +1,5 @@
 import { ApiRequestError, getEmoji, searchEmojis } from '$lib/api/appview';
+import { listMyBluemoji } from '$lib/atproto/bluemoji';
 import type { EmojiView } from '$lib/api/types';
 
 const USAGE_KEY = 'nagi:reaction-usage:v2';
@@ -282,8 +283,21 @@ export function buildQuickReactionChoices(
 let customSuggestionPoolPromise: Promise<EmojiView[]> | undefined;
 
 export function loadCustomSuggestionPool(): Promise<EmojiView[]> {
-	customSuggestionPoolPromise ??= searchEmojis({ limit: 100 })
-		.then((result) => result.emojis)
-		.catch(() => []);
+	customSuggestionPoolPromise ??= listMyBluemoji()
+		.then(async (own) => {
+			const availableOwn = own.filter((emoji) => !emoji.adultOnly);
+			const others = await searchEmojis({
+				excludeRepo: own[0]?.did,
+				limit: 100,
+			})
+				.then((result) => result.emojis)
+				.catch(() => []);
+			return [...availableOwn, ...others];
+		})
+		.catch(() =>
+			searchEmojis({ limit: 100 })
+				.then((result) => result.emojis)
+				.catch(() => []),
+		);
 	return customSuggestionPoolPromise;
 }

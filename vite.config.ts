@@ -61,8 +61,8 @@ export default defineConfig(({ command, mode }) => {
 							: ['self', 'https:', 'data:', 'blob:'],
 						'font-src': ['self', 'data:'],
 						'connect-src': isDev
-							? ['self', 'https:', 'http://localhost:*', 'http://127.0.0.1:*']
-							: ['self', 'https:'],
+							? ['self', 'https:', 'data:', 'http://localhost:*', 'http://127.0.0.1:*']
+							: ['self', 'https:', 'data:'],
 						'base-uri': ['self'],
 						'form-action': ['self'],
 						'object-src': ['none'],

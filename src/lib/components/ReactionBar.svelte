@@ -1,9 +1,8 @@
 <script lang="ts">
 	import type { ActorView, EmojiView, ReactionView } from '$lib/api/types';
-	import { searchEmojis } from '$lib/api/appview';
 	import { session } from '$lib/oauth/session.svelte';
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
-	import { displayEmojiName } from '$lib/atproto/bluemoji';
+	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
 	import { myProfile } from '$lib/profile/me.svelte';
 	import EmojiPicker from './EmojiPicker.svelte';
 	import Avatar from './Avatar.svelte';
@@ -83,8 +82,8 @@
 		}));
 		return [...custom, ...unicode];
 	});
-	// 500件以上でも先頭の候補プールだけに検索範囲を限定しないよう、Bluemojiは
-	// AppViewへ問い合わせる。Unicode索引は従来どおりクライアント内で検索する。
+	// 本人分はPDSキャッシュ、他ユーザー分はAppViewへ問い合わせる。
+	// Unicode索引は従来どおりクライアント内で検索する。
 	$effect(() => {
 		const q = quickQuery.trim();
 		const requestId = ++quickSearchRequestId;
@@ -92,7 +91,7 @@
 		if (!q) return;
 		const timer = setTimeout(async () => {
 			try {
-				const result = await searchEmojis({ q, limit: 12 });
+				const result = await searchAvailableBluemoji({ q, limit: 12 });
 				if (requestId === quickSearchRequestId) quickCustomResults = result.emojis;
 			} catch {
 				// Unicode検索は継続する。次の入力でBluemoji検索を再試行する。

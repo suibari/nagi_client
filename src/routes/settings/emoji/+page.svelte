@@ -18,6 +18,7 @@
 		type MyEmoji,
 	} from '$lib/atproto/bluemoji';
 	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
+	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import type { EmojiView } from '$lib/api/types';
 
@@ -42,6 +43,7 @@
 	let error = $state('');
 	let batch = $state<BatchItem[]>([]);
 	let ignoredFiles = $state(0);
+	let visibleEmojiCount = $state(60);
 
 	const safeInternalReturnTo = (value: string | null) => {
 		if (!value?.startsWith('/') || value.startsWith('//')) return undefined;
@@ -58,6 +60,7 @@
 	const backHref = $derived(returnTo ?? '/settings');
 	const backLabel = $derived(returnTo ? m.emojiBackToSource() : m.backToSettings());
 	const taken = $derived(new Set(emojis.map((emoji) => displayEmojiName(emoji.name))));
+	const visibleEmojis = $derived(emojis.slice(0, visibleEmojiCount));
 	const nameValid = $derived(EMOJI_NAME_PATTERN.test(name));
 	const fileProblem = (selected: File) => {
 		const type = emojiFileType(selected);
@@ -86,18 +89,13 @@
 			: undefined,
 	);
 
-	const releaseEmojiUrls = (items: MyEmoji[]) => {
-		for (const emoji of items) if (emoji.url.startsWith('blob:')) URL.revokeObjectURL(emoji.url);
-	};
 	const loadEmojis = async () => {
-		const next = await listMyBluemoji();
-		releaseEmojiUrls(emojis);
-		emojis = next;
+		emojis = await listMyBluemoji();
+		visibleEmojiCount = 60;
 	};
 	onDestroy(() => {
 		if (preview) URL.revokeObjectURL(preview);
 		for (const item of batch) URL.revokeObjectURL(item.preview);
-		releaseEmojiUrls(emojis);
 	});
 	$effect(() => {
 		if (!$session?.did || loaded) return;
@@ -263,7 +261,6 @@
 		error = '';
 		try {
 			await deleteBluemoji(emoji.rkey);
-			if (emoji.url.startsWith('blob:')) URL.revokeObjectURL(emoji.url);
 			emojis = emojis.filter((item) => item.uri !== emoji.uri);
 			status = m.emojiDeleted();
 		} catch (cause) {
@@ -365,7 +362,7 @@
 			<p>{m.emojiMineEmpty()}</p>
 		{:else}
 			<div class="emoji-settings-grid">
-				{#each emojis as emoji (emoji.uri)}
+				{#each visibleEmojis as emoji (emoji.uri)}
 					<div class="emoji-settings-item" title={displayEmojiName(emoji.name)}>
 						<BluemojiMedia {emoji} />
 						<div class="emoji-settings-meta">
@@ -383,6 +380,13 @@
 						</button>
 					</div>
 				{/each}
+				<InfiniteScroll
+					hasMore={visibleEmojiCount < emojis.length}
+					loading={false}
+					onload={() => {
+						visibleEmojiCount = Math.min(emojis.length, visibleEmojiCount + 60);
+					}}
+				/>
 			</div>
 		{/if}
 	{/if}
