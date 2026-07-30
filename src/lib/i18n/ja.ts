@@ -38,6 +38,16 @@ export const ja = {
 	newsShareFailed: '共有できませんでした',
 	newsQuoteLabel: 'ニュースを引用して投稿',
 	newsSourceUnknown: '媒体不明',
+	communityAffirmationTitle: 'みんなで全肯定',
+	communityAffirmationIntro: 'botたんが、そっと聞いてほしい声をまとめたよ',
+	communityAffirmationReact: '気持ちを届ける',
+	communityAffirmationReactAria: 'この紹介の元投稿にリアクションを届ける',
+	communityAffirmationNext: '次へ',
+	communityAffirmationComplete: '気持ちが届いたよ。ここから取り消すこともできるよ',
+	communityAffirmationLoading: 'botたんが声を探しています…',
+	communityAffirmationEmpty: 'いま紹介できる声はないみたい。またあとでね',
+	communityAffirmationError: 'いまは声を受け取れませんでした',
+	communityAffirmationRefreshPermissions: 'ログイン権限を更新する',
 	newsUnavailable: 'このニュースは掲載終了しました',
 
 	// sidebar footer / about page hero（本文中にキャラ紹介ページへのリンクを挟むため3分割）
@@ -199,7 +209,8 @@ export const ja = {
 	linkCardLoading: 'リンク情報を取得中…',
 	linkCardRemove: 'リンクカードを削除',
 	composerKossori: 'こっそり',
-	composerKossoriAria: 'こっそり投稿（グローバル・全肯定タイムラインには載せません）',
+	composerKossoriAria:
+		'こっそり投稿（共有タイムラインに本文は載せませんが、匿名のbotたん要約が「みんなで全肯定」に表示される場合があります）',
 
 	// drafts
 	draftSave: '下書きに保存',
@@ -242,7 +253,8 @@ export const ja = {
 	deletingPost: '削除中…',
 	deletePostFailed: '投稿を削除できませんでした',
 	kossoriBadge: 'こっそり',
-	kossoriBadgeAria: 'こっそり投稿（グローバル・全肯定タイムラインには表示されません）',
+	kossoriBadgeAria:
+		'こっそり投稿（共有タイムラインに本文は表示されませんが、匿名要約の候補になります）',
 	kossoriEnable: 'こっそりにする',
 	kossoriEnableAria: 'この投稿をこっそりにする',
 	kossoriDisable: '公開に戻す',
@@ -729,7 +741,8 @@ export const ja = {
 	searchSectionChannels: 'チャンネル',
 	searchSectionNews: 'ニュース',
 	channelUpdatedAt: (o: { time: string }) => `更新日時: ${o.time}`,
-	composerChannelOnly: 'このチャンネルだけに投稿（グローバルに出さない）',
+	composerChannelOnly:
+		'このチャンネルだけに投稿（本文はグローバルに出ませんが、匿名要約の候補になります）',
 	channelPinPost: 'このポストをピン止め',
 	channelUnpinPost: 'ピン止めを解除',
 	channelPinnedPost: 'ピン止めされたポスト',

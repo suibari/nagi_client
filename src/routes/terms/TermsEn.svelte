@@ -104,7 +104,7 @@
 	<li><strong>You retain the rights to the content you post.</strong></li>
 	<li>
 		The operator uses it only as needed to provide the Service — displaying it in timelines,
-		searching, translating, and generating Bot-tan's replies.
+		searching, translating, and generating Bot-tan's replies and anonymous summaries.
 	</li>
 	<li>
 		Your posts are stored in your own PDS. Because of how the AT Protocol works, public records can
@@ -113,11 +113,16 @@
 </ul>
 <div class="callout warn">
 	<p>
-		<strong>"Kossori" (quiet) posts are not private posts.</strong> They are hidden from the Service's
-		timelines, but they are stored in your PDS as ordinary public records, so other applications can read
-		them. Please do not post anything you need to keep secret.
+		<strong>"Kossori" (quiet) posts are not private posts.</strong> Their bodies stay out of shared timelines,
+		but an anonymous Bot-tan summary may appear in "Affirm together." A reaction made from that summary
+		is delivered directly to the original post. They are also stored in your PDS as ordinary public records,
+		so other applications can read them. Please do not post anything you need to keep secret.
 	</p>
 </div>
+<p>
+	Channel-only posts may also be anonymously summarized even though their bodies stay out of shared
+	timelines outside the channel. Posts with a Content Warning are excluded from these summaries.
+</p>
 
 <h2 id="t5">5. Our stance</h2>
 <p>
@@ -285,8 +290,8 @@
 <div class="callout">
 	<p>
 		<strong>Bot-tan is an AI, not a human.</strong> Bot-tan's replies and conversations, the automatic
-		analysis of your profile, diaries, card comments, and news selection are all produced by generative
-		AI.
+		analysis of your profile, diaries, card comments, news selection, and the anonymous summaries in "Affirm
+		together" are all produced by generative AI.
 	</p>
 </div>
 <ul>

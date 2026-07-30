@@ -7,6 +7,7 @@ import type {
 	CardCollectionView,
 	ChannelsPage,
 	ChannelView,
+	CommunityAffirmationPage,
 	DiaryPage,
 	DrawCardResult,
 	EmojiView,
@@ -140,6 +141,16 @@ export const getAffirmation = (cursor?: string) =>
 		'com.suibari.nagi.getAffirmation',
 		`/xrpc/com.suibari.nagi.getAffirmation?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
 	);
+export const getCommunityAffirmations = (lang: 'ja' | 'en', cursor?: string) => {
+	const params = new URLSearchParams({ lang, limit: '10' });
+	if (cursor) params.set('cursor', cursor);
+	return call<CommunityAffirmationPage>(
+		'com.suibari.nagi.getCommunityAffirmations',
+		`/xrpc/com.suibari.nagi.getCommunityAffirmations?${params}`,
+		{},
+		'required',
+	);
+};
 export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ limit: '20', lang });
 	if (cursor) params.set('cursor', cursor);

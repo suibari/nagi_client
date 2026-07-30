@@ -34,12 +34,16 @@
 		reactions = [],
 		pickerOpen = $bindable(false),
 		pickerAnchor,
+		ontoggled,
+		showReactors = true,
 	}: {
 		uri: string;
 		cid: string;
 		reactions?: ReactionView[];
 		pickerOpen?: boolean;
 		pickerAnchor?: HTMLElement;
+		ontoggled?: (active: boolean) => void;
+		showReactors?: boolean;
 	} = $props();
 	const REACTION = 'com.suibari.nagi.reaction';
 	// The appview only learns about reactions via jetstream (a few seconds behind),
@@ -267,6 +271,7 @@
 					)
 					.filter((r) => r.reactors.length > 0 || r.hasMoreReactors);
 				await deleteRecord(REACTION, rkey);
+				ontoggled?.(local.some(reactedByViewer));
 			} else {
 				local = existing
 					? local.map((r) =>
@@ -296,6 +301,7 @@
 				local = local.map((r) =>
 					keyOf(r) === key ? { ...r, viewerReactionUri: res.data.uri } : r,
 				);
+				ontoggled?.(true);
 			}
 		} catch {
 			local = snapshot;
@@ -341,20 +347,22 @@
 						{reaction.emoji}
 					{/if}
 				</button>
-				<div class="reaction-actors">
-					{#each reaction.reactors as actor (actor.did)}
-						<a
-							class="reaction-avatar"
-							href={`/profile/${actor.did}`}
-							aria-label={m.viewProfileOfAria({ name: actor.displayName ?? actor.handle })}
-							title={actor.displayName ?? actor.handle}><Avatar {actor} size="small" /></a
-						>
-					{/each}
-					{#if reaction.hasMoreReactors}<span
-							class="reaction-more"
-							aria-label={m.moreReactorsAria()}>…</span
-						>{/if}
-				</div>
+				{#if showReactors}
+					<div class="reaction-actors">
+						{#each reaction.reactors as actor (actor.did)}
+							<a
+								class="reaction-avatar"
+								href={`/profile/${actor.did}`}
+								aria-label={m.viewProfileOfAria({ name: actor.displayName ?? actor.handle })}
+								title={actor.displayName ?? actor.handle}><Avatar {actor} size="small" /></a
+							>
+						{/each}
+						{#if reaction.hasMoreReactors}<span
+								class="reaction-more"
+								aria-label={m.moreReactorsAria()}>…</span
+							>{/if}
+					</div>
+				{/if}
 			</div>
 		{/each}
 	</div>

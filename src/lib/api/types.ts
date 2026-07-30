@@ -122,6 +122,13 @@ export type FeedItem = PostView & {
 };
 export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean; botActor?: ActorView };
 export type TimelinePage = Page<FeedItem>;
+export type CommunityAffirmationView = {
+	uri: string;
+	cid: string;
+	summary: string;
+	reactions: ReactionView[];
+};
+export type CommunityAffirmationPage = Page<CommunityAffirmationView>;
 /** 本人だけが取得できる、ホームに表示するユーザーの非公開一覧。 */
 export type PrivateListView = { members: ActorView[]; limit: 200 };
 export type NewsPage = Page<NewsView>;

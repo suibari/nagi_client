@@ -36,6 +36,16 @@ export const en: Messages = {
 	newsShareFailed: 'Could not share',
 	newsQuoteLabel: 'Quote this news story',
 	newsSourceUnknown: 'Unknown source',
+	communityAffirmationTitle: 'Affirm together',
+	communityAffirmationIntro: 'Bot-tan found a voice that could use a gentle response',
+	communityAffirmationReact: 'Send some warmth',
+	communityAffirmationReactAria: 'React to the post behind this summary',
+	communityAffirmationNext: 'Next',
+	communityAffirmationComplete: 'Your reaction arrived gently. You can still undo it here',
+	communityAffirmationLoading: 'Bot-tan is listening for a voice…',
+	communityAffirmationEmpty: 'There is no voice to share right now. Please come back later',
+	communityAffirmationError: 'Could not receive a voice right now',
+	communityAffirmationRefreshPermissions: 'Refresh login permissions',
 	newsUnavailable: 'This news story is no longer available',
 
 	aboutBeforeLink: 'No likes, no follows. Whatever you write, ',
@@ -188,7 +198,8 @@ export const en: Messages = {
 	linkCardLoading: 'Loading link details…',
 	linkCardRemove: 'Remove link card',
 	composerKossori: 'Limited',
-	composerKossoriAria: 'Limited mode post (kept off the Global and Affirmation timelines)',
+	composerKossoriAria:
+		'Limited post (the body stays off shared timelines, but an anonymous Bot-tan summary may appear in Affirm together)',
 
 	// drafts
 	draftSave: 'Save as draft',
@@ -231,7 +242,8 @@ export const en: Messages = {
 	deletingPost: 'Deleting…',
 	deletePostFailed: 'Could not delete post',
 	kossoriBadge: 'Limited',
-	kossoriBadgeAria: 'Limited mode post (not shown on the Global or Affirmation timeline)',
+	kossoriBadgeAria:
+		'Limited post (the body is hidden from shared timelines but may be anonymously summarized)',
 	kossoriEnable: 'Make limited',
 	kossoriEnableAria: 'Hide this post from the timelines',
 	kossoriDisable: 'Make public',
@@ -700,7 +712,8 @@ export const en: Messages = {
 	searchSectionChannels: 'Channels',
 	searchSectionNews: 'News',
 	channelUpdatedAt: (o: { time: string }) => `Updated ${o.time}`,
-	composerChannelOnly: 'Post to this channel only (hide from global)',
+	composerChannelOnly:
+		'Post to this channel only (the body stays out of Global but may be anonymously summarized)',
 	channelPinPost: 'Pin this post',
 	channelUnpinPost: 'Unpin post',
 	channelPinnedPost: 'Pinned post',

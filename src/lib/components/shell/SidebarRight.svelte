@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { session } from '$lib/oauth/session.svelte';
+	import CommunityAffirmationPanel from '../CommunityAffirmationPanel.svelte';
 </script>
 
 <aside class="sidebar sidebar-right">
+	{#if $session}<CommunityAffirmationPanel />{/if}
 	<div class="spacer"></div>
 	<footer class="side-footer">
 		<a class="suibari-brand" href="https://suibari.com" target="_blank" rel="noreferrer noopener">
