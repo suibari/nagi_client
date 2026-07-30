@@ -188,15 +188,8 @@
 		status = '';
 		error = '';
 	}
-	const duplicateBatchNames = () => {
-		const counts = new Map<string, number>();
-		for (const item of batch) counts.set(item.name, (counts.get(item.name) ?? 0) + 1);
-		return counts;
-	};
 	function batchProblem(item: BatchItem) {
 		if (!EMOJI_NAME_PATTERN.test(item.name)) return m.emojiNameInvalid();
-		if (taken.has(item.name)) return m.emojiNameTaken();
-		if ((duplicateBatchNames().get(item.name) ?? 0) > 1) return m.emojiBatchDuplicate();
 		return fileProblem(item.file);
 	}
 	const batchReady = $derived(
