@@ -5,7 +5,7 @@ import type { ActorView, NewsView, PostView } from '$lib/api/types';
  * コメントは PDS 上の独立したレコードではないので、uri はニュースのものへ
  * `#bot-comment` を足した合成値にする（リアクションはニュース本体へ付く）。
  *
- * ニュース一覧のカード（NewsCard）と my Nagi の1行表示（NewsTicker）の両方から使う。
+ * ニュース一覧と my Nagi の横スクロールカードの両方から使う。
  */
 export function newsBotPost(news: NewsView, botActor?: ActorView): PostView {
 	return {

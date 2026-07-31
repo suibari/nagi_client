@@ -2,29 +2,28 @@
 	/**
 	 * my Nagi — サインイン後の起点。
 	 *
-	 * 投稿欄より先に「ゆるいつながり」を見せるための画面。投稿は左下／右下の FAB から
-	 * ポストモーダルで行う（+layout.svelte に常駐）。
-	 *
-	 * 情報量が多くなるので、上ほど圧縮・下ほど展開の密度勾配を付けている:
-	 * ニュース（1行）→ botたん（3件）→ みんなで全肯定（横カルーセル）→ リスト動向。
+	 * パーソナルな全肯定を起点に、内部のつながりから外部の話題へ段階的に広げる:
+	 * botたん（1件）→ みんなで全肯定 → 全肯定ニュース → リスト動向。
+	 * 投稿は左下／右下の FAB からポストモーダルで行う（+layout.svelte に常駐）。
 	 *
 	 * 各セクションは独立して読み込み・失敗する。1本コケても画面全体は落ちない。
-	 * 将来の表示/順序カスタマイズを見据え、並びは下の SECTIONS 配列1本で決める。
+	 * 表示順は下のセクション配置で明示する。
 	 */
 	import { onMount } from 'svelte';
 	import { getMyNagi, getPositiveNews, getProfile } from '$lib/api/appview';
 	import type { ActorView, MyNagiView, NewsView, PostView } from '$lib/api/types';
+	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import CommunityAffirmationPanel from '$lib/components/CommunityAffirmationPanel.svelte';
 	import MainFeed from '$lib/components/MainFeed.svelte';
+	import MyNagiNewsCarousel from '$lib/components/MyNagiNewsCarousel.svelte';
 	import MyNagiPostRow from '$lib/components/MyNagiPostRow.svelte';
 	import MyNagiSection from '$lib/components/MyNagiSection.svelte';
-	import NewsTicker from '$lib/components/NewsTicker.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { unreadNews } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 
 	const NEWS_COUNT = 5;
-	const BOT_POST_COUNT = 3;
+	const BOT_POST_COUNT = 1;
 	const LIST_COUNT = 6;
 
 	let news = $state<NewsView[]>([]);
@@ -45,8 +44,7 @@
 	const isOpen = (uri: string) => openPostUri === uri;
 	const setOpen = (uri: string, open: boolean) => (openPostUri = open ? uri : undefined);
 
-	const message = (cause: unknown) =>
-		cause instanceof Error ? cause.message : m.loadFailed();
+	const message = (cause: unknown) => (cause instanceof Error ? cause.message : m.loadFailed());
 	// at://<did>/<collection>/<rkey> → /channels/<did>/<rkey>
 	const channelHref = (uri: string) => {
 		const rest = uri.slice('at://'.length).split('/');
@@ -133,7 +131,25 @@
 	<h1 class="my-nagi-title">{m.navMyNagi()}</h1>
 
 	<MyNagiSection
-		title={m.navNews()}
+		title={m.myNagiBotTitle()}
+		icon="bot"
+		moreHref={botActor ? `/profile/${botActor.did}` : undefined}
+		loading={botLoading}
+		error={botError}
+		empty={!botPosts.length}
+		onretry={loadBotPosts}
+	>
+		{#if botPosts[0]}
+			<div class="my-nagi-bot-card">
+				<ChatBubble post={botPosts[0]} {botActor} />
+			</div>
+		{/if}
+	</MyNagiSection>
+
+	<CommunityAffirmationPanel />
+
+	<MyNagiSection
+		title={m.myNagiNewsTitle()}
 		icon="newspaper"
 		moreHref="/news"
 		loading={newsLoading}
@@ -143,29 +159,8 @@
 		unreadLabel={m.newsUnreadAria()}
 		onretry={loadNews}
 	>
-		<NewsTicker items={news} {botActor} />
+		<MyNagiNewsCarousel items={news} {botActor} />
 	</MyNagiSection>
-
-	<MyNagiSection
-		title={m.myNagiBotTitle()}
-		icon="bot"
-		moreHref={botActor ? `/profile/${botActor.did}` : undefined}
-		loading={botLoading}
-		error={botError}
-		empty={!botPosts.length}
-		onretry={loadBotPosts}
-	>
-		{#each botPosts as post (post.uri)}
-			<MyNagiPostRow
-				{post}
-				{botActor}
-				open={isOpen(post.uri)}
-				onopenchange={(open) => setOpen(post.uri, open)}
-			/>
-		{/each}
-	</MyNagiSection>
-
-	<CommunityAffirmationPanel />
 
 	<MyNagiSection
 		title={m.myNagiListTitle()}
@@ -209,8 +204,7 @@
 			</p>
 		{/snippet}
 		{#each listActivity.channels as entry (entry.post.uri)}
-			<a class="my-nagi-channel-link" href={channelHref(entry.channel.uri)}
-				>#{entry.channel.name}</a
+			<a class="my-nagi-channel-link" href={channelHref(entry.channel.uri)}>#{entry.channel.name}</a
 			>
 			<MyNagiPostRow
 				post={entry.post}
@@ -227,6 +221,11 @@
 		margin: 0 0 12px;
 		font-size: 1.1rem;
 		font-weight: 800;
+	}
+
+	.my-nagi-bot-card {
+		min-width: 0;
+		padding: 8px 4px 10px;
 	}
 
 	.my-nagi-state {
