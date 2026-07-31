@@ -4,6 +4,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Avatar from './Avatar.svelte';
 	import ThreadFlags from './ThreadFlags.svelte';
+	import { replyIndent } from '$lib/thread/replyIndent';
 	import { onMount } from 'svelte';
 	let {
 		item,
@@ -100,10 +101,7 @@
 				aria-label={m.threadViewAll()}>{m.threadMore({ count: conv.hiddenCount })}</a
 			>{/if}
 		{#each conv.bubbles as bubble (bubble.post.uri)}
-			<div
-				class="thread-reply"
-				style="--reply-indent: {Math.min(Math.max(0, bubble.depth - 1), 5)}"
-			>
+			<div class="thread-reply" style="--reply-indent: {replyIndent(bubble.depth)}">
 				<ChatBubble
 					post={bubble.post}
 					{botActor}

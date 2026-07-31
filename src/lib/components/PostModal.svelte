@@ -2,6 +2,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
+	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import Composer from './Composer.svelte';
 	import Icon from './shell/Icon.svelte';
 
@@ -16,6 +17,18 @@
 	let mode = $state<'simple' | 'rich'>('simple');
 	let dialog = $state<HTMLDivElement>();
 	let wasOpen = $state(false);
+	let sending = $state(false);
+
+	function postHref(uri: string) {
+		const [did, , rkey] = uri.slice('at://'.length).split('/');
+		return `/thread/${did}/${rkey}`;
+	}
+
+	function postSucceeded(uri: string) {
+		postedSignal.notify();
+		postFollowNotice.show(postHref(uri));
+		composerHost.hide();
+	}
 
 	// 開くたびに「あっさり」へ戻す。日常の投稿は短文が圧倒的に多く、
 	// 毎回同じ場所に同じものが出る予測可能性を優先する。
@@ -30,14 +43,14 @@
 	});
 
 	function keydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && composerHost.open) {
+		if (event.key === 'Escape' && composerHost.open && !sending) {
 			event.preventDefault();
 			composerHost.hide();
 		}
 	}
 
 	function backdropClick(event: MouseEvent) {
-		if (event.target === event.currentTarget) composerHost.hide();
+		if (event.target === event.currentTarget && !sending) composerHost.hide();
 	}
 </script>
 
@@ -65,6 +78,7 @@
 					role="tab"
 					aria-selected={mode === 'simple'}
 					class:active={mode === 'simple'}
+					disabled={sending}
 					onclick={() => (mode = 'simple')}>{m.postModeSimple()}</button
 				>
 				<button
@@ -72,12 +86,14 @@
 					role="tab"
 					aria-selected={mode === 'rich'}
 					class:active={mode === 'rich'}
+					disabled={sending}
 					onclick={() => (mode = 'rich')}>{m.postModeRich()}</button
 				>
 			</div>
 			<button
 				class="icon-action post-modal-close"
 				type="button"
+				disabled={sending}
 				aria-label={m.close()}
 				title={m.close()}
 				onclick={() => composerHost.hide()}><Icon name="close" size={18} /></button
@@ -88,8 +104,8 @@
 				{mode}
 				channel={composerHost.channel}
 				defaultScope={composerHost.defaultScope}
-				onstarted={() => composerHost.hide()}
-				onposted={() => postedSignal.notify()}
+				onsendingchange={(value) => (sending = value)}
+				onposted={postSucceeded}
 			/>
 		</div>
 	</div>

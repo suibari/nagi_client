@@ -234,6 +234,7 @@
 */
 .community-affirmation-track {
 	display: flex;
+	align-items: flex-start;
 	gap: 12px;
 	padding: 12px 13px;
 	overflow-x: auto;
@@ -275,11 +276,6 @@
 	flex: 1;
 	min-width: 0;
 	margin: 0;
-	display: -webkit-box;
-	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 7;
-	line-clamp: 7;
-	overflow: hidden;
 	color: var(--text);
 	font-size: 14px;
 	line-height: 1.72;

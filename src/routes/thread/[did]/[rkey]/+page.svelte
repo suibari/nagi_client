@@ -9,6 +9,7 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
+	import { replyDepths, replyIndent } from '$lib/thread/replyIndent';
 	let thread = $state<ThreadView>();
 	let error = $state('');
 	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
@@ -26,6 +27,7 @@
 			(reply) => !optimisticPosts.items.some((item) => item.uri === reply.uri),
 		),
 	]);
+	let replyDepthByUri = $derived(replyDepths(uri, [...(thread ? [thread.post] : []), ...replies]));
 	function postDeleted(deletedUri: string) {
 		if (deletedUri === uri) {
 			void goto('/');
@@ -68,6 +70,7 @@
 			{#each replies as reply (reply.uri)}
 				<div
 					class="thread-reply"
+					style="--reply-indent: {replyIndent(replyDepthByUri.get(reply.uri) ?? 1)}"
 					data-post-uri={reply.uri}
 					data-optimistic-key={reply.optimisticKey}
 				>

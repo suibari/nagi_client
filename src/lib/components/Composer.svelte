@@ -35,14 +35,13 @@
 	// 「こっそり」で表現する（レコード上は kossori）。
 	let {
 		onposted,
-		onstarted,
+		onsendingchange,
 		channel,
 		defaultScope = 'feed',
 		mode = 'simple',
 	}: {
-		onposted: () => void | Promise<void>;
-		/** 楽観投稿を積んで入力欄をクリアした直後。モーダルを閉じるのに使う。 */
-		onstarted?: () => void;
+		onposted: (uri: string) => void | Promise<void>;
+		onsendingchange?: (sending: boolean) => void;
 		channel?: { uri: string; cid: string; name?: string };
 		defaultScope?: PostScope;
 		mode?: 'simple' | 'rich';
@@ -233,12 +232,10 @@
 			threadKossori: kossori,
 		});
 		busy = true;
+		onsendingchange?.(true);
 		error = '';
 		warning = '';
 		draftError = '';
-		clearComposer();
-		// 楽観投稿はもうフィードに出ているので、アップロードの完了を待たずに畳んでよい。
-		onstarted?.();
 		try {
 			const assets = await uploadPostAssets(draft);
 			const response = await createPost(draft, assets);
@@ -282,12 +279,14 @@
 					warning = e instanceof Error ? e.message : m.standardSiteFailed();
 				}
 			}
-			await Promise.resolve(onposted()).catch(() => undefined);
+			clearComposer();
+			await Promise.resolve(onposted(response.data.uri)).catch(() => undefined);
 		} catch (e) {
 			optimisticPosts.remove(optimisticId);
 			error = e instanceof Error ? e.message : m.postFailed();
 		} finally {
 			busy = false;
+			onsendingchange?.(false);
 		}
 	}
 
@@ -400,7 +399,8 @@
 				title={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
 				onclick={() => submit()}
 			>
-				<Icon name={busy ? 'refresh' : 'send'} size={18} />
+				{#if busy}<span class="submit-spinner" aria-hidden="true"></span>
+				{:else}<Icon name="send" size={18} />{/if}
 				<span>{busy ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
 			</button>
 		</div>

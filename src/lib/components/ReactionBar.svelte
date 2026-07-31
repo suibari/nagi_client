@@ -35,6 +35,7 @@
 		pickerOpen = $bindable(false),
 		pickerAnchor,
 		ontoggled,
+		onpickerclose,
 		showReactors = true,
 	}: {
 		uri: string;
@@ -43,6 +44,7 @@
 		pickerOpen?: boolean;
 		pickerAnchor?: HTMLElement;
 		ontoggled?: (active: boolean) => void;
+		onpickerclose?: () => void;
 		showReactors?: boolean;
 	} = $props();
 	const REACTION = 'com.suibari.nagi.reaction';
@@ -205,6 +207,7 @@
 	function closePicker() {
 		pickerOpen = false;
 		fullPickerOpen = false;
+		onpickerclose?.();
 		requestAnimationFrame(() => pickerAnchor?.focus());
 	}
 	function markCustomUnavailable(uri: string) {
@@ -234,6 +237,7 @@
 		if (busy) return;
 		pickerOpen = false;
 		fullPickerOpen = false;
+		onpickerclose?.();
 		const custom = typeof raw === 'string' ? undefined : raw;
 		const emoji = custom ? custom.name : (raw as string).normalize('NFC');
 		const key = custom ? custom.uri : emoji;

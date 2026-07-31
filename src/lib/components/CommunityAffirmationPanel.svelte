@@ -96,6 +96,10 @@
 		if (active) handleItem(uri);
 	}
 
+	function handlePickerClose(uri: string) {
+		if (openPickerUri === uri) openPickerUri = undefined;
+	}
+
 	/** 1枚ぶん送る。カード幅はレイアウト依存なので実測から出す。 */
 	function scrollByCard(direction: 1 | -1) {
 		if (!track) return;
@@ -166,19 +170,18 @@
 							pickerOpen={openPickerUri === item.uri}
 							pickerAnchor={reactionButtons[item.uri]}
 							ontoggled={(active) => handleReactionToggle(item.uri, active)}
+							onpickerclose={() => handlePickerClose(item.uri)}
 						/>
 						<button
 							bind:this={reactionButtons[item.uri]}
 							class="community-affirmation-react"
 							class:active={openPickerUri === item.uri}
 							aria-expanded={openPickerUri === item.uri}
-							aria-label={openPickerUri === item.uri
-								? m.closeEmojiAria()
-								: m.communityAffirmationReactAria()}
+							aria-label={m.communityAffirmationReactAria()}
 							onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
 						>
 							<Icon name="emoji" size={16} />
-							<span>{openPickerUri === item.uri ? m.close() : m.communityAffirmationReact()}</span>
+							<span>{m.communityAffirmationReact()}</span>
 						</button>
 					</div>
 				</article>

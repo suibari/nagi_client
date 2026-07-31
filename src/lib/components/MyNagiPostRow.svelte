@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { ActorView, PostView } from '$lib/api/types';
-	import { m, relativeTime } from '$lib/i18n/i18n.svelte';
+	import { i18n, m, relativeTime } from '$lib/i18n/i18n.svelte';
 	import Avatar from './Avatar.svelte';
 	import ChatBubble from './ChatBubble.svelte';
 	import Icon from './shell/Icon.svelte';
+	import { languageName, languagePreferences } from '$lib/i18n/languagePreferences.svelte';
+	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 
 	/**
 	 * my Nagi の各セクションで使う、投稿1件の表示。
@@ -34,6 +36,34 @@
 	} = $props();
 
 	const author = $derived(actor ?? post.author);
+	let translationEligible = $derived(
+		languagePreferences.autoTranslate &&
+			isTranslationCandidate(post, languagePreferences.translationLanguage),
+	);
+	let translation = $derived(
+		translationEligible
+			? postTranslations.entry(post.uri, languagePreferences.translationLanguage)
+			: undefined,
+	);
+	let targetLanguageName = $derived(
+		languageName(languagePreferences.translationLanguage, i18n.locale),
+	);
+	let previewText = $derived(
+		!translationEligible || translation?.status === 'failed'
+			? post.text
+			: translation?.status === 'translated'
+				? translation.text
+				: translation?.status === 'loading' && translation.english
+					? translation.english.text
+					: m.translatingTo({ language: targetLanguageName }),
+	);
+
+	$effect(() => {
+		const target = languagePreferences.translationLanguage;
+		void target;
+		if (!translationEligible || translation) return;
+		postTranslations.ensure(post);
+	});
 </script>
 
 <div class="my-nagi-post" class:open>
@@ -53,7 +83,8 @@
 		</span>
 		{#if !open}
 			<span class="my-nagi-post-text">
-				{#if post.text.trim()}{post.text}{:else}<span class="muted">{m.myNagiNoText()}</span>{/if}
+				{#if previewText.trim()}{previewText}{:else}<span class="muted">{m.myNagiNoText()}</span
+					>{/if}
 			</span>
 		{/if}
 	</button>
