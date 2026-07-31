@@ -1,4 +1,4 @@
-import type { ChannelSelection, MentionSelection } from '$lib/atproto/facets';
+import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 import type { LinkCardDraft } from '$lib/atproto/records';
 import type { ImageAttachment } from '$lib/images';
 import { clearDrafts, deleteDraft, listDrafts, putDraft, type StoredDraft } from './storage';
@@ -10,6 +10,7 @@ export type ComposerSnapshot = {
 	linkCards: LinkCardDraft[];
 	mentions: MentionSelection[];
 	channels: ChannelSelection[];
+	emojis: EmojiSelection[];
 	dismissedUrls: string[];
 };
 
@@ -35,6 +36,7 @@ class Drafts {
 			text: snapshot.text,
 			mentions: snapshot.mentions,
 			channels: snapshot.channels,
+			emojis: snapshot.emojis,
 			images: snapshot.attachments.map(({ id, blob, alt, contentWarning, aspectRatio }) => ({
 				id,
 				blob,

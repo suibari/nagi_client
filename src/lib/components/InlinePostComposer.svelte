@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ChannelSelection, MentionSelection } from '$lib/atproto/facets';
+	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import type { ImageAttachment } from '$lib/images';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -19,6 +19,7 @@
 		text = $bindable(),
 		mentions = $bindable(),
 		channels = $bindable<ChannelSelection[]>([]),
+		emojis = $bindable<EmojiSelection[]>([]),
 		channelSuggestionsEnabled = false,
 		attachments = $bindable(),
 		linkCards = $bindable(),
@@ -33,6 +34,7 @@
 		text: string;
 		mentions: MentionSelection[];
 		channels?: ChannelSelection[];
+		emojis?: EmojiSelection[];
 		channelSuggestionsEnabled?: boolean;
 		attachments: ImageAttachment[];
 		linkCards: LinkCardDraft[];
@@ -61,6 +63,7 @@
 			bind:value={text}
 			bind:mentions
 			bind:channels
+			bind:emojis
 			{channelSuggestionsEnabled}
 			{placeholder}
 			disabled={busy}

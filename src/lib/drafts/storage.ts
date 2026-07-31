@@ -1,4 +1,4 @@
-import type { ChannelSelection, MentionSelection } from '$lib/atproto/facets';
+import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 
 /**
  * 下書きは非公開データだが、AppView に置くと下書き本文と画像バイトをサーバが抱えることに
@@ -27,6 +27,8 @@ export type StoredDraft = {
 	mentions: MentionSelection[];
 	/** 候補から明示選択したチャンネルタグ。旧下書きには無いので復元側で空配列にする。 */
 	channels?: ChannelSelection[];
+	/** 本文内Bluemojiの参照範囲。旧下書きでは未定義。 */
+	emojis?: EmojiSelection[];
 	images: StoredDraftImage[];
 	linkCards: StoredDraftLinkCard[];
 	/** ユーザーが × で消したリンクカードの URL。復元時に再取得させないため。 */

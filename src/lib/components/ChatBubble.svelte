@@ -29,6 +29,7 @@
 		restorePostEditState,
 		validChannelSelections,
 		type ChannelSelection,
+		type EmojiSelection,
 		type MentionSelection,
 	} from '$lib/atproto/facets';
 	import {
@@ -88,11 +89,13 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let channels = $state<ChannelSelection[]>([]);
+	let emojis = $state<EmojiSelection[]>([]);
 	let kossoriBusy = $state(false);
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
 	let editing = $state(false);
 	let editText = $state('');
 	let editMentions = $state<MentionSelection[]>([]);
+	let editEmojis = $state<EmojiSelection[]>([]);
 	let editImages = $state<PostEditImage[]>([]);
 	let editImageProcessing = $state(false);
 	let editBusy = $state(false);
@@ -203,6 +206,7 @@
 		linkCards = [];
 		mentions = [];
 		channels = [];
+		emojis = [];
 	}
 	function startEdit() {
 		if (!$session) {
@@ -213,6 +217,7 @@
 		const restored = restorePostEditState(post.text, post.facets);
 		editText = restored.text;
 		editMentions = restored.mentions;
+		editEmojis = restored.emojis;
 		editImageProcessing = false;
 		editImages = (post.images ?? []).map((image, sourceIndex) => ({
 			kind: 'existing',
@@ -228,6 +233,7 @@
 	function cancelEdit() {
 		editing = false;
 		editText = '';
+		editEmojis = [];
 		editMentions = [];
 		editImages = [];
 		editImageProcessing = false;
@@ -280,7 +286,16 @@
 			editError = m.editPostFailed();
 			return;
 		}
-		const draft = preparePostDraft(editText, undefined, undefined, [], [], editMentions);
+		const draft = preparePostDraft(
+			editText,
+			undefined,
+			undefined,
+			[],
+			[],
+			editMentions,
+			[],
+			editEmojis,
+		);
 		if (
 			!post.cwRestricted &&
 			(hasContentWarning(draft.text) || editImages.some((image) => image.contentWarning))
@@ -306,6 +321,7 @@
 			editing = false;
 			editText = '';
 			editMentions = [];
+			editEmojis = [];
 			editImages = [];
 			editImageProcessing = false;
 			// standard.site の記事にしてある投稿なら本文を追従させる。記事化していない
@@ -352,6 +368,7 @@
 			linkCards,
 			mentions,
 			mode === 'quote' ? channels : [],
+			emojis,
 			// こっそりはスレッドルートだけが所有するため、返信レコードへ複製しない。
 			false,
 			targetChannel,
@@ -380,6 +397,7 @@
 		linkCards = [];
 		mentions = [];
 		channels = [];
+		emojis = [];
 		composeMode = undefined;
 		await tick();
 		const optimisticTarget = document.querySelector(`[data-optimistic-key="${optimisticId}"]`);
@@ -489,6 +507,7 @@
 					id={`edit-${post.cid}`}
 					bind:value={editText}
 					bind:mentions={editMentions}
+					bind:emojis={editEmojis}
 					placeholder={m.editPlaceholder()}
 					disabled={editBusy}
 					contentWarningEnabled={Boolean(post.cwRestricted)}
@@ -680,6 +699,7 @@
 		bind:text={composeText}
 		bind:mentions
 		bind:channels
+		bind:emojis
 		channelSuggestionsEnabled={composeMode === 'quote'}
 		bind:attachments
 		bind:linkCards

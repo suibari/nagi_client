@@ -1,7 +1,12 @@
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
-import { parsePostText, type ChannelSelection, type MentionSelection } from './facets';
+import {
+	parsePostText,
+	type ChannelSelection,
+	type EmojiSelection,
+	type MentionSelection,
+} from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment, PostEditImage } from '$lib/images';
 import type { EmojiView, PostImage } from '$lib/api/types';
@@ -61,6 +66,7 @@ export function preparePostDraft(
 	linkCards: LinkCardDraft[] = [],
 	mentions: MentionSelection[] = [],
 	channels: ChannelSelection[] = [],
+	emojis: EmojiSelection[] = [],
 	kossori = false,
 	channel?: { uri: string; cid: string },
 	channelOnly = false,
@@ -78,6 +84,11 @@ export function preparePostDraft(
 			...selected,
 			start: selected.start - leadingWhitespace,
 			end: selected.end - leadingWhitespace,
+		})),
+		emojis.map((selection) => ({
+			...selection,
+			start: selection.start - leadingWhitespace,
+			end: selection.end - leadingWhitespace,
 		})),
 	);
 	return {

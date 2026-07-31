@@ -13,6 +13,7 @@
 	let thread = $state<ThreadView>();
 	let error = $state('');
 	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
+	let threadRootUri = $derived(thread?.post.uri ?? uri);
 	async function refreshThread() {
 		const next = (await getThread(uri)).thread;
 		void postTranslations.prepare([next.post, ...next.replies]);
@@ -20,16 +21,16 @@
 		thread = next;
 	}
 	let replies = $derived([
-		...optimisticPosts.items.filter(
-			(item) => item.reply?.root.uri === uri || item.reply?.parent.uri === uri,
-		),
+		...optimisticPosts.items.filter((item) => item.reply?.root.uri === threadRootUri),
 		...(thread?.replies ?? []).filter(
 			(reply) => !optimisticPosts.items.some((item) => item.uri === reply.uri),
 		),
 	]);
-	let replyDepthByUri = $derived(replyDepths(uri, [...(thread ? [thread.post] : []), ...replies]));
+	let replyDepthByUri = $derived(
+		replyDepths(threadRootUri, [...(thread ? [thread.post] : []), ...replies]),
+	);
 	function postDeleted(deletedUri: string) {
-		if (deletedUri === uri) {
+		if (deletedUri === uri || deletedUri === thread?.post.uri) {
 			void goto('/');
 			return;
 		}
@@ -41,9 +42,7 @@
 		const timer = setInterval(() => {
 			if (
 				document.visibilityState === 'visible' &&
-				optimisticPosts.items.some(
-					(item) => item.reply?.root.uri === uri || item.reply?.parent.uri === uri,
-				)
+				optimisticPosts.items.some((item) => item.reply?.root.uri === threadRootUri)
 			)
 				void refreshThread().catch(() => undefined);
 		}, 3_000);
@@ -66,7 +65,9 @@
 					thread.post.threadKossori ?? thread.post.kossori ?? thread.post.channelOnly,
 				)}
 			/>
-			<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
+			<div data-post-uri={thread.post.uri}>
+				<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
+			</div>
 			{#each replies as reply (reply.uri)}
 				<div
 					class="thread-reply"

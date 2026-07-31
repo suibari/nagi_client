@@ -9,6 +9,7 @@ import {
 import {
 	validChannelSelections,
 	type ChannelSelection,
+	type EmojiSelection,
 	type MentionSelection,
 } from '$lib/atproto/facets';
 import type { ImageAttachment } from '$lib/images';
@@ -31,6 +32,7 @@ export class NewsQuote {
 	linkCards = $state<LinkCardDraft[]>([]);
 	mentions = $state<MentionSelection[]>([]);
 	channels = $state<ChannelSelection[]>([]);
+	emojis = $state<EmojiSelection[]>([]);
 
 	get empty() {
 		return !this.text.trim() && !this.attachments.length && !this.linkCards.length;
@@ -53,6 +55,7 @@ export class NewsQuote {
 		this.linkCards = [];
 		this.mentions = [];
 		this.channels = [];
+		this.emojis = [];
 	}
 
 	cancel() {
@@ -73,6 +76,7 @@ export class NewsQuote {
 			this.linkCards,
 			this.mentions,
 			this.channels,
+			this.emojis,
 			false,
 			selectedChannel ? { uri: selectedChannel.uri, cid: selectedChannel.cid } : undefined,
 		);

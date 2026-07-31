@@ -1,17 +1,25 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { parsePostText, type ChannelSelection, type MentionSelection } from '$lib/atproto/facets';
+	import {
+		parsePostText,
+		type ChannelSelection,
+		type EmojiSelection,
+		type MentionSelection,
+	} from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import MarkdownPalette, { type MarkdownFormat } from './MarkdownPalette.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
 	import RichText from './RichText.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { parseContentWarning } from '$lib/atproto/contentWarning';
+	import type { EmojiView } from '$lib/api/types';
+	import QuickEmojiPalette from './QuickEmojiPalette.svelte';
 
 	let {
 		value = $bindable(''),
 		mentions = $bindable<MentionSelection[]>([]),
 		channels = $bindable<ChannelSelection[]>([]),
+		emojis = $bindable<EmojiSelection[]>([]),
 		channelSuggestionsEnabled = false,
 		id,
 		placeholder,
@@ -26,6 +34,7 @@
 		value?: string;
 		mentions?: MentionSelection[];
 		channels?: ChannelSelection[];
+		emojis?: EmojiSelection[];
 		channelSuggestionsEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
@@ -47,14 +56,17 @@
 		applyMarkdown: (format: MarkdownFormat) => void;
 		applyContentWarning: () => void;
 		insertAtCaret: (text: string) => void;
+		insertEmoji: (emoji: string | EmojiView) => void;
 	}>();
+	let emojiPickerOpen = $state(false);
+	let emojiButton = $state<HTMLButtonElement>();
 	// あっさりへ戻したときにプレビューのまま固まらないようにする。
 	$effect(() => {
 		if (mode === 'simple' && preview) preview = false;
 	});
 	let hasSelection = $state(false);
 	// 投稿時と同じ変換をかけ、[ラベル](URL)・生URL・メンションが facet になった状態を見せる
-	let parsed = $derived(preview ? parsePostText(value, mentions, channels) : undefined);
+	let parsed = $derived(preview ? parsePostText(value, mentions, channels, emojis) : undefined);
 	let contentWarning = $derived(parseContentWarning(parsed?.text ?? value));
 	let contentWarningError = $derived(
 		contentWarning.status === 'invalid'
@@ -104,6 +116,7 @@
 		bind:value
 		bind:mentions
 		bind:channels
+		bind:emojis
 		{channelSuggestionsEnabled}
 		{id}
 		{placeholder}
@@ -116,6 +129,19 @@
 	<div class="composer-tools" class:with-leading={tools}>
 		{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}
 		<div class="composer-format-tools">
+			<button
+				bind:this={emojiButton}
+				class="icon-action"
+				class:active={emojiPickerOpen}
+				type="button"
+				{disabled}
+				aria-label={m.insertEmoji()}
+				title={m.insertEmoji()}
+				aria-haspopup="dialog"
+				aria-expanded={emojiPickerOpen}
+				onmousedown={(event) => event.preventDefault()}
+				onclick={() => (emojiPickerOpen = !emojiPickerOpen)}><Icon name="emoji" size={17} /></button
+			>
 			{#if contentWarningEnabled}<button
 					class="icon-action content-warning-tool"
 					class:active={contentWarning.status === 'valid'}
@@ -132,6 +158,13 @@
 		</div>
 	</div>
 </div>
+<QuickEmojiPalette
+	bind:open={emojiPickerOpen}
+	anchor={emojiButton}
+	select={(emoji) => editor?.insertEmoji(emoji)}
+	ariaLabel={m.insertEmojiPickerAria()}
+	choiceAriaLabel={(emoji) => m.insertEmojiChoiceAria({ emoji })}
+/>
 {#if contentWarningError}<p class="error cw-error" role="alert">{contentWarningError}</p>{/if}
 
 <style>

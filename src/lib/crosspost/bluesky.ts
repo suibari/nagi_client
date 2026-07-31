@@ -129,7 +129,16 @@ export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);
-	const chunks = splitForBluesky(draft.text, draft.facets as Facet[]);
+	const chunks = splitForBluesky(draft.text, draft.facets as Facet[]).map((chunk) => ({
+		...chunk,
+		facets: chunk.facets.flatMap((facet) => {
+			// 公式 Bluemoji facet は相互運用のため残し、Nagi の正確な rkey 解決用参照だけ外す。
+			const features = facet.features.filter(
+				(feature) => feature.$type !== 'com.suibari.nagi.richtext#bluemoji',
+			);
+			return features.length ? [{ ...facet, features }] : [];
+		}),
+	}));
 	if (!chunks.length) return;
 	const embed = buildEmbed(assets);
 	const base = Date.parse(draft.createdAt) || Date.now();

@@ -17,6 +17,7 @@
 	import {
 		validChannelSelections,
 		type ChannelSelection,
+		type EmojiSelection,
 		type MentionSelection,
 	} from '$lib/atproto/facets';
 	import { drafts } from '$lib/drafts/drafts.svelte';
@@ -54,6 +55,7 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let channels = $state<ChannelSelection[]>([]);
+	let emojis = $state<EmojiSelection[]>([]);
 	// defaultScope はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
 	let scope = $state<PostScope>(untrack(() => defaultScope));
 	let scopeDialogOpen = $state(false);
@@ -92,9 +94,7 @@
 		hasContentWarning(text) || attachments.some((image) => image.contentWarning),
 	);
 	const contentWarningValid = $derived(validContentWarningSyntax(text));
-	const externalReady = $derived(
-		externalTarget === 'bluesky' ? crosspostReady : standardSiteReady,
-	);
+	const externalReady = $derived(externalTarget === 'bluesky' ? crosspostReady : standardSiteReady);
 	/**
 	 * 外部にも出せる条件。Bluesky（クロスポスト）と standard.site（記事化）で
 	 * 元々別々に書かれていたが、条件は「チャンネル投稿でない・CW が無い」で一致するため
@@ -149,6 +149,7 @@
 		linkCards = [];
 		mentions = [];
 		channels = [];
+		emojis = [];
 		dismissedUrls = [];
 		scope = defaultScope;
 		articleTitle = '';
@@ -164,6 +165,7 @@
 				linkCards,
 				mentions,
 				channels,
+				emojis,
 				dismissedUrls,
 			});
 			clearComposer();
@@ -190,6 +192,7 @@
 		text = draft.text;
 		mentions = [...draft.mentions];
 		channels = [...(draft.channels ?? [])];
+		emojis = [...(draft.emojis ?? [])];
 		attachments = draft.images.map((image) => ({
 			...image,
 			previewUrl: URL.createObjectURL(image.blob),
@@ -224,6 +227,7 @@
 			linkCards,
 			mentions,
 			channels,
+			emojis,
 			kossori,
 			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
 		);
@@ -326,6 +330,7 @@
 		bind:value={text}
 		bind:mentions
 		bind:channels
+		bind:emojis
 		channelSuggestionsEnabled={!channel}
 		placeholder={m.composerPlaceholder()}
 		ariaLabel={m.composerAria()}

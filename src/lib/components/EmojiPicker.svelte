@@ -29,6 +29,8 @@
 		close,
 		showFavorites = true,
 		oncustomunavailable,
+		ariaLabel = m.emojiPickerAria(),
+		choiceAriaLabel = (emoji: string) => m.reactWithAria({ emoji }),
 	}: {
 		anchor: HTMLElement;
 		select: (emoji: string | EmojiView) => void;
@@ -36,6 +38,8 @@
 		/** 設定画面から「お気に入りに追加する絵文字」を選ぶときは false。 */
 		showFavorites?: boolean;
 		oncustomunavailable?: (uri: string) => void;
+		ariaLabel?: string;
+		choiceAriaLabel?: (emoji: string) => string;
 	} = $props();
 	type FavoriteItem = { id: string; choice: ReactionChoice };
 	// パレットを開いた時点のお気に入りを編集対象にし、並び替えのたびに保存する。
@@ -239,7 +243,7 @@
 	class:positioned
 	style={positionStyle}
 	role="dialog"
-	aria-label={m.emojiPickerAria()}
+	aria-label={ariaLabel}
 >
 	<div class="emoji-tabs" role="tablist">
 		{#if showFavorites}
@@ -314,7 +318,7 @@
 							<button
 								class="emoji-custom-item emoji-unicode-item"
 								title={emoji.label}
-								aria-label={m.reactWithAria({ emoji: emoji.label })}
+								aria-label={choiceAriaLabel(emoji.label)}
 								onclick={() => select(emoji.emoji)}
 							>
 								{emoji.emoji}
@@ -346,7 +350,7 @@
 						<button
 							class="emoji-custom-item"
 							title={displayEmojiName(emoji.name)}
-							aria-label={m.reactWithAria({ emoji: displayEmojiName(emoji.name) })}
+							aria-label={choiceAriaLabel(displayEmojiName(emoji.name))}
 							onclick={() => select(emoji)}
 						>
 							<BluemojiMedia {emoji} />

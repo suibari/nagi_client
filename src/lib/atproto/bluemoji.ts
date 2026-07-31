@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
-import type { EmojiView } from '$lib/api/types';
+import type { BluemojiFacetFormats, EmojiView } from '$lib/api/types';
 import { APPVIEW_URL, searchEmojis } from '$lib/api/appview';
 import { listRecords as pdsListRecords, resolvePdsUrl } from '$lib/atproto/pds';
 
@@ -137,6 +137,7 @@ export type MyEmoji = {
 	did: string;
 	url: string;
 	mediaType: EmojiView['mediaType'];
+	formats?: BluemojiFacetFormats;
 };
 
 type BlobRef = { ref?: { $link?: unknown }; mimeType?: unknown; size?: unknown };
@@ -190,7 +191,7 @@ const directMediaOf = (
 	pds: string,
 	did: string,
 	raw: unknown,
-): Pick<MyEmoji, 'url' | 'mediaType'> | undefined => {
+): Pick<MyEmoji, 'url' | 'mediaType' | 'formats'> | undefined => {
 	const formats = raw as Record<string, any>;
 	if (!formats || formats.$type !== FORMATS_V0) return undefined;
 	const lottie = validBytes(formats.lottie);
@@ -198,9 +199,15 @@ const directMediaOf = (
 		return {
 			url: `data:application/lottie+zip;base64,${lottie}`,
 			mediaType: 'application/lottie+zip',
+			formats: { $type: 'blue.moji.richtext.facet#formats_v0', lottie: true },
 		};
 	const apng = validBytes(formats.apng_128);
-	if (apng) return { url: `data:image/apng;base64,${apng}`, mediaType: 'image/apng' };
+	if (apng)
+		return {
+			url: `data:image/apng;base64,${apng}`,
+			mediaType: 'image/apng',
+			formats: { $type: 'blue.moji.richtext.facet#formats_v0', apng_128: true },
+		};
 	for (const [key, mediaType] of [
 		['gif_128', 'image/gif'],
 		['webp_128', 'image/webp'],
@@ -212,6 +219,10 @@ const directMediaOf = (
 			return {
 				url: pdsBlobUrl(pds, did, link),
 				mediaType,
+				formats: {
+					$type: 'blue.moji.richtext.facet#formats_v0',
+					[key]: link,
+				},
 			};
 	}
 	const original = formats.original as BlobRef | undefined;

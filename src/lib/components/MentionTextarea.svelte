@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { searchActors, searchChannelsTypeahead } from '$lib/api/appview';
 	import { createActorSearch } from '$lib/api/useActorSearch.svelte';
-	import type { ActorView, ChannelView } from '$lib/api/types';
-	import type { ChannelSelection, MentionSelection } from '$lib/atproto/facets';
+	import type { ActorView, ChannelView, EmojiView } from '$lib/api/types';
+	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
 	import ChannelSuggestionList from './ChannelSuggestionList.svelte';
@@ -16,6 +16,7 @@
 		value = $bindable(''),
 		mentions = $bindable<MentionSelection[]>([]),
 		channels = $bindable<ChannelSelection[]>([]),
+		emojis = $bindable<EmojiSelection[]>([]),
 		channelSuggestionsEnabled = false,
 		id,
 		placeholder,
@@ -28,6 +29,7 @@
 		value?: string;
 		mentions?: MentionSelection[];
 		channels?: ChannelSelection[];
+		emojis?: EmojiSelection[];
 		channelSuggestionsEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
@@ -80,6 +82,7 @@
 		const delta = next.length - previous.length;
 		mentions = shiftedSelections(mentions, prefix, oldEnd, delta);
 		channels = shiftedSelections(channels, prefix, oldEnd, delta);
+		emojis = shiftedSelections(emojis, prefix, oldEnd, delta);
 	}
 
 	function resetChannelSearch() {
@@ -190,6 +193,7 @@
 			});
 		mentions = shiftForInsertions(mentions);
 		channels = shiftForInsertions(channels);
+		emojis = shiftForInsertions(emojis);
 		value = next;
 		close();
 		requestAnimationFrame(() => {
@@ -280,8 +284,22 @@
 				);
 			mentions = shrink(mentions);
 			channels = shrink(channels);
+			emojis = shrink(emojis);
 		}
 		insertText([{ at: start, text }], start + text.length, start + text.length);
+	}
+
+	/** Unicode は文字として、Bluemoji は :name: と追跡可能な参照範囲として挿入する。 */
+	export function insertEmoji(emoji: string | EmojiView) {
+		if (typeof emoji === 'string') {
+			insertAtCaret(emoji.normalize('NFC'));
+			return;
+		}
+		const start = textarea.selectionStart;
+		insertAtCaret(emoji.name);
+		emojis = [...emojis, { start, end: start + emoji.name.length, emoji }].sort(
+			(a, b) => a.start - b.start,
+		);
 	}
 
 	export function applyMarkdown(format: MarkdownFormat) {
@@ -304,6 +322,7 @@
 			}));
 		mentions = remap(mentions);
 		channels = remap(channels);
+		emojis = remap(emojis);
 		value = result.text;
 		close();
 		requestAnimationFrame(() => {
@@ -331,6 +350,7 @@
 			{ start: token.start, end: token.start + label.length, did: actor.did, handle: actor.handle },
 		].sort((a, b) => a.start - b.start);
 		channels = shiftedSelections(channels, token.start, token.end, delta);
+		emojis = shiftedSelections(emojis, token.start, token.end, delta);
 		const caret = token.start + label.length + trailingSpace.length;
 		close();
 		requestAnimationFrame(() => {
@@ -348,6 +368,7 @@
 		const delta = replacementLength - (token.end - token.start);
 		value = `${value.slice(0, token.start)}${label}${trailingSpace}${suffix}`;
 		mentions = shiftedSelections(mentions, token.start, token.end, delta);
+		emojis = shiftedSelections(emojis, token.start, token.end, delta);
 		channels = [
 			...shiftedSelections(channels, token.start, token.end, delta),
 			{

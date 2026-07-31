@@ -117,6 +117,7 @@
 							bind:text={quote.text}
 							bind:mentions={quote.mentions}
 							bind:channels={quote.channels}
+							bind:emojis={quote.emojis}
 							channelSuggestionsEnabled
 							bind:attachments={quote.attachments}
 							bind:linkCards={quote.linkCards}

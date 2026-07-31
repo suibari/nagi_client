@@ -1,4 +1,4 @@
-import type { Facet } from '$lib/api/types';
+import type { BluemojiFacetFormats, EmojiView, Facet } from '$lib/api/types';
 import { httpUrl } from './facets';
 
 export type Mark = 'bold' | 'italic' | 'strike' | 'code';
@@ -9,13 +9,20 @@ export type InlineRun = {
 	external?: boolean;
 	contentWarning?: boolean;
 	contentWarningStart?: boolean;
+	bluemoji?: EmojiView;
 };
 export type Block =
 	| { type: 'p' | 'h1' | 'h2' | 'h3' | 'quote'; runs: InlineRun[] }
 	| { type: 'ul'; items: InlineRun[][] }
 	| { type: 'ol'; items: InlineRun[][]; start: number };
 
-type LinkRange = { start: number; end: number; href?: string; external: boolean };
+type FacetRange = {
+	start: number;
+	end: number;
+	href?: string;
+	external: boolean;
+	bluemoji?: EmojiView;
+};
 /** 元テキストの文字位置を保持したブロック本文。map[i] は text[i] の元位置（-1 は挿入した改行）。 */
 type Piece = { text: string; map: number[] };
 
@@ -28,11 +35,23 @@ const isWord = (value: string | undefined) => value !== undefined && /[\p{L}\p{N
  * facet のバイト範囲を文字インデックスへ変換する。RichText が持っていた検証をそのまま踏襲し、
  * 重なり・範囲外を捨て、http(s) 以外の URI はリンクにしない（javascript: の実行を防ぐ）。
  */
-function linkRanges(text: string, facets: Facet[]): LinkRange[] {
+function facetRanges(text: string, facets: Facet[]): FacetRange[] {
 	const bytes = new TextEncoder().encode(text);
-	const ranges: LinkRange[] = [];
+	const ranges: FacetRange[] = [];
 	let offset = 0;
 	for (const facet of [...facets].sort((a, b) => a.index.byteStart - b.index.byteStart)) {
+		const bluemoji = facet.features.find((item) => {
+			if (typeof item !== 'object' || item === null) return false;
+			return (item as { $type?: unknown }).$type === 'com.suibari.nagi.richtext#bluemoji';
+		}) as
+			| {
+					ref?: { uri?: unknown; cid?: unknown };
+					did?: unknown;
+					name?: unknown;
+					alt?: unknown;
+					mediaType?: unknown;
+			  }
+			| undefined;
 		const feature = facet.features.find((item) => {
 			if (typeof item !== 'object' || item === null) return false;
 			const candidate = item as { $type?: unknown; uri?: unknown; did?: unknown; tag?: unknown };
@@ -45,20 +64,49 @@ function linkRanges(text: string, facets: Facet[]): LinkRange[] {
 		}) as { $type: string; uri?: string; did?: string; tag?: string } | undefined;
 		const start = facet.index.byteStart;
 		const end = facet.index.byteEnd;
-		if (!feature || start < offset || end <= start || end > bytes.length) continue;
+		const validBluemoji =
+			typeof bluemoji?.ref?.uri === 'string' &&
+			typeof bluemoji.ref.cid === 'string' &&
+			typeof bluemoji.did === 'string' &&
+			typeof bluemoji.name === 'string' &&
+			typeof bluemoji.mediaType === 'string';
+		if ((!feature && !validBluemoji) || start < offset || end <= start || end > bytes.length)
+			continue;
 		const href =
-			feature.$type === 'app.bsky.richtext.facet#mention' && feature.did
+			feature?.$type === 'app.bsky.richtext.facet#mention' && feature.did
 				? `/profile/${encodeURIComponent(feature.did)}`
-				: feature.$type === 'app.bsky.richtext.facet#tag' && feature.tag
+				: feature?.$type === 'app.bsky.richtext.facet#tag' && feature.tag
 					? `/search?tag=${encodeURIComponent(feature.tag.toLowerCase())}`
-					: feature.uri
+					: feature?.uri
 						? httpUrl(feature.uri)
 						: undefined;
+		let emoji: EmojiView | undefined;
+		if (validBluemoji) {
+			const rkey = (bluemoji!.ref!.uri as string).split('/').pop();
+			const official = facet.features.find(
+				(item) =>
+					typeof item === 'object' &&
+					item !== null &&
+					(item as { $type?: unknown }).$type === 'blue.moji.richtext.facet',
+			) as { formats?: BluemojiFacetFormats } | undefined;
+			if (rkey)
+				emoji = {
+					uri: bluemoji!.ref!.uri as string,
+					cid: bluemoji!.ref!.cid as string,
+					did: bluemoji!.did as string,
+					name: bluemoji!.name as string,
+					alt: typeof bluemoji!.alt === 'string' ? bluemoji!.alt : undefined,
+					mediaType: bluemoji!.mediaType as EmojiView['mediaType'],
+					url: `/api/emoji-asset/${encodeURIComponent(bluemoji!.did as string)}/${encodeURIComponent(rkey)}/${encodeURIComponent(bluemoji!.ref!.cid as string)}`,
+					...(official?.formats ? { formats: official.formats } : {}),
+				};
+		}
 		ranges.push({
 			start: decoder.decode(bytes.slice(0, start)).length,
 			end: decoder.decode(bytes.slice(0, end)).length,
 			href,
-			external: feature.$type === 'app.bsky.richtext.facet#link',
+			external: feature?.$type === 'app.bsky.richtext.facet#link',
+			...(emoji ? { bluemoji: emoji } : {}),
 		});
 		offset = end;
 	}
@@ -71,7 +119,7 @@ function pushRuns(
 	from: number,
 	to: number,
 	marks: Set<Mark>,
-	ranges: LinkRange[],
+	ranges: FacetRange[],
 	contentWarning?: { start: number; end: number },
 ) {
 	// marks 配列の参照を共有し、同一装飾かつ同一リンクの連続文字を 1 つの run にまとめる
@@ -84,8 +132,21 @@ function pushRuns(
 		const warning = Boolean(
 			contentWarning && source >= contentWarning.start && source < contentWarning.end,
 		);
+		if (range?.bluemoji && source === range.start) {
+			let next = i + 1;
+			while (next < to && piece.map[next] >= range.start && piece.map[next] < range.end) next++;
+			out.push({
+				text: piece.text.slice(i, next),
+				marks: list,
+				bluemoji: range.bluemoji,
+				...(warning ? { contentWarning: true } : {}),
+			});
+			i = next - 1;
+			continue;
+		}
 		if (
 			last &&
+			!last.bluemoji &&
 			last.marks === list &&
 			last.href === range?.href &&
 			Boolean(last.contentWarning) === warning
@@ -128,7 +189,7 @@ function scanInline(
 	from: number,
 	to: number,
 	marks: Set<Mark>,
-	ranges: LinkRange[],
+	ranges: FacetRange[],
 	out: InlineRun[],
 	contentWarning?: { start: number; end: number },
 ) {
@@ -206,7 +267,7 @@ function scanInline(
 
 function inlineRuns(
 	piece: Piece,
-	ranges: LinkRange[],
+	ranges: FacetRange[],
 	contentWarning?: { start: number; end: number },
 ): InlineRun[] {
 	const out: InlineRun[] = [];
@@ -216,6 +277,8 @@ function inlineRuns(
 		const last = merged[merged.length - 1];
 		if (
 			last &&
+			!last.bluemoji &&
+			!run.bluemoji &&
 			last.href === run.href &&
 			Boolean(last.contentWarning) === Boolean(run.contentWarning) &&
 			last.marks.length === run.marks.length &&
@@ -254,7 +317,7 @@ export function parseRichText(
 	facets: Facet[] = [],
 	contentWarning?: { start: number; end: number },
 ): Block[] {
-	const ranges = linkRanges(source, facets);
+	const ranges = facetRanges(source, facets);
 	const blocks: Block[] = [];
 	const lines: Array<{ start: number; end: number }> = [];
 	for (let offset = 0; offset <= source.length;) {

@@ -1,10 +1,16 @@
 <script lang="ts">
 	import type { InlineRun } from '$lib/atproto/markdown';
 	import ContentWarningMask from './ContentWarningMask.svelte';
+	import BluemojiMedia from './BluemojiMedia.svelte';
 	let { runs, warningState }: { runs: InlineRun[]; warningState: { revealed: boolean } } = $props();
+	let unavailable = $state<string[]>([]);
 </script>
 
-{#each runs as run}{#snippet body()}{#if run.href}<a
+{#each runs as run}{#snippet body()}{#if run.bluemoji && !unavailable.includes(run.bluemoji.uri)}<BluemojiMedia
+				class="inline-bluemoji"
+				emoji={run.bluemoji}
+				onunavailable={() => (unavailable = [...unavailable, run.bluemoji!.uri])}
+			/>{:else if run.href}<a
 				class="rich-link"
 				href={run.href}
 				target={run.external ? '_blank' : undefined}
@@ -21,3 +27,19 @@
 			bind:revealed={warningState.revealed}
 			showIcon={Boolean(run.contentWarningStart)}>{@render formatted()}</ContentWarningMask
 		>{:else}{@render formatted()}{/if}{/each}
+
+<style>
+	:global(.inline-bluemoji) {
+		display: inline-flex;
+		width: 1.35em;
+		height: 1.35em;
+		vertical-align: -0.28em;
+	}
+
+	:global(.inline-bluemoji img),
+	:global(.inline-bluemoji canvas) {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+</style>

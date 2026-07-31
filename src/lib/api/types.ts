@@ -15,6 +15,14 @@ export type ActorView = {
 	currentTitle?: { ja: string; en: string };
 };
 /** 固定 Bluemoji Lexicon に準拠したカスタム絵文字ビュー。 */
+export type BluemojiFacetFormats = {
+	$type: 'blue.moji.richtext.facet#formats_v0';
+	png_128?: string;
+	webp_128?: string;
+	gif_128?: string;
+	apng_128?: boolean;
+	lottie?: boolean;
+};
 export type EmojiView = {
 	uri: string;
 	cid: string;
@@ -23,6 +31,8 @@ export type EmojiView = {
 	alt?: string;
 	url: string;
 	mediaType: `image/${string}` | 'application/lottie+zip';
+	/** 他クライアントでも本文内Bluemojiを描画できる、公式richtext facet用スナップショット。 */
+	formats?: BluemojiFacetFormats;
 };
 export type ReactionView = {
 	emoji: string;
