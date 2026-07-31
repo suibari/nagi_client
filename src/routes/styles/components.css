@@ -7,13 +7,50 @@
 	margin: 0 0 16px;
 	padding: 18px 20px;
 }
-/* 投稿フォームは thread-unit と同じカードに載せ、投稿後の楽観カードと見た目・位置を揃える */
-.composer-card {
-	background: var(--bg-raised);
-	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-card);
-	margin: 0 0 16px;
-	padding: 14px;
+/*
+	投稿フォームはポストモーダル専用。以前はタイムラインに直接置いていたので
+	thread-unit と同じカード（枠・影・吹き出し）を被せていたが、モーダルの中では
+	外枠が二重になるだけなので持たない。
+*/
+.composer {
+	display: grid;
+	gap: 8px;
+	min-width: 0;
+}
+/*
+	「しっかり」は長文用。パネルの高さを固定して本文だけを内側でスクロールさせ、
+	ツールバーと送信ボタンを常に見える位置に留める（本文の量に合わせてモーダルが
+	伸びる作りだと、長く書くほど送信ボタンが画面外へ逃げていく）。
+	長文エディタの一般的な作法で、Bluesky の長文投稿や Mastodon の作成欄も同じ。
+*/
+.composer.rich {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+/* hidden（プレビュー中）の入力欄まで display で復活させないこと。 */
+.composer.rich .composer-write:not([hidden]) {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+.composer.rich .mention-textarea {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+}
+.composer.rich .mention-textarea textarea {
+	flex: 1;
+	min-height: 0;
+	/* 高さはパネルが決めるので、つまんで伸ばす操作は無効にする。 */
+	resize: none;
+}
+.composer.rich .composer-preview {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
 }
 .welcome {
 	display: flex;
@@ -126,22 +163,59 @@
 .channel-suggestions .channel-suggestion-copy {
 	align-content: center;
 }
+/*
+	投稿範囲は必ず左端、送信は必ず右端で対にする。以前は狭い画面で折り返して
+	投稿範囲だけが1行を占めていたので、ここでは折り返さず文字数の方を削る。
+*/
 .composer-foot {
 	display: flex;
+	flex-wrap: nowrap;
 	align-items: center;
-	justify-content: space-between;
+	gap: 6px;
 	color: var(--text-muted);
 	font-size: 12px;
 }
+/* 現在の投稿範囲。押すと投稿範囲モーダル（ゲージ）が開く。 */
+.scope-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	flex: 0 1 auto;
+	min-width: 0;
+	min-height: 30px;
+	/* 送信ボタンを右端へ押しやり、投稿範囲を左端に固定する。 */
+	margin-right: auto;
+	padding: 5px 11px;
+	border: 1px solid var(--accent-border);
+	border-radius: var(--radius-pill);
+	background: var(--accent-softer);
+	color: var(--accent-strong);
+	font-size: 12px;
+	font-weight: 800;
+	cursor: pointer;
+}
+.scope-button > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.scope-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
+}
+@media (hover: hover) and (pointer: fine) {
+	.scope-button:not(:disabled):hover {
+		background: var(--accent-soft);
+	}
+}
+/* 文字数。詰まってきたら真っ先に削ってよい要素なので縮小を許す。 */
 .composer-status {
 	display: flex;
 	align-items: center;
 	gap: 7px;
 	min-width: 0;
-	margin-right: auto;
-}
-.composer-status > span:first-child {
-	flex: 0 0 auto;
+	overflow: hidden;
+	white-space: nowrap;
 }
 .composer-submit-actions {
 	display: flex;
@@ -165,12 +239,6 @@
 	background: var(--accent);
 	color: var(--text-on-accent);
 }
-.submit-secondary {
-	padding: 7px 10px;
-	border: 1px solid var(--line-strong);
-	background: var(--bg-raised);
-	color: var(--text-muted);
-}
 .composer-submit-actions button:disabled {
 	cursor: not-allowed;
 	opacity: 0.45;
@@ -179,24 +247,14 @@
 	.submit-primary:not(:disabled):hover {
 		background: var(--accent-strong);
 	}
-	.submit-secondary:not(:disabled):hover {
-		border-color: var(--accent-border);
-		color: var(--accent-strong);
-	}
 }
 .composer-submit-actions button:not(:disabled):active {
 	transform: translateY(1px);
 }
+/* 狭い画面では文字数を落として、投稿範囲と送信の対だけを残す。 */
 @media (max-width: 420px) {
-	.composer-foot {
-		flex-wrap: wrap;
-		gap: 7px 4px;
-	}
 	.composer-status {
-		flex-basis: 100%;
-	}
-	.composer-submit-actions {
-		margin-inline-start: auto;
+		display: none;
 	}
 }
 /* standard.site の投稿ごとオプトイン。条件を満たす長文のときだけ現れる。 */
@@ -770,8 +828,9 @@
 .post-action-menu button.danger {
 	color: var(--danger);
 }
-/* リプライ／引用フォームは親投稿の下に、自分側の吹き出しとしてぶら下がる */
-.composer-row:not(.composer-card) {
+/* リプライ／引用フォーム（InlinePostComposer）は親投稿の下に、自分側の吹き出しとして
+   ぶら下がる。トップレベルの投稿欄はモーダルへ移ったので、吹き出しはこちらだけが使う。 */
+.composer-row {
 	margin-top: 10px;
 }
 .post-composer label {
@@ -3493,6 +3552,46 @@ a.about-feature:focus-visible {
 .channel-hero-action:disabled {
 	opacity: 0.6;
 	cursor: default;
+}
+/* 参加ボタンはバナー上に載るので、アイコンボタンと同じ暗幕の上に置く。
+   参加中はアクセント色にして、押せば外れることを見た目で示す。 */
+.channel-join {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	block-size: 34px;
+	padding: 0 13px;
+	border: 0;
+	border-radius: var(--radius-pill);
+	background: rgb(0 0 0 / 0.4);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 800;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.channel-join:hover {
+	background: rgb(0 0 0 / 0.6);
+}
+.channel-join.joined {
+	background: var(--accent);
+	color: var(--text-on-accent);
+}
+.channel-join:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+/* CH 一覧での「参加中」バッジ。 */
+.channel-card-joined {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 9px;
+	border-radius: var(--radius-pill);
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+	font-size: 11px;
+	font-weight: 800;
 }
 /* ミュート中の CH は一覧・検索から消えるので、URL で開いたときだけ状態が分かるようにする。 */
 .channel-muted-badge {

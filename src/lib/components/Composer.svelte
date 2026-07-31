@@ -12,9 +12,8 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
+	import PostScopeDialog from './PostScopeDialog.svelte';
 	import Icon from './shell/Icon.svelte';
-	import Avatar from './Avatar.svelte';
-	import { myProfile } from '$lib/profile/me.svelte';
 	import {
 		validChannelSelections,
 		type ChannelSelection,
@@ -24,26 +23,29 @@
 	import { DraftStorageError } from '$lib/drafts/storage';
 	import DraftListDialog from './DraftListDialog.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
-	import {
-		getStandardSiteEnabled,
-		hasStandardSiteScope,
-		isArticleCandidate,
-	} from '$lib/standardsite/preferences';
+	import { getStandardSiteEnabled, hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import {
 		publishStandardSiteDocument,
 		tagsFromFacets,
 		usableAsCoverImage,
 	} from '$lib/standardsite/document';
 	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
-	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は kossori（目アイコン）で表現。
+	import { getExternalTarget, type ExternalTarget, type PostScope } from '$lib/post/scope';
+	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は投稿範囲の
+	// 「こっそり」で表現する（レコード上は kossori）。
 	let {
 		onposted,
+		onstarted,
 		channel,
-		defaultKossori = false,
+		defaultScope = 'feed',
+		mode = 'simple',
 	}: {
 		onposted: () => void | Promise<void>;
+		/** 楽観投稿を積んで入力欄をクリアした直後。モーダルを閉じるのに使う。 */
+		onstarted?: () => void;
 		channel?: { uri: string; cid: string; name?: string };
-		defaultKossori?: boolean;
+		defaultScope?: PostScope;
+		mode?: 'simple' | 'rich';
 	} = $props();
 	let text = $state('');
 	let busy = $state(false);
@@ -53,8 +55,9 @@
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let channels = $state<ChannelSelection[]>([]);
-	// defaultKossori はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
-	let kossori = $state(untrack(() => defaultKossori));
+	// defaultScope はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
+	let scope = $state<PostScope>(untrack(() => defaultScope));
+	let scopeDialogOpen = $state(false);
 	let dismissedUrls = $state<string[]>([]);
 	let draftListOpen = $state(false);
 	let draftError = $state('');
@@ -68,12 +71,13 @@
 		[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length,
 	);
 
-	// --- standard.site（ブログとしての公開）へのオプトイン --------------------
-	// 権限はサインイン時にまとめて渡し、機能の有効化は設定ページ、投稿ごとの ON/OFF は
-	// こっそりモードと同じアイコンボタンで行う。既定は常に OFF。
+	// --- 外部への同時投稿（Bluesky / standard.site）------------------------------
+	// 権限はサインイン時にまとめて渡し、機能の有効化と「どちらに出すか」は設定ページ、
+	// 投稿ごとの ON/OFF は投稿範囲ゲージの3段階目で行う。既定は常に OFF。
 	let standardSiteReady = $state(false);
-	let standardSite = $state(false);
+	let externalTarget = $state<ExternalTarget>('bluesky');
 	let articleTitle = $state('');
+	const kossori = $derived(scope === 'kossori');
 	const selectedChannel = $derived(validChannelSelections(text, channels)[0]);
 	const effectiveChannel = $derived(
 		channel ??
@@ -85,33 +89,38 @@
 					}
 				: undefined),
 	);
-	const articleCandidate = $derived(isArticleCandidate({ kossori, channel: effectiveChannel }));
 	const hasContentWarningSetting = $derived(
 		hasContentWarning(text) || attachments.some((image) => image.contentWarning),
 	);
 	const contentWarningValid = $derived(validContentWarningSyntax(text));
-	const crosspostEligible = $derived(
-		crosspostReady && !effectiveChannel && !kossori && !standardSite && !hasContentWarningSetting,
+	const externalReady = $derived(
+		externalTarget === 'bluesky' ? crosspostReady : standardSiteReady,
 	);
-	const crosspostDisabledReason = $derived(
-		kossori
-			? m.crosspostDisabledKossori()
-			: standardSite
-				? m.crosspostDisabledArticle()
+	/**
+	 * 外部にも出せる条件。Bluesky（クロスポスト）と standard.site（記事化）で
+	 * 元々別々に書かれていたが、条件は「チャンネル投稿でない・CW が無い」で一致するため
+	 * 1本にまとめている。こっそりとの排他はゲージの構造そのものが担保する。
+	 */
+	const externalEligible = $derived(
+		externalReady && !effectiveChannel && !hasContentWarningSetting,
+	);
+	const externalDisabledReason = $derived(
+		!externalReady
+			? m.postScopeExternalUnavailable()
+			: effectiveChannel
+				? m.postScopeExternalChannel()
 				: hasContentWarningSetting
 					? m.crosspostDisabledContentWarning()
-					: m.composerSubmitBluesky(),
+					: '',
 	);
+	const standardSite = $derived(scope === 'external' && externalTarget === 'standardSite');
 	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
 	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
-	const needsArticleTitle = $derived(standardSiteReady && standardSite && !headingTitle);
+	const needsArticleTitle = $derived(standardSite && externalEligible && !headingTitle);
 	const articleTitleMissing = $derived(needsArticleTitle && !articleTitle.trim());
-	// こっそり／チャンネル投稿に切り替わったら黙って落とす（意図せぬ公開を作らない）。
+	// 外部に出せない状態に変わったら黙って1段階狭める（意図せぬ公開を作らない）。
 	$effect(() => {
-		if (!articleCandidate && standardSite) standardSite = false;
-	});
-	$effect(() => {
-		if (hasContentWarningSetting && standardSite) standardSite = false;
+		if (scope === 'external' && !externalEligible) scope = 'feed';
 	});
 
 	$effect(() => {
@@ -121,6 +130,7 @@
 			void drafts.load(did);
 			crosspostReady = false;
 			standardSiteReady = false;
+			externalTarget = getExternalTarget();
 			if (did && getCrosspostEnabled()) {
 				void hasCrosspostScope().then((granted) => {
 					if ($session?.did === did) crosspostReady = granted;
@@ -141,8 +151,7 @@
 		mentions = [];
 		channels = [];
 		dismissedUrls = [];
-		kossori = defaultKossori;
-		standardSite = false;
+		scope = defaultScope;
 		articleTitle = '';
 	}
 
@@ -200,11 +209,12 @@
 		await restoreDraft(id);
 	}
 
-	async function submit(target: 'nagi' | 'nagi-and-bluesky' = 'nagi') {
+	async function submit() {
 		if (empty || busy || !$session || articleTitleMissing || !contentWarningValid) return;
+		const wantsExternal = scope === 'external' && externalEligible;
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
 		const article =
-			standardSite && !hasContentWarningSetting
+			wantsExternal && externalTarget === 'standardSite' && !hasContentWarningSetting
 				? { title: (headingTitle ?? articleTitle).trim() }
 				: undefined;
 		const draft = preparePostDraft(
@@ -227,6 +237,8 @@
 		warning = '';
 		draftError = '';
 		clearComposer();
+		// 楽観投稿はもうフィードに出ているので、アップロードの完了を待たずに畳んでよい。
+		onstarted?.();
 		try {
 			const assets = await uploadPostAssets(draft);
 			const response = await createPost(draft, assets);
@@ -237,7 +249,8 @@
 			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの
 			// 分割スレッドなので、長文記事だと Bluesky 側が連投で埋まってしまう。
 			if (
-				target === 'nagi-and-bluesky' &&
+				wantsExternal &&
+				externalTarget === 'bluesky' &&
 				!draft.kossori &&
 				!draft.channel &&
 				!draft.cwRestricted &&
@@ -277,73 +290,87 @@
 			busy = false;
 		}
 	}
+
+	const scopeLabel = $derived(
+		scope === 'kossori'
+			? m.postScopeKossoriShort()
+			: scope === 'external'
+				? externalTarget === 'bluesky'
+					? m.postScopeBlueskyShort()
+					: m.postScopeStandardSiteShort()
+				: effectiveChannel
+					? (effectiveChannel.name ?? m.postScopeChannelShort())
+					: m.postScopeFeedShort(),
+	);
+	const scopeIcon = $derived(
+		scope === 'kossori'
+			? 'hide'
+			: scope === 'external'
+				? externalTarget === 'bluesky'
+					? 'bluesky'
+					: 'newspaper'
+				: effectiveChannel
+					? 'hash'
+					: 'home',
+	);
 </script>
 
-<div class="post-row mine composer-row composer-card">
-	<a href={`/profile/${$session?.did}`} aria-label={m.myProfileAria()}
-		><Avatar actor={myProfile.current} /></a
-	>
-	<section class="bubble composer">
-		{#snippet editorTools()}
-			<ImageAttachmentEditor bind:this={imageEditor} bind:attachments disabled={busy} />
-		{/snippet}
-		<ComposerEditor
-			bind:value={text}
-			bind:mentions
-			bind:channels
-			channelSuggestionsEnabled={!channel}
-			placeholder={m.composerPlaceholder()}
-			ariaLabel={m.composerAria()}
+<!--
+	モーダル専用なので、以前タイムラインとの一体感のために付けていた吹き出し
+	（.post-row.mine / .bubble のアクセント枠としっぽ）とアバターは持たない。
+-->
+<section class="composer" class:rich={mode === 'rich'}>
+	{#snippet editorTools()}
+		<ImageAttachmentEditor bind:this={imageEditor} bind:attachments disabled={busy} />
+	{/snippet}
+	<ComposerEditor
+		bind:value={text}
+		bind:mentions
+		bind:channels
+		channelSuggestionsEnabled={!channel}
+		placeholder={m.composerPlaceholder()}
+		ariaLabel={m.composerAria()}
+		disabled={busy}
+		{mode}
+		onsubmit={() => submit()}
+		onpaste={(event) => imageEditor?.handlePaste(event)}
+		tools={editorTools}
+	/>
+	<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+	{#if needsArticleTitle}
+		<!-- 本文の先頭が見出しでないときだけ。standard.site の document.title は必須。 -->
+		<div class="composer-article">
+			<label class="composer-article-title">
+				<span>{m.standardSiteTitleLabel()}</span>
+				<input
+					type="text"
+					bind:value={articleTitle}
+					maxlength="200"
+					disabled={busy}
+					placeholder={m.standardSiteTitlePlaceholder()}
+				/>
+			</label>
+			<p class="composer-article-note">{m.standardSiteTitleHint()}</p>
+		</div>
+	{/if}
+	<div class="composer-foot">
+		<button
+			class="scope-button"
+			type="button"
 			disabled={busy}
-			onsubmit={() => submit('nagi')}
-			onpaste={(event) => imageEditor?.handlePaste(event)}
-			tools={editorTools}
-		/>
-		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
-		{#if needsArticleTitle}
-			<!-- 本文の先頭が見出しでないときだけ。standard.site の document.title は必須。 -->
-			<div class="composer-article">
-				<label class="composer-article-title">
-					<span>{m.standardSiteTitleLabel()}</span>
-					<input
-						type="text"
-						bind:value={articleTitle}
-						maxlength="200"
-						disabled={busy}
-						placeholder={m.standardSiteTitlePlaceholder()}
-					/>
-				</label>
-				<p class="composer-article-note">{m.standardSiteTitleHint()}</p>
-			</div>
-		{/if}
-		<div class="composer-foot">
-			<div class="composer-status">
-				<span>{graphemes} / 3000</span>
-			</div>
-			<!-- チャンネル投稿は記事にしないので、CH の投稿欄ではボタンごと出さない。
-			     こっそりに切り替えたときは押せなくなるだけにして、位置は動かさない。 -->
-			{#if standardSiteReady && !effectiveChannel}
-				<button
-					class="icon-action article-toggle"
-					class:active={standardSite}
-					type="button"
-					disabled={busy || !articleCandidate || hasContentWarningSetting}
-					aria-pressed={standardSite}
-					aria-label={m.standardSiteComposerLabel()}
-					title={m.standardSiteComposerLabel()}
-					onclick={() => (standardSite = !standardSite)}><Icon name="newspaper" size={18} /></button
-				>
-			{/if}
-			<button
-				class="icon-action kossori-toggle"
-				class:active={kossori}
-				type="button"
-				disabled={busy}
-				aria-pressed={kossori}
-				aria-label={effectiveChannel ? m.composerChannelOnly() : m.composerKossoriAria()}
-				title={effectiveChannel ? m.composerChannelOnly() : m.composerKossoriAria()}
-				onclick={() => (kossori = !kossori)}><Icon name="hide" size={18} /></button
-			>
+			aria-haspopup="dialog"
+			aria-expanded={scopeDialogOpen}
+			aria-label={m.postScopeOpenAria({ scope: scopeLabel })}
+			title={m.postScopeOpenAria({ scope: scopeLabel })}
+			onclick={() => (scopeDialogOpen = true)}
+		>
+			<Icon name={scopeIcon} size={15} />
+			<span>{scopeLabel}</span>
+		</button>
+		<div class="composer-status">
+			<span>{graphemes} / 3000</span>
+		</div>
+		{#if mode === 'rich'}
 			{#if drafts.count}
 				<button
 					class="icon-action draft-open"
@@ -363,44 +390,38 @@
 				title={m.draftSave()}
 				onclick={saveDraft}><Icon name="draft" size={18} /></button
 			>
-			<div class="composer-submit-actions">
-				{#if crosspostReady && !effectiveChannel}
-					<button
-						class="submit-secondary"
-						type="button"
-						disabled={busy ||
-							empty ||
-							articleTitleMissing ||
-							!contentWarningValid ||
-							!crosspostEligible}
-						aria-label={m.composerSubmitBluesky()}
-						title={busy ? m.composerSubmitting() : crosspostDisabledReason}
-						onclick={() => submit('nagi-and-bluesky')}
-					>
-						<Icon name="bluesky" size={17} />
-						<span>{m.composerSubmitBlueskyShort()}</span>
-					</button>
-				{/if}
-				<button
-					class="submit-primary"
-					type="button"
-					disabled={busy || empty || articleTitleMissing || !contentWarningValid}
-					aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
-					title={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
-					onclick={() => submit('nagi')}
-				>
-					<Icon name={busy ? 'refresh' : 'send'} size={18} />
-					<span>{busy ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
-				</button>
-			</div>
+		{/if}
+		<div class="composer-submit-actions">
+			<button
+				class="submit-primary"
+				type="button"
+				disabled={busy || empty || articleTitleMissing || !contentWarningValid}
+				aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
+				title={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
+				onclick={() => submit()}
+			>
+				<Icon name={busy ? 'refresh' : 'send'} size={18} />
+				<span>{busy ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
+			</button>
 		</div>
-		{#if error}<p class="error">{error}</p>{/if}{#if draftError}<p class="error">
-				{draftError}
-			</p>{/if}{#if warning}<p class="error">
-				{m.crosspostWarning({ reason: warning })}
-			</p>{/if}
-	</section>
-</div>
+	</div>
+	{#if error}<p class="error">{error}</p>{/if}{#if draftError}<p class="error">
+			{draftError}
+		</p>{/if}{#if warning}<p class="error">
+			{m.crosspostWarning({ reason: warning })}
+		</p>{/if}
+</section>
+{#if scopeDialogOpen}
+	<PostScopeDialog
+		{scope}
+		{externalTarget}
+		{externalEligible}
+		{externalDisabledReason}
+		channelName={effectiveChannel?.name}
+		onselect={(next) => (scope = next)}
+		onclose={() => (scopeDialogOpen = false)}
+	/>
+{/if}
 {#if draftListOpen}
 	<DraftListDialog onrestore={restoreDraft} onclose={() => (draftListOpen = false)} />
 {/if}

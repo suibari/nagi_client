@@ -14,6 +14,10 @@
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
 	import { startUnreadNewsPolling } from '$lib/news/unread.svelte';
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
+	import PostFab from '$lib/components/PostFab.svelte';
+	import PostModal from '$lib/components/PostModal.svelte';
+	import { composerHost } from '$lib/post/composer-host.svelte';
+	import { defaultScopeForPath } from '$lib/post/scope';
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import { refreshPushState } from '$lib/notifications/push.svelte';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
@@ -50,6 +54,15 @@
 	let { children } = $props();
 	const publicSeo = $derived(PUBLIC_SEO[page.url.pathname]);
 	const wideLayout = $derived(page.url.pathname === '/about');
+	// サインインの動線そのものを塞がないページでは投稿ボタンを出さない。
+	const NO_FAB = ['/login', '/onboarding', '/oauth'];
+	const showPostFab = $derived(
+		!!$session &&
+			$oauthReady &&
+			!composerHost.open &&
+			!NO_FAB.some((path) => page.url.pathname.startsWith(path)),
+	);
+	const defaultScope = $derived(defaultScopeForPath(page.url.pathname));
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let privateListDid: string | undefined;
@@ -140,3 +153,11 @@
 </div>
 <MobileNav />
 <PostFollowNotice />
+<!-- 投稿はページごとではなくアプリ全体の1つの入口に統一する。Composer は
+     PostModal の中で常時マウントしたままにする（添付画像を失わないため）。 -->
+{#if showPostFab}
+	<PostFab onclick={() => composerHost.show(defaultScope)} />
+{/if}
+{#if $session}
+	<PostModal />
+{/if}

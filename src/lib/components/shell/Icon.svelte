@@ -22,6 +22,8 @@
 		image: 'M4 5h16v14H4V5Zm0 11 4.5-4.5 3.5 3 2.5-2.5 5.5 5M9 9h.01',
 		drag: 'M8 5h.01M16 5h.01M8 12h.01M16 12h.01M8 19h.01M16 19h.01',
 		close: 'M5 5l14 14M19 5 5 19',
+		check: 'm5 12.5 5 5L19 7',
+		plus: 'M12 5v14M5 12h14',
 		send: 'M3 11.5 21 3l-8.5 18-2.2-7.3L3 11.5Zm7.3 2.2L21 3',
 		refresh: 'M20 7v5h-5M4 17v-5h5M6.1 8.5A7 7 0 0 1 18.7 7M5.3 17A7 7 0 0 0 17.9 15.5',
 		more: 'm7 10 5 5 5-5',
@@ -48,9 +50,15 @@
 	};
 </script>
 
-{#if name === 'bot'}
-	<!-- botたんは線画PNGなので、透過をマスクに使って他のアイコンと同じ currentColor で塗る -->
-	<span class="icon icon-bot" style="width: {size}px; height: {size}px;" aria-hidden="true"></span>
+{#if name === 'bot' || name === 'nagi'}
+	<!-- botたん・Nagi は線画PNGなので、透過をマスクに使って他のアイコンと同じ currentColor で塗る -->
+	<span
+		class="icon icon-mask"
+		class:icon-bot={name === 'bot'}
+		class:icon-nagi={name === 'nagi'}
+		style="width: {size}px; height: {size}px;"
+		aria-hidden="true"
+	></span>
 {:else}
 	<svg
 		class="icon"
@@ -67,11 +75,19 @@
 {/if}
 
 <style>
-	.icon-bot {
+	.icon-mask {
 		display: inline-block;
 		flex-shrink: 0;
 		background-color: currentColor;
+	}
+
+	.icon-bot {
 		-webkit-mask: url('/bot_icon_trans.png') center / contain no-repeat;
 		mask: url('/bot_icon_trans.png') center / contain no-repeat;
+	}
+
+	.icon-nagi {
+		-webkit-mask: url('/nagi_icon_trans.png') center / contain no-repeat;
+		mask: url('/nagi_icon_trans.png') center / contain no-repeat;
 	}
 </style>

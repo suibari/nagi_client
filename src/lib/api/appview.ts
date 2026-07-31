@@ -19,6 +19,7 @@ import type {
 	ProfileFeedFilter,
 	ProfilePage,
 	ProfileReactionPage,
+	MyNagiView,
 	PrivateListView,
 	SearchActorsResult,
 	ThreadView,
@@ -141,8 +142,8 @@ export const getAffirmation = (cursor?: string) =>
 		'com.suibari.nagi.getAffirmation',
 		`/xrpc/com.suibari.nagi.getAffirmation?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
 	);
-export const getCommunityAffirmations = (lang: 'ja' | 'en', cursor?: string) => {
-	const params = new URLSearchParams({ lang, limit: '10' });
+export const getCommunityAffirmations = (lang: 'ja' | 'en', cursor?: string, limit = 10) => {
+	const params = new URLSearchParams({ lang, limit: String(limit) });
 	if (cursor) params.set('cursor', cursor);
 	return call<CommunityAffirmationPage>(
 		'com.suibari.nagi.getCommunityAffirmations',
@@ -377,6 +378,22 @@ export const setPrivateListMember = (memberDid: string, included: boolean) =>
 		'com.suibari.nagi.setPrivateListMember',
 		'/xrpc/com.suibari.nagi.setPrivateListMember',
 		{ method: 'POST', body: JSON.stringify({ memberDid, included }) },
+		'required',
+	);
+/** my Nagi の「リスト動向」。本人のリストと購読状況そのものなので認証必須。 */
+export const getMyNagi = (limit = 6) =>
+	call<MyNagiView>(
+		'com.suibari.nagi.getMyNagi',
+		`/xrpc/com.suibari.nagi.getMyNagi?limit=${limit}`,
+		{},
+		'required',
+	);
+/** チャンネルの参加・解除。参加状態は本人にしか返らないので必ず認証付きで叩く。 */
+export const setChannelSubscription = (uri: string, subscribed: boolean) =>
+	call<{ uri: string; subscribed: boolean }>(
+		'com.suibari.nagi.setChannelSubscription',
+		'/xrpc/com.suibari.nagi.setChannelSubscription',
+		{ method: 'POST', body: JSON.stringify({ uri, subscribed }) },
 		'required',
 	);
 // カードの所持状況は公開情報なので、他人のプロフィールでも見える。ただし自分のときだけ

@@ -15,7 +15,7 @@
 </script>
 
 <nav class="feed-tabs" aria-label={m.feedTabsAria()}>
-	<a href={$session ? '/' : '/login'} class:active={current === 'home'}>{m.navHome()}</a>
+	<a href={$session ? '/feed' : '/login'} class:active={current === 'home'}>{m.navHome()}</a>
 	<a href="/global" class:active={current === 'global'}>{m.navGlobal()}</a>
 	<a href="/affirmation" class:active={current === 'affirmation'}>{m.navAffirmation()}</a>
 </nav>

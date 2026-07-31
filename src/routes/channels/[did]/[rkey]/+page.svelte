@@ -1,15 +1,22 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { APPVIEW_URL, ApiRequestError, getChannel, getChannelTimeline } from '$lib/api/appview';
+	import {
+		APPVIEW_URL,
+		ApiRequestError,
+		getChannel,
+		getChannelTimeline,
+		setChannelSubscription,
+	} from '$lib/api/appview';
 	import { deleteChannel, setChannelPinnedPost, updateChannel } from '$lib/atproto/records';
 	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import type { ChannelView, PostView } from '$lib/api/types';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
-	import Composer from '$lib/components/Composer.svelte';
+	import { composerHost } from '$lib/post/composer-host.svelte';
+	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -96,9 +103,40 @@
 			headError = m.muteUpdateFailed();
 		}
 	}
+	// 参加状態はサーバの viewerSubscribed が真実源。押した直後だけ楽観的に上書きし、
+	// 失敗したら戻す（ミュートのストアほど広く参照されないので、ここだけで持つ）。
+	let subscribedOverride = $state<boolean | undefined>(undefined);
+	let subscribeBusy = $state(false);
+	let subscribed = $derived(subscribedOverride ?? Boolean(channel?.viewerSubscribed));
+	// CH を移動したら前のページの楽観状態を持ち越さない。
+	$effect(() => {
+		void channel?.uri;
+		subscribedOverride = undefined;
+	});
+	async function toggleSubscription() {
+		if (!channel || subscribeBusy) return;
+		const next = !subscribed;
+		subscribeBusy = true;
+		subscribedOverride = next;
+		headError = '';
+		try {
+			await setChannelSubscription(channel.uri, next);
+		} catch (e) {
+			subscribedOverride = !next;
+			headError = e instanceof Error ? e.message : m.channelJoinFailed();
+		} finally {
+			subscribeBusy = false;
+		}
+	}
 	let composerChannel = $derived(
 		channel ? { uri: channel.uri, cid: channel.cid, name: channel.name } : undefined,
 	);
+	// ポストモーダルは +layout に常駐しているので、「いま見ているフィード」がこの CH で
+	// あることを渡してやる必要がある（ルートパラメータからは cid が取れない）。
+	$effect(() => {
+		if (composerChannel) composerHost.setChannel(composerChannel);
+		else composerHost.clearChannel();
+	});
 	const resolve = (url?: string) => (url?.startsWith('/') ? APPVIEW_URL + url : url);
 
 	let editOpen = $state(false);
@@ -268,8 +306,19 @@
 			base();
 			fast();
 			revokeEditPreview();
+			// この CH を離れたら投稿先の文脈も落とす。残すと別ページからの投稿が
+			// この CH に入ってしまう。
+			composerHost.clearChannel();
 			if (localBannerUrl) URL.revokeObjectURL(localBannerUrl);
 		};
+	});
+
+	// ポストモーダルからの投稿を拾う。
+	let seenPosted = untrack(() => postedSignal.count);
+	$effect(() => {
+		if (postedSignal.count === seenPosted) return;
+		seenPosted = postedSignal.count;
+		void feed?.refresh();
 	});
 </script>
 
@@ -283,6 +332,20 @@
 			<h1 class="channel-card-name">{channel.name}</h1>
 			{#if isOwner || $session}
 				<div class="channel-hero-actions">
+					{#if $session}
+						<!-- 参加するとこの CH の最新ポストが my Nagi に並ぶ。所有者も参加できる。 -->
+						<button
+							class="channel-join"
+							class:joined={subscribed}
+							type="button"
+							disabled={subscribeBusy}
+							aria-pressed={subscribed}
+							onclick={() => void toggleSubscription()}
+						>
+							<Icon name={subscribed ? 'check' : 'plus'} size={16} />
+							<span>{subscribed ? m.channelLeave() : m.channelJoin()}</span>
+						</button>
+					{/if}
 					{#if isOwner}
 						<button
 							class="channel-hero-action"
@@ -326,10 +389,6 @@
 		<p class="error">{headError}</p>
 	{/if}
 </section>
-
-{#if $session}
-	<Composer channel={composerChannel} onposted={() => feed?.refresh()} />
-{/if}
 
 {#if channel?.pinnedPost}
 	<section class="channel-pinned" aria-label={m.channelPinnedPost()}>

@@ -193,11 +193,14 @@
 	}
 
 	/* --- mobile: .mobile-nav（fixed, 68px + safe-area）を必ず avoid する。
-	       基準値は .post-follow-notice と揃える。 --- */
+	       基準値は .post-follow-notice と揃える。
+	       この幅では右下が投稿ボタン（.post-fab）の定位置なので、こちらは左へ逃がす。 --- */
 	@media (max-width: 767px) {
 		.card-fab-wrap {
 			bottom: calc(82px + env(safe-area-inset-bottom));
-			right: 16px;
+			right: auto;
+			left: 16px;
+			justify-items: start;
 		}
 		.card-fab {
 			min-width: 64px;
@@ -215,9 +218,11 @@
 		}
 	}
 
+	/* 380px 以下は必ずモバイル幅なので、左寄せのまま余白だけ詰める。 */
 	@media (max-width: 380px) {
 		.card-fab-wrap {
-			right: 12px;
+			right: auto;
+			left: 12px;
 		}
 	}
 

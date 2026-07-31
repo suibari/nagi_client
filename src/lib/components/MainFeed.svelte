@@ -8,9 +8,9 @@
 	import { Feed } from '$lib/feed/feed.svelte';
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import { globalFeedRead, homeFeedRead } from '$lib/feed/unread.svelte';
+	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { startVisiblePolling } from '$lib/polling';
 	import ThreadUnit from './ThreadUnit.svelte';
-	import Composer from './Composer.svelte';
 	import CardDrawFab from './CardDrawFab.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
@@ -108,12 +108,19 @@
 			void feed.load();
 		}
 	});
+
+	// ポストモーダルからの投稿を拾う。楽観投稿は optimisticPosts が既に反映しているので、
+	// ここはサーバ側の確定データ（botたんの返信予定など）へ寄せるための更新。
+	let seenPosted = untrack(() => postedSignal.count);
+	$effect(() => {
+		if (postedSignal.count === seenPosted) return;
+		seenPosted = postedSignal.count;
+		void feed.refresh();
+	});
 </script>
 
 <FeedTabs active={mode} />
-{#if $session}
-	<Composer defaultKossori={mode === 'home'} onposted={() => feed.refresh()} />
-{:else}
+{#if !$session}
 	<section class="hero">
 		<p class="eyebrow">{m.heroEyebrow()}</p>
 		<h1>{m.heroTitle()}</h1>

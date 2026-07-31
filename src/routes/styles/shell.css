@@ -160,9 +160,11 @@
 .sidebar-right {
 	gap: 16px;
 }
+/* my Nagi のセクションとして縦に並ぶので、.my-nagi-section と同じ間隔を空ける。 */
 .community-affirmation {
 	display: grid;
 	overflow: hidden;
+	margin-bottom: 16px;
 	border: 1px solid var(--line);
 	border-radius: var(--radius-l);
 	background: var(--bg-raised);
@@ -177,13 +179,14 @@
 	border-bottom: 1px solid var(--line);
 	background: color-mix(in srgb, var(--bubble-bot-bg) 72%, var(--bg-raised));
 }
+/* my Nagi の他セクション（.my-nagi-section-mark）と同じ見出しアイコンの扱いに揃える。 */
 .community-affirmation-mark {
 	flex: 0 0 auto;
 	display: grid;
 	place-items: center;
 	width: 22px;
 	height: 22px;
-	color: var(--text-strong);
+	color: var(--accent-strong);
 }
 .community-affirmation h2 {
 	margin: 0;
@@ -192,64 +195,126 @@
 	font-weight: 800;
 	line-height: 1.4;
 }
-.community-affirmation-body {
-	padding: 12px;
+/* タイトル右端の送りボタン。カードが2枚以上あるときだけ出る。 */
+.community-affirmation-arrows {
+	display: flex;
+	gap: 2px;
+	margin-inline-start: auto;
 }
-.community-affirmation-comment {
+.community-affirmation-arrows button {
 	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+.community-affirmation-arrows button:first-child {
+	transform: rotate(180deg);
+}
+.community-affirmation-arrows button:hover,
+.community-affirmation-arrows button:focus-visible {
+	background: color-mix(in srgb, var(--accent-soft) 82%, transparent);
+	color: var(--accent-strong);
+}
+.community-affirmation-intro {
+	margin: 0;
+	padding: 10px 13px 0;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.55;
+}
+/*
+	横スクロールのカルーセル。transform は使わない（使うと position: fixed の
+	絵文字ピッカーがこの要素に閉じ込められてクリップされる）。
+*/
+.community-affirmation-track {
+	display: flex;
+	gap: 12px;
+	padding: 12px 13px;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	/*
+		スナップ位置を padding のぶんだけ内側にずらす。これが無いと、送った先で
+		カードが枠線にぴったり張り付き、左の余白が消えて窮屈に見える
+		（スナップは既定でスクロールポート＝padding box の端に合わせるため）。
+	*/
+	scroll-padding-inline: 13px;
+	scrollbar-width: thin;
+	overscroll-behavior-x: contain;
+}
+.community-affirmation-card {
+	flex: 0 0 min(280px, 82%);
+	display: flex;
+	flex-direction: column;
 	gap: 10px;
 	padding: 11px 14px;
 	border: 1px solid var(--bubble-bot-border);
 	border-radius: 14px;
 	background: var(--bubble-bg);
+	scroll-snap-align: start;
+}
+/* 反応済みは消さずに沈める。まだ届けていないものが目に入るように。 */
+.community-affirmation-card.reacted {
+	opacity: 0.62;
 }
 .community-affirmation-summary {
 	margin: 0;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 7;
+	line-clamp: 7;
+	overflow: hidden;
 	color: var(--text);
 	font-size: 14px;
 	line-height: 1.72;
 	overflow-wrap: anywhere;
 	white-space: pre-line;
 }
-.community-affirmation-complete,
-.community-affirmation-state {
-	margin: 0;
-	color: var(--text-muted);
-	font-size: 12px;
-	line-height: 1.55;
-}
-.community-affirmation-complete {
-	color: var(--accent-strong);
-}
-.community-affirmation-actions {
+.community-affirmation-card-foot {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
+	margin-top: auto;
 }
-.community-affirmation-actions button {
+.community-affirmation-react {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	gap: 5px;
-	min-height: 36px;
-	padding: 7px 9px;
+	flex: 0 0 auto;
+	min-height: 32px;
+	padding: 6px 9px;
 	border: 0;
 	border-radius: var(--radius-pill);
 	background: transparent;
 	color: var(--text-muted);
 	font-size: 12px;
 	font-weight: 700;
+	cursor: pointer;
 }
-.community-affirmation-actions button:hover,
-.community-affirmation-actions button:focus-visible,
-.community-affirmation-actions button.active {
+.community-affirmation-react:hover,
+.community-affirmation-react:focus-visible,
+.community-affirmation-react.active {
 	background: color-mix(in srgb, var(--accent-soft) 82%, transparent);
 	color: var(--accent-strong);
+}
+.community-affirmation-state {
+	margin: 0;
+	padding: 12px 13px;
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.55;
 }
 .community-affirmation-error {
 	display: grid;
 	gap: 5px;
+	justify-items: start;
 }
 .community-affirmation-error a,
 .community-affirmation-error button {

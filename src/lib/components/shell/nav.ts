@@ -1,7 +1,6 @@
-import { derived, type Readable } from 'svelte/store';
+import { type Readable } from 'svelte/store';
 import { m } from '$lib/i18n/i18n.svelte';
 import { unreadCount } from '$lib/notifications/unread.svelte';
-import { unreadNews } from '$lib/news/unread.svelte';
 
 /**
  * ナビ項目に重ねる未読表示。ドットと数値バッジで真実源が違う（端末ローカルの
@@ -17,19 +16,14 @@ export type NavBadge = {
 export type NavItem = { href: string; label: () => string; icon: string; badge?: NavBadge };
 /** 未読バッジの表示テキスト。3桁以上は "99+" に丸める。 */
 export const formatUnread = (count: number) => (count > 99 ? '99+' : String(count));
+/*
+ * スマホの下部ナビは5項目が限界。ニュースはここから外し、my Nagi の
+ * ニュースセクション（未読ドット付き）から入ってもらう。
+ */
 export const navItems: NavItem[] = [
-	{ href: '/', label: m.navFeed, icon: 'home' },
+	{ href: '/', label: m.navMyNagi, icon: 'home' },
+	{ href: '/feed', label: m.navFeed, icon: 'text' },
 	{ href: '/channels', label: m.navChannels, icon: 'hash' },
-	{
-		href: '/news',
-		label: m.navNews,
-		icon: 'newspaper',
-		badge: {
-			unread: derived(unreadNews, (unread) => (unread ? 1 : 0)),
-			style: 'dot',
-			aria: () => m.newsUnreadAria(),
-		},
-	},
 	{
 		href: '/notifications',
 		label: m.navNotifications,
@@ -42,8 +36,13 @@ export const navItems: NavItem[] = [
 	},
 	{ href: '/settings', label: m.navSettings, icon: 'settings' },
 ];
-/** 3つのフィードタブ（ホーム/グローバル/全肯定）ではフィードを active にする。 */
-export const isActive = (pathname: string, href: string) =>
-	href === '/'
-		? pathname === '/' || pathname.startsWith('/global') || pathname.startsWith('/affirmation')
-		: pathname === href || pathname.startsWith(`${href}/`);
+/** フィードの3タブ（ホーム/グローバル/全肯定）はどれもフィード扱いにする。 */
+const FEED_PATHS = ['/feed', '/global', '/affirmation'];
+/**
+ * my Nagi（`/`）は完全一致のときだけ。前方一致にすると全ページで active になってしまう。
+ */
+export const isActive = (pathname: string, href: string) => {
+	if (href === '/') return pathname === '/';
+	if (href === '/feed') return FEED_PATHS.some((path) => pathname.startsWith(path));
+	return pathname === href || pathname.startsWith(`${href}/`);
+};

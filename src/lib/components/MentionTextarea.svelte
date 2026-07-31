@@ -254,6 +254,36 @@
 		insertText(insertions, start + shiftBeforeStart, end + shiftBeforeEnd);
 	}
 
+	/**
+	 * キャレット位置（選択中なら選択範囲を置き換えて）に文字列を差し込む。
+	 * 絵文字挿入のように「装飾ではないただの挿入」のための入口で、
+	 * メンション/チャンネルの選択範囲の付け替えは insertText がまとめて面倒を見る。
+	 */
+	export function insertAtCaret(text: string) {
+		if (disabled || !text) return;
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		// 選択範囲があるときは insertText では消せないので、先に本文から取り除く。
+		if (start !== end) {
+			value = `${value.slice(0, start)}${value.slice(end)}`;
+			const shrink = <T extends { start: number; end: number }>(items: T[]) =>
+				items.flatMap((item) =>
+					item.start < end && item.end > start
+						? []
+						: [
+								{
+									...item,
+									start: item.start >= end ? item.start - (end - start) : item.start,
+									end: item.end >= end ? item.end - (end - start) : item.end,
+								},
+							],
+				);
+			mentions = shrink(mentions);
+			channels = shrink(channels);
+		}
+		insertText([{ at: start, text }], start + text.length, start + text.length);
+	}
+
 	export function applyMarkdown(format: MarkdownFormat) {
 		if (disabled) return;
 		if (format === 'bold') applyInlineFormat('**', '**', m.markdownBoldPlaceholder());

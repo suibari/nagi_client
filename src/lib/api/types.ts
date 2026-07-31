@@ -121,6 +121,13 @@ export type FeedItem = PostView & {
 	conversation?: ConversationView;
 };
 export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean; botActor?: ActorView };
+/**
+ * my Nagi の「リスト動向」。1人 / 1チャンネルにつき最新1件しか来ないので、
+ * 活発な相手が枠を埋め尽くさない。ページングは無く、続きは既存のTLへ送る。
+ */
+export type MyNagiListUser = { actor: ActorView; post: FeedItem };
+export type MyNagiChannel = { channel: ChannelView; post: FeedItem };
+export type MyNagiView = { listUsers: MyNagiListUser[]; channels: MyNagiChannel[] };
 export type TimelinePage = Page<FeedItem>;
 export type CommunityAffirmationView = {
 	uri: string;
@@ -210,6 +217,11 @@ export type ChannelView = {
 	 * では開けるので、そのページで解除できるように getChannel だけが返す。
 	 */
 	viewerMuted?: boolean;
+	/**
+	 * 自分がこの CH に参加（購読）しているか。my Nagi の「参加中チャンネル」枠の対象になる。
+	 * ミュートと同じく本人にしか意味のない情報なので、サインアウト時は付かない。
+	 */
+	viewerSubscribed?: boolean;
 };
 export type ChannelsPage = { channels: ChannelView[]; cursor?: string; hasMore: boolean };
 /** ミュート対象の種別。actor は相手の DID、channel はチャンネルの AT-URI を指す。 */

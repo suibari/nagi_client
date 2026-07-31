@@ -24,6 +24,11 @@
 	<span class="channel-card-name">{channel.name}</span>
 	<span class="channel-card-foot">
 		{#if channel.description}<span class="channel-card-desc">{channel.description}</span>{/if}
-		<span class="channel-card-updated">{m.channelUpdatedAt({ time: updatedAt(channel) })}</span>
+		<span class="channel-card-updated">
+			{m.channelUpdatedAt({ time: updatedAt(channel) })}
+			{#if channel.viewerSubscribed}<span class="channel-card-joined"
+					>{m.channelJoinedBadge()}</span
+				>{/if}
+		</span>
 	</span>
 </a>

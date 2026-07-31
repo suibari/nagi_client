@@ -18,6 +18,7 @@
 		ariaLabel,
 		disabled = false,
 		contentWarningEnabled = true,
+		mode = 'rich',
 		onsubmit,
 		onpaste,
 		tools,
@@ -31,6 +32,11 @@
 		ariaLabel?: string;
 		disabled?: boolean;
 		contentWarningEnabled?: boolean;
+		/**
+		 * simple（あっさり）はプレビュータブと文字装飾を畳み、本文・画像・CW だけにする。
+		 * 返信や引用の InlinePostComposer は従来どおり rich のまま。
+		 */
+		mode?: 'simple' | 'rich';
 		onsubmit?: () => void;
 		onpaste?: (event: ClipboardEvent) => void;
 		tools?: Snippet;
@@ -40,7 +46,12 @@
 	let editor = $state<{
 		applyMarkdown: (format: MarkdownFormat) => void;
 		applyContentWarning: () => void;
+		insertAtCaret: (text: string) => void;
 	}>();
+	// あっさりへ戻したときにプレビューのまま固まらないようにする。
+	$effect(() => {
+		if (mode === 'simple' && preview) preview = false;
+	});
 	let hasSelection = $state(false);
 	// 投稿時と同じ変換をかけ、[ラベル](URL)・生URL・メンションが facet になった状態を見せる
 	let parsed = $derived(preview ? parsePostText(value, mentions, channels) : undefined);
@@ -56,22 +67,24 @@
 	);
 </script>
 
-<div class="composer-tabs" role="tablist" aria-label={m.composerTabsAria()}>
-	<button
-		type="button"
-		role="tab"
-		aria-selected={!preview}
-		class:active={!preview}
-		onclick={() => (preview = false)}>{m.composerTabWrite()}</button
-	>
-	<button
-		type="button"
-		role="tab"
-		aria-selected={preview}
-		class:active={preview}
-		onclick={() => (preview = true)}>{m.composerTabPreview()}</button
-	>
-</div>
+{#if mode === 'rich'}
+	<div class="composer-tabs" role="tablist" aria-label={m.composerTabsAria()}>
+		<button
+			type="button"
+			role="tab"
+			aria-selected={!preview}
+			class:active={!preview}
+			onclick={() => (preview = false)}>{m.composerTabWrite()}</button
+		>
+		<button
+			type="button"
+			role="tab"
+			aria-selected={preview}
+			class:active={preview}
+			onclick={() => (preview = true)}>{m.composerTabPreview()}</button
+		>
+	</div>
+{/if}
 {#if preview}
 	<div class="post-text composer-preview">
 		{#if parsed?.text.trim()}<RichText text={parsed.text} facets={parsed.facets} />{:else}<p
@@ -113,7 +126,9 @@
 					onmousedown={(event) => event.preventDefault()}
 					onclick={() => editor?.applyContentWarning()}><Icon name="warning" size={17} /></button
 				>{/if}
-			<MarkdownPalette {disabled} onformat={(format) => editor?.applyMarkdown(format)} />
+			{#if mode === 'rich'}
+				<MarkdownPalette {disabled} onformat={(format) => editor?.applyMarkdown(format)} />
+			{/if}
 		</div>
 	</div>
 </div>

@@ -8,16 +8,29 @@
 		setCrosspostEnabled,
 	} from '$lib/crosspost/preferences';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
+	import { getStandardSiteEnabled, hasStandardSiteScope } from '$lib/standardsite/preferences';
+	import { getExternalTarget, setExternalTarget, type ExternalTarget } from '$lib/post/scope';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 
 	let enabled = $state(false);
 	let granted = $state(false);
 	let busy = $state(false);
+	// 投稿ごとに宛先を選ばせると投稿範囲ゲージが2軸になるので、宛先はここで先に1つ選ぶ。
+	let target = $state<ExternalTarget>('bluesky');
+	let standardSiteReady = $state(false);
+	const blueskyReady = $derived(enabled && granted);
 	onMount(async () => {
 		enabled = getCrosspostEnabled();
 		granted = await hasCrosspostScope();
+		standardSiteReady = getStandardSiteEnabled() && (await hasStandardSiteScope());
+		target = getExternalTarget();
 	});
+
+	function chooseTarget(next: ExternalTarget) {
+		target = next;
+		setExternalTarget(next);
+	}
 
 	function toggle(next: boolean) {
 		enabled = next;
@@ -59,4 +72,59 @@
 			>
 		{/if}
 	</fieldset>
+	{#if blueskyReady || standardSiteReady}
+		<fieldset class="theme-settings">
+			<legend>{m.externalTargetLegend()}</legend>
+			<p>{m.externalTargetHelp()}</p>
+			<div class="target-choice" role="radiogroup" aria-label={m.externalTargetLegend()}>
+				<button
+					type="button"
+					role="radio"
+					aria-checked={target === 'bluesky'}
+					class:active={target === 'bluesky'}
+					disabled={!blueskyReady}
+					onclick={() => chooseTarget('bluesky')}>{m.externalTargetBluesky()}</button
+				>
+				<button
+					type="button"
+					role="radio"
+					aria-checked={target === 'standardSite'}
+					class:active={target === 'standardSite'}
+					disabled={!standardSiteReady}
+					onclick={() => chooseTarget('standardSite')}>{m.externalTargetStandardSite()}</button
+				>
+			</div>
+			{#if !standardSiteReady}<p>{m.externalTargetStandardSiteHint()}</p>{/if}
+		</fieldset>
+	{/if}
 </section>
+
+<style>
+	.target-choice {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.target-choice button {
+		padding: 8px 16px;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-pill);
+		background: var(--bg-raised);
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.target-choice button.active {
+		border-color: var(--accent);
+		background: var(--accent-soft);
+		color: var(--accent-strong);
+	}
+
+	.target-choice button:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+</style>

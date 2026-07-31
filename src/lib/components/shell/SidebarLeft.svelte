@@ -5,6 +5,10 @@
 	import Icon from './Icon.svelte';
 	import NavBadge from './NavBadge.svelte';
 	import AccountCard from './AccountCard.svelte';
+	import PostButton from './PostButton.svelte';
+	import { session } from '$lib/oauth/session.svelte';
+	import { composerHost } from '$lib/post/composer-host.svelte';
+	import { defaultScopeForPath } from '$lib/post/scope';
 </script>
 
 <aside class="sidebar sidebar-left">
@@ -27,5 +31,8 @@
 		{/each}
 	</nav>
 	<div class="spacer"></div>
+	{#if $session}
+		<PostButton onclick={() => composerHost.show(defaultScopeForPath(page.url.pathname))} />
+	{/if}
 	<AccountCard />
 </aside>

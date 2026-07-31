@@ -1,18 +1,7 @@
 <script lang="ts">
-	import type { ActorView, NewsView, PostView } from '$lib/api/types';
-	import {
-		createPost,
-		preparePostDraft,
-		uploadPostAssets,
-		type LinkCardDraft,
-	} from '$lib/atproto/records';
-	import {
-		validChannelSelections,
-		type ChannelSelection,
-		type MentionSelection,
-	} from '$lib/atproto/facets';
-	import type { ImageAttachment } from '$lib/images';
-	import { session } from '$lib/oauth/session.svelte';
+	import type { ActorView, NewsView } from '$lib/api/types';
+	import { newsBotPost, safeNewsUrl } from '$lib/news/bot-post';
+	import { NewsQuote } from '$lib/news/quote.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
 	import ChatBubble from './ChatBubble.svelte';
@@ -28,42 +17,13 @@
 		/** 前回ニュース一覧を見た時点より新しいか。カード左端にマークを出す。 */
 		unread?: boolean;
 	} = $props();
-	let composing = $state(false),
-		text = $state(''),
-		busy = $state(false),
-		error = $state(''),
-		shared = $state(false);
-	let attachments = $state<ImageAttachment[]>([]);
-	let linkCards = $state<LinkCardDraft[]>([]);
-	let mentions = $state<MentionSelection[]>([]);
-	let channels = $state<ChannelSelection[]>([]);
+	const quote = new NewsQuote();
+	let shared = $state(false);
+	let shareError = $state('');
 	let reactionPickerOpen = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
-	let safeUrl = $derived.by(() => {
-		try {
-			const u = new URL(news.url);
-			return ['http:', 'https:'].includes(u.protocol) ? u.href : undefined;
-		} catch {
-			return undefined;
-		}
-	});
-	let botPost = $derived<PostView>({
-		uri: `${news.uri}#bot-comment`,
-		cid: news.cid,
-		author: botActor ?? {
-			did: 'did:unknown:bot-tan',
-			handle: 'bot-tan',
-			displayName: 'Botたん',
-			isBot: true,
-		},
-		text: news.botComment,
-		langs: [news.lang],
-		createdAt: news.createdAt,
-		indexedAt: news.indexedAt,
-		reactions: [],
-		isBot: true,
-		isAffirmation: false,
-	});
+	let safeUrl = $derived(safeNewsUrl(news.url));
+	let botPost = $derived(newsBotPost(news, botActor));
 	async function share() {
 		if (!safeUrl) return;
 		try {
@@ -74,55 +34,7 @@
 				setTimeout(() => (shared = false), 2000);
 			}
 		} catch (e) {
-			if ((e as DOMException)?.name !== 'AbortError') error = m.newsShareFailed();
-		}
-	}
-	function openQuote() {
-		if (!$session) {
-			location.href = '/login';
-			return;
-		}
-		error = '';
-		if (composing) cancelQuote();
-		else composing = true;
-	}
-	function clearQuote() {
-		text = '';
-		attachments = [];
-		linkCards = [];
-		mentions = [];
-		channels = [];
-	}
-	function cancelQuote() {
-		composing = false;
-		clearQuote();
-	}
-	async function quote() {
-		if (!$session || (!text.trim() && !attachments.length && !linkCards.length) || busy) return;
-		busy = true;
-		error = '';
-		const selectedChannel = validChannelSelections(text, channels)[0];
-		const draft = preparePostDraft(
-			text,
-			undefined,
-			{ uri: news.uri, cid: news.cid },
-			attachments,
-			linkCards,
-			mentions,
-			channels,
-			false,
-			selectedChannel ? { uri: selectedChannel.uri, cid: selectedChannel.cid } : undefined,
-		);
-		try {
-			const assets = await uploadPostAssets(draft);
-			// ニュース引用もNagi内レコードを参照するため、Blueskyへはクロスポストしない。
-			await createPost(draft, assets);
-			clearQuote();
-			composing = false;
-		} catch (e) {
-			error = e instanceof Error ? e.message : m.postFailed();
-		} finally {
-			busy = false;
+			if ((e as DOMException)?.name !== 'AbortError') shareError = m.newsShareFailed();
 		}
 	}
 </script>
@@ -157,7 +69,7 @@
 		<button
 			class="ghost icon-action timeline-action"
 			type="button"
-			onclick={openQuote}
+			onclick={() => quote.toggle()}
 			aria-label={m.newsQuote()}
 			title={m.newsQuote()}><Icon name="quote" size={18} /></button
 		>
@@ -181,22 +93,22 @@
 			title={shared ? m.newsCopied() : m.newsShare()}><Icon name="share" size={18} /></button
 		>
 	</div>
-	{#if composing}<InlinePostComposer
+	{#if quote.composing}<InlinePostComposer
 			id={`news-quote-${news.cid}`}
 			label={m.newsQuoteLabel()}
 			placeholder={m.quotePlaceholder()}
-			bind:text
-			bind:mentions
-			bind:channels
+			bind:text={quote.text}
+			bind:mentions={quote.mentions}
+			bind:channels={quote.channels}
 			channelSuggestionsEnabled
-			bind:attachments
-			bind:linkCards
-			{busy}
-			{error}
-			onsubmit={() => void quote()}
-			oncancel={cancelQuote}
+			bind:attachments={quote.attachments}
+			bind:linkCards={quote.linkCards}
+			busy={quote.busy}
+			error={quote.error}
+			onsubmit={() => void quote.submit(news)}
+			oncancel={() => quote.cancel()}
 		/>{/if}
-	{#if error && !composing}<p class="error" role="alert">{error}</p>{/if}
+	{#if shareError}<p class="error" role="alert">{shareError}</p>{/if}
 </article>
 
 <style>
