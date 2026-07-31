@@ -12,12 +12,14 @@
 	import { onMount } from 'svelte';
 	import { getMyNagi, getPositiveNews, getProfile } from '$lib/api/appview';
 	import type { ActorView, MyNagiView, NewsView, PostView } from '$lib/api/types';
+	import CarouselArrows from '$lib/components/CarouselArrows.svelte';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import CommunityAffirmationPanel from '$lib/components/CommunityAffirmationPanel.svelte';
 	import MainFeed from '$lib/components/MainFeed.svelte';
 	import MyNagiNewsCarousel from '$lib/components/MyNagiNewsCarousel.svelte';
-	import MyNagiPostRow from '$lib/components/MyNagiPostRow.svelte';
 	import MyNagiSection from '$lib/components/MyNagiSection.svelte';
+	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
+	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { unreadNews } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
@@ -38,19 +40,20 @@
 	let listActivity = $state<MyNagiView>({ listUsers: [], channels: [] });
 	let listLoading = $state(true);
 	let listError = $state('');
+	let newsCarousel = $state<{
+		scrollPrevious: () => void;
+		scrollNext: () => void;
+	}>();
+	let newsCarouselState = $state({ canPrevious: false, canNext: false });
 
-	// 開くのは画面全体で1件だけ。縦に伸び続けて現在地を見失うのを防ぐ。
-	let openPostUri = $state<string>();
-	const isOpen = (uri: string) => openPostUri === uri;
-	const setOpen = (uri: string, open: boolean) => (openPostUri = open ? uri : undefined);
+	// APIも新着順だが、表示境界でも時系列を保証し、リスト登録順には依存させない。
+	const newestFirst = <T extends { post: PostView }>(a: T, b: T) =>
+		new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime() ||
+		b.post.uri.localeCompare(a.post.uri);
+	let listUsersByRecency = $derived([...listActivity.listUsers].sort(newestFirst));
+	let channelsByRecency = $derived([...listActivity.channels].sort(newestFirst));
 
 	const message = (cause: unknown) => (cause instanceof Error ? cause.message : m.loadFailed());
-	// at://<did>/<collection>/<rkey> → /channels/<did>/<rkey>
-	const channelHref = (uri: string) => {
-		const rest = uri.slice('at://'.length).split('/');
-		return `/channels/${rest[0]}/${rest[2]}`;
-	};
-
 	async function loadNews() {
 		newsLoading = true;
 		newsError = '';
@@ -120,6 +123,17 @@
 	});
 </script>
 
+{#snippet newsCarouselActions()}
+	<CarouselArrows
+		previousLabel={m.myNagiNewsScrollPrev()}
+		nextLabel={m.myNagiNewsScrollNext()}
+		previousDisabled={!newsCarouselState.canPrevious}
+		nextDisabled={!newsCarouselState.canNext}
+		onprevious={() => newsCarousel?.scrollPrevious()}
+		onnext={() => newsCarousel?.scrollNext()}
+	/>
+{/snippet}
+
 {#if !$oauthReady}
 	<div class="timeline-loading" role="status" aria-label={m.loading()}>
 		<span class="spinner" aria-hidden="true"></span>
@@ -146,20 +160,28 @@
 		{/if}
 	</MyNagiSection>
 
-	<CommunityAffirmationPanel />
+	<CommunityAffirmationPanel {botActor} />
 
 	<MyNagiSection
 		title={m.myNagiNewsTitle()}
 		icon="newspaper"
-		moreHref="/news"
 		loading={newsLoading}
 		error={newsError}
 		empty={!news.length}
 		unread={$unreadNews}
 		unreadLabel={m.newsUnreadAria()}
 		onretry={loadNews}
+		headerActions={news.length > 1 ? newsCarouselActions : undefined}
 	>
-		<MyNagiNewsCarousel items={news} {botActor} />
+		<MyNagiNewsCarousel
+			bind:this={newsCarousel}
+			items={news}
+			{botActor}
+			onscrollstatechange={(state) => (newsCarouselState = state)}
+		/>
+		<div class="my-nagi-news-footer">
+			<a href="/news">{m.myNagiMore()}<Icon name="chevron" size={15} /></a>
+		</div>
 	</MyNagiSection>
 
 	<MyNagiSection
@@ -177,14 +199,10 @@
 				<a href="/settings/home-list">{m.myNagiListEmptyCta()}</a>
 			</p>
 		{/snippet}
-		{#each listActivity.listUsers as entry (entry.post.uri)}
-			<MyNagiPostRow
-				post={entry.post}
-				actor={entry.actor}
-				{botActor}
-				open={isOpen(entry.post.uri)}
-				onopenchange={(open) => setOpen(entry.post.uri, open)}
-			/>
+		{#each listUsersByRecency as entry (entry.post.uri)}
+			<div class="my-nagi-activity-card">
+				<ChatBubble post={entry.post} {botActor} />
+			</div>
 		{/each}
 	</MyNagiSection>
 
@@ -203,15 +221,11 @@
 				<a href="/channels">{m.myNagiChannelsEmptyCta()}</a>
 			</p>
 		{/snippet}
-		{#each listActivity.channels as entry (entry.post.uri)}
-			<a class="my-nagi-channel-link" href={channelHref(entry.channel.uri)}>#{entry.channel.name}</a
-			>
-			<MyNagiPostRow
-				post={entry.post}
-				{botActor}
-				open={isOpen(entry.post.uri)}
-				onopenchange={(open) => setOpen(entry.post.uri, open)}
-			/>
+		{#each channelsByRecency as entry (entry.post.uri)}
+			<div class="my-nagi-activity-card">
+				<ThreadFlags channel={entry.channel} />
+				<ChatBubble post={entry.post} {botActor} />
+			</div>
 		{/each}
 	</MyNagiSection>
 {/if}
@@ -226,6 +240,35 @@
 	.my-nagi-bot-card {
 		min-width: 0;
 		padding: 8px 4px 10px;
+	}
+
+	.my-nagi-news-footer {
+		display: flex;
+		justify-content: flex-end;
+		padding: 0 4px 8px;
+	}
+
+	.my-nagi-news-footer a {
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+		color: var(--text-muted);
+		font-size: 12px;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.my-nagi-news-footer a:hover {
+		color: var(--accent-strong);
+	}
+
+	.my-nagi-activity-card {
+		min-width: 0;
+		padding: 10px 4px;
+	}
+
+	.my-nagi-activity-card + .my-nagi-activity-card {
+		border-top: 1px solid var(--panel-divider);
 	}
 
 	.my-nagi-state {
@@ -243,18 +286,5 @@
 	.my-nagi-state a {
 		color: var(--accent-strong);
 		font-weight: 700;
-	}
-
-	.my-nagi-channel-link {
-		display: block;
-		padding: 8px 4px 0;
-		color: var(--accent-strong);
-		font-size: 0.76rem;
-		font-weight: 800;
-		text-decoration: none;
-	}
-
-	.my-nagi-channel-link:hover {
-		text-decoration: underline;
 	}
 </style>

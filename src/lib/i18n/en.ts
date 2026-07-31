@@ -58,6 +58,8 @@ export const en: Messages = {
 	myNagiNoText: '(no text)',
 	myNagiBotTitle: 'Bot-tan now',
 	myNagiNewsTitle: 'Fully Affirming News',
+	myNagiNewsScrollPrev: 'See the previous story',
+	myNagiNewsScrollNext: 'See the next story',
 	myNagiListTitle: 'People in your list',
 	myNagiListEmpty: 'You have not chosen anyone to see on Home yet.',
 	myNagiListEmptyCta: 'Choose who to see',

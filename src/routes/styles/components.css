@@ -1,9 +1,9 @@
 /* --- welcome / composer --- */
 .welcome {
-	background: var(--bg-raised);
+	background: var(--panel-bg);
 	border: 0;
 	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-card);
+	box-shadow: var(--shadow-panel);
 	margin: 0 0 16px;
 	padding: 18px 20px;
 }
@@ -585,10 +585,10 @@
 }
 .thread-unit {
 	min-width: 0;
-	background: var(--bg-raised);
+	background: var(--panel-bg);
 	border: 0;
 	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-card);
+	box-shadow: var(--shadow-panel);
 	padding: 12px;
 	display: grid;
 	gap: 0;
@@ -640,11 +640,12 @@
 	font-size: 30px;
 }
 .bubble {
+	--bubble-current-bg: var(--bubble-bg);
 	position: relative;
 	min-width: 0;
 	flex: 1;
 	padding: 11px 14px;
-	background: var(--bubble-bg);
+	background: var(--bubble-current-bg);
 	border: 1px solid var(--bubble-border);
 	border-radius: 7px 20px 20px;
 }
@@ -666,7 +667,7 @@
 	top: 15px;
 	left: -6px;
 	border-top-width: 6px;
-	border-right: 7px solid var(--bubble-bg);
+	border-right: 7px solid var(--bubble-current-bg);
 	border-bottom-width: 6px;
 }
 /* 自分の投稿・投稿フォームは右揃えのチャット風。しっぽも左右反転する */
@@ -674,6 +675,7 @@
 	flex-direction: row-reverse;
 }
 .mine > .bubble {
+	--bubble-current-bg: var(--bubble-mine-bg);
 	border-color: var(--bubble-mine-border);
 	border-radius: 20px 7px 20px 20px;
 }
@@ -688,7 +690,7 @@
 }
 .mine > .bubble::after {
 	right: -6px;
-	border-left: 7px solid var(--bubble-bg);
+	border-left: 7px solid var(--bubble-current-bg);
 }
 .mine .meta {
 	flex-direction: row-reverse;
@@ -701,6 +703,7 @@
 	justify-content: flex-end;
 }
 .bot > .bubble {
+	--bubble-current-bg: var(--bubble-bot-bg);
 	border-color: var(--bubble-bot-border);
 }
 .bot > .bubble::before {

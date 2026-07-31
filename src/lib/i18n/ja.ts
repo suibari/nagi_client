@@ -60,6 +60,8 @@ export const ja = {
 	myNagiNoText: '（本文なし）',
 	myNagiBotTitle: 'botたんのいま',
 	myNagiNewsTitle: '全肯定ニュース',
+	myNagiNewsScrollPrev: '前のニュースを見る',
+	myNagiNewsScrollNext: '次のニュースを見る',
 	myNagiListTitle: 'リストのみんな',
 	myNagiListEmpty: 'ホームで見る人がまだいません。',
 	myNagiListEmptyCta: '見る人を選ぶ',

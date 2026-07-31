@@ -143,6 +143,7 @@ export type CommunityAffirmationView = {
 	uri: string;
 	cid: string;
 	summary: string;
+	createdAt: string;
 	reactions: ReactionView[];
 };
 export type CommunityAffirmationPage = Page<CommunityAffirmationView>;

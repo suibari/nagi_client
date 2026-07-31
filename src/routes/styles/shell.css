@@ -105,8 +105,8 @@
 	gap: 11px;
 	border: 0;
 	border-radius: var(--radius-l);
-	background: var(--bg-raised);
-	box-shadow: var(--shadow-card);
+	background: var(--panel-bg);
+	box-shadow: var(--shadow-panel);
 }
 .account-card .who {
 	min-width: 0;
@@ -165,10 +165,10 @@
 	display: grid;
 	overflow: hidden;
 	margin-bottom: 16px;
-	border: 1px solid var(--line);
+	border: 0;
 	border-radius: var(--radius-l);
-	background: var(--bg-raised);
-	box-shadow: var(--shadow-card);
+	background: var(--panel-bg);
+	box-shadow: var(--shadow-panel);
 }
 .community-affirmation-titlebar {
 	display: flex;
@@ -176,8 +176,6 @@
 	gap: 8px;
 	min-height: 43px;
 	padding: 9px 13px;
-	border-bottom: 1px solid var(--line);
-	background: color-mix(in srgb, var(--bubble-bot-bg) 72%, var(--bg-raised));
 }
 /* my Nagi の他セクション（.my-nagi-section-mark）と同じ見出しアイコンの扱いに揃える。 */
 .community-affirmation-mark {
@@ -197,29 +195,7 @@
 }
 /* タイトル右端の送りボタン。カードが2枚以上あるときだけ出る。 */
 .community-affirmation-arrows {
-	display: flex;
-	gap: 2px;
 	margin-inline-start: auto;
-}
-.community-affirmation-arrows button {
-	display: grid;
-	place-items: center;
-	width: 26px;
-	height: 26px;
-	padding: 0;
-	border: 0;
-	border-radius: 50%;
-	background: transparent;
-	color: var(--text-muted);
-	cursor: pointer;
-}
-.community-affirmation-arrows button:first-child {
-	transform: rotate(180deg);
-}
-.community-affirmation-arrows button:hover,
-.community-affirmation-arrows button:focus-visible {
-	background: color-mix(in srgb, var(--accent-soft) 82%, transparent);
-	color: var(--accent-strong);
 }
 .community-affirmation-intro {
 	margin: 0;
@@ -245,18 +221,18 @@
 		（スナップは既定でスクロールポート＝padding box の端に合わせるため）。
 	*/
 	scroll-padding-inline: 13px;
-	scrollbar-width: thin;
+	scrollbar-width: none;
 	overscroll-behavior-x: contain;
 }
+.community-affirmation-track::-webkit-scrollbar {
+	display: none;
+}
 .community-affirmation-card {
-	flex: 0 0 min(280px, 82%);
+	flex: 0 0 min(340px, 88%);
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	padding: 11px 14px;
-	border: 1px solid var(--bubble-bot-border);
-	border-radius: 14px;
-	background: var(--bubble-bg);
+	gap: 8px;
+	min-width: 0;
 	scroll-snap-align: start;
 	transition:
 		opacity 0.18s ease,
@@ -267,28 +243,12 @@
 	transform: scale(0.97);
 	pointer-events: none;
 }
-.community-affirmation-card-head {
-	display: flex;
-	align-items: flex-start;
-	gap: 8px;
-}
-.community-affirmation-summary {
-	flex: 1;
-	min-width: 0;
-	margin: 0;
-	color: var(--text);
-	font-size: 14px;
-	line-height: 1.72;
-	overflow-wrap: anywhere;
-	white-space: pre-line;
-}
 .community-affirmation-dismiss {
 	display: inline-grid;
 	place-items: center;
 	flex: 0 0 auto;
 	width: 28px;
 	height: 28px;
-	margin: -3px -6px 0 0;
 	padding: 0;
 	border: 0;
 	border-radius: 50%;
@@ -312,6 +272,12 @@
 	justify-content: space-between;
 	gap: 8px;
 	margin-top: auto;
+	margin-inline-start: 53px;
+}
+.community-affirmation-card-actions {
+	display: flex;
+	align-items: center;
+	gap: 2px;
 }
 .community-affirmation-react {
 	display: inline-flex;

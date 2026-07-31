@@ -11,11 +11,14 @@
 		news,
 		botActor,
 		unread = false,
+		embedded = false,
 	}: {
 		news: NewsView;
 		botActor?: ActorView;
 		/** 前回ニュース一覧を見た時点より新しいか。カード左端にマークを出す。 */
 		unread?: boolean;
+		/** 外側のセクション内に置くときは、カード自身の枠と影を持たせない。 */
+		embedded?: boolean;
 	} = $props();
 	const quote = new NewsQuote();
 	let shared = $state(false);
@@ -39,7 +42,7 @@
 	}
 </script>
 
-<article class="news-card" class:unread>
+<article class="news-card" class:unread class:embedded>
 	<div class="news-meta">
 		<span>{news.sourceName ?? m.newsSourceUnknown()}</span>{#if news.publishedAt}<time
 				>{new Date(news.publishedAt).toLocaleString(dateLocale(), {
@@ -117,17 +120,26 @@
 		min-inline-size: 0;
 		max-inline-size: 100%;
 		padding: 0.75rem;
-		border: 1px solid var(--line);
+		border: 1px solid var(--panel-border);
 		border-radius: var(--radius-l);
-		background: var(--bg-raised);
-		box-shadow: var(--shadow-card);
+		background: var(--panel-bg);
+		box-shadow: var(--shadow-panel);
 	}
 	/* 未読は通知カードと同じ左のアクセントバー＋淡い地色。既読化後も表示中は残る。 */
 	.news-card.unread {
 		background: var(--accent-softer);
 		box-shadow:
 			inset 3px 0 0 var(--accent),
-			var(--shadow-card);
+			var(--shadow-panel);
+	}
+	.news-card.embedded {
+		border: 0;
+		background: var(--bg-raised);
+		box-shadow: none;
+	}
+	.news-card.unread.embedded {
+		background: var(--accent-softer);
+		box-shadow: inset 3px 0 0 var(--accent);
 	}
 	.news-meta {
 		display: flex;

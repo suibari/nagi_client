@@ -58,6 +58,7 @@
 		ondeleted,
 		onposted,
 		displayOnly = false,
+		hideTimestamp = false,
 		canPin = false,
 		pinned = false,
 		pinBusy = false,
@@ -70,6 +71,8 @@
 		onposted?: () => void | Promise<void>;
 		/** ニュースコメント等、投稿と同じ見た目だけを使う読み取り専用表示。 */
 		displayOnly?: boolean;
+		/** APIのローリング更新などで信頼できる日時が無い読み取り専用表示に使う。 */
+		hideTimestamp?: boolean;
 		/** チャンネル作成者向け。投稿者に関係なく、この投稿をピン操作できる。 */
 		canPin?: boolean;
 		pinned?: boolean;
@@ -473,21 +476,23 @@
 				<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a>
 				<div class="meta-badges"><ActorBadges actor={post.author} /></div>
 			</div>
-			<time>
-				{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
-						month: 'short',
-						day: 'numeric',
-						hour: '2-digit',
-						minute: '2-digit',
-					})}{:else}<a href={threadHref}
-						>{new Date(post.createdAt).toLocaleString(dateLocale(), {
+			{#if !hideTimestamp}
+				<time>
+					{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
 							month: 'short',
 							day: 'numeric',
 							hour: '2-digit',
 							minute: '2-digit',
-						})}</a
-					>{/if}</time
-			>
+						})}{:else}<a href={threadHref}
+							>{new Date(post.createdAt).toLocaleString(dateLocale(), {
+								month: 'short',
+								day: 'numeric',
+								hour: '2-digit',
+								minute: '2-digit',
+							})}</a
+						>{/if}</time
+				>
+			{/if}
 			{#if post.edited}<span class="edited-badge" aria-label={m.editedBadgeAria()}
 					>{m.editedBadge()}</span
 				>{/if}

@@ -1,11 +1,18 @@
 <script lang="ts">
 	import { ApiRequestError, getCommunityAffirmations } from '$lib/api/appview';
-	import type { CommunityAffirmationView } from '$lib/api/types';
+	import type { ActorView, CommunityAffirmationView } from '$lib/api/types';
 	import {
 		communityAffirmationHandledUris,
 		markCommunityAffirmationHandled,
 	} from '$lib/community-affirmation/seen';
+	import {
+		communityAffirmationBotPost,
+		hasCommunityAffirmationTimestamp,
+	} from '$lib/community-affirmation/bot-post';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { tick } from 'svelte';
+	import CarouselArrows from './CarouselArrows.svelte';
+	import ChatBubble from './ChatBubble.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import Icon from './shell/Icon.svelte';
 
@@ -17,7 +24,8 @@
 	 * 他ユーザーのリアクションはサーバが返さない（自分がどうするかだけの機能）。
 	 * ReactionBar も showReactors={false} で反応した人を出さない。
 	 */
-	let { limit = 10 }: { limit?: number } = $props();
+	let { limit = 10, botActor: providedBotActor }: { limit?: number; botActor?: ActorView } =
+		$props();
 
 	let items = $state<CommunityAffirmationView[]>([]);
 	let loading = $state(false);
@@ -25,8 +33,12 @@
 	let authError = $state(false);
 	let loadedLocale = $state<'ja' | 'en'>();
 	let completed = $state(false);
+	let responseBotActor = $state<ActorView>();
+	let visibleBotActor = $derived(responseBotActor ?? providedBotActor);
 	let removingUris = $state(new Set<string>());
 	let track = $state<HTMLDivElement>();
+	let canScrollPrevious = $state(false);
+	let canScrollNext = $state(false);
 	/** ピッカーは1枚ずつしか開かないので、開いているカードの uri で持つ。 */
 	let openPickerUri = $state<string>();
 	let reactionButtons = $state<Record<string, HTMLButtonElement | undefined>>({});
@@ -51,6 +63,7 @@
 			let foundAny = false;
 			for (let pageIndex = 0; pageIndex < MAX_SCAN_PAGES; pageIndex += 1) {
 				const page = await getCommunityAffirmations(i18n.locale, cursor, pageLimit);
+				responseBotActor = page.botActor ?? responseBotActor;
 				foundAny ||= page.items.length > 0;
 				for (const item of page.items) {
 					if (reactedByMe(item)) {
@@ -108,6 +121,12 @@
 		track.scrollBy({ left: step * direction, behavior: 'smooth' });
 	}
 
+	function updateScrollState() {
+		if (!track) return;
+		canScrollPrevious = track.scrollLeft > 2;
+		canScrollNext = track.scrollLeft + track.clientWidth < track.scrollWidth - 2;
+	}
+
 	$effect(() => {
 		const locale = i18n.locale;
 		if (locale === loadedLocale) return;
@@ -115,6 +134,20 @@
 		items = [];
 		removingUris = new Set();
 		void load();
+	});
+
+	$effect(() => {
+		items.length;
+		void tick().then(updateScrollState);
+	});
+
+	$effect(() => {
+		const node = track;
+		if (!node) return;
+		const observer = new ResizeObserver(updateScrollState);
+		observer.observe(node);
+		updateScrollState();
+		return () => observer.disconnect();
 	});
 </script>
 
@@ -124,43 +157,29 @@
 		<h2 id="community-affirmation-title">{m.communityAffirmationTitle()}</h2>
 		{#if items.length > 1}
 			<div class="community-affirmation-arrows">
-				<button
-					type="button"
-					aria-label={m.communityAffirmationScrollPrev()}
-					title={m.communityAffirmationScrollPrev()}
-					onclick={() => scrollByCard(-1)}
-				>
-					<Icon name="chevron" size={16} />
-				</button>
-				<button
-					type="button"
-					aria-label={m.communityAffirmationScrollNext()}
-					title={m.communityAffirmationScrollNext()}
-					onclick={() => scrollByCard(1)}
-				>
-					<Icon name="chevron" size={16} />
-				</button>
+				<CarouselArrows
+					previousLabel={m.communityAffirmationScrollPrev()}
+					nextLabel={m.communityAffirmationScrollNext()}
+					previousDisabled={!canScrollPrevious}
+					nextDisabled={!canScrollNext}
+					onprevious={() => scrollByCard(-1)}
+					onnext={() => scrollByCard(1)}
+				/>
 			</div>
 		{/if}
 	</header>
 
 	{#if items.length}
 		<p class="community-affirmation-intro">{m.communityAffirmationIntro()}</p>
-		<div class="community-affirmation-track" bind:this={track}>
+		<div class="community-affirmation-track" bind:this={track} onscroll={updateScrollState}>
 			{#each items as item (item.uri)}
 				<article class="community-affirmation-card" class:removing={removingUris.has(item.uri)}>
-					<div class="community-affirmation-card-head">
-						<p class="community-affirmation-summary">{item.summary}</p>
-						<button
-							type="button"
-							class="community-affirmation-dismiss"
-							aria-label={m.communityAffirmationDismiss()}
-							title={m.communityAffirmationDismiss()}
-							onclick={() => handleItem(item.uri)}
-						>
-							<Icon name="close" size={14} />
-						</button>
-					</div>
+					<ChatBubble
+						post={communityAffirmationBotPost(item, visibleBotActor)}
+						botActor={visibleBotActor}
+						displayOnly
+						hideTimestamp={!hasCommunityAffirmationTimestamp(item)}
+					/>
 					<div class="community-affirmation-card-foot">
 						<ReactionBar
 							uri={item.uri}
@@ -172,17 +191,28 @@
 							ontoggled={(active) => handleReactionToggle(item.uri, active)}
 							onpickerclose={() => handlePickerClose(item.uri)}
 						/>
-						<button
-							bind:this={reactionButtons[item.uri]}
-							class="community-affirmation-react"
-							class:active={openPickerUri === item.uri}
-							aria-expanded={openPickerUri === item.uri}
-							aria-label={m.communityAffirmationReactAria()}
-							onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
-						>
-							<Icon name="emoji" size={16} />
-							<span>{m.communityAffirmationReact()}</span>
-						</button>
+						<div class="community-affirmation-card-actions">
+							<button
+								bind:this={reactionButtons[item.uri]}
+								class="community-affirmation-react"
+								class:active={openPickerUri === item.uri}
+								aria-expanded={openPickerUri === item.uri}
+								aria-label={m.communityAffirmationReactAria()}
+								onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
+							>
+								<Icon name="emoji" size={16} />
+								<span>{m.communityAffirmationReact()}</span>
+							</button>
+							<button
+								type="button"
+								class="community-affirmation-dismiss"
+								aria-label={m.communityAffirmationDismiss()}
+								title={m.communityAffirmationDismiss()}
+								onclick={() => handleItem(item.uri)}
+							>
+								<Icon name="close" size={14} />
+							</button>
+						</div>
 					</div>
 				</article>
 			{/each}

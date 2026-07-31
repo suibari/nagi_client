@@ -103,10 +103,10 @@ img.mark {
 .card {
 	min-inline-size: 0;
 	max-inline-size: 100%;
-	background: var(--bg-raised);
+	background: var(--panel-bg);
 	border: 0;
 	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-card);
+	box-shadow: var(--shadow-panel);
 }
 .state,
 .notice {
@@ -114,12 +114,12 @@ img.mark {
 	max-inline-size: 100%;
 	overflow-wrap: anywhere;
 	text-align: center;
-	background: var(--bg-raised);
+	background: var(--panel-bg);
 	border: 0;
 	border-radius: 18px;
 	padding: 30px;
 	color: var(--text-muted);
-	box-shadow: var(--shadow-card);
+	box-shadow: var(--shadow-panel);
 }
 .state button {
 	display: block;

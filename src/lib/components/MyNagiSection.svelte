@@ -19,6 +19,7 @@
 		unreadLabel = '',
 		onretry,
 		emptyState,
+		headerActions,
 		children,
 	}: {
 		title: string;
@@ -33,6 +34,8 @@
 		onretry?: () => void;
 		/** 空のときに出す導線。省略すると既定の文言だけ出る。 */
 		emptyState?: Snippet;
+		/** 「もっと見る」と並べる、カルーセル操作などの見出し右側アクション。 */
+		headerActions?: Snippet;
 		children: Snippet;
 	} = $props();
 </script>
@@ -42,8 +45,15 @@
 		<span class="my-nagi-section-mark"><Icon name={icon} size={17} /></span>
 		<h2>{title}</h2>
 		{#if unread}<span class="my-nagi-unread" role="status" aria-label={unreadLabel}></span>{/if}
-		{#if moreHref && !empty && !error}
-			<a class="my-nagi-more" href={moreHref}>{m.myNagiMore()}<Icon name="chevron" size={15} /></a>
+		{#if (moreHref && !empty && !error) || headerActions}
+			<div class="my-nagi-section-actions" class:with-header-actions={Boolean(headerActions)}>
+				{#if moreHref && !empty && !error}
+					<a class="my-nagi-more" href={moreHref}
+						>{m.myNagiMore()}<Icon name="chevron" size={15} /></a
+					>
+				{/if}
+				{#if headerActions}{@render headerActions()}{/if}
+			</div>
 		{/if}
 	</header>
 	<div class="my-nagi-section-body">
@@ -68,10 +78,10 @@
 	.my-nagi-section {
 		overflow: hidden;
 		margin-bottom: 16px;
-		border: 1px solid var(--line);
+		border: 0;
 		border-radius: var(--radius-l);
-		background: var(--bg-raised);
-		box-shadow: var(--shadow-card);
+		background: var(--panel-bg);
+		box-shadow: var(--shadow-panel);
 	}
 
 	header {
@@ -80,7 +90,6 @@
 		gap: 8px;
 		min-height: 43px;
 		padding: 9px 13px;
-		border-bottom: 1px solid var(--line);
 	}
 
 	.my-nagi-section-mark {
@@ -109,11 +118,17 @@
 		background: var(--decorative-accent);
 	}
 
+	.my-nagi-section-actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-inline-start: auto;
+	}
+
 	.my-nagi-more {
 		display: inline-flex;
 		align-items: center;
 		gap: 2px;
-		margin-inline-start: auto;
 		color: var(--text-muted);
 		font-size: 12px;
 		font-weight: 700;
@@ -123,6 +138,17 @@
 
 	.my-nagi-more:hover {
 		color: var(--accent-strong);
+	}
+
+	@media (max-width: 420px) {
+		.my-nagi-section-actions.with-header-actions {
+			gap: 2px;
+		}
+
+		.my-nagi-section-actions.with-header-actions .my-nagi-more {
+			gap: 0;
+			font-size: 0;
+		}
 	}
 
 	.my-nagi-section-body {
