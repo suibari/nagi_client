@@ -2,18 +2,17 @@
 	import { ApiRequestError, getCommunityAffirmations } from '$lib/api/appview';
 	import type { CommunityAffirmationView } from '$lib/api/types';
 	import {
-		communityAffirmationReactedUris,
-		markCommunityAffirmationReacted,
-		unmarkCommunityAffirmationReacted,
+		communityAffirmationHandledUris,
+		markCommunityAffirmationHandled,
 	} from '$lib/community-affirmation/seen';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import Icon from './shell/Icon.svelte';
 
 	/**
-	 * 「みんなで全肯定」。以前は1件ずつ「次へ」で送るキュー型だったが、ストックが
-	 * ほとんど増えない構造だったため毎回同じ1件を見せていた。サーバ側で常時ストック
-	 * されるようになったので、横スクロールのカルーセルで一覧として見せる。
+	 * 「みんなで全肯定」。サーバ側のストックから未処理の声を最大 limit 件集め、
+	 * 横スクロールのカルーセルで見せる。リアクション成功、または明示的な見送りで
+	 * そのカードを消し、1回に表示したまとまりを空にできるキューとして扱う。
 	 *
 	 * 他ユーザーのリアクションはサーバが返さない（自分がどうするかだけの機能）。
 	 * ReactionBar も showReactors={false} で反応した人を出さない。
@@ -25,7 +24,8 @@
 	let error = $state('');
 	let authError = $state(false);
 	let loadedLocale = $state<'ja' | 'en'>();
-	let reactedUris = $state(new Set<string>());
+	let completed = $state(false);
+	let removingUris = $state(new Set<string>());
 	let track = $state<HTMLDivElement>();
 	/** ピッカーは1枚ずつしか開かないので、開いているカードの uri で持つ。 */
 	let openPickerUri = $state<string>();
@@ -33,28 +33,67 @@
 
 	const reactedByMe = (item: CommunityAffirmationView) =>
 		item.reactions.some((reaction) => reaction.reactedByMe || Boolean(reaction.viewerReactionUri));
+	// 既存の処理済み記録は最大200件なので、20件×10ページを上限に次の未処理を探す。
+	const MAX_SCAN_PAGES = 10;
+	const REMOVE_MS = 180;
 
 	async function load() {
 		if (loading) return;
 		loading = true;
 		error = '';
 		authError = false;
+		completed = false;
 		try {
-			const page = await getCommunityAffirmations(i18n.locale, undefined, limit);
-			items = page.items;
-			reactedUris = communityAffirmationReactedUris();
+			const pageLimit = Math.min(20, Math.max(10, limit));
+			const handled = communityAffirmationHandledUris();
+			const visible: CommunityAffirmationView[] = [];
+			let cursor: string | undefined;
+			let foundAny = false;
+			for (let pageIndex = 0; pageIndex < MAX_SCAN_PAGES; pageIndex += 1) {
+				const page = await getCommunityAffirmations(i18n.locale, cursor, pageLimit);
+				foundAny ||= page.items.length > 0;
+				for (const item of page.items) {
+					if (reactedByMe(item)) {
+						markCommunityAffirmationHandled(item.uri);
+						handled.add(item.uri);
+						continue;
+					}
+					if (!handled.has(item.uri) && visible.length < limit) visible.push(item);
+				}
+				if (visible.length >= limit || !page.hasMore || !page.cursor) break;
+				cursor = page.cursor;
+			}
+			items = visible;
+			completed = foundAny && visible.length === 0;
 		} catch (cause) {
-			authError = cause instanceof ApiRequestError && (cause.status === 401 || cause.status === 403);
+			authError =
+				cause instanceof ApiRequestError && (cause.status === 401 || cause.status === 403);
 			error = cause instanceof Error ? cause.message : m.communityAffirmationError();
 		} finally {
 			loading = false;
 		}
 	}
 
+	function handleItem(uri: string) {
+		if (removingUris.has(uri)) return;
+		markCommunityAffirmationHandled(uri);
+		removingUris = new Set([...removingUris, uri]);
+		if (openPickerUri === uri) openPickerUri = undefined;
+		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		window.setTimeout(
+			() => {
+				items = items.filter((item) => item.uri !== uri);
+				const nextRemoving = new Set(removingUris);
+				nextRemoving.delete(uri);
+				removingUris = nextRemoving;
+				if (items.length === 0) completed = true;
+			},
+			reduceMotion ? 0 : REMOVE_MS,
+		);
+	}
+
 	function handleReactionToggle(uri: string, active: boolean) {
-		if (active) markCommunityAffirmationReacted(uri);
-		else unmarkCommunityAffirmationReacted(uri);
-		reactedUris = communityAffirmationReactedUris();
+		if (active) handleItem(uri);
 	}
 
 	/** 1枚ぶん送る。カード幅はレイアウト依存なので実測から出す。 */
@@ -70,6 +109,7 @@
 		if (locale === loadedLocale) return;
 		loadedLocale = locale;
 		items = [];
+		removingUris = new Set();
 		void load();
 	});
 </script>
@@ -104,8 +144,19 @@
 		<p class="community-affirmation-intro">{m.communityAffirmationIntro()}</p>
 		<div class="community-affirmation-track" bind:this={track}>
 			{#each items as item (item.uri)}
-				<article class="community-affirmation-card" class:reacted={reactedUris.has(item.uri)}>
-					<p class="community-affirmation-summary">{item.summary}</p>
+				<article class="community-affirmation-card" class:removing={removingUris.has(item.uri)}>
+					<div class="community-affirmation-card-head">
+						<p class="community-affirmation-summary">{item.summary}</p>
+						<button
+							type="button"
+							class="community-affirmation-dismiss"
+							aria-label={m.communityAffirmationDismiss()}
+							title={m.communityAffirmationDismiss()}
+							onclick={() => handleItem(item.uri)}
+						>
+							<Icon name="close" size={14} />
+						</button>
+					</div>
 					<div class="community-affirmation-card-foot">
 						<ReactionBar
 							uri={item.uri}
@@ -121,12 +172,13 @@
 							class="community-affirmation-react"
 							class:active={openPickerUri === item.uri}
 							aria-expanded={openPickerUri === item.uri}
-							aria-label={m.communityAffirmationReactAria()}
-							onclick={() =>
-								(openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
+							aria-label={openPickerUri === item.uri
+								? m.closeEmojiAria()
+								: m.communityAffirmationReactAria()}
+							onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
 						>
 							<Icon name="emoji" size={16} />
-							<span>{reactedByMe(item) ? m.communityAffirmationSent() : m.communityAffirmationReact()}</span>
+							<span>{openPickerUri === item.uri ? m.close() : m.communityAffirmationReact()}</span>
 						</button>
 					</div>
 				</article>
@@ -144,6 +196,8 @@
 			{/if}
 		</div>
 	{:else}
-		<p class="community-affirmation-state">{m.communityAffirmationEmpty()}</p>
+		<p class="community-affirmation-state">
+			{completed ? m.communityAffirmationDone() : m.communityAffirmationEmpty()}
+		</p>
 	{/if}
 </section>

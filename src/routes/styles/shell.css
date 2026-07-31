@@ -257,12 +257,23 @@
 	border-radius: 14px;
 	background: var(--bubble-bg);
 	scroll-snap-align: start;
+	transition:
+		opacity 0.18s ease,
+		transform 0.18s ease;
 }
-/* 反応済みは消さずに沈める。まだ届けていないものが目に入るように。 */
-.community-affirmation-card.reacted {
-	opacity: 0.62;
+.community-affirmation-card.removing {
+	opacity: 0;
+	transform: scale(0.97);
+	pointer-events: none;
+}
+.community-affirmation-card-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
 }
 .community-affirmation-summary {
+	flex: 1;
+	min-width: 0;
 	margin: 0;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
@@ -274,6 +285,30 @@
 	line-height: 1.72;
 	overflow-wrap: anywhere;
 	white-space: pre-line;
+}
+.community-affirmation-dismiss {
+	display: inline-grid;
+	place-items: center;
+	flex: 0 0 auto;
+	width: 28px;
+	height: 28px;
+	margin: -3px -6px 0 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+.community-affirmation-dismiss:hover,
+.community-affirmation-dismiss:focus-visible {
+	background: color-mix(in srgb, var(--accent-soft) 82%, transparent);
+	color: var(--accent-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+	.community-affirmation-card {
+		transition: none;
+	}
 }
 .community-affirmation-card-foot {
 	display: flex;
