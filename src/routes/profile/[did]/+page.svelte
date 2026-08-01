@@ -109,12 +109,12 @@
 			reactionFeed = f;
 			return;
 		}
-		const key = `${actor}:${filter}`;
+		const key = `${actor}:${filter}:${locale}`;
 		let f = feeds.get(key);
 		if (!f) {
 			f = new Feed(
 				(cursor) =>
-					getProfile(actor, { filter, cursor }).then((r) => {
+					getProfile(actor, { filter, cursor, lang: locale }).then((r) => {
 						profile = r.profile;
 						optimisticPosts.rememberActor(r.profile);
 						return r.feed;

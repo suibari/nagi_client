@@ -11,7 +11,7 @@
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { m } from '$lib/i18n/i18n.svelte';
+	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
 	import { onDestroy } from 'svelte';
 
@@ -37,7 +37,7 @@
 			.then(async (profile) => {
 				if (!profile) return getBlueskyProfileDraft();
 				try {
-					const currentProfile = await getProfile(did, { limit: 1 });
+					const currentProfile = await getProfile(did, { limit: 1, lang: i18n.locale });
 					const avatar = currentProfile.profile.avatar;
 					profile.avatarUrl = avatar?.startsWith('/') ? APPVIEW_URL + avatar : avatar;
 				} catch {

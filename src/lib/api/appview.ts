@@ -262,7 +262,8 @@ type GetProfileOptions = {
 	filter?: ProfileFeedFilter;
 	cursor?: string;
 	limit?: number;
-	lang?: 'ja' | 'en';
+	/** 分析コメント・名刺データの表示言語。省略による日本語フォールバックを防ぐため必須。 */
+	lang: 'ja' | 'en';
 };
 export function getProfile(
 	actor: string,
@@ -270,16 +271,16 @@ export function getProfile(
 ): Promise<ProfileReactionPage>;
 export function getProfile(
 	actor: string,
-	opts?: GetProfileOptions & {
+	opts: GetProfileOptions & {
 		filter?: Exclude<ProfileFeedFilter, 'reactions'>;
 	},
 ): Promise<ProfilePage>;
-export function getProfile(actor: string, opts: GetProfileOptions = {}) {
+export function getProfile(actor: string, opts: GetProfileOptions) {
 	const params = new URLSearchParams({ actor });
 	if (opts.filter) params.set('filter', opts.filter);
 	if (opts.cursor) params.set('cursor', opts.cursor);
 	params.set('limit', String(opts.limit ?? POST_PAGE_LIMIT));
-	if (opts.lang) params.set('lang', opts.lang);
+	params.set('lang', opts.lang);
 	return call<ProfilePage | ProfileReactionPage>(
 		'com.suibari.nagi.getProfile',
 		`/xrpc/com.suibari.nagi.getProfile?${params}`,

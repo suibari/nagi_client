@@ -16,7 +16,7 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { m } from '$lib/i18n/i18n.svelte';
+	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { startVisiblePolling } from '$lib/polling';
 
 	// 自由文検索(?q=)を優先。無ければタグ検索(?tag=、小文字で正規化して保存側と一致)。
@@ -33,7 +33,8 @@
 	// 閲覧は未認証（AppView 直読み）なのでセッション復元を待たない。
 	let currentKey = $state<string | null>(null);
 	$effect(() => {
-		const key = q ? `q:${q}` : tag ? `tag:${tag}` : '';
+		const locale = i18n.locale;
+		const key = q ? `q:${q}:${locale}` : tag ? `tag:${tag}:${locale}` : '';
 		if (key === currentKey) return;
 		currentKey = key;
 		users = [];
@@ -59,7 +60,7 @@
 			void searchChannelsByQuery(term)
 				.then((r) => key === at && (channels = r.channels))
 				.catch(() => {});
-			void searchNewsByQuery(term, 'ja')
+			void searchNewsByQuery(term, locale)
 				.then((r) => key === at && (news = { items: r.items, botActor: r.botActor }))
 				.catch(() => {});
 		}

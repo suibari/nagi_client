@@ -2,6 +2,7 @@ import { session } from '$lib/oauth/session.svelte';
 import { getProfile } from '$lib/api/appview';
 import type { ProfileDetail } from '$lib/api/types';
 import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+import { i18n } from '$lib/i18n/i18n.svelte';
 
 /**
  * ログイン中ユーザーのプロフィールを 1 回だけ取って共有する。
@@ -24,7 +25,7 @@ class MyProfile {
 
 	async #fetch(did: string) {
 		try {
-			const { profile } = await getProfile(did, { limit: 1 });
+			const { profile } = await getProfile(did, { limit: 1, lang: i18n.locale });
 			if (this.#did !== did) return;
 			this.current = profile;
 			optimisticPosts.rememberActor(profile);
