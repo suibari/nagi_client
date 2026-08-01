@@ -109,8 +109,8 @@
 	.target-choice button {
 		padding: 8px 16px;
 		border: 1px solid var(--line-strong);
-		border-radius: var(--radius-pill);
-		background: var(--bg-raised);
+		border-radius: var(--r-sm);
+		background: var(--surface-1);
 		color: var(--text-muted);
 		font-size: 0.85rem;
 		font-weight: 700;

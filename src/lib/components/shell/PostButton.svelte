@@ -27,11 +27,12 @@
 		margin: 0 6px 12px;
 		padding: 12px 16px;
 		border: 0;
-		border-radius: var(--radius-pill);
+		border-radius: var(--r-md);
 		background: var(--accent);
 		color: var(--text-on-accent);
 		font-size: 15px;
-		font-weight: 800;
+		font-weight: 700;
+		letter-spacing: 0.02em;
 		cursor: pointer;
 		transition: background 0.14s ease;
 	}
@@ -42,7 +43,7 @@
 	}
 
 	/* --- tablet: アイコンレールになるのでラベルを畳んで丸にする --- */
-	@media (max-width: 1099px) {
+	@media (max-width: 899px) {
 		.post-button {
 			align-self: center;
 			width: 48px;

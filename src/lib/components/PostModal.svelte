@@ -121,7 +121,7 @@
 		justify-content: center;
 		padding: 40px 16px 16px;
 		overflow-y: auto;
-		background: rgb(0 0 0 / 0.4);
+		background: color-mix(in srgb, var(--bg) 82%, #000);
 	}
 
 	.post-modal-backdrop[hidden] {
@@ -131,13 +131,13 @@
 	.post-modal {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 12px;
 		width: min(100%, 620px);
-		padding: 8px 12px 12px;
-		border: 1px solid var(--line);
-		border-radius: var(--radius-l);
-		background: var(--bg-raised);
-		box-shadow: var(--shadow-card);
+		padding: 12px 16px 16px;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-md);
+		background: var(--surface-1);
+		box-shadow: var(--shadow-pop);
 	}
 
 	/*
@@ -170,11 +170,13 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		padding-bottom: 10px;
+		border-bottom: 1px solid var(--line);
 	}
 
 	.post-modal-modes {
 		display: flex;
-		gap: 2px;
+		gap: 4px;
 	}
 
 	.post-modal-close {
@@ -182,19 +184,21 @@
 	}
 
 	.post-modal-modes button {
-		padding: 4px 12px;
-		border: 0;
-		border-radius: var(--radius-pill);
-		background: none;
-		color: var(--text-muted);
+		min-height: 28px;
+		padding: 4px 10px;
+		border: 1px solid transparent;
+		border-radius: var(--r-sm);
+		background: transparent;
+		color: var(--text-sub);
 		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
 	}
 
 	.post-modal-modes button.active {
-		background: var(--accent-soft);
-		color: var(--accent-strong);
+		border-color: var(--line-strong);
+		background: var(--surface-2);
+		color: var(--text);
 	}
 
 	@media (max-width: 767px) {
@@ -203,7 +207,7 @@
 		}
 
 		.post-modal {
-			padding: 6px 10px 10px;
+			padding: 10px 12px 12px;
 		}
 
 		/* スマホは画面をほぼ使い切る（バックドロップの余白ぶんだけ引く）。 */

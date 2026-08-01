@@ -72,6 +72,7 @@
 				{news}
 				{botActor}
 				unread={unreadView.isUnread(news)}
+				clampTitle={false}
 			/>{/each}<InfiniteScroll {hasMore} {loading} {error} onload={() => load()} />{/if}
 </section>
 

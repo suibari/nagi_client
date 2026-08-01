@@ -74,9 +74,7 @@
 	/** repeat の有無に応じてフィールド候補を組み立てる（repeat 時は配列の先頭要素を走査）。 */
 	function computeChoices(editor: LinkEditor, autoDefault: boolean): FieldChoice[] {
 		if (!editor.record) return [];
-		const base = editor.repeat
-			? getByPath(editor.record, editor.repeat)
-			: editor.record;
+		const base = editor.repeat ? getByPath(editor.record, editor.repeat) : editor.record;
 		const element =
 			editor.repeat && Array.isArray(base) ? (base[0] as Record<string, unknown>) : base;
 		if (!element || typeof element !== 'object') return [];
@@ -121,7 +119,9 @@
 		const meta = /\.(profile|declaration|preference|preferences|settings|status|self)$/;
 		const content = cols.filter((c) => !meta.test(c));
 		const pool = content.length ? content : cols;
-		return [...pool].sort((a, b) => a.split('.').length - b.split('.').length || a.localeCompare(b))[0];
+		return [...pool].sort(
+			(a, b) => a.split('.').length - b.split('.').length || a.localeCompare(b),
+		)[0];
 	}
 
 	// discovery はコレクション単位ではなくアプリ単位でまとめる（同じ favicon が並ぶのを防ぎ、
@@ -324,7 +324,12 @@
 					<span class="muted">{m.appLinksFromRepoHint()}</span>
 					<div class="favicons">
 						{#each appGroups as g (g.home)}
-							<button type="button" class="favicon-btn" title={g.rep} onclick={() => addCollection(g.rep)}>
+							<button
+								type="button"
+								class="favicon-btn"
+								title={g.rep}
+								onclick={() => addCollection(g.rep)}
+							>
 								<img
 									src={discoveredIcons[g.home]}
 									alt=""
@@ -357,7 +362,11 @@
 								<span>{m.appLinksAppUriLabel()}</span>
 								<span class="with-button">
 									<input type="url" placeholder="https://" bind:value={editor.appUri} />
-									<button type="button" disabled={!editor.appUri.trim()} onclick={() => refetchIcon(editor)}>
+									<button
+										type="button"
+										disabled={!editor.appUri.trim()}
+										onclick={() => refetchIcon(editor)}
+									>
 										{m.appLinksResolveIcon()}
 									</button>
 								</span>
@@ -405,7 +414,9 @@
 								</div>
 							{/if}
 
-							<button type="button" class="remove" onclick={() => removeLink(i)}>{m.appLinksRemove()}</button>
+							<button type="button" class="remove" onclick={() => removeLink(i)}
+								>{m.appLinksRemove()}</button
+							>
 						</div>
 					{/if}
 				</div>
@@ -569,7 +580,7 @@
 	.save {
 		inline-size: 100%;
 		padding: 13px;
-		border-radius: var(--radius-pill);
+		border-radius: var(--r-md);
 		font-weight: 700;
 	}
 	.save:disabled {

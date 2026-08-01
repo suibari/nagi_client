@@ -118,7 +118,7 @@
 		width: 100%;
 		padding: 12px 18px;
 		border: 1px solid var(--accent);
-		border-radius: var(--radius-pill);
+		border-radius: var(--r-md);
 		background: transparent;
 		color: var(--accent-strong);
 		font-weight: 700;

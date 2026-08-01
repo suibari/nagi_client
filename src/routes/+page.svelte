@@ -166,6 +166,7 @@
 	<MyNagiSection
 		title={m.myNagiBotTitle()}
 		icon="bot"
+		description={m.myNagiBotIntro()}
 		moreHref={botActor ? `/profile/${botActor.did}` : undefined}
 		loading={botLoading}
 		error={botError}
@@ -184,6 +185,7 @@
 	<MyNagiSection
 		title={m.myNagiNewsTitle()}
 		icon="newspaper"
+		description={m.myNagiNewsIntro()}
 		loading={newsLoading}
 		error={newsError}
 		empty={!news.length}
@@ -341,9 +343,9 @@
 		margin-bottom: 16px;
 		padding: 14px;
 		border: 1px solid var(--panel-border);
-		border-radius: var(--radius-l);
-		background: var(--panel-bg);
-		box-shadow: var(--shadow-panel);
+		border-radius: var(--r-md);
+		background: var(--surface-1);
+		box-shadow: none;
 	}
 
 	.my-nagi-signin-panel div {
@@ -367,7 +369,7 @@
 		flex: 0 0 auto;
 		padding: 7px 12px;
 		border: 1px solid var(--accent);
-		border-radius: var(--radius-pill);
+		border-radius: var(--r-md);
 		color: var(--accent-strong);
 		font-size: 12px;
 		font-weight: 800;

@@ -77,9 +77,9 @@
 		flex: 0 0 36px;
 		padding: 0;
 		color: var(--text-muted);
-		background: var(--bg-raised);
+		background: var(--surface-1);
 		border: 1px solid var(--line);
-		border-radius: 50%;
+		border-radius: var(--r-sm);
 	}
 
 	.palette-toggle {
@@ -144,9 +144,9 @@
 			gap: 5px;
 			padding: 7px;
 			border: 1px solid var(--line);
-			border-radius: var(--radius-m);
-			background: var(--bg-raised);
-			box-shadow: var(--shadow-card);
+			border-radius: var(--r-md);
+			background: var(--surface-1);
+			box-shadow: var(--shadow-pop);
 		}
 	}
 </style>

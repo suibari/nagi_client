@@ -36,6 +36,7 @@
 	let local = $state<ReactionView[]>([...reactions]);
 	let holdUntil = 0;
 	let busy = $state(false);
+	let unavailable = $state<string[]>([]);
 	$effect(() => {
 		const incoming = reactions;
 		if (Date.now() >= holdUntil) local = [...incoming];
@@ -141,10 +142,14 @@
 					aria-label={m.reactWithAria({ emoji: labelOf(reaction) })}
 					onclick={() => toggle(reaction.bluemoji ?? reaction.emoji)}
 				>
-					{#if reaction.bluemoji}
-						<BluemojiMedia class="reaction-image" emoji={reaction.bluemoji} />
+					{#if reaction.bluemoji && !unavailable.includes(reaction.bluemoji.uri)}
+						<BluemojiMedia
+							class="reaction-image"
+							emoji={reaction.bluemoji}
+							onunavailable={() => (unavailable = [...unavailable, reaction.bluemoji!.uri])}
+						/>
 					{:else}
-						{reaction.emoji}
+						{labelOf(reaction)}
 					{/if}
 				</button>
 				{#if showReactors}

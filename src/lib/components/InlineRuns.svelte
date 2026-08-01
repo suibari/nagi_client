@@ -31,9 +31,9 @@
 <style>
 	:global(.inline-bluemoji) {
 		display: inline-flex;
-		width: 1.35em;
-		height: 1.35em;
-		vertical-align: -0.28em;
+		width: 1.25em;
+		height: 1.25em;
+		vertical-align: -0.25em;
 	}
 
 	:global(.inline-bluemoji img),

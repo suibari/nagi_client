@@ -4,6 +4,19 @@
 (function () {
 	try {
 		var theme = localStorage.getItem('nagi-theme');
+		var dark =
+			theme === 'dark' ||
+			(theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+		var themeColor = document.querySelector('meta[name="theme-color"]');
+		if (themeColor) themeColor.setAttribute('content', dark ? '#08110f' : '#f4fafa');
+		if (theme !== 'light' && theme !== 'dark') {
+			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (event) {
+				var currentTheme = localStorage.getItem('nagi-theme');
+				if (currentTheme !== 'light' && currentTheme !== 'dark' && themeColor) {
+					themeColor.setAttribute('content', event.matches ? '#08110f' : '#f4fafa');
+				}
+			});
+		}
 		if (theme === 'light' || theme === 'dark') {
 			document.documentElement.setAttribute('data-theme', theme);
 			document.documentElement.style.colorScheme = theme;

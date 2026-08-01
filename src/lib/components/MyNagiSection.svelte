@@ -11,6 +11,7 @@
 	let {
 		title,
 		icon,
+		description,
 		moreHref,
 		loading = false,
 		error = '',
@@ -24,6 +25,8 @@
 	}: {
 		title: string;
 		icon: string;
+		/** 内容があるとき、見出しと本文の間に表示する短い案内文。 */
+		description?: string;
 		moreHref?: string;
 		loading?: boolean;
 		error?: string;
@@ -69,6 +72,7 @@
 				<p class="my-nagi-state">{m.myNagiEmpty()}</p>
 			{/if}
 		{:else}
+			{#if description}<p class="my-nagi-section-intro">{description}</p>{/if}
 			{@render children()}
 		{/if}
 	</div>
@@ -76,36 +80,37 @@
 
 <style>
 	.my-nagi-section {
-		overflow: hidden;
-		margin-bottom: 16px;
+		margin-bottom: 32px;
 		border: 0;
-		border-radius: var(--radius-l);
-		background: var(--panel-bg);
-		box-shadow: var(--shadow-panel);
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
 	}
 
 	header {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		min-height: 43px;
-		padding: 9px 13px;
+		min-height: 37px;
+		padding: 0 0 10px;
+		border-bottom: 1px solid var(--line);
 	}
 
 	.my-nagi-section-mark {
 		flex: 0 0 auto;
 		display: grid;
 		place-items: center;
-		width: 22px;
-		height: 22px;
-		color: var(--accent-strong);
+		width: 16px;
+		height: 16px;
+		color: var(--text-mute);
 	}
 
 	h2 {
 		margin: 0;
 		color: var(--text-strong);
-		font-size: 14px;
-		font-weight: 800;
+		font-size: 13px;
+		font-weight: 700;
+		letter-spacing: 0.04em;
 		line-height: 1.4;
 	}
 
@@ -153,7 +158,15 @@
 
 	.my-nagi-section-body {
 		min-width: 0;
-		padding: 4px 9px;
+		padding: 8px 0 0;
+	}
+
+	.my-nagi-section-intro {
+		margin: 0;
+		padding: 4px 0 0;
+		color: var(--text-muted);
+		font-size: 12px;
+		line-height: 1.55;
 	}
 
 	.my-nagi-state {

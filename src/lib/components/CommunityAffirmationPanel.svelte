@@ -11,9 +11,9 @@
 	} from '$lib/community-affirmation/bot-post';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
-	import { tick } from 'svelte';
 	import CarouselArrows from './CarouselArrows.svelte';
 	import ChatBubble from './ChatBubble.svelte';
+	import HorizontalCarousel from './HorizontalCarousel.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import Icon from './shell/Icon.svelte';
 
@@ -37,7 +37,7 @@
 	let responseBotActor = $state<ActorView>();
 	let visibleBotActor = $derived(responseBotActor ?? providedBotActor);
 	let removingUris = $state(new Set<string>());
-	let track = $state<HTMLDivElement>();
+	let carousel = $state<{ scrollPrevious: () => void; scrollNext: () => void }>();
 	let canScrollPrevious = $state(false);
 	let canScrollNext = $state(false);
 	/** ピッカーは1枚ずつしか開かないので、開いているカードの uri で持つ。 */
@@ -114,20 +114,6 @@
 		if (openPickerUri === uri) openPickerUri = undefined;
 	}
 
-	/** 1枚ぶん送る。カード幅はレイアウト依存なので実測から出す。 */
-	function scrollByCard(direction: 1 | -1) {
-		if (!track) return;
-		const card = track.querySelector<HTMLElement>('.community-affirmation-card');
-		const step = card ? card.offsetWidth + 12 : track.clientWidth * 0.8;
-		track.scrollBy({ left: step * direction, behavior: 'smooth' });
-	}
-
-	function updateScrollState() {
-		if (!track) return;
-		canScrollPrevious = track.scrollLeft > 2;
-		canScrollNext = track.scrollLeft + track.clientWidth < track.scrollWidth - 2;
-	}
-
 	$effect(() => {
 		if (!$oauthReady) return;
 		const key = `${$session?.did ?? 'guest'}:${i18n.locale}`;
@@ -140,20 +126,6 @@
 		authError = false;
 		if ($session) void load();
 		else loading = false;
-	});
-
-	$effect(() => {
-		items.length;
-		void tick().then(updateScrollState);
-	});
-
-	$effect(() => {
-		const node = track;
-		if (!node) return;
-		const observer = new ResizeObserver(updateScrollState);
-		observer.observe(node);
-		updateScrollState();
-		return () => observer.disconnect();
 	});
 </script>
 
@@ -168,8 +140,8 @@
 					nextLabel={m.communityAffirmationScrollNext()}
 					previousDisabled={!canScrollPrevious}
 					nextDisabled={!canScrollNext}
-					onprevious={() => scrollByCard(-1)}
-					onnext={() => scrollByCard(1)}
+					onprevious={() => carousel?.scrollPrevious()}
+					onnext={() => carousel?.scrollNext()}
 				/>
 			</div>
 		{/if}
@@ -182,50 +154,62 @@
 		</div>
 	{:else if items.length}
 		<p class="community-affirmation-intro">{m.communityAffirmationIntro()}</p>
-		<div class="community-affirmation-track" bind:this={track} onscroll={updateScrollState}>
-			{#each items as item (item.uri)}
-				<article class="community-affirmation-card" class:removing={removingUris.has(item.uri)}>
-					<ChatBubble
-						post={communityAffirmationBotPost(item, visibleBotActor)}
-						botActor={visibleBotActor}
-						displayOnly
-						hideTimestamp={!hasCommunityAffirmationTimestamp(item)}
-					/>
-					<div class="community-affirmation-card-foot">
-						<ReactionBar
-							uri={item.uri}
-							cid={item.cid}
-							reactions={item.reactions}
-							showReactors={false}
-							pickerOpen={openPickerUri === item.uri}
-							pickerAnchor={reactionButtons[item.uri]}
-							ontoggled={(active) => handleReactionToggle(item.uri, active)}
-							onpickerclose={() => handlePickerClose(item.uri)}
+		<HorizontalCarousel
+			bind:this={carousel}
+			ariaLabel={m.communityAffirmationTitle()}
+			onscrollstatechange={(state) => {
+				canScrollPrevious = state.canPrevious;
+				canScrollNext = state.canNext;
+			}}
+		>
+			<div class="horizontal-carousel-track">
+				{#each items as item (item.uri)}
+					<article
+						class="horizontal-carousel-item community-affirmation-card"
+						class:removing={removingUris.has(item.uri)}
+					>
+						<ChatBubble
+							post={communityAffirmationBotPost(item, visibleBotActor)}
+							botActor={visibleBotActor}
+							displayOnly
+							hideTimestamp={!hasCommunityAffirmationTimestamp(item)}
 						/>
-						<button
-							bind:this={reactionButtons[item.uri]}
-							class="community-affirmation-react"
-							class:active={openPickerUri === item.uri}
-							aria-expanded={openPickerUri === item.uri}
-							aria-label={m.communityAffirmationReactAria()}
-							onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
-						>
-							<Icon name="emoji" size={16} />
-							<span>{m.communityAffirmationReact()}</span>
-						</button>
-						<button
-							type="button"
-							class="community-affirmation-dismiss"
-							aria-label={m.communityAffirmationDismissAria()}
-							title={m.communityAffirmationDismissAria()}
-							onclick={() => handleItem(item.uri)}
-						>
-							{m.communityAffirmationDismiss()}
-						</button>
-					</div>
-				</article>
-			{/each}
-		</div>
+						<div class="community-affirmation-card-foot">
+							<ReactionBar
+								uri={item.uri}
+								cid={item.cid}
+								reactions={item.reactions}
+								showReactors={false}
+								pickerOpen={openPickerUri === item.uri}
+								pickerAnchor={reactionButtons[item.uri]}
+								ontoggled={(active) => handleReactionToggle(item.uri, active)}
+								onpickerclose={() => handlePickerClose(item.uri)}
+							/>
+							<button
+								bind:this={reactionButtons[item.uri]}
+								class="community-affirmation-react"
+								class:active={openPickerUri === item.uri}
+								aria-expanded={openPickerUri === item.uri}
+								aria-label={m.communityAffirmationReactAria()}
+								onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
+							>
+								<Icon name="emoji" size={16} />
+								<span>{m.communityAffirmationReact()}</span>
+							</button>
+							<button
+								type="button"
+								class="community-affirmation-dismiss"
+								aria-label={m.communityAffirmationDismissAria()}
+								title={m.communityAffirmationDismissAria()}
+								onclick={() => handleItem(item.uri)}
+							>
+								{m.communityAffirmationDismiss()}
+							</button>
+						</div>
+					</article>
+				{/each}
+			</div>
+		</HorizontalCarousel>
 	{:else if loading}
 		<p class="community-affirmation-state" role="status">{m.communityAffirmationLoading()}</p>
 	{:else if error}

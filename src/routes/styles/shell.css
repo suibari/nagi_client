@@ -1,10 +1,10 @@
 /* App shell: 3-column responsive layout (tomarigi-style) */
 .shell {
 	display: grid;
-	grid-template-columns: 260px minmax(0, 600px) 300px;
+	grid-template-columns: 240px minmax(0, 640px) 300px;
 	justify-content: center;
-	gap: 24px;
-	width: min(1240px, 100%);
+	gap: 32px;
+	width: min(1244px, 100%);
 	margin: 0 auto;
 	padding: 0 12px;
 	min-height: 100dvh;
@@ -12,7 +12,7 @@
 }
 /* ランディング用（/about）。右サイドバーを畳んで本文を広く取る。 */
 .shell.wide {
-	grid-template-columns: 260px minmax(0, 900px);
+	grid-template-columns: 240px minmax(0, 900px);
 }
 .shell > main {
 	min-width: 0;
@@ -30,7 +30,9 @@
 	overflow-y: auto;
 }
 .sidebar-left .brand {
+	margin-bottom: 12px;
 	padding: 6px 14px 18px;
+	border-bottom: 1px solid var(--line);
 }
 .side-nav {
 	display: grid;
@@ -39,20 +41,26 @@
 .side-nav a {
 	display: flex;
 	align-items: center;
-	gap: 14px;
-	padding: 11px 14px;
-	border-radius: var(--radius-pill);
-	font-size: 15px;
-	font-weight: 700;
+	gap: 12px;
+	height: 40px;
+	padding: 0 14px 0 11px;
+	border-left: 3px solid transparent;
+	border-radius: var(--r-md);
+	font-size: 14px;
+	font-weight: 600;
 	color: var(--text-muted);
 }
 .side-nav a:hover {
-	background: var(--accent-softer);
-	color: var(--accent-strong);
+	background: var(--surface-1);
+	color: var(--text);
 }
 .side-nav a.active {
-	color: var(--accent-strong);
-	background: var(--accent-soft);
+	border-left-color: var(--accent);
+	color: var(--text);
+	background: var(--accent-weak);
+}
+.side-nav a.active .icon {
+	color: var(--accent);
 }
 .side-nav .icon {
 	flex: 0 0 auto;
@@ -104,9 +112,10 @@
 	align-items: center;
 	gap: 11px;
 	border: 0;
-	border-radius: var(--radius-l);
-	background: var(--panel-bg);
-	box-shadow: var(--shadow-panel);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	background: var(--surface-1);
+	box-shadow: none;
 }
 .account-card .who {
 	min-width: 0;
@@ -163,34 +172,35 @@
 /* my Nagi のセクションとして縦に並ぶので、.my-nagi-section と同じ間隔を空ける。 */
 .community-affirmation {
 	display: grid;
-	overflow: hidden;
-	margin-bottom: 16px;
+	margin-bottom: 32px;
 	border: 0;
-	border-radius: var(--radius-l);
-	background: var(--panel-bg);
-	box-shadow: var(--shadow-panel);
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
 }
 .community-affirmation-titlebar {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	min-height: 43px;
-	padding: 9px 13px;
+	min-height: 37px;
+	padding: 0 0 10px;
+	border-bottom: 1px solid var(--line);
 }
 /* my Nagi の他セクション（.my-nagi-section-mark）と同じ見出しアイコンの扱いに揃える。 */
 .community-affirmation-mark {
 	flex: 0 0 auto;
 	display: grid;
 	place-items: center;
-	width: 22px;
-	height: 22px;
-	color: var(--accent-strong);
+	width: 16px;
+	height: 16px;
+	color: var(--text-mute);
 }
 .community-affirmation h2 {
 	margin: 0;
 	color: var(--text-strong);
-	font-size: 14px;
-	font-weight: 800;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
 	line-height: 1.4;
 }
 /* タイトル右端の送りボタン。カードが2枚以上あるときだけ出る。 */
@@ -199,41 +209,16 @@
 }
 .community-affirmation-intro {
 	margin: 0;
-	padding: 10px 13px 0;
+	padding: 12px 0 0;
 	color: var(--text-muted);
 	font-size: 12px;
 	line-height: 1.55;
 }
-/*
-	横スクロールのカルーセル。transform は使わない（使うと position: fixed の
-	絵文字ピッカーがこの要素に閉じ込められてクリップされる）。
-*/
-.community-affirmation-track {
-	display: flex;
-	align-items: flex-start;
-	gap: 12px;
-	padding: 12px 13px;
-	overflow-x: auto;
-	scroll-snap-type: x mandatory;
-	/*
-		スナップ位置を padding のぶんだけ内側にずらす。これが無いと、送った先で
-		カードが枠線にぴったり張り付き、左の余白が消えて窮屈に見える
-		（スナップは既定でスクロールポート＝padding box の端に合わせるため）。
-	*/
-	scroll-padding-inline: 13px;
-	scrollbar-width: none;
-	overscroll-behavior-x: contain;
-}
-.community-affirmation-track::-webkit-scrollbar {
-	display: none;
-}
 .community-affirmation-card {
-	flex: 0 0 min(340px, 88%);
 	display: flex;
 	flex-direction: column;
+	align-self: flex-start;
 	gap: 8px;
-	min-width: 0;
-	scroll-snap-align: start;
 	transition:
 		opacity 0.18s ease,
 		transform 0.18s ease;
@@ -252,7 +237,7 @@
 	margin-inline-start: auto;
 	padding: 5px 7px;
 	border: 0;
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-sm);
 	background: transparent;
 	color: var(--text-faint);
 	font-size: 11px;
@@ -272,7 +257,7 @@
 .community-affirmation-card-foot {
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	gap: 6px;
 	margin-top: auto;
 	margin-inline-start: 53px;
 }
@@ -282,11 +267,11 @@
 	justify-content: center;
 	gap: 5px;
 	flex: 0 0 auto;
-	min-height: 32px;
-	padding: 6px 9px;
-	border: 0;
-	border-radius: var(--radius-pill);
-	background: transparent;
+	height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--line);
+	border-radius: var(--r-sm);
+	background: var(--surface-1);
 	color: var(--text-muted);
 	font-size: 12px;
 	font-weight: 700;
@@ -379,8 +364,7 @@
 	padding: 4px 8px 0;
 	margin-bottom: 14px;
 	border: 0;
-	background: var(--bg-veil);
-	backdrop-filter: blur(14px);
+	background: var(--bg);
 }
 .feed-tabs a {
 	position: relative;
@@ -415,17 +399,28 @@
 	display: none;
 }
 
-/* --- tablet: icon rail, no right sidebar --- */
-@media (max-width: 1099px) {
+/* --- compact desktop: keep the full sidebar, hide the right rail --- */
+@media (max-width: 1179px) {
 	.shell {
-		grid-template-columns: 76px minmax(0, 600px);
-		gap: 16px;
+		grid-template-columns: 240px minmax(0, 640px);
+		gap: 32px;
 	}
 	.shell.wide {
-		grid-template-columns: 76px minmax(0, 900px);
+		grid-template-columns: 240px minmax(0, 900px);
 	}
 	.sidebar-right {
 		display: none;
+	}
+}
+
+/* --- tablet: icon rail --- */
+@media (max-width: 899px) {
+	.shell {
+		grid-template-columns: 64px minmax(0, 640px);
+		gap: 16px;
+	}
+	.shell.wide {
+		grid-template-columns: 64px minmax(0, 900px);
 	}
 	.sidebar-left .brand span:last-child,
 	.side-nav a .label {
@@ -437,7 +432,7 @@
 	}
 	.side-nav a {
 		justify-content: center;
-		padding: 12px;
+		padding: 0;
 	}
 	.account-card {
 		margin-inline: 0;
@@ -486,9 +481,8 @@
 		z-index: 20;
 		height: var(--mobile-header-h);
 		padding: 0 14px;
-		background: var(--bg-veil);
+		background: var(--bg);
 		border-bottom: 1px solid var(--line);
-		backdrop-filter: blur(14px);
 	}
 	.mobile-top .brand {
 		font-size: 17px;
@@ -511,9 +505,8 @@
 		right: 0;
 		z-index: 20;
 		min-height: calc(68px + env(safe-area-inset-bottom));
-		background: var(--bg-veil);
+		background: var(--surface-1);
 		border-top: 1px solid var(--line);
-		backdrop-filter: blur(14px);
 		padding: 6px 8px calc(10px + env(safe-area-inset-bottom));
 	}
 	.mobile-nav a {

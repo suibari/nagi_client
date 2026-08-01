@@ -175,9 +175,10 @@
 	}
 
 	.composer-tabs button {
-		padding: 3px 11px;
-		border: 0;
-		border-radius: var(--radius-pill);
+		min-height: 28px;
+		padding: 3px 10px;
+		border: 1px solid transparent;
+		border-radius: var(--r-sm);
 		background: none;
 		color: var(--text-muted);
 		font-size: 12px;
@@ -185,16 +186,17 @@
 	}
 
 	.composer-tabs button.active {
-		background: var(--accent-soft);
-		color: var(--accent-strong);
+		border-color: var(--line-strong);
+		background: var(--surface-2);
+		color: var(--text);
 	}
 
 	.composer-preview {
 		min-height: 84px;
 		padding: 10px;
 		border: 1px solid var(--line);
-		border-radius: var(--radius-m);
-		background: var(--bg-inset);
+		border-radius: var(--r-md);
+		background: var(--surface-2);
 	}
 
 	.composer-preview .muted {

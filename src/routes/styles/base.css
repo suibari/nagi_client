@@ -1,8 +1,9 @@
 :root {
-	font-family: 'Hiragino Sans', 'Yu Gothic UI', system-ui, sans-serif;
+	font-family: system-ui, 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', sans-serif;
 	color: var(--text);
 	background: var(--bg);
 	font-synthesis: none;
+	font-feature-settings: 'palt' 1;
 }
 * {
 	box-sizing: border-box;
@@ -15,7 +16,11 @@ body {
 }
 body {
 	margin: 0;
-	background: radial-gradient(circle at 50% -10%, var(--bg-glow) 0, transparent 32rem), var(--bg);
+	background: var(--bg);
+	color: var(--text);
+	letter-spacing: 0.01em;
+	-webkit-font-smoothing: auto;
+	-moz-osx-font-smoothing: auto;
 }
 a {
 	color: inherit;
@@ -70,9 +75,11 @@ img.mark {
 	color: var(--text-on-accent) !important;
 	background: var(--accent);
 	border: 0;
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-md);
+	min-height: 44px;
 	padding: 10px 18px;
 	font-weight: 700;
+	letter-spacing: 0.02em;
 }
 .primary:hover,
 .login:hover,
@@ -105,8 +112,8 @@ img.mark {
 	max-inline-size: 100%;
 	background: var(--panel-bg);
 	border: 0;
-	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-panel);
+	border-radius: var(--r-md);
+	box-shadow: none;
 }
 .state,
 .notice {
@@ -114,12 +121,12 @@ img.mark {
 	max-inline-size: 100%;
 	overflow-wrap: anywhere;
 	text-align: center;
-	background: var(--panel-bg);
-	border: 0;
-	border-radius: 18px;
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
 	padding: 30px;
 	color: var(--text-muted);
-	box-shadow: var(--shadow-panel);
+	box-shadow: none;
 }
 .state button {
 	display: block;
@@ -135,7 +142,7 @@ img.mark {
 	border: 1px solid var(--line-strong);
 	background: var(--bg-raised);
 	color: var(--accent-strong);
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-md);
 	padding: 10px 22px;
 }
 .more:hover {
@@ -146,21 +153,31 @@ img.mark {
 	padding: 20px 0 16px;
 }
 .page-title h1 {
-	font-size: 26px;
+	font-size: 22px;
 	margin: 0;
 	color: var(--text-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		scroll-behavior: auto !important;
+		transition: none !important;
+		animation: none !important;
+	}
 }
 .auth-card {
 	width: min(450px, 100%);
 	min-inline-size: 0;
 	max-inline-size: 100%;
 	margin: 40px auto;
-	background: var(--bg-raised);
-	border: 0;
-	border-radius: 28px;
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
 	padding: 34px;
 	text-align: center;
-	box-shadow: var(--shadow-pop);
+	box-shadow: none;
 }
 .auth-card h1 {
 	color: var(--text-strong);
@@ -181,7 +198,7 @@ img.mark {
 .auth-card input,
 .auth-card textarea {
 	border: 1px solid var(--line-strong);
-	border-radius: 12px;
+	border-radius: var(--r-md);
 	padding: 13px;
 	outline: none;
 	background: var(--bg-inset);

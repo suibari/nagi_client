@@ -50,7 +50,9 @@
 		value === 'kossori'
 			? 'hide'
 			: value === 'feed'
-				? (channelName ? 'hash' : 'home')
+				? channelName
+					? 'hash'
+					: 'home'
 				: externalTarget === 'bluesky'
 					? 'bluesky'
 					: 'newspaper';
@@ -147,7 +149,7 @@
 		align-items: center;
 		justify-content: center;
 		padding: 16px;
-		background: rgb(0 0 0 / 0.4);
+		background: color-mix(in srgb, var(--bg) 82%, #000);
 	}
 
 	.scope-dialog {
@@ -156,10 +158,10 @@
 		gap: 14px;
 		width: min(100%, 460px);
 		padding: 18px;
-		border: 1px solid var(--line);
-		border-radius: var(--radius-l);
-		background: var(--bg-raised);
-		box-shadow: var(--shadow-card);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-md);
+		background: var(--surface-1);
+		box-shadow: var(--shadow-pop);
 	}
 
 	.scope-dialog:focus {
@@ -171,6 +173,8 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
+		padding-bottom: 10px;
+		border-bottom: 1px solid var(--line);
 	}
 
 	h2 {
@@ -262,8 +266,8 @@
 	.scope-detail {
 		margin: 0;
 		padding: 10px 12px;
-		border-radius: var(--radius-m);
-		background: var(--bg-inset);
+		border-radius: var(--r-md);
+		background: var(--surface-2);
 		color: var(--text-muted);
 		font-size: 0.8rem;
 		line-height: 1.6;

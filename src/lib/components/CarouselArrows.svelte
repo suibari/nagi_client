@@ -43,7 +43,7 @@
 <style>
 	.carousel-arrows {
 		display: flex;
-		gap: 2px;
+		gap: 4px;
 	}
 
 	button {
@@ -52,13 +52,14 @@
 		width: 28px;
 		height: 28px;
 		padding: 0;
-		border: 0;
-		border-radius: 50%;
-		background: transparent;
-		color: var(--text-muted);
+		border: 1px solid var(--line);
+		border-radius: var(--r-sm);
+		background: var(--surface-2);
+		color: var(--text-sub);
 		cursor: pointer;
 		transition:
 			background 0.16s ease,
+			border-color 0.16s ease,
 			color 0.16s ease,
 			opacity 0.16s ease;
 	}
@@ -69,8 +70,9 @@
 
 	button:hover:not(:disabled),
 	button:focus-visible:not(:disabled) {
-		background: color-mix(in srgb, var(--accent-soft) 82%, transparent);
-		color: var(--accent-strong);
+		border-color: var(--line-strong);
+		background: var(--surface-3);
+		color: var(--text);
 	}
 
 	button:disabled {

@@ -41,9 +41,9 @@
 		gap: 12px;
 		padding: 11px 12px 11px 16px;
 		border: 1px solid var(--line-strong);
-		border-radius: var(--radius-l);
-		background: var(--bg-raised);
-		box-shadow: var(--shadow-card);
+		border-radius: var(--r-md);
+		background: var(--surface-1);
+		box-shadow: var(--shadow-pop);
 		color: var(--text);
 		font-size: 13px;
 	}
@@ -61,7 +61,7 @@
 		height: 32px;
 		padding: 0;
 		border: 0;
-		border-radius: 50%;
+		border-radius: var(--r-sm);
 		background: transparent;
 		color: var(--text-muted);
 	}

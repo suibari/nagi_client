@@ -1,9 +1,9 @@
 /* --- welcome / composer --- */
 .welcome {
-	background: var(--panel-bg);
-	border: 0;
-	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-panel);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	margin: 0 0 16px;
 	padding: 18px 20px;
 }
@@ -70,7 +70,7 @@
 	white-space: nowrap;
 	border: 1px solid var(--accent);
 	color: var(--accent-strong);
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-md);
 	padding: 9px 17px;
 	font-weight: 700;
 }
@@ -86,13 +86,15 @@
 	text-decoration: underline;
 }
 .composer textarea {
-	border: 0;
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
 	resize: vertical;
 	width: 100%;
 	min-height: 84px;
+	padding: 12px 14px;
 	outline: none;
 	font-size: 16px;
-	background: none;
+	background: var(--surface-2);
 	color: var(--text);
 }
 .mention-textarea {
@@ -182,16 +184,16 @@
 	gap: 5px;
 	flex: 0 1 auto;
 	min-width: 0;
-	min-height: 30px;
+	height: 32px;
 	/* 送信ボタンを右端へ押しやり、投稿範囲を左端に固定する。 */
 	margin-right: auto;
 	padding: 5px 11px;
-	border: 1px solid var(--accent-border);
-	border-radius: var(--radius-pill);
-	background: var(--accent-softer);
-	color: var(--accent-strong);
+	border: 1px solid var(--line);
+	border-radius: var(--r-sm);
+	background: var(--surface-2);
+	color: var(--text-sub);
 	font-size: 12px;
-	font-weight: 800;
+	font-weight: 600;
 	cursor: pointer;
 }
 .scope-button > span {
@@ -205,7 +207,9 @@
 }
 @media (hover: hover) and (pointer: fine) {
 	.scope-button:not(:disabled):hover {
-		background: var(--accent-soft);
+		border-color: var(--line-strong);
+		background: var(--surface-3);
+		color: var(--text);
 	}
 }
 /* 文字数。詰まってきたら真っ先に削ってよい要素なので縮小を許す。 */
@@ -227,14 +231,15 @@
 	align-items: center;
 	justify-content: center;
 	gap: 5px;
-	min-height: 36px;
-	border-radius: var(--radius-pill);
-	font-size: 12px;
-	font-weight: 800;
+	height: 44px;
+	border-radius: var(--r-md);
+	font-size: 15px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
 	white-space: nowrap;
 }
 .submit-primary {
-	padding: 7px 14px;
+	padding: 0 16px;
 	border: 1px solid var(--accent);
 	background: var(--accent);
 	color: var(--text-on-accent);
@@ -333,7 +338,7 @@
 	display: grid;
 	place-items: center;
 	padding: 20px;
-	background: rgb(0 0 0 / 0.58);
+	background: color-mix(in srgb, var(--bg) 82%, #000);
 }
 .draft-dialog {
 	width: min(100%, 460px);
@@ -342,9 +347,10 @@
 	flex-direction: column;
 	gap: 12px;
 	padding: 20px;
-	border-radius: var(--radius-l);
-	background: var(--bg-raised);
-	box-shadow: var(--shadow-card);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--r-md);
+	background: var(--surface-1);
+	box-shadow: var(--shadow-pop);
 }
 .draft-confirm {
 	width: min(100%, 380px);
@@ -361,6 +367,8 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--line);
 }
 .draft-list {
 	flex: 1;
@@ -376,8 +384,9 @@
 	align-items: center;
 	gap: 10px;
 	padding: 10px;
-	border-radius: var(--radius-m);
-	background: var(--bg-inset);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	background: var(--surface-2);
 }
 .draft-thumb {
 	width: 44px;
@@ -585,10 +594,10 @@
 }
 .thread-unit {
 	min-width: 0;
-	background: var(--panel-bg);
+	background: transparent;
 	border: 0;
-	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-panel);
+	border-radius: 0;
+	box-shadow: none;
 	padding: 12px;
 	display: grid;
 	gap: 0;
@@ -602,7 +611,7 @@
 }
 .post-row {
 	display: flex;
-	gap: 11px;
+	gap: 12px;
 	align-items: flex-start;
 }
 .post-row > a:first-child {
@@ -611,18 +620,18 @@
 	border-radius: 50%;
 }
 .avatar {
-	width: 42px;
-	height: 42px;
+	width: 40px;
+	height: 40px;
 	flex: 0 0 auto;
-	border-radius: 50%;
+	border-radius: var(--r-full);
 	display: grid;
 	place-items: center;
 	overflow: hidden;
 	background: var(--accent-soft);
 	color: var(--accent-strong);
 	font-weight: 800;
-	border: 2px solid var(--bg-raised);
-	box-shadow: var(--shadow-card);
+	border: 1px solid var(--line);
+	box-shadow: none;
 }
 .avatar img {
 	width: 100%;
@@ -644,10 +653,12 @@
 	position: relative;
 	min-width: 0;
 	flex: 1;
-	padding: 11px 14px;
+	max-width: 34em;
+	padding: 12px 14px;
 	background: var(--bubble-current-bg);
 	border: 1px solid var(--bubble-border);
-	border-radius: 7px 20px 20px;
+	border-radius: var(--r-sm) var(--r-bubble) var(--r-bubble) var(--r-bubble);
+	box-shadow: none;
 }
 .bubble::before,
 .bubble::after {
@@ -677,7 +688,7 @@
 .mine > .bubble {
 	--bubble-current-bg: var(--bubble-mine-bg);
 	border-color: var(--bubble-mine-border);
-	border-radius: 20px 7px 20px 20px;
+	border-radius: var(--r-bubble) var(--r-sm) var(--r-bubble) var(--r-bubble);
 }
 .mine > .bubble::before,
 .mine > .bubble::after {
@@ -695,7 +706,11 @@
 .mine .meta {
 	flex-direction: row-reverse;
 }
-.mine .meta time {
+.mine .meta-author-line,
+.mine .meta-badges {
+	justify-content: flex-end;
+}
+.mine .meta-time {
 	margin-left: 0;
 	margin-right: auto;
 }
@@ -711,24 +726,26 @@
 }
 .meta {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	flex-wrap: wrap;
 	gap: 4px 8px;
-	font-size: 12px;
-	color: var(--text-muted);
+	color: var(--text-mute);
 	min-width: 0;
 }
-.meta-author {
-	display: grid;
-	gap: 3px;
+.meta-author-line {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
 	flex: 1 1 0;
 	min-width: 0;
 }
-.meta-author > a:first-child {
+.meta-author-line > a:first-child {
 	flex: 0 1 auto;
 	min-width: 0;
 	max-width: 100%;
-	font-weight: 800;
+	font-size: 15px;
+	font-weight: 700;
 	color: var(--text-strong);
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -740,21 +757,20 @@
 	gap: 4px;
 	flex-wrap: wrap;
 }
-.mine .meta-author {
-	justify-items: end;
-}
-.mine .meta-badges {
-	justify-content: flex-end;
-}
 .meta .handle {
 	color: var(--text-faint);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.meta time {
+.meta-time {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 	margin-left: auto;
 	flex: 0 0 auto;
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
 }
 .meta time a:hover {
 	color: var(--accent-strong);
@@ -772,15 +788,15 @@
 	width: 30px;
 	height: 30px;
 	padding: 0;
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-sm);
 }
 .timeline-action {
 	color: var(--text-muted);
 	background: transparent;
 }
 .timeline-action.active {
-	color: var(--accent-strong);
-	background: var(--accent-soft);
+	color: var(--accent);
+	background: var(--accent-weak);
 }
 @media (hover: hover) and (pointer: fine) {
 	.timeline-action:hover {
@@ -891,7 +907,7 @@
 	height: 38px;
 	padding: 0;
 	border: 0;
-	border-radius: 50%;
+	border-radius: var(--r-sm);
 	color: var(--text-muted);
 	background: transparent;
 	transition:
@@ -918,7 +934,7 @@
 .icon-action.primary-icon {
 	color: var(--text-on-accent);
 	background: var(--accent);
-	box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 24%, transparent);
+	box-shadow: none;
 }
 .icon-action.primary-icon:active {
 	color: var(--text-on-accent);
@@ -948,12 +964,12 @@
 	flex: 0 0 auto;
 	display: inline-block;
 	max-width: 100%;
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-sm);
 	background: var(--accent-soft);
 	color: var(--accent-strong);
-	padding: 2px 7px;
-	font-size: 10px;
-	font-weight: 800;
+	padding: 1px 6px;
+	font-size: 11px;
+	font-weight: 600;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -1023,7 +1039,7 @@
 }
 .bubble p {
 	white-space: pre-wrap;
-	line-height: 1.75;
+	line-height: 1.8;
 	margin: 8px 0;
 	color: var(--text);
 	overflow-wrap: anywhere;
@@ -1033,8 +1049,10 @@
 .post-text {
 	/* 折りたたみ時の表示行数。TranslateToggle が同じ値を読んで溢れを判定する */
 	--clamp-lines: 6;
-	line-height: 1.75;
+	font-size: 15px;
+	line-height: 1.8;
 	color: var(--text);
+	word-break: auto-phrase;
 	overflow-wrap: anywhere;
 }
 .post-text.collapsed {
@@ -1049,7 +1067,10 @@
 	white-space: pre-wrap;
 }
 .post-text p {
-	margin: 8px 0;
+	margin: 0;
+}
+.post-text > * + * {
+	margin-top: 1.1em;
 }
 .post-text > :first-child {
 	margin-top: 0;
@@ -1060,23 +1081,23 @@
 .post-text h3,
 .post-text h4,
 .post-text h5 {
-	margin: 12px 0 8px;
+	margin-bottom: 0;
 	font-weight: 700;
 	line-height: 1.5;
 	color: var(--text);
 }
 .post-text h3 {
-	font-size: 1.4em;
+	font-size: 17px;
 }
 .post-text h4 {
-	font-size: 1.2em;
+	font-size: 15px;
 }
 .post-text h5 {
 	font-size: 1.05em;
 }
 .post-text ul,
 .post-text ol {
-	margin: 8px 0;
+	margin-bottom: 0;
 	padding-left: 1.35em;
 }
 .post-text ul {
@@ -1086,13 +1107,19 @@
 	list-style: decimal;
 }
 .post-text li {
-	margin: 2px 0;
+	margin: 0;
+}
+.post-text li + li {
+	margin-top: 0.4em;
+}
+.post-text li::marker {
+	color: var(--text-mute);
 }
 .post-text blockquote {
 	margin: 8px 0;
 	padding-left: 0.7em;
-	border-left: 3px solid var(--line);
-	color: var(--text-muted);
+	border-left: 2px solid var(--line-strong);
+	color: var(--text-sub);
 }
 .post-text code {
 	padding: 1px 4px;
@@ -1106,7 +1133,7 @@
 .read {
 	border: 0;
 	background: none;
-	color: var(--accent-strong);
+	color: var(--accent);
 	padding: 0;
 	font-size: 12px;
 }
@@ -1144,7 +1171,7 @@
 	}
 	.composer-row > .bubble {
 		width: 100%;
-		border-radius: 20px;
+		border-radius: var(--r-bubble);
 	}
 	.composer-row > .bubble::before,
 	.composer-row > .bubble::after {
@@ -1223,11 +1250,16 @@
 	position: relative;
 }
 .reaction-emoji {
-	border: 1px solid var(--line-strong);
-	background: var(--bg-inset);
-	border-radius: var(--radius-pill);
-	padding: 4px 10px;
-	color: var(--text-muted);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	height: 28px;
+	border: 1px solid var(--line);
+	background: var(--surface-1);
+	border-radius: var(--r-sm);
+	padding: 0 8px;
+	color: var(--text-sub);
 	font-size: 12px;
 	transition: transform 0.1s ease;
 }
@@ -1671,8 +1703,8 @@
 .reaction-image {
 	display: inline-flex;
 	width: auto;
-	height: 1.4em;
-	min-width: 1.4em;
+	height: 18px;
+	min-width: 18px;
 	max-width: 8em;
 	object-fit: contain;
 	vertical-align: -0.3em;
@@ -1870,7 +1902,7 @@
 	width: fit-content;
 	padding: 7px 10px;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-sm);
 }
 .attachment-add span {
 	color: var(--text-faint);
@@ -2220,7 +2252,7 @@
 	white-space: nowrap;
 	border: 1px solid var(--accent);
 	color: var(--accent-strong);
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-md);
 	padding: 7px 15px;
 	font-size: 13px;
 	font-weight: 700;
@@ -2304,7 +2336,7 @@
 	align-items: center;
 	border: 1px solid var(--accent);
 	color: var(--accent-strong);
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-md);
 	padding: 8px 14px;
 	font-size: 13px;
 	font-weight: 700;
@@ -2329,16 +2361,17 @@
 	display: grid;
 	place-items: center;
 	padding: 20px;
-	background: rgb(0 0 0 / 0.58);
+	background: color-mix(in srgb, var(--bg) 82%, #000);
 }
 .cropper-dialog {
 	width: min(100%, 360px);
 	display: grid;
 	gap: 16px;
 	padding: 22px;
-	border-radius: var(--radius-l);
-	background: var(--bg-raised);
-	box-shadow: var(--shadow-card);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--r-md);
+	background: var(--surface-1);
+	box-shadow: var(--shadow-pop);
 }
 .cropper-dialog h2 {
 	margin: 0;
@@ -2392,16 +2425,17 @@
 	display: grid;
 	place-items: center;
 	padding: 20px;
-	background: rgb(0 0 0 / 0.58);
+	background: color-mix(in srgb, var(--bg) 82%, #000);
 }
 .delete-dialog {
 	width: min(100%, 380px);
 	display: grid;
 	gap: 14px;
 	padding: 22px;
-	border-radius: var(--radius-l);
-	background: var(--bg-raised);
-	box-shadow: var(--shadow-card);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--r-md);
+	background: var(--surface-1);
+	box-shadow: var(--shadow-pop);
 }
 .delete-dialog h2,
 .delete-dialog p {
@@ -2420,7 +2454,7 @@
 }
 .delete-actions .danger {
 	border: 0;
-	border-radius: var(--radius-pill);
+	border-radius: var(--r-md);
 	background: var(--danger);
 	color: white;
 	font-weight: 700;
@@ -2715,10 +2749,10 @@
 	min-height: 86px;
 	padding: 14px 18px;
 	color: var(--text);
-	background: var(--bg-raised);
-	border: 0;
-	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-card);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	transition:
 		background 0.15s ease,
 		transform 0.15s ease;
@@ -2730,8 +2764,8 @@ button.settings-category {
 	cursor: pointer;
 }
 .settings-category:hover {
-	background: var(--bg-hover);
-	transform: translateY(-1px);
+	border-color: var(--line-strong);
+	background: var(--surface-2);
 }
 .settings-category:focus-visible {
 	outline: 2px solid var(--focus-ring);
@@ -2742,9 +2776,9 @@ button.settings-category {
 	place-items: center;
 	width: 46px;
 	height: 46px;
-	color: var(--accent-strong);
-	background: var(--accent-soft);
-	border-radius: 13px;
+	color: var(--text-mute);
+	background: var(--surface-2);
+	border-radius: var(--r-md);
 }
 .settings-category-copy {
 	display: grid;
@@ -2830,17 +2864,15 @@ button.settings-category {
 	align-items: center;
 	gap: 10px 30px;
 	padding: 30px 36px;
-	background: var(--bg-raised);
-	border-radius: 32px;
-	box-shadow: var(--shadow-pop);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	min-inline-size: 0;
 }
 /* 「凪」らしいやわらかさを出す泡。装飾のみで、内容には一切かからない。 */
 .about-bubbles {
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	pointer-events: none;
+	display: none;
 }
 .about-bubble {
 	position: absolute;
@@ -2969,7 +3001,7 @@ button.settings-category {
 	display: inline-block;
 	padding: 14px 38px;
 	font-size: 1rem;
-	box-shadow: var(--shadow-card);
+	box-shadow: none;
 	transition: transform 0.15s ease;
 }
 .about-cta a.primary:hover {
@@ -3005,9 +3037,10 @@ button.settings-category {
 	gap: 8px;
 	padding: 24px 20px;
 	text-align: center;
-	background: var(--bg-raised);
-	border-radius: 24px;
-	box-shadow: var(--shadow-card);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	min-inline-size: 0;
 }
 .about-reason-icon {
@@ -3016,9 +3049,9 @@ button.settings-category {
 	inline-size: 56px;
 	block-size: 56px;
 	margin-bottom: 2px;
-	color: var(--accent-strong);
-	background: var(--accent-soft);
-	border-radius: 50%;
+	color: var(--text-mute);
+	background: var(--surface-2);
+	border-radius: var(--r-md);
 }
 .about-reason h3 {
 	margin: 0;
@@ -3049,9 +3082,10 @@ button.settings-category {
 	gap: 8px;
 	padding: 22px 20px;
 	text-align: center;
-	background: var(--bg-raised);
-	border-radius: 24px;
-	box-shadow: var(--shadow-card);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	min-inline-size: 0;
 }
 .about-step-num {
@@ -3059,8 +3093,8 @@ button.settings-category {
 	place-items: center;
 	inline-size: 44px;
 	block-size: 44px;
-	border-radius: 50%;
-	background: var(--brand-gradient);
+	border-radius: var(--r-md);
+	background: var(--accent);
 	color: var(--text-on-accent);
 	font-weight: 800;
 	font-size: 1.15rem;
@@ -3098,9 +3132,10 @@ button.settings-category {
 	gap: 7px;
 	padding: 16px 18px;
 	color: var(--text);
-	background: var(--bg-raised);
-	border-radius: var(--radius-l);
-	box-shadow: var(--shadow-card);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	min-inline-size: 0;
 	transition:
 		background 0.15s ease,
@@ -3119,9 +3154,9 @@ a.about-feature:focus-visible {
 	place-items: center;
 	inline-size: 38px;
 	block-size: 38px;
-	color: var(--accent-strong);
-	background: var(--accent-soft);
-	border-radius: 12px;
+	color: var(--text-mute);
+	background: var(--surface-2);
+	border-radius: var(--r-md);
 }
 .about-feature h3 {
 	margin: 0;
@@ -3165,9 +3200,10 @@ a.about-feature:focus-visible {
 }
 .about-compare-row {
 	padding: 14px 18px;
-	background: var(--bg-raised);
-	border-radius: var(--radius-m);
-	box-shadow: var(--shadow-card);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	font-size: 0.86rem;
 	line-height: 1.6;
 	overflow-wrap: anywhere;
@@ -3212,9 +3248,10 @@ a.about-feature:focus-visible {
 	gap: 10px;
 	text-align: center;
 	padding: 34px 24px 36px;
-	background: var(--bg-raised);
-	border-radius: 32px;
-	box-shadow: var(--shadow-card);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	box-shadow: none;
 	min-inline-size: 0;
 }
 .about-final h2 {
@@ -3322,7 +3359,7 @@ a.about-feature:focus-visible {
 	.about-step {
 		padding: 16px 12px;
 		gap: 6px;
-		border-radius: 18px;
+		border-radius: var(--r-md);
 	}
 	.about-reason-icon {
 		inline-size: 44px;

@@ -13,6 +13,7 @@
 		botActor,
 		unread = false,
 		embedded = false,
+		clampTitle = true,
 	}: {
 		news: NewsView;
 		botActor?: ActorView;
@@ -20,6 +21,8 @@
 		unread?: boolean;
 		/** 外側のセクション内に置くときは、カード自身の枠と影を持たせない。 */
 		embedded?: boolean;
+		/** カルーセルなど高さを揃える表示では、タイトルを2行に収める。 */
+		clampTitle?: boolean;
 	} = $props();
 	const quote = new NewsQuote();
 	let shared = $state(false);
@@ -68,7 +71,7 @@
 				})}</time
 			>{/if}
 	</div>
-	<h3 title={news.title}>{news.title}</h3>
+	<h3 class:clamped={clampTitle} title={news.title}>{news.title}</h3>
 	<ChatBubble post={botPost} displayOnly />
 	<div class="news-footer">
 		<ReactionBar
@@ -138,29 +141,28 @@
 		flex-direction: column;
 		min-inline-size: 0;
 		max-inline-size: 100%;
-		padding: 0.75rem;
-		border: 1px solid var(--panel-border);
-		border-radius: var(--radius-l);
-		background: var(--panel-bg);
-		box-shadow: var(--shadow-panel);
+		padding: 12px 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
 	}
-	/* 未読は通知カードと同じ左のアクセントバー＋淡い地色。既読化後も表示中は残る。 */
+	/* 外枠を復活させず、未読だけ左のアクセントバーで示す。 */
 	.news-card.unread {
-		background: var(--accent-softer);
-		box-shadow:
-			inset 3px 0 0 var(--accent),
-			var(--shadow-panel);
+		padding-inline-start: 12px;
+		background: transparent;
+		box-shadow: inset 3px 0 0 var(--accent);
 	}
 	.news-card.embedded {
 		inline-size: 100%;
 		block-size: 100%;
 		box-sizing: border-box;
 		border: 0;
-		background: var(--bg-raised);
+		background: transparent;
 		box-shadow: none;
 	}
 	.news-card.unread.embedded {
-		background: var(--accent-softer);
+		background: transparent;
 		box-shadow: inset 3px 0 0 var(--accent);
 	}
 	.news-meta {
@@ -178,16 +180,18 @@
 		margin-left: auto;
 	}
 	h3 {
+		margin: 0.45rem 0 0.75rem;
+		font-size: 1.08rem;
+		line-height: 1.55;
+		overflow-wrap: anywhere;
+	}
+	h3.clamped {
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
 		min-block-size: 3.35rem;
 		overflow: hidden;
-		font-size: 1.08rem;
-		line-height: 1.55;
-		margin: 0.45rem 0 0.75rem;
-		overflow-wrap: anywhere;
 	}
 	.news-footer {
 		margin-top: auto;

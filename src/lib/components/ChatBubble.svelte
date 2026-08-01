@@ -479,30 +479,34 @@
 	<AvatarLink actor={post.author} />
 	<div class="bubble" class:sending={optimistic}>
 		<div class="meta">
-			<div class="meta-author">
+			<div class="meta-author-line">
 				<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a>
 				<div class="meta-badges"><ActorBadges actor={post.author} /></div>
 			</div>
-			{#if !hideTimestamp}
-				<time>
-					{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
-							month: 'short',
-							day: 'numeric',
-							hour: '2-digit',
-							minute: '2-digit',
-						})}{:else}<a href={threadHref}
-							>{new Date(post.createdAt).toLocaleString(dateLocale(), {
-								month: 'short',
-								day: 'numeric',
-								hour: '2-digit',
-								minute: '2-digit',
-							})}</a
-						>{/if}</time
-				>
+			{#if !hideTimestamp || post.edited}
+				<div class="meta-time">
+					{#if !hideTimestamp}
+						<time>
+							{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
+									month: 'short',
+									day: 'numeric',
+									hour: '2-digit',
+									minute: '2-digit',
+								})}{:else}<a href={threadHref}
+									>{new Date(post.createdAt).toLocaleString(dateLocale(), {
+										month: 'short',
+										day: 'numeric',
+										hour: '2-digit',
+										minute: '2-digit',
+									})}</a
+								>{/if}</time
+						>
+					{/if}
+					{#if post.edited}<span class="edited-badge" aria-label={m.editedBadgeAria()}
+							>{m.editedBadge()}</span
+						>{/if}
+				</div>
 			{/if}
-			{#if post.edited}<span class="edited-badge" aria-label={m.editedBadgeAria()}
-					>{m.editedBadge()}</span
-				>{/if}
 		</div>
 		{#if editing}
 			<div class="inline-edit">
@@ -747,9 +751,8 @@
 		font-size: 0.8125rem;
 	}
 	.edited-badge {
-		margin-left: 0.4rem;
-		color: var(--text-muted);
-		font-size: 0.75rem;
+		color: var(--text-mute);
+		font-size: 11px;
 	}
 	.inline-edit {
 		margin-top: 0.35rem;

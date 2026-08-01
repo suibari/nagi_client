@@ -1,6 +1,17 @@
 export type ThemePreference = 'system' | 'light' | 'dark';
 
 export const THEME_STORAGE_KEY = 'nagi-theme';
+const THEME_COLORS = { light: '#f4fafa', dark: '#08110f' } as const;
+
+function syncThemeColor(preference: ThemePreference): void {
+	if (typeof document === 'undefined') return;
+	const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+	if (!meta) return;
+	const dark =
+		preference === 'dark' ||
+		(preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+	meta.content = dark ? THEME_COLORS.dark : THEME_COLORS.light;
+}
 
 export function isThemePreference(value: unknown): value is ThemePreference {
 	return value === 'system' || value === 'light' || value === 'dark';
@@ -19,6 +30,7 @@ export function getThemePreference(): ThemePreference {
 
 export function applyThemePreference(preference: ThemePreference): void {
 	if (typeof document === 'undefined') return;
+	syncThemeColor(preference);
 
 	if (preference === 'system') {
 		document.documentElement.removeAttribute('data-theme');
