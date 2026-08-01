@@ -2,10 +2,9 @@
 	import type { ActorView, FeedItem, PostView } from '$lib/api/types';
 	import ChatBubble from './ChatBubble.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import Avatar from './Avatar.svelte';
+	import BotReplyStatus from './BotReplyStatus.svelte';
 	import ThreadFlags from './ThreadFlags.svelte';
 	import { replyIndent } from '$lib/thread/replyIndent';
-	import { onMount } from 'svelte';
 	let {
 		item,
 		botActor,
@@ -34,21 +33,9 @@
 		/** 前回このフィードを見た時点より新しいスレッドか。カード全体に1本だけマークを出す。 */
 		unread?: boolean;
 	} = $props();
-	const STALE_MS = 3 * 60 * 1000;
-	const LONG_WAIT_MS = 10 * 1000;
 	// 会話グループ(group モード)では待機状態は conversation.awaitingBotReply が持つ。
 	let conv = $derived(item.conversation);
 	let botState = $derived(conv ? conv.awaitingBotReply : item.botReplyState);
-	let waiting = $derived(botState === 'pending' || botState === 'processing');
-	let failed = $derived(botState === 'failed');
-	let now = $state(Date.now());
-	onMount(() => {
-		const timer = window.setInterval(() => (now = Date.now()), 1000);
-		return () => window.clearInterval(timer);
-	});
-	let stale = $derived(waiting && now - new Date(item.createdAt).valueOf() > STALE_MS);
-	let longWait = $derived(waiting && now - new Date(item.createdAt).valueOf() >= LONG_WAIT_MS);
-	let pendingStatus = $derived(botState === 'processing' ? m.botThinking() : m.botWaiting());
 	let fullThreadHref = $derived(
 		conv ? `/thread/${conv.root.author.did}/${conv.root.uri.split('/').pop()}` : '',
 	);
@@ -114,21 +101,12 @@
 				/>
 			</div>
 		{/each}
-		{#if !item.optimisticState && waiting && !stale}
-			<div class="thread-reply">
-				<div class="bot-pending">
-					<Avatar actor={botActor} />
-					<div class="pending-bubble" role="status" aria-live="polite">
-						<div><span class="typing"><i></i><i></i><i></i></span>{pendingStatus}</div>
-						{#if longWait}<small>{m.botLongWait()}</small>{/if}
-					</div>
-				</div>
-			</div>
-		{:else if !item.optimisticState && waiting}
-			<p class="bot-missed">{m.botMissed()}</p>
-		{:else if !item.optimisticState && failed}
-			<p class="bot-missed" role="status">{m.botFailed()}</p>
-		{/if}
+		<BotReplyStatus
+			state={botState}
+			createdAt={item.createdAt}
+			{botActor}
+			optimistic={Boolean(item.optimisticState)}
+		/>
 	</article>
 {:else if hasVisiblePost}
 	<article
@@ -200,20 +178,13 @@
 					{ontogglepin}
 				/>
 			{/if}
-		{:else if !item.optimisticState && showItem && waiting && !stale}
-			<div class="thread-reply">
-				<div class="bot-pending">
-					<Avatar actor={botActor} />
-					<div class="pending-bubble" role="status" aria-live="polite">
-						<div><span class="typing"><i></i><i></i><i></i></span>{pendingStatus}</div>
-						{#if longWait}<small>{m.botLongWait()}</small>{/if}
-					</div>
-				</div>
-			</div>
-		{:else if !item.optimisticState && showItem && waiting}
-			<p class="bot-missed">{m.botMissed()}</p>
-		{:else if !item.optimisticState && showItem && item.botReplyState === 'failed'}
-			<p class="bot-missed" role="status">{m.botFailed()}</p>
+		{:else if showItem}
+			<BotReplyStatus
+				state={item.botReplyState}
+				createdAt={item.createdAt}
+				{botActor}
+				optimistic={Boolean(item.optimisticState)}
+			/>
 		{/if}
 	</article>
 {/if}

@@ -262,6 +262,8 @@ type GetProfileOptions = {
 	filter?: ProfileFeedFilter;
 	cursor?: string;
 	limit?: number;
+	/** 選ばれた投稿にぶら下がる返信を、通常タイムラインと同じ会話単位で返す。 */
+	group?: boolean;
 	/** 分析コメント・名刺データの表示言語。省略による日本語フォールバックを防ぐため必須。 */
 	lang: 'ja' | 'en';
 };
@@ -279,6 +281,7 @@ export function getProfile(actor: string, opts: GetProfileOptions) {
 	const params = new URLSearchParams({ actor });
 	if (opts.filter) params.set('filter', opts.filter);
 	if (opts.cursor) params.set('cursor', opts.cursor);
+	if (opts.group) params.set('group', 'true');
 	params.set('limit', String(opts.limit ?? POST_PAGE_LIMIT));
 	params.set('lang', opts.lang);
 	return call<ProfilePage | ProfileReactionPage>(

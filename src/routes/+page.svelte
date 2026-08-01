@@ -9,19 +9,19 @@
 	 * 各セクションは独立して読み込み・失敗する。1本コケても画面全体は落ちない。
 	 * 表示順は下のセクション配置で明示する。
 	 */
-	import { getMyNagi, getPositiveNews, getProfile } from '$lib/api/appview';
+	import { getMyNagi, getPositiveNews, getProfile, getThread } from '$lib/api/appview';
 	import type { ActorView, MyNagiView, NewsView, PostView } from '$lib/api/types';
 	import CarouselArrows from '$lib/components/CarouselArrows.svelte';
-	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import CardDrawEntry from '$lib/components/CardDrawEntry.svelte';
 	import CommunityAffirmationPanel from '$lib/components/CommunityAffirmationPanel.svelte';
 	import MyNagiNewsCarousel from '$lib/components/MyNagiNewsCarousel.svelte';
 	import MyNagiSection from '$lib/components/MyNagiSection.svelte';
-	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
+	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { unreadNews } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import { threadToConversationItem } from '$lib/thread/conversation';
 
 	const NEWS_COUNT = 5;
 	const BOT_POST_COUNT = 1;
@@ -71,8 +71,7 @@
 		botLoading = true;
 		botError = '';
 		try {
-			// botたん専用のエンドポイントは要らない。getProfile の filter=posts が
-			// SQL レベルで返信を除くので、トップレベル投稿だけが返る。
+			// 最新のトップレベル投稿を代表にしつつ、通常タイムラインと同じ会話単位で返信を含める。
 			const did = botActor?.did;
 			if (!did) {
 				botPosts = [];
@@ -82,8 +81,25 @@
 				filter: 'posts',
 				limit: BOT_POST_COUNT,
 				lang: i18n.locale,
+				group: true,
 			});
-			botPosts = profile.feed.items.slice(0, BOT_POST_COUNT);
+			const latest = profile.feed.items[0];
+			if (!latest) {
+				botPosts = [];
+				return;
+			}
+			// group をまだ解釈しない稼働中 AppView でも、返信を欠落させずに表示する。
+			if (!latest.conversation) {
+				try {
+					const { thread } = await getThread(latest.uri);
+					botActor ??= thread.botActor;
+					botPosts = [threadToConversationItem(thread)];
+					return;
+				} catch {
+					// スレッド補完だけが失敗した場合も、取得済みの最新投稿自体は表示する。
+				}
+			}
+			botPosts = [latest];
 		} catch (cause) {
 			botError = message(cause);
 		} finally {
@@ -158,7 +174,7 @@
 	>
 		{#if botPosts[0]}
 			<div class="my-nagi-bot-card">
-				<ChatBubble post={botPosts[0]} {botActor} />
+				<ThreadUnit item={botPosts[0]} {botActor} />
 			</div>
 		{/if}
 	</MyNagiSection>
@@ -213,7 +229,7 @@
 			{/snippet}
 			{#each listUsersByRecency as entry (entry.post.uri)}
 				<div class="my-nagi-activity-card">
-					<ChatBubble post={entry.post} {botActor} />
+					<ThreadUnit item={entry.post} {botActor} />
 				</div>
 			{/each}
 		</MyNagiSection>
@@ -235,8 +251,7 @@
 			{/snippet}
 			{#each channelsByRecency as entry (entry.post.uri)}
 				<div class="my-nagi-activity-card">
-					<ThreadFlags channel={entry.channel} />
-					<ChatBubble post={entry.post} {botActor} />
+					<ThreadUnit item={entry.post} {botActor} />
 				</div>
 			{/each}
 		</MyNagiSection>
@@ -290,6 +305,15 @@
 
 	.my-nagi-activity-card + .my-nagi-activity-card {
 		border-top: 1px solid var(--panel-divider);
+	}
+
+	/* my NagiSection 自体がカード境界を持つため、内側のタイムライン用カード枠は重ねない。 */
+	.my-nagi-bot-card :global(> .thread-unit),
+	.my-nagi-activity-card :global(> .thread-unit) {
+		background: transparent;
+		border-radius: 0;
+		box-shadow: none;
+		padding: 0;
 	}
 
 	.my-nagi-state {

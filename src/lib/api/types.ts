@@ -174,7 +174,11 @@ export type ProfileReactionPage = {
 	profile: ProfileDetail;
 	feed: Page<ProfileFeedItem>;
 };
-export type ThreadView = { post: PostView; replies: PostView[] };
+export type ThreadView = {
+	post: FeedItem;
+	replies: FeedItem[];
+	botActor?: ActorView;
+};
 /** botたんが書いた1日分の日記。ポストではないのでタイムラインには出ない。 */
 export type DiaryView = {
 	uri: string;

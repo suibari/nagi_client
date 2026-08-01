@@ -4,6 +4,7 @@
 	import { getThread } from '$lib/api/appview';
 	import type { ThreadView } from '$lib/api/types';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
+	import BotReplyStatus from '$lib/components/BotReplyStatus.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { goto } from '$app/navigation';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
@@ -29,6 +30,14 @@
 	let replyDepthByUri = $derived(
 		replyDepths(threadRootUri, [...(thread ? [thread.post] : []), ...replies]),
 	);
+	let awaitingBotReply = $derived(
+		Boolean(
+			thread &&
+			[thread.post, ...thread.replies].some(
+				(post) => post.botReplyState === 'pending' || post.botReplyState === 'processing',
+			),
+		),
+	);
 	function postDeleted(deletedUri: string) {
 		if (deletedUri === uri || deletedUri === thread?.post.uri) {
 			void goto('/');
@@ -40,9 +49,21 @@
 	onMount(() => {
 		void refreshThread().catch((e) => (error = e.message));
 		const timer = setInterval(() => {
+			// 投稿直後は AppView に投稿が見えてから bot ジョブが作られるまで短い差があり得る。
+			// ジョブがまだ無い最初の応答でも、直近3分のスレッドは高速更新を続ける。
+			const recentlyCreated = Boolean(
+				thread &&
+				[thread.post, ...thread.replies].some(
+					(post) => !post.isBot && Date.now() - new Date(post.createdAt).valueOf() < 180_000,
+				),
+			);
 			if (
 				document.visibilityState === 'visible' &&
-				optimisticPosts.items.some((item) => item.reply?.root.uri === threadRootUri)
+				(optimisticPosts.items.some(
+					(item) => item.uri === threadRootUri || item.reply?.root.uri === threadRootUri,
+				) ||
+					recentlyCreated ||
+					awaitingBotReply)
 			)
 				void refreshThread().catch(() => undefined);
 		}, 3_000);
@@ -68,15 +89,30 @@
 			<div data-post-uri={thread.post.uri}>
 				<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
 			</div>
+			<BotReplyStatus
+				state={thread.post.botReplyState}
+				createdAt={thread.post.createdAt}
+				botActor={thread.botActor}
+				optimistic={Boolean(thread.post.optimisticState)}
+				indent="0"
+			/>
 			{#each replies as reply (reply.uri)}
+				{@const depth = replyDepthByUri.get(reply.uri) ?? 1}
 				<div
 					class="thread-reply"
-					style="--reply-indent: {replyIndent(replyDepthByUri.get(reply.uri) ?? 1)}"
+					style="--reply-indent: {replyIndent(depth)}"
 					data-post-uri={reply.uri}
 					data-optimistic-key={reply.optimisticKey}
 				>
 					<ChatBubble post={reply} ondeleted={postDeleted} onposted={refreshThread} />
 				</div>
+				<BotReplyStatus
+					state={reply.botReplyState}
+					createdAt={reply.createdAt}
+					botActor={thread.botActor}
+					optimistic={Boolean(reply.optimisticState)}
+					indent={String(replyIndent(depth + 1))}
+				/>
 			{/each}
 		</article>
 	{/if}
