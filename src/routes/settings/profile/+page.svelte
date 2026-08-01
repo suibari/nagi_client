@@ -13,12 +13,16 @@
 	import { page } from '$app/state';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
+	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
+	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
+	import { syncExistingPublicationFromProfile } from '$lib/standardsite/publication';
 	import { onDestroy } from 'svelte';
 
 	let name = $state('');
 	let description = $state('');
 	let status = $state('');
 	let error = $state('');
+	let syncWarning = $state('');
 	let busy = $state(false);
 	let loaded = $state(false);
 	let draft = $state<ProfileDraft>();
@@ -93,6 +97,7 @@
 		busy = true;
 		status = '';
 		error = '';
+		syncWarning = '';
 		try {
 			const avatar =
 				avatarChange instanceof Blob ? await uploadAvatar(avatarChange) : draft?.avatar;
@@ -103,6 +108,13 @@
 				avatar: avatarChange === null ? undefined : avatar,
 			};
 			await putProfile(name, description, updatedDraft);
+			if (await hasStandardSiteScope()) {
+				try {
+					await syncExistingPublicationFromProfile({ fallbackName: name || $session.did });
+				} catch {
+					syncWarning = m.profilePublicationSyncWarning();
+				}
+			}
 			draft = updatedDraft;
 			avatarChange = undefined;
 			status = m.saved();
@@ -150,7 +162,16 @@
 			>{m.bioLabel()}<textarea bind:value={description} maxlength="2560" rows="4"></textarea></label
 		>
 		<button disabled={busy || !loaded} onclick={save}>{busy ? m.saving() : m.save()}</button>
-		{#if status}<p>{status}</p>{/if}{#if error}<p class="error">{error}</p>{/if}
+		{#if status}<p>{status}</p>{/if}
+		{#if syncWarning}<p class="error" role="status">{syncWarning}</p>{/if}
+		{#if error}<p class="error">{error}</p>{/if}
+
+		<section class="profile-card-settings" aria-labelledby="profile-card-settings-heading">
+			<h2 id="profile-card-settings-heading">{m.profileCardsSettingsTitle()}</h2>
+			<p>{m.profileCardsSettingsHelp()}</p>
+			<ProfileAppLinks did={$session?.did} />
+			<a class="profile-cards-manage" href="/settings/app-links">{m.profileCardsManage()}</a>
+		</section>
 	{/if}
 </section>
 
@@ -159,3 +180,22 @@
 		onconfirm={applyAvatar}
 		oncancel={() => (cropFile = undefined)}
 	/>{/if}
+
+<style>
+	.profile-card-settings {
+		display: grid;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--line);
+		text-align: left;
+	}
+	.profile-card-settings h2,
+	.profile-card-settings p {
+		margin: 0;
+	}
+	.profile-cards-manage {
+		width: fit-content;
+		font-weight: 700;
+	}
+</style>

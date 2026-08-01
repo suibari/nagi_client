@@ -307,7 +307,7 @@
 </script>
 
 <section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
+	<a class="settings-back" href="/settings/profile">← {m.backToProfileSettings()}</a>
 	<h1>{m.settingsAppLinksTitle()}</h1>
 	<fieldset class="theme-settings">
 		<legend>{m.appLinksLegend()}</legend>

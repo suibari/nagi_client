@@ -100,4 +100,18 @@ export async function updatePublication(
 	writePublicationCache(s.did, existing.uri);
 }
 
+/**
+ * 既存の Nagi publication がある場合だけ、現在のプロフィールを反映する。
+ * プロフィール編集をきっかけにブログ公開を勝手に有効化しないため、新規作成はしない。
+ */
+export async function syncExistingPublicationFromProfile(
+	options: {
+		fallbackName?: string;
+	} = {},
+): Promise<boolean> {
+	if (!(await findNagiPublication())) return false;
+	await updatePublication(undefined, options);
+	return true;
+}
+
 export { forgetPublicationCache, findNagiPublication, type ExistingPublication };

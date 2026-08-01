@@ -6,6 +6,7 @@
 		title,
 		description,
 		danger = false,
+		variant = 'default',
 		onclick = undefined,
 	} = $props<{
 		href?: string;
@@ -13,17 +14,24 @@
 		title: string;
 		description: string;
 		danger?: boolean;
+		variant?: 'default' | 'account';
 		onclick?: () => void;
 	}>();
 </script>
 
 {#if onclick}
-	<button type="button" class="settings-category" class:danger {onclick}>
+	<button
+		type="button"
+		class="settings-category"
+		class:danger
+		class:account={variant === 'account'}
+		{onclick}
+	>
 		<span class="settings-category-icon"><Icon name={icon} size={24} /></span>
 		<span class="settings-category-copy"><strong>{title}</strong><small>{description}</small></span>
 	</button>
 {:else}
-	<a class="settings-category" class:danger {href}>
+	<a class="settings-category" class:danger class:account={variant === 'account'} {href}>
 		<span class="settings-category-icon"><Icon name={icon} size={24} /></span>
 		<span class="settings-category-copy"><strong>{title}</strong><small>{description}</small></span>
 		<Icon name="chevron" size={20} />

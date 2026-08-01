@@ -131,7 +131,7 @@ export const ja = {
 	aboutCrosspostBody: 'Blueskyにも同時に投稿できます',
 	aboutCrosspostLink: 'クロスポストを設定する',
 	aboutStandardSiteTitle: 'ブログとして公開',
-	aboutStandardSiteBody: '投稿をstandard.siteの記事にもできます',
+	aboutStandardSiteBody: '投稿を、対応アプリで読めるブログ記事としても公開できます',
 	aboutProfileTitle: '別のプロフィール',
 	aboutProfileBody: 'Blueskyとは独立した姿でいられます',
 	aboutProfileLink: 'プロフィールを編集する',
@@ -261,7 +261,6 @@ export const ja = {
 		'投稿範囲を「外部にも」にしたときの送り先です。投稿ごとではなく、ここで先に選びます。',
 	externalTargetBluesky: 'Bluesky',
 	externalTargetStandardSite: 'standard.site（ブログ）',
-	externalTargetStandardSiteHint: 'standard.siteは設定 > standard.site から有効にできます。',
 
 	// drafts
 	draftSave: '下書きに保存',
@@ -528,7 +527,15 @@ export const ja = {
 	backToSettings: '設定に戻る',
 	backToHome: 'ホームに戻る',
 	settingsProfileTitle: 'プロフィール',
-	settingsProfileDescription: '表示名、自己紹介、アバター',
+	settingsProfileDescription: '表示名、自己紹介、アバター、プロフィールカード',
+	settingsGroupAccount: 'アカウントとプロフィール',
+	settingsGroupExperience: '表示と使い方',
+	settingsGroupEmoji: '絵文字',
+	settingsGroupPublishing: '投稿と外部連携',
+	settingsGroupNagi: 'Nagi',
+	settingsGroupAccountActions: 'アカウント操作',
+	settingsExternalPublishingTitle: '外部公開',
+	settingsExternalPublishingDescription: 'Blueskyやブログへの公開方法を選ぶ',
 	settingsAppearanceTitle: '外観',
 	settingsAppearanceDescription: '表示テーマと配色',
 	settingsLanguageTitle: '言語',
@@ -597,9 +604,12 @@ export const ja = {
 	pushRetry: 'もう一度試す',
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
-	settingsCrosspostTitle: 'Blueskyクロスポスト',
-	settingsCrosspostDescription: '投稿欄のBlueskyボタンを有効化',
-	crosspostLegend: 'Blueskyクロスポスト',
+	externalPublishingHelp:
+		'投稿するときに、Nagi以外へも公開する選択肢を追加できます。使いたい公開先だけを有効にしてください。',
+	blueskyPublishingTitle: 'Blueskyにも投稿',
+	blogPublishingTitle: 'ブログとして公開',
+	blogPublishingHelp: '選んだ投稿を、対応するAT Protocolアプリでも読める長文記事として公開します。',
+	externalPublishingDetails: '仕組みと注意点',
 	crosspostHelp:
 		'投稿欄に「Blueskyにも」ボタンを表示し、選んだ投稿だけをBlueskyへ同時投稿できます。スレッドへの返信は対象外です。',
 	crosspostSplitNote:
@@ -618,11 +628,8 @@ export const ja = {
 		`Nagiには投稿しましたが、Blueskyへのクロスポストに失敗しました: ${p.reason}`,
 	// standard.site（AT Protocol 共通の長文記事 lexicon）へのオプトイン公開。
 	// standard.site という名前の知名度が低いので、UI 上は「ブログ」と呼ぶ。
-	settingsStandardSiteTitle: 'ブログとして公開',
-	settingsStandardSiteDescription: '投稿をstandard.siteの記事としても出せるようにする',
-	standardSiteLegend: 'ブログとして公開（standard.site）',
 	standardSiteHelp:
-		'standard.siteは、AT Protocol上のブログ・記事の共通フォーマットです。対応したアプリから読まれたり、Blueskyでリンクを貼ったときに記事として表示されたりします。',
+		'standard.siteというAT Protocol上の共通フォーマットで保存します。対応アプリから記事を読めるようになります。',
 	standardSiteOptInNote:
 		'すべての投稿がブログになるわけではありません。投稿欄のボタンで、投稿ごとにオン/オフを選べます（既定はオフ）。こっそり投稿とチャンネル投稿は対象外です。',
 	// クロスポストは300文字ごとの分割スレッドなので、長文記事と併用すると Bluesky が連投で埋まる。
@@ -634,8 +641,6 @@ export const ja = {
 	standardSiteDiscoverLabel: '発見フィードに掲載する',
 	standardSiteDiscoverNote:
 		'オフにすると、standard.site対応アプリの新着一覧には出ません。記事そのものは公開されたままです。',
-	standardSitePublicationName: (p: { name: string }) => `記事のまとまりの名前: ${p.name}`,
-	standardSiteSyncProfile: 'Nagiのプロフィールから更新する',
 	standardSiteReauthNote:
 		'ブログとして出すには、あなたのPDSにstandard.siteのレコードを書く権限が必要です。下のボタンから追加の権限を付与してください。',
 	standardSiteReauthSubmit: '追加の権限を付与する',
@@ -646,9 +651,8 @@ export const ja = {
 	standardSiteTitlePlaceholder: 'タイトルを入力',
 	standardSiteTitleHint: '本文の先頭を「# 見出し」にすると、そこから自動で決まります。',
 	// app links (任意 Atmosphere アプリ連携)
-	settingsAppLinksTitle: '連携アプリ',
-	settingsAppLinksDescription: '任意のAtmosphereアプリをプロフィールに並べる',
-	appLinksLegend: '連携アプリ',
+	settingsAppLinksTitle: 'プロフィールカード',
+	appLinksLegend: 'プロフィールカード',
 	appLinksHelp:
 		'あなたのPDSにある任意のAtmosphereアプリのレコードを、プロフィールカードの下部にカードとして表示します。表示するコレクションとフィールドはあなたが自由に選べます。',
 	appLinksPublicNote:
@@ -692,7 +696,7 @@ export const ja = {
 	appLinksSaving: '保存中…',
 	appLinksSaved: '保存しました。',
 	appLinksSaveFailed: '保存に失敗しました。権限の反映には最大24時間かかる場合があります。',
-	profileAppLinksHeading: '連携アプリ',
+	profileAppLinksHeading: 'プロフィールカード',
 	themeLegend: '表示テーマ',
 	themeHelp: 'この端末で使用する配色を選択します。',
 	optionSystem: 'システム設定',
@@ -718,6 +722,13 @@ export const ja = {
 	translationProviderLabel: '翻訳プロバイダーを選択',
 	optionBrowser: 'ブラウザの設定',
 	profileSettingsTitle: 'プロフィール設定',
+	backToProfileSettings: 'プロフィール設定に戻る',
+	profileCardsSettingsTitle: 'プロフィールカード',
+	profileCardsSettingsHelp:
+		'ほかのAtmosphereアプリにある自分の情報を、プロフィールの下部にカードとして表示できます。',
+	profileCardsManage: 'プロフィールカードを追加・編集',
+	profilePublicationSyncWarning:
+		'プロフィールは保存されましたが、ブログ側のプロフィール情報を更新できませんでした。',
 	profileSettingsNote:
 		'NagiのプロフィールはBlueskyのプロフィールとは独立しています。ここで変更・保存しても、Bluesky側のプロフィールには反映されません。',
 	onboardingLoadedNote:

@@ -124,7 +124,7 @@ export const en: Messages = {
 	aboutCrosspostBody: 'Post to Nagi and Bluesky at once',
 	aboutCrosspostLink: 'Set up crossposting',
 	aboutStandardSiteTitle: 'Publish as a blog',
-	aboutStandardSiteBody: 'Posts can go out as standard.site articles',
+	aboutStandardSiteBody: 'Publish posts as blog articles that compatible apps can read',
 	aboutProfileTitle: 'A separate profile',
 	aboutProfileBody: 'Independent from your Bluesky one',
 	aboutProfileLink: 'Edit your profile',
@@ -249,7 +249,6 @@ export const en: Messages = {
 	externalTargetHelp: 'Where “Also outside” sends your post. Chosen here once, not on every post.',
 	externalTargetBluesky: 'Bluesky',
 	externalTargetStandardSite: 'standard.site (blog)',
-	externalTargetStandardSiteHint: 'Enable standard.site under Settings > standard.site.',
 
 	// drafts
 	draftSave: 'Save as draft',
@@ -498,7 +497,15 @@ export const en: Messages = {
 	backToSettings: 'Back to settings',
 	backToHome: 'Back to home',
 	settingsProfileTitle: 'Profile',
-	settingsProfileDescription: 'Display name, bio, and avatar',
+	settingsProfileDescription: 'Display name, bio, avatar, and profile cards',
+	settingsGroupAccount: 'Account and profile',
+	settingsGroupExperience: 'Display and experience',
+	settingsGroupEmoji: 'Emoji',
+	settingsGroupPublishing: 'Publishing and connections',
+	settingsGroupNagi: 'Nagi',
+	settingsGroupAccountActions: 'Account actions',
+	settingsExternalPublishingTitle: 'External publishing',
+	settingsExternalPublishingDescription: 'Choose how to publish to Bluesky or as a blog',
 	settingsAppearanceTitle: 'Appearance',
 	settingsAppearanceDescription: 'Theme and color scheme',
 	settingsLanguageTitle: 'Language',
@@ -568,9 +575,13 @@ export const en: Messages = {
 	pushRetry: 'Try again',
 	pushRefreshPermissions: 'Refresh permissions and sign in',
 	pushReauthPending: 'Opening authorization…',
-	settingsCrosspostTitle: 'Bluesky crossposting',
-	settingsCrosspostDescription: 'Enable the Bluesky button in the composer',
-	crosspostLegend: 'Bluesky crossposting',
+	externalPublishingHelp:
+		'Add options to publish beyond Nagi. Enable only the destinations you want to use.',
+	blueskyPublishingTitle: 'Also post to Bluesky',
+	blogPublishingTitle: 'Publish as a blog',
+	blogPublishingHelp:
+		'Publish selected posts as long-form articles that compatible AT Protocol apps can read.',
+	externalPublishingDetails: 'How it works and things to know',
 	crosspostHelp:
 		'Adds an “Also Bluesky” button to the composer, so only posts you choose are sent to Bluesky too. Replies are not crossposted.',
 	crosspostSplitNote:
@@ -588,11 +599,8 @@ export const en: Messages = {
 	crosspostWarning: (p: { reason: string }) =>
 		`Posted to Nagi, but crossposting to Bluesky failed: ${p.reason}`,
 
-	settingsStandardSiteTitle: 'Publish as a blog',
-	settingsStandardSiteDescription: 'Let posts go out as standard.site articles too',
-	standardSiteLegend: 'Publish as a blog (standard.site)',
 	standardSiteHelp:
-		'standard.site is a shared format for blogs and articles on the AT Protocol. Articles can be read by apps that support it, and links to them get an article treatment on Bluesky.',
+		'Posts are saved using standard.site, a shared AT Protocol format, so compatible apps can read them as articles.',
 	standardSiteOptInNote:
 		'Not every post becomes a blog post. A button in the composer turns it on per post, and it starts off. Kossori posts and channel posts are never included.',
 	standardSiteCrosspostNote:
@@ -602,8 +610,6 @@ export const en: Messages = {
 	standardSiteDiscoverLabel: 'Show in discovery feeds',
 	standardSiteDiscoverNote:
 		'Turn this off to stay out of the “recently published” lists in standard.site apps. Your articles stay public either way.',
-	standardSitePublicationName: (p: { name: string }) => `Publication name: ${p.name}`,
-	standardSiteSyncProfile: 'Update from your Nagi profile',
 	standardSiteReauthNote:
 		'Publishing blog posts needs permission to write standard.site records to your PDS. Grant the extra permission with the button below.',
 	standardSiteReauthSubmit: 'Grant the extra permission',
@@ -615,9 +621,8 @@ export const en: Messages = {
 	standardSiteTitleHint: 'Start your post with “# Heading” and the title is taken from there.',
 
 	// app links (arbitrary Atmosphere app integration)
-	settingsAppLinksTitle: 'Connected apps',
-	settingsAppLinksDescription: 'Show any Atmosphere app on your profile',
-	appLinksLegend: 'Connected apps',
+	settingsAppLinksTitle: 'Profile cards',
+	appLinksLegend: 'Profile cards',
 	appLinksHelp:
 		'Show records from any Atmosphere app in your PDS as cards at the bottom of your profile. You choose which collection and which fields to display.',
 	appLinksPublicNote:
@@ -661,7 +666,7 @@ export const en: Messages = {
 	appLinksSaving: 'Saving…',
 	appLinksSaved: 'Saved.',
 	appLinksSaveFailed: 'Failed to save. Permission changes can take up to 24 hours to propagate.',
-	profileAppLinksHeading: 'Connected apps',
+	profileAppLinksHeading: 'Profile cards',
 
 	themeLegend: 'Theme',
 	themeHelp: 'Choose the color scheme used on this device.',
@@ -688,6 +693,13 @@ export const en: Messages = {
 	translationProviderLabel: 'Choose translation provider',
 	optionBrowser: 'Browser language',
 	profileSettingsTitle: 'Profile settings',
+	backToProfileSettings: 'Back to profile settings',
+	profileCardsSettingsTitle: 'Profile cards',
+	profileCardsSettingsHelp:
+		'Show your information from other Atmosphere apps as cards at the bottom of your profile.',
+	profileCardsManage: 'Add or edit profile cards',
+	profilePublicationSyncWarning:
+		'Your profile was saved, but its blog profile information could not be updated.',
 	profileSettingsNote:
 		'Your Nagi profile is independent from your Bluesky profile. Changes saved here are not reflected on Bluesky.',
 	onboardingLoadedNote:

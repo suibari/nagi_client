@@ -55,7 +55,7 @@
 			icon: 'link',
 			title: m.aboutStandardSiteTitle,
 			body: m.aboutStandardSiteBody,
-			href: '/settings/standard-site',
+			href: '/settings/crosspost',
 		},
 		{
 			icon: 'profile',
