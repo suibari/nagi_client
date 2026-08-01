@@ -53,7 +53,6 @@
 
 	let { children } = $props();
 	const publicSeo = $derived(PUBLIC_SEO[page.url.pathname]);
-	const wideLayout = $derived(page.url.pathname === '/about');
 	// サインインの動線そのものを塞がないページでは投稿ボタンを出さない。
 	const NO_FAB = ['/login', '/onboarding', '/oauth'];
 	const showPostFab = $derived(
@@ -145,11 +144,11 @@
 </svelte:head>
 
 <MobileHeader />
-<!-- /about はサービス紹介のランディングなので、右サイドバーを畳んで本文を広く取る。 -->
-<div class="shell" class:wide={wideLayout}>
+<!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。 -->
+<div class="shell">
 	<SidebarLeft />
 	<main>{@render children()}</main>
-	{#if !wideLayout}<SidebarRight />{/if}
+	<SidebarRight />
 </div>
 <MobileNav />
 <PostFollowNotice />

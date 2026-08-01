@@ -2824,7 +2824,7 @@ button.settings-category {
 }
 
 /* --- about page (ランディング構成: ヒーロー → 理由 → 使い方 → 機能 → AT Protocol → CTA) --- */
-/* 設定配下の .auth-card(450px) ではなく、shell.wide が広げたメインカラムをそのまま使う。
+/* 設定配下の .auth-card(450px) ではなく、共通のメインカラムをそのまま使う。
    文章は各ブロック1〜2行に抑え、情報量ではなく図で伝える。 */
 .about-page {
 	display: grid;
@@ -3025,7 +3025,7 @@ button.settings-category {
 /* --- 選ばれる理由 --- */
 .about-reasons {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 	gap: 14px;
 	margin: 0;
 	padding: 0;
@@ -3070,7 +3070,7 @@ button.settings-category {
 /* --- 使い方(3ステップ) --- */
 .about-steps {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 	gap: 14px;
 	margin: 0;
 	padding: 0;
@@ -3291,6 +3291,13 @@ a.about-feature:focus-visible {
 }
 .about-page > .legal-links {
 	margin-top: -22px;
+}
+
+/* デスクトップでは同じロゴが右サイドバーにある。右レールが消える幅だけ本文内を使う。 */
+@media (min-width: 1180px) {
+	.about-suibari-brand {
+		display: none;
+	}
 }
 
 /* --- about page: 狭幅 --- */

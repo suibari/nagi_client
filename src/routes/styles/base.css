@@ -14,6 +14,10 @@ body {
 	overflow-x: clip;
 	overscroll-behavior-x: none;
 }
+html {
+	/* 短いページと長いページを行き来しても、中央のシェル位置を動かさない。 */
+	scrollbar-gutter: stable;
+}
 body {
 	margin: 0;
 	background: var(--bg);

@@ -63,6 +63,7 @@
 
 <div
 	class="horizontal-carousel"
+	class:has-next={scrollState.canNext}
 	role="region"
 	aria-label={ariaLabel}
 	bind:this={viewport}
@@ -79,6 +80,10 @@
 		scroll-padding-inline: 0;
 		scroll-snap-type: x mandatory;
 		scrollbar-width: none;
+	}
+
+	/* 右へ続きがある間だけ次のカードの存在を示し、終端では内容を明瞭に見せる。 */
+	.horizontal-carousel.has-next {
 		-webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
 		mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
 	}
