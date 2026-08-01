@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * my Nagi — サインイン後の起点。
+	 * my Nagi — Nagi の起点。公開部分はサインイン前にも見せる。
 	 *
 	 * パーソナルな全肯定を起点に、内部のつながりから外部の話題へ段階的に広げる:
 	 * botたん（1件）→ みんなで全肯定 → 全肯定ニュース → リスト動向。
@@ -9,13 +9,12 @@
 	 * 各セクションは独立して読み込み・失敗する。1本コケても画面全体は落ちない。
 	 * 表示順は下のセクション配置で明示する。
 	 */
-	import { onMount } from 'svelte';
 	import { getMyNagi, getPositiveNews, getProfile } from '$lib/api/appview';
 	import type { ActorView, MyNagiView, NewsView, PostView } from '$lib/api/types';
 	import CarouselArrows from '$lib/components/CarouselArrows.svelte';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
+	import CardDrawEntry from '$lib/components/CardDrawEntry.svelte';
 	import CommunityAffirmationPanel from '$lib/components/CommunityAffirmationPanel.svelte';
-	import MainFeed from '$lib/components/MainFeed.svelte';
 	import MyNagiNewsCarousel from '$lib/components/MyNagiNewsCarousel.svelte';
 	import MyNagiSection from '$lib/components/MyNagiSection.svelte';
 	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
@@ -109,9 +108,12 @@
 		void loadListActivity();
 	}
 
-	onMount(() => {
-		if ($session) loadAll();
-	});
+	function loadPublic() {
+		void loadNews().then(loadBotPosts);
+		listActivity = { listUsers: [], channels: [] };
+		listLoading = false;
+		listError = '';
+	}
 
 	let loadedFor = $state<string | undefined>(undefined);
 	$effect(() => {
@@ -120,6 +122,7 @@
 		if (key === loadedFor) return;
 		loadedFor = key;
 		if ($session) loadAll();
+		else loadPublic();
 	});
 </script>
 
@@ -138,11 +141,11 @@
 	<div class="timeline-loading" role="status" aria-label={m.loading()}>
 		<span class="spinner" aria-hidden="true"></span>
 	</div>
-{:else if !$session}
-	<!-- サインアウト時は従来どおりグローバルTLとヒーローを見せる（公開ランディング）。 -->
-	<MainFeed mode="global" />
 {:else}
-	<h1 class="my-nagi-title">{m.navMyNagi()}</h1>
+	<div class="my-nagi-heading">
+		<h1 class="my-nagi-title">{m.navMyNagi()}</h1>
+		<CardDrawEntry variant="header" />
+	</div>
 
 	<MyNagiSection
 		title={m.myNagiBotTitle()}
@@ -184,57 +187,75 @@
 		</div>
 	</MyNagiSection>
 
-	<MyNagiSection
-		title={m.myNagiListTitle()}
-		icon="user"
-		moreHref="/feed"
-		loading={listLoading}
-		error={listError}
-		empty={!listActivity.listUsers.length}
-		onretry={loadListActivity}
-	>
-		{#snippet emptyState()}
-			<p class="my-nagi-state">
-				{m.myNagiListEmpty()}
-				<a href="/settings/home-list">{m.myNagiListEmptyCta()}</a>
-			</p>
-		{/snippet}
-		{#each listUsersByRecency as entry (entry.post.uri)}
-			<div class="my-nagi-activity-card">
-				<ChatBubble post={entry.post} {botActor} />
+	{#if !$session}
+		<section class="my-nagi-signin-panel">
+			<div>
+				<strong>{m.myNagiGuestTitle()}</strong>
+				<span>{m.myNagiGuestBody()}</span>
 			</div>
-		{/each}
-	</MyNagiSection>
+			<a href="/login">{m.login()}</a>
+		</section>
+	{:else}
+		<MyNagiSection
+			title={m.myNagiListTitle()}
+			icon="user"
+			moreHref="/feed"
+			loading={listLoading}
+			error={listError}
+			empty={!listActivity.listUsers.length}
+			onretry={loadListActivity}
+		>
+			{#snippet emptyState()}
+				<p class="my-nagi-state">
+					{m.myNagiListEmpty()}
+					<a href="/settings/home-list">{m.myNagiListEmptyCta()}</a>
+				</p>
+			{/snippet}
+			{#each listUsersByRecency as entry (entry.post.uri)}
+				<div class="my-nagi-activity-card">
+					<ChatBubble post={entry.post} {botActor} />
+				</div>
+			{/each}
+		</MyNagiSection>
 
-	<MyNagiSection
-		title={m.myNagiChannelsTitle()}
-		icon="hash"
-		moreHref="/channels"
-		loading={listLoading}
-		error={listError}
-		empty={!listActivity.channels.length}
-		onretry={loadListActivity}
-	>
-		{#snippet emptyState()}
-			<p class="my-nagi-state">
-				{m.myNagiChannelsEmpty()}
-				<a href="/channels">{m.myNagiChannelsEmptyCta()}</a>
-			</p>
-		{/snippet}
-		{#each channelsByRecency as entry (entry.post.uri)}
-			<div class="my-nagi-activity-card">
-				<ThreadFlags channel={entry.channel} />
-				<ChatBubble post={entry.post} {botActor} />
-			</div>
-		{/each}
-	</MyNagiSection>
+		<MyNagiSection
+			title={m.myNagiChannelsTitle()}
+			icon="hash"
+			moreHref="/channels"
+			loading={listLoading}
+			error={listError}
+			empty={!listActivity.channels.length}
+			onretry={loadListActivity}
+		>
+			{#snippet emptyState()}
+				<p class="my-nagi-state">
+					{m.myNagiChannelsEmpty()}
+					<a href="/channels">{m.myNagiChannelsEmptyCta()}</a>
+				</p>
+			{/snippet}
+			{#each channelsByRecency as entry (entry.post.uri)}
+				<div class="my-nagi-activity-card">
+					<ThreadFlags channel={entry.channel} />
+					<ChatBubble post={entry.post} {botActor} />
+				</div>
+			{/each}
+		</MyNagiSection>
+	{/if}
 {/if}
 
 <style>
 	.my-nagi-title {
-		margin: 0 0 12px;
+		margin: 0;
 		font-size: 1.1rem;
 		font-weight: 800;
+	}
+
+	.my-nagi-heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 12px;
 	}
 
 	.my-nagi-bot-card {
@@ -286,5 +307,53 @@
 	.my-nagi-state a {
 		color: var(--accent-strong);
 		font-weight: 700;
+	}
+
+	.my-nagi-signin-panel {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 16px;
+		padding: 14px;
+		border: 1px solid var(--panel-border);
+		border-radius: var(--radius-l);
+		background: var(--panel-bg);
+		box-shadow: var(--shadow-panel);
+	}
+
+	.my-nagi-signin-panel div {
+		display: grid;
+		gap: 3px;
+		min-width: 0;
+	}
+
+	.my-nagi-signin-panel strong {
+		color: var(--text-strong);
+		font-size: 13px;
+	}
+
+	.my-nagi-signin-panel span {
+		color: var(--text-muted);
+		font-size: 12px;
+		line-height: 1.55;
+	}
+
+	.my-nagi-signin-panel a {
+		flex: 0 0 auto;
+		padding: 7px 12px;
+		border: 1px solid var(--accent);
+		border-radius: var(--radius-pill);
+		color: var(--accent-strong);
+		font-size: 12px;
+		font-weight: 800;
+		text-decoration: none;
+	}
+
+	@media (max-width: 480px) {
+		.my-nagi-signin-panel {
+			align-items: flex-start;
+			flex-direction: column;
+		}
 	}
 </style>

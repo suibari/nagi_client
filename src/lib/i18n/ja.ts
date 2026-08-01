@@ -44,7 +44,9 @@ export const ja = {
 	communityAffirmationIntro: 'botたんが、そっと聞いてほしい声をまとめたよ',
 	communityAffirmationReact: '絵文字で気持ちを届ける',
 	communityAffirmationReactAria: '元投稿へ届ける絵文字を選ぶ',
-	communityAffirmationDismiss: 'この声を閉じる',
+	communityAffirmationDismiss: '今回は見送る',
+	communityAffirmationDismissAria: 'この声を今回は見送る',
+	communityAffirmationGuest: 'サインインすると、みんなの声に絵文字で気持ちを届けられます。',
 	communityAffirmationScrollPrev: '前の声を見る',
 	communityAffirmationScrollNext: '次の声を見る',
 	communityAffirmationLoading: 'botたんが声を探しています…',
@@ -68,6 +70,8 @@ export const ja = {
 	myNagiChannelsTitle: '参加中チャンネル',
 	myNagiChannelsEmpty: 'まだどのチャンネルにも参加していません。',
 	myNagiChannelsEmptyCta: 'チャンネルを探す',
+	myNagiGuestTitle: 'サインインすると、もっとあなたらしい my Nagi に',
+	myNagiGuestBody: 'リストのみんなと参加中チャンネルが、ここに並びます。',
 
 	// sidebar footer / about page hero（本文中にキャラ紹介ページへのリンクを挟むため3分割）
 	aboutBeforeLink: 'いいねもフォローもありません。書いた言葉は、',
@@ -807,6 +811,7 @@ export const ja = {
 	channelDeleteFailed: 'チャンネルを削除できませんでした',
 	// 全肯定カード（1日1回引けるトレカ）
 	cardDrawButton: '今日のカードを引く',
+	cardHeaderLabel: '今日の一枚！',
 	cardDrawing: '引いています…',
 	cardDrawFailed: 'カードを引けませんでした',
 	cardFetchFailed: 'カードを取得できません',

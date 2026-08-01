@@ -1,18 +1,13 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import { dev } from '$app/environment';
-	import { page } from '$app/state';
-	import { ApiRequestError, drawCard, getHomeTimeline, getTimeline } from '$lib/api/appview';
-	import type { CardView, DrawCardResult } from '$lib/api/types';
-	import { cardCollections } from '$lib/cards/collection.svelte';
+	import { ApiRequestError, getHomeTimeline, getTimeline } from '$lib/api/appview';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import { globalFeedRead, homeFeedRead } from '$lib/feed/unread.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { startVisiblePolling } from '$lib/polling';
 	import ThreadUnit from './ThreadUnit.svelte';
-	import CardDrawFab from './CardDrawFab.svelte';
-	import CardDetailDialog from './CardDetailDialog.svelte';
+	import CardDrawEntry from './CardDrawEntry.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
 	import FeedTabs from './shell/FeedTabs.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -45,61 +40,17 @@
 		feedWatermark,
 	);
 	let lastDid = $state<string | undefined>(untrack(() => $session?.did));
-	let drawing = $state(false);
-	let drawError = $state('');
-	let drawResult = $state<DrawCardResult | undefined>();
-	let openedCard = $state<CardView | undefined>();
-	const myDid = $derived($session?.did);
-	const forceFab = $derived(
-		dev &&
-			[...page.url.searchParams].some(
-				([key, value]) => key.toLowerCase() === 'cardfab' && value === '1',
-			),
-	);
-	const showFab = $derived(!openedCard && ((!!myDid && cardCollections.canDrawToday) || forceFab));
-
-	$effect(() => {
-		if (myDid) void cardCollections.ensure(myDid);
-	});
-
 	onMount(() => {
 		void feed.load();
 		const base = startVisiblePolling(() => feed.refresh(), 30_000, { onReturn: true });
 		const fast = startVisiblePolling(() => feed.refresh(), 3_000, {
 			when: () => feed.hasOptimistic() || feed.hasPendingFor($session?.did),
 		});
-		const cards = startVisiblePolling(() => cardCollections.refreshSelfIfStale(), 5 * 60_000, {
-			onReturn: true,
-		});
 		return () => {
 			base();
 			fast();
-			cards();
 		};
 	});
-
-	async function drawFromFab() {
-		const did = myDid;
-		if (!did || drawing) return;
-		drawing = true;
-		drawError = '';
-		try {
-			const result = await drawCard();
-			cardCollections.applyDraw(did, result);
-			drawResult = result;
-			openedCard = result.card;
-		} catch (error) {
-			drawError = error instanceof Error ? error.message : m.cardDrawFailed();
-		} finally {
-			drawing = false;
-		}
-	}
-
-	function closeDraw(final: CardView) {
-		openedCard = undefined;
-		drawResult = undefined;
-		if (myDid) cardCollections.applyCard(myDid, final);
-	}
 
 	$effect(() => {
 		const did = $session?.did;
@@ -172,21 +123,4 @@
 	{/if}
 </section>
 
-{#if showFab || drawing || drawError}
-	<CardDrawFab
-		{drawing}
-		error={drawError}
-		shifted={!!postFollowNotice.current}
-		ondraw={drawFromFab}
-		ondismisserror={() => (drawError = '')}
-	/>
-{/if}
-{#if openedCard && myDid}
-	<CardDetailDialog
-		initial={openedCard}
-		actor={myDid}
-		draw={drawResult}
-		collectionHref={`/profile/${myDid}?tab=cards`}
-		onclose={closeDraw}
-	/>
-{/if}
+<CardDrawEntry variant="fab" shifted={!!postFollowNotice.current} />

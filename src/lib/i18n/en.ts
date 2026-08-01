@@ -42,7 +42,9 @@ export const en: Messages = {
 	communityAffirmationIntro: 'Bot-tan found a voice that could use a gentle response',
 	communityAffirmationReact: 'Send warmth with an emoji',
 	communityAffirmationReactAria: 'Choose an emoji to send to the original post',
-	communityAffirmationDismiss: 'Dismiss this voice',
+	communityAffirmationDismiss: 'Skip for now',
+	communityAffirmationDismissAria: 'Skip this voice for now',
+	communityAffirmationGuest: 'Sign in to send a warm emoji to voices from the community.',
 	communityAffirmationScrollPrev: 'See the previous voice',
 	communityAffirmationScrollNext: 'See the next voice',
 	communityAffirmationLoading: 'Bot-tan is listening for a voice…',
@@ -66,6 +68,8 @@ export const en: Messages = {
 	myNagiChannelsTitle: 'Channels you joined',
 	myNagiChannelsEmpty: 'You have not joined any channel yet.',
 	myNagiChannelsEmptyCta: 'Browse channels',
+	myNagiGuestTitle: 'Sign in to make my Nagi yours',
+	myNagiGuestBody: 'People in your list and channels you joined will appear here.',
 
 	aboutBeforeLink: 'No likes, no follows. Whatever you write, ',
 	aboutLinkText: 'the fully affirming Bot-tan',
@@ -777,6 +781,7 @@ export const en: Messages = {
 	channelDeleteFailed: 'Could not delete the channel',
 	// Affirmation cards (one draw per day)
 	cardDrawButton: "Draw today's card",
+	cardHeaderLabel: "Today's card!",
 	cardDrawing: 'Drawing…',
 	cardDrawFailed: 'Could not draw a card',
 	cardFetchFailed: 'Could not load cards',

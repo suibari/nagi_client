@@ -21,7 +21,7 @@
 	} = $props();
 
 	/** 通り過ぎるだけのカーソルで取得を走らせないための待ち時間。 */
-	const OPEN_DELAY_MS = 400;
+	const OPEN_DELAY_MS = 150;
 	/** アバターからカード本体へマウスを移す間、閉じないでおく猶予。 */
 	const CLOSE_DELAY_MS = 200;
 

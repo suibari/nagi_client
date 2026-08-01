@@ -92,7 +92,7 @@
 
 	.my-nagi-news-track {
 		display: flex;
-		align-items: flex-start;
+		align-items: stretch;
 		gap: 12px;
 		margin: 0;
 		padding: 0;
@@ -101,6 +101,7 @@
 
 	.my-nagi-news-item {
 		flex: 0 0 min(340px, 88%);
+		display: flex;
 		min-width: 0;
 		scroll-snap-align: start;
 	}

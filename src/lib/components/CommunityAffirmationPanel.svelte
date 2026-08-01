@@ -10,6 +10,7 @@
 		hasCommunityAffirmationTimestamp,
 	} from '$lib/community-affirmation/bot-post';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { tick } from 'svelte';
 	import CarouselArrows from './CarouselArrows.svelte';
 	import ChatBubble from './ChatBubble.svelte';
@@ -31,7 +32,7 @@
 	let loading = $state(false);
 	let error = $state('');
 	let authError = $state(false);
-	let loadedLocale = $state<'ja' | 'en'>();
+	let loadedKey = $state('');
 	let completed = $state(false);
 	let responseBotActor = $state<ActorView>();
 	let visibleBotActor = $derived(responseBotActor ?? providedBotActor);
@@ -128,12 +129,17 @@
 	}
 
 	$effect(() => {
-		const locale = i18n.locale;
-		if (locale === loadedLocale) return;
-		loadedLocale = locale;
+		if (!$oauthReady) return;
+		const key = `${$session?.did ?? 'guest'}:${i18n.locale}`;
+		if (key === loadedKey) return;
+		loadedKey = key;
 		items = [];
 		removingUris = new Set();
-		void load();
+		completed = false;
+		error = '';
+		authError = false;
+		if ($session) void load();
+		else loading = false;
 	});
 
 	$effect(() => {
@@ -169,7 +175,12 @@
 		{/if}
 	</header>
 
-	{#if items.length}
+	{#if !$session}
+		<div class="community-affirmation-state community-affirmation-guest">
+			<span>{m.communityAffirmationGuest()}</span>
+			<a href="/login">{m.login()}</a>
+		</div>
+	{:else if items.length}
 		<p class="community-affirmation-intro">{m.communityAffirmationIntro()}</p>
 		<div class="community-affirmation-track" bind:this={track} onscroll={updateScrollState}>
 			{#each items as item (item.uri)}
@@ -191,28 +202,26 @@
 							ontoggled={(active) => handleReactionToggle(item.uri, active)}
 							onpickerclose={() => handlePickerClose(item.uri)}
 						/>
-						<div class="community-affirmation-card-actions">
-							<button
-								bind:this={reactionButtons[item.uri]}
-								class="community-affirmation-react"
-								class:active={openPickerUri === item.uri}
-								aria-expanded={openPickerUri === item.uri}
-								aria-label={m.communityAffirmationReactAria()}
-								onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
-							>
-								<Icon name="emoji" size={16} />
-								<span>{m.communityAffirmationReact()}</span>
-							</button>
-							<button
-								type="button"
-								class="community-affirmation-dismiss"
-								aria-label={m.communityAffirmationDismiss()}
-								title={m.communityAffirmationDismiss()}
-								onclick={() => handleItem(item.uri)}
-							>
-								<Icon name="close" size={14} />
-							</button>
-						</div>
+						<button
+							bind:this={reactionButtons[item.uri]}
+							class="community-affirmation-react"
+							class:active={openPickerUri === item.uri}
+							aria-expanded={openPickerUri === item.uri}
+							aria-label={m.communityAffirmationReactAria()}
+							onclick={() => (openPickerUri = openPickerUri === item.uri ? undefined : item.uri)}
+						>
+							<Icon name="emoji" size={16} />
+							<span>{m.communityAffirmationReact()}</span>
+						</button>
+						<button
+							type="button"
+							class="community-affirmation-dismiss"
+							aria-label={m.communityAffirmationDismissAria()}
+							title={m.communityAffirmationDismissAria()}
+							onclick={() => handleItem(item.uri)}
+						>
+							{m.communityAffirmationDismiss()}
+						</button>
 					</div>
 				</article>
 			{/each}

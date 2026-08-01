@@ -202,6 +202,13 @@
 			composeMode = mode;
 		}
 	}
+	function toggleReactionPicker() {
+		if (!$session) {
+			location.href = '/login';
+			return;
+		}
+		reactionPickerOpen = !reactionPickerOpen;
+	}
 	function cancelComposer() {
 		composeMode = undefined;
 		composeText = '';
@@ -599,7 +606,7 @@
 					aria-label={m.addReactionAria()}
 					title={m.addReactionAria()}
 					aria-expanded={reactionPickerOpen}
-					onclick={() => (reactionPickerOpen = !reactionPickerOpen)}
+					onclick={toggleReactionPicker}
 				>
 					<Icon name="emojiPlus" size={18} />
 				</button>

@@ -3,6 +3,7 @@
 	import { newsBotPost, safeNewsUrl } from '$lib/news/bot-post';
 	import { NewsQuote } from '$lib/news/quote.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import Icon from './shell/Icon.svelte';
 	import ChatBubble from './ChatBubble.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
@@ -40,6 +41,20 @@
 			if ((e as DOMException)?.name !== 'AbortError') shareError = m.newsShareFailed();
 		}
 	}
+	function toggleQuote() {
+		if (!$session) {
+			location.href = '/login';
+			return;
+		}
+		quote.toggle();
+	}
+	function toggleReactionPicker() {
+		if (!$session) {
+			location.href = '/login';
+			return;
+		}
+		reactionPickerOpen = !reactionPickerOpen;
+	}
 </script>
 
 <article class="news-card" class:unread class:embedded>
@@ -53,48 +68,50 @@
 				})}</time
 			>{/if}
 	</div>
-	<h3>{news.title}</h3>
+	<h3 title={news.title}>{news.title}</h3>
 	<ChatBubble post={botPost} displayOnly />
-	<ReactionBar
-		uri={news.uri}
-		cid={news.cid}
-		reactions={news.reactions}
-		bind:pickerOpen={reactionPickerOpen}
-		pickerAnchor={reactionButton}
-	/>
-	<div class="news-actions">
-		{#if safeUrl}<a
-				class="primary news-read"
-				href={safeUrl}
-				target="_blank"
-				rel="noopener noreferrer">{m.newsReadArticle()}</a
-			>{/if}
-		<button
-			class="ghost icon-action timeline-action"
-			type="button"
-			onclick={() => quote.toggle()}
-			aria-label={m.newsQuote()}
-			title={m.newsQuote()}><Icon name="quote" size={18} /></button
-		>
-		<button
-			bind:this={reactionButton}
-			class="ghost icon-action timeline-action"
-			class:active={reactionPickerOpen}
-			type="button"
-			aria-label={m.addReactionAria()}
-			title={m.addReactionAria()}
-			aria-expanded={reactionPickerOpen}
-			onclick={() => (reactionPickerOpen = !reactionPickerOpen)}
-		>
-			<Icon name="emojiPlus" size={18} />
-		</button>
-		<button
-			class="ghost icon-action timeline-action"
-			type="button"
-			onclick={share}
-			aria-label={shared ? m.newsCopied() : m.newsShare()}
-			title={shared ? m.newsCopied() : m.newsShare()}><Icon name="share" size={18} /></button
-		>
+	<div class="news-footer">
+		<ReactionBar
+			uri={news.uri}
+			cid={news.cid}
+			reactions={news.reactions}
+			bind:pickerOpen={reactionPickerOpen}
+			pickerAnchor={reactionButton}
+		/>
+		<div class="news-actions">
+			{#if safeUrl}<a
+					class="primary news-read"
+					href={safeUrl}
+					target="_blank"
+					rel="noopener noreferrer">{m.newsReadArticle()}</a
+				>{/if}
+			<button
+				class="ghost icon-action timeline-action"
+				type="button"
+				onclick={toggleQuote}
+				aria-label={m.newsQuote()}
+				title={m.newsQuote()}><Icon name="quote" size={18} /></button
+			>
+			<button
+				bind:this={reactionButton}
+				class="ghost icon-action timeline-action"
+				class:active={reactionPickerOpen}
+				type="button"
+				aria-label={m.addReactionAria()}
+				title={m.addReactionAria()}
+				aria-expanded={reactionPickerOpen}
+				onclick={toggleReactionPicker}
+			>
+				<Icon name="emojiPlus" size={18} />
+			</button>
+			<button
+				class="ghost icon-action timeline-action"
+				type="button"
+				onclick={share}
+				aria-label={shared ? m.newsCopied() : m.newsShare()}
+				title={shared ? m.newsCopied() : m.newsShare()}><Icon name="share" size={18} /></button
+			>
+		</div>
 	</div>
 	{#if quote.composing}<InlinePostComposer
 			id={`news-quote-${news.cid}`}
@@ -117,6 +134,8 @@
 
 <style>
 	.news-card {
+		display: flex;
+		flex-direction: column;
 		min-inline-size: 0;
 		max-inline-size: 100%;
 		padding: 0.75rem;
@@ -133,6 +152,9 @@
 			var(--shadow-panel);
 	}
 	.news-card.embedded {
+		inline-size: 100%;
+		block-size: 100%;
+		box-sizing: border-box;
 		border: 0;
 		background: var(--bg-raised);
 		box-shadow: none;
@@ -156,10 +178,19 @@
 		margin-left: auto;
 	}
 	h3 {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		min-block-size: 3.35rem;
+		overflow: hidden;
 		font-size: 1.08rem;
 		line-height: 1.55;
 		margin: 0.45rem 0 0.75rem;
 		overflow-wrap: anywhere;
+	}
+	.news-footer {
+		margin-top: auto;
 	}
 	.news-actions {
 		display: flex;
