@@ -1,17 +1,24 @@
 <script lang="ts">
-	import { getNotifications, APPVIEW_URL } from '$lib/api/appview';
-	import type { NotificationView } from '$lib/api/types';
+	import { getNotifications, getProfile, APPVIEW_URL } from '$lib/api/appview';
+	import type { ActorView, NotificationView } from '$lib/api/types';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import { stripMarkdown } from '$lib/atproto/markdown';
 	import { displayEmojiName } from '$lib/atproto/bluemoji';
 	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { markAllSeen } from '$lib/notifications/unread.svelte';
-	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 	import ContentWarningMask from '$lib/components/ContentWarningMask.svelte';
+	import BusinessCard from '$lib/components/BusinessCard.svelte';
+	import BusinessCardDialog from '$lib/components/BusinessCardDialog.svelte';
+	import { cardFromProfile, type BusinessCardData } from '$lib/card/data';
 	let items = $state<NotificationView[]>([]);
 	let error = $state('');
 	let loading = $state(true);
+	let notificationCard = $state<BusinessCardData>();
+	let cardComment = $state<string>();
+	let cardBotActor = $state<ActorView>();
+	let cardDialogOpen = $state(false);
 	const relativeTimeBase = Date.now();
 	/** 通知カード全体がリンクなので、サムネはギャラリー無しの素の img で並べる。 */
 	const MAX_THUMBS = 4;
@@ -31,6 +38,19 @@
 				// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
 				// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
 				if (items.length) void markAllSeen(items[0].createdAt);
+				// 名刺更新があるときだけ本人の最新名刺を1回取得する。通知行には更新当時の
+				// スナップショットが無いので、複数行があってもすべて現在の名刺を表示する。
+				if (items.some((item) => item.type === 'analysis')) {
+					try {
+						const page = await getProfile($session.did, { limit: 1, lang: i18n.locale });
+						notificationCard = cardFromProfile(page.profile, location.origin);
+						cardComment = page.profile.comment;
+						cardBotActor = page.feed.botActor;
+					} catch {
+						// 通知一覧そのものは表示し、名刺だけ従来のプロフィールリンクへフォールバックする。
+						notificationCard = undefined;
+					}
+				}
 			} catch (e) {
 				error = e instanceof Error ? e.message : m.notifFetchFailed();
 			} finally {
@@ -73,6 +93,40 @@
 		/>{:else}{reaction.emoji}{/if}
 {/snippet}
 
+{#snippet notificationHead(item: NotificationView)}
+	<div class="notification-head">
+		<span class="what">
+			<strong>{item.actor.displayName ?? item.actor.handle}</strong
+			>{#if item.type === 'reaction' && item.reaction}{m.notifReactedWithPrefix()}{@render reactionEmoji(
+					item.reaction,
+				)}{m.notifReactedWithSuffix()}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{m.notifReactedSuffix()}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
+		</span>
+		<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
+	</div>
+{/snippet}
+
+{#snippet notificationContent(item: NotificationView)}
+	<!-- 返信/メンションは新しい投稿、リアクションは対象投稿を AppView が post に入れる。 -->
+	{#if item.type === 'diary' && item.diary}<p class="notification-subject">
+			{stripMarkdown(item.diary.text)}
+		</p>{:else if item.post?.contentWarning}<p class="notification-subject">
+			{m.contentWarningNotification()}
+		</p>{:else if item.post?.text}<p class="notification-subject">
+			{stripMarkdown(item.post.text)}
+		</p>{/if}
+	{#if item.post?.images?.length}<div class="notification-thumbs">
+			{#each item.post.images.slice(0, MAX_THUMBS) as image}
+				{#if image.contentWarning}
+					<ContentWarningMask kind="image" interactive={false}
+						><img src={resolveImage(image.url)} alt="" loading="lazy" /></ContentWarningMask
+					>
+				{:else}
+					<img src={resolveImage(image.url)} alt={image.alt} loading="lazy" />
+				{/if}
+			{/each}
+		</div>{/if}
+{/snippet}
+
 <section class="page-title"><h1>{m.navNotifications()}</h1></section>
 <section class="timeline">
 	{#if error}<div class="state error">{error}</div>
@@ -80,38 +134,42 @@
 	{:else if !items.length}<div class="state">{m.notifEmpty()}</div>
 	{:else}
 		{#each items as item (item.id)}
-			<a class="notification card" class:unread={item.readAt == null} href={notificationHref(item)}>
-				<Avatar actor={item.actor} size="small" />
-				<div class="notification-main">
-					<div class="notification-head">
-						<span class="what">
-							<strong>{item.actor.displayName ?? item.actor.handle}</strong
-							>{#if item.type === 'reaction' && item.reaction}{m.notifReactedWithPrefix()}{@render reactionEmoji(
-									item.reaction,
-								)}{m.notifReactedWithSuffix()}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{m.notifReactedSuffix()}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
-						</span>
-						<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
+			{#if item.type === 'analysis' && notificationCard}
+				<div class="notification card" class:unread={item.readAt == null}>
+					<Avatar actor={item.actor} size="small" />
+					<div class="notification-main">
+						{@render notificationHead(item)}
+						<div class="notification-name-card">
+							<BusinessCard
+								data={notificationCard}
+								size="compact"
+								onclick={() => (cardDialogOpen = true)}
+							/>
+						</div>
 					</div>
-					{#if item.type === 'diary' && item.diary}<p class="notification-subject">
-							{stripMarkdown(item.diary.text)}
-						</p>{:else if item.post?.contentWarning}<p class="notification-subject">
-							{m.contentWarningNotification()}
-						</p>{:else if item.post?.text}<p class="notification-subject">
-							{stripMarkdown(item.post.text)}
-						</p>{/if}
-					{#if item.post?.images?.length}<div class="notification-thumbs">
-							{#each item.post.images.slice(0, MAX_THUMBS) as image}
-								{#if image.contentWarning}
-									<ContentWarningMask kind="image" interactive={false}
-										><img src={resolveImage(image.url)} alt="" loading="lazy" /></ContentWarningMask
-									>
-								{:else}
-									<img src={resolveImage(image.url)} alt={image.alt} loading="lazy" />
-								{/if}
-							{/each}
-						</div>{/if}
 				</div>
-			</a>
+			{:else}
+				<a
+					class="notification card"
+					class:unread={item.readAt == null}
+					href={notificationHref(item)}
+				>
+					<Avatar actor={item.actor} size="small" />
+					<div class="notification-main">
+						{@render notificationHead(item)}
+						{@render notificationContent(item)}
+					</div>
+				</a>
+			{/if}
 		{/each}
 	{/if}
 </section>
+
+{#if cardDialogOpen && notificationCard}
+	<BusinessCardDialog
+		data={notificationCard}
+		comment={cardComment}
+		botActor={cardBotActor}
+		onclose={() => (cardDialogOpen = false)}
+	/>
+{/if}

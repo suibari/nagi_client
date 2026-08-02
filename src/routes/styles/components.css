@@ -2587,6 +2587,13 @@
 	width: 56px;
 	height: 56px;
 }
+.notification-name-card {
+	max-inline-size: 30rem;
+	margin-top: 10px;
+}
+.notification-name-card .business-card {
+	max-inline-size: 100%;
+}
 
 /* --- hero (logged-out landing) --- */
 .hero {

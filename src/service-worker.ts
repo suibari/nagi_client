@@ -55,13 +55,13 @@ sw.addEventListener('push', (event) => {
 		(async () => {
 			await sw.registration.showNotification(title, {
 				body: payload.body ?? '',
-				icon: '/nagi_icon.png',
-				badge: '/nagi_icon.png',
+				icon: '/nagi_icon_trans.png',
+				badge: '/nagi_icon_trans.png',
 				tag: notificationTag(payload),
 				// tag が万一衝突しても再アラートさせる保険。tag の指定が前提の項目なので、
 				// tag を空にする変更を入れるとここも壊れる。
 				renotify: true,
-				data: { url }
+				data: { url },
 			});
 			// アプリバッジを 1 増やす（未読の正確な件数はアプリ起動時に再同期される）。
 			try {
@@ -70,7 +70,7 @@ sw.addEventListener('push', (event) => {
 			} catch {
 				// バッジ非対応環境では無視。
 			}
-		})()
+		})(),
 	);
 });
 
@@ -89,7 +89,7 @@ sw.addEventListener('notificationclick', (event) => {
 				}
 			}
 			await sw.clients.openWindow(target);
-		})()
+		})(),
 	);
 });
 
@@ -112,6 +112,6 @@ sw.addEventListener('pushsubscriptionchange', (event) => {
 		sw.registration.pushManager
 			.subscribe({ userVisibleOnly: true, applicationServerKey })
 			.then(() => undefined)
-			.catch(() => undefined)
+			.catch(() => undefined),
 	);
 });
