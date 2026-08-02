@@ -24,6 +24,10 @@
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
 		},
 		{
+			"source": "/feed",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+		},
+		{
 			"source": "/login",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
@@ -71,6 +75,7 @@
 		{ "source": "/affirmation", "destination": "/200" },
 		{ "source": "/channels/:path*", "destination": "/200" },
 		{ "source": "/dev/:path*", "destination": "/200" },
+		{ "source": "/feed", "destination": "/200" },
 		{ "source": "/login", "destination": "/200" },
 		{ "source": "/news", "destination": "/200" },
 		{ "source": "/notifications", "destination": "/200" },
