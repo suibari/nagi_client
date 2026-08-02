@@ -68,12 +68,12 @@
 		entries.reduce((max, entry) => Math.max(max, entry.postCount ?? 0), 0),
 	);
 	/**
-	 * 当月最大を1とする連続強度。対数スケールで、最大値が突出した月でも
-	 * 少ない投稿数同士の色差を残す。
+	 * 当月最大を1とする線形の連続強度。投稿数の比率をそのまま色差へ反映し、
+	 * 活発な日が一目で突出して見えるようにする。
 	 */
 	const activityIntensity = (entry: DiaryView): number | undefined => {
 		if (entry.postCount === undefined || maxPostCount === 0) return undefined;
-		return Math.log1p(entry.postCount) / Math.log1p(maxPostCount);
+		return entry.postCount / maxPostCount;
 	};
 
 	const shiftMonth = (delta: number) => {
