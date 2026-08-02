@@ -64,6 +64,18 @@
 
 	const byDate = $derived(new Map(entries.map((entry) => [entry.date, entry])));
 	const current = $derived(selected ? byDate.get(selected) : undefined);
+	const maxPostCount = $derived(
+		entries.reduce((max, entry) => Math.max(max, entry.postCount ?? 0), 0),
+	);
+	/** 当月最大を4として、投稿数のある新形式の日記だけを月内相対の4段階にする。 */
+	const activityLevel = (entry: DiaryView): number | undefined => {
+		if (entry.postCount === undefined || maxPostCount === 0) return undefined;
+		return Math.max(1, Math.ceil((entry.postCount / maxPostCount) * 4));
+	};
+	const activityClass = (entry: DiaryView) => {
+		const level = activityLevel(entry);
+		return level === undefined ? '' : `diary-cell--activity-${level}`;
+	};
 
 	const shiftMonth = (delta: number) => {
 		const [year, mon] = month.split('-').map(Number);
@@ -156,17 +168,25 @@
 				<span class="diary-weekday">{weekday}</span>
 			{/each}
 			{#each cells as cell, index (cell?.date ?? `pad-${index}`)}
+				{@const entry = cell ? byDate.get(cell.date) : undefined}
 				{#if !cell}
 					<span class="diary-cell diary-cell--pad"></span>
-				{:else if byDate.has(cell.date)}
+				{:else if entry}
 					<button
-						class="diary-cell diary-cell--has"
+						class="diary-cell diary-cell--has {activityClass(entry)}"
 						class:selected={selected === cell.date}
 						type="button"
 						aria-pressed={selected === cell.date}
-						aria-label={m.diaryDayAria({ date: longDate(cell.date) })}
+						aria-label={m.diaryDayAria({
+							date: longDate(cell.date),
+							postCount: entry.postCount,
+							emoji: entry.emoji,
+						})}
 						onclick={() => (selected = selected === cell.date ? undefined : cell.date)}
-						>{cell.day}</button
+						><span class="diary-cell-day">{cell.day}</span>
+						{#if entry.emoji}
+							<span class="diary-cell-emoji" aria-hidden="true">{entry.emoji}</span>
+						{/if}</button
 					>
 				{:else}
 					<span class="diary-cell">{cell.day}</span>
@@ -245,12 +265,36 @@
 		font-weight: 800;
 		cursor: pointer;
 	}
+	.diary-cell--activity-1 {
+		background: var(--accent-softer);
+	}
+	.diary-cell--activity-2 {
+		background: color-mix(in srgb, var(--accent-softer) 55%, var(--accent-soft));
+	}
+	.diary-cell--activity-3 {
+		background: var(--accent-soft);
+	}
+	.diary-cell--activity-4 {
+		background: var(--accent-strong);
+		border-color: var(--accent-strong);
+		color: var(--text-on-accent);
+	}
 	.diary-cell--has:hover {
 		background: var(--accent-soft);
+		color: var(--accent-strong);
 	}
 	.diary-cell--has.selected {
 		background: var(--accent-soft);
+		color: var(--accent-strong);
 		box-shadow: 0 0 0 2px var(--focus-ring);
+	}
+	.diary-cell-day {
+		line-height: 1;
+	}
+	.diary-cell-emoji {
+		font-size: 13px;
+		line-height: 1;
+		margin-top: 2px;
 	}
 	.diary-entry h3 {
 		font-size: 14px;

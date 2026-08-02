@@ -462,7 +462,16 @@ export const en: Messages = {
 	diaryNextMonth: 'Next month',
 	diaryPickDate: 'Pick a highlighted day to read that entry.',
 	diaryTitleLabel: (p) => `Today's title: ${p.title}`,
-	diaryDayAria: (p) => `Diary for ${p.date}`,
+	diaryDayAria: (p: { date: string; postCount?: number; emoji?: string }) =>
+		[
+			`Diary for ${p.date}`,
+			p.postCount === undefined
+				? undefined
+				: `${p.postCount} ${p.postCount === 1 ? 'post' : 'posts'}`,
+			p.emoji === undefined ? undefined : `emoji ${p.emoji}`,
+		]
+			.filter(Boolean)
+			.join(', '),
 	diaryAbout: "Bot-tan writes these entries from that day's posts.",
 
 	loginTitle: 'Join Nagi',
