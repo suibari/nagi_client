@@ -6,7 +6,6 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { deleteOwnNews } from '$lib/atproto/records';
 	import Icon from './shell/Icon.svelte';
-	import Avatar from './Avatar.svelte';
 	import ChatBubble from './ChatBubble.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
 	import ReactionBar from './ReactionBar.svelte';
@@ -78,14 +77,6 @@
 </script>
 
 {#if !deleted}<article class="news-card" class:unread class:embedded>
-		{#if news.submittedBy}<a class="news-submitter" href={`/profile/${news.submittedBy.did}`}>
-				<Avatar actor={news.submittedBy} size="small" />
-				<span
-					>{m.newsSubmittedBy({
-						name: news.submittedBy.displayName ?? news.submittedBy.handle,
-					})}</span
-				>
-			</a>{/if}
 		<div class="news-meta">
 			<span>{news.sourceName ?? m.newsSourceUnknown()}</span>{#if news.publishedAt}<time
 					>{new Date(news.publishedAt).toLocaleString(dateLocale(), {
@@ -96,7 +87,18 @@
 					})}</time
 				>{/if}
 		</div>
-		<h3 class:clamped={clampTitle} title={news.title}>{news.title}</h3>
+		<h3
+			class:clamped={clampTitle}
+			class:has-submitter={Boolean(news.submittedBy)}
+			title={news.title}
+		>
+			{news.title}
+		</h3>
+		{#if news.submittedBy}<a class="news-submitter" href={`/profile/${news.submittedBy.did}`}
+				>{m.newsSubmittedBy({
+					name: news.submittedBy.displayName ?? news.submittedBy.handle,
+				})}</a
+			>{/if}
 		<ChatBubble post={botPost} displayOnly />
 		<div class="news-footer">
 			<ReactionBar
@@ -206,17 +208,15 @@
 		font-size: 0.78rem;
 	}
 	.news-submitter {
-		display: inline-flex;
-		align-items: center;
-		align-self: flex-start;
-		gap: 7px;
-		margin-bottom: 8px;
+		display: inline-block;
+		align-self: flex-end;
+		margin: 0 0 0.75rem;
 		color: var(--text-muted);
 		font-size: 0.8rem;
 		font-weight: 650;
 		text-decoration: none;
 	}
-	.news-submitter:hover span {
+	.news-submitter:hover {
 		text-decoration: underline;
 	}
 	.news-meta > span {
@@ -239,6 +239,9 @@
 		line-clamp: 2;
 		min-block-size: 3.35rem;
 		overflow: hidden;
+	}
+	h3.has-submitter {
+		margin-bottom: 0.2rem;
 	}
 	.news-footer {
 		margin-top: auto;
