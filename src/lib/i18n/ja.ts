@@ -513,9 +513,10 @@ export const ja = {
 	diaryNextMonth: '次の月',
 	diaryPickDate: '日記のある日を選ぶと本文が読めます。',
 	diaryTitleLabel: (p: { title: string }) => `今日の称号: ${p.title}`,
-	diaryDayAria: (p: { date: string; postCount?: number; emoji?: string }) =>
+	diaryDayAria: (p: { date: string; postCount?: number; emoji?: string; title?: string }) =>
 		[
 			`${p.date}の日記`,
+			p.title === undefined ? undefined : `今日の称号 ${p.title}`,
 			p.postCount === undefined ? undefined : `${p.postCount}件のポスト`,
 			p.emoji === undefined ? undefined : `今日の絵文字 ${p.emoji}`,
 		]

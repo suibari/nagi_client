@@ -169,6 +169,7 @@
 			{/each}
 			{#each cells as cell, index (cell?.date ?? `pad-${index}`)}
 				{@const entry = cell ? byDate.get(cell.date) : undefined}
+				{@const title = entry ? entryTitle(entry) : undefined}
 				{#if !cell}
 					<span class="diary-cell diary-cell--pad"></span>
 				{:else if entry}
@@ -176,11 +177,13 @@
 						class="diary-cell diary-cell--has {activityClass(entry)}"
 						class:selected={selected === cell.date}
 						type="button"
+						title={title ? m.diaryTitleLabel({ title }) : undefined}
 						aria-pressed={selected === cell.date}
 						aria-label={m.diaryDayAria({
 							date: longDate(cell.date),
 							postCount: entry.postCount,
 							emoji: entry.emoji,
+							title,
 						})}
 						onclick={() => (selected = selected === cell.date ? undefined : cell.date)}
 						><span class="diary-cell-day">{cell.day}</span>
@@ -292,9 +295,10 @@
 		line-height: 1;
 	}
 	.diary-cell-emoji {
-		font-size: 13px;
+		font-size: clamp(9px, 2.4vw, 12px);
 		line-height: 1;
 		margin-top: 2px;
+		white-space: nowrap;
 	}
 	.diary-entry h3 {
 		font-size: 14px;

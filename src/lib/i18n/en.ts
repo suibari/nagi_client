@@ -489,9 +489,10 @@ export const en: Messages = {
 	diaryNextMonth: 'Next month',
 	diaryPickDate: 'Pick a highlighted day to read that entry.',
 	diaryTitleLabel: (p) => `Today's title: ${p.title}`,
-	diaryDayAria: (p: { date: string; postCount?: number; emoji?: string }) =>
+	diaryDayAria: (p: { date: string; postCount?: number; emoji?: string; title?: string }) =>
 		[
 			`Diary for ${p.date}`,
+			p.title === undefined ? undefined : `title ${p.title}`,
 			p.postCount === undefined
 				? undefined
 				: `${p.postCount} ${p.postCount === 1 ? 'post' : 'posts'}`,
