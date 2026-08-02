@@ -3,10 +3,12 @@
 	import { getPositiveNews } from '$lib/api/appview';
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import NewsCard from '$lib/components/NewsCard.svelte';
+	import NewsSubmissionDialog from '$lib/components/NewsSubmissionDialog.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m, dayHeading, dayKey } from '$lib/i18n/i18n.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	let items = $state<NewsView[]>([]),
 		botActor = $state<ActorView>(),
 		cursor = $state<string>(),
@@ -14,10 +16,15 @@
 		loading = $state(false),
 		error = $state(''),
 		loadedLang = $state<string>();
+	let submissionOpen = $state(false);
+	let refreshAfterLoad = false;
 	// 既読基準は画面を開いた時点で凍結する。既読化しても表示中のマークは消えない。
 	const unreadView = openNewsUnreadView();
 	async function load(reset = false) {
-		if (loading) return;
+		if (loading) {
+			if (reset) refreshAfterLoad = true;
+			return;
+		}
 		loading = true;
 		error = '';
 		try {
@@ -32,6 +39,10 @@
 			error = e instanceof Error ? e.message : m.loadFailed();
 		} finally {
 			loading = false;
+			if (refreshAfterLoad) {
+				refreshAfterLoad = false;
+				queueMicrotask(() => void load(true));
+			}
 		}
 	}
 	onMount(() => {
@@ -53,9 +64,19 @@
 			return { news, heading: dayHeading(iso) };
 		});
 	});
+	function openSubmission() {
+		if (!$session) {
+			location.href = '/login';
+			return;
+		}
+		submissionOpen = true;
+	}
 </script>
 
-<section class="page-title"><h1>{m.navNews()}</h1></section>
+<section class="page-title news-title">
+	<h1>{m.navNews()}</h1>
+	<button type="button" class="primary" onclick={openSubmission}>{m.newsAdd()}</button>
+</section>
 <section class="news-feed" aria-busy={loading}>
 	{#if loading && !items.length}<div class="timeline-loading" role="status">
 			<span class="spinner"></span>
@@ -75,8 +96,18 @@
 				clampTitle={false}
 			/>{/each}<InfiniteScroll {hasMore} {loading} {error} onload={() => load()} />{/if}
 </section>
+{#if submissionOpen}<NewsSubmissionDialog
+		onclose={() => (submissionOpen = false)}
+		onapproved={() => void load(true)}
+	/>{/if}
 
 <style>
+	.news-title {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
 	.news-feed {
 		display: grid;
 		gap: 14px;

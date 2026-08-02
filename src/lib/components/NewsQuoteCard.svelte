@@ -2,6 +2,7 @@
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import QuoteFrame from './QuoteFrame.svelte';
+	import Avatar from './Avatar.svelte';
 	let { news, botActor }: { news: NewsView; botActor?: ActorView } = $props();
 	let safeUrl = $derived.by(() => {
 		try {
@@ -21,6 +22,10 @@
 		profileHref={botActor ? `/profile/${botActor.did}` : undefined}
 		datetime={news.createdAt}
 	>
+		{#if news.submittedBy}<a class="submitted-by" href={`/profile/${news.submittedBy.did}`}>
+				<Avatar actor={news.submittedBy} size="small" />
+				{m.newsSubmittedBy({ name: news.submittedBy.displayName ?? news.submittedBy.handle })}
+			</a>{/if}
 		{#if news.botComment}<p class="bot-comment">{news.botComment}</p>{/if}
 		<a class="news-quote" href={safeUrl} target="_blank" rel="noopener noreferrer">
 			<small>{news.sourceName ?? m.newsSourceUnknown()}</small><strong>{news.title}</strong>
@@ -29,6 +34,15 @@
 {/if}
 
 <style>
+	.submitted-by {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-bottom: 0.45rem;
+		color: var(--text-muted);
+		font-size: 0.78rem;
+		text-decoration: none;
+	}
 	.bot-comment {
 		margin: 0 0 0.5rem;
 		overflow-wrap: anywhere;

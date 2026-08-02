@@ -15,6 +15,8 @@ import type {
 	MutesView,
 	NotificationView,
 	NewsPage,
+	NewsSubmissionItem,
+	NewsSubmissionPreview,
 	Page,
 	ProfileFeedFilter,
 	ProfilePage,
@@ -500,6 +502,27 @@ export const getLinkMetadata = (url: string, fallback = false) =>
 	call<LinkMetadata>(
 		'com.suibari.nagi.getLinkMetadata',
 		`/xrpc/com.suibari.nagi.getLinkMetadata?url=${encodeURIComponent(url)}${fallback ? '&fallback=true' : ''}`,
+		{},
+		'required',
+	);
+export const getNewsSubmissionPreview = (url: string) =>
+	call<NewsSubmissionPreview>(
+		'com.suibari.nagi.getNewsSubmissionPreview',
+		`/xrpc/com.suibari.nagi.getNewsSubmissionPreview?url=${encodeURIComponent(url)}`,
+		{},
+		'required',
+	);
+export const requestNewsReview = (subject: { uri: string; cid: string }) =>
+	call<{ status: NewsSubmissionItem['status'] }>(
+		'com.suibari.nagi.requestNewsReview',
+		'/xrpc/com.suibari.nagi.requestNewsReview',
+		{ method: 'POST', body: JSON.stringify({ subject }) },
+		'required',
+	);
+export const getMyNewsSubmissions = (limit = 10) =>
+	call<{ items: NewsSubmissionItem[] }>(
+		'com.suibari.nagi.getMyNewsSubmissions',
+		`/xrpc/com.suibari.nagi.getMyNewsSubmissions?limit=${limit}`,
 		{},
 		'required',
 	);

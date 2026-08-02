@@ -66,7 +66,29 @@ export type NewsView = {
 	createdAt: string;
 	indexedAt: string;
 	reactions: ReactionView[];
+	submittedBy?: ActorView;
 	unavailable?: boolean;
+};
+export type NewsSubmissionPreview = {
+	articleId: string;
+	url: string;
+	title: string;
+	sourceName: string;
+	sourceUrl: string;
+	publishedAt?: string;
+	image?: string;
+};
+export type NewsSubmissionState =
+	'pending' | 'processing' | 'approved' | 'rejected' | 'failed' | 'cancelled';
+export type NewsSubmissionItem = {
+	uri: string;
+	cid: string;
+	url: string;
+	title: string;
+	status: NewsSubmissionState;
+	reasonCode?: string;
+	requestedAt: string;
+	finishedAt?: string;
 };
 export type PostView = {
 	uri: string;

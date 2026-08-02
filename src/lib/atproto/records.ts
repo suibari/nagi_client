@@ -9,7 +9,7 @@ import {
 } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment, PostEditImage } from '$lib/images';
-import type { EmojiView, PostImage } from '$lib/api/types';
+import type { EmojiView, NewsSubmissionPreview, PostImage } from '$lib/api/types';
 import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
 import { hasOptInScope } from '$lib/optin/scope-optin';
 import { forgetPublicationCache } from '$lib/standardsite/cache';
@@ -19,6 +19,7 @@ const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
 	CHANNEL = 'com.suibari.nagi.channel';
+const NEWS = 'com.suibari.nagi.news';
 const current = () => {
 	const value = get(session);
 	if (!value) throw new Error('Authentication required');
@@ -447,6 +448,33 @@ export async function createReaction(
 			createdAt: new Date().toISOString(),
 		},
 	});
+}
+export async function createNewsRecord(preview: NewsSubmissionPreview) {
+	const s = current();
+	return new Agent(s).com.atproto.repo.createRecord({
+		repo: s.did,
+		collection: NEWS,
+		validate: false,
+		record: {
+			$type: NEWS,
+			articleId: preview.articleId,
+			url: preview.url,
+			titleJa: preview.title,
+			sourceName: preview.sourceName,
+			sourceUrl: preview.sourceUrl,
+			...(preview.publishedAt ? { publishedAt: preview.publishedAt } : {}),
+			langs: ['ja'],
+			createdAt: new Date().toISOString(),
+		},
+	});
+}
+
+export async function deleteOwnNews(uri: string) {
+	const s = current();
+	const prefix = `at://${s.did}/${NEWS}/`;
+	const rkey = uri.startsWith(prefix) ? uri.slice(prefix.length) : '';
+	if (!rkey || rkey.includes('/')) throw new Error('News record owner does not match');
+	return new Agent(s).com.atproto.repo.deleteRecord({ repo: s.did, collection: NEWS, rkey });
 }
 export async function deleteRecord(collection: string, rkey: string) {
 	const s = current();
