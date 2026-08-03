@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.suibari.nagi",
+      "sha256_cert_fingerprints": [
+        "63:25:ED:90:EB:65:84:EE:CE:1A:5D:38:99:5B:5C:89:B3:E0:55:0F:7B:66:C4:DC:41:6D:CC:83:52:C3:64:48"
+      ]
+    }
+  }
+]
