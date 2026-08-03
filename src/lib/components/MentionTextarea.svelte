@@ -4,6 +4,7 @@
 	import type { ActorView, ChannelView, EmojiView } from '$lib/api/types';
 	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { portal } from '$lib/actions/portal';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
 	import ChannelSuggestionList from './ChannelSuggestionList.svelte';
 	import type { MarkdownFormat } from './MarkdownPalette.svelte';
@@ -48,6 +49,9 @@
 	let channelRequestId = 0;
 	let channelSearchStarted = false;
 	let activeIndex = $state(0);
+	let suggestionLayer = $state<HTMLDivElement>();
+	let suggestionStyle = $state('');
+	let suggestionPositioned = $state(false);
 	let token = $state<
 		| { kind: 'mention'; start: number; end: number; query: string }
 		| { kind: 'channel'; start: number; end: number; query: string; marker: '#' | '＃' }
@@ -95,10 +99,51 @@
 
 	function close() {
 		token = undefined;
+		suggestionPositioned = false;
 		suggest.reset();
 		resetChannelSearch();
 		activeIndex = 0;
 	}
+
+	$effect(() => {
+		if (!token || !suggestionLayer) return;
+		const layer = suggestionLayer;
+		let frame: number | undefined;
+		const updatePosition = () => {
+			frame = undefined;
+			const rect = textarea.getBoundingClientRect();
+			const margin = 12;
+			const gap = 4;
+			const width = Math.min(rect.width, Math.max(0, window.innerWidth - margin * 2));
+			const belowSpace = window.innerHeight - margin - rect.bottom - gap;
+			const aboveSpace = rect.top - gap - margin;
+			const openBelow = belowSpace >= 280 || belowSpace >= aboveSpace;
+			const maxHeight = Math.max(0, Math.min(280, openBelow ? belowSpace : aboveSpace));
+			const height = Math.min(layer.offsetHeight, maxHeight);
+			const left = Math.min(
+				Math.max(margin, rect.left),
+				Math.max(margin, window.innerWidth - margin - width),
+			);
+			const top = openBelow ? rect.bottom + gap : Math.max(margin, rect.top - gap - height);
+			suggestionStyle = `left:${left}px;top:${top}px;width:${width}px;--suggestion-max-height:${maxHeight}px;`;
+			suggestionPositioned = true;
+		};
+		const schedule = () => {
+			if (frame !== undefined) return;
+			frame = requestAnimationFrame(updatePosition);
+		};
+		const resizeObserver = new ResizeObserver(schedule);
+		resizeObserver.observe(layer);
+		window.addEventListener('resize', schedule);
+		window.addEventListener('scroll', schedule, true);
+		updatePosition();
+		return () => {
+			if (frame !== undefined) cancelAnimationFrame(frame);
+			resizeObserver.disconnect();
+			window.removeEventListener('resize', schedule);
+			window.removeEventListener('scroll', schedule, true);
+		};
+	});
 
 	function searchChannels(query: string) {
 		const current = ++channelRequestId;
@@ -453,9 +498,23 @@
 		{onpaste}
 		onblur={() => setTimeout(close, 150)}
 	></textarea>
-	{#if token?.kind === 'mention'}
-		<ActorSuggestionList actors={suggest.actors} {activeIndex} onchoose={choose} />
-	{:else if token?.kind === 'channel'}
-		<ChannelSuggestionList channels={suggestedChannels} {activeIndex} onchoose={chooseChannel} />
+	{#if token}
+		<div
+			bind:this={suggestionLayer}
+			use:portal
+			class="mention-suggestions-portal"
+			class:positioned={suggestionPositioned}
+			style={suggestionStyle}
+		>
+			{#if token.kind === 'mention'}
+				<ActorSuggestionList actors={suggest.actors} {activeIndex} onchoose={choose} />
+			{:else}
+				<ChannelSuggestionList
+					channels={suggestedChannels}
+					{activeIndex}
+					onchoose={chooseChannel}
+				/>
+			{/if}
+		</div>
 	{/if}
 </div>

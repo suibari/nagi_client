@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { portal } from '$lib/actions/portal';
 	import type { EmojiView } from '$lib/api/types';
 	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
@@ -133,15 +134,6 @@
 		const labels = (favoriteRows ? QUICK_LABEL : 0) + (recentItems.length ? QUICK_LABEL : 0);
 		const body = labels + (favoriteRows + recentRows) * QUICK_CELL;
 		return 16 + Math.max(body, QUICK_RESULTS_MAX) + 40 + 39;
-	}
-
-	function portal(node: HTMLElement) {
-		document.body.append(node);
-		return {
-			destroy() {
-				node.remove();
-			},
-		};
 	}
 
 	$effect(() => {

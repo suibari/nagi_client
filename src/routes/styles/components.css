@@ -114,6 +114,19 @@
 	background: var(--bg-raised);
 	box-shadow: var(--shadow-card);
 }
+.mention-suggestions-portal {
+	position: fixed;
+	z-index: 142;
+}
+.mention-suggestions-portal:not(.positioned),
+.hover-card:not(.positioned) {
+	visibility: hidden;
+}
+.mention-suggestions-portal > .mention-suggestions {
+	position: static;
+	width: 100%;
+	max-height: var(--suggestion-max-height, 280px);
+}
 .mention-suggestions button {
 	display: flex;
 	align-items: center;

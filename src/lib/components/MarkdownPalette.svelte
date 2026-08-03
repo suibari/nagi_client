@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { portal } from '$lib/actions/portal';
 
 	export type MarkdownFormat =
 		'heading' | 'bulletList' | 'numberedList' | 'quote' | 'bold' | 'italic' | 'strike';
@@ -13,6 +14,10 @@
 	} = $props();
 
 	let expanded = $state(false);
+	let anchor = $state<HTMLButtonElement>();
+	let actions = $state<HTMLDivElement>();
+	let actionsStyle = $state('');
+	let actionsPositioned = $state(false);
 
 	const formats: Array<{ format: MarkdownFormat; mark: string; label: () => string }> = [
 		{ format: 'heading', mark: 'H', label: m.markdownHeading },
@@ -23,22 +28,74 @@
 		{ format: 'italic', mark: 'I', label: m.markdownItalic },
 		{ format: 'strike', mark: 'S', label: m.markdownStrike },
 	];
+
+	function toggle() {
+		expanded = !expanded;
+		if (expanded) actionsPositioned = false;
+	}
+
+	$effect(() => {
+		if (!expanded || !anchor || !actions) return;
+		const anchorElement = anchor;
+		const actionsElement = actions;
+		let frame: number | undefined;
+		const updatePosition = () => {
+			frame = undefined;
+			const rect = anchorElement.getBoundingClientRect();
+			const width = actionsElement.offsetWidth;
+			const height = actionsElement.offsetHeight;
+			const margin = 12;
+			const gap = 6;
+			const above = rect.top - gap - height;
+			const top = above >= margin ? above : rect.bottom + gap;
+			const left = Math.min(
+				Math.max(margin, rect.right - width),
+				Math.max(margin, window.innerWidth - margin - width),
+			);
+			actionsStyle = `left:${left}px;top:${top}px;`;
+			actionsPositioned = true;
+		};
+		const schedule = () => {
+			if (frame !== undefined) return;
+			frame = requestAnimationFrame(updatePosition);
+		};
+		const resizeObserver = new ResizeObserver(schedule);
+		resizeObserver.observe(actionsElement);
+		window.addEventListener('resize', schedule);
+		window.addEventListener('scroll', schedule, true);
+		updatePosition();
+		return () => {
+			if (frame !== undefined) cancelAnimationFrame(frame);
+			resizeObserver.disconnect();
+			window.removeEventListener('resize', schedule);
+			window.removeEventListener('scroll', schedule, true);
+		};
+	});
 </script>
 
 <div class="markdown-palette" class:expanded>
 	<button
+		bind:this={anchor}
 		type="button"
 		class="palette-toggle"
 		{disabled}
 		aria-label={m.markdownPalette()}
 		title={m.markdownPalette()}
 		aria-expanded={expanded}
-		onclick={() => (expanded = !expanded)}
+		onclick={toggle}
 	>
 		<span aria-hidden="true">Aa</span>
 	</button>
 	{#if expanded}
-		<div class="palette-actions" role="toolbar" aria-label={m.markdownPaletteAria()}>
+		<div
+			bind:this={actions}
+			use:portal
+			class="palette-actions"
+			class:positioned={actionsPositioned}
+			style={actionsStyle}
+			role="toolbar"
+			aria-label={m.markdownPaletteAria()}
+		>
 			{#each formats as item (item.format)}
 				<button
 					type="button"
@@ -89,9 +146,20 @@
 	}
 
 	.palette-actions {
+		position: fixed;
+		z-index: 142;
 		display: flex;
 		flex-direction: row-reverse;
 		gap: 4px;
+		padding: 7px;
+		border: 1px solid var(--line);
+		border-radius: var(--r-md);
+		background: var(--surface-1);
+		box-shadow: var(--shadow-pop);
+	}
+
+	.palette-actions:not(.positioned) {
+		visibility: hidden;
 	}
 
 	.palette-actions button {
@@ -131,22 +199,10 @@
 	}
 
 	@media (max-width: 520px) {
-		.markdown-palette.expanded {
-			z-index: 25;
-		}
-
 		.palette-actions {
-			position: absolute;
-			right: 0;
-			bottom: calc(100% + 6px);
 			display: grid;
 			grid-template-columns: repeat(4, 36px);
 			gap: 5px;
-			padding: 7px;
-			border: 1px solid var(--line);
-			border-radius: var(--r-md);
-			background: var(--surface-1);
-			box-shadow: var(--shadow-pop);
 		}
 	}
 </style>
