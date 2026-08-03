@@ -1328,18 +1328,23 @@
 	border: 0;
 	background: transparent;
 }
+.emoji-palette-portal {
+	display: contents;
+}
 .reaction-quick-picker {
 	position: fixed;
 	z-index: 28;
+	max-height: calc(100dvh - 24px);
 	padding: 8px;
 	border: 1px solid var(--line);
 	border-radius: var(--radius-m);
 	background: var(--bg-raised);
 	box-shadow: var(--shadow-pop);
+	overflow-y: auto;
 }
 .reaction-quick-grid {
 	display: grid;
-	grid-template-columns: repeat(6, minmax(36px, 1fr));
+	grid-template-columns: repeat(var(--quick-columns, 6), minmax(0, 1fr));
 	gap: 4px;
 }
 .reaction-quick-section + .reaction-quick-section {
@@ -2637,9 +2642,6 @@
 	}
 	.bubble {
 		padding: 10px 12px;
-	}
-	.reaction-quick-grid {
-		grid-template-columns: repeat(6, minmax(34px, 1fr));
 	}
 	.welcome {
 		align-items: flex-start;

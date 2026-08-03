@@ -53,6 +53,7 @@
 	let unicodeIndex = $state<UnicodeEmoji[]>([]);
 	let unicodeRequested = false;
 	const QUICK_COLUMNS = 6;
+	const QUICK_MIN_COLUMNS = 3;
 	const QUICK_MAX_FAVORITE_ROWS = 3;
 	const quickSearching = $derived(quickQuery.trim().length > 0);
 	const quickResults = $derived.by(() => {
@@ -123,14 +124,24 @@
 	const QUICK_CELL = 42;
 	const QUICK_LABEL = 17;
 	const QUICK_RESULTS_MAX = QUICK_CELL * 3;
-	function estimateQuickHeight() {
+	function estimateQuickHeight(columns: number) {
 		const favoriteRows = favorites.length
-			? Math.min(Math.ceil(favorites.length / QUICK_COLUMNS), QUICK_MAX_FAVORITE_ROWS)
+			? Math.min(Math.ceil(favorites.length / columns), QUICK_MAX_FAVORITE_ROWS)
 			: 0;
-		const recentRows = recentItems.length || quickItems.length ? 1 : 0;
+		const recentCount = recentItems.length || quickItems.length;
+		const recentRows = recentCount ? Math.ceil(recentCount / columns) : 0;
 		const labels = (favoriteRows ? QUICK_LABEL : 0) + (recentItems.length ? QUICK_LABEL : 0);
 		const body = labels + (favoriteRows + recentRows) * QUICK_CELL;
 		return 16 + Math.max(body, QUICK_RESULTS_MAX) + 40 + 39;
+	}
+
+	function portal(node: HTMLElement) {
+		document.body.append(node);
+		return {
+			destroy() {
+				node.remove();
+			},
+		};
 	}
 
 	$effect(() => {
@@ -139,11 +150,16 @@
 			const rect = anchor.getBoundingClientRect();
 			const margin = 12;
 			const width = Math.min(336, window.innerWidth - margin * 2);
+			const innerWidth = Math.max(0, width - 18);
+			const columns = Math.max(
+				QUICK_MIN_COLUMNS,
+				Math.min(QUICK_COLUMNS, Math.floor((innerWidth + 4) / 38)),
+			);
 			const left = Math.min(Math.max(margin, rect.left), window.innerWidth - margin - width);
-			const estimatedHeight = estimateQuickHeight();
+			const estimatedHeight = estimateQuickHeight(columns);
 			const openAbove = rect.top > estimatedHeight + margin;
 			const top = openAbove ? rect.top - estimatedHeight - 8 : rect.bottom + 8;
-			quickPickerStyle = `top:${Math.max(margin, top)}px;left:${left}px;width:${width}px;`;
+			quickPickerStyle = `top:${Math.max(margin, top)}px;left:${left}px;width:${width}px;--quick-columns:${columns};`;
 		};
 		const handleKeydown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') closePalette();
@@ -209,76 +225,85 @@
 {/snippet}
 
 {#if open && anchor}
-	{#if fullPickerOpen}
-		<button class="emoji-picker-backdrop" aria-label={m.closeEmojiAria()} onclick={closePalette}
-		></button>
-		<EmojiPicker
-			{anchor}
-			select={choose}
-			close={closePalette}
-			{ariaLabel}
-			{choiceAriaLabel}
-			oncustomunavailable={markCustomUnavailable}
-		/>
-	{:else}
-		<button class="reaction-picker-backdrop" aria-label={m.closeEmojiAria()} onclick={closePalette}
-		></button>
-		<div
-			class="reaction-quick-picker"
-			style={quickPickerStyle}
-			role="dialog"
-			aria-label={ariaLabel}
-		>
-			{#if quickSearching}
-				<div class="reaction-quick-results">
-					{#if quickResults.length}
-						<div class="reaction-quick-grid">
-							{#each quickResults as item (reactionChoiceKey(item))}{@render quickChoice(
-									item,
-								)}{/each}
-						</div>
-					{:else}
-						<p class="reaction-quick-empty">{m.emojiUnicodeEmpty()}</p>
-					{/if}
-				</div>
-			{:else}
-				{#if favorites.length}
-					<div class="reaction-quick-section">
-						<span class="reaction-quick-label">{m.quickReactionFavorites()}</span>
-						<div class="reaction-quick-grid reaction-quick-favorites">
-							{#each favorites as item (reactionChoiceKey(item))}{@render quickChoice(item)}{/each}
-						</div>
-					</div>
-				{/if}
-				{#if recentItems.length}
-					<div class="reaction-quick-section">
-						<span class="reaction-quick-label">{m.quickReactionRecent()}</span>
-						<div class="reaction-quick-grid">
-							{#each recentItems as item (reactionChoiceKey(item))}{@render quickChoice(
-									item,
-								)}{/each}
-						</div>
-					</div>
-				{:else if quickItems.length}
-					<div class="reaction-quick-section">
-						<div class="reaction-quick-grid">
-							{#each quickItems as item (reactionChoiceKey(item))}{@render quickChoice(item)}{/each}
-						</div>
-					</div>
-				{/if}
-			{/if}
-			<input
-				class="reaction-quick-search"
-				type="search"
-				bind:value={quickQuery}
-				oninput={ensureUnicodeIndex}
-				placeholder={m.emojiSearchLabel()}
-				aria-label={m.emojiSearchLabel()}
+	<div class="emoji-palette-portal" use:portal>
+		{#if fullPickerOpen}
+			<button class="emoji-picker-backdrop" aria-label={m.closeEmojiAria()} onclick={closePalette}
+			></button>
+			<EmojiPicker
+				{anchor}
+				select={choose}
+				close={closePalette}
+				{ariaLabel}
+				{choiceAriaLabel}
+				oncustomunavailable={markCustomUnavailable}
 			/>
-			<button class="reaction-show-all" onclick={() => (fullPickerOpen = true)}>
-				<Icon name="emoji" size={17} />
-				<span>{m.showAllReactions()}</span>
-			</button>
-		</div>
-	{/if}
+		{:else}
+			<button
+				class="reaction-picker-backdrop"
+				aria-label={m.closeEmojiAria()}
+				onclick={closePalette}
+			></button>
+			<div
+				class="reaction-quick-picker"
+				style={quickPickerStyle}
+				role="dialog"
+				aria-label={ariaLabel}
+			>
+				{#if quickSearching}
+					<div class="reaction-quick-results">
+						{#if quickResults.length}
+							<div class="reaction-quick-grid">
+								{#each quickResults as item (reactionChoiceKey(item))}{@render quickChoice(
+										item,
+									)}{/each}
+							</div>
+						{:else}
+							<p class="reaction-quick-empty">{m.emojiUnicodeEmpty()}</p>
+						{/if}
+					</div>
+				{:else}
+					{#if favorites.length}
+						<div class="reaction-quick-section">
+							<span class="reaction-quick-label">{m.quickReactionFavorites()}</span>
+							<div class="reaction-quick-grid reaction-quick-favorites">
+								{#each favorites as item (reactionChoiceKey(item))}{@render quickChoice(
+										item,
+									)}{/each}
+							</div>
+						</div>
+					{/if}
+					{#if recentItems.length}
+						<div class="reaction-quick-section">
+							<span class="reaction-quick-label">{m.quickReactionRecent()}</span>
+							<div class="reaction-quick-grid">
+								{#each recentItems as item (reactionChoiceKey(item))}{@render quickChoice(
+										item,
+									)}{/each}
+							</div>
+						</div>
+					{:else if quickItems.length}
+						<div class="reaction-quick-section">
+							<div class="reaction-quick-grid">
+								{#each quickItems as item (reactionChoiceKey(item))}{@render quickChoice(
+										item,
+									)}{/each}
+							</div>
+						</div>
+					{/if}
+				{/if}
+				<input
+					class="reaction-quick-search"
+					type="search"
+					bind:value={quickQuery}
+					oninput={ensureUnicodeIndex}
+					placeholder={m.emojiSearchLabel()}
+					aria-label={m.emojiSearchLabel()}
+				/>
+				<button class="reaction-show-all" onclick={() => (fullPickerOpen = true)}>
+					<Icon name="emoji" size={17} />
+					<span>{m.showAllReactions()}</span>
+				</button>
+			</div>
+		{/if}
+	</div>
 {/if}
