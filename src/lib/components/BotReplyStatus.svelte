@@ -3,6 +3,7 @@
 	import type { ActorView, BotReplyState } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Avatar from './Avatar.svelte';
+	import AvatarLink from './AvatarLink.svelte';
 
 	let {
 		state: botState,
@@ -36,7 +37,11 @@
 {#if !optimistic && waiting && !stale}
 	<div class="thread-reply" style:--reply-indent={indent}>
 		<div class="bot-pending">
-			<Avatar actor={botActor} />
+			{#if botActor}
+				<AvatarLink actor={botActor} />
+			{:else}
+				<Avatar />
+			{/if}
 			<div class="pending-bubble" role="status" aria-live="polite">
 				<div><span class="typing"><i></i><i></i><i></i></span>{pendingStatus}</div>
 				{#if longWait}<small>{m.botLongWait()}</small>{/if}

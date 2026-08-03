@@ -23,6 +23,8 @@
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { privateList } from '$lib/private-list/private-list.svelte';
+	import { loadReactionUsage, prepareReactionPalette } from '$lib/emoji/reactionUsage';
+	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -101,6 +103,35 @@
 		if (!did || pushSyncedDid === did) return;
 		pushSyncedDid = did;
 		void refreshPushState();
+	});
+	// よく使われるリアクションパレットは、本文表示を妨げないアイドル時間に準備する。
+	// ローカル候補だけでも即時表示できるため、失敗時は次回オープン時の再試行に任せる。
+	$effect(() => {
+		const did = $oauthReady ? $session?.did : undefined;
+		if (!did || typeof window === 'undefined') return;
+		let cancelled = false;
+		const prepare = () => {
+			if (cancelled) return;
+			const usage = loadReactionUsage();
+			const favorites = loadFavorites();
+			void prepareReactionPalette(did, usage, favorites)
+				.then((prepared) => {
+					if (!cancelled) saveFavorites(prepared.favorites);
+				})
+				.catch(() => undefined);
+		};
+		if ('requestIdleCallback' in window) {
+			const idleId = window.requestIdleCallback(prepare, { timeout: 1_500 });
+			return () => {
+				cancelled = true;
+				window.cancelIdleCallback(idleId);
+			};
+		}
+		const timerId = globalThis.setTimeout(prepare, 500);
+		return () => {
+			cancelled = true;
+			globalThis.clearTimeout(timerId);
+		};
 	});
 	onMount(() => {
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。

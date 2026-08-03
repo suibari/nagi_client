@@ -4,7 +4,7 @@
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
 	import { displayEmojiName } from '$lib/atproto/bluemoji';
 	import { myProfile } from '$lib/profile/me.svelte';
-	import Avatar from './Avatar.svelte';
+	import AvatarLink from './AvatarLink.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import BluemojiMedia from './BluemojiMedia.svelte';
 	import QuickEmojiPalette from './QuickEmojiPalette.svelte';
@@ -155,12 +155,15 @@
 				{#if showReactors}
 					<div class="reaction-actors">
 						{#each reaction.reactors as actor (actor.did)}
-							<a
-								class="reaction-avatar"
-								href={`/profile/${actor.did}`}
-								aria-label={m.viewProfileOfAria({ name: actor.displayName ?? actor.handle })}
-								title={actor.displayName ?? actor.handle}><Avatar {actor} size="small" /></a
-							>
+							<AvatarLink
+								{actor}
+								size="small"
+								className="reaction-avatar"
+								ariaLabel={m.viewProfileOfAria({
+									name: actor.displayName ?? actor.handle,
+								})}
+								title={actor.displayName ?? actor.handle}
+							/>
 						{/each}
 						{#if reaction.hasMoreReactors}<span
 								class="reaction-more"

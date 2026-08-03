@@ -280,24 +280,65 @@ export function buildQuickReactionChoices(
 	return chosen.slice(0, 6);
 }
 
-let customSuggestionPoolPromise: Promise<EmojiView[]> | undefined;
+type CustomSuggestionPoolCache = {
+	did: string;
+	promise: Promise<EmojiView[]>;
+	value?: EmojiView[];
+};
 
-export function loadCustomSuggestionPool(): Promise<EmojiView[]> {
-	customSuggestionPoolPromise ??= listMyBluemoji()
-		.then(async (own) => {
-			const availableOwn = own.filter((emoji) => !emoji.adultOnly);
-			const others = await searchEmojis({
-				excludeRepo: own[0]?.did,
+let customSuggestionPoolCache: CustomSuggestionPoolCache | undefined;
+
+export function getPreparedCustomSuggestionPool(did: string): EmojiView[] | undefined {
+	return customSuggestionPoolCache?.did === did ? customSuggestionPoolCache.value : undefined;
+}
+
+export function loadCustomSuggestionPool(did: string): Promise<EmojiView[]> {
+	if (customSuggestionPoolCache?.did === did) return customSuggestionPoolCache.promise;
+	const cache: CustomSuggestionPoolCache = {
+		did,
+		promise: Promise.resolve([]),
+	};
+	const promise = (async () => {
+		const own = await listMyBluemoji().catch(() => undefined);
+		// PDS取得に失敗してもAppViewの公開候補は利用できる。
+		if (!own) return (await searchEmojis({ excludeRepo: did, limit: 100 })).emojis;
+		const availableOwn = own.filter((emoji) => !emoji.adultOnly);
+		const others = (
+			await searchEmojis({
+				excludeRepo: did,
 				limit: 100,
 			})
-				.then((result) => result.emojis)
-				.catch(() => []);
-			return [...availableOwn, ...others];
+		).emojis;
+		return [...availableOwn, ...others];
+	})()
+		.then((pool) => {
+			if (customSuggestionPoolCache === cache) cache.value = pool;
+			return pool;
 		})
-		.catch(() =>
-			searchEmojis({ limit: 100 })
-				.then((result) => result.emojis)
-				.catch(() => []),
-		);
-	return customSuggestionPoolPromise;
+		.catch((error) => {
+			// 起動直後の一時的な通信失敗をセッション中ずっと空候補として固定しない。
+			if (customSuggestionPoolCache === cache) customSuggestionPoolCache = undefined;
+			throw error;
+		});
+	cache.promise = promise;
+	customSuggestionPoolCache = cache;
+	return promise;
+}
+
+export async function prepareReactionPalette(
+	did: string,
+	usage: ReactionUsage[],
+	favorites: ReactionChoice[],
+): Promise<{
+	usage: ReactionUsage[];
+	favorites: ReactionChoice[];
+	customPool: EmojiView[];
+}> {
+	const [refreshedUsage, refreshedFavorites, customPool] = await Promise.all([
+		refreshReactionUsage(usage),
+		refreshReactionChoices(favorites),
+		// 履歴とお気に入りの検証結果は利用できるようにし、候補一覧だけ次回再試行する。
+		loadCustomSuggestionPool(did).catch(() => []),
+	]);
+	return { usage: refreshedUsage, favorites: refreshedFavorites, customPool };
 }

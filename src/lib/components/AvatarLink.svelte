@@ -15,9 +15,16 @@
 	let {
 		actor,
 		size,
+		className = '',
+		ariaLabel = m.viewProfileAria(),
+		title,
 	}: {
 		actor: { did: string; displayName?: string; handle?: string; avatar?: string };
 		size?: 'small' | 'large';
+		/** 呼び出し元固有の配置・重なりスタイルを保つための追加クラス。 */
+		className?: string;
+		ariaLabel?: string;
+		title?: string;
 	} = $props();
 
 	/** 通り過ぎるだけのカーソルで取得を走らせないための待ち時間。 */
@@ -69,9 +76,10 @@
 
 <a
 	bind:this={anchor}
-	class="avatar-link"
+	class={`avatar-link${className ? ` ${className}` : ''}`}
 	href="/profile/{actor.did}"
-	aria-label={m.viewProfileAria()}
+	aria-label={ariaLabel}
+	{title}
 	onmouseenter={open}
 	onmouseleave={close}
 	onfocus={open}

@@ -3,18 +3,19 @@
 	import type { EmojiView } from '$lib/api/types';
 	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import {
 		buildQuickReactionChoices,
-		loadCustomSuggestionPool,
+		getPreparedCustomSuggestionPool,
 		loadReactionUsage,
+		prepareReactionPalette,
 		reactionChoiceKey,
 		recentReactionChoices,
 		recordReactionUsage,
-		refreshReactionUsage,
 		SAFE_UNICODE_REACTIONS,
 		type ReactionChoice,
 	} from '$lib/emoji/reactionUsage';
-	import { loadFavorites, refreshFavorites } from '$lib/emoji/favorites';
+	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
 	import {
 		loadUnicodeEmojiIndex,
 		searchUnicodeEmojis,
@@ -44,8 +45,6 @@
 	let failedCustomUris = $state<string[]>([]);
 	let quickPickerStyle = $state('');
 	let quickItems = $state<ReactionChoice[]>([]);
-	let quickLoading = $state(false);
-	let pickerGeneration = 0;
 	let favorites = $state<ReactionChoice[]>([]);
 	let recentItems = $state<ReactionChoice[]>([]);
 	let quickQuery = $state('');
@@ -98,36 +97,27 @@
 
 	$effect(() => {
 		if (!open || fullPickerOpen) return;
-		const generation = ++pickerGeneration;
 		const usageSnapshot = untrack(loadReactionUsage);
 		const failedSnapshot = untrack(() => failedCustomUris);
 		const favoriteSnapshot = untrack(loadFavorites);
+		const did = $session?.did;
+		const preparedPool = did ? getPreparedCustomSuggestionPool(did) : undefined;
+		const favoriteKeys = new Set(favoriteSnapshot.map(reactionChoiceKey));
+		const localRecent = recentReactionChoices(usageSnapshot, QUICK_COLUMNS, failedSnapshot).filter(
+			(item) => !favoriteKeys.has(reactionChoiceKey(item)),
+		);
 		quickQuery = '';
-		favorites = [];
-		recentItems = [];
-		quickItems = [];
-		quickLoading = true;
-		void Promise.all([
-			refreshReactionUsage(usageSnapshot),
-			refreshFavorites(favoriteSnapshot),
-			loadCustomSuggestionPool(),
-		]).then(([refreshedUsage, refreshedFavorites, pool]) => {
-			if (generation !== pickerGeneration || !open || fullPickerOpen) return;
-			const favoriteKeys = new Set(refreshedFavorites.map(reactionChoiceKey));
-			const refreshedRecent = recentReactionChoices(
-				refreshedUsage,
-				QUICK_COLUMNS,
-				failedSnapshot,
-			).filter((item) => !favoriteKeys.has(reactionChoiceKey(item)));
-			favorites = refreshedFavorites;
-			recentItems = refreshedRecent;
-			if (!refreshedFavorites.length && !refreshedRecent.length)
-				quickItems = buildQuickReactionChoices(refreshedUsage, pool, failedSnapshot);
-			quickLoading = false;
-		});
-		return () => {
-			pickerGeneration += 1;
-		};
+		favorites = favoriteSnapshot;
+		recentItems = localRecent;
+		quickItems =
+			favoriteSnapshot.length || localRecent.length
+				? []
+				: buildQuickReactionChoices(usageSnapshot, preparedPool ?? [], failedSnapshot);
+		// 開いている最中には候補を差し替えない。検証・候補取得結果は次回表示から使う。
+		if (did)
+			void prepareReactionPalette(did, usageSnapshot, favoriteSnapshot)
+				.then((prepared) => saveFavorites(prepared.favorites))
+				.catch(() => undefined);
 	});
 
 	const QUICK_CELL = 42;
@@ -238,7 +228,6 @@
 			style={quickPickerStyle}
 			role="dialog"
 			aria-label={ariaLabel}
-			aria-busy={quickLoading}
 		>
 			{#if quickSearching}
 				<div class="reaction-quick-results">
@@ -252,8 +241,6 @@
 						<p class="reaction-quick-empty">{m.emojiUnicodeEmpty()}</p>
 					{/if}
 				</div>
-			{:else if quickLoading}
-				<div class="reaction-quick-loading" role="status">{m.loading()}</div>
 			{:else}
 				{#if favorites.length}
 					<div class="reaction-quick-section">

@@ -6,6 +6,7 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
 	import Avatar from './Avatar.svelte';
+	import AvatarLink from './AvatarLink.svelte';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
@@ -50,9 +51,11 @@
 </script>
 
 <div class="post-row mine composer-row">
-	<a href={`/profile/${$session?.did}`} aria-label={m.myProfileAria()}
-		><Avatar actor={myProfile.current} /></a
-	>
+	{#if $session?.did}
+		<AvatarLink actor={{ ...myProfile.current, did: $session.did }} ariaLabel={m.myProfileAria()} />
+	{:else}
+		<Avatar actor={myProfile.current} />
+	{/if}
 	<section class="bubble post-composer">
 		<label for={id}>{label}</label>
 		{#snippet editorTools()}
