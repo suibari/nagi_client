@@ -562,7 +562,7 @@ export const ja = {
 	backToSettings: '設定に戻る',
 	backToHome: 'ホームに戻る',
 	settingsProfileTitle: 'プロフィール',
-	settingsProfileDescription: '表示名、自己紹介、アバター、プロフィールカード',
+	settingsProfileDescription: '表示名、自己紹介、アバター、使ってるアプリ',
 	settingsGroupAccount: 'アカウントとプロフィール',
 	settingsGroupExperience: '表示と使い方',
 	settingsGroupEmoji: '絵文字',
@@ -683,10 +683,10 @@ export const ja = {
 	standardSiteTitlePlaceholder: 'タイトルを入力',
 	standardSiteTitleHint: '本文の先頭を「# 見出し」にすると、そこから自動で決まります。',
 	// app links (任意 Atmosphere アプリ連携)
-	settingsAppLinksTitle: 'プロフィールカード',
-	appLinksLegend: 'プロフィールカード',
+	settingsAppLinksTitle: '使ってるアプリ',
+	appLinksLegend: '使ってるアプリ',
 	appLinksHelp:
-		'あなたのPDSにある任意のAtmosphereアプリのレコードを、プロフィールカードの下部にカードとして表示します。表示するコレクションとフィールドはあなたが自由に選べます。',
+		'あなたのPDSにある任意のAtmosphereアプリの情報を、プロフィールの下部に表示します。表示するコレクションとフィールドはあなたが自由に選べます。',
 	appLinksPublicNote:
 		'連携設定は公開レコード（com.suibari.nagi.appLinks）として自分のPDSに保存され、他のクライアントからも読み取れます。',
 	appLinksSignInRequired: '連携を設定するにはログインしてください。',
@@ -728,7 +728,7 @@ export const ja = {
 	appLinksSaving: '保存中…',
 	appLinksSaved: '保存しました。',
 	appLinksSaveFailed: '保存に失敗しました。権限の反映には最大24時間かかる場合があります。',
-	profileAppLinksHeading: 'プロフィールカード',
+	profileAppLinksHeading: '使ってるアプリ',
 	themeLegend: '表示テーマ',
 	themeHelp: 'この端末で使用する配色を選択します。',
 	optionSystem: 'システム設定',
@@ -755,14 +755,26 @@ export const ja = {
 	optionBrowser: 'ブラウザの設定',
 	profileSettingsTitle: 'プロフィール設定',
 	backToProfileSettings: 'プロフィール設定に戻る',
-	profileCardsSettingsTitle: 'プロフィールカード',
+	profileCardsSettingsTitle: '使ってるアプリ',
 	profileCardsSettingsHelp:
-		'ほかのAtmosphereアプリにある自分の情報を、プロフィールの下部にカードとして表示できます。',
-	profileCardsManage: 'プロフィールカードを追加・編集',
+		'ほかのAtmosphereアプリにある自分の情報を、プロフィールの下部に表示できます。',
+	profileCardsManage: '使ってるアプリを追加・編集',
 	profilePublicationSyncWarning:
 		'プロフィールは保存されましたが、ブログ側のプロフィール情報を更新できませんでした。',
 	profileSettingsNote:
-		'NagiのプロフィールはBlueskyのプロフィールとは独立しています。ここで変更・保存しても、Bluesky側のプロフィールには反映されません。',
+		'表示名・自己紹介・アバターはNagi専用です。WebサイトだけはBlueskyなど対応するAT Protocolアプリと共有されます。',
+	profileWebsiteLabel: 'Webサイト',
+	profileWebsiteHelp:
+		'https://は省略できます。Blueskyプロフィールのwebsiteとして保存し、Nagiではリンクカードで表示します。反映には最大1分ほどかかる場合があります。',
+	profileWebsitePermissionNote:
+		'Webサイトを編集するには、Blueskyプロフィールの更新権限を追加してください。表示名・自己紹介・アバターは変更しません。',
+	profileWebsiteReauthSubmit: 'Webサイトの編集権限を追加',
+	profileWebsiteReauthPending: '移動しています…',
+	profileWebsiteInvalid: 'WebサイトのURLを確認してください。',
+	profileWebsiteUnavailable:
+		'現在のWebサイトを確認できていないため、変更できません。ページを再読み込みしてください。',
+	profileWebsiteLoadWarning: '現在のWebサイトを読み込めませんでした。',
+	profileWebsiteSaveWarning: 'プロフィールは保存されましたが、Webサイトを更新できませんでした。',
 	onboardingLoadedNote:
 		'Blueskyのプロフィールを初期値として読み込みました。内容を確認して保存してください。',
 	loginRequired: '設定を変更するにはログインしてください。',

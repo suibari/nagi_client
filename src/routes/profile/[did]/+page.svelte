@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { getProfile } from '$lib/api/appview';
 	import type { ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
 	import { Feed } from '$lib/feed/feed.svelte';
@@ -18,6 +19,8 @@
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
 	import CardCollection from '$lib/components/CardCollection.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
+	import ProfileDescription from '$lib/components/ProfileDescription.svelte';
+	import ProfileWebsiteCard from '$lib/components/ProfileWebsiteCard.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -98,6 +101,12 @@
 			if (!f) {
 				f = new ProfileReactionFeed((cursor) =>
 					getProfile(actor, { filter, cursor, lang: locale }).then((response) => {
+						if (actor !== response.profile.did)
+							void goto(`/profile/${encodeURIComponent(response.profile.did)}${page.url.search}`, {
+								replaceState: true,
+								noScroll: true,
+								keepFocus: true,
+							});
 						profile = response.profile;
 						optimisticPosts.rememberActor(response.profile);
 						return response.feed;
@@ -115,6 +124,12 @@
 			f = new Feed(
 				(cursor) =>
 					getProfile(actor, { filter, cursor, lang: locale }).then((r) => {
+						if (actor !== r.profile.did)
+							void goto(`/profile/${encodeURIComponent(r.profile.did)}${page.url.search}`, {
+								replaceState: true,
+								noScroll: true,
+								keepFocus: true,
+							});
 						profile = r.profile;
 						optimisticPosts.rememberActor(r.profile);
 						return r.feed;
@@ -220,7 +235,7 @@
 		{#if privateList.loaded && !privateList.has(did) && privateList.members.length >= privateList.limit}
 			<p class="muted home-list-note">{m.homeListLimitReached()}</p>
 		{/if}
-		{#if profile?.description}<p class="description">{profile.description}</p>{/if}
+		{#if profile?.description}<ProfileDescription text={profile.description} />{/if}
 		<div class="profile-stats">
 			<span
 				><strong>{profile?.postCount ?? 0}</strong>
@@ -228,6 +243,7 @@
 			>
 			{#if joined}<span>{m.profileJoinedSince({ date: joined })}</span>{/if}
 		</div>
+		<ProfileWebsiteCard did={profile?.did} />
 		<ProfileAppLinks did={profile?.did} />
 	</header>
 	<nav class="profile-tabs" aria-label={m.profileTabsAria()}>

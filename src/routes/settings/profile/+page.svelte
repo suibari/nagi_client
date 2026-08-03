@@ -1,14 +1,18 @@
 <script lang="ts">
 	import {
 		getBlueskyProfileDraft,
+		getOwnBlueskyWebsite,
 		getOwnNagiProfile,
+		hasBlueskyProfileScope,
+		normalizeProfileWebsite,
 		putProfile,
+		putOwnBlueskyWebsite,
 		type ProfileDraft,
 		uploadAvatar,
 	} from '$lib/atproto/records';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import { APPVIEW_URL, getProfile } from '$lib/api/appview';
-	import { session, oauthReady } from '$lib/oauth/session.svelte';
+	import { session, oauthReady, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
@@ -17,9 +21,16 @@
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { syncExistingPublicationFromProfile } from '$lib/standardsite/publication';
 	import { onDestroy } from 'svelte';
+	import { grantedOptIns } from '$lib/optin/scope-optin';
 
 	let name = $state('');
 	let description = $state('');
+	let website = $state('');
+	let initialWebsite = $state('');
+	let websiteLoaded = $state(false);
+	let websiteGranted = $state(false);
+	let websiteReauthBusy = $state(false);
+	let websiteWarning = $state('');
 	let status = $state('');
 	let error = $state('');
 	let syncWarning = $state('');
@@ -37,24 +48,35 @@
 	$effect(() => {
 		const did = $session?.did;
 		if (!did || loaded) return;
-		getOwnNagiProfile()
-			.then(async (profile) => {
-				if (!profile) return getBlueskyProfileDraft();
-				try {
-					const currentProfile = await getProfile(did, { limit: 1, lang: i18n.locale });
-					const avatar = currentProfile.profile.avatar;
-					profile.avatarUrl = avatar?.startsWith('/') ? APPVIEW_URL + avatar : avatar;
-				} catch {
-					/* The PDS remains the source of truth until AppView catches up. */
-				}
-				return profile;
-			})
-			.then((profile) => {
+		const profilePromise = getOwnNagiProfile().then(async (profile) => {
+			if (!profile) return getBlueskyProfileDraft();
+			try {
+				const currentProfile = await getProfile(did, { limit: 1, lang: i18n.locale });
+				const avatar = currentProfile.profile.avatar;
+				profile.avatarUrl = avatar?.startsWith('/') ? APPVIEW_URL + avatar : avatar;
+			} catch {
+				/* The PDS remains the source of truth until AppView catches up. */
+			}
+			return profile;
+		});
+		Promise.all([
+			profilePromise,
+			getOwnBlueskyWebsite()
+				.then((value) => ({ value, failed: false }))
+				.catch(() => ({ value: '', failed: true })),
+			hasBlueskyProfileScope(),
+		])
+			.then(([profile, websiteResult, granted]) => {
 				if (loaded) return;
 				draft = profile;
 				avatarPreview = profile.avatarUrl;
 				name = profile.displayName;
 				description = profile.description;
+				website = websiteResult.value;
+				initialWebsite = websiteResult.value;
+				websiteLoaded = !websiteResult.failed;
+				websiteGranted = granted;
+				if (websiteResult.failed) websiteWarning = m.profileWebsiteLoadWarning();
 				loaded = true;
 			})
 			.catch((e) => {
@@ -62,6 +84,16 @@
 				loaded = true;
 			});
 	});
+	async function reauthorizeWebsite() {
+		if (!$session || websiteReauthBusy) return;
+		websiteReauthBusy = true;
+		setOAuthReturnTo('/settings/profile');
+		try {
+			await signIn($session.did, { ...(await grantedOptIns()), refreshPermissions: true });
+		} finally {
+			websiteReauthBusy = false;
+		}
+	}
 	function selectAvatar(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
@@ -94,10 +126,21 @@
 			location.href = '/login';
 			return;
 		}
+		const websiteChanged = website.trim() !== initialWebsite;
+		if (websiteChanged && (!websiteGranted || !websiteLoaded)) {
+			error = m.profileWebsiteUnavailable();
+			return;
+		}
+		const normalizedWebsite = websiteChanged ? normalizeProfileWebsite(website) : initialWebsite;
+		if (normalizedWebsite === undefined) {
+			error = m.profileWebsiteInvalid();
+			return;
+		}
 		busy = true;
 		status = '';
 		error = '';
 		syncWarning = '';
+		websiteWarning = '';
 		try {
 			const avatar =
 				avatarChange instanceof Blob ? await uploadAvatar(avatarChange) : draft?.avatar;
@@ -108,6 +151,15 @@
 				avatar: avatarChange === null ? undefined : avatar,
 			};
 			await putProfile(name, description, updatedDraft);
+			if (websiteChanged && websiteGranted) {
+				try {
+					await putOwnBlueskyWebsite(normalizedWebsite);
+					website = normalizedWebsite;
+					initialWebsite = normalizedWebsite;
+				} catch {
+					websiteWarning = m.profileWebsiteSaveWarning();
+				}
+			}
 			if (await hasStandardSiteScope()) {
 				try {
 					await syncExistingPublicationFromProfile({ fallbackName: name || $session.did });
@@ -161,9 +213,28 @@
 		<label
 			>{m.bioLabel()}<textarea bind:value={description} maxlength="2560" rows="4"></textarea></label
 		>
+		<label
+			>{m.profileWebsiteLabel()}<input
+				type="url"
+				inputmode="url"
+				placeholder="https://example.com"
+				bind:value={website}
+				readonly={!websiteGranted || !websiteLoaded}
+			/></label
+		>
+		<small class="profile-website-help">{m.profileWebsiteHelp()}</small>
+		{#if $session && !websiteGranted}
+			<div class="profile-website-permission">
+				<p>{m.profileWebsitePermissionNote()}</p>
+				<button type="button" disabled={websiteReauthBusy} onclick={reauthorizeWebsite}>
+					{websiteReauthBusy ? m.profileWebsiteReauthPending() : m.profileWebsiteReauthSubmit()}
+				</button>
+			</div>
+		{/if}
 		<button disabled={busy || !loaded} onclick={save}>{busy ? m.saving() : m.save()}</button>
 		{#if status}<p>{status}</p>{/if}
 		{#if syncWarning}<p class="error" role="status">{syncWarning}</p>{/if}
+		{#if websiteWarning}<p class="error" role="status">{websiteWarning}</p>{/if}
 		{#if error}<p class="error">{error}</p>{/if}
 
 		<section class="profile-card-settings" aria-labelledby="profile-card-settings-heading">
@@ -197,5 +268,19 @@
 	.profile-cards-manage {
 		width: fit-content;
 		font-weight: 700;
+	}
+	.profile-website-help {
+		margin-top: -0.5rem;
+		color: var(--text-muted);
+		text-align: left;
+	}
+	.profile-website-permission {
+		padding: 0.75rem;
+		border: 1px solid var(--line);
+		border-radius: var(--radius-m);
+		text-align: left;
+	}
+	.profile-website-permission p {
+		margin-top: 0;
 	}
 </style>

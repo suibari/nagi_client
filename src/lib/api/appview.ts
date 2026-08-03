@@ -11,6 +11,7 @@ import type {
 	DiaryPage,
 	DrawCardResult,
 	EmojiView,
+	LinkCardView,
 	MuteSubjectType,
 	MutesView,
 	NotificationView,
@@ -291,6 +292,13 @@ export function getProfile(actor: string, opts: GetProfileOptions) {
 		`/xrpc/com.suibari.nagi.getProfile?${params}`,
 	);
 }
+export const getProfileWebsite = (actor: string) =>
+	call<{ card?: LinkCardView }>(
+		'com.suibari.nagi.getProfileWebsite',
+		`/xrpc/com.suibari.nagi.getProfileWebsite?actor=${encodeURIComponent(actor)}`,
+		{},
+		'none',
+	);
 /** 日記は公開コンテンツなので認証不要。month は "YYYY-MM"。 */
 export const getDiaries = (actor: string, opts: { month?: string; cursor?: string } = {}) => {
 	const params = new URLSearchParams({ actor });

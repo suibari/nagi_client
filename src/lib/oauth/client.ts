@@ -5,6 +5,9 @@ export const BLUESKY_ENTRYWAY_URL = 'https://bsky.social';
 
 /** クロスポスト対象コレクション。付与判定の前方一致にも使う。 */
 export const CROSSPOST_COLLECTION_SCOPE = 'repo:app.bsky.feed.post';
+/** プロフィール設定から Bluesky profile の website だけを更新するための権限。 */
+export const BLUESKY_PROFILE_COLLECTION_SCOPE = 'repo:app.bsky.actor.profile';
+export const BLUESKY_PROFILE_SCOPE = `${BLUESKY_PROFILE_COLLECTION_SCOPE}?action=create&action=update`;
 // Nagi は Bluesky 投稿を作成するだけで、更新・削除は一切行わない（cf. crosspost/bluesky.ts）。
 // action 未指定は create/update/delete 全許可になるため、明示的に create のみへ絞る。
 export const CROSSPOST_SCOPE = `${CROSSPOST_COLLECTION_SCOPE}?action=create`;
@@ -28,6 +31,7 @@ const baseScopes = [
 	'blob:image/*',
 	'include:com.suibari.nagi.appviewAccess',
 	BLUEMOJI_SCOPE,
+	BLUESKY_PROFILE_SCOPE,
 ];
 /** サインイン時に追加で要求するオプトイン権限。どちらも既定は要求しない。 */
 export type ScopeOptIns = { crosspost?: boolean; standardSite?: boolean };

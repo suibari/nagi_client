@@ -535,7 +535,7 @@ export const en: Messages = {
 	backToSettings: 'Back to settings',
 	backToHome: 'Back to home',
 	settingsProfileTitle: 'Profile',
-	settingsProfileDescription: 'Display name, bio, avatar, and profile cards',
+	settingsProfileDescription: 'Display name, bio, avatar, and apps you use',
 	settingsGroupAccount: 'Account and profile',
 	settingsGroupExperience: 'Display and experience',
 	settingsGroupEmoji: 'Emoji',
@@ -656,10 +656,10 @@ export const en: Messages = {
 	standardSiteTitleHint: 'Start your post with “# Heading” and the title is taken from there.',
 
 	// app links (arbitrary Atmosphere app integration)
-	settingsAppLinksTitle: 'Profile cards',
-	appLinksLegend: 'Profile cards',
+	settingsAppLinksTitle: 'Apps I use',
+	appLinksLegend: 'Apps I use',
 	appLinksHelp:
-		'Show records from any Atmosphere app in your PDS as cards at the bottom of your profile. You choose which collection and which fields to display.',
+		'Show information from any Atmosphere app in your PDS at the bottom of your profile. You choose which collection and which fields to display.',
 	appLinksPublicNote:
 		'Your connections are saved as a public record (com.suibari.nagi.appLinks) in your PDS and can be read by other clients too.',
 	appLinksSignInRequired: 'Sign in to configure connections.',
@@ -701,7 +701,7 @@ export const en: Messages = {
 	appLinksSaving: 'Saving…',
 	appLinksSaved: 'Saved.',
 	appLinksSaveFailed: 'Failed to save. Permission changes can take up to 24 hours to propagate.',
-	profileAppLinksHeading: 'Profile cards',
+	profileAppLinksHeading: 'Apps I use',
 
 	themeLegend: 'Theme',
 	themeHelp: 'Choose the color scheme used on this device.',
@@ -729,14 +729,26 @@ export const en: Messages = {
 	optionBrowser: 'Browser language',
 	profileSettingsTitle: 'Profile settings',
 	backToProfileSettings: 'Back to profile settings',
-	profileCardsSettingsTitle: 'Profile cards',
+	profileCardsSettingsTitle: 'Apps I use',
 	profileCardsSettingsHelp:
-		'Show your information from other Atmosphere apps as cards at the bottom of your profile.',
-	profileCardsManage: 'Add or edit profile cards',
+		'Show your information from other Atmosphere apps at the bottom of your profile.',
+	profileCardsManage: 'Add or edit apps you use',
 	profilePublicationSyncWarning:
 		'Your profile was saved, but its blog profile information could not be updated.',
 	profileSettingsNote:
-		'Your Nagi profile is independent from your Bluesky profile. Changes saved here are not reflected on Bluesky.',
+		'Your display name, bio, and avatar are specific to Nagi. Only your website is shared with Bluesky and other compatible AT Protocol apps.',
+	profileWebsiteLabel: 'Website',
+	profileWebsiteHelp:
+		'You can omit https://. This is saved as your Bluesky profile website and shown as a link card on Nagi. Updates may take about a minute to appear.',
+	profileWebsitePermissionNote:
+		'To edit your website, grant permission to update your Bluesky profile. Nagi will not change its display name, bio, or avatar.',
+	profileWebsiteReauthSubmit: 'Grant website editing permission',
+	profileWebsiteReauthPending: 'Redirecting…',
+	profileWebsiteInvalid: 'Check the website URL.',
+	profileWebsiteUnavailable:
+		'The current website could not be verified, so it cannot be changed. Reload the page and try again.',
+	profileWebsiteLoadWarning: 'Your current website could not be loaded.',
+	profileWebsiteSaveWarning: 'Your profile was saved, but its website could not be updated.',
 	onboardingLoadedNote:
 		'Your Bluesky profile has been loaded as a starting point. Review it and save.',
 	loginRequired: 'Log in to change your settings.',
