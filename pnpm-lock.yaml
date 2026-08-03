@@ -20,6 +20,9 @@ importers:
       '@paulmillr/qr':
         specifier: ^0.3.0
         version: 0.3.0
+      '@suibari/nagi-passport':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(@sveltejs/kit@2.70.0(@sveltejs/vite-plugin-svelte@7.2.0(svelte@5.56.6)(vite@8.1.5(jiti@2.7.0)))(svelte@5.56.6)(typescript@6.0.3)(vite@8.1.5(jiti@2.7.0)))(svelte@5.56.6)
@@ -318,6 +321,11 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@suibari/nagi-passport@0.1.0':
+    resolution: {integrity: sha512-3TzM3wm2mzaISKbn9L+HA4yQJ01RN+kBeJlQaRNBaR9yxwBS08WZ8cymsQisdRIQNzaD3R9uVWoAEN5/nUhm9A==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@sveltejs/acorn-typescript@1.0.11':
     resolution: {integrity: sha512-LFuZUkjJ9iF7JZye/aG5XM0SFcQ5VyL0oVX4WJ9dc0Va3R3s0OauX1BESVCb+YN/ol8TAfqGDDAQsTG627Y5kw==}
@@ -1125,6 +1133,8 @@ snapshots:
   '@rolldown/pluginutils@1.0.1': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@suibari/nagi-passport@0.1.0': {}
 
   '@sveltejs/acorn-typescript@1.0.11(acorn@8.17.0)':
     dependencies:

@@ -1,2 +1,4 @@
 allowBuilds:
-  core-js: set this to true or false
+  core-js: false
+minimumReleaseAgeExclude:
+  - '@suibari/nagi-passport@0.1.0'
