@@ -577,6 +577,8 @@ export const ja = {
 	settingsLanguageDescription: '表示、投稿、翻訳に使う言語',
 	settingsAboutTitle: 'Nagiについて',
 	settingsAboutDescription: 'Nagiでできること、利用規約、プライバシー',
+	settingsRoomTitle: 'botたんのお部屋',
+	settingsRoomDescription: 'botたんに会いに行く（サインイン済みのまま移動します）',
 	settingsDeleteTitle: '全データ削除',
 	settingsDeleteDescription: 'Nagiに保存されたデータを完全に削除',
 	// mute (ユーザー/チャンネルのミュート)

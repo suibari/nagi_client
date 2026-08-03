@@ -1,5 +1,6 @@
 import type { BluemojiFacetFormats, EmojiView, Facet } from '$lib/api/types';
 import { httpUrl } from './facets';
+import { decorateSiblingUrl } from '$lib/sso/links';
 
 export type Mark = 'bold' | 'italic' | 'strike' | 'code';
 export type InlineRun = {
@@ -78,7 +79,7 @@ function facetRanges(text: string, facets: Facet[]): FacetRange[] {
 				: feature?.$type === 'app.bsky.richtext.facet#tag' && feature.tag
 					? `/search?tag=${encodeURIComponent(feature.tag.toLowerCase())}`
 					: feature?.uri
-						? httpUrl(feature.uri)
+						? decorateSiblingUrl(httpUrl(feature.uri))
 						: undefined;
 		let emoji: EmojiView | undefined;
 		if (validBluemoji) {

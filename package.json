@@ -32,6 +32,7 @@
 		"@atproto/oauth-client-browser": "^0.4.0",
 		"@lottiefiles/dotlottie-web": "0.78.2",
 		"@paulmillr/qr": "^0.3.0",
+		"@suibari/nagi-passport": "^0.1.0",
 		"@vercel/analytics": "^2.0.1",
 		"emoji-picker-element": "^1.29.1",
 		"emoji-picker-element-data": "^1.8.0"

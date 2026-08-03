@@ -430,6 +430,17 @@ export const drawCard = () =>
 		{ method: 'POST' },
 		'required',
 	);
+/**
+ * 姉妹アプリへ「サインイン済みのまま」移動するための短命チケットを取得する。
+ * 発行対象は AppView が検証した viewerDid 固定で、こちらから DID は渡さない。
+ */
+export const createSsoTicket = (audience: string) =>
+	call<{ ticket: string; expiresIn: number }>(
+		'com.suibari.nagi.createSsoTicket',
+		'/xrpc/com.suibari.nagi.createSsoTicket',
+		{ method: 'POST', body: JSON.stringify({ audience }) },
+		'required',
+	);
 export const updateSeen = (seenAt: string) =>
 	call<{ updated: number }>(
 		'com.suibari.nagi.updateSeen',

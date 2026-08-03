@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { decorateSiblingUrl } from '$lib/sso/links';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import type { AppLinkView } from '$lib/atproto/appLinks';
@@ -48,7 +49,7 @@
 						size={13}
 					/>{/if}
 				{#if f.role === 'url'}
-					<a href={f.value} target="_blank" rel="noopener noreferrer">{f.value}</a>
+					<a href={decorateSiblingUrl(f.value)} target="_blank" rel="noopener noreferrer">{f.value}</a>
 				{:else}
 					<span>{f.value}</span>
 				{/if}
@@ -73,7 +74,7 @@
 				<span class="icon fallback"><Icon name="apps" size={14} /></span>
 			{/if}
 			{#if link.appUri}
-				<a class="name" href={link.appUri} target="_blank" rel="noopener noreferrer">{link.label}</a
+				<a class="name" href={decorateSiblingUrl(link.appUri)} target="_blank" rel="noopener noreferrer">{link.label}</a
 				>
 			{:else}
 				<span class="name">{link.label}</span>

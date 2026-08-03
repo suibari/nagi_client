@@ -550,6 +550,8 @@ export const en: Messages = {
 	settingsLanguageDescription: 'Display, post, and translation languages',
 	settingsAboutTitle: 'About Nagi',
 	settingsAboutDescription: 'What you can do on Nagi, terms, and privacy',
+	settingsRoomTitle: "bot-tan's Room",
+	settingsRoomDescription: 'Go meet bot-tan (you stay signed in)',
 	settingsDeleteTitle: 'Delete all data',
 	settingsDeleteDescription: 'Permanently delete your data from Nagi',
 	// mute

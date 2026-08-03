@@ -2,10 +2,12 @@
 	import type { LinkCardView } from '$lib/api/types';
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import { httpUrl } from '$lib/atproto/facets';
+	import { decorateSiblingUrl } from '$lib/sso/links';
 	let { card }: { card: LinkCardView } = $props();
 	// カードの URI が http(s) の場合のみリンクにする。細工された javascript: URI は
 	// クリック不能なプレーンカードとして描画する。
-	let safeHref = $derived(httpUrl(card.uri));
+	// 姉妹アプリ宛なら did ヒントを足す（それ以外の URL は素通り）。
+	let safeHref = $derived(decorateSiblingUrl(httpUrl(card.uri)));
 	let host = $derived.by(() => {
 		try {
 			return new URL(card.uri).hostname;
