@@ -204,8 +204,8 @@ export const ja = {
 	composerPlaceholder: 'いま、どんな気持ち？',
 	composerAria: '投稿内容',
 	composerSubmit: '投稿する',
-	composerSubmitNagi: 'Nagiに投稿する',
-	composerSubmitNagiShort: 'Nagiへ',
+	composerSubmitNagi: '投稿する',
+	composerSubmitNagiShort: '投稿する',
 	crosspostDisabledContentWarning: 'コンテンツ警告のある投稿はBlueskyへ投稿できません',
 	composerSubmitting: '送信中…',
 	composerTabsAria: '入力とプレビューの切り替え',
@@ -285,8 +285,7 @@ export const ja = {
 	postScopeExternalUnavailable: '外部への同時投稿は設定から有効にできます',
 	postScopeExternalChannel: 'チャンネルへの投稿は外部には出せません',
 	externalTargetLegend: '外部への投稿先',
-	externalTargetHelp:
-		'投稿範囲を「外部にも」にしたときの送り先です。投稿ごとではなく、ここで先に選びます。',
+	externalTargetHelp: '投稿範囲を「外部にも」にしたときの送り先を、最初に1つ選んでください。',
 	externalTargetBluesky: 'Bluesky',
 	externalTargetStandardSite: 'standard.site（ブログ）',
 
@@ -641,7 +640,7 @@ export const ja = {
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
 	externalPublishingHelp:
-		'投稿するときに、Nagi以外へも公開する選択肢を追加できます。使いたい公開先だけを有効にしてください。',
+		'投稿をNagi以外にも公開するときの送り先を選びます。選んだ公開先の設定だけが下に表示されます。',
 	blueskyPublishingTitle: 'Blueskyにも投稿',
 	blogPublishingTitle: 'ブログとして公開',
 	blogPublishingHelp: '選んだ投稿を、対応するAT Protocolアプリでも読める長文記事として公開します。',
@@ -674,9 +673,6 @@ export const ja = {
 		'ブログとして出した投稿は、Blueskyへのクロスポストを行いません。長文が分割されて連投になるのを避けるためです。',
 	standardSiteDeviceNote: 'この設定は、この端末でのみ有効です。',
 	standardSiteEnableLabel: 'ブログとして出せるようにする',
-	standardSiteDiscoverLabel: '発見フィードに掲載する',
-	standardSiteDiscoverNote:
-		'オフにすると、standard.site対応アプリの新着一覧には出ません。記事そのものは公開されたままです。',
 	standardSiteReauthNote:
 		'ブログとして出すには、あなたのPDSにstandard.siteのレコードを書く権限が必要です。下のボタンから追加の権限を付与してください。',
 	standardSiteReauthSubmit: '追加の権限を付与する',

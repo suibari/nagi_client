@@ -40,12 +40,14 @@
 		channel,
 		defaultScope = 'feed',
 		mode = 'simple',
+		publishingPreferencesVersion = 0,
 	}: {
 		onposted: (uri: string) => void | Promise<void>;
 		onsendingchange?: (sending: boolean) => void;
 		channel?: { uri: string; cid: string; name?: string };
 		defaultScope?: PostScope;
 		mode?: 'simple' | 'rich';
+		publishingPreferencesVersion?: number;
 	} = $props();
 	let text = $state('');
 	let busy = $state(false);
@@ -65,6 +67,7 @@
 	let pendingRestoreId = $state<string | null>(null);
 	let loadedDid = $state<string | undefined>(undefined);
 	let crosspostReady = $state(false);
+	let publishingLoadVersion = 0;
 	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
@@ -124,22 +127,37 @@
 
 	$effect(() => {
 		const did = $session?.did;
-		if (did !== loadedDid) {
-			loadedDid = did;
-			void drafts.load(did);
-			crosspostReady = false;
-			standardSiteReady = false;
-			externalTarget = getExternalTarget();
-			if (did && getCrosspostEnabled()) {
-				void hasCrosspostScope().then((granted) => {
-					if ($session?.did === did) crosspostReady = granted;
-				});
-			}
-			if (did && getStandardSiteEnabled()) {
-				void hasStandardSiteScope().then((granted) => {
-					if ($session?.did === did) standardSiteReady = granted;
-				});
-			}
+		if (did === loadedDid) return;
+		loadedDid = did;
+		void drafts.load(did);
+	});
+
+	$effect(() => {
+		const did = $session?.did;
+		const preferencesVersion = publishingPreferencesVersion;
+		const loadVersion = ++publishingLoadVersion;
+		crosspostReady = false;
+		standardSiteReady = false;
+		externalTarget = getExternalTarget();
+		if (did && getCrosspostEnabled()) {
+			void hasCrosspostScope().then((granted) => {
+				if (
+					$session?.did === did &&
+					publishingPreferencesVersion === preferencesVersion &&
+					publishingLoadVersion === loadVersion
+				)
+					crosspostReady = granted;
+			});
+		}
+		if (did && getStandardSiteEnabled()) {
+			void hasStandardSiteScope().then((granted) => {
+				if (
+					$session?.did === did &&
+					publishingPreferencesVersion === preferencesVersion &&
+					publishingLoadVersion === loadVersion
+				)
+					standardSiteReady = granted;
+			});
 		}
 	});
 

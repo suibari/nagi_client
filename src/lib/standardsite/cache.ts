@@ -3,9 +3,9 @@
  * DID ごとに持つ。消えても listRecords で作り直せる（正しさは PDS 側が持つ）。
  * records.ts からも参照するため、依存を持たない単独モジュールに切っている。
  */
-// v2: 初期実装は listRecords の先頭を無条件で採用しており、他アプリ（blento.app など）の
-// publication を掴んだ値が残っている可能性がある。キーを変えて捨てる。
-const CACHE_KEY = 'nagi-standardsite-publication.v2';
+// v3: Nagi の記事公開では showInDiscover=true を保証する方針へ変えたため、既存キャッシュを
+// 一度捨てて publication を再確認し、過去の false / 未設定レコードを次回公開時に補正する。
+const CACHE_KEY = 'nagi-standardsite-publication.v3';
 
 export function readPublicationCache(did: string): string | undefined {
 	if (typeof window === 'undefined') return undefined;

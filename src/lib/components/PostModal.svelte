@@ -18,6 +18,7 @@
 	let dialog = $state<HTMLDivElement>();
 	let wasOpen = $state(false);
 	let sending = $state(false);
+	let publishingPreferencesVersion = $state(0);
 
 	function postHref(uri: string) {
 		const [did, , rkey] = uri.slice('at://'.length).split('/');
@@ -37,6 +38,7 @@
 		wasOpen = composerHost.open;
 		if (composerHost.open) {
 			mode = 'simple';
+			publishingPreferencesVersion += 1;
 			// hidden が外れてから当てないとフォーカスが乗らない。
 			requestAnimationFrame(() => dialog?.focus());
 		}
@@ -102,6 +104,7 @@
 		<div class="post-modal-body">
 			<Composer
 				{mode}
+				{publishingPreferencesVersion}
 				channel={composerHost.channel}
 				defaultScope={composerHost.defaultScope}
 				onsendingchange={(value) => (sending = value)}

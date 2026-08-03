@@ -37,6 +37,11 @@ export async function ensurePublication(options: { fallbackName?: string } = {})
 
 	const existing = await findNagiPublication();
 	if (existing) {
+		// Nagi では記事として公開する選択自体を発見フィードへの掲載同意として扱う。
+		// 過去の設定が false / 未設定でも、次に記事を公開するときに ON へ揃える。
+		if (existing.value.preferences?.showInDiscover !== true) {
+			await updatePublication({ showInDiscover: true }, options);
+		}
 		writePublicationCache(s.did, existing.uri);
 		return existing.uri;
 	}

@@ -192,8 +192,8 @@ export const en: Messages = {
 	composerPlaceholder: 'How are you feeling right now?',
 	composerAria: 'Post text',
 	composerSubmit: 'Post',
-	composerSubmitNagi: 'Post to Nagi',
-	composerSubmitNagiShort: 'Nagi',
+	composerSubmitNagi: 'Post',
+	composerSubmitNagiShort: 'Post',
 	crosspostDisabledContentWarning: 'Posts with content warnings cannot be posted to Bluesky',
 	composerSubmitting: 'Posting…',
 	composerTabsAria: 'Switch between writing and preview',
@@ -273,7 +273,8 @@ export const en: Messages = {
 	postScopeExternalUnavailable: 'Enable cross-posting in settings to use this',
 	postScopeExternalChannel: 'Channel posts cannot be sent outside Nagi',
 	externalTargetLegend: 'Where to cross-post',
-	externalTargetHelp: 'Where “Also outside” sends your post. Chosen here once, not on every post.',
+	externalTargetHelp:
+		'First choose one destination for posts whose scope is set to “Also outside”.',
 	externalTargetBluesky: 'Bluesky',
 	externalTargetStandardSite: 'standard.site (blog)',
 
@@ -613,7 +614,7 @@ export const en: Messages = {
 	pushRefreshPermissions: 'Refresh permissions and sign in',
 	pushReauthPending: 'Opening authorization…',
 	externalPublishingHelp:
-		'Add options to publish beyond Nagi. Enable only the destinations you want to use.',
+		'Choose where posts can be published beyond Nagi. Only settings for the selected destination are shown below.',
 	blueskyPublishingTitle: 'Also post to Bluesky',
 	blogPublishingTitle: 'Publish as a blog',
 	blogPublishingHelp:
@@ -644,9 +645,6 @@ export const en: Messages = {
 		'Posts published as blog posts are not crossposted to Bluesky, so a long piece never turns into a chain of split posts there.',
 	standardSiteDeviceNote: 'This setting applies to this device only.',
 	standardSiteEnableLabel: 'Allow publishing as blog posts',
-	standardSiteDiscoverLabel: 'Show in discovery feeds',
-	standardSiteDiscoverNote:
-		'Turn this off to stay out of the “recently published” lists in standard.site apps. Your articles stay public either way.',
 	standardSiteReauthNote:
 		'Publishing blog posts needs permission to write standard.site records to your PDS. Grant the extra permission with the button below.',
 	standardSiteReauthSubmit: 'Grant the extra permission',
