@@ -114,7 +114,7 @@
 			<p class="eyebrow">{m.aboutHeroEyebrow()}</p>
 			<h1>{m.aboutHeroTitle()}</h1>
 			<p class="about-hero-body">
-				{m.aboutBeforeLink()}<a href="https://suibari.com/character/">{m.aboutLinkText()}</a
+				{m.aboutBeforeLink()}<a href="https://bot-tan.com/">{m.aboutLinkText()}</a
 				>{m.aboutAfterLink()}
 			</p>
 			{#if showJoin}
