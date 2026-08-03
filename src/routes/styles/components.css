@@ -1319,10 +1319,11 @@
 	color: var(--text-faint);
 	font-weight: 700;
 }
+/* body 直下へポータルするため、各モーダルより上の共通レイヤーに置く。 */
 .reaction-picker-backdrop {
 	position: fixed;
 	inset: 0;
-	z-index: 27;
+	z-index: 140;
 	display: block;
 	width: 100%;
 	border: 0;
@@ -1333,7 +1334,7 @@
 }
 .reaction-quick-picker {
 	position: fixed;
-	z-index: 28;
+	z-index: 141;
 	max-height: calc(100dvh - 24px);
 	padding: 8px;
 	border: 1px solid var(--line);
@@ -1443,7 +1444,7 @@
 }
 .emoji-picker {
 	position: fixed;
-	z-index: 18;
+	z-index: 141;
 	border-radius: var(--radius-m);
 	box-shadow: var(--shadow-pop);
 	overflow: hidden;
@@ -2622,7 +2623,7 @@
 	.emoji-picker-backdrop {
 		position: fixed;
 		inset: 0;
-		z-index: 29;
+		z-index: 140;
 		display: block;
 		width: 100%;
 		border: 0;
@@ -2631,7 +2632,7 @@
 	.emoji-picker {
 		position: fixed;
 		inset: auto 8px calc(64px + env(safe-area-inset-bottom)) 8px;
-		z-index: 30;
+		z-index: 141;
 		width: auto;
 		height: min(520px, calc(100dvh - 96px));
 		border-radius: var(--radius-l);
