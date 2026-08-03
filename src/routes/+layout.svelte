@@ -13,6 +13,7 @@
 	import { onMount } from 'svelte';
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
 	import { startUnreadNewsPolling } from '$lib/news/unread.svelte';
+	import { interceptSiblingLinkClick } from '$lib/sso/links';
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
 	import PostFab from '$lib/components/PostFab.svelte';
 	import PostModal from '$lib/components/PostModal.svelte';
@@ -173,6 +174,11 @@
 	<meta name="twitter:description" content={publicSeo?.description ?? m.appDescription()} />
 	{#if publicSeo}<link rel="canonical" href={publicSeo.canonical} />{/if}
 </svelte:head>
+
+<!-- 姉妹アプリ（botたんのお部屋）宛のリンクは、クリック時に SSO チケットを取って
+     遷移させる。href に埋めるとチケットが失効するため、ここで横取りする。
+     取得に失敗したら href の ?did= がそのまま使われる。 -->
+<svelte:document onclick={interceptSiblingLinkClick} />
 
 <MobileHeader />
 <!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。 -->

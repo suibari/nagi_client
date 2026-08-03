@@ -68,15 +68,83 @@ export function buildDidHintUrl(app: SsoApp, path = '/'): string {
  * 認可サーバのキャッシュが最大24h残り createSsoTicket が 403 になりうるので、
  * この分岐が無いとその間ずっと導線が壊れる（appview.ts の withPublicFallback と同じ理由）。
  */
+// お部屋は Next.js の API ルートでチケットを受ける。trailingSlash 設定のため
+// 末尾スラッシュまで書く（無いと 308 で1往復増える）。
+const SSO_PATH = '/api/sso/';
+
 export async function gotoSsoApp(app: SsoApp, returnTo = '/'): Promise<void> {
 	const appOrigin = SSO_APPS[app];
 	try {
 		const { ticket } = await createSsoTicket(appOrigin);
-		// お部屋は Next.js の API ルートでチケットを受けるので /api/sso。
-		window.location.href = buildTicketUrl({ appOrigin, ticket, returnTo, ssoPath: '/api/sso' });
+		window.location.href = buildTicketUrl({ appOrigin, ticket, returnTo, ssoPath: SSO_PATH });
 		return;
 	} catch (error) {
 		console.warn('[sso] ticket unavailable, falling back to did hint:', error);
 	}
 	window.location.href = buildDidHintUrl(app, returnTo);
+}
+
+/** ヒント用に付けた did は遷移先で不要なので、戻り先パスからは落とす。 */
+function returnToFrom(url: URL): string {
+	const params = new URLSearchParams(url.search);
+	params.delete('did');
+	const query = params.toString();
+	return `${url.pathname}${query ? `?${query}` : ''}${url.hash}`;
+}
+
+async function navigateWithTicket(url: URL, popup: Window | null, fallbackHref: string) {
+	const go = (target: string) => {
+		if (popup) {
+			// 同期で開いた空タブは opener を持つので、遷移前に切っておく。
+			popup.opener = null;
+			popup.location.replace(target);
+		} else {
+			window.location.href = target;
+		}
+	};
+	try {
+		const { ticket } = await createSsoTicket(url.origin);
+		go(buildTicketUrl({ appOrigin: url.origin, ticket, returnTo: returnToFrom(url), ssoPath: SSO_PATH }));
+		return;
+	} catch (error) {
+		console.warn('[sso] ticket unavailable, falling back to did hint:', error);
+	}
+	// 取得できなければ ?did= 付きの元のリンクへ。遷移先で通常の OAuth になる。
+	go(fallbackHref);
+}
+
+/**
+ * 姉妹アプリ宛リンクのクリックを横取りし、チケット経由の遷移に差し替える。
+ *
+ * チケットは60秒で失効するので href には埋められない。かといってリンクを
+ * ヒント経路のままにすると遷移先で毎回 OAuth の承認画面が出るため、
+ * クリック時にだけ取りに行く。
+ *
+ * ルートレイアウトから document のクリックに繋いで、個々のリンク側に手を
+ * 入れずに全リンクへ効かせる。
+ */
+export function interceptSiblingLinkClick(event: MouseEvent): void {
+	if (event.defaultPrevented || event.button !== 0) return;
+	// 修飾キー付き（別タブで開く等）はブラウザ既定の挙動を尊重する。
+	// この場合は href の ?did= が使われ、遷移先で1クリックの OAuth になる。
+	if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+	const target = event.target;
+	const anchor = target instanceof Element ? target.closest('a[href]') : null;
+	if (!(anchor instanceof HTMLAnchorElement)) return;
+
+	let url: URL;
+	try {
+		url = new URL(anchor.href, window.location.href);
+	} catch {
+		return;
+	}
+	if (!SIBLING_ORIGINS.includes(url.origin)) return;
+	if (!get(session)) return;
+
+	event.preventDefault();
+	// ポップアップブロッカに掛からないよう、新規タブはクリック直後に同期で開く。
+	// noopener を渡すと参照が返らず遷移先を設定できないので、後から opener を切る。
+	const popup = anchor.target === '_blank' ? window.open('', '_blank') : null;
+	void navigateWithTicket(url, popup, anchor.href);
 }
