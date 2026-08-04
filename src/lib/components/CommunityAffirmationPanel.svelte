@@ -10,7 +10,9 @@
 		hasCommunityAffirmationTimestamp,
 	} from '$lib/community-affirmation/bot-post';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { latestReadPosition, openMyNagiUnreadView, readLatest } from '$lib/my-nagi/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	import CarouselArrows from './CarouselArrows.svelte';
 	import ChatBubble from './ChatBubble.svelte';
 	import HorizontalCarousel from './HorizontalCarousel.svelte';
@@ -32,6 +34,8 @@
 	let loading = $state(false);
 	let error = $state('');
 	let authError = $state(false);
+	let unread = $state(false);
+	let unreadView: UnreadView | undefined;
 	let loadedKey = $state('');
 	let completed = $state(false);
 	let responseBotActor = $state<ActorView>();
@@ -52,6 +56,7 @@
 
 	async function load() {
 		if (loading) return;
+		const activeUnreadView = unreadView;
 		loading = true;
 		error = '';
 		authError = false;
@@ -78,6 +83,13 @@
 				cursor = page.cursor;
 			}
 			items = visible;
+			unread = readLatest(
+				activeUnreadView,
+				latestReadPosition(visible, (item) => ({
+					indexedAt: item.createdAt,
+					uri: item.uri,
+				})),
+			);
 			completed = foundAny && visible.length === 0;
 		} catch (cause) {
 			authError =
@@ -124,6 +136,8 @@
 		completed = false;
 		error = '';
 		authError = false;
+		unread = false;
+		unreadView = $session ? openMyNagiUnreadView('community', $session.did) : undefined;
 		if ($session) void load();
 		else loading = false;
 	});
@@ -133,6 +147,13 @@
 	<header class="community-affirmation-titlebar">
 		<span class="community-affirmation-mark"><Icon name="nagi" size={18} /></span>
 		<h2 id="community-affirmation-title">{m.communityAffirmationTitle()}</h2>
+		{#if unread}
+			<span
+				class="community-affirmation-unread"
+				role="status"
+				aria-label={m.communityAffirmationUnreadAria()}
+			></span>
+		{/if}
 		{#if items.length > 1}
 			<div class="community-affirmation-arrows">
 				<CarouselArrows

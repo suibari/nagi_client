@@ -19,9 +19,16 @@
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
-	import { unreadNews } from '$lib/news/unread.svelte';
+	import {
+		latestIncludedPostPosition,
+		latestReadPosition,
+		openMyNagiUnreadView,
+		readLatest,
+	} from '$lib/my-nagi/unread.svelte';
+	import { openNewsUnreadView, previewUnreadNews } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { threadToConversationItem } from '$lib/thread/conversation';
+	import type { UnreadView } from '$lib/unread/watermark.svelte';
 
 	const NEWS_COUNT = 5;
 	const BOT_POST_COUNT = 1;
@@ -30,15 +37,23 @@
 	let news = $state<NewsView[]>([]);
 	let newsLoading = $state(true);
 	let newsError = $state('');
+	let newsUnread = $state(false);
+	let newsUnreadView: UnreadView | undefined;
 
 	let botPosts = $state<PostView[]>([]);
 	let botActor = $state<ActorView>();
 	let botLoading = $state(true);
 	let botError = $state('');
+	let botUnread = $state(false);
+	let botUnreadView: UnreadView | undefined;
 
 	let listActivity = $state<MyNagiView>({ listUsers: [], channels: [] });
 	let listLoading = $state(true);
 	let listError = $state('');
+	let listUnread = $state(false);
+	let channelsUnread = $state(false);
+	let listUnreadView: UnreadView | undefined;
+	let channelsUnreadView: UnreadView | undefined;
 	let newsCarousel = $state<{
 		scrollPrevious: () => void;
 		scrollNext: () => void;
@@ -53,12 +68,25 @@
 	let channelsByRecency = $derived([...listActivity.channels].sort(newestFirst));
 
 	const message = (cause: unknown) => (cause instanceof Error ? cause.message : m.loadFailed());
+	function showBotPosts(items: PostView[], unreadView = botUnreadView) {
+		botPosts = items;
+		botUnread = readLatest(unreadView, latestIncludedPostPosition(items));
+	}
+
 	async function loadNews() {
+		const activeUnreadView = newsUnreadView;
 		newsLoading = true;
 		newsError = '';
 		try {
 			const page = await getPositiveNews(i18n.locale);
 			news = page.items.slice(0, NEWS_COUNT);
+			newsUnread = previewUnreadNews(
+				activeUnreadView,
+				latestReadPosition(news, (item) => ({
+					indexedAt: item.indexedAt,
+					uri: item.uri,
+				})),
+			);
 			botActor ??= page.botActor;
 		} catch (cause) {
 			newsError = message(cause);
@@ -68,13 +96,14 @@
 	}
 
 	async function loadBotPosts() {
+		const activeUnreadView = botUnreadView;
 		botLoading = true;
 		botError = '';
 		try {
 			// 最新のトップレベル投稿を代表にしつつ、通常タイムラインと同じ会話単位で返信を含める。
 			const did = botActor?.did;
 			if (!did) {
-				botPosts = [];
+				showBotPosts([], activeUnreadView);
 				return;
 			}
 			const profile = await getProfile(did, {
@@ -85,7 +114,7 @@
 			});
 			const latest = profile.feed.items[0];
 			if (!latest) {
-				botPosts = [];
+				showBotPosts([], activeUnreadView);
 				return;
 			}
 			// group をまだ解釈しない稼働中 AppView でも、返信を欠落させずに表示する。
@@ -93,13 +122,13 @@
 				try {
 					const { thread } = await getThread(latest.uri);
 					botActor ??= thread.botActor;
-					botPosts = [threadToConversationItem(thread)];
+					showBotPosts([threadToConversationItem(thread)], activeUnreadView);
 					return;
 				} catch {
 					// スレッド補完だけが失敗した場合も、取得済みの最新投稿自体は表示する。
 				}
 			}
-			botPosts = [latest];
+			showBotPosts([latest], activeUnreadView);
 		} catch (cause) {
 			botError = message(cause);
 		} finally {
@@ -108,10 +137,20 @@
 	}
 
 	async function loadListActivity() {
+		const activeListUnreadView = listUnreadView;
+		const activeChannelsUnreadView = channelsUnreadView;
 		listLoading = true;
 		listError = '';
 		try {
 			listActivity = await getMyNagi(LIST_COUNT);
+			listUnread = readLatest(
+				activeListUnreadView,
+				latestIncludedPostPosition(listActivity.listUsers.map(({ post }) => post)),
+			);
+			channelsUnread = readLatest(
+				activeChannelsUnreadView,
+				latestIncludedPostPosition(listActivity.channels.map(({ post }) => post)),
+			);
 		} catch (cause) {
 			listError = message(cause);
 		} finally {
@@ -137,6 +176,14 @@
 		const key = `${$session?.did ?? 'guest'}:${i18n.locale}`;
 		if (key === loadedFor) return;
 		loadedFor = key;
+		newsUnread = false;
+		botUnread = false;
+		listUnread = false;
+		channelsUnread = false;
+		newsUnreadView = openNewsUnreadView();
+		botUnreadView = openMyNagiUnreadView('bot');
+		listUnreadView = $session ? openMyNagiUnreadView('list', $session.did) : undefined;
+		channelsUnreadView = $session ? openMyNagiUnreadView('channels', $session.did) : undefined;
 		if ($session) loadAll();
 		else loadPublic();
 	});
@@ -171,6 +218,8 @@
 		loading={botLoading}
 		error={botError}
 		empty={!botPosts.length}
+		unread={botUnread}
+		unreadLabel={m.myNagiBotUnreadAria()}
 		onretry={loadBotPosts}
 	>
 		{#if botPosts[0]}
@@ -189,7 +238,7 @@
 		loading={newsLoading}
 		error={newsError}
 		empty={!news.length}
-		unread={$unreadNews}
+		unread={newsUnread}
 		unreadLabel={m.newsUnreadAria()}
 		onretry={loadNews}
 		headerActions={news.length > 1 ? newsCarouselActions : undefined}
@@ -221,6 +270,8 @@
 			loading={listLoading}
 			error={listError}
 			empty={!listActivity.listUsers.length}
+			unread={listUnread}
+			unreadLabel={m.myNagiListUnreadAria()}
 			onretry={loadListActivity}
 		>
 			{#snippet emptyState()}
@@ -243,6 +294,8 @@
 			loading={listLoading}
 			error={listError}
 			empty={!listActivity.channels.length}
+			unread={channelsUnread}
+			unreadLabel={m.myNagiChannelsUnreadAria()}
 			onretry={loadListActivity}
 		>
 			{#snippet emptyState()}

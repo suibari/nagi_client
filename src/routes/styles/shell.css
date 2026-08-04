@@ -199,6 +199,14 @@
 	letter-spacing: 0.04em;
 	line-height: 1.4;
 }
+/* my Nagi の他セクションと同じ、件数を持たないローカル未読ドット。 */
+.community-affirmation-unread {
+	flex: 0 0 auto;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--decorative-accent);
+}
 /* タイトル右端の送りボタン。カードが2枚以上あるときだけ出る。 */
 .community-affirmation-arrows {
 	margin-inline-start: auto;

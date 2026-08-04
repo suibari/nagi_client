@@ -2,8 +2,7 @@
 	import { goto } from '$app/navigation';
 	import SettingsCategoryCard from '$lib/components/SettingsCategoryCard.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { session, signOut } from '$lib/oauth/session.svelte';
-	import { gotoSsoApp } from '$lib/sso/links';
+	import { signOut } from '$lib/oauth/session.svelte';
 
 	async function handleSignOut() {
 		await signOut();
@@ -101,15 +100,6 @@
 					title={m.settingsAboutTitle()}
 					description={m.settingsAboutDescription()}
 				/>
-				{#if $session}
-					<!-- チケットの有効期間が短いので、href に埋めずクリック時に取得する。 -->
-					<SettingsCategoryCard
-						icon="heart"
-						title={m.settingsRoomTitle()}
-						description={m.settingsRoomDescription()}
-						onclick={() => void gotoSsoApp('room')}
-					/>
-				{/if}
 			</div>
 		</section>
 
