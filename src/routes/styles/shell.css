@@ -239,7 +239,7 @@
 	margin-inline-start: auto;
 }
 .community-affirmation-intro {
-	margin: 0;
+	margin: 0 0 8px;
 	padding: 12px 0 0;
 	color: var(--text-muted);
 	font-size: 12px;
