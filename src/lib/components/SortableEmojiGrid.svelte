@@ -1,5 +1,6 @@
 <script lang="ts" generics="T extends { id: string }">
 	import { onDestroy, type Snippet } from 'svelte';
+	import { createDragGhost } from '$lib/emoji/dragGhost';
 	import { m } from '$lib/i18n/i18n.svelte';
 
 	let {
@@ -11,8 +12,11 @@
 	}: {
 		items: T[];
 		disabled?: boolean;
-		/** しきい値未満のポインタ操作＝タップ。ドラッグ中は発火しない。 */
-		onselect?: (item: T) => void;
+		/**
+		 * しきい値未満のポインタ操作＝タップ。ドラッグ中は発火しない。
+		 * event は Shift+クリックの連続選択判定のために渡す（受け取らなくてよい）。
+		 */
+		onselect?: (item: T, event: PointerEvent | KeyboardEvent) => void;
 		onreorder?: (items: T[]) => void;
 		children: Snippet<[item: T]>;
 	} = $props();
@@ -27,36 +31,11 @@
 	let startX = 0;
 	let startY = 0;
 	let announcement = $state('');
-	let dragGhost: HTMLElement | undefined;
-	let ghostOffsetX = 0;
-	let ghostOffsetY = 0;
-
-	function positionGhost(clientX: number, clientY: number) {
-		if (!dragGhost) return;
-		dragGhost.style.left = `${clientX - ghostOffsetX}px`;
-		dragGhost.style.top = `${clientY - ghostOffsetY}px`;
-	}
-
-	function createGhost(tile: HTMLElement, clientX: number, clientY: number) {
-		const rect = tile.getBoundingClientRect();
-		ghostOffsetX = clientX - rect.left;
-		ghostOffsetY = clientY - rect.top;
-		dragGhost = tile.cloneNode(true) as HTMLElement;
-		dragGhost.classList.remove('dragging', 'drop-target');
-		dragGhost.classList.add('emoji-sort-ghost');
-		dragGhost.setAttribute('aria-hidden', 'true');
-		dragGhost.style.width = `${rect.width}px`;
-		dragGhost.style.height = `${rect.height}px`;
-		for (const control of dragGhost.querySelectorAll<HTMLElement>('button, input')) {
-			control.tabIndex = -1;
-		}
-		document.body.append(dragGhost);
-		positionGhost(clientX, clientY);
-	}
+	let ghost: ReturnType<typeof createDragGhost> | undefined;
 
 	function removeGhost() {
-		dragGhost?.remove();
-		dragGhost = undefined;
+		ghost?.remove();
+		ghost = undefined;
 	}
 
 	function move(from: number, to: number) {
@@ -89,11 +68,11 @@
 			draggingId = pendingId;
 			targetId = pendingId;
 			pendingId = undefined;
-			createGhost(event.currentTarget as HTMLElement, event.clientX, event.clientY);
+			ghost = createDragGhost(event.currentTarget as HTMLElement, event.clientX, event.clientY);
 		}
 		if (!draggingId) return;
 		event.preventDefault();
-		positionGhost(event.clientX, event.clientY);
+		ghost?.move(event.clientX, event.clientY);
 		const target = document
 			.elementFromPoint(event.clientX, event.clientY)
 			?.closest<HTMLElement>('[data-sortable-emoji-id]');
@@ -115,7 +94,7 @@
 		const tapped = event.type === 'pointerup' && pendingId;
 		if (tapped) {
 			const item = items.find((candidate) => candidate.id === pendingId);
-			if (item) onselect?.(item);
+			if (item) onselect?.(item, event);
 		}
 		pendingId = undefined;
 		draggingId = undefined;
@@ -129,7 +108,7 @@
 			const item = items.find((candidate) => candidate.id === id);
 			if (!item || !onselect) return;
 			event.preventDefault();
-			onselect(item);
+			onselect(item, event);
 			return;
 		}
 		if (disabled || items.length < 2) return;

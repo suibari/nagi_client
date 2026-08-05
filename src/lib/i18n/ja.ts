@@ -396,6 +396,13 @@ export const ja = {
 	emojiFavoriteReorder: (p: { index: number }) =>
 		`${p.index}番目のお気に入り。ドラッグまたは矢印キーで並び替え`,
 	emojiFavoriteMoved: (p: { position: number }) => `${p.position}番目に移動しました`,
+	quickReactionShiftHint: 'Shift＋クリックで続けて選べます',
+	quickReactionDragHint: 'ドラッグで並び替え。下の帯へドロップで外せます',
+	quickReactionDropFavorite: 'お気に入りに追加',
+	quickReactionDropRemove: 'お気に入りから外す',
+	emojiFavoriteAdded: (p: { emoji: string }) => `${p.emoji} をお気に入りに追加しました`,
+	emojiFavoriteRemoved: (p: { emoji: string }) => `${p.emoji} をお気に入りから外しました`,
+	emojiFavoriteRemoveKeyHint: 'Delete キーでお気に入りから外せます',
 
 	// favorite emoji settings
 	emojiFavoritesSettingsTitle: 'お気に入り絵文字',

@@ -1455,6 +1455,89 @@
 	color: var(--accent-strong);
 	background: var(--accent-softer);
 }
+/* --- クイックパレットの連続選択 / ドラッグ --- */
+.reaction-quick-item {
+	user-select: none;
+}
+/* 画像のネイティブドラッグがポインタドラッグを乗っ取らないようにする。 */
+.reaction-quick-item img,
+.reaction-quick-item canvas {
+	pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+	.reaction-quick-favorites .reaction-quick-item {
+		cursor: grab;
+	}
+}
+.reaction-quick-item.dragging {
+	/* ドラッグ中はゴーストが本体なので、:active の拡大は打ち消す。 */
+	transform: none;
+	opacity: 0.35;
+}
+.reaction-quick-item.drop-target {
+	background: var(--accent-softer);
+	box-shadow: inset 0 0 0 2px var(--accent);
+}
+.reaction-quick-item.flash {
+	animation: quick-pick-flash 220ms ease-out;
+}
+@keyframes quick-pick-flash {
+	from {
+		background: var(--accent-softer);
+		transform: scale(1.25);
+	}
+	to {
+		transform: none;
+	}
+}
+.reaction-quick-hint {
+	margin: 6px 0 0;
+	overflow: hidden;
+	color: var(--text-faint);
+	font-size: 11px;
+	white-space: nowrap;
+	text-align: center;
+	text-overflow: ellipsis;
+}
+.reaction-quick-footer {
+	position: relative;
+}
+.reaction-quick-dropbar {
+	position: absolute;
+	inset: 6px 0 0;
+	z-index: 1;
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	justify-content: center;
+	border: 1px dashed var(--line-strong);
+	border-radius: var(--radius-m);
+	background: var(--bg-inset);
+	color: var(--text-muted);
+	font-size: 12px;
+	font-weight: 700;
+}
+.reaction-quick-dropbar.accept.over {
+	border-style: solid;
+	border-color: var(--accent);
+	background: var(--accent-softer);
+	color: var(--accent-strong);
+}
+.reaction-quick-dropbar.danger.over {
+	border-style: solid;
+	border-color: var(--danger);
+	background: var(--danger-soft);
+	color: var(--danger);
+}
+.reaction-quick-dropbar.full {
+	opacity: 0.6;
+}
+@media (prefers-reduced-motion: reduce) {
+	.reaction-quick-item.flash {
+		background: var(--accent-softer);
+		animation: none;
+	}
+}
 .emoji-picker {
 	position: fixed;
 	z-index: 141;
@@ -1652,7 +1735,8 @@
 }
 .emoji-sort-ghost {
 	position: fixed;
-	z-index: 60;
+	/* クイックパレット（141）より上に出す必要がある。 */
+	z-index: 150;
 	display: flex;
 	align-items: center;
 	justify-content: center;

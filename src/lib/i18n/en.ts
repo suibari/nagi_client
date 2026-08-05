@@ -383,6 +383,13 @@ export const en: Messages = {
 	emojiFavoriteReorder: (p: { index: number }) =>
 		`Favorite ${p.index}. Drag or use arrow keys to reorder`,
 	emojiFavoriteMoved: (p: { position: number }) => `Moved to position ${p.position}`,
+	quickReactionShiftHint: 'Shift-click to pick several',
+	quickReactionDragHint: 'Drag to reorder. Drop on the bar below to remove',
+	quickReactionDropFavorite: 'Add to favorites',
+	quickReactionDropRemove: 'Remove from favorites',
+	emojiFavoriteAdded: (p: { emoji: string }) => `Added ${p.emoji} to favorites`,
+	emojiFavoriteRemoved: (p: { emoji: string }) => `Removed ${p.emoji} from favorites`,
+	emojiFavoriteRemoveKeyHint: 'Press Delete to remove from favorites',
 
 	// favorite emoji settings
 	emojiFavoritesSettingsTitle: 'Favorite emoji',

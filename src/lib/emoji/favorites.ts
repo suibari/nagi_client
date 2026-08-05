@@ -39,15 +39,34 @@ const toChoice = (raw: string | EmojiView): ReactionChoice =>
 		? { kind: 'unicode', emoji: raw.normalize('NFC') }
 		: { kind: 'custom', emoji: raw };
 
-/** 既にお気に入りなら並びを変えず何もしない。新規は末尾に足す。 */
+/**
+ * 既にお気に入りなら並びを変えず何もしない。新規は末尾に足す。
+ * 満杯のときも元の配列をそのまま返す（末尾に足してから slice すると、
+ * 足したはずの絵文字自身が切り捨てられて無言の no-op になる）。
+ */
 export function addFavorite(
 	favorites: ReactionChoice[],
 	raw: string | EmojiView,
 ): ReactionChoice[] {
+	return insertFavorite(favorites, raw, favorites.length);
+}
+
+/**
+ * 指定位置に差し込む。既にお気に入りなら並びを変えず何もしない。
+ * 満杯のときは元の配列をそのまま返すので、呼び出し側は参照の同一性で
+ * 「入らなかった」ことを判定できる（末尾を黙って切り捨てない）。
+ */
+export function insertFavorite(
+	favorites: ReactionChoice[],
+	raw: string | EmojiView,
+	index: number,
+): ReactionChoice[] {
 	const choice = toChoice(raw);
 	const key = reactionChoiceKey(choice);
 	if (favorites.some((item) => reactionChoiceKey(item) === key)) return favorites;
-	const next = [...favorites, choice].slice(0, MAX_FAVORITES);
+	if (favoritesFull(favorites)) return favorites;
+	const next = [...favorites];
+	next.splice(Math.max(0, Math.min(index, next.length)), 0, choice);
 	saveFavorites(next);
 	return next;
 }

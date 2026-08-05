@@ -33,7 +33,8 @@
 		choiceAriaLabel = (emoji: string) => m.reactWithAria({ emoji }),
 	}: {
 		anchor: HTMLElement;
-		select: (emoji: string | EmojiView) => void;
+		/** keepOpen は Shift+クリックの連続選択。呼び出し側がパレットを閉じずに続ける。 */
+		select: (emoji: string | EmojiView, keepOpen?: boolean) => void;
 		close: () => void;
 		/** 設定画面から「お気に入りに追加する絵文字」を選ぶときは false。 */
 		showFavorites?: boolean;
@@ -69,6 +70,8 @@
 	let unicodeLoading = $state(false);
 	let unicodeError = $state(false);
 	let unicodeRequested = false;
+	/** Web Component のクリック直前に控えた Shift 状態（連続選択の判定用）。 */
+	let pickerShift = false;
 
 	const unicodeSearching = $derived(unicodeQuery.trim().length > 0);
 	const unicodeResults = $derived(
@@ -195,6 +198,13 @@
 		const handlePointerDown = (event: PointerEvent) => {
 			if (!host.contains(event.target as Node)) close();
 		};
+		// Web Component 側は shadow DOM 内で stopPropagation するので、修飾キーは
+		// capture フェーズ（shadow の委譲ハンドラより先に走る）で控えておく。
+		const rememberShift = (event: Event) => {
+			pickerShift = (event as MouseEvent | KeyboardEvent).shiftKey;
+		};
+		unicodeHost?.addEventListener('click', rememberShift, true);
+		unicodeHost?.addEventListener('keydown', rememberShift, true);
 
 		window.addEventListener('keydown', handleKeydown);
 		window.addEventListener('pointerdown', handlePointerDown);
@@ -213,9 +223,25 @@
 					searchLabel: m.emojiSearchLabel(),
 				},
 			});
+			// emoji-click は shadow DOM 内から修飾キー無しで、しかも IndexedDB を待った後に
+			// 非同期発火する。Shift の連続選択を判定するため、クリックと同じタスクで来る
+			// emoji-click-sync を優先して使い、Shift 状態はそこで確定させる。
+			let syncSeen = false;
+			picker.addEventListener('emoji-click-sync', (event) => {
+				syncSeen = true;
+				const keepOpen = pickerShift;
+				void (event as unknown as { detail: Promise<{ unicode?: string }> }).detail
+					.then((detail) => {
+						if (detail.unicode) select(detail.unicode, keepOpen);
+					})
+					.catch(() => undefined);
+			});
+			// emoji-click-sync が来ない版へのフォールバック。こちらは非同期なので
+			// 連打すると Shift 状態を取り違えうるが、選択自体は必ず成立させる。
 			picker.addEventListener('emoji-click', (event) => {
+				if (syncSeen) return;
 				const emoji = (event as CustomEvent<{ unicode?: string }>).detail.unicode;
-				if (emoji) select(emoji);
+				if (emoji) select(emoji, pickerShift);
 			});
 			unicodeHost.append(picker);
 			// 検索と頻出履歴は Nagi 側で Unicode・カスタム共通に扱うため内蔵UIを隠す。
@@ -228,6 +254,8 @@
 		return () => {
 			disposed = true;
 			if (positionFrame !== undefined) cancelAnimationFrame(positionFrame);
+			unicodeHost?.removeEventListener('click', rememberShift, true);
+			unicodeHost?.removeEventListener('keydown', rememberShift, true);
 			window.removeEventListener('keydown', handleKeydown);
 			window.removeEventListener('pointerdown', handlePointerDown);
 			window.removeEventListener('resize', schedulePositionUpdate);
@@ -272,7 +300,7 @@
 			{#if favorites.length}
 				<SortableEmojiGrid
 					bind:items={favorites}
-					onselect={(item) => select(item.choice.emoji)}
+					onselect={(item, event) => select(item.choice.emoji, event.shiftKey)}
 					onreorder={persistFavorites}
 				>
 					{#snippet children(item)}
@@ -319,7 +347,7 @@
 								class="emoji-custom-item emoji-unicode-item"
 								title={emoji.label}
 								aria-label={choiceAriaLabel(emoji.label)}
-								onclick={() => select(emoji.emoji)}
+								onclick={(event) => select(emoji.emoji, event.shiftKey)}
 							>
 								{emoji.emoji}
 							</button>
@@ -351,7 +379,7 @@
 							class="emoji-custom-item"
 							title={displayEmojiName(emoji.name)}
 							aria-label={choiceAriaLabel(displayEmojiName(emoji.name))}
-							onclick={() => select(emoji)}
+							onclick={(event) => select(emoji, event.shiftKey)}
 						>
 							<BluemojiMedia {emoji} />
 						</button>

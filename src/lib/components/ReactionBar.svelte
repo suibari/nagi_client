@@ -35,7 +35,6 @@
 	// svelte-ignore state_referenced_locally -- initial snapshot; kept in sync by the $effect below
 	let local = $state<ReactionView[]>([...reactions]);
 	let holdUntil = 0;
-	let busy = $state(false);
 	let unavailable = $state<string[]>([]);
 	$effect(() => {
 		const incoming = reactions;
@@ -49,12 +48,19 @@
 		Boolean($session?.did && reaction.reactors.some((actor) => actor.did === $session?.did));
 	const labelOf = (reaction: ReactionView) =>
 		reaction.bluemoji ? displayEmojiName(reaction.bluemoji.name) : reaction.emoji;
-	async function toggle(raw: string | EmojiView) {
+	// Shift+クリックの連続リアクションを取りこぼさないよう、直列化して順に流す。
+	// 早期 return で捨てると、同じ絵文字の on→off が viewerReactionUri 未確定のまま
+	// 削除に入って無言で失敗する。
+	let queue: Promise<void> = Promise.resolve();
+	function toggle(raw: string | EmojiView) {
 		if (!$session) {
 			location.href = '/login';
 			return;
 		}
-		if (busy) return;
+		queue = queue.then(() => run(raw)).catch(() => undefined);
+	}
+	async function run(raw: string | EmojiView) {
+		if (!$session) return;
 		const custom = typeof raw === 'string' ? undefined : raw;
 		const emoji = custom ? custom.name : (raw as string).normalize('NFC');
 		const key = custom ? custom.uri : emoji;
@@ -73,7 +79,6 @@
 						avatar: myProfile.current.avatar,
 					} satisfies ActorView)
 				: ({ did: viewerDid, handle: viewerDid } satisfies ActorView));
-		busy = true;
 		holdUntil = Date.now() + HOLD_MS;
 		try {
 			if (existing && reactedByViewer(existing)) {
@@ -125,8 +130,6 @@
 			}
 		} catch {
 			local = snapshot;
-		} finally {
-			busy = false;
 		}
 	}
 </script>
