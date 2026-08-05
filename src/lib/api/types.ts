@@ -167,6 +167,8 @@ export type CommunityAffirmationView = {
 	summary: string;
 	createdAt: string;
 	reactions: ReactionView[];
+	images?: PostImage[];
+	linkCards?: LinkCardView[];
 };
 export type CommunityAffirmationPage = Page<CommunityAffirmationView>;
 /** 本人だけが取得できる、ホームに表示するユーザーの非公開一覧。 */

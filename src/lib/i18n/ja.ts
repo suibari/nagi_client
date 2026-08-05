@@ -367,6 +367,7 @@ export const ja = {
 	// conversation grouping
 	threadMore: (p: { count: number }) => `${p.count}件のやりとり`,
 	threadViewAll: 'やりとりを全部見る',
+	showAllMedia: '全部見る',
 
 	// reactions
 	reactWithAria: (p: { emoji: string }) => `${p.emoji} でリアクション`,

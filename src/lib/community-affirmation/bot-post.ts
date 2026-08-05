@@ -23,6 +23,8 @@ export function communityAffirmationBotPost(
 			isBot: true,
 		},
 		text: item.summary,
+		images: item.images,
+		linkCards: item.linkCards,
 		createdAt,
 		indexedAt: createdAt,
 		reactions: [],

@@ -194,6 +194,9 @@
 							botActor={visibleBotActor}
 							displayOnly
 							hideTimestamp={!hasCommunityAffirmationTimestamp(item)}
+							clampLines={item.images?.length || item.linkCards?.length ? 3 : 6}
+							maxImages={2}
+							maxLinkCards={1}
 						/>
 						<div class="community-affirmation-card-foot">
 							<ReactionBar

@@ -21,6 +21,7 @@
 		deleted = false,
 		collapsed = false,
 		disabled = false,
+		clampLines,
 		onoverflowchange,
 	}: {
 		uri: string;
@@ -30,6 +31,7 @@
 		deleted?: boolean;
 		collapsed?: boolean;
 		disabled?: boolean;
+		clampLines?: number;
 		onoverflowchange?: (overflowing: boolean) => void;
 	} = $props();
 	let body = $state<HTMLElement>();
@@ -93,7 +95,7 @@
 		void text;
 		const measure = () => {
 			const style = getComputedStyle(target);
-			const lines = Number.parseFloat(style.getPropertyValue('--clamp-lines')) || 6;
+			const lines = clampLines ?? (Number.parseFloat(style.getPropertyValue('--clamp-lines')) || 6);
 			const lineHeight =
 				Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.75;
 			onoverflowchange?.(target.scrollHeight > lineHeight * lines + 1);
@@ -157,7 +159,12 @@
 	{/if}
 	{#if !translated && !busy}
 		<div class="original" class:separated={busy || failed}>
-			<div class="post-text" class:collapsed bind:this={body}>
+			<div
+				class="post-text"
+				class:collapsed
+				style={clampLines ? `--clamp-lines: ${clampLines};` : undefined}
+				bind:this={body}
+			>
 				{#if deleted}<p>{m.postDeleted()}</p>{:else}<RichText {text} {facets} />{/if}
 			</div>
 		</div>

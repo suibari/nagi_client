@@ -63,6 +63,9 @@
 		pinned = false,
 		pinBusy = false,
 		ontogglepin,
+		clampLines,
+		maxImages,
+		maxLinkCards,
 	}: {
 		post: PostView;
 		/** ニュース引用ブロックの botたんヘッダーに使う実データ。 */
@@ -78,9 +81,17 @@
 		pinned?: boolean;
 		pinBusy?: boolean;
 		ontogglepin?: (post: PostView) => void | Promise<void>;
+		/** 省略時の表示行数。未指定時は CSS の 6 行。 */
+		clampLines?: number;
+		/** 画像の初期表示枚数上限。未指定時は制限なし。 */
+		maxImages?: number;
+		/** リンクカードの初期表示枚数上限。未指定時は制限なし。 */
+		maxLinkCards?: number;
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
+	let showAllImages = $state(false);
+	let showAllLinkCards = $state(false);
 	let deleteOpen = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state('');
@@ -111,6 +122,18 @@
 	let actionMenu = $state<HTMLDivElement>();
 	let postRow: HTMLDivElement;
 	let mine = $derived($session?.did === post.author.did);
+	let visibleImages = $derived(
+		maxImages && !showAllImages ? post.images?.slice(0, maxImages) : post.images,
+	);
+	let imageToggleable = $derived(
+		Boolean(maxImages && post.images && post.images.length > maxImages),
+	);
+	let visibleLinkCards = $derived(
+		maxLinkCards && !showAllLinkCards ? post.linkCards?.slice(0, maxLinkCards) : post.linkCards,
+	);
+	let linkCardToggleable = $derived(
+		Boolean(maxLinkCards && post.linkCards && post.linkCards.length > maxLinkCards),
+	);
 	let topLevel = $derived(!post.reply);
 	let optimistic = $derived(Boolean(post.optimisticState));
 	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
@@ -559,16 +582,25 @@
 				deleted={post.deleted}
 				collapsed={!expanded}
 				disabled={optimistic}
+				{clampLines}
 				onoverflowchange={(value) => (overflowing = value)}
 			/>
 			{#if overflowing || expanded}<button class="read" onclick={() => (expanded = !expanded)}
 					>{expanded ? m.readLess() : m.readMore()}</button
 				>{/if}
-		{/if}{#if !editing && post.images?.length}<ImageGallery
-				images={post.images}
-			/>{/if}{#if post.linkCards?.length}<div class="link-cards">
-				{#each post.linkCards as card}<LinkCard {card} />{/each}
-			</div>{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
+		{/if}{#if !editing && visibleImages?.length}<ImageGallery
+				images={visibleImages}
+			/>{#if imageToggleable}<button
+					class="read"
+					onclick={() => (showAllImages = !showAllImages)}
+					>{showAllImages ? m.readLess() : m.showAllMedia()}</button
+				>{/if}{/if}{#if visibleLinkCards?.length}<div class="link-cards">
+				{#each visibleLinkCards as card}<LinkCard {card} />{/each}
+			</div>{#if linkCardToggleable}<button
+					class="read"
+					onclick={() => (showAllLinkCards = !showAllLinkCards)}
+					>{showAllLinkCards ? m.readLess() : m.showAllMedia()}</button
+				>{/if}{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
 		{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} {botActor} />{/if}
 		{#if !displayOnly}{#if optimistic}
 				<div class="post-sending" role="status" aria-live="polite">
@@ -594,7 +626,7 @@
 					title={m.replyPost()}
 					onclick={() => openComposer('reply')}><Icon name="reply" size={17} /></button
 				>
-				{#if post.isBot}<button
+				{#if post.isBot || mine}<button
 						class="ghost timeline-action"
 						class:active={composeMode === 'quote'}
 						type="button"

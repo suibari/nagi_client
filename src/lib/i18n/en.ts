@@ -355,6 +355,7 @@ export const en: Messages = {
 	// conversation grouping
 	threadMore: (p: { count: number }) => `${p.count} more in this conversation`,
 	threadViewAll: 'View full conversation',
+	showAllMedia: 'Show all',
 
 	reactWithAria: (p) => `React with ${p.emoji}`,
 	viewProfileOfAria: (p) => `View ${p.name}'s profile`,
