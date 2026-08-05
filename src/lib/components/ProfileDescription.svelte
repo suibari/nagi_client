@@ -2,6 +2,7 @@
 	import { RichText } from '@atproto/api';
 	import { httpUrl } from '$lib/atproto/facets';
 	import { decorateSiblingUrl } from '$lib/sso/links';
+	import { isInternalUrl, toInternalPath } from '$lib/utils/url';
 
 	type Segment = { text: string; href?: string; external?: boolean };
 
@@ -16,7 +17,11 @@
 			const link = segment.link?.uri
 				? decorateSiblingUrl(httpUrl(segment.link.uri))
 				: undefined;
-			if (link) return { text: segment.text, href: link, external: true };
+			if (link) {
+				const isInternal = isInternalUrl(link);
+				const href = isInternal ? toInternalPath(link) : link;
+				return { text: segment.text, href, external: !isInternal };
+			}
 			const handle = segment.mention?.did.trim().toLowerCase();
 			if (handle) return { text: segment.text, href: `/profile/${encodeURIComponent(handle)}` };
 			return { text: segment.text };

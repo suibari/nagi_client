@@ -3,6 +3,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import type { AppLinkView } from '$lib/atproto/appLinks';
+	import { isInternalUrl, toInternalPath } from '$lib/utils/url';
 
 	let {
 		link,
@@ -43,13 +44,16 @@
 {#snippet fieldList(fields: AppLinkView['records'][number]['fields'])}
 	<ul class="fields">
 		{#each fields as f, i (i)}
+			{@const decorated = decorateSiblingUrl(f.value)}
+			{@const internal = isInternalUrl(decorated)}
+			{@const href = internal ? toInternalPath(decorated) : decorated}
 			<li class="field {f.role}">
 				{#if f.role === 'datetime'}<Icon name="clock" size={13} />{:else if f.role === 'url'}<Icon
 						name="link"
 						size={13}
 					/>{/if}
 				{#if f.role === 'url'}
-					<a href={decorateSiblingUrl(f.value)} target="_blank" rel="noopener noreferrer">{f.value}</a>
+					<a href={href} target={internal ? undefined : '_blank'} rel={internal ? undefined : 'noopener noreferrer'}>{f.value}</a>
 				{:else}
 					<span>{f.value}</span>
 				{/if}
@@ -74,7 +78,10 @@
 				<span class="icon fallback"><Icon name="apps" size={14} /></span>
 			{/if}
 			{#if link.appUri}
-				<a class="name" href={decorateSiblingUrl(link.appUri)} target="_blank" rel="noopener noreferrer">{link.label}</a
+				{@const decoratedAppUri = decorateSiblingUrl(link.appUri)}
+				{@const internalApp = isInternalUrl(decoratedAppUri)}
+				{@const appHref = internalApp ? toInternalPath(decoratedAppUri) : decoratedAppUri}
+				<a class="name" href={appHref} target={internalApp ? undefined : '_blank'} rel={internalApp ? undefined : 'noopener noreferrer'}>{link.label}</a
 				>
 			{:else}
 				<span class="name">{link.label}</span>

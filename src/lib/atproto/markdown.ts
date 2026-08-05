@@ -1,6 +1,7 @@
 import type { BluemojiFacetFormats, EmojiView, Facet } from '$lib/api/types';
 import { httpUrl } from './facets';
 import { decorateSiblingUrl } from '$lib/sso/links';
+import { isInternalUrl, toInternalPath } from '$lib/utils/url';
 
 export type Mark = 'bold' | 'italic' | 'strike' | 'code';
 export type InlineRun = {
@@ -73,7 +74,7 @@ function facetRanges(text: string, facets: Facet[]): FacetRange[] {
 			typeof bluemoji.mediaType === 'string';
 		if ((!feature && !validBluemoji) || start < offset || end <= start || end > bytes.length)
 			continue;
-		const href =
+		const rawHref =
 			feature?.$type === 'app.bsky.richtext.facet#mention' && feature.did
 				? `/profile/${encodeURIComponent(feature.did)}`
 				: feature?.$type === 'app.bsky.richtext.facet#tag' && feature.tag
@@ -81,6 +82,8 @@ function facetRanges(text: string, facets: Facet[]): FacetRange[] {
 					: feature?.uri
 						? decorateSiblingUrl(httpUrl(feature.uri))
 						: undefined;
+		const isInternal = isInternalUrl(rawHref);
+		const href = isInternal ? toInternalPath(rawHref) : rawHref;
 		let emoji: EmojiView | undefined;
 		if (validBluemoji) {
 			const rkey = (bluemoji!.ref!.uri as string).split('/').pop();
@@ -106,7 +109,7 @@ function facetRanges(text: string, facets: Facet[]): FacetRange[] {
 			start: decoder.decode(bytes.slice(0, start)).length,
 			end: decoder.decode(bytes.slice(0, end)).length,
 			href,
-			external: feature?.$type === 'app.bsky.richtext.facet#link',
+			external: feature?.$type === 'app.bsky.richtext.facet#link' && !isInternal,
 			...(emoji ? { bluemoji: emoji } : {}),
 		});
 		offset = end;
