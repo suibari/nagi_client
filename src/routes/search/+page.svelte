@@ -21,7 +21,12 @@
 
 	// 自由文検索(?q=)を優先。無ければタグ検索(?tag=、小文字で正規化して保存側と一致)。
 	let q = $derived((page.url.searchParams.get('q') ?? '').trim());
-	let tag = $derived((page.url.searchParams.get('tag') ?? '').trim().toLowerCase());
+	let tag = $derived(
+		(page.url.searchParams.get('tag') ?? '')
+			.trim()
+			.replace(/^[#＃]+/, '')
+			.toLowerCase(),
+	);
 	let hasQuery = $derived(Boolean(q || tag));
 
 	let feed = $state<Feed>();

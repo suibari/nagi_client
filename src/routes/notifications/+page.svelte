@@ -2,7 +2,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { getNotifications, getProfile, APPVIEW_URL } from '$lib/api/appview';
 	import type { ActorView, NotificationView } from '$lib/api/types';
-	import Avatar from '$lib/components/Avatar.svelte';
+	import AvatarLink from '$lib/components/AvatarLink.svelte';
 	import { stripMarkdown } from '$lib/atproto/markdown';
 	import { displayEmojiName } from '$lib/atproto/bluemoji';
 	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
@@ -164,7 +164,7 @@
 		{#each items as item (item.id)}
 			{#if item.type === 'analysis' && notificationCard}
 				<div class="notification card" class:unread={item.readAt == null}>
-					<Avatar actor={item.actor} size="small" />
+					<AvatarLink actor={item.actor} size="small" />
 					<div class="notification-main">
 						{@render notificationHead(item)}
 						<div class="notification-name-card">
@@ -177,17 +177,13 @@
 					</div>
 				</div>
 			{:else}
-				<a
-					class="notification card"
-					class:unread={item.readAt == null}
-					href={notificationHref(item)}
-				>
-					<Avatar actor={item.actor} size="small" />
-					<div class="notification-main">
+				<div class="notification card" class:unread={item.readAt == null}>
+					<AvatarLink actor={item.actor} size="small" />
+					<a class="notification-main" href={notificationHref(item)}>
 						{@render notificationHead(item)}
 						{@render notificationContent(item)}
-					</div>
-				</a>
+					</a>
+				</div>
 			{/if}
 		{/each}
 	{/if}
