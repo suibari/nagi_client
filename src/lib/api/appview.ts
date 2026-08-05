@@ -226,19 +226,28 @@ export const searchPosts = (tag: string, cursor?: string) => {
 		`/xrpc/com.suibari.nagi.searchPosts?${params}`,
 	);
 };
-// 自由文キーワード検索（意味検索＋語彙一致のハイブリッド）。tag 検索と同じ /search 画面に相乗り。
-export const searchPostsByQuery = (q: string, cursor?: string) => {
+// 検索の出し分け。一致(exact) と botたんの気まぐれ(semantic)。未指定は従来のハイブリッド。
+export type SearchMode = 'exact' | 'semantic';
+
+// 自由文キーワード検索。tag 検索と同じ /search 画面に相乗り。
+export const searchPostsByQuery = (q: string, cursor?: string, mode?: SearchMode) => {
 	const params = new URLSearchParams({ q, limit: POST_PAGE_LIMIT });
 	if (cursor) params.set('cursor', cursor);
+	if (mode) params.set('mode', mode);
 	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.searchPosts',
 		`/xrpc/com.suibari.nagi.searchPosts?${params}`,
 	);
 };
-// チャンネルの自由文検索（意味検索＋語彙一致）。
-export const searchChannelsByQuery = (q: string, cursor?: string) => {
+// チャンネルの自由文検索。検索する対象はチャンネルの name+description（中の投稿は見ない）。
+export const searchChannelsByQuery = (
+	q: string,
+	cursor?: string,
+	mode?: SearchMode,
+) => {
 	const params = new URLSearchParams({ q });
 	if (cursor) params.set('cursor', cursor);
+	if (mode) params.set('mode', mode);
 	return withPublicFallback<ChannelsPage>(
 		'com.suibari.nagi.searchChannels',
 		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
@@ -253,9 +262,15 @@ export const searchChannelsTypeahead = (q: string) => {
 	);
 };
 // ニュースの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
-export const searchNewsByQuery = (q: string, lang: 'ja' | 'en', cursor?: string) => {
+export const searchNewsByQuery = (
+	q: string,
+	lang: 'ja' | 'en',
+	cursor?: string,
+	mode?: SearchMode,
+) => {
 	const params = new URLSearchParams({ q, lang });
 	if (cursor) params.set('cursor', cursor);
+	if (mode) params.set('mode', mode);
 	return call<NewsPage>(
 		'com.suibari.nagi.searchNews',
 		`/xrpc/com.suibari.nagi.searchNews?${params}`,
@@ -313,13 +328,19 @@ export const getDiaries = (actor: string, opts: { month?: string; cursor?: strin
 		'none',
 	);
 };
-export const searchActors = (query: string, limit = 10) =>
-	call<SearchActorsResult>(
+export const searchActors = (query: string, limit = 10, mode?: SearchMode) => {
+	const params = new URLSearchParams({
+		q: query,
+		limit: String(Math.min(20, Math.max(1, limit))),
+	});
+	if (mode) params.set('mode', mode);
+	return call<SearchActorsResult>(
 		'com.suibari.nagi.searchActors',
-		`/xrpc/com.suibari.nagi.searchActors?q=${encodeURIComponent(query)}&limit=${Math.min(10, Math.max(1, limit))}`,
+		`/xrpc/com.suibari.nagi.searchActors?${params}`,
 		{},
 		'none',
 	);
+};
 // ログイン画面のサジェスト用。ログイン時点ではまだ Nagi ユーザーですらないため、
 // Nagi AppView を経由せず未認証で叩ける公開 Bsky AppView を直接叩く。
 const BSKY_PUBLIC = 'https://public.api.bsky.app';

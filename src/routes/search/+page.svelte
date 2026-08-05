@@ -29,60 +29,222 @@
 	);
 	let hasQuery = $derived(Boolean(q || tag));
 
-	let feed = $state<Feed>();
-	// q モードの横断結果（ユーザー/チャンネル/ニュース）。投稿は feed が担う。
-	let users = $state<ActorView[]>([]);
-	let channels = $state<ChannelView[]>([]);
-	let news = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
+	// 自由文モードは対象ごとにタブを分ける。各タブの中は「一致」→「botたんの気まぐれ」の順に
+	// 縦に並べ、一致側には見出しを付けない（タブ名から自明なため）。
+	type TabId = 'posts' | 'users' | 'channels' | 'news';
+	const tabs: { id: TabId; label: () => string }[] = [
+		{ id: 'posts', label: () => m.searchTabPosts() },
+		{ id: 'users', label: () => m.searchTabUsers() },
+		{ id: 'channels', label: () => m.searchTabChannels() },
+		{ id: 'news', label: () => m.searchTabNews() },
+	];
+	let tab = $state<TabId>('posts');
+
+	// 投稿は Feed に載せる（楽観投稿の突合・削除反映・ページングが乗るため）。
+	let postsExact = $state<Feed>();
+	let postsFuzzy = $state<Feed>();
+	// タグモードは従来どおり投稿1本。
+	let tagFeed = $state<Feed>();
+	// 投稿以外は FeedItem ではないので素の配列で持つ。
+	let usersExact = $state<ActorView[]>([]);
+	let usersFuzzy = $state<ActorView[]>([]);
+	let channelsExact = $state<ChannelView[]>([]);
+	let channelsFuzzy = $state<ChannelView[]>([]);
+	let newsExact = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
+	let newsFuzzy = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
+	// 描画用の「そのタブの結果が揃ったか」。未取得と0件を区別するために要る（投稿タブは Feed の
+	// loading があるので使わない）。
+	let readyExact = $state<Record<TabId, boolean>>({
+		posts: false,
+		users: false,
+		channels: false,
+		news: false,
+	});
+	let readyFuzzy = $state<Record<TabId, boolean>>({
+		posts: false,
+		users: false,
+		channels: false,
+		news: false,
+	});
+	// タブを自分で選んだらもう自動で移動しない。
+	let tabPicked = $state(false);
+
+	let currentKey = $state<string | null>(null);
+	// 取得済みの記録。$state にすると読み書きが同じエフェクト内で回るので素の値で持つ。
+	let loadedFuzzy: Record<string, boolean> = {};
+	let loadedKey: string | null = null;
+
+	function reset() {
+		postsExact = undefined;
+		postsFuzzy = undefined;
+		tagFeed = undefined;
+		usersExact = [];
+		usersFuzzy = [];
+		channelsExact = [];
+		channelsFuzzy = [];
+		newsExact = { items: [] };
+		newsFuzzy = { items: [] };
+		readyExact = { posts: false, users: false, channels: false, news: false };
+		readyFuzzy = { posts: false, users: false, channels: false, news: false };
+		tabPicked = false;
+		loadedFuzzy = {};
+	}
+
+	/**
+	 * 一致は4タブぶん先に読む。埋め込みを使わない（＝Ollama を叩かない）ので安く、
+	 * タブに件数を出して「別のタブに当たりがある」と分かるようにするために必要。
+	 * これが無いと、既定のポストタブが0件なだけで「ヒットしない」に見えてしまう。
+	 */
+	function loadExact(at: string, locale: 'ja' | 'en') {
+		const fresh = () => currentKey === at;
+		postsExact = new Feed((c) => searchPostsByQuery(q, c, 'exact'), () => false);
+		void postsExact.load().then(() => fresh() && (readyExact.posts = true));
+		void searchActors(q, 20, 'exact')
+			.then((r) => fresh() && (usersExact = r.actors))
+			.catch(() => {})
+			.finally(() => fresh() && (readyExact.users = true));
+		void searchChannelsByQuery(q, undefined, 'exact')
+			.then((r) => fresh() && (channelsExact = r.channels))
+			.catch(() => {})
+			.finally(() => fresh() && (readyExact.channels = true));
+		void searchNewsByQuery(q, locale, undefined, 'exact')
+			.then((r) => fresh() && (newsExact = { items: r.items, botActor: r.botActor }))
+			.catch(() => {})
+			.finally(() => fresh() && (readyExact.news = true));
+	}
+
+	/** 気まぐれ側は埋め込み生成が要るので、開いたタブのぶんだけ遅れて読む。 */
+	function loadFuzzy(target: TabId, at: string, locale: 'ja' | 'en') {
+		const fresh = () => currentKey === at;
+		const done = () => fresh() && (readyFuzzy[target] = true);
+		if (target === 'posts') {
+			postsFuzzy = new Feed((c) => searchPostsByQuery(q, c, 'semantic'), () => false);
+			void postsFuzzy.load().then(done);
+		} else if (target === 'users') {
+			void searchActors(q, 20, 'semantic')
+				.then((r) => fresh() && (usersFuzzy = r.actors))
+				.catch(() => {})
+				.finally(done);
+		} else if (target === 'channels') {
+			void searchChannelsByQuery(q, undefined, 'semantic')
+				.then((r) => fresh() && (channelsFuzzy = r.channels))
+				.catch(() => {})
+				.finally(done);
+		} else {
+			void searchNewsByQuery(q, locale, undefined, 'semantic')
+				.then((r) => fresh() && (newsFuzzy = { items: r.items, botActor: r.botActor }))
+				.catch(() => {})
+				.finally(done);
+		}
+	}
 
 	// 閲覧は未認証（AppView 直読み）なのでセッション復元を待たない。
-	let currentKey = $state<string | null>(null);
 	$effect(() => {
 		const locale = i18n.locale;
 		const key = q ? `q:${q}:${locale}` : tag ? `tag:${tag}:${locale}` : '';
-		if (key === currentKey) return;
-		currentKey = key;
-		users = [];
-		channels = [];
-		news = { items: [] };
-		if (!key) {
-			feed = undefined;
+		const target = tab;
+		if (key !== currentKey) {
+			currentKey = key;
+			reset();
+		}
+		if (!key) return;
+		if (!q) {
+			if (loadedFuzzy.tag) return;
+			loadedFuzzy.tag = true;
+			tagFeed = new Feed((c) => searchPosts(tag, c), () => false);
+			tagFeed.load();
 			return;
 		}
-		const term = q || tag;
-		const load = q
-			? (cursor?: string) => searchPostsByQuery(term, cursor)
-			: (cursor?: string) => searchPosts(term, cursor);
-		feed = new Feed(load, () => false);
-		feed.load();
-
-		// 自由文モードだけ、ユーザー/チャンネル/ニュースも横断検索する。
-		if (q) {
-			const at = key;
-			void searchActors(term, 10)
-				.then((r) => key === at && (users = r.actors))
-				.catch(() => {});
-			void searchChannelsByQuery(term)
-				.then((r) => key === at && (channels = r.channels))
-				.catch(() => {});
-			void searchNewsByQuery(term, locale)
-				.then((r) => key === at && (news = { items: r.items, botActor: r.botActor }))
-				.catch(() => {});
+		if (loadedKey !== key) {
+			loadedKey = key;
+			loadExact(key, locale);
 		}
+		if (loadedFuzzy[target]) return;
+		loadedFuzzy[target] = true;
+		loadFuzzy(target, key, locale);
 	});
 
-	// 全セクションが空なら「結果なし」を出すための判定（読み込み完了後の目安）。
-	let nothingFound = $derived(
-		Boolean(q) &&
-			!feed?.loading &&
-			!feed?.visibleItems.length &&
-			!users.length &&
-			!channels.length &&
-			!news.items.length,
+	// タブごとの一致ヒット数。0件のタブと当たりのあるタブを見分けるために出す。
+	let exactCounts = $derived<Record<TabId, number>>({
+		posts: postsExact?.visibleItems.length ?? 0,
+		users: usersExact.length,
+		channels: channelsExact.length,
+		news: newsExact.items.length,
+	});
+	let allExactReady = $derived(
+		readyExact.posts && readyExact.users && readyExact.channels && readyExact.news,
+	);
+	// 自分でタブを選ぶ前に限り、当たりのあるタブへ寄せる。「チャンネルはあるのに検索して
+	// ヒットしない」と見えてしまう事故を防ぐのが目的。
+	$effect(() => {
+		if (!allExactReady || tabPicked || exactCounts[tab] > 0) return;
+		const hit = tabs.find((t) => exactCounts[t.id] > 0);
+		if (hit) tab = hit.id;
+	});
+
+	// 一致セクションだけ新着が効く。気まぐれは並びがスコア依存で揺れるので自動更新しない。
+	onMount(() =>
+		startVisiblePolling(() => (postsExact ?? tagFeed)?.refresh(), 30_000, { onReturn: true }),
 	);
 
-	onMount(() => startVisiblePolling(() => feed?.refresh(), 30_000, { onReturn: true }));
+	let postsEmpty = $derived(
+		Boolean(postsExact && !postsExact.loading && !postsExact.visibleItems.length),
+	);
 </script>
+
+{#snippet postList(feed: Feed)}
+	{#each feed.visibleItems as item (item.uri)}
+		<ThreadUnit
+			{item}
+			botActor={feed.botActor}
+			ondeleted={(u) => feed.removePost(u)}
+			onposted={() => feed.refresh()}
+		/>
+	{/each}
+{/snippet}
+
+{#snippet feedState(feed: Feed)}
+	{#if feed.loading && !feed.visibleItems.length}
+		<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
+			<span class="spinner" aria-hidden="true"></span>
+		</div>
+	{:else if feed.error && !feed.visibleItems.length}
+		<div class="state error">
+			{feed.error}<button
+				class="icon-action"
+				type="button"
+				aria-label={m.retry()}
+				title={m.retry()}
+				onclick={() => feed.load()}><Icon name="refresh" size={18} /></button
+			>
+		</div>
+	{/if}
+{/snippet}
+
+{#snippet spinner()}
+	<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
+		<span class="spinner" aria-hidden="true"></span>
+	</div>
+{/snippet}
+
+{#snippet actorRows(actors: ActorView[])}
+	<div class="actor-list">
+		{#each actors as actor (actor.did)}
+			<a class="actor-row" href={`/profile/${actor.did}`}>
+				<Avatar {actor} size="small" />
+				<span class="actor-name">
+					<strong>{actor.displayName ?? actor.handle}</strong>
+					<small>@{actor.handle}</small>
+				</span>
+			</a>
+		{/each}
+	</div>
+{/snippet}
+
+<!-- 気まぐれセクションの見出し。空でも「気まぐれには何もなかった」と分かるよう常に出す。 -->
+{#snippet fuzzyHeading()}
+	<h2><Icon name="bot" size={16} />{m.searchSectionFuzzy()}</h2>
+{/snippet}
 
 {#if q}
 	<section class="page-title"><h1>{q}</h1></section>
@@ -95,117 +257,148 @@
 {#if !hasQuery}
 	<section class="timeline"><div class="state">{m.searchNoQuery()}</div></section>
 {:else if q}
-	<!-- 自由文モード: ユーザー/チャンネル/ニュース/投稿をセクション表示 -->
-	{#if nothingFound}
-		<section class="timeline"><div class="state">{m.searchQueryEmpty()}</div></section>
-	{/if}
+	<div class="search-tabs" role="tablist">
+		{#each tabs as t (t.id)}
+			<button
+				role="tab"
+				aria-selected={tab === t.id}
+				class:active={tab === t.id}
+				onclick={() => {
+					tabPicked = true;
+					tab = t.id;
+				}}
+				>{t.label()}{#if readyExact[t.id]}<span class="tab-count" class:zero={exactCounts[t.id] === 0}
+						>{exactCounts[t.id]}{#if t.id === 'posts' && postsExact?.hasMore}+{/if}</span
+					>{/if}</button
+			>
+		{/each}
+	</div>
 
-	{#if users.length}
-		<section class="search-section">
-			<h2>{m.searchSectionUsers()}</h2>
-			<div class="actor-list">
-				{#each users as actor (actor.did)}
-					<a class="actor-row" href={`/profile/${actor.did}`}>
-						<Avatar {actor} size="small" />
-						<span class="actor-name">
-							<strong>{actor.displayName ?? actor.handle}</strong>
-							<small>@{actor.handle}</small>
-						</span>
-					</a>
-				{/each}
-			</div>
-		</section>
-	{/if}
-
-	{#if channels.length}
-		<section class="search-section">
-			<h2>{m.searchSectionChannels()}</h2>
-			<div class="channels-list">
-				{#each channels as ch (ch.uri)}
-					<ChannelCard channel={ch} />
-				{/each}
-			</div>
-		</section>
-	{/if}
-
-	{#if news.items.length}
-		<section class="search-section">
-			<h2>{m.searchSectionNews()}</h2>
-			{#each news.items as item (item.uri)}
-				<NewsCard news={item} botActor={news.botActor} />
-			{/each}
-		</section>
-	{/if}
-
-	<section class="search-section timeline" aria-busy={feed?.loading}>
-		<h2>{m.searchSectionPosts()}</h2>
-		{#if feed}
-			{#if feed.loading && !feed.visibleItems.length}
-				<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
-					<span class="spinner" aria-hidden="true"></span>
-				</div>
-			{:else if feed.error && !feed.visibleItems.length}
-				<div class="state error">
-					{feed.error}<button
-						class="icon-action"
+	{#if tab === 'posts'}
+		<section class="search-section timeline" aria-busy={postsExact?.loading}>
+			{#if postsExact}
+				{@render feedState(postsExact)}
+				{#if postsEmpty}
+					<div class="state">{m.searchExactEmpty()}</div>
+				{:else}
+					{@render postList(postsExact)}
+				{/if}
+				<!-- 下の気まぐれセクションに到達できなくなるので無限スクロールにしない。 -->
+				{#if postsExact.hasMore}
+					<button
+						class="search-more"
 						type="button"
-						aria-label={m.retry()}
-						title={m.retry()}
-						onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+						disabled={postsExact.loading}
+						onclick={() => postsExact?.loadMore()}>{m.searchLoadMore()}</button
 					>
-				</div>
-			{:else}
-				{#each feed.visibleItems as item (item.uri)}
-					<ThreadUnit
-						{item}
-						botActor={feed.botActor}
-						ondeleted={(u) => feed?.removePost(u)}
-						onposted={() => feed?.refresh()}
-					/>
-				{/each}
-				<InfiniteScroll
-					hasMore={feed.hasMore}
-					loading={feed.loading}
-					error={feed.error}
-					onload={() => feed?.loadMore()}
-				/>
+				{/if}
 			{/if}
-		{/if}
-	</section>
+		</section>
+		<section class="search-section timeline">
+			{@render fuzzyHeading()}
+			{#if postsFuzzy}
+				{@render feedState(postsFuzzy)}
+				{#if !postsFuzzy.loading && !postsFuzzy.visibleItems.length}
+					<div class="state">{m.searchFuzzyEmpty()}</div>
+				{:else}
+					{@render postList(postsFuzzy)}
+				{/if}
+			{/if}
+		</section>
+	{:else if tab === 'users'}
+		<section class="search-section">
+			{#if !readyExact.users}
+				{@render spinner()}
+			{:else if !usersExact.length}
+				<div class="state">{m.searchExactEmpty()}</div>
+			{:else}
+				{@render actorRows(usersExact)}
+			{/if}
+		</section>
+		<section class="search-section">
+			{@render fuzzyHeading()}
+			{#if readyFuzzy.users && !usersFuzzy.length}
+				<div class="state">{m.searchFuzzyEmpty()}</div>
+			{:else}
+				{@render actorRows(usersFuzzy)}
+			{/if}
+		</section>
+	{:else if tab === 'channels'}
+		<section class="search-section">
+			{#if !readyExact.channels}
+				{@render spinner()}
+			{:else if !channelsExact.length}
+				<div class="state">{m.searchExactEmpty()}</div>
+			{:else}
+				<div class="channels-list">
+					{#each channelsExact as ch (ch.uri)}
+						<ChannelCard channel={ch} />
+					{/each}
+				</div>
+			{/if}
+		</section>
+		<section class="search-section">
+			{@render fuzzyHeading()}
+			{#if readyFuzzy.channels && !channelsFuzzy.length}
+				<div class="state">{m.searchFuzzyEmpty()}</div>
+			{:else}
+				<div class="channels-list">
+					{#each channelsFuzzy as ch (ch.uri)}
+						<ChannelCard channel={ch} />
+					{/each}
+				</div>
+			{/if}
+		</section>
+	{:else}
+		<section class="search-section">
+			{#if !readyExact.news}
+				{@render spinner()}
+			{:else if !newsExact.items.length}
+				<div class="state">{m.searchExactEmpty()}</div>
+			{:else}
+				{#each newsExact.items as item (item.uri)}
+					<NewsCard news={item} botActor={newsExact.botActor} />
+				{/each}
+			{/if}
+		</section>
+		<section class="search-section">
+			{@render fuzzyHeading()}
+			{#if readyFuzzy.news && !newsFuzzy.items.length}
+				<div class="state">{m.searchFuzzyEmpty()}</div>
+			{:else}
+				{#each newsFuzzy.items as item (item.uri)}
+					<NewsCard news={item} botActor={newsFuzzy.botActor} />
+				{/each}
+			{/if}
+		</section>
+	{/if}
 {:else}
-	<!-- タグ検索モード（従来どおり投稿のみ） -->
-	<section class="timeline" aria-busy={feed?.loading}>
-		{#if feed}
-			{#if feed.loading && !feed.visibleItems.length}
+	<!-- タグ検索モード（従来どおり投稿のみ・タブなし） -->
+	<section class="timeline" aria-busy={tagFeed?.loading}>
+		{#if tagFeed}
+			{#if tagFeed.loading && !tagFeed.visibleItems.length}
 				<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
 					<span class="spinner" aria-hidden="true"></span>
 				</div>
-			{:else if feed.error && !feed.visibleItems.length}
+			{:else if tagFeed.error && !tagFeed.visibleItems.length}
 				<div class="state error">
-					{feed.error}<button
+					{tagFeed.error}<button
 						class="icon-action"
 						type="button"
 						aria-label={m.retry()}
 						title={m.retry()}
-						onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+						onclick={() => tagFeed?.load()}><Icon name="refresh" size={18} /></button
 					>
 				</div>
-			{:else if !feed.visibleItems.length}
+			{:else if !tagFeed.visibleItems.length}
 				<div class="state">{m.searchTagEmpty()}</div>
 			{:else}
-				{#each feed.visibleItems as item (item.uri)}
-					<ThreadUnit
-						{item}
-						botActor={feed.botActor}
-						ondeleted={(u) => feed?.removePost(u)}
-						onposted={() => feed?.refresh()}
-					/>
-				{/each}
+				{@render postList(tagFeed)}
 				<InfiniteScroll
-					hasMore={feed.hasMore}
-					loading={feed.loading}
-					error={feed.error}
-					onload={() => feed?.loadMore()}
+					hasMore={tagFeed.hasMore}
+					loading={tagFeed.loading}
+					error={tagFeed.error}
+					onload={() => tagFeed?.loadMore()}
 				/>
 			{/if}
 		{/if}
@@ -213,15 +406,65 @@
 {/if}
 
 <style>
+	.search-tabs {
+		display: flex;
+		gap: 4px;
+		padding: 0 1rem;
+		border-bottom: 1px solid var(--line);
+	}
+	.search-tabs button {
+		padding: 0.6rem 0.9rem;
+		border: 0;
+		border-bottom: 2px solid transparent;
+		background: none;
+		color: var(--text-faint);
+		font-size: 0.9rem;
+		font-weight: 700;
+	}
+	.search-tabs button.active {
+		color: var(--text);
+		border-bottom-color: var(--accent-strong);
+	}
+	/* 件数。0件のタブは薄くして「当たりがあるタブ」を目で追えるようにする。 */
+	.tab-count {
+		margin-inline-start: 0.35em;
+		font-size: 0.8em;
+		font-weight: 600;
+		color: var(--accent-strong);
+	}
+	.tab-count.zero {
+		color: var(--text-faint);
+		opacity: 0.6;
+	}
 	.search-section {
 		padding: 0.5rem 0;
 	}
 	.search-section > h2 {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
 		font-size: 0.85rem;
 		font-weight: 700;
 		opacity: 0.7;
 		padding: 0.5rem 1rem;
 		margin: 0;
+	}
+	.search-more {
+		display: block;
+		width: 100%;
+		padding: 0.7rem 1rem;
+		border: 0;
+		background: none;
+		color: var(--accent-strong);
+		font-size: 0.9rem;
+		font-weight: 700;
+	}
+	.search-more:hover:not(:disabled) {
+		background: color-mix(in srgb, currentColor 6%, transparent);
+	}
+	.search-more:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
 	.actor-list {
 		display: flex;
