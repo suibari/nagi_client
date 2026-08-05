@@ -2632,15 +2632,10 @@
 	position: relative;
 	z-index: 1;
 }
-/* 未読は左のアクセントバー＋淡い地色で示す。開いた直後に見え、既読化後も表示中は残る。 */
-.notification.unread {
-	background: var(--accent-softer);
-	box-shadow: inset 3px 0 0 var(--accent);
-}
-/* フィードも同じ見た目。マークはスレッド単位なので、カード1枚につきバーは1本だけ。
-   カード自身の影は保つ。 */
+/* 未読は全コンポーネント共通で「左のアクセントバー（背景変更なし）」のみで示す。 */
+.is-unread,
+.notification.unread,
 .thread-unit.unread {
-	background: var(--accent-softer);
 	box-shadow:
 		inset 3px 0 0 var(--accent),
 		var(--shadow-card);

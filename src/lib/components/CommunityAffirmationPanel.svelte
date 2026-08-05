@@ -187,6 +187,7 @@
 				{#each items as item (item.uri)}
 					<article
 						class="horizontal-carousel-item community-affirmation-card"
+						class:unread={readLatest(unreadView, { indexedAt: item.createdAt, uri: item.uri })}
 						class:removing={removingUris.has(item.uri)}
 					>
 						<ChatBubble

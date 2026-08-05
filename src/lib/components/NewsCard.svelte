@@ -197,6 +197,7 @@
 		box-shadow: none;
 	}
 	.news-card.unread.embedded {
+		padding-inline-start: 12px;
 		background: transparent;
 		box-shadow: inset 3px 0 0 var(--accent);
 	}

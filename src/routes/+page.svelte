@@ -253,7 +253,7 @@
 	>
 		{#if botPosts[0]}
 			<div class="my-nagi-bot-card">
-				<ThreadUnit item={botPosts[0]} {botActor} />
+				<ThreadUnit item={botPosts[0]} unread={botUnread} {botActor} />
 			</div>
 		{/if}
 	</MyNagiSection>
@@ -275,6 +275,7 @@
 		<MyNagiNewsCarousel
 			bind:this={newsCarousel}
 			items={news}
+			unreadView={newsUnreadView}
 			{botActor}
 			onscrollstatechange={(state) => (newsCarouselState = state)}
 		/>
@@ -311,7 +312,7 @@
 			{/snippet}
 			{#each listUsersByRecency as entry (entry.post.uri)}
 				<div class="my-nagi-activity-card">
-					<ThreadUnit item={entry.post} {botActor} />
+					<ThreadUnit item={entry.post} unread={readLatest(listUnreadView, entry.post)} {botActor} />
 				</div>
 			{/each}
 		</MyNagiSection>
@@ -335,7 +336,11 @@
 			{/snippet}
 			{#each channelsByRecency as entry (entry.post.uri)}
 				<div class="my-nagi-activity-card">
-					<ThreadUnit item={entry.post} {botActor} />
+					<ThreadUnit
+						item={entry.post}
+						unread={readLatest(channelsUnreadView, entry.post)}
+						{botActor}
+					/>
 				</div>
 			{/each}
 		</MyNagiSection>
@@ -391,13 +396,18 @@
 		border-top: 1px solid var(--panel-divider);
 	}
 
-	/* my NagiSection 自体がカード境界を持つため、内側のタイムライン用カード枠は重ねない。 */
+	/* my NagiSection 自体がカード境界を持つため、内側のタイムライン用カード枠は重ねない。
+	   ただし、未読の左アクセントバー（inset 3px 0 0）は維持する。 */
 	.my-nagi-bot-card :global(> .thread-unit),
 	.my-nagi-activity-card :global(> .thread-unit) {
 		background: transparent;
 		border-radius: 0;
 		box-shadow: none;
 		padding: 0;
+	}
+	.my-nagi-bot-card :global(> .thread-unit.unread),
+	.my-nagi-activity-card :global(> .thread-unit.unread) {
+		box-shadow: inset 3px 0 0 var(--accent);
 	}
 
 	.my-nagi-state {

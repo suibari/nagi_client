@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActorView, NewsView } from '$lib/api/types';
+	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import HorizontalCarousel from './HorizontalCarousel.svelte';
 	import NewsCard from './NewsCard.svelte';
@@ -8,10 +9,12 @@
 
 	let {
 		items,
+		unreadView,
 		botActor,
 		onscrollstatechange,
 	}: {
 		items: NewsView[];
+		unreadView?: UnreadView;
 		botActor?: ActorView;
 		onscrollstatechange?: (nextState: ScrollState) => void;
 	} = $props();
@@ -31,7 +34,7 @@
 	<ul class="horizontal-carousel-track">
 		{#each items as news (news.uri)}
 			<li class="horizontal-carousel-item my-nagi-news-item">
-				<NewsCard {news} {botActor} embedded />
+				<NewsCard {news} {botActor} embedded unread={unreadView?.isUnread(news) ?? false} />
 			</li>
 		{/each}
 	</ul>

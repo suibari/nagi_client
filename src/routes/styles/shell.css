@@ -232,6 +232,9 @@
 	transform: scale(0.97);
 	pointer-events: none;
 }
+.community-affirmation-card.unread {
+	box-shadow: inset 3px 0 0 var(--accent);
+}
 .community-affirmation-dismiss {
 	display: inline-flex;
 	align-items: center;
