@@ -395,12 +395,17 @@ export const en: Messages = {
 	emojiFavoritesSettingsTitle: 'Favorite emoji',
 	emojiFavoritesSettingsDescription: 'Pin the emoji you use most for one-tap reactions',
 	emojiFavoritesSettingsNote:
-		'Favorites appear first in the reaction palette, in this order. Drag (or use the arrow keys) to rearrange them. This setting is saved on this device only.',
+		'Favorites appear first in the reaction palette, in this order. Drag (or use the arrow keys) to rearrange them. This setting is saved to your account, so it follows you to your other devices.',
 	emojiFavoritesEmpty: 'No favorites yet.',
 	emojiFavoritesEmptyHint: 'Emoji you add to favorites show up here',
 	emojiFavoriteAdd: 'Add emoji',
 	emojiFavoriteRemove: (p: { emoji: string }) => `Remove ${p.emoji} from favorites`,
 	emojiFavoritesFull: 'You can keep up to 32 favorites',
+
+	// Cross-device sync (shown until the updated permission set reaches this session)
+	preferencesSyncUnavailable:
+		'This device is not syncing with your other devices yet. Favorite emoji and read positions are stored on this device only for now.',
+	preferencesSyncReauthorize: 'Sign in again to enable sync',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'Custom emoji',

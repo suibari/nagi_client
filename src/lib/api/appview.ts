@@ -23,7 +23,9 @@ import type {
 	ProfilePage,
 	ProfileReactionPage,
 	MyNagiView,
+	PreferencesView,
 	PrivateListView,
+	PutPreferencesInput,
 	SearchActorsResult,
 	ThreadView,
 	TimelinePage,
@@ -392,6 +394,22 @@ export const setPrivateListMember = (memberDid: string, included: boolean) =>
 		'com.suibari.nagi.setPrivateListMember',
 		'/xrpc/com.suibari.nagi.setPrivateListMember',
 		{ method: 'POST', body: JSON.stringify({ memberDid, included }) },
+		'required',
+	);
+// 同期する設定（既読位置・お気に入り絵文字）。既読位置は閲覧履歴そのものなので、
+// ミュートと同じく公開フォールバックは付けず必ず認証必須で叩く。
+export const getPreferences = () =>
+	call<PreferencesView>(
+		'com.suibari.nagi.getPreferences',
+		'/xrpc/com.suibari.nagi.getPreferences',
+		{},
+		'required',
+	);
+export const putPreferences = (input: PutPreferencesInput) =>
+	call<PreferencesView>(
+		'com.suibari.nagi.putPreferences',
+		'/xrpc/com.suibari.nagi.putPreferences',
+		{ method: 'POST', body: JSON.stringify(input) },
 		'required',
 	);
 /** my Nagi の「リスト動向」。本人のリストと購読状況そのものなので認証必須。 */

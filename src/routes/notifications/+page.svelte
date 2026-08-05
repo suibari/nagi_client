@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount, untrack } from 'svelte';
 	import { getNotifications, getProfile, APPVIEW_URL } from '$lib/api/appview';
 	import type { ActorView, NotificationView } from '$lib/api/types';
 	import Avatar from '$lib/components/Avatar.svelte';
@@ -7,6 +8,8 @@
 	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { markAllSeen } from '$lib/notifications/unread.svelte';
+	import { pageRefresh } from '$lib/components/shell/nav';
+	import { startVisiblePolling } from '$lib/polling';
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 	import ContentWarningMask from '$lib/components/ContentWarningMask.svelte';
 	import BusinessCard from '$lib/components/BusinessCard.svelte';
@@ -23,8 +26,46 @@
 	/** 通知カード全体がリンクなので、サムネはギャラリー無しの素の img で並べる。 */
 	const MAX_THUMBS = 4;
 	let loaded = $state(false);
+	let reloading = false;
+
+	/**
+	 * 一覧を取り直して、表示した分までを既読にする。
+	 * マウント時だけでなくタブ復帰・ナビ再タップでも走らせる。1回きりにしていた頃は、
+	 * この画面を開いたまま戻ってきても一覧が伸びず、バッジの数字も消えなかった。
+	 */
+	async function reload() {
+		if (reloading || !$session) return;
+		reloading = true;
+		try {
+			items = (await getNotifications()).items;
+			// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
+			// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
+			if (items.length) void markAllSeen(items[0].createdAt);
+			error = '';
+			// 名刺更新があるときだけ本人の最新名刺を1回取得する。通知行には更新当時の
+			// スナップショットが無いので、複数行があってもすべて現在の名刺を表示する。
+			if (!notificationCard && items.some((item) => item.type === 'analysis')) {
+				try {
+					const page = await getProfile($session.did, { limit: 1, lang: i18n.locale });
+					notificationCard = cardFromProfile(page.profile, location.origin);
+					cardComment = page.profile.comment;
+					cardBotActor = page.feed.botActor;
+				} catch {
+					// 通知一覧そのものは表示し、名刺だけ従来のプロフィールリンクへフォールバックする。
+					notificationCard = undefined;
+				}
+			}
+		} catch (e) {
+			// 再取得の失敗で、すでに出ている一覧を消さない。
+			if (!items.length) error = e instanceof Error ? e.message : m.notifFetchFailed();
+		} finally {
+			reloading = false;
+			loading = false;
+		}
+	}
+
 	// OAuth 復元は非同期なので oauthReady を待つ。待たずに required API を叩くと、リロード時に
-	// session がまだ null で "Authentication required" になる。復元完了後に一度だけ取得する。
+	// session がまだ null で "Authentication required" になる。
 	$effect(() => {
 		if (!$oauthReady || loaded) return;
 		if (!$session) {
@@ -32,31 +73,18 @@
 			return;
 		}
 		loaded = true;
-		void (async () => {
-			try {
-				items = (await getNotifications()).items;
-				// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
-				// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
-				if (items.length) void markAllSeen(items[0].createdAt);
-				// 名刺更新があるときだけ本人の最新名刺を1回取得する。通知行には更新当時の
-				// スナップショットが無いので、複数行があってもすべて現在の名刺を表示する。
-				if (items.some((item) => item.type === 'analysis')) {
-					try {
-						const page = await getProfile($session.did, { limit: 1, lang: i18n.locale });
-						notificationCard = cardFromProfile(page.profile, location.origin);
-						cardComment = page.profile.comment;
-						cardBotActor = page.feed.botActor;
-					} catch {
-						// 通知一覧そのものは表示し、名刺だけ従来のプロフィールリンクへフォールバックする。
-						notificationCard = undefined;
-					}
-				}
-			} catch (e) {
-				error = e instanceof Error ? e.message : m.notifFetchFailed();
-			} finally {
-				loading = false;
-			}
-		})();
+		void reload();
+	});
+	// タブ復帰（と保険の60秒ポーリング）で最新へ追従する。
+	onMount(() => startVisiblePolling(() => void reload(), 60_000, { onReturn: true }));
+	// ナビの通知アイコンをもう一度押したときも開き直す。reload() が読む状態を依存に
+	// 取り込まないよう untrack する（取り込むと初回ロードと二重に走る）。
+	let refreshHandled = 0;
+	$effect(() => {
+		const requested = $pageRefresh;
+		if (requested === refreshHandled) return;
+		refreshHandled = requested;
+		untrack(() => void reload());
 	});
 	const threadHref = (uri: string) => {
 		const [, , did, , rkey] = uri.split('/');

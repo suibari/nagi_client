@@ -26,6 +26,7 @@
 	import { privateList } from '$lib/private-list/private-list.svelte';
 	import { loadReactionUsage, prepareReactionPalette } from '$lib/emoji/reactionUsage';
 	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
+	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -69,6 +70,7 @@
 	let mutesDid: string | undefined;
 	let privateListDid: string | undefined;
 	let pushSyncedDid: string | undefined;
+	let preferencesDid: string | undefined;
 	beforeNavigate(() => postTranslations.cancelPending());
 	$effect(() => {
 		postTranslations.syncPreferences(
@@ -105,6 +107,15 @@
 		pushSyncedDid = did;
 		void refreshPushState();
 	});
+	// 端末をまたぐ設定（my Nagi の既読位置・お気に入り絵文字）の同期。ミュートや
+	// ホームリストと同じくセッション確立に紐付ける。同期できない端末（permission-set が
+	// 古い等）では静かに localStorage 単独へ落ちるので、結果を待つ必要はない。
+	$effect(() => {
+		const did = $oauthReady ? $session?.did : undefined;
+		if (preferencesDid === did) return;
+		preferencesDid = did;
+		void syncPreferences(did);
+	});
 	// よく使われるリアクションパレットは、本文表示を妨げないアイドル時間に準備する。
 	// ローカル候補だけでも即時表示できるため、失敗時は次回オープン時の再試行に任せる。
 	$effect(() => {
@@ -113,10 +124,14 @@
 		let cancelled = false;
 		const prepare = () => {
 			if (cancelled) return;
-			const usage = loadReactionUsage();
-			const favorites = loadFavorites();
-			void prepareReactionPalette(did, usage, favorites)
-				.then((prepared) => {
+			// 同期の完了を待ってから読む。先に読むと、初回同期の和集合を
+			// この保存で上書きしてしまう。
+			void preferencesReady()
+				.then(async () => {
+					if (cancelled) return;
+					const usage = loadReactionUsage();
+					const favorites = loadFavorites();
+					const prepared = await prepareReactionPalette(did, usage, favorites);
 					if (!cancelled) saveFavorites(prepared.favorites);
 				})
 				.catch(() => undefined);

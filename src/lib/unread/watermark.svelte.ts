@@ -1,9 +1,12 @@
 import { writable, type Readable } from 'svelte/store';
 
 /**
- * 端末ローカルの「ここまで読んだ」位置（ウォーターマーク）。
- * ニュースとフィードで同じ仕組みを使うため、保存と比較だけをここに置く。
- * ポーリングや取得は利用側（news / feed）が持つ。
+ * 「ここまで読んだ」位置（ウォーターマーク）。保存と比較だけをここに置き、
+ * ポーリングや取得は利用側（news / feed / my Nagi）が持つ。
+ *
+ * 保存先は常に localStorage。アカウント同期するセクション（my Nagi・ニュース）では
+ * onPersist / mergeRemote を通して `$lib/preferences` がサーバーとも突き合わせるが、
+ * この層はサーバーを知らないままにしておく（フィードは同期しないため）。
  */
 export type ReadPosition = { indexedAt: string; uri: string };
 type StoredState = { initialized: false } | { initialized: true; seen?: ReadPosition };
@@ -63,11 +66,26 @@ export type ReadWatermark = {
 	observeLatest(latest?: ReadPosition): void;
 	/** localStorage を読み直して未読状態を再計算する（別タブ同期用）。 */
 	reloadFromStorage(): void;
+	/**
+	 * サーバーから受け取った位置を取り込む。既読は前にしか進まないので、
+	 * 新しい方だけを採用して保存する。戻り値はマージ後の現在位置（無ければ undefined）で、
+	 * ローカルが勝ったかどうかは呼び出し側が戻り値と remote を比べて判断する。
+	 * onPersist は呼ばない（受け取った値をそのまま送り返さないため）。
+	 */
+	mergeRemote(remote?: ReadPosition): ReadPosition | undefined;
 	/** 表示用ビューを作る。凍結前に保存値を読み直し、別タブの既読を取り込む。 */
 	openView(): UnreadView;
 };
 
-export function createReadWatermark(storageKey: string): ReadWatermark {
+export type ReadWatermarkOptions = {
+	/** 保存位置が前に進んだときだけ呼ばれる。アカウント同期するセクションで使う。 */
+	onPersist?: (seen: ReadPosition) => void;
+};
+
+export function createReadWatermark(
+	storageKey: string,
+	options: ReadWatermarkOptions = {},
+): ReadWatermark {
 	const unread = writable(false);
 	let state: StoredState = readStoredState(storageKey);
 	let latestKnown: ReadPosition | undefined;
@@ -101,9 +119,11 @@ export function createReadWatermark(storageKey: string): ReadWatermark {
 		if (!state.initialized) {
 			state = { initialized: true, seen };
 			persist();
+			if (seen) options.onPersist?.(seen);
 		} else if (seen && (!state.seen || isNewerPosition(seen, state.seen))) {
 			state = { initialized: true, seen };
 			persist();
+			options.onPersist?.(seen);
 		}
 		// 一覧取得後にさらに新しいものを検出済みなら、その分の未読表示は残す。
 		recompute();
@@ -121,6 +141,7 @@ export function createReadWatermark(storageKey: string): ReadWatermark {
 				// 機能を初めて使う端末では、現在の掲載分を既読の基準にする。
 				state = { initialized: true, seen: latestKnown };
 				persist();
+				if (latestKnown) options.onPersist?.(latestKnown);
 				unread.set(false);
 				return;
 			}
@@ -129,6 +150,18 @@ export function createReadWatermark(storageKey: string): ReadWatermark {
 		reloadFromStorage() {
 			state = readStoredState(storageKey);
 			if (state.initialized) recompute();
+		},
+		mergeRemote(remote) {
+			const incoming = positionOf(remote);
+			const current = state.initialized ? state.seen : undefined;
+			if (incoming && (!current || isNewerPosition(incoming, current))) {
+				state = { initialized: true, seen: incoming };
+				persist();
+				recompute();
+				return incoming;
+			}
+			// ローカルが勝った（または同期対象がまだ無い）。呼び出し側が押し戻す。
+			return current;
 		},
 		openView() {
 			// 別タブでの既読を取り込んでから基準を凍結する。保存に失敗する端末では

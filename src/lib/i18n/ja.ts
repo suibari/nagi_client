@@ -408,12 +408,17 @@ export const ja = {
 	emojiFavoritesSettingsTitle: 'お気に入り絵文字',
 	emojiFavoritesSettingsDescription: 'よく使う絵文字を登録して、すぐ押せるようにする',
 	emojiFavoritesSettingsNote:
-		'ここで登録した絵文字が、リアクションパレットの先頭にこの並びで出ます。ドラッグ（または矢印キー）で並び替えできます。設定はこの端末にだけ保存されます。',
+		'ここで登録した絵文字が、リアクションパレットの先頭にこの並びで出ます。ドラッグ（または矢印キー）で並び替えできます。設定はアカウントに保存され、他の端末でも同じ並びになります。',
 	emojiFavoritesEmpty: 'まだお気に入りがありません。',
 	emojiFavoritesEmptyHint: 'お気に入りを登録すると、ここに出ます',
 	emojiFavoriteAdd: '絵文字を追加',
 	emojiFavoriteRemove: (p: { emoji: string }) => `${p.emoji} をお気に入りから外す`,
 	emojiFavoritesFull: 'お気に入りは32個までです',
+
+	// 端末間同期（permission-set の更新が行き渡るまでのあいだ出る告知）
+	preferencesSyncUnavailable:
+		'この端末はまだ他の端末と同期していません。お気に入り絵文字と未読の位置は、いまはこの端末にだけ保存されています。',
+	preferencesSyncReauthorize: '再ログインして同期を有効にする',
 
 	// custom emoji settings
 	emojiSettingsTitle: 'カスタム絵文字',

@@ -8,6 +8,7 @@
 	import { oauthReady, session, signOut } from '$lib/oauth/session.svelte';
 	import { clearThemePreference } from '$lib/theme';
 	import { drafts } from '$lib/drafts/drafts.svelte';
+	import { clearLocalPreferenceCache } from '$lib/preferences/sync.svelte';
 
 	let confirmation = $state('');
 	let dialogOpen = $state(false);
@@ -29,6 +30,9 @@
 			clearThemePreference();
 			clearLanguagePreferences();
 			clearLocalePreference();
+			// 既読位置とお気に入りは AppView と端末の両方にある。サーバー側は
+			// deleteAccountData が消すので、端末のキャッシュもここで揃えて消す。
+			clearLocalPreferenceCache(did);
 			await signOut().catch(() => undefined);
 			await goto('/');
 		} catch (e) {

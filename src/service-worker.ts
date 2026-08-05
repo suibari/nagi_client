@@ -70,6 +70,10 @@ sw.addEventListener('push', (event) => {
 			} catch {
 				// バッジ非対応環境では無視。
 			}
+			// 開いているタブへ知らせる。これが無いと、タブを開いたままプッシュが来ても
+			// 次のポーリング（最大60秒）までナビの未読バッジが古いままになる。
+			const clients = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });
+			for (const client of clients) client.postMessage({ type: 'nagi:push' });
 		})(),
 	);
 });

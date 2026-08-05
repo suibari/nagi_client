@@ -1,23 +1,28 @@
+import { get } from 'svelte/store';
 import { getLatestPositiveNews } from '$lib/api/appview';
 import { i18n } from '$lib/i18n/i18n.svelte';
-import {
-	createReadWatermark,
-	type ReadPosition,
-	type UnreadView,
-} from '$lib/unread/watermark.svelte';
+import { session } from '$lib/oauth/session.svelte';
+import { sectionWatermark } from '$lib/unread/sections.svelte';
+import { type ReadPosition, type UnreadView } from '$lib/unread/watermark.svelte';
 
-export const NEWS_READ_STATE_STORAGE_KEY = 'nagi.news-read-state.v1';
+/**
+ * ニュースの既読位置。my Nagi のニュースセクションのドットと /news 一覧の未読表示に使う。
+ * 既読はアカウント同期する（サーバー側は DID 単位）ので、ローカルのキーも DID で分ける。
+ * サインアウト中の閲覧は guest スコープに閉じ込める。
+ */
+export const newsStorageKey = (viewerDid?: string) =>
+	`nagi.news-read-state.v1.${encodeURIComponent(viewerDid ?? 'guest')}`;
 
 const POLL_INTERVAL_MS = 30 * 60_000;
-const watermark = createReadWatermark(NEWS_READ_STATE_STORAGE_KEY);
 let timer: ReturnType<typeof setInterval> | undefined;
 let started = false;
 
-/** ナビの未読ドット用。 */
-export const unreadNews = watermark.unread;
+/** サインイン状態が変わるとキーごと変わるので、その都度いまのウォーターマークを引く。 */
+const current = (viewerDid: string | undefined = get(session)?.did) =>
+	sectionWatermark('news', newsStorageKey(viewerDid), viewerDid);
 
 /** ニュース一覧を開いた時点の既読基準を凍結したビュー。マウントごとに1つ作る。 */
-export const openNewsUnreadView = () => watermark.openView();
+export const openNewsUnreadView = (viewerDid?: string): UnreadView => current(viewerDid).openView();
 
 /**
  * my Nagi では未読の有無だけを確認し、未読だった位置はまだ既読へ進めない。
@@ -35,7 +40,7 @@ export function previewUnreadNews(view: UnreadView | undefined, latest?: ReadPos
 export async function refreshUnreadNews() {
 	try {
 		const page = await getLatestPositiveNews(i18n.locale);
-		watermark.observeLatest(page.items[0]);
+		current().observeLatest(page.items[0]);
 	} catch {
 		// ネットワーク断などは未読表示を変えず、次のポーリングや画面復帰で再試行する。
 	}
@@ -46,7 +51,8 @@ function onVisible() {
 }
 
 function onStorage(event: StorageEvent) {
-	if (event.key !== NEWS_READ_STATE_STORAGE_KEY) return;
+	const watermark = current();
+	if (event.key !== watermark.storageKey) return;
 	watermark.reloadFromStorage();
 	if (!watermark.initialized) void refreshUnreadNews();
 }

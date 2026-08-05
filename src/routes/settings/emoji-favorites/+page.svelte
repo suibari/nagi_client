@@ -10,6 +10,8 @@
 	import SortableEmojiGrid from '$lib/components/SortableEmojiGrid.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
+	import PreferencesSyncNotice from '$lib/components/PreferencesSyncNotice.svelte';
+	import { preferencesReady } from '$lib/preferences/sync.svelte';
 
 	type FavoriteItem = { id: string; choice: ReactionChoice };
 
@@ -36,8 +38,12 @@
 	const toItems = (favorites: ReactionChoice[]) =>
 		favorites.map((choice) => ({ id: reactionChoiceKey(choice), choice }));
 
+	// アカウント同期の取り込みが済んでから読む。先に読むと、初回同期の和集合が
+	// 反映される前の一覧を編集して上書きしてしまう。
 	onMount(() => {
-		items = toItems(loadFavorites());
+		void preferencesReady().then(() => {
+			items = toItems(loadFavorites());
+		});
 	});
 
 	function add(raw: string | EmojiView) {
@@ -64,6 +70,7 @@
 	<a class="settings-back" href={backHref}>← {backLabel}</a>
 	<h1>{m.emojiFavoritesSettingsTitle()}</h1>
 	<p>{m.emojiFavoritesSettingsNote()}</p>
+	<PreferencesSyncNotice />
 
 	<button
 		type="button"

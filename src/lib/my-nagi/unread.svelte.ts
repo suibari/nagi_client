@@ -1,8 +1,5 @@
-import {
-	createReadWatermark,
-	type ReadPosition,
-	type UnreadView,
-} from '$lib/unread/watermark.svelte';
+import { type ReadPosition, type UnreadView } from '$lib/unread/watermark.svelte';
+import { sectionWatermark } from '$lib/unread/sections.svelte';
 import type { FeedItem, PostView } from '$lib/api/types';
 
 export type MyNagiUnreadSection = 'bot' | 'community' | 'list' | 'channels';
@@ -10,12 +7,19 @@ export type MyNagiUnreadSection = 'bot' | 'community' | 'list' | 'channels';
 const STORAGE_KEY_PREFIX = 'nagi.my-nagi-read-state.v1';
 
 /**
+ * 既読位置はアカウント同期する（サーバー側は DID 単位）ので、ローカルのキーも
+ * DID で分ける。サインアウト中は guest スコープに閉じ込める。
+ */
+export const myNagiStorageKey = (section: MyNagiUnreadSection, viewerDid?: string) =>
+	`${STORAGE_KEY_PREFIX}.${section}.${encodeURIComponent(viewerDid ?? 'guest')}`;
+
+/**
  * my Nagi を開いた時点の既読位置を固定する。
- * パーソナルなセクションは、同じ端末でアカウントを切り替えても混ざらないよう DID ごとに保存する。
+ * ウォーターマーク自体はセクションごとに1つ（`$lib/unread/sections`）で、
+ * 進んだ位置はそこからアカウントへ同期される。
  */
 export function openMyNagiUnreadView(section: MyNagiUnreadSection, viewerDid?: string): UnreadView {
-	const scope = section === 'bot' ? 'public' : encodeURIComponent(viewerDid ?? 'guest');
-	return createReadWatermark(`${STORAGE_KEY_PREFIX}.${section}.${scope}`).openView();
+	return sectionWatermark(section, myNagiStorageKey(section, viewerDid), viewerDid).openView();
 }
 
 /** API が返す最新順を信用せず、AppView と同じ日時・URI順で最新位置を選ぶ。 */

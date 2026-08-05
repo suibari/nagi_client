@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import SettingsCategoryCard from '$lib/components/SettingsCategoryCard.svelte';
+	import PreferencesSyncNotice from '$lib/components/PreferencesSyncNotice.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { signOut } from '$lib/oauth/session.svelte';
 
@@ -12,6 +13,7 @@
 
 <section class="settings-page">
 	<h1>{m.navSettings()}</h1>
+	<PreferencesSyncNotice />
 	<div class="settings-groups">
 		<section class="settings-group" aria-labelledby="settings-account-heading">
 			<h2 id="settings-account-heading">{m.settingsGroupAccount()}</h2>

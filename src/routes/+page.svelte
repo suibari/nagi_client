@@ -29,6 +29,9 @@
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { threadToConversationItem } from '$lib/thread/conversation';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
+	import { onMount, untrack } from 'svelte';
+	import { pageRefresh } from '$lib/components/shell/nav';
+	import { startVisiblePolling } from '$lib/polling';
 
 	const NEWS_COUNT = 5;
 	const BOT_POST_COUNT = 1;
@@ -73,9 +76,13 @@
 		botUnread = readLatest(unreadView, latestIncludedPostPosition(items));
 	}
 
+	/**
+	 * 定期・復帰時の取り直しでは、すでに出ている内容を消さない。ローディング表示を
+	 * 出し直すと60秒ごとに画面がちらつき、失敗するたびに読めていた内容が消えてしまう。
+	 */
 	async function loadNews() {
 		const activeUnreadView = newsUnreadView;
-		newsLoading = true;
+		newsLoading = news.length === 0;
 		newsError = '';
 		try {
 			const page = await getPositiveNews(i18n.locale);
@@ -89,7 +96,7 @@
 			);
 			botActor ??= page.botActor;
 		} catch (cause) {
-			newsError = message(cause);
+			if (!news.length) newsError = message(cause);
 		} finally {
 			newsLoading = false;
 		}
@@ -97,7 +104,7 @@
 
 	async function loadBotPosts() {
 		const activeUnreadView = botUnreadView;
-		botLoading = true;
+		botLoading = botPosts.length === 0;
 		botError = '';
 		try {
 			// 最新のトップレベル投稿を代表にしつつ、通常タイムラインと同じ会話単位で返信を含める。
@@ -130,7 +137,7 @@
 			}
 			showBotPosts([latest], activeUnreadView);
 		} catch (cause) {
-			botError = message(cause);
+			if (!botPosts.length) botError = message(cause);
 		} finally {
 			botLoading = false;
 		}
@@ -139,7 +146,8 @@
 	async function loadListActivity() {
 		const activeListUnreadView = listUnreadView;
 		const activeChannelsUnreadView = channelsUnreadView;
-		listLoading = true;
+		const hadContent = listActivity.listUsers.length > 0 || listActivity.channels.length > 0;
+		listLoading = !hadContent;
 		listError = '';
 		try {
 			listActivity = await getMyNagi(LIST_COUNT);
@@ -152,7 +160,7 @@
 				latestIncludedPostPosition(listActivity.channels.map(({ post }) => post)),
 			);
 		} catch (cause) {
-			listError = message(cause);
+			if (!hadContent) listError = message(cause);
 		} finally {
 			listLoading = false;
 		}
@@ -180,12 +188,33 @@
 		botUnread = false;
 		listUnread = false;
 		channelsUnread = false;
-		newsUnreadView = openNewsUnreadView();
-		botUnreadView = openMyNagiUnreadView('bot');
+		newsUnreadView = openNewsUnreadView($session?.did);
+		// botたんセクションは公開だが、既読はアカウント同期するので DID で分ける。
+		botUnreadView = openMyNagiUnreadView('bot', $session?.did);
 		listUnreadView = $session ? openMyNagiUnreadView('list', $session.did) : undefined;
 		channelsUnreadView = $session ? openMyNagiUnreadView('channels', $session.did) : undefined;
 		if ($session) loadAll();
 		else loadPublic();
+	});
+	/**
+	 * タブ復帰と60秒ポーリングで各セクションを取り直す。フィードは MainFeed が同じ形で
+	 * やっているのに my Nagi だけ無く、戻ってきても中身とドットが古いままだった。
+	 * 既読ビューは作り直さない（凍結した基準のまま新着ぶんだけドットが点く）。
+	 */
+	function reload() {
+		if (!loadedFor) return;
+		if ($session) loadAll();
+		else loadPublic();
+	}
+	onMount(() => startVisiblePolling(reload, 60_000, { onReturn: true }));
+	// ナビの my Nagi をもう一度押したときも開き直す。reload() が読む状態を依存に
+	// 取り込まないよう untrack する（取り込むと初回ロードと二重に走る）。
+	let refreshHandled = 0;
+	$effect(() => {
+		const requested = $pageRefresh;
+		if (requested === refreshHandled) return;
+		refreshHandled = requested;
+		untrack(reload);
 	});
 </script>
 

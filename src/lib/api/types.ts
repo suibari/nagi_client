@@ -271,6 +271,29 @@ export type MuteSubjectType = 'actor' | 'channel';
 export type MutesView = { actors: ActorView[]; channels: ChannelView[] };
 
 // ---------------------------------------------------------------------------
+// 端末をまたいで同期する設定（既読位置・お気に入り絵文字）
+// ---------------------------------------------------------------------------
+/** my Nagi のドットを持つセクション。既読位置はセクションごとに1つ。 */
+export type ReadPositionSection = 'bot' | 'community' | 'list' | 'channels' | 'news';
+/** 「ここまで読んだ」位置。新旧は (indexedAt, uri) の辞書順で比較する。 */
+export type RemoteReadPosition = { section: ReadPositionSection; indexedAt: string; uri: string };
+/** お気に入り絵文字1つ。localStorage の ReactionChoice と同じ形をそのまま預ける。 */
+export type EmojiFavorite =
+	{ kind: 'unicode'; emoji: string } | { kind: 'custom'; emoji: EmojiView };
+export type PreferencesView = {
+	readPositions: RemoteReadPosition[];
+	emojiFavorites: EmojiFavorite[];
+	/** 省略＝このアカウントのお気に入りがまだ一度も同期されていない（初回同期の合図）。 */
+	emojiFavoritesUpdatedAt?: string;
+};
+export type PutPreferencesInput = {
+	readPositions?: RemoteReadPosition[];
+	emojiFavorites?: EmojiFavorite[];
+	/** emojiFavorites を送るときは必須。保存済みより古ければサーバは書き込まない。 */
+	emojiFavoritesUpdatedAt?: string;
+};
+
+// ---------------------------------------------------------------------------
 // 全肯定カード（1日1回引けるトレカ）
 // ---------------------------------------------------------------------------
 /** N < R < SR < UR < AAR(All-Affirmation Rare)。 */

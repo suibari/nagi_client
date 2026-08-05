@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { getPositiveNews } from '$lib/api/appview';
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import NewsCard from '$lib/components/NewsCard.svelte';
@@ -8,7 +7,8 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m, dayHeading, dayKey } from '$lib/i18n/i18n.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
-	import { session } from '$lib/oauth/session.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	let items = $state<NewsView[]>([]),
 		botActor = $state<ActorView>(),
 		cursor = $state<string>(),
@@ -19,7 +19,8 @@
 	let submissionOpen = $state(false);
 	let refreshAfterLoad = false;
 	// 既読基準は画面を開いた時点で凍結する。既読化しても表示中のマークは消えない。
-	const unreadView = openNewsUnreadView();
+	// 既読はアカウント同期＝DID ごとなので、OAuth の復元が終わるまで凍結を待つ。
+	let unreadView = $state<UnreadView>();
 	async function load(reset = false) {
 		if (loading) {
 			if (reset) refreshAfterLoad = true;
@@ -34,7 +35,7 @@
 			cursor = page.cursor;
 			hasMore = page.hasMore;
 			loadedLang = i18n.locale;
-			if (reset) unreadView.advance(page.items[0]);
+			if (reset) unreadView?.advance(page.items[0]);
 		} catch (e) {
 			error = e instanceof Error ? e.message : m.loadFailed();
 		} finally {
@@ -45,7 +46,13 @@
 			}
 		}
 	}
-	onMount(() => {
+	let readyFor = $state<string | undefined>();
+	$effect(() => {
+		if (!$oauthReady) return;
+		const key = $session?.did ?? 'guest';
+		if (readyFor === key) return;
+		readyFor = key;
+		unreadView = openNewsUnreadView($session?.did);
 		void load(true);
 	});
 	$effect(() => {
@@ -92,7 +99,7 @@
 				</h2>{/if}<NewsCard
 				{news}
 				{botActor}
-				unread={unreadView.isUnread(news)}
+				unread={unreadView?.isUnread(news) ?? false}
 				clampTitle={false}
 			/>{/each}<InfiniteScroll {hasMore} {loading} {error} onload={() => load()} />{/if}
 </section>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { navItems, isActive } from './nav';
+	import { navItems, isActive, handleNavClick } from './nav';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './Icon.svelte';
 	import NavBadge from './NavBadge.svelte';
@@ -22,6 +22,7 @@
 				class:active={isActive(page.url.pathname, item.href)}
 				title={item.label()}
 				aria-current={isActive(page.url.pathname, item.href) ? 'page' : undefined}
+				onclick={(event) => handleNavClick(event, page.url.pathname, item.href)}
 			>
 				<span class="nav-icon">
 					<Icon name={item.icon} />
