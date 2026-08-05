@@ -23,7 +23,7 @@
 		removeFavorite,
 		saveFavorites,
 	} from '$lib/emoji/favorites';
-	import { createEmojiDrag } from '$lib/emoji/emojiDrag.svelte';
+	import { createEmojiDrag, type DropZone } from '$lib/emoji/emojiDrag.svelte';
 	import {
 		loadUnicodeEmojiIndex,
 		searchUnicodeEmojis,
@@ -254,37 +254,48 @@
 	}
 
 	/**
+	 * ドロップ位置を「お気に入り配列の何番目に差し込むか」に直す。
+	 * タイルの右半分に落としたらその次。末尾タイルの右半分＝末尾追加になる。
+	 */
+	function insertionIndex(zone: { kind: string; index?: number; after?: boolean }) {
+		if (zone.kind !== 'favorite' || zone.index === undefined) return favorites.length;
+		return zone.index + (zone.after ? 1 : 0);
+	}
+
+	/**
 	 * 「最近使った」からお気に入りへはコピー（履歴 localStorage は触らない）。
 	 * お気に入りからバーへドロップすると外す。お気に入り同士は並び替え。
 	 */
-	function applyDrop(payload: DragPayload, zone: { kind: string; index?: number } | undefined) {
+	function applyDrop(payload: DragPayload, zone: DropZone | undefined) {
 		if (!zone) return;
 		const { choice, source } = payload;
 		const key = reactionChoiceKey(choice);
+		if (zone.kind !== 'favorite' && zone.kind !== 'bar') return;
 		if (source === 'favorites') {
 			if (zone.kind === 'bar') {
 				commitFavorites(removeFavorite(favorites, key));
 				announcement = m.emojiFavoriteRemoved({ emoji: labelOf(choice) });
 				return;
 			}
-			if (zone.kind !== 'favorite' || zone.index === undefined) return;
 			const from = favorites.findIndex((item) => reactionChoiceKey(item) === key);
-			if (from < 0 || from === zone.index) return;
+			if (from < 0) return;
+			// 自分を抜いた分、後ろ向きの移動先はひとつ手前にずれる。
+			let to = insertionIndex(zone);
+			if (from < to) to -= 1;
+			if (to === from) return;
 			const next = [...favorites];
 			const [moved] = next.splice(from, 1);
-			next.splice(zone.index, 0, moved);
+			next.splice(to, 0, moved);
 			saveFavorites(next);
 			commitFavorites(next);
-			announcement = m.emojiFavoriteMoved({ position: zone.index + 1 });
+			announcement = m.emojiFavoriteMoved({ position: to + 1 });
 			return;
 		}
-		if (zone.kind !== 'favorite' && zone.kind !== 'bar') return;
 		if (favoritesFull(favorites)) {
 			announcement = m.emojiFavoritesFull();
 			return;
 		}
-		const at = zone.kind === 'favorite' && zone.index !== undefined ? zone.index : favorites.length;
-		const next = insertFavorite(favorites, choice.emoji, at);
+		const next = insertFavorite(favorites, choice.emoji, insertionIndex(zone));
 		if (next === favorites) return;
 		commitFavorites(next);
 		// お気に入りにあるものは「最近使った」に出さない規則（上の $effect）と
@@ -304,6 +315,25 @@
 	}
 
 	const draggingKey = $derived(drag.payload ? reactionChoiceKey(drag.payload.choice) : undefined);
+
+	/**
+	 * どのタイルのどちら側に差し込まれるかを示すキャレット。
+	 * ドロップ位置が末尾（最後のタイルの右）のときだけ 'after' になる。
+	 */
+	function dropCaret(source: DragSource, index: number) {
+		if (source !== 'favorites' || !drag.dragging) return undefined;
+		const zone = drag.zone;
+		if (zone?.kind !== 'favorite' || zone.index === undefined) return undefined;
+		const at = insertionIndex(zone);
+		// 自分の位置に戻すだけのドロップにはキャレットを出さない。
+		if (draggingKey !== undefined && drag.payload?.source === 'favorites') {
+			const from = favorites.findIndex((item) => reactionChoiceKey(item) === draggingKey);
+			if (from >= 0 && (at === from || at === from + 1)) return undefined;
+		}
+		if (at === index) return 'before';
+		if (at === favorites.length && index === favorites.length - 1) return 'after';
+		return undefined;
+	}
 	const dropBarLabel = $derived.by(() => {
 		if (drag.payload?.source === 'favorites') return m.quickReactionDropRemove();
 		if (favoritesFull(favorites)) return m.emojiFavoritesFull();
@@ -317,11 +347,8 @@
 		class="reaction-quick-item"
 		class:flash={flashKey === key}
 		class:dragging={draggingKey === key}
-		class:drop-target={source === 'favorites' &&
-			draggingKey !== undefined &&
-			draggingKey !== key &&
-			drag.zone?.kind === 'favorite' &&
-			drag.zone.index === index}
+		class:drop-before={dropCaret(source, index) === 'before'}
+		class:drop-after={dropCaret(source, index) === 'after'}
 		data-emoji-drop={source === 'favorites' ? 'favorite' : undefined}
 		data-emoji-drop-index={source === 'favorites' ? index : undefined}
 		aria-label={choiceAriaLabel(labelOf(item))}

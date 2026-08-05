@@ -4,8 +4,11 @@ import { createDragGhost } from './dragGhost';
  * ドロップ先。DOM 側は `data-emoji-drop="<kind>"` と、必要なら
  * `data-emoji-drop-index="<n>"` を置くだけでよい。要素の親子関係を問わないので、
  * 「最近使った」から「お気に入り」のようにコンテナをまたぐドラッグが書ける。
+ *
+ * index を持つゾーンでは、要素の左右どちら側にポインタがあるかを after で返す。
+ * 「一番右のタイルの右半分＝末尾に追加」を表現するために要る。
  */
-export type DropZone = { kind: string; index?: number };
+export type DropZone = { kind: string; index?: number; after?: boolean };
 
 type Options<P> = {
 	/** タップ（＝即リアクション）と区別するための移動量。 */
@@ -39,10 +42,13 @@ export function createEmojiDrag<P>(options: Options<P>) {
 			.elementFromPoint(clientX, clientY)
 			?.closest<HTMLElement>('[data-emoji-drop]');
 		const kind = target?.dataset.emojiDrop;
-		if (!kind) return undefined;
-		const raw = target?.dataset.emojiDropIndex;
-		const index = raw === undefined ? undefined : Number(raw);
-		return { kind, index: Number.isFinite(index) ? index : undefined };
+		if (!kind || !target) return undefined;
+		const raw = target.dataset.emojiDropIndex;
+		const parsed = raw === undefined ? undefined : Number(raw);
+		const index = Number.isFinite(parsed) ? parsed : undefined;
+		if (index === undefined) return { kind };
+		const rect = target.getBoundingClientRect();
+		return { kind, index, after: clientX >= rect.left + rect.width / 2 };
 	}
 
 	function reset() {
@@ -91,7 +97,8 @@ export function createEmojiDrag<P>(options: Options<P>) {
 			event.preventDefault();
 			ghost?.move(event.clientX, event.clientY);
 			const next = zoneAt(event.clientX, event.clientY);
-			if (next?.kind === zone?.kind && next?.index === zone?.index) return;
+			if (next?.kind === zone?.kind && next?.index === zone?.index && next?.after === zone?.after)
+				return;
 			zone = next;
 			options.onHover?.(next, payload);
 		},

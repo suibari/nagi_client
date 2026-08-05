@@ -1474,9 +1474,16 @@
 	transform: none;
 	opacity: 0.35;
 }
-.reaction-quick-item.drop-target {
+/* 差し込み位置のキャレット。末尾追加は最後のタイルの右side に出る。 */
+.reaction-quick-item.drop-before,
+.reaction-quick-item.drop-after {
 	background: var(--accent-softer);
-	box-shadow: inset 0 0 0 2px var(--accent);
+}
+.reaction-quick-item.drop-before {
+	box-shadow: inset 3px 0 0 var(--accent);
+}
+.reaction-quick-item.drop-after {
+	box-shadow: inset -3px 0 0 var(--accent);
 }
 .reaction-quick-item.flash {
 	animation: quick-pick-flash 220ms ease-out;
