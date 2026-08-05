@@ -7,7 +7,6 @@
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { startVisiblePolling } from '$lib/polling';
 	import ThreadUnit from './ThreadUnit.svelte';
-	import CardDrawEntry from './CardDrawEntry.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
 	import FeedTabs from './shell/FeedTabs.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -122,5 +121,3 @@
 		/>
 	{/if}
 </section>
-
-<CardDrawEntry variant="fab" shifted={!!postFollowNotice.current} />
