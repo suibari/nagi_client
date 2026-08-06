@@ -403,13 +403,15 @@
 }
 .feed-tabs a {
 	position: relative;
-	flex: 1;
 	text-align: center;
 	padding: 10px 0 12px;
 	font-size: 14px;
 	font-weight: 700;
 	color: var(--text-muted);
 	transition: color 0.18s ease;
+}
+.feed-tabs a:not(.feed-tab-add) {
+	flex: 1;
 }
 .feed-tabs a:hover {
 	color: var(--accent-strong);
