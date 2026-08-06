@@ -149,6 +149,7 @@
 	let cropFile = $state<File>();
 	let editing = $state(false);
 	let editError = $state('');
+	let bannerInput = $state<HTMLInputElement>();
 	function revokeEditPreview() {
 		// 既存バナーが楽観表示用 blob URL の場合は channel 側が所有するため、ここでは破棄しない。
 		if (editBanner instanceof Blob && editBannerPreview?.startsWith('blob:'))
@@ -487,12 +488,15 @@
 					>
 				{/if}
 				<div class="channel-banner-actions">
-					<label class="avatar-select"
-						>{m.selectImage()}<input
-							type="file"
-							accept="image/jpeg,image/png,image/webp"
-							onchange={selectBanner}
-						/></label
+					<input
+						bind:this={bannerInput}
+						type="file"
+						accept="image/jpeg,image/png,image/webp"
+						class="visually-hidden"
+						onchange={selectBanner}
+					/>
+					<button type="button" class="avatar-select" onclick={() => bannerInput?.click()}
+						>{m.selectImage()}</button
 					>
 					{#if editBannerPreview}
 						<button type="button" class="ghost" onclick={removeBanner}

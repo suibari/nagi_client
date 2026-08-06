@@ -44,6 +44,9 @@
 	let batch = $state<BatchItem[]>([]);
 	let ignoredFiles = $state(0);
 	let visibleEmojiCount = $state(60);
+	let singleFileInput = $state<HTMLInputElement>();
+	let folderInput = $state<HTMLInputElement>();
+	let batchFileInput = $state<HTMLInputElement>();
 
 	const safeInternalReturnTo = (value: string | null) => {
 		if (!value?.startsWith('/') || value.startsWith('//')) return undefined;
@@ -277,12 +280,15 @@
 					class="emoji-upload-preview"
 					emoji={singlePreviewEmoji}
 				/>{/if}
-			<label class="avatar-select"
-				>{m.selectImage()}<input
-					type="file"
-					accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
-					onchange={selectFile}
-				/></label
+			<input
+				bind:this={singleFileInput}
+				type="file"
+				accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
+				class="visually-hidden"
+				onchange={selectFile}
+			/>
+			<button type="button" class="avatar-select" onclick={() => singleFileInput?.click()}
+				>{m.selectImage()}</button
 			>
 			<small>{m.emojiUploadNote()}</small>
 			{#if singleFileProblem}<p class="error">{singleFileProblem}</p>{/if}
@@ -301,21 +307,27 @@
 		<h2>{m.emojiBatchTitle()}</h2>
 		<p>{m.emojiBatchNote()}</p>
 		<div class="emoji-batch-actions">
-			<label class="avatar-select"
-				>{m.emojiSelectFolder()}<input
-					type="file"
-					accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
-					use:directoryPicker
-					onchange={selectBatch}
-				/></label
+			<input
+				bind:this={folderInput}
+				type="file"
+				accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
+				use:directoryPicker
+				class="visually-hidden"
+				onchange={selectBatch}
+			/>
+			<button type="button" class="avatar-select" onclick={() => folderInput?.click()}
+				>{m.emojiSelectFolder()}</button
 			>
-			<label class="avatar-select"
-				>{m.emojiSelectFiles()}<input
-					type="file"
-					multiple
-					accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
-					onchange={selectBatch}
-				/></label
+			<input
+				bind:this={batchFileInput}
+				type="file"
+				multiple
+				accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
+				class="visually-hidden"
+				onchange={selectBatch}
+			/>
+			<button type="button" class="avatar-select" onclick={() => batchFileInput?.click()}
+				>{m.emojiSelectFiles()}</button
 			>
 		</div>
 		{#if ignoredFiles}<p class="muted">{m.emojiBatchIgnored({ count: ignoredFiles })}</p>{/if}

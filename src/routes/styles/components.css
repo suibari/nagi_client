@@ -2451,6 +2451,9 @@
 	font-size: 13px;
 	font-weight: 700;
 	cursor: pointer;
+	background: transparent;
+	font-family: inherit;
+	line-height: inherit;
 }
 .avatar-select input {
 	position: absolute;

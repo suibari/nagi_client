@@ -26,6 +26,7 @@
 	let cropFile = $state<File>();
 	let creating = $state(false);
 	let createError = $state('');
+	let bannerInput = $state<HTMLInputElement>();
 
 	// at://<did>/<collection>/<rkey> → /channels/<did>/<rkey>
 	const channelHref = (uri: string) => {
@@ -191,12 +192,15 @@
 				{#if bannerPreview}
 					<span class="channel-banner preview"><img src={bannerPreview} alt="" /></span>
 				{/if}
-				<label class="avatar-select"
-					>{m.selectImage()}<input
-						type="file"
-						accept="image/jpeg,image/png,image/webp"
-						onchange={selectBanner}
-					/></label
+				<input
+					bind:this={bannerInput}
+					type="file"
+					accept="image/jpeg,image/png,image/webp"
+					class="visually-hidden"
+					onchange={selectBanner}
+				/>
+				<button type="button" class="avatar-select" onclick={() => bannerInput?.click()}
+					>{m.selectImage()}</button
 				>
 				<small>{m.channelBannerNote()}</small>
 			</div>

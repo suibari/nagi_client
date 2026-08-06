@@ -40,6 +40,7 @@
 	let avatarPreview = $state<string>();
 	let avatarChange = $state<Blob | null>();
 	let cropFile = $state<File>();
+	let avatarInput = $state<HTMLInputElement>();
 	let onboarding = $derived(page.url.searchParams.get('onboarding') === '1');
 
 	onDestroy(() => {
@@ -196,12 +197,15 @@
 					alt={m.currentAvatarAlt()}
 				/>{:else}<span class="avatar large">{name.slice(0, 1) || '○'}</span>{/if}
 			<div class="avatar-controls">
-				<label class="avatar-select"
-					>{m.selectImage()}<input
-						type="file"
-						accept="image/jpeg,image/png,image/webp"
-						onchange={selectAvatar}
-					/></label
+				<input
+					bind:this={avatarInput}
+					type="file"
+					accept="image/jpeg,image/png,image/webp"
+					class="visually-hidden"
+					onchange={selectAvatar}
+				/>
+				<button type="button" class="avatar-select" onclick={() => avatarInput?.click()}
+					>{m.selectImage()}</button
 				>
 				{#if avatarPreview}<button type="button" class="ghost avatar-remove" onclick={removeAvatar}
 						>{m.remove()}</button
