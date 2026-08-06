@@ -14,6 +14,7 @@
 	import { Feed } from '$lib/feed/feed.svelte';
 	import type { ChannelView, PostView } from '$lib/api/types';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
+	import BotReplyStatus from '$lib/components/BotReplyStatus.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
@@ -296,12 +297,30 @@
 		}
 	}
 
+	const STALE_MS = 3 * 60 * 1000;
+	let isCreatedJustNow = $derived(Boolean(createdChannels.get(uri)));
+	let isCreatedRecently = $derived(
+		Boolean(
+			channel &&
+				(isCreatedJustNow ||
+					(isOwner && Date.now() - new Date(channel.createdAt).valueOf() < STALE_MS)),
+		),
+	);
+	let isAwaitingInitialBotPost = $derived(
+		Boolean(isCreatedRecently && feed && !feed.loading && !feed.visibleItems.length),
+	);
+
 	onMount(() => {
 		const base = startVisiblePolling(() => feed?.refresh(), 30_000, { onReturn: true });
 		// 投稿直後は AppView 取り込み前のため、即時 refresh だけでは楽観投稿を
 		// reconcile できない。反映されるまで短い間隔で追従する。
 		const fast = startVisiblePolling(() => feed?.refresh(), 3_000, {
-			when: () => Boolean(feed?.hasOptimistic() || feed?.hasPendingFor($session?.did)),
+			when: () =>
+				Boolean(
+					feed?.hasOptimistic() ||
+						feed?.hasPendingFor($session?.did) ||
+						isAwaitingInitialBotPost,
+				),
 		});
 		return () => {
 			base();
@@ -437,7 +456,17 @@
 				>
 			</div>
 		{:else if !feed.visibleItems.length}
-			<div class="state">{m.channelTimelineEmpty()}</div>
+			{#if isAwaitingInitialBotPost}
+				<article class="thread-unit">
+					<BotReplyStatus
+						state="processing"
+						createdAt={channel?.createdAt ?? new Date().toISOString()}
+						botActor={feed.botActor}
+					/>
+				</article>
+			{:else}
+				<div class="state">{m.channelTimelineEmpty()}</div>
+			{/if}
 		{:else}
 			{#each feed.visibleItems as item (item.uri)}
 				<ThreadUnit
