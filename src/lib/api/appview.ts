@@ -114,9 +114,13 @@ async function call<T>(
  * キャッシュが最大24h残るため、これが無いと publish 直後に該当画面が丸ごと壊れる。
  * 公開コンテンツを返すエンドポイント専用（ミュート等のビューア依存部分が効かなくなるだけ）。
  */
-async function withPublicFallback<T>(lxm: string, path: string): Promise<T> {
+async function withPublicFallback<T>(
+	lxm: string,
+	path: string,
+	options: RequestInit = {},
+): Promise<T> {
 	try {
-		return await call<T>(lxm, path);
+		return await call<T>(lxm, path, options);
 	} catch (error) {
 		if (
 			get(session) &&
@@ -125,7 +129,7 @@ async function withPublicFallback<T>(lxm: string, path: string): Promise<T> {
 				error.status === 403 ||
 				(error.status === 400 && /scope|permission/i.test(error.message)))
 		) {
-			return call<T>(lxm, path, {}, 'none');
+			return call<T>(lxm, path, options, 'none');
 		}
 		throw error;
 	}
@@ -240,11 +244,7 @@ export const searchPostsByQuery = (q: string, cursor?: string, mode?: SearchMode
 	);
 };
 // チャンネルの自由文検索。検索する対象はチャンネルの name+description（中の投稿は見ない）。
-export const searchChannelsByQuery = (
-	q: string,
-	cursor?: string,
-	mode?: SearchMode,
-) => {
+export const searchChannelsByQuery = (q: string, cursor?: string, mode?: SearchMode) => {
 	const params = new URLSearchParams({ q });
 	if (cursor) params.set('cursor', cursor);
 	if (mode) params.set('mode', mode);
@@ -254,11 +254,13 @@ export const searchChannelsByQuery = (
 	);
 };
 // Composer の #チャンネル候補。意味検索を走らせない軽量な name 検索を明示する。
-export const searchChannelsTypeahead = (q: string) => {
+// signal は打鍵ごとに前の候補取得を打ち切るため（PDS プロキシ経由の往復を無駄に重ねない）。
+export const searchChannelsTypeahead = (q: string, signal?: AbortSignal) => {
 	const params = new URLSearchParams({ q, limit: '10', typeahead: 'true' });
 	return withPublicFallback<ChannelsPage>(
 		'com.suibari.nagi.searchChannels',
 		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
+		{ signal },
 	);
 };
 // ニュースの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
@@ -328,7 +330,12 @@ export const getDiaries = (actor: string, opts: { month?: string; cursor?: strin
 		'none',
 	);
 };
-export const searchActors = (query: string, limit = 10, mode?: SearchMode) => {
+export const searchActors = (
+	query: string,
+	limit = 10,
+	mode?: SearchMode,
+	signal?: AbortSignal,
+) => {
 	const params = new URLSearchParams({
 		q: query,
 		limit: String(Math.min(20, Math.max(1, limit))),
@@ -337,7 +344,7 @@ export const searchActors = (query: string, limit = 10, mode?: SearchMode) => {
 	return call<SearchActorsResult>(
 		'com.suibari.nagi.searchActors',
 		`/xrpc/com.suibari.nagi.searchActors?${params}`,
-		{},
+		{ signal },
 		'none',
 	);
 };
@@ -347,11 +354,12 @@ const BSKY_PUBLIC = 'https://public.api.bsky.app';
 export const searchActorsTypeahead = async (
 	query: string,
 	limit = 8,
+	signal?: AbortSignal,
 ): Promise<SearchActorsResult> => {
 	const q = query.trim();
 	if (!q) return { actors: [] };
 	const url = `${BSKY_PUBLIC}/xrpc/app.bsky.actor.searchActorsTypeahead?q=${encodeURIComponent(q)}&limit=${Math.min(10, Math.max(1, limit))}`;
-	const res = await fetch(url);
+	const res = await fetch(url, { signal });
 	if (!res.ok) return { actors: [] };
 	return res.json() as Promise<SearchActorsResult>;
 };

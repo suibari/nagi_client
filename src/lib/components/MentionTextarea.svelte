@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { searchActors, searchChannelsTypeahead } from '$lib/api/appview';
-	import { createActorSearch } from '$lib/api/useActorSearch.svelte';
+	import { createTypeaheadSearch } from '$lib/api/useTypeaheadSearch.svelte';
 	import type { ActorView, ChannelView, EmojiView } from '$lib/api/types';
 	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -43,11 +43,24 @@
 
 	let textarea: HTMLTextAreaElement;
 	// Composer は最初の1文字を即時検索し、連続入力だけ短くまとめる。
-	const suggest = createActorSearch(searchActors, { debounceMs: 80, leading: true });
-	let suggestedChannels = $state<ChannelView[]>([]);
-	let channelTimer: ReturnType<typeof setTimeout> | undefined;
-	let channelRequestId = 0;
-	let channelSearchStarted = false;
+	const suggest = createTypeaheadSearch<ActorView>(
+		(query, signal) => searchActors(query, 10, undefined, signal).then((result) => result.actors),
+		{
+			debounceMs: 80,
+			leading: true,
+			matches: (actor, query) =>
+				actor.handle.toLowerCase().includes(query) ||
+				(actor.displayName?.toLowerCase().includes(query) ?? false),
+		},
+	);
+	const channelSuggest = createTypeaheadSearch<ChannelView>(
+		(query, signal) => searchChannelsTypeahead(query, signal).then((result) => result.channels),
+		{
+			debounceMs: 80,
+			leading: true,
+			matches: (channel, query) => channel.name.toLowerCase().includes(query),
+		},
+	);
 	let activeIndex = $state(0);
 	let suggestionLayer = $state<HTMLDivElement>();
 	let suggestionStyle = $state('');
@@ -56,6 +69,8 @@
 		| { kind: 'mention'; start: number; end: number; query: string }
 		| { kind: 'channel'; start: number; end: number; query: string; marker: '#' | '＃' }
 	>();
+	// いま候補を出している方（トークンの種類で決まる）。件数・確定はこれ経由で扱う。
+	let activeSuggest = $derived(token?.kind === 'channel' ? channelSuggest : suggest);
 
 	function shiftedSelections<T extends { start: number; end: number }>(
 		selections: T[],
@@ -89,19 +104,11 @@
 		emojis = shiftedSelections(emojis, prefix, oldEnd, delta);
 	}
 
-	function resetChannelSearch() {
-		suggestedChannels = [];
-		channelRequestId++;
-		if (channelTimer) clearTimeout(channelTimer);
-		channelTimer = undefined;
-		channelSearchStarted = false;
-	}
-
 	function close() {
 		token = undefined;
 		suggestionPositioned = false;
 		suggest.reset();
-		resetChannelSearch();
+		channelSuggest.reset();
 		activeIndex = 0;
 	}
 
@@ -145,24 +152,6 @@
 		};
 	});
 
-	function searchChannels(query: string) {
-		const current = ++channelRequestId;
-		if (channelTimer) clearTimeout(channelTimer);
-		const delay = channelSearchStarted ? 80 : 0;
-		channelSearchStarted = true;
-		channelTimer = setTimeout(async () => {
-			channelTimer = undefined;
-			try {
-				const result = await searchChannelsTypeahead(query);
-				if (current !== channelRequestId) return;
-				suggestedChannels = result.channels;
-				activeIndex = 0;
-			} catch {
-				if (current === channelRequestId) suggestedChannels = [];
-			}
-		}, delay);
-	}
-
 	function detectToken() {
 		onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd);
 		const caret = textarea.selectionStart;
@@ -174,7 +163,7 @@
 				end: caret,
 				query: match[2],
 			};
-			resetChannelSearch();
+			channelSuggest.reset();
 			suggest.search(match[2], () => (activeIndex = 0));
 			return;
 		}
@@ -190,7 +179,7 @@
 				marker: channelMatch[2] as '#' | '＃',
 			};
 			suggest.reset();
-			searchChannels(channelMatch[3]);
+			channelSuggest.search(channelMatch[3], () => (activeIndex = 0));
 			return;
 		}
 		close();
@@ -458,20 +447,21 @@
 				return;
 			}
 		}
-		const suggestionCount =
-			token?.kind === 'channel' ? suggestedChannels.length : suggest.actors.length;
+		const suggestionCount = activeSuggest.items.length;
 		if (!suggestionCount || !token) {
 			if (event.key === 'Escape') close();
 			return;
 		}
+		// 応答待ちの絞り込みで候補が減ると activeIndex が末尾を追い越すことがある。
+		activeIndex = Math.min(activeIndex, suggestionCount - 1);
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 			event.preventDefault();
 			const direction = event.key === 'ArrowDown' ? 1 : -1;
 			activeIndex = (activeIndex + direction + suggestionCount) % suggestionCount;
 		} else if (event.key === 'Enter' || event.key === 'Tab') {
 			event.preventDefault();
-			if (token.kind === 'channel') chooseChannel(suggestedChannels[activeIndex]);
-			else choose(suggest.actors[activeIndex]);
+			if (token.kind === 'channel') chooseChannel(channelSuggest.items[activeIndex]);
+			else choose(suggest.items[activeIndex]);
 		} else if (event.key === 'Escape') {
 			event.preventDefault();
 			close();
@@ -507,10 +497,16 @@
 			style={suggestionStyle}
 		>
 			{#if token.kind === 'mention'}
-				<ActorSuggestionList actors={suggest.actors} {activeIndex} onchoose={choose} />
+				<ActorSuggestionList
+					actors={suggest.items}
+					pending={suggest.pending}
+					{activeIndex}
+					onchoose={choose}
+				/>
 			{:else}
 				<ChannelSuggestionList
-					channels={suggestedChannels}
+					channels={channelSuggest.items}
+					pending={channelSuggest.pending}
 					{activeIndex}
 					onchoose={chooseChannel}
 				/>

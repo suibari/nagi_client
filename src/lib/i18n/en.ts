@@ -827,6 +827,8 @@ export const en: Messages = {
 	channelBannerRemove: 'Remove image',
 	channelTimelineEmpty: 'No posts in this channel yet. Say the first word.',
 	channelSuggestions: 'Channel suggestions',
+	suggestionsLoading: 'Looking for matches…',
+	suggestionsEmpty: 'No matching suggestions',
 	channelBadge: (o: { name: string }) => `#${o.name}`,
 	channelBadgeAria: (o: { name: string }) => `Posts in channel "${o.name}"`,
 	// search (hashtag search and keyword search share this screen)

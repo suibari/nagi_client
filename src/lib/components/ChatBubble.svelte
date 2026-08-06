@@ -109,6 +109,11 @@
 	let editing = $state(false);
 	let editText = $state('');
 	let editMentions = $state<MentionSelection[]>([]);
+	let editChannels = $state<ChannelSelection[]>([]);
+	// 編集開始時点の所属。タグ由来（本文の #CH名 から復元できた）かどうかで、
+	// タグを消したときに CH から外すかを決める。
+	let editOriginalChannel = $state<{ uri: string; cid: string; name?: string }>();
+	let editChannelWasTagged = $state(false);
 	let editEmojis = $state<EmojiSelection[]>([]);
 	let editImages = $state<PostEditImage[]>([]);
 	let editImageProcessing = $state(false);
@@ -247,9 +252,16 @@
 			return;
 		}
 		editError = '';
-		const restored = restorePostEditState(post.text, post.facets);
+		// 所属はスレッドルートが持つので、返信の編集ではチャンネルに一切触れない。
+		editOriginalChannel =
+			!post.reply && post.channel?.cid
+				? { uri: post.channel.uri, cid: post.channel.cid, name: post.channel.name }
+				: undefined;
+		const restored = restorePostEditState(post.text, post.facets, editOriginalChannel);
 		editText = restored.text;
 		editMentions = restored.mentions;
+		editChannels = restored.channels;
+		editChannelWasTagged = restored.channels.length > 0;
 		editEmojis = restored.emojis;
 		editImageProcessing = false;
 		editImages = (post.images ?? []).map((image, sourceIndex) => ({
@@ -268,6 +280,9 @@
 		editText = '';
 		editEmojis = [];
 		editMentions = [];
+		editChannels = [];
+		editOriginalChannel = undefined;
+		editChannelWasTagged = false;
 		editImages = [];
 		editImageProcessing = false;
 		editError = '';
@@ -319,6 +334,14 @@
 			editError = m.editPostFailed();
 			return;
 		}
+		// サジェストから選び直したチャンネルが最優先。選択が無いときは、元がタグ由来の
+		// 所属なら「タグを消した＝CH から外す」、そうでなければ（CH ページからの投稿）保持する。
+		const selectedChannel = validChannelSelections(editText, editChannels)[0];
+		const nextChannel = selectedChannel
+			? { uri: selectedChannel.uri, cid: selectedChannel.cid, name: selectedChannel.name }
+			: editChannelWasTagged
+				? undefined
+				: editOriginalChannel;
 		const draft = preparePostDraft(
 			editText,
 			undefined,
@@ -326,8 +349,10 @@
 			[],
 			[],
 			editMentions,
-			[],
+			editChannels,
 			editEmojis,
+			false,
+			nextChannel ? { uri: nextChannel.uri, cid: nextChannel.cid } : undefined,
 		);
 		if (
 			!post.cwRestricted &&
@@ -339,7 +364,9 @@
 		editBusy = true;
 		editError = '';
 		try {
-			const result = await updatePost(match[2], draft, editImages);
+			// applyChannel: 返信では常に nextChannel が undefined になるため、旧クライアントが
+			// 複製した channel が残っていればこの編集で落ちる（ルート所有への正規化）。
+			const result = await updatePost(match[2], draft, editImages, { applyChannel: true });
 			// 楽観反映: このカードの本文/facets/画像を差し替え「編集済み」を立てる。AppView が
 			// putRecord を取り込むと同じ内容へ収束するため、即時 refresh は呼ばない
 			// （取り込み前は旧本文が返り楽観反映を打ち消してしまうため）。
@@ -351,9 +378,20 @@
 			post.langs = draft.langs;
 			post.images = result.imageViews?.length ? result.imageViews : undefined;
 			post.edited = true;
+			// 返信では所属を触らないので、楽観反映もルート（=非返信）のときだけ行う。
+			// 配下の返信のバッジは AppView がルートから配り直すので取り込み後に揃う。
+			if (!post.reply) {
+				post.channel = nextChannel
+					? { uri: nextChannel.uri, cid: nextChannel.cid, name: nextChannel.name }
+					: undefined;
+				if (!nextChannel) post.channelOnly = undefined;
+			}
 			editing = false;
 			editText = '';
 			editMentions = [];
+			editChannels = [];
+			editOriginalChannel = undefined;
+			editChannelWasTagged = false;
 			editEmojis = [];
 			editImages = [];
 			editImageProcessing = false;
@@ -382,17 +420,14 @@
 		// 途中の返信が上書きしないようにする。引用は新しいスレッドなので継承しない。
 		const reply =
 			mode === 'reply' ? { root: post.reply?.root ?? subject, parent: subject } : undefined;
-		// 返信は親の所属チャンネルを継承する（Misskey 同様、返信も CH TL に並ぶ）。
-		// 引用は通常投稿として扱い、引用元の CH には入れない。
-		const inheritedChannel =
-			mode === 'reply' && post.channel?.cid
-				? { uri: post.channel.uri, cid: post.channel.cid }
-				: undefined;
+		// 所属チャンネルはこっそりと同じくスレッドルートだけが所有する。返信レコードへは
+		// 複製せず、AppView が reply.root から解決して CH TL に並べる（返信単位で所属を
+		// 持てるように見せない）。引用は新しいスレッドなので引用元の CH には入れない。
 		const selectedChannel =
 			mode === 'quote' ? validChannelSelections(composeText, channels)[0] : undefined;
-		const targetChannel =
-			inheritedChannel ??
-			(selectedChannel ? { uri: selectedChannel.uri, cid: selectedChannel.cid } : undefined);
+		const targetChannel = selectedChannel
+			? { uri: selectedChannel.uri, cid: selectedChannel.cid }
+			: undefined;
 		const draft = preparePostDraft(
 			composeText,
 			reply,
@@ -409,7 +444,9 @@
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),
 			...(mode === 'quote' ? { quote: post } : {}),
-			...(inheritedChannel && post.channel
+			// 楽観表示のバッジだけは返信でも出す（レコードには持たないが、AppView は
+			// ルート由来で channel_uri を埋めるので取り込み後も同じ見え方に収束する）。
+			...(mode === 'reply' && post.channel
 				? { channel: post.channel }
 				: selectedChannel
 					? {
@@ -546,7 +583,9 @@
 					id={`edit-${post.cid}`}
 					bind:value={editText}
 					bind:mentions={editMentions}
+					bind:channels={editChannels}
 					bind:emojis={editEmojis}
+					channelSuggestionsEnabled={!post.reply}
 					placeholder={m.editPlaceholder()}
 					disabled={editBusy}
 					contentWarningEnabled={Boolean(post.cwRestricted)}
@@ -590,13 +629,12 @@
 				>{/if}
 		{/if}{#if !editing && visibleImages?.length}<ImageGallery
 				images={visibleImages}
-			/>{#if imageToggleable}<button
-					class="read"
-					onclick={() => (showAllImages = !showAllImages)}
+			/>{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
 					>{showAllImages ? m.readLess() : m.showAllMedia()}</button
 				>{/if}{/if}{#if visibleLinkCards?.length}<div class="link-cards">
 				{#each visibleLinkCards as card}<LinkCard {card} />{/each}
-			</div>{#if linkCardToggleable}<button
+			</div>
+			{#if linkCardToggleable}<button
 					class="read"
 					onclick={() => (showAllLinkCards = !showAllLinkCards)}
 					>{showAllLinkCards ? m.readLess() : m.showAllMedia()}</button

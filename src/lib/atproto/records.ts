@@ -373,9 +373,17 @@ function blobCid(blob: unknown): string | undefined {
 
 /**
  * 既存投稿の本文と画像を編集する。既存画像は getRecord した BlobRef を再利用し、
- * 新規画像だけアップロードする。createdAt・reply・channel・kossori 等のフィールドは保持する。
+ * 新規画像だけアップロードする。createdAt・reply・kossori 等のフィールドは保持する。
+ *
+ * applyChannel を渡したときだけ所属チャンネルを draft の内容で書き直す（未指定なら保持）。
+ * channelOnly は channel と対でしか意味を持たないので、外すときは必ず一緒に消す。
  */
-export async function updatePost(rkey: string, draft: PostDraft, images?: PostEditImage[]) {
+export async function updatePost(
+	rkey: string,
+	draft: PostDraft,
+	images?: PostEditImage[],
+	opts: { applyChannel?: boolean } = {},
+) {
 	const s = current();
 	const agent = new Agent(s);
 	const { data } = await agent.com.atproto.repo.getRecord({
@@ -390,6 +398,13 @@ export async function updatePost(rkey: string, draft: PostDraft, images?: PostEd
 		facets: draft.facets,
 		langs: draft.langs,
 	};
+	if (opts.applyChannel) {
+		if (draft.channel) record.channel = draft.channel;
+		else {
+			delete record.channel;
+			delete record.channelOnly;
+		}
+	}
 	const cwRestricted = record.cwRestricted === true;
 	if (
 		!cwRestricted &&

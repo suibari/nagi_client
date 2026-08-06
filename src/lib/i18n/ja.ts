@@ -853,6 +853,8 @@ export const ja = {
 	channelBannerRemove: '画像を削除',
 	channelTimelineEmpty: 'このチャンネルにはまだ投稿がありません。最初の一言をどうぞ。',
 	channelSuggestions: 'チャンネル候補',
+	suggestionsLoading: '候補を探しています…',
+	suggestionsEmpty: '一致する候補はありません',
 	channelBadge: (o: { name: string }) => `#${o.name}`,
 	channelBadgeAria: (o: { name: string }) => `チャンネル「${o.name}」の投稿`,
 	// search（ハッシュタグ検索とキーワード検索が同画面に相乗り）

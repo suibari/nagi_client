@@ -156,6 +156,65 @@
 .mention-suggestions button small {
 	color: var(--text-muted);
 }
+/* 検索中／該当なしの一言。候補行と同じ内側余白に揃える。 */
+.mention-suggestions .suggestion-status {
+	margin: 0;
+	padding: 8px;
+	color: var(--text-muted);
+	font-size: 0.85em;
+}
+/* 検索中のスケルトン。行の骨格だけ先に出して「探している」ことを見せる。 */
+.mention-suggestions .suggestion-skeleton {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 8px;
+}
+.suggestion-skeleton-figure,
+.suggestion-skeleton-bar {
+	border-radius: var(--radius-s);
+	background: var(--bg-subtle);
+	animation: suggestion-skeleton-pulse 1.2s ease-in-out infinite;
+}
+.suggestion-skeleton-figure {
+	flex: 0 0 32px;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+}
+.channel-suggestions .suggestion-skeleton-figure {
+	flex-basis: 76px;
+	width: 76px;
+	height: 44px;
+	border-radius: var(--radius-s);
+}
+.suggestion-skeleton-copy {
+	display: grid;
+	gap: 6px;
+	flex: 1;
+	min-width: 0;
+}
+.suggestion-skeleton-bar {
+	height: 10px;
+}
+.suggestion-skeleton-bar.short {
+	width: 55%;
+}
+@keyframes suggestion-skeleton-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.suggestion-skeleton-figure,
+	.suggestion-skeleton-bar {
+		animation: none;
+	}
+}
 .channel-suggestions button {
 	align-items: stretch;
 }
