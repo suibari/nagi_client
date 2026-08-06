@@ -31,7 +31,12 @@
 		usableAsCoverImage,
 	} from '$lib/standardsite/document';
 	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
-	import { getExternalTarget, type ExternalTarget, type PostScope } from '$lib/post/scope';
+	import {
+		getExternalTarget,
+		setLastPostScope,
+		type ExternalTarget,
+		type PostScope,
+	} from '$lib/post/scope';
 	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は投稿範囲の
 	// 「こっそり」で表現する（レコード上は kossori）。
 	let {
@@ -301,6 +306,7 @@
 					warning = e instanceof Error ? e.message : m.standardSiteFailed();
 				}
 			}
+			setLastPostScope(scope);
 			clearComposer();
 			await Promise.resolve(onposted(response.data.uri)).catch(() => undefined);
 		} catch (e) {
@@ -441,7 +447,10 @@
 		{externalEligible}
 		{externalDisabledReason}
 		channelName={effectiveChannel?.name}
-		onselect={(next) => (scope = next)}
+		onselect={(next) => {
+			scope = next;
+			setLastPostScope(next);
+		}}
 		onclose={() => (scopeDialogOpen = false)}
 	/>
 {/if}

@@ -16,15 +16,44 @@ export type PostScope = 'kossori' | 'feed' | 'external';
 
 export const POST_SCOPES: PostScope[] = ['kossori', 'feed', 'external'];
 
+const SCOPE_KEY = 'nagi-last-post-scope';
+const TARGET_KEY = 'nagi-external-target';
+
 /** 自分とリストの人しか居ない場所。従来のホームタブと同じくこっそりを既定にする。 */
 const HOME_LIKE = new Set<string>(['/', '/feed']);
 
+function read(key: string): string | null {
+	if (typeof window === 'undefined') return null;
+	try {
+		return window.localStorage.getItem(key);
+	} catch {
+		return null;
+	}
+}
+
+export function getLastPostScope(): PostScope | null {
+	const stored = read(SCOPE_KEY);
+	if (stored === 'kossori' || stored === 'feed' || stored === 'external') return stored;
+	return null;
+}
+
+export function setLastPostScope(scope: PostScope) {
+	if (typeof window === 'undefined') return;
+	try {
+		window.localStorage.setItem(SCOPE_KEY, scope);
+	} catch {
+		// 保存できなくても投稿自体には影響しない。
+	}
+}
+
 /**
  * そのページで投稿を始めたときの既定の投稿範囲。
- * 投稿ボタンはサイドバー（PC）と浮かぶFAB（スマホ）の2箇所にあるので、
- * 判定がずれないようここ1箇所に置く。
+ * 端末に前回選択した投稿範囲が保存されている場合はそれを優先し、
+ * 未保存の場合はページに応じた既定値（ホーム等はこっそり）を使用する。
  */
 export function defaultScopeForPath(pathname: string): PostScope {
+	const lastScope = getLastPostScope();
+	if (lastScope) return lastScope;
 	return HOME_LIKE.has(pathname) ? 'kossori' : 'feed';
 }
 
@@ -34,17 +63,6 @@ export function defaultScopeForPath(pathname: string): PostScope {
  * 保存先が localStorage なので端末ごとの設定になる（オプトイン本体と同じ方針）。
  */
 export type ExternalTarget = 'bluesky' | 'standardSite';
-
-const TARGET_KEY = 'nagi-external-target';
-
-const read = (key: string) => {
-	if (typeof window === 'undefined') return null;
-	try {
-		return window.localStorage.getItem(key);
-	} catch {
-		return null;
-	}
-};
 
 /**
  * 選択中の外部クロスポスト先。未設定のときは、実際にオプトイン済みの方へ倒す
