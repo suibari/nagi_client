@@ -260,6 +260,7 @@
 	pointer-events: none;
 }
 .community-affirmation-card.unread {
+	padding-inline-start: 12px;
 	box-shadow: inset 3px 0 0 var(--accent);
 }
 .community-affirmation-dismiss {

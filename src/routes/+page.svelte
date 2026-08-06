@@ -407,6 +407,7 @@
 	}
 	.my-nagi-bot-card :global(> .thread-unit.unread),
 	.my-nagi-activity-card :global(> .thread-unit.unread) {
+		padding-inline-start: 12px;
 		box-shadow: inset 3px 0 0 var(--accent);
 	}
 

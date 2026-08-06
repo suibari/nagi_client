@@ -2635,7 +2635,8 @@
 	position: relative;
 	z-index: 1;
 }
-/* 未読は全コンポーネント共通で「左のアクセントバー（背景変更なし）」のみで示す。 */
+/* 未読は全コンポーネント共通で「左のアクセントバー（背景変更なし）」のみで示す。
+   アクセントバー（inset 3px 0 0）を表示する際は、バーとコンテンツの間に必ず内側余白（padding-inline-start: 12px）を確保すること。 */
 .is-unread,
 .notification.unread,
 .thread-unit.unread {
