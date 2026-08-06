@@ -3697,6 +3697,12 @@ a.about-feature:focus-visible {
 	font-size: 1.15rem;
 	margin: 0;
 }
+.channels-intro {
+	margin: 0 0 14px;
+	color: var(--text-muted);
+	font-size: 0.85rem;
+	line-height: 1.7;
+}
 .channels-head button.primary {
 	display: inline-flex;
 	align-items: center;
@@ -4254,4 +4260,224 @@ a.about-feature:focus-visible {
 .avatar-link {
 	display: inline-flex;
 	border-radius: 50%;
+}
+
+/* ---- フィードのタブ設定（/settings/feed-tabs） ---- */
+.feed-tab-add-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 12px 0;
+}
+.feed-tab-sort {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.feed-tab-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: var(--bg-raised);
+	/* ドラッグ中にページがスクロールへ持っていかれないようにする。 */
+	touch-action: none;
+}
+.feed-tab-row.dragging {
+	opacity: 0.35;
+}
+.feed-tab-row.drop-target {
+	box-shadow: inset 0 0 0 2px var(--accent);
+}
+/* 行のゴーストは絵文字タイル用の見た目を打ち消して、行のまま追従させる。 */
+.feed-tab-row.emoji-sort-ghost {
+	font-size: inherit;
+	justify-content: flex-start;
+}
+/* ドラッグ中に指へ追従するコピー。実体の行と同じ見た目で、当たり判定だけ外す。 */
+.feed-tab-ghost {
+	position: fixed;
+	z-index: 150;
+	box-shadow: var(--shadow-pop);
+	opacity: 0.9;
+	pointer-events: none;
+}
+.feed-tab-handle {
+	flex: 0 0 auto;
+	padding: 4px;
+	border: 0;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 16px;
+	line-height: 1;
+	cursor: grab;
+}
+.feed-tab-row-text {
+	display: flex;
+	/* min-width:0 が無いと、フレックスの最小サイズが効いて名前が1文字ずつ縦に折れる。 */
+	min-width: 0;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 2px;
+	/* settings-detail は中央寄せなので、行の中身だけ左に戻す。 */
+	text-align: start;
+}
+.feed-tab-row-text strong,
+.feed-tab-row-text small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.feed-tab-row-text strong {
+	font-size: 0.95rem;
+}
+.feed-tab-row-text small {
+	color: var(--text-muted);
+	font-size: 0.75rem;
+}
+/* アイコンと削除ボタンは潰さない。潰れると中身が縦に折れる。 */
+.feed-tab-row > svg,
+.feed-tab-row > .icon-action,
+.feed-tab-handle {
+	flex: 0 0 auto;
+}
+.feed-tab-kinds,
+.feed-tab-channels {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 8px 0;
+	padding: 0;
+	list-style: none;
+	max-height: 40vh;
+	overflow-y: auto;
+}
+.feed-tab-kind {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: transparent;
+	text-align: start;
+}
+.feed-tab-kind:hover:not(:disabled) {
+	background: var(--bg-hover);
+}
+.feed-tab-kind:disabled {
+	opacity: 0.45;
+}
+.feed-tab-kind > svg {
+	flex: 0 0 auto;
+}
+.feed-tab-kind-text {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	text-align: start;
+}
+.feed-tab-kind-text strong {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.feed-tab-kind-text small {
+	color: var(--text-muted);
+	font-size: 0.75rem;
+}
+.feed-tab-group {
+	margin: 10px 0 4px;
+	color: var(--text-muted);
+	font-size: 0.78rem;
+}
+.feed-tab-channels button {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: transparent;
+	text-align: start;
+}
+.feed-tab-channels button:hover:not(:disabled) {
+	background: var(--bg-hover);
+}
+.feed-tab-channels button:disabled {
+	opacity: 0.45;
+}
+.feed-tab-search-kind {
+	display: inline-flex;
+	gap: 4px;
+	margin-bottom: 8px;
+}
+.feed-tab-search-kind button {
+	padding: 6px 12px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-pill);
+	background: transparent;
+	font-size: 0.85rem;
+}
+.feed-tab-search-kind button.active {
+	border-color: var(--accent);
+	background: var(--accent-softer);
+	color: var(--accent-strong);
+}
+/* プレビュー。実物と同じ .feed-tabs を使うので、sticky だけ打ち消す。 */
+.feed-tab-preview {
+	margin-top: 20px;
+	padding-top: 12px;
+	border-top: 1px solid var(--line);
+}
+.feed-tab-preview-label {
+	margin: 0 0 6px;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+}
+.feed-tab-preview .feed-tabs {
+	position: static;
+	margin-bottom: 8px;
+}
+.feed-tab-preview-tab {
+	position: relative;
+	flex: 1;
+	padding: 10px 8px 12px;
+	border: 0;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 14px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+.feed-tabs.scrollable .feed-tab-preview-tab {
+	flex: 0 0 auto;
+	max-width: 12em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.feed-tab-preview-tab.active {
+	color: var(--accent-strong);
+}
+.feed-tab-preview-tab.active::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: 2px;
+	width: 30px;
+	height: 3px;
+	border-radius: var(--radius-pill);
+	background: var(--accent);
+	transform: translateX(-50%);
+}
+/* プレビューの投稿は読むためではなく雰囲気を見るためのもの。操作は無効にする。 */
+.feed-tab-preview-body {
+	pointer-events: none;
+	max-height: 60vh;
+	overflow: hidden;
+	mask-image: linear-gradient(to bottom, #000 70%, transparent);
 }

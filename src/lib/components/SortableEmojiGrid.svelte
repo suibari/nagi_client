@@ -1,6 +1,6 @@
 <script lang="ts" generics="T extends { id: string }">
-	import { onDestroy, type Snippet } from 'svelte';
-	import { createDragGhost } from '$lib/emoji/dragGhost';
+	import type { Snippet } from 'svelte';
+	import { createSortable } from '$lib/dnd/sortable.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
 	let {
@@ -22,86 +22,18 @@
 	} = $props();
 
 	// タップ（リアクション）とドラッグ（並び替え）を同じタイルで受けるためのしきい値。
-	const DRAG_THRESHOLD = 6;
-
-	let draggingId = $state<string>();
-	let targetId = $state<string>();
-	let pointerId = $state<number>();
-	let pendingId: string | undefined;
-	let startX = 0;
-	let startY = 0;
-	let announcement = $state('');
-	let ghost: ReturnType<typeof createDragGhost> | undefined;
-
-	function removeGhost() {
-		ghost?.remove();
-		ghost = undefined;
-	}
-
-	function move(from: number, to: number) {
-		if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return;
-		const next = [...items];
-		const [item] = next.splice(from, 1);
-		next.splice(to, 0, item);
-		items = next;
-		onreorder?.(next);
-		announcement = m.emojiFavoriteMoved({ position: to + 1 });
-	}
-
-	function startPointer(event: PointerEvent, id: string) {
-		if (event.button !== 0 && event.pointerType === 'mouse') return;
-		// タイル内のボタン（削除など）はドラッグにもタップ選択にも巻き込まない。
-		if ((event.target as HTMLElement).closest('button')) return;
-		pointerId = event.pointerId;
-		pendingId = id;
-		startX = event.clientX;
-		startY = event.clientY;
-		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-	}
-
-	function movePointer(event: PointerEvent) {
-		if (event.pointerId !== pointerId) return;
-		if (pendingId) {
-			if (disabled || items.length < 2) return;
-			const moved = Math.hypot(event.clientX - startX, event.clientY - startY);
-			if (moved < DRAG_THRESHOLD) return;
-			draggingId = pendingId;
-			targetId = pendingId;
-			pendingId = undefined;
-			ghost = createDragGhost(event.currentTarget as HTMLElement, event.clientX, event.clientY);
-		}
-		if (!draggingId) return;
-		event.preventDefault();
-		ghost?.move(event.clientX, event.clientY);
-		const target = document
-			.elementFromPoint(event.clientX, event.clientY)
-			?.closest<HTMLElement>('[data-sortable-emoji-id]');
-		const nextTargetId = target?.dataset.sortableEmojiId;
-		if (!nextTargetId || nextTargetId === draggingId || nextTargetId === targetId) return;
-		targetId = nextTargetId;
-		move(
-			items.findIndex((item) => item.id === draggingId),
-			items.findIndex((item) => item.id === nextTargetId),
-		);
-	}
-
-	function endPointer(event: PointerEvent) {
-		if (event.pointerId !== pointerId) return;
-		const target = event.currentTarget as HTMLElement;
-		if (target.hasPointerCapture(event.pointerId)) {
-			target.releasePointerCapture(event.pointerId);
-		}
-		const tapped = event.type === 'pointerup' && pendingId;
-		if (tapped) {
-			const item = items.find((candidate) => candidate.id === pendingId);
-			if (item) onselect?.(item, event);
-		}
-		pendingId = undefined;
-		draggingId = undefined;
-		targetId = undefined;
-		pointerId = undefined;
-		removeGhost();
-	}
+	const sortable = createSortable<T>({
+		items: () => items,
+		commit: (next) => {
+			items = next;
+			onreorder?.(next);
+		},
+		ghostClass: 'emoji-sort-ghost',
+		threshold: 6,
+		onTap: (item, event) => onselect?.(item, event),
+		announce: (position) => m.emojiFavoriteMoved({ position }),
+		disabled: () => disabled,
+	});
 
 	function keydown(event: KeyboardEvent, id: string) {
 		if (event.key === 'Enter' || event.key === ' ') {
@@ -111,44 +43,26 @@
 			onselect(item, event);
 			return;
 		}
-		if (disabled || items.length < 2) return;
-		const from = items.findIndex((item) => item.id === id);
-		let to: number | undefined;
-		if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') to = Math.max(0, from - 1);
-		if (event.key === 'ArrowRight' || event.key === 'ArrowDown')
-			to = Math.min(items.length - 1, from + 1);
-		if (event.key === 'Home') to = 0;
-		if (event.key === 'End') to = items.length - 1;
-		if (to === undefined || to === from) return;
+		if (!sortable.moveByKey(id, event.key)) return;
 		event.preventDefault();
-		move(from, to);
-		requestAnimationFrame(() =>
-			document.querySelector<HTMLElement>(`[data-sortable-emoji-id="${CSS.escape(id)}"]`)?.focus(),
-		);
+		sortable.refocus(id);
 	}
-
-	onDestroy(removeGhost);
 </script>
 
-<div class="emoji-sort-grid">
+<div class="emoji-sort-grid" use:sortable.container>
 	{#each items as item, index (item.id)}
 		<div
 			class="emoji-sort-item"
-			class:dragging={draggingId === item.id}
-			class:drop-target={Boolean(draggingId && targetId === item.id && draggingId !== item.id)}
-			data-sortable-emoji-id={item.id}
+			class:dragging={sortable.draggingId === item.id}
+			class:drop-target={sortable.isDropTarget(item.id)}
+			data-sortable-id={item.id}
 			role="button"
 			tabindex="0"
 			aria-label={m.emojiFavoriteReorder({ index: index + 1 })}
-			onpointerdown={(event) => startPointer(event, item.id)}
-			onpointermove={movePointer}
-			onpointerup={endPointer}
-			onpointercancel={endPointer}
-			onlostpointercapture={endPointer}
 			onkeydown={(event) => keydown(event, item.id)}
 		>
 			{@render children(item)}
 		</div>
 	{/each}
 </div>
-<span class="visually-hidden" aria-live="polite">{announcement}</span>
+<span class="visually-hidden" aria-live="polite">{sortable.announcement}</span>

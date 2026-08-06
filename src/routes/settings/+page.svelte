@@ -49,6 +49,12 @@
 					description={m.settingsNotificationsDescription()}
 				/>
 				<SettingsCategoryCard
+					href="/settings/feed-tabs"
+					icon="text"
+					title={m.settingsFeedTabsTitle()}
+					description={m.settingsFeedTabsDescription()}
+				/>
+				<SettingsCategoryCard
 					href="/settings/home-list"
 					icon="home"
 					title={m.settingsHomeListTitle()}

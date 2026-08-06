@@ -12,6 +12,7 @@
 	import { deleteChannel, setChannelPinnedPost, updateChannel } from '$lib/atproto/records';
 	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
+	import { rememberChannelLabel } from '$lib/feed-tabs/labels.svelte';
 	import type { ChannelView, PostView } from '$lib/api/types';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import BotReplyStatus from '$lib/components/BotReplyStatus.svelte';
@@ -46,6 +47,9 @@
 				const res = await getChannel(target);
 				if (cancelled() || target !== currentUri) return;
 				channel = res.channel;
+				// フィードのタブに並んでいる場合の表示名をここで更新しておく
+				// （タブ側の label スナップショットは同期対象なので触らない）。
+				rememberChannelLabel(res.channel.uri, res.channel.name);
 				headError = '';
 				createdChannels.remove(target);
 				return;

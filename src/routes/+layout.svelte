@@ -27,6 +27,7 @@
 	import { loadReactionUsage, prepareReactionPalette } from '$lib/emoji/reactionUsage';
 	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
+	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -152,6 +153,10 @@
 	onMount(() => {
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
+		// フィードのタブ構成を localStorage から読む。プリレンダでは既定タブのままなので、
+		// ここで一度読まないと、サインインしない人のカスタムが永久に反映されない
+		// （サインイン後は syncPreferences が DID スコープで読み直す）。
+		feedTabs.hydrate();
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
 		void initOAuth().then(() => resolvePendingOptIns());
 		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。

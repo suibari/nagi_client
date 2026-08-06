@@ -282,17 +282,48 @@ export type RemoteReadPosition = { section: ReadPositionSection; indexedAt: stri
 /** お気に入り絵文字1つ。localStorage の ReactionChoice と同じ形をそのまま預ける。 */
 export type EmojiFavorite =
 	{ kind: 'unicode'; emoji: string } | { kind: 'custom'; emoji: EmojiView };
+/**
+ * フィードのタブ1枚の種別。
+ * list / custom は「入れ物」で、どれを指すかは source が持つ（list はいまホームだけ、
+ * custom はいま全肯定だけ）。将来ユーザーが定義したカスタムフィードも custom に入る。
+ */
+export type FeedTabKind = 'list' | 'global' | 'custom' | 'channel' | 'search';
+/** list / custom が指す組み込みの中身。ユーザー定義のフィードは将来 uri で指す。 */
+export type FeedTabSource = 'home' | 'affirmation';
+/**
+ * フィードのタブ1枚。種別ごとの union にせずフラットに持つのは、lexicon で
+ * タグ付き union を表しづらく、将来の種別追加を optional の追加で吸収したいため。
+ */
+export type FeedTab = {
+	id: string;
+	kind: FeedTabKind;
+	/** kind が list / custom のときの参照先（list=home, custom=affirmation）。 */
+	source?: FeedTabSource;
+	/** kind==='channel' のチャンネル AT-URI。 */
+	uri?: string;
+	/** kind==='search' の保存クエリ。 */
+	query?: string;
+	queryKind?: 'keyword' | 'tag';
+	/** 表示名のスナップショット。権威は uri / query 側で、これは初回描画用。 */
+	label?: string;
+};
 export type PreferencesView = {
 	readPositions: RemoteReadPosition[];
 	emojiFavorites: EmojiFavorite[];
 	/** 省略＝このアカウントのお気に入りがまだ一度も同期されていない（初回同期の合図）。 */
 	emojiFavoritesUpdatedAt?: string;
+	feedTabs: FeedTab[];
+	/** 省略＝まだ一度もタブをカスタムしていない。クライアントは既定タブを使う。 */
+	feedTabsUpdatedAt?: string;
 };
 export type PutPreferencesInput = {
 	readPositions?: RemoteReadPosition[];
 	emojiFavorites?: EmojiFavorite[];
 	/** emojiFavorites を送るときは必須。保存済みより古ければサーバは書き込まない。 */
 	emojiFavoritesUpdatedAt?: string;
+	feedTabs?: FeedTab[];
+	/** feedTabs を送るときは必須。保存済みより古ければサーバは書き込まない。 */
+	feedTabsUpdatedAt?: string;
 };
 
 // ---------------------------------------------------------------------------

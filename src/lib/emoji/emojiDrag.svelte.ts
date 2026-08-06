@@ -1,4 +1,4 @@
-import { createDragGhost } from './dragGhost';
+import { createDragGhost } from '$lib/dnd/ghost';
 
 /**
  * ドロップ先。DOM 側は `data-emoji-drop="<kind>"` と、必要なら
@@ -91,7 +91,12 @@ export function createEmojiDrag<P>(options: Options<P>) {
 				payload = pending;
 				pending = undefined;
 				dragging = true;
-				ghost = createDragGhost(event.currentTarget as HTMLElement, event.clientX, event.clientY);
+				ghost = createDragGhost(
+					event.currentTarget as HTMLElement,
+					event.clientX,
+					event.clientY,
+					'emoji-sort-ghost',
+				);
 			}
 			if (!dragging || payload === undefined) return;
 			event.preventDefault();

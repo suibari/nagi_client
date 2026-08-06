@@ -428,6 +428,48 @@
 	background: var(--accent);
 	transform: translateX(-50%);
 }
+/* タブを増やせるので、4本以上は等分をやめて横スクロールにする。 */
+.feed-tabs.scrollable {
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+.feed-tabs.scrollable::-webkit-scrollbar {
+	display: none;
+}
+.feed-tabs.scrollable a {
+	flex: 0 0 auto;
+	max-width: 12em;
+	padding-inline: 12px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+/* ＋ はスクロールしても必ず手が届く位置に貼り付けておく。 */
+.feed-tab-add {
+	position: sticky;
+	inset-inline-end: 0;
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px 8px 12px;
+	background: var(--bg);
+}
+.feed-tabs.scrollable .feed-tab-add {
+	box-shadow: -8px 0 8px -6px var(--bg);
+}
+/* チャンネルタブから元のチャンネルページへ。バナーや追加ボタンは向こうにある。 */
+.feed-tab-channel-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin: -8px 8px 10px;
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}
+.feed-tab-channel-link:hover {
+	color: var(--accent-strong);
+}
 /* --- mobile top bar & bottom nav (hidden on desktop) --- */
 .mobile-top,
 .mobile-nav {

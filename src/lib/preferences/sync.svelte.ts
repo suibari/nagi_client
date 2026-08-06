@@ -9,6 +9,14 @@ import {
 	setFavoritesScope,
 	unionFavorites,
 } from '$lib/emoji/favorites';
+import {
+	adoptFeedTabs,
+	feedTabs,
+	feedTabsStorageKey,
+	loadStoredFeedTabs,
+	setFeedTabsScope,
+} from '$lib/feed-tabs/feed-tabs.svelte';
+import { feedTabLabelsStorageKey } from '$lib/feed-tabs/labels.svelte';
 import { myNagiStorageKey, type MyNagiUnreadSection } from '$lib/my-nagi/unread.svelte';
 import { newsStorageKey } from '$lib/news/unread.svelte';
 import { session } from '$lib/oauth/session.svelte';
@@ -77,6 +85,26 @@ function applyFavorites(did: string, view: PreferencesView) {
 		preferences.pushFavorites(local.choices as EmojiFavorite[], localUpdatedAt);
 }
 
+/**
+ * フィードのタブ構成の突き合わせ。お気に入りと違い**和集合はしない** — 順序のある
+ * 1本の設定で、和集合すると同じタブが2枚並ぶ。純粋に updatedAt の後勝ち。
+ * どちらにも記録が無ければ何もしない（既定タブのまま。勝手に保存すると、将来
+ * 既定を変えてもこの人には反映されなくなる）。
+ */
+function applyFeedTabs(did: string, view: PreferencesView) {
+	const local = loadStoredFeedTabs(did);
+	const remoteUpdatedAt = view.feedTabsUpdatedAt;
+	const localUpdatedAt = local?.updatedAt ?? '';
+	// ISO 8601(UTC) 同士なので文字列比較がそのまま時刻順になる。
+	if (remoteUpdatedAt && remoteUpdatedAt > localUpdatedAt) {
+		adoptFeedTabs(did, view.feedTabs, remoteUpdatedAt);
+		feedTabs.adopt(view.feedTabs);
+		return;
+	}
+	if (local && localUpdatedAt > (remoteUpdatedAt ?? ''))
+		preferences.pushFeedTabs(local.tabs, localUpdatedAt);
+}
+
 let syncing: Promise<void> = Promise.resolve();
 let syncedDid: string | undefined;
 
@@ -91,12 +119,16 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 	if (!did) {
 		syncedDid = undefined;
 		setFavoritesScope(undefined);
+		setFeedTabsScope(undefined);
 		preferences.clear();
 		syncing = Promise.resolve();
 		return syncing;
 	}
 	if (syncedDid === did) return syncing;
 	syncedDid = did;
+	// タブ構成はサーバー同期の成否に関わらずアカウント単位。load を待たずに切り替える
+	// （待つと、同期できない端末で guest のタブを見せたまま guest のキーへ書いてしまう）。
+	setFeedTabsScope(did);
 	syncing = (async () => {
 		const view = await preferences.load();
 		if (!view || get(session)?.did !== did) return;
@@ -107,6 +139,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		sectionWatermark('news', newsStorageKey(did), did);
 		reconcileSections(did);
 		applyFavorites(did, view);
+		applyFeedTabs(did, view);
 	})();
 	return syncing;
 }
@@ -128,6 +161,9 @@ export function clearLocalPreferenceCache(did: string) {
 		favoritesStorageKey(),
 		favoritesStorageKey(did),
 		firstSyncKey(did),
+		feedTabsStorageKey(),
+		feedTabsStorageKey(did),
+		feedTabLabelsStorageKey,
 		newsStorageKey(),
 		newsStorageKey(did),
 		...MY_NAGI_SECTIONS.flatMap((section) => [
@@ -145,17 +181,22 @@ export function clearLocalPreferenceCache(did: string) {
 	}
 	clearSections();
 	setFavoritesScope(undefined);
+	setFeedTabsScope(undefined);
 	syncedDid = undefined;
 }
 
 // 送信結果（マージ後の確定値）でローカルを整える。押し返さないと、端末ごとに違う値を
 // 持ったまま「同期したつもり」になる。
-preferences.subscribeMerged((view, sentFavorites) => {
+preferences.subscribeMerged((view, sent) => {
 	const did = get(session)?.did;
 	if (!did) return;
 	reconcileSections(did);
-	// お気に入りを送っていない送信の応答で上書きすると、デバウンス待ちの編集を
-	// 巻き戻してしまう。自分が送った回の結果だけ取り込む。
-	if (sentFavorites && view.emojiFavoritesUpdatedAt)
+	// 送っていない項目を応答で上書きすると、デバウンス待ちの編集を巻き戻して
+	// しまう。自分が送った回の結果だけ取り込む。
+	if (sent.favorites && view.emojiFavoritesUpdatedAt)
 		adoptFavorites(did, view.emojiFavorites as ReactionChoice[], view.emojiFavoritesUpdatedAt);
+	if (sent.feedTabs && view.feedTabsUpdatedAt) {
+		adoptFeedTabs(did, view.feedTabs, view.feedTabsUpdatedAt);
+		feedTabs.adopt(view.feedTabs);
+	}
 });

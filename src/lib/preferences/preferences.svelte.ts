@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { ApiRequestError, getPreferences, putPreferences } from '$lib/api/appview';
 import type {
 	EmojiFavorite,
+	FeedTab,
 	PreferencesView,
 	PutPreferencesInput,
 	ReadPositionSection,
@@ -29,8 +30,11 @@ const isScopeDenied = (error: unknown) =>
 		error.status === 403 ||
 		(error.status === 400 && /scope|permission/i.test(error.message)));
 
-/** マージ後の確定値の通知。sentFavorites はこの送信にお気に入りを含めたか。 */
-type MergedHandler = (view: PreferencesView, sentFavorites: boolean) => void;
+/** マージ後の確定値の通知。sent はこの送信に何を含めたか（含めていない項目で上書きしないため）。 */
+type MergedHandler = (
+	view: PreferencesView,
+	sent: { favorites: boolean; feedTabs: boolean },
+) => void;
 
 class Preferences {
 	/** サーバーと同期できている（getPreferences が成功した）か。 */
@@ -46,6 +50,7 @@ class Preferences {
 	#remotePositions = new Map<ReadPositionSection, RemoteReadPosition>();
 	#pendingPositions = new Map<ReadPositionSection, RemoteReadPosition>();
 	#pendingFavorites: { choices: EmojiFavorite[]; updatedAt: string } | undefined;
+	#pendingFeedTabs: { tabs: FeedTab[]; updatedAt: string } | undefined;
 	#flushTimer: ReturnType<typeof setTimeout> | undefined;
 	#flushing: Promise<void> = Promise.resolve();
 	#onMerged: MergedHandler | undefined;
@@ -94,6 +99,7 @@ class Preferences {
 		this.#remotePositions.clear();
 		this.#pendingPositions.clear();
 		this.#pendingFavorites = undefined;
+		this.#pendingFeedTabs = undefined;
 		if (this.#flushTimer) clearTimeout(this.#flushTimer);
 		this.#flushTimer = undefined;
 	}
@@ -107,6 +113,12 @@ class Preferences {
 	pushFavorites(choices: EmojiFavorite[], updatedAt: string) {
 		if (!this.synced) return;
 		this.#pendingFavorites = { choices, updatedAt };
+		this.#schedule();
+	}
+
+	pushFeedTabs(tabs: FeedTab[], updatedAt: string) {
+		if (!this.synced) return;
+		this.#pendingFeedTabs = { tabs, updatedAt };
 		this.#schedule();
 	}
 
@@ -142,9 +154,11 @@ class Preferences {
 		const did = this.#did;
 		const positions = [...this.#pendingPositions.values()];
 		const favorites = this.#pendingFavorites;
-		if (!positions.length && !favorites) return;
+		const feedTabs = this.#pendingFeedTabs;
+		if (!positions.length && !favorites && !feedTabs) return;
 		this.#pendingPositions.clear();
 		this.#pendingFavorites = undefined;
+		this.#pendingFeedTabs = undefined;
 		const input: PutPreferencesInput = {
 			...(positions.length ? { readPositions: positions } : {}),
 			...(favorites
@@ -153,12 +167,18 @@ class Preferences {
 						emojiFavoritesUpdatedAt: favorites.updatedAt,
 					}
 				: {}),
+			...(feedTabs
+				? { feedTabs: feedTabs.tabs, feedTabsUpdatedAt: feedTabs.updatedAt }
+				: {}),
 		};
 		try {
 			const view = await putPreferences(input);
 			if (get(session)?.did !== did) return;
 			this.#rememberPositions(view);
-			this.#onMerged?.(view, Boolean(favorites));
+			this.#onMerged?.(view, {
+				favorites: Boolean(favorites),
+				feedTabs: Boolean(feedTabs),
+			});
 		} catch (error) {
 			if (isScopeDenied(error)) {
 				// 認可が切れた/足りない。以後の push を止めて localStorage 単独へ落とす。
@@ -172,6 +192,7 @@ class Preferences {
 				if (!this.#pendingPositions.has(position.section))
 					this.#pendingPositions.set(position.section, position);
 			if (favorites && !this.#pendingFavorites) this.#pendingFavorites = favorites;
+			if (feedTabs && !this.#pendingFeedTabs) this.#pendingFeedTabs = feedTabs;
 		}
 	}
 }

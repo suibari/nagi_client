@@ -139,6 +139,8 @@
 		</button>
 	{/if}
 </section>
+<!-- Bluesky から来た人・Nagi 初心者向け。「入らないと書けない場所」に見せないための一文。 -->
+<p class="channels-intro">{m.channelsIntro()}</p>
 
 <section class="channels-list" aria-busy={loading}>
 	{#if loading && !channels.length}
