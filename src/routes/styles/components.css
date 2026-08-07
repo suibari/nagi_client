@@ -2757,6 +2757,15 @@ a.notification-main::before {
 	color: var(--text-faint);
 	flex: 0 0 auto;
 }
+/* 自動翻訳で本文を差し替えたことを示す小さな見出し。TranslateToggle の .label と揃える。 */
+.notification-label {
+	margin: 8px 0 0;
+	color: var(--text-faint);
+	font-size: 12px;
+}
+.notification-label + .notification-subject {
+	margin-top: 2px;
+}
 .notification-subject {
 	display: -webkit-box;
 	overflow: hidden;

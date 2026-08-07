@@ -11,6 +11,8 @@
 	import { pageRefresh } from '$lib/components/shell/nav';
 	import { startVisiblePolling } from '$lib/polling';
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
+	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
+	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import ContentWarningMask from '$lib/components/ContentWarningMask.svelte';
 	import BusinessCard from '$lib/components/BusinessCard.svelte';
 	import BusinessCardDialog from '$lib/components/BusinessCardDialog.svelte';
@@ -38,6 +40,23 @@
 		reloading = true;
 		try {
 			items = (await getNotifications()).items;
+			// 通知に引用は出さないので、prepare が引用まで展開しないよう必要な項目だけ渡す。
+			// 既に翻訳済み/翻訳中の投稿は prepare が飛ばすので、ポーリングで重複リクエストにならない。
+			void postTranslations.prepare(
+				items.flatMap((item) =>
+					item.post
+						? [
+								{
+									uri: item.post.uri,
+									text: item.post.text,
+									langs: item.post.langs,
+									contentWarning: item.post.contentWarning,
+									deleted: item.post.deleted,
+								},
+							]
+						: [],
+				),
+			);
 			// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
 			// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
 			if (items.length) void markAllSeen(items[0].createdAt);
@@ -101,6 +120,19 @@
 				? `/profile/${$session?.did}`
 				: threadHref(item.subjectUri);
 	const resolveImage = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
+	/**
+	 * 通知は素のテキスト表示（カード全体がリンク）なので TranslateToggle は使わず、
+	 * 共有ストアから訳文だけ受け取る。翻訳待ち／失敗のときは undefined を返して原文表示へ落とす。
+	 * 流し見する画面なので「翻訳中…」や再試行リンクといった状態表示は出さない。
+	 */
+	function notificationTranslation(item: NotificationView) {
+		const post = item.post;
+		if (!post || !languagePreferences.autoTranslate) return undefined;
+		const target = languagePreferences.translationLanguage;
+		if (!isTranslationCandidate(post, target)) return undefined;
+		const entry = postTranslations.entry(post.uri, target);
+		return entry?.status === 'translated' ? entry.text : undefined;
+	}
 	const relativeTime = (createdAt: string) => {
 		const differenceSeconds = (new Date(createdAt).valueOf() - relativeTimeBase) / 1000;
 		const absoluteSeconds = Math.abs(differenceSeconds);
@@ -134,13 +166,17 @@
 {/snippet}
 
 {#snippet notificationContent(item: NotificationView)}
+	{@const translated = notificationTranslation(item)}
 	<!-- 返信/メンションは新しい投稿、リアクションは対象投稿を AppView が post に入れる。 -->
 	{#if item.type === 'diary' && item.diary}<p class="notification-subject">
 			{stripMarkdown(item.diary.text)}
 		</p>{:else if item.post?.contentWarning}<p class="notification-subject">
 			{m.contentWarningNotification()}
-		</p>{:else if item.post?.text}<p class="notification-subject">
-			{stripMarkdown(item.post.text)}
+		</p>{:else if item.post?.text}{#if translated}<p class="notification-label">
+				{m.translationLabel()}
+			</p>{/if}
+		<p class="notification-subject">
+			{stripMarkdown(translated ?? item.post.text)}
 		</p>{/if}
 	{#if item.post?.images?.length}<div class="notification-thumbs">
 			{#each item.post.images.slice(0, MAX_THUMBS) as image}
