@@ -13,6 +13,8 @@
 	import { postFollow, postHref } from '$lib/feed/post-follow.svelte';
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
+	import ComposerQuoteEditor from './ComposerQuoteEditor.svelte';
+	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
 	import Icon from './shell/Icon.svelte';
 	import {
@@ -68,6 +70,8 @@
 	let scope = $state<PostScope>(untrack(() => defaultScope));
 	let scopeDialogOpen = $state(false);
 	let dismissedUrls = $state<string[]>([]);
+	// Nagi のスレッドURLを貼ったときだけ引き取る引用スロット。本文には URL を入れない。
+	const quotePick = new QuotePick();
 	let draftListOpen = $state(false);
 	let draftError = $state('');
 	let pendingRestoreId = $state<string | null>(null);
@@ -108,9 +112,13 @@
 	 * 外部にも出せる条件。Bluesky（クロスポスト）と standard.site（記事化）で
 	 * 元々別々に書かれていたが、条件は「チャンネル投稿でない・CW が無い」で一致するため
 	 * 1本にまとめている。こっそりとの排他はゲージの構造そのものが担保する。
+	 *
+	 * 引用付きも外部へは出せない。Bluesky の embed には Nagi のレコードを載せられず
+	 * （crosspost/bluesky.ts の buildEmbed は images / external のみ）、記事化しても
+	 * 引用は本文に現れないため、どちらも参照が黙って消える。
 	 */
 	const externalEligible = $derived(
-		externalReady && !effectiveChannel && !hasContentWarningSetting,
+		externalReady && !effectiveChannel && !hasContentWarningSetting && !quotePick.active,
 	);
 	const externalDisabledReason = $derived(
 		!externalReady
@@ -119,7 +127,9 @@
 				? m.postScopeExternalChannel()
 				: hasContentWarningSetting
 					? m.crosspostDisabledContentWarning()
-					: '',
+					: quotePick.active
+						? m.quoteExternalDisabled()
+						: '',
 	);
 	const standardSite = $derived(scope === 'external' && externalTarget === 'standardSite');
 	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
@@ -175,6 +185,7 @@
 		channels = [];
 		emojis = [];
 		dismissedUrls = [];
+		quotePick.clear();
 		scope = defaultScope;
 		articleTitle = '';
 	}
@@ -191,6 +202,7 @@
 				channels,
 				emojis,
 				dismissedUrls,
+				quoteUri: quotePick.ref?.uri,
 			});
 			clearComposer();
 		} catch (e) {
@@ -226,6 +238,7 @@
 			previewUrl: card.thumbnail ? URL.createObjectURL(card.thumbnail) : undefined,
 		}));
 		dismissedUrls = [...draft.dismissedUrls];
+		quotePick.restore(draft.quoteUri, $session?.did);
 	}
 
 	async function confirmRestore() {
@@ -243,10 +256,11 @@
 			wantsExternal && externalTarget === 'standardSite' && !hasContentWarningSetting
 				? { title: (headingTitle ?? articleTitle).trim() }
 				: undefined;
+		const quotedPost = quotePick.post;
 		const draft = preparePostDraft(
 			text,
 			undefined,
-			undefined,
+			quotePick.ref,
 			attachments,
 			linkCards,
 			mentions,
@@ -256,6 +270,7 @@
 			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
+			...(quotedPost && { quote: quotedPost }),
 			...(effectiveChannel && { channel: effectiveChannel }),
 			threadKossori: kossori,
 		});
@@ -277,12 +292,15 @@
 			// エラーではなく警告として伝える。
 			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの
 			// 分割スレッドなので、長文記事だと Bluesky 側が連投で埋まってしまう。
+			// 引用はNagi内のレコードを参照するため、Blueskyへはクロスポストしない
+			// （返信・引用の既存方針と同じ）。scope 側でも外部を選べなくしてある。
 			if (
 				wantsExternal &&
 				externalTarget === 'bluesky' &&
 				!draft.kossori &&
 				!draft.channel &&
 				!draft.cwRestricted &&
+				!draft.quote &&
 				!article
 			) {
 				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
@@ -295,7 +313,7 @@
 					}
 			}
 			// standard.site も同じ扱い。document の rkey は Nagi 投稿の rkey を使い回す。
-			if (article && !draft.cwRestricted) {
+			if (article && !draft.cwRestricted && !draft.quote) {
 				try {
 					const uri = response.data.uri;
 					const cover = assets.images[0]?.image;
@@ -367,10 +385,16 @@
 		disabled={busy}
 		{mode}
 		onsubmit={() => submit()}
-		onpaste={(event) => imageEditor?.handlePaste(event)}
+		onpaste={(event) => {
+			// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
+			// それ以外は素通しするので、画像ペーストは従来どおり動く。
+			quotePick.handlePaste(event, $session?.did);
+			imageEditor?.handlePaste(event);
+		}}
 		tools={editorTools}
 	/>
 	<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+	<ComposerQuoteEditor quote={quotePick} disabled={busy} />
 	{#if needsArticleTitle}
 		<!-- 本文の先頭が見出しでないときだけ。standard.site の document.title は必須。 -->
 		<div class="composer-article">

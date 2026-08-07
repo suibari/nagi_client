@@ -12,6 +12,7 @@ export type ComposerSnapshot = {
 	channels: ChannelSelection[];
 	emojis: EmojiSelection[];
 	dismissedUrls: string[];
+	quoteUri?: string;
 };
 
 class Drafts {
@@ -51,6 +52,7 @@ class Drafts {
 				thumbnail,
 			})),
 			dismissedUrls: snapshot.dismissedUrls,
+			...(snapshot.quoteUri ? { quoteUri: snapshot.quoteUri } : {}),
 			createdAt: now,
 			updatedAt: now,
 		}) as StoredDraft;

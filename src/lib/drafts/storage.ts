@@ -33,6 +33,11 @@ export type StoredDraft = {
 	linkCards: StoredDraftLinkCard[];
 	/** ユーザーが × で消したリンクカードの URL。復元時に再取得させないため。 */
 	dismissedUrls: string[];
+	/**
+	 * 貼り付けでセットした引用元の AT-URI。表示に要る本文・著者は復元時に取り直すので
+	 * ここには参照だけ持つ。旧下書きには無い。
+	 */
+	quoteUri?: string;
 	createdAt: string;
 	updatedAt: string;
 };

@@ -1,7 +1,9 @@
 import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig, loadEnv } from 'vite';
+import { loadEnv } from 'vite';
+// defineConfig は vitest/config のもの（vite の型を包含し、test ブロックを足せる）。
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig(({ command, mode }) => {
 	// mode は任意名に変更できるため、開発サーバーか本番ビルドかは command で判定する。
@@ -70,5 +72,11 @@ export default defineConfig(({ command, mode }) => {
 				},
 			}),
 		],
+		// 対象は UI を持たない純ロジック（facet 計算・URL 解釈・レコード組み立てなど）。
+		// コンポーネントは jsdom を足すまで対象外なので、拾うのは .ts のテストだけにする。
+		test: {
+			include: ['src/**/*.test.ts'],
+			environment: 'node',
+		},
 	};
 });

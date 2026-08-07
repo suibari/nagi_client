@@ -8,8 +8,10 @@
 	import Avatar from './Avatar.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import ComposerEditor from './ComposerEditor.svelte';
+	import ComposerQuoteEditor from './ComposerQuoteEditor.svelte';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
+	import type { QuotePick } from '$lib/post/quote-pick.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { validContentWarningSyntax } from '$lib/atproto/contentWarning';
 	import type { PostScope } from '$lib/post/scope';
@@ -25,6 +27,7 @@
 		channelSuggestionsEnabled = false,
 		attachments = $bindable(),
 		linkCards = $bindable(),
+		quote,
 		busy = false,
 		error = '',
 		scope = 'feed',
@@ -42,6 +45,8 @@
 		channelSuggestionsEnabled?: boolean;
 		attachments: ImageAttachment[];
 		linkCards: LinkCardDraft[];
+		/** 渡したときだけ、Nagi のスレッドURL貼り付けで引用を付けられる。 */
+		quote?: QuotePick;
 		busy?: boolean;
 		error?: string;
 		scope?: PostScope;
@@ -88,10 +93,14 @@
 			disabled={busy}
 			mode="simple"
 			{onsubmit}
-			onpaste={(event) => imageEditor?.handlePaste(event)}
+			onpaste={(event) => {
+				quote?.handlePaste(event, $session?.did);
+				imageEditor?.handlePaste(event);
+			}}
 			tools={editorTools}
 		/>
 		<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />
+		{#if quote}<ComposerQuoteEditor {quote} disabled={busy} />{/if}
 		<div class="post-composer-foot">
 			<button
 				class="scope-button"

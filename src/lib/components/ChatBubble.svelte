@@ -25,6 +25,7 @@
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
+	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import {
 		restorePostEditState,
 		validChannelSelections,
@@ -95,7 +96,10 @@
 	let deleteOpen = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state('');
+	// どちらのボタンでコンポーザーを開いたか。引用は composeMode とは別枠のスロットで、
+	// 返信中に Nagi のスレッドURLを貼れば「返信＋引用」になる（レコードは両立できる）。
 	let composeMode = $state<'reply' | 'quote'>();
+	const quotePick = new QuotePick();
 	let composeText = $state('');
 	let posting = $state(false);
 	let postError = $state('');
@@ -241,6 +245,8 @@
 			cancelComposer();
 		} else {
 			if (mode === 'reply') channels = [];
+			// 返信↔引用を切り替えたら、貼り付けで付いていた引用は持ち越さない。
+			if (composeMode !== mode) quotePick.clear();
 			composeMode = mode;
 		}
 	}
@@ -259,6 +265,7 @@
 		mentions = [];
 		channels = [];
 		emojis = [];
+		quotePick.clear();
 	}
 	function startEdit() {
 		if (!$session) {
@@ -424,6 +431,10 @@
 		// 途中の返信が上書きしないようにする。引用は新しいスレッドなので継承しない。
 		const reply =
 			mode === 'reply' ? { root: post.reply?.root ?? subject, parent: subject } : undefined;
+		// 引用ボタン経路ではこの投稿そのものが引用元。返信中はURL貼り付けで付けた
+		// 引用（あれば）がそのまま乗るので、返信と引用が同居する。
+		const quotedPost = mode === 'quote' ? post : quotePick.post;
+		const quoteRef = mode === 'quote' ? subject : quotePick.ref;
 		// 所属チャンネルはこっそりと同じくスレッドルートだけが所有する。返信レコードへは
 		// 複製せず、AppView が reply.root から解決して CH TL に並べる（返信単位で所属を
 		// 持てるように見せない）。引用は新しいスレッドなので引用元の CH には入れない。
@@ -435,7 +446,7 @@
 		const draft = preparePostDraft(
 			composeText,
 			reply,
-			mode === 'quote' ? subject : undefined,
+			quoteRef,
 			attachments,
 			linkCards,
 			mentions,
@@ -447,7 +458,7 @@
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),
-			...(mode === 'quote' ? { quote: post } : {}),
+			...(quotedPost ? { quote: quotedPost } : {}),
 			// 楽観表示のバッジだけは返信でも出す（レコードには持たないが、AppView は
 			// ルート由来で channel_uri を埋めるので取り込み後も同じ見え方に収束する）。
 			...(mode === 'reply' && post.channel
@@ -479,6 +490,7 @@
 		channels = [];
 		emojis = [];
 		composeMode = undefined;
+		quotePick.clear();
 		try {
 			// 返信・引用はNagi内の投稿文脈を参照するため、Blueskyへはクロスポストしない。
 			const response = await createPost(draft);
@@ -801,6 +813,7 @@
 		channelSuggestionsEnabled={composeMode === 'quote'}
 		bind:attachments
 		bind:linkCards
+		quote={composeMode === 'reply' ? quotePick : undefined}
 		busy={posting}
 		error={postError}
 		scope={post.kossori ? 'kossori' : 'feed'}
