@@ -18,6 +18,7 @@
 	import BotReplyStatus from '$lib/components/BotReplyStatus.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
+	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -344,6 +345,8 @@
 		seenPosted = postedSignal.count;
 		void feed?.refresh();
 	});
+	// 投稿直後の画面追従。楽観カード → 確定カードで DOM が入れ替わる。
+	followPostedScroll(() => feed?.visibleItems);
 </script>
 
 <section class="channel-header">

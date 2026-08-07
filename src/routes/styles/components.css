@@ -1232,8 +1232,10 @@
 	color: var(--text);
 	background: var(--bg-hover);
 }
+/* 投稿後の追従スクロールは発言単位（.post-row）でも寄せるので、同じ余白を持たせる。 */
 .thread-unit,
-.thread-reply {
+.thread-reply,
+.post-row {
 	scroll-margin-top: 16px;
 }
 @media (max-width: 767px) {
@@ -1250,7 +1252,8 @@
 		display: none;
 	}
 	.thread-unit,
-	.thread-reply {
+	.thread-reply,
+	.post-row {
 		scroll-margin-top: calc(var(--mobile-header-h) + 8px);
 	}
 }

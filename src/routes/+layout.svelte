@@ -15,6 +15,7 @@
 	import { startUnreadNewsPolling } from '$lib/news/unread.svelte';
 	import { interceptSiblingLinkClick } from '$lib/sso/links';
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
+	import { postFollow } from '$lib/feed/post-follow.svelte';
 	import PostFab from '$lib/components/PostFab.svelte';
 	import PostModal from '$lib/components/PostModal.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
@@ -72,7 +73,11 @@
 	let privateListDid: string | undefined;
 	let pushSyncedDid: string | undefined;
 	let preferencesDid: string | undefined;
-	beforeNavigate(() => postTranslations.cancelPending());
+	beforeNavigate(() => {
+		postTranslations.cancelPending();
+		// 画面を移ったら投稿の追従は打ち切る。移った先で急に画面が動くほうが戸惑う。
+		postFollow.cancel();
+	});
 	$effect(() => {
 		postTranslations.syncPreferences(
 			languagePreferences.translationLanguage,

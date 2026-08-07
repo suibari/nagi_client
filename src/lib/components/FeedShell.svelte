@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
+	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import type { FeedTabSpec } from '$lib/feed-tabs/resolve';
 	import { startVisiblePolling } from '$lib/polling';
@@ -63,6 +64,10 @@
 			fast();
 		};
 	});
+
+	// 投稿直後の画面追従。楽観カード → 確定カードで DOM が入れ替わるので、
+	// 並びが変わるたびに追従先を引き直す。
+	followPostedScroll(() => feed.visibleItems);
 
 	// ポストモーダルからの投稿を拾う。楽観投稿は optimisticPosts が既に反映しているので、
 	// ここはサーバー側の確定データ（botたんの返信予定など）へ寄せるための更新。

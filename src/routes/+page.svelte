@@ -253,7 +253,7 @@
 	>
 		{#if botPosts[0]}
 			<div class="my-nagi-bot-card">
-				<ThreadUnit item={botPosts[0]} unread={botUnread} {botActor} />
+				<ThreadUnit item={botPosts[0]} unread={botUnread} {botActor} onposted={loadBotPosts} />
 			</div>
 		{/if}
 	</MyNagiSection>
@@ -312,7 +312,13 @@
 			{/snippet}
 			{#each listUsersByRecency as entry (entry.post.uri)}
 				<div class="my-nagi-activity-card">
-					<ThreadUnit item={entry.post} unread={readLatest(listUnreadView, entry.post)} {botActor} />
+					<!-- 返信したら60秒ポーリングを待たずに取り直す（楽観表示はこの画面には無い）。 -->
+					<ThreadUnit
+						item={entry.post}
+						unread={readLatest(listUnreadView, entry.post)}
+						{botActor}
+						onposted={loadListActivity}
+					/>
 				</div>
 			{/each}
 		</MyNagiSection>
@@ -340,6 +346,7 @@
 						item={entry.post}
 						unread={readLatest(channelsUnreadView, entry.post)}
 						{botActor}
+						onposted={loadListActivity}
 					/>
 				</div>
 			{/each}

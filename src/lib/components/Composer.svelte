@@ -10,6 +10,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import { postFollow, postHref } from '$lib/feed/post-follow.svelte';
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
@@ -258,6 +259,9 @@
 			...(effectiveChannel && { channel: effectiveChannel }),
 			threadKossori: kossori,
 		});
+		// 表示中のフィードに楽観カードが出たらそこへ、確定したらその投稿へ画面を寄せる。
+		// 出せないフィード（検索タブなど）や投稿できない画面では導線へ切り替わる。
+		postFollow.begin(optimisticId);
 		busy = true;
 		onsendingchange?.(true);
 		error = '';
@@ -267,6 +271,7 @@
 			const assets = await uploadPostAssets(draft);
 			const response = await createPost(draft, assets);
 			optimisticPosts.markCreated(optimisticId, response.data);
+			postFollow.settle(response.data.uri, postHref(response.data.uri));
 			await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
 			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
 			// エラーではなく警告として伝える。
@@ -311,6 +316,7 @@
 			await Promise.resolve(onposted(response.data.uri)).catch(() => undefined);
 		} catch (e) {
 			optimisticPosts.remove(optimisticId);
+			postFollow.fail();
 			error = e instanceof Error ? e.message : m.postFailed();
 		} finally {
 			busy = false;

@@ -26,8 +26,10 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
+	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import { privateList } from '$lib/private-list/private-list.svelte';
 
@@ -162,6 +164,16 @@
 				})
 			: undefined,
 	);
+	// ポストモーダルからの投稿を拾う。自分のプロフィールを見ながら投稿したときに、
+	// 確定データ（botたんの返信予定など）まで反映されるようにする。
+	let seenPosted = untrack(() => postedSignal.count);
+	$effect(() => {
+		if (postedSignal.count === seenPosted) return;
+		seenPosted = postedSignal.count;
+		void feed?.refresh();
+	});
+	// 投稿直後の画面追従。楽観カード → 確定カードで DOM が入れ替わる。
+	followPostedScroll(() => feed?.visibleItems);
 	function postDeleted(uri: string) {
 		for (const cachedFeed of feeds.values()) cachedFeed.removePost(uri);
 		for (const cachedFeed of reactionFeeds.values()) cachedFeed.removePost(uri);

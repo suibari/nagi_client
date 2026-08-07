@@ -88,7 +88,13 @@
 				aria-label={m.threadViewAll()}>{m.threadMore({ count: conv.hiddenCount })}</a
 			>{/if}
 		{#each conv.bubbles as bubble (bubble.post.uri)}
-			<div class="thread-reply" style="--reply-indent: {replyIndent(bubble.depth)}">
+			<!-- data-* は投稿後の追従スクロールの目印。楽観返信はここへ合流して出る。 -->
+			<div
+				class="thread-reply"
+				style="--reply-indent: {replyIndent(bubble.depth)}"
+				data-post-uri={bubble.post.uri}
+				data-optimistic-key={bubble.post.optimisticKey}
+			>
 				<ChatBubble
 					post={bubble.post}
 					{botActor}

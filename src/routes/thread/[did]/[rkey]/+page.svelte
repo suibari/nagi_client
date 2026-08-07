@@ -8,6 +8,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { goto } from '$app/navigation';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
 	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { replyDepths, replyIndent } from '$lib/thread/replyIndent';
@@ -21,11 +22,13 @@
 		optimisticPosts.reconcile([next.post, ...next.replies]);
 		thread = next;
 	}
+	// 楽観返信は時系列の末尾に置く。先頭に積むと、サーバーが取り込んだ瞬間に本来の位置
+	// （下）へ飛んでしまい、書いたばかりの返信を見失う。
 	let replies = $derived([
-		...optimisticPosts.items.filter((item) => item.reply?.root.uri === threadRootUri),
 		...(thread?.replies ?? []).filter(
 			(reply) => !optimisticPosts.items.some((item) => item.uri === reply.uri),
 		),
+		...optimisticPosts.items.filter((item) => item.reply?.root.uri === threadRootUri),
 	]);
 	let replyDepthByUri = $derived(
 		replyDepths(threadRootUri, [...(thread ? [thread.post] : []), ...replies]),
@@ -38,6 +41,9 @@
 			),
 		),
 	);
+	// 投稿直後の画面追従。楽観返信 → 確定した返信で DOM が入れ替わるので、
+	// 返信リストが変わるたびに追従先を引き直す。
+	followPostedScroll(() => replies);
 	function postDeleted(deletedUri: string) {
 		if (deletedUri === uri || deletedUri === thread?.post.uri) {
 			void goto('/');

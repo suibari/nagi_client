@@ -14,6 +14,8 @@ import {
 } from '$lib/atproto/facets';
 import type { ImageAttachment } from '$lib/images';
 import { m } from '$lib/i18n/i18n.svelte';
+import { postFollowNotice, postHref } from '$lib/feed/post-follow.svelte';
+import { postedSignal } from '$lib/feed/posted-signal.svelte';
 import { session } from '$lib/oauth/session.svelte';
 
 /**
@@ -83,9 +85,13 @@ export class NewsQuote {
 		try {
 			const assets = await uploadPostAssets(draft);
 			// ニュース引用もNagi内レコードを参照するため、Blueskyへはクロスポストしない。
-			await createPost(draft, assets);
+			const response = await createPost(draft, assets);
 			this.clear();
 			this.composing = false;
+			// ニュース一覧に投稿は並ばないので、追従できない代わりに導線を出す。
+			// フィードを開いている場合に備えて合図も送る。
+			postedSignal.notify();
+			postFollowNotice.show(postHref(response.data.uri));
 		} catch (e) {
 			this.error = e instanceof Error ? e.message : m.postFailed();
 		} finally {

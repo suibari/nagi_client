@@ -38,7 +38,7 @@
 	} from '$lib/i18n/languagePreferences.svelte';
 	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
 	import { tick } from 'svelte';
-	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
+	import { postFollow, postHref, scrollToElement } from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
@@ -287,15 +287,6 @@
 		editImageProcessing = false;
 		editError = '';
 	}
-	const postHref = (uri: string) => {
-		const [did, , rkey] = uri.slice('at://'.length).split('/');
-		return `/thread/${did}/${rkey}`;
-	};
-	const scrollBehavior = (): ScrollBehavior =>
-		window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-	function scrollTo(element?: Element | null) {
-		element?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
-	}
 	/**
 	 * 投稿の編集・削除に standard.site の記事を追従させる。
 	 * 権限が無い／記事化していない場合は黙って何もしない（Nagi 側の操作は成立している）。
@@ -414,7 +405,6 @@
 		)
 			return;
 		const mode = composeMode;
-		postFollowNotice.clear();
 		const subject = { uri: post.uri, cid: post.cid };
 		// ネスト返信でも最初のルートを維持することで、公開範囲を含むスレッド設定を
 		// 途中の返信が上書きしないようにする。引用は新しいスレッドなので継承しない。
@@ -460,6 +450,12 @@
 			threadKossori:
 				mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori ?? post.channelOnly) : false,
 		});
+		// 楽観カード →（サーバー確定後）本物のカード、と2段階で入れ替わるので、追従先は
+		// postFollow に預けて描画のたびに引き直してもらう。ここで一度寄せるだけでは、
+		// 差し替わった先（会話カードの中の自分の返信）を見失う。
+		postFollow.begin(optimisticId, {
+			...(mode === 'reply' ? { threadRootUri: reply!.root.uri } : {}),
+		});
 		posting = true;
 		postError = '';
 		composeText = '';
@@ -469,26 +465,20 @@
 		channels = [];
 		emojis = [];
 		composeMode = undefined;
-		await tick();
-		const optimisticTarget = document.querySelector(`[data-optimistic-key="${optimisticId}"]`);
-		const followedImmediately = Boolean(optimisticTarget);
-		scrollTo(optimisticTarget);
 		try {
 			// 返信・引用はNagi内の投稿文脈を参照するため、Blueskyへはクロスポストしない。
 			const response = await createPost(draft);
 			optimisticPosts.markCreated(optimisticId, response.data);
+			// 画面に出せない投稿（検索タブなど）では、postFollow が導線へ切り替える。
+			postFollow.settle(response.data.uri, postHref(response.data.uri));
 			await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
 			await Promise.resolve(onposted?.()).catch(() => undefined);
-			if (!followedImmediately) {
-				// フィルター外の投稿で画面を自動遷移すると閲覧中の文脈を失うため、
-				// 明示的な導線だけを提示し、移動するかはユーザーに委ねる。
-				postFollowNotice.show(postHref(response.data.uri));
-			}
 		} catch (error) {
 			optimisticPosts.remove(optimisticId);
+			postFollow.fail();
 			postError = error instanceof Error ? error.message : m.postFailed();
 			await tick();
-			scrollTo(postRow);
+			scrollToElement(postRow);
 		} finally {
 			posting = false;
 		}
@@ -534,7 +524,14 @@
 	}
 </script>
 
-<div class="post-row" class:mine class:bot={post.isBot} bind:this={postRow}>
+<!-- data-post-uri は投稿後の追従スクロールの目印。カード単位ではなく発言単位で寄せる。 -->
+<div
+	class="post-row"
+	class:mine
+	class:bot={post.isBot}
+	data-post-uri={post.uri}
+	bind:this={postRow}
+>
 	<!-- ホバーで名刺、クリックで従来どおりプロフィールへ。 -->
 	<AvatarLink actor={post.author} />
 	<div class="bubble" class:sending={optimistic}>

@@ -2,7 +2,6 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
-	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import Composer from './Composer.svelte';
 	import Icon from './shell/Icon.svelte';
 
@@ -20,14 +19,10 @@
 	let sending = $state(false);
 	let publishingPreferencesVersion = $state(0);
 
-	function postHref(uri: string) {
-		const [did, , rkey] = uri.slice('at://'.length).split('/');
-		return `/thread/${did}/${rkey}`;
-	}
-
-	function postSucceeded(uri: string) {
+	// 投稿できたことを表示中のフィードへ伝えるだけ。画面をどこへ寄せるか（寄せられない
+	// ときに導線を出すか）は Composer が postFollow へ預けている。
+	function postSucceeded() {
 		postedSignal.notify();
-		postFollowNotice.show(postHref(uri));
 		composerHost.hide();
 	}
 
