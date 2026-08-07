@@ -2300,19 +2300,32 @@
 .images.clamp-tall .image-tile,
 .images.single.clamp-tall .image-tile {
 	height: auto;
-	max-height: 200px;
+	max-height: 88px;
 }
 .images.clamp-tall .image-tile-wrap > .cw-mask,
 .images.single.clamp-tall .image-tile-wrap > .cw-mask {
 	height: auto;
-	max-height: 200px;
+	max-height: 88px;
 }
 .images.clamp-tall img,
 .images.single.clamp-tall img,
 .images.clamp-tall .image-tile-wrap > .cw-mask img,
 .images.single.clamp-tall .image-tile-wrap > .cw-mask img {
-	max-height: 200px;
+	max-height: 88px;
 	object-fit: cover;
+}
+.images.clamp-tall .image-tile-wrap::after,
+.images.clamp-tall .image-tile::after {
+	content: '';
+	position: absolute;
+	inset: auto 0 0 0;
+	height: 36px;
+	background: linear-gradient(to bottom, transparent 0%, var(--bg-inset) 90%);
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
+	pointer-events: none;
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
 }
 .image-viewer {
 	position: fixed;
