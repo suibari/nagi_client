@@ -4,6 +4,8 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { getLinkMetadata, getLinkThumbnail } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { createSortable } from '$lib/dnd/sortable.svelte';
+	import Icon from './shell/Icon.svelte';
 
 	let {
 		text,
@@ -21,6 +23,25 @@
 	let urls = $derived(parsePostText(text).urls);
 	const previews = new Set<string>();
 	let previousUrls = new Set<string>();
+
+	const sortableItems = $derived(
+		cards.map((card) => ({ ...card, id: card.id ?? card.uri })),
+	);
+
+	const sortable = createSortable<LinkCardDraft & { id: string }>({
+		items: () => sortableItems,
+		commit: (next) => (cards = next),
+		ghostClass: 'attachment-drag-ghost',
+		handleSelector: '.attachment-drag-handle',
+		announce: (position) => m.postImageMoved({ position }),
+		disabled: () => disabled,
+	});
+
+	function keydown(event: KeyboardEvent, id: string) {
+		if (!sortable.moveByKey(id, event.key)) return;
+		event.preventDefault();
+		sortable.refocus(id, '.attachment-drag-handle');
+	}
 
 	$effect(() => {
 		const currentUrls = new Set(urls);
@@ -57,7 +78,8 @@
 
 	async function add(uri: string) {
 		if (cards.some((card) => card.uri === uri) || loading.includes(uri)) return;
-		cards = [...cards, { uri, title: new URL(uri).hostname }];
+		const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${uri}-${Date.now()}`;
+		cards = [...cards, { id, uri, title: new URL(uri).hostname }];
 		loading = [...loading, uri];
 		try {
 			let metadata = await getLinkMetadata(uri);
@@ -83,6 +105,7 @@
 			cards = cards.map((card) =>
 				card.uri === uri
 					? {
+							...card,
 							uri,
 							title: metadata.title,
 							description: metadata.description,
@@ -108,10 +131,26 @@
 </script>
 
 {#if cards.length}
-	<div class="link-card-editor">
+	<div class="link-card-editor" use:sortable.container>
 		<div class="link-card-previews">
-			{#each cards as card}
-				<article class="link-card-preview" class:loading={loading.includes(card.uri)}>
+			{#each cards as card, index (card.id ?? card.uri)}
+				<article
+					class="link-card-preview"
+					class:loading={loading.includes(card.uri)}
+					class:dragging={sortable.draggingId === (card.id ?? card.uri)}
+					class:drop-target={sortable.isDropTarget(card.id ?? card.uri)}
+					data-sortable-id={card.id ?? card.uri}
+				>
+					<button
+						class="attachment-drag-handle"
+						type="button"
+						disabled={disabled || cards.length < 2}
+						aria-label={m.postImageReorder({ index: index + 1 })}
+						title={m.postImageReorder({ index: index + 1 })}
+						onkeydown={(event) => keydown(event, card.id ?? card.uri)}
+					>
+						<Icon name="drag" size={17} />
+					</button>
 					{#if card.previewUrl}<img src={card.previewUrl} alt="" />{/if}
 					<span>
 						<strong>{card.title}</strong>
@@ -129,5 +168,6 @@
 				</article>
 			{/each}
 		</div>
+		<span class="visually-hidden" aria-live="polite">{sortable.announcement}</span>
 	</div>
 {/if}

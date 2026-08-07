@@ -192,7 +192,7 @@
 	}
 
 	.composer-preview {
-		min-height: 84px;
+		min-height: 168px;
 		padding: 10px;
 		border: 1px solid var(--line);
 		border-radius: var(--r-md);

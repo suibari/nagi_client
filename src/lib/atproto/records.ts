@@ -106,6 +106,7 @@ export async function putOwnBlueskyWebsite(value: string): Promise<void> {
 	});
 }
 export type LinkCardDraft = {
+	id?: string;
 	uri: string;
 	title: string;
 	description?: string;

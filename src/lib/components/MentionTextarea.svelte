@@ -452,6 +452,8 @@
 			if (event.key === 'Escape') close();
 			return;
 		}
+		if (event.isComposing || event.keyCode === 229) return;
+
 		// 応答待ちの絞り込みで候補が減ると activeIndex が末尾を追い越すことがある。
 		activeIndex = Math.min(activeIndex, suggestionCount - 1);
 		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

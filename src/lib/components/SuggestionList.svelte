@@ -27,10 +27,19 @@
 		ariaLabel?: string;
 		skeletonRows?: number;
 	} = $props();
+
+	let containerEl = $state<HTMLDivElement>();
+
+	$effect(() => {
+		if (containerEl && activeIndex >= 0) {
+			const activeBtn = containerEl.children[activeIndex] as HTMLElement | undefined;
+			activeBtn?.scrollIntoView({ block: 'nearest' });
+		}
+	});
 </script>
 
 {#if items.length}
-	<div class="mention-suggestions {listClass}" role="listbox" aria-label={ariaLabel}>
+	<div bind:this={containerEl} class="mention-suggestions {listClass}" role="listbox" aria-label={ariaLabel}>
 		{#each items as item, index (keyOf(item))}
 			<button
 				type="button"

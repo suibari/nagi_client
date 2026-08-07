@@ -12,6 +12,7 @@
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { validContentWarningSyntax } from '$lib/atproto/contentWarning';
+	import type { PostScope } from '$lib/post/scope';
 
 	let {
 		id,
@@ -26,6 +27,8 @@
 		linkCards = $bindable(),
 		busy = false,
 		error = '',
+		scope = 'feed',
+		channelName,
 		onsubmit,
 		oncancel,
 	}: {
@@ -41,6 +44,8 @@
 		linkCards: LinkCardDraft[];
 		busy?: boolean;
 		error?: string;
+		scope?: PostScope;
+		channelName?: string;
 		onsubmit: () => void;
 		oncancel: () => void;
 	} = $props();
@@ -48,6 +53,17 @@
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
 	let contentWarningValid = $derived(validContentWarningSyntax(text));
 	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
+
+	const scopeLabel = $derived(
+		scope === 'kossori'
+			? m.postScopeKossoriShort()
+			: channelName
+				? channelName
+				: m.postScopeFeedShort(),
+	);
+	const scopeIcon = $derived(
+		scope === 'kossori' ? 'hide' : channelName ? 'hash' : 'home',
+	);
 </script>
 
 <div class="post-row mine composer-row">
@@ -70,12 +86,23 @@
 			{channelSuggestionsEnabled}
 			{placeholder}
 			disabled={busy}
+			mode="simple"
 			{onsubmit}
 			onpaste={(event) => imageEditor?.handlePaste(event)}
 			tools={editorTools}
 		/>
 		<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />
 		<div class="post-composer-foot">
+			<button
+				class="scope-button"
+				type="button"
+				disabled
+				aria-label={m.postScopeOpenAria({ scope: scopeLabel })}
+				title={m.postScopeOpenAria({ scope: scopeLabel })}
+			>
+				<Icon name={scopeIcon} size={15} />
+				<span>{scopeLabel}</span>
+			</button>
 			{#if error}<span class="error" role="alert">{error}</span>{/if}
 			<button
 				class="ghost icon-action"

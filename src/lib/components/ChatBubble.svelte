@@ -791,6 +791,8 @@
 		bind:linkCards
 		busy={posting}
 		error={postError}
+		scope={post.kossori ? 'kossori' : 'feed'}
+		channelName={post.channel?.name}
 		onsubmit={() => void submitPost()}
 		oncancel={cancelComposer}
 	/>
