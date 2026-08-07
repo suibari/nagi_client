@@ -127,11 +127,25 @@
 	let actionMenu = $state<HTMLDivElement>();
 	let postRow: HTMLDivElement;
 	let mine = $derived($session?.did === post.author.did);
+	let hasTallImage = $derived(
+		Boolean(
+			post.images?.some(
+				(img) => !img.aspectRatio || img.aspectRatio.height > img.aspectRatio.width,
+			),
+		),
+	);
 	let visibleImages = $derived(
 		maxImages && !showAllImages ? post.images?.slice(0, maxImages) : post.images,
 	);
 	let imageToggleable = $derived(
-		Boolean(maxImages && post.images && post.images.length > maxImages),
+		Boolean(
+			maxImages &&
+				post.images &&
+				(post.images.length > maxImages || hasTallImage),
+		),
+	);
+	let clampTallImages = $derived(
+		Boolean(maxImages && !showAllImages && hasTallImage),
 	);
 	let visibleLinkCards = $derived(
 		maxLinkCards && !showAllLinkCards ? post.linkCards?.slice(0, maxLinkCards) : post.linkCards,
@@ -626,6 +640,7 @@
 				>{/if}
 		{/if}{#if !editing && visibleImages?.length}<ImageGallery
 				images={visibleImages}
+				clampTall={clampTallImages}
 			/>{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
 					>{showAllImages ? m.readLess() : m.showAllMedia()}</button
 				>{/if}{/if}{#if visibleLinkCards?.length}<div class="link-cards">

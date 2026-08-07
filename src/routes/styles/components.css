@@ -2295,6 +2295,25 @@
 	object-fit: contain;
 	background: var(--bg-inset);
 }
+.images.clamp-tall .image-tile-wrap,
+.images.single.clamp-tall .image-tile-wrap,
+.images.clamp-tall .image-tile,
+.images.single.clamp-tall .image-tile {
+	height: auto;
+	max-height: 200px;
+}
+.images.clamp-tall .image-tile-wrap > .cw-mask,
+.images.single.clamp-tall .image-tile-wrap > .cw-mask {
+	height: auto;
+	max-height: 200px;
+}
+.images.clamp-tall img,
+.images.single.clamp-tall img,
+.images.clamp-tall .image-tile-wrap > .cw-mask img,
+.images.single.clamp-tall .image-tile-wrap > .cw-mask img {
+	max-height: 200px;
+	object-fit: cover;
+}
 .image-viewer {
 	position: fixed;
 	inset: 0;

@@ -6,7 +6,7 @@
 	import Icon from './shell/Icon.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
 
-	let { images }: { images: PostImage[] } = $props();
+	let { images, clampTall = false }: { images: PostImage[]; clampTall?: boolean } = $props();
 	let active = $state<number>();
 	let opener = $state<HTMLButtonElement>();
 	let closeButton = $state<HTMLButtonElement>();
@@ -61,7 +61,12 @@
 	}
 </script>
 
-<div class="images" class:single={images.length === 1} data-count={images.length}>
+<div
+	class="images"
+	class:single={images.length === 1}
+	class:clamp-tall={clampTall}
+	data-count={images.length}
+>
 	{#each images as image, index}
 		<div class="image-tile-wrap">
 			{#if image.contentWarning && !revealedWarnings[index]}
