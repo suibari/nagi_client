@@ -51,7 +51,7 @@
 
 <h2 id="t1">1. Definitions</h2>
 <p>
-	The Service is a fully affirming social network running on the AT Protocol. Your posts are stored
+	The Service is a fully supportive social network running on the AT Protocol. Your posts are stored
 	in your own account (PDS), and the Service acts as an AppView that displays and searches them.
 </p>
 <ul>
@@ -114,7 +114,7 @@
 <div class="callout warn">
 	<p>
 		<strong>"Kossori" (quiet) posts are not private posts.</strong> Their bodies stay out of shared timelines,
-		but an anonymous Bot-tan summary may appear in "Affirm together." A reaction made from that summary
+		but an anonymous Bot-tan summary may appear in "Support together." A reaction made from that summary
 		is delivered directly to the original post. They are also stored in your PDS as ordinary public records,
 		so other applications can read them. Please do not post anything you need to keep secret.
 	</p>
@@ -290,7 +290,7 @@
 <div class="callout">
 	<p>
 		<strong>Bot-tan is an AI, not a human.</strong> Bot-tan's replies and conversations, the automatic
-		analysis of your profile, diaries, card comments, news selection, and the anonymous summaries in "Affirm
+		analysis of your profile, diaries, card comments, news selection, and the anonymous summaries in "Support
 		together" are all produced by generative AI.
 	</p>
 </div>
