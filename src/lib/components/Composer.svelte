@@ -77,6 +77,7 @@
 	let pendingRestoreId = $state<string | null>(null);
 	let loadedDid = $state<string | undefined>(undefined);
 	let crosspostReady = $state(false);
+	let botSilent = $state(false);
 	let publishingLoadVersion = 0;
 	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
@@ -188,6 +189,7 @@
 		quotePick.clear();
 		scope = defaultScope;
 		articleTitle = '';
+		botSilent = false;
 	}
 
 	async function saveDraft() {
@@ -268,6 +270,8 @@
 			emojis,
 			kossori,
 			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
+			false,
+			botSilent,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(quotedPost && { quote: quotedPost }),
@@ -450,6 +454,18 @@
 			>
 		{/if}
 		<div class="composer-submit-actions">
+			<button
+				class="icon-action bot-silent-toggle"
+				class:active={botSilent}
+				type="button"
+				disabled={busy}
+				aria-label={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
+				aria-pressed={botSilent}
+				title={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
+				onclick={() => (botSilent = !botSilent)}
+			>
+				<Icon name="bot-off" size={18} />
+			</button>
 			<button
 				class="submit-primary"
 				type="button"

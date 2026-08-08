@@ -995,7 +995,8 @@
 	background: var(--accent-softer);
 }
 .icon-action.kossori-toggle.active,
-.icon-action.article-toggle.active {
+.icon-action.article-toggle.active,
+.icon-action.bot-silent-toggle.active {
 	color: var(--accent-strong);
 	background: var(--accent-softer);
 }

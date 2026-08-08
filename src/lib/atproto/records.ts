@@ -130,6 +130,8 @@ export type PostDraft = {
 	channelOnly?: boolean;
 	/** 作成時からCW運用であり、外部コピーを永久に作らない投稿。 */
 	cwRestricted?: boolean;
+	/** botたんサイレント機能。true の投稿には botたんが返信しない。 */
+	botSilent?: boolean;
 };
 
 export function preparePostDraft(
@@ -144,6 +146,7 @@ export function preparePostDraft(
 	kossori = false,
 	channel?: { uri: string; cid: string },
 	channelOnly = false,
+	botSilent = false,
 ): PostDraft {
 	const leadingWhitespace = text.length - text.trimStart().length;
 	const source = text.trim();
@@ -180,6 +183,7 @@ export function preparePostDraft(
 		...(kossori ? { kossori: true } : {}),
 		...(channel ? { channel } : {}),
 		...(channel && channelOnly ? { channelOnly: true } : {}),
+		...(botSilent ? { botSilent: true } : {}),
 	};
 }
 
@@ -316,6 +320,7 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			createdAt: draft.createdAt,
 			...(draft.cwRestricted && { cwRestricted: true }),
 			...(draft.kossori && { kossori: true }),
+			...(draft.botSilent && { botSilent: true }),
 			...(draft.channel && { channel: draft.channel }),
 			...(draft.channel && draft.channelOnly && { channelOnly: true }),
 			...(draft.reply && { reply: draft.reply }),

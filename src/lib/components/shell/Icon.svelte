@@ -62,6 +62,22 @@
 		style="width: {size}px; height: {size}px;"
 		aria-hidden="true"
 	></span>
+{:else if name === 'bot-off' || name === 'botOff'}
+	<span class="icon-bot-off-wrapper" style="width: {size}px; height: {size}px;" aria-hidden="true">
+		<span class="icon icon-mask icon-bot" style="width: {size}px; height: {size}px;"></span>
+		<svg
+			class="icon icon-slash"
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+		>
+			<line x1="4" y1="4" x2="20" y2="20" />
+		</svg>
+	</span>
 {:else}
 	<svg
 		class="icon"
@@ -92,5 +108,19 @@
 	.icon-nagi {
 		-webkit-mask: url('/nagi_icon_trans.png') center / contain no-repeat;
 		mask: url('/nagi_icon_trans.png') center / contain no-repeat;
+	}
+
+	.icon-bot-off-wrapper {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.icon-slash {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
 	}
 </style>
