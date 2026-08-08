@@ -11,7 +11,7 @@
 	} from '$lib/api/appview';
 	import { deleteChannel, setChannelPinnedPost, updateChannel } from '$lib/atproto/records';
 	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
-	import { Feed } from '$lib/feed/feed.svelte';
+	import { Feed, feedKey } from '$lib/feed/feed.svelte';
 	import { rememberChannelLabel } from '$lib/feed-tabs/labels.svelte';
 	import type { ChannelView, PostView } from '$lib/api/types';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
@@ -475,7 +475,7 @@
 				<div class="state">{m.channelTimelineEmpty()}</div>
 			{/if}
 		{:else}
-			{#each feed.visibleItems as item (item.uri)}
+			{#each feed.visibleItems as item (feedKey(item))}
 				<ThreadUnit
 					{item}
 					botActor={feed.botActor}

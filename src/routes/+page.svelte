@@ -117,23 +117,20 @@
 				filter: 'posts',
 				limit: BOT_POST_COUNT,
 				lang: i18n.locale,
-				group: true,
 			});
 			const latest = profile.feed.items[0];
 			if (!latest) {
 				showBotPosts([], activeUnreadView);
 				return;
 			}
-			// group をまだ解釈しない稼働中 AppView でも、返信を欠落させずに表示する。
-			if (!latest.conversation) {
-				try {
-					const { thread } = await getThread(latest.uri);
-					botActor ??= thread.botActor;
-					showBotPosts([threadToConversationItem(thread)], activeUnreadView);
-					return;
-				} catch {
-					// スレッド補完だけが失敗した場合も、取得済みの最新投稿自体は表示する。
-				}
+			// botたん最新は会話の活動順ではなく、最新トップレベル投稿を先に選んでから展開する。
+			try {
+				const { thread } = await getThread(latest.uri);
+				botActor ??= thread.botActor;
+				showBotPosts([threadToConversationItem(thread)], activeUnreadView);
+				return;
+			} catch {
+				// スレッド取得だけが失敗した場合も、取得済みの最新投稿自体は表示する。
 			}
 			showBotPosts([latest], activeUnreadView);
 		} catch (cause) {

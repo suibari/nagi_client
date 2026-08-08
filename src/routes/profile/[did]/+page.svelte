@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { getProfile } from '$lib/api/appview';
 	import type { ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
-	import { Feed } from '$lib/feed/feed.svelte';
+	import { Feed, feedKey } from '$lib/feed/feed.svelte';
 	import {
 		isNewsReactionItem,
 		ProfileReactionFeed,
@@ -125,7 +125,7 @@
 		if (!f) {
 			f = new Feed(
 				(cursor) =>
-					getProfile(actor, { filter, cursor, lang: locale }).then((r) => {
+					getProfile(actor, { filter, cursor, lang: locale, group: true }).then((r) => {
 						if (actor !== r.profile.did)
 							void goto(`/profile/${encodeURIComponent(r.profile.did)}${page.url.search}`, {
 								replaceState: true,
@@ -322,7 +322,7 @@
 					>
 				</div>
 			{:else if !feed.visibleItems.length}<div class="state">{m.profileEmptyPosts()}</div>
-			{:else}{#each feed.visibleItems as item (item.uri)}<ThreadUnit
+			{:else}{#each feed.visibleItems as item (feedKey(item))}<ThreadUnit
 						{item}
 						botActor={feed.botActor}
 						ondeleted={postDeleted}

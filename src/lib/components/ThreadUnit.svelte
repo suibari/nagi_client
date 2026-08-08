@@ -43,6 +43,13 @@
 	// 会話グループ(group モード)では待機状態は conversation.awaitingBotReply が持つ。
 	let conv = $derived(item.conversation);
 	let botState = $derived(conv ? conv.awaitingBotReply : item.botReplyState);
+	let showConvRoot = $derived(Boolean(conv && conv.root.uri !== hiddenPostUri));
+	let visibleConvBubbles = $derived(
+		conv?.bubbles.filter((bubble) => bubble.post.uri !== hiddenPostUri) ?? [],
+	);
+	let showConversation = $derived(
+		Boolean(conv && (showConvRoot || visibleConvBubbles.length > 0 || botState)),
+	);
 	let fullThreadHref = $derived(
 		conv ? `/thread/${conv.root.author.did}/${conv.root.uri.split('/').pop()}` : '',
 	);
@@ -70,7 +77,7 @@
 		canPin && (!pinChannelUri || post.channel?.uri === pinChannelUri);
 </script>
 
-{#if conv}
+{#if conv && showConversation}
 	<article
 		class="thread-unit"
 		class:unread
@@ -79,23 +86,25 @@
 		data-optimistic-key={item.optimisticKey}
 	>
 		<ThreadFlags channel={convChannel} kossori={convKossori} />
-		<ChatBubble
-			post={conv.root}
-			{botActor}
-			{ondeleted}
-			{onposted}
-			canPin={canPinPost(conv.root)}
-			pinned={conv.root.uri === pinnedPostUri}
-			{pinBusy}
-			{ontogglepin}
-		/>
+		{#if showConvRoot}
+			<ChatBubble
+				post={conv.root}
+				{botActor}
+				{ondeleted}
+				{onposted}
+				canPin={canPinPost(conv.root)}
+				pinned={conv.root.uri === pinnedPostUri}
+				{pinBusy}
+				{ontogglepin}
+			/>
+		{/if}
 		{#if conv.hiddenCount > 0}<a
 				class="thread-gap"
 				href={fullThreadHref}
 				aria-label={m.threadViewAll()}>{m.threadMore({ count: conv.hiddenCount })}</a
 			>{/if}
 
-		{#if conv.bubbles.length > 0}
+		{#if visibleConvBubbles.length > 0}
 			{#if collapsibleReplies && !repliesExpanded}
 				<button
 					type="button"
@@ -103,10 +112,10 @@
 					onclick={() => (repliesExpanded = true)}
 				>
 					<Icon name="chevron" size={14} />
-					<span>{m.showReplies({ count: conv.bubbles.length })}</span>
+					<span>{m.showReplies({ count: visibleConvBubbles.length })}</span>
 				</button>
 			{:else}
-				{#each conv.bubbles as bubble (bubble.post.uri)}
+				{#each visibleConvBubbles as bubble (bubble.post.uri)}
 					<!-- data-* は投稿後の追従スクロールの目印。楽観返信はここへ合流して出る。 -->
 					<div
 						class="thread-reply"
