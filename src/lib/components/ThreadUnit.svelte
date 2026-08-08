@@ -4,6 +4,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import BotReplyStatus from './BotReplyStatus.svelte';
 	import ThreadFlags from './ThreadFlags.svelte';
+	import Icon from './shell/Icon.svelte';
 	import { replyIndent } from '$lib/thread/replyIndent';
 	let {
 		item,
@@ -17,6 +18,7 @@
 		pinBusy = false,
 		ontogglepin,
 		unread = false,
+		collapsibleReplies = false,
 	}: {
 		item: FeedItem;
 		botActor?: ActorView;
@@ -32,10 +34,22 @@
 		ontogglepin?: (post: PostView) => void | Promise<void>;
 		/** 前回このフィードを見た時点より新しいスレッドか。カード全体に1本だけマークを出す。 */
 		unread?: boolean;
+		/** 返信を最初は折りたたんで展開ボタン形式にするか。 */
+		collapsibleReplies?: boolean;
 	} = $props();
+
+	let repliesExpanded = $state(false);
+
 	// 会話グループ(group モード)では待機状態は conversation.awaitingBotReply が持つ。
 	let conv = $derived(item.conversation);
 	let botState = $derived(conv ? conv.awaitingBotReply : item.botReplyState);
+	let showConvRoot = $derived(Boolean(conv && conv.root.uri !== hiddenPostUri));
+	let visibleConvBubbles = $derived(
+		conv?.bubbles.filter((bubble) => bubble.post.uri !== hiddenPostUri) ?? [],
+	);
+	let showConversation = $derived(
+		Boolean(conv && (showConvRoot || visibleConvBubbles.length > 0 || botState)),
+	);
 	let fullThreadHref = $derived(
 		conv ? `/thread/${conv.root.author.did}/${conv.root.uri.split('/').pop()}` : '',
 	);
@@ -63,7 +77,7 @@
 		canPin && (!pinChannelUri || post.channel?.uri === pinChannelUri);
 </script>
 
-{#if conv}
+{#if conv && showConversation}
 	<article
 		class="thread-unit"
 		class:unread
@@ -72,41 +86,68 @@
 		data-optimistic-key={item.optimisticKey}
 	>
 		<ThreadFlags channel={convChannel} kossori={convKossori} />
-		<ChatBubble
-			post={conv.root}
-			{botActor}
-			{ondeleted}
-			{onposted}
-			canPin={canPinPost(conv.root)}
-			pinned={conv.root.uri === pinnedPostUri}
-			{pinBusy}
-			{ontogglepin}
-		/>
+		{#if showConvRoot}
+			<ChatBubble
+				post={conv.root}
+				{botActor}
+				{ondeleted}
+				{onposted}
+				canPin={canPinPost(conv.root)}
+				pinned={conv.root.uri === pinnedPostUri}
+				{pinBusy}
+				{ontogglepin}
+			/>
+		{/if}
 		{#if conv.hiddenCount > 0}<a
 				class="thread-gap"
 				href={fullThreadHref}
 				aria-label={m.threadViewAll()}>{m.threadMore({ count: conv.hiddenCount })}</a
 			>{/if}
-		{#each conv.bubbles as bubble (bubble.post.uri)}
-			<!-- data-* は投稿後の追従スクロールの目印。楽観返信はここへ合流して出る。 -->
-			<div
-				class="thread-reply"
-				style="--reply-indent: {replyIndent(bubble.depth)}"
-				data-post-uri={bubble.post.uri}
-				data-optimistic-key={bubble.post.optimisticKey}
-			>
-				<ChatBubble
-					post={bubble.post}
-					{botActor}
-					{ondeleted}
-					{onposted}
-					canPin={canPinPost(bubble.post)}
-					pinned={bubble.post.uri === pinnedPostUri}
-					{pinBusy}
-					{ontogglepin}
-				/>
-			</div>
-		{/each}
+
+		{#if visibleConvBubbles.length > 0}
+			{#if collapsibleReplies && !repliesExpanded}
+				<button
+					type="button"
+					class="thread-reply-toggle-btn"
+					onclick={() => (repliesExpanded = true)}
+				>
+					<Icon name="chevron" size={14} />
+					<span>{m.showReplies({ count: visibleConvBubbles.length })}</span>
+				</button>
+			{:else}
+				{#each visibleConvBubbles as bubble (bubble.post.uri)}
+					<!-- data-* は投稿後の追従スクロールの目印。楽観返信はここへ合流して出る。 -->
+					<div
+						class="thread-reply"
+						style="--reply-indent: {replyIndent(bubble.depth)}"
+						data-post-uri={bubble.post.uri}
+						data-optimistic-key={bubble.post.optimisticKey}
+					>
+						<ChatBubble
+							post={bubble.post}
+							{botActor}
+							{ondeleted}
+							{onposted}
+							canPin={canPinPost(bubble.post)}
+							pinned={bubble.post.uri === pinnedPostUri}
+							{pinBusy}
+							{ontogglepin}
+						/>
+					</div>
+				{/each}
+				{#if collapsibleReplies && repliesExpanded}
+					<button
+						type="button"
+						class="thread-reply-toggle-btn expanded"
+						onclick={() => (repliesExpanded = false)}
+					>
+						<Icon name="chevron" size={14} />
+						<span>{m.hideReplies()}</span>
+					</button>
+				{/if}
+			{/if}
+		{/if}
+
 		<BotReplyStatus
 			state={botState}
 			createdAt={item.createdAt}
@@ -161,8 +202,29 @@
 			{/if}
 		{/if}
 		{#if !item.optimisticState && showBotReply && item.botReply}
-			{#if showItem}<div class="thread-reply">
-					<ChatBubble
+			{#if collapsibleReplies && !repliesExpanded}
+				<button
+					type="button"
+					class="thread-reply-toggle-btn"
+					onclick={() => (repliesExpanded = true)}
+				>
+					<Icon name="chevron" size={14} />
+					<span>{m.showReplies({ count: 1 })}</span>
+				</button>
+			{:else}
+				{#if showItem}<div class="thread-reply">
+						<ChatBubble
+							post={item.botReply}
+							{botActor}
+							{ondeleted}
+							{onposted}
+							canPin={canPinPost(item.botReply)}
+							pinned={item.botReply.uri === pinnedPostUri}
+							{pinBusy}
+							{ontogglepin}
+						/>
+					</div>
+				{:else}<ChatBubble
 						post={item.botReply}
 						{botActor}
 						{ondeleted}
@@ -172,17 +234,17 @@
 						{pinBusy}
 						{ontogglepin}
 					/>
-				</div>
-			{:else}<ChatBubble
-					post={item.botReply}
-					{botActor}
-					{ondeleted}
-					{onposted}
-					canPin={canPinPost(item.botReply)}
-					pinned={item.botReply.uri === pinnedPostUri}
-					{pinBusy}
-					{ontogglepin}
-				/>
+				{/if}
+				{#if collapsibleReplies && repliesExpanded}
+					<button
+						type="button"
+						class="thread-reply-toggle-btn expanded"
+						onclick={() => (repliesExpanded = false)}
+					>
+						<Icon name="chevron" size={14} />
+						<span>{m.hideReplies()}</span>
+					</button>
+				{/if}
 			{/if}
 		{:else if showItem}
 			<BotReplyStatus
@@ -194,3 +256,36 @@
 		{/if}
 	</article>
 {/if}
+
+<style>
+	.thread-reply-toggle-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 6px;
+		margin-inline-start: 12px;
+		padding: 5px 12px;
+		border: 1px solid var(--panel-border);
+		border-radius: 9999px;
+		background: var(--surface-2, rgba(0, 0, 0, 0.03));
+		color: var(--accent-strong);
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background-color 0.15s ease, border-color 0.15s ease;
+	}
+
+	.thread-reply-toggle-btn:hover {
+		background: var(--surface-3, rgba(0, 0, 0, 0.06));
+		border-color: var(--accent);
+	}
+
+	.thread-reply-toggle-btn :global(.icon) {
+		transition: transform 0.2s ease;
+		transform: rotate(90deg);
+	}
+
+	.thread-reply-toggle-btn.expanded :global(.icon) {
+		transform: rotate(-90deg);
+	}
+</style>

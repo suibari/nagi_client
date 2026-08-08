@@ -69,6 +69,24 @@
 			</div>
 		</section>
 
+		<section class="settings-group" aria-labelledby="settings-bot-heading">
+			<h2 id="settings-bot-heading">{m.settingsGroupBot()}</h2>
+			<div class="settings-categories">
+				<SettingsCategoryCard
+					href="/settings/bot-name"
+					icon="bot"
+					title={m.settingsBotNameTitle()}
+					description={m.settingsBotNameDescription()}
+				/>
+				<SettingsCategoryCard
+					href="/settings/bot-reply-freq"
+					icon="reply"
+					title={m.settingsBotReplyFreqTitle()}
+					description={m.settingsBotReplyFreqDescription()}
+				/>
+			</div>
+		</section>
+
 		<section class="settings-group" aria-labelledby="settings-emoji-heading">
 			<h2 id="settings-emoji-heading">{m.settingsGroupEmoji()}</h2>
 			<div class="settings-categories">

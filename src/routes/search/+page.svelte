@@ -9,7 +9,7 @@
 		searchActors,
 	} from '$lib/api/appview';
 	import type { ActorView, ChannelView, NewsView } from '$lib/api/types';
-	import { Feed } from '$lib/feed/feed.svelte';
+	import { Feed, feedKey } from '$lib/feed/feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
 	import ChannelCard from '$lib/components/ChannelCard.svelte';
@@ -193,7 +193,7 @@
 </script>
 
 {#snippet postList(feed: Feed)}
-	{#each feed.visibleItems as item (item.uri)}
+	{#each feed.visibleItems as item (feedKey(item))}
 		<ThreadUnit
 			{item}
 			botActor={feed.botActor}

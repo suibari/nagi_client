@@ -315,6 +315,10 @@ export type PreferencesView = {
 	feedTabs: FeedTab[];
 	/** 省略＝まだ一度もタブをカスタムしていない。クライアントは既定タブを使う。 */
 	feedTabsUpdatedAt?: string;
+	/** botたんからの返信確率（0〜100%）。 */
+	replyFreq?: number;
+	/** 省略＝未設定。botたんは表示名で呼ぶ。 */
+	preferredName?: string;
 };
 export type PutPreferencesInput = {
 	readPositions?: RemoteReadPosition[];
@@ -324,6 +328,13 @@ export type PutPreferencesInput = {
 	feedTabs?: FeedTab[];
 	/** feedTabs を送るときは必須。保存済みより古ければサーバは書き込まない。 */
 	feedTabsUpdatedAt?: string;
+	/** botたんからの返信確率（0〜100%）。送らなければ変更しない。 */
+	replyFreq?: number;
+	/**
+	 * botたんに呼んでほしい名前。空文字で登録を解除して表示名に戻す。
+	 * 送らなければ変更しない。他の項目と違い後勝ちで、updatedAt は不要。
+	 */
+	preferredName?: string;
 };
 
 // ---------------------------------------------------------------------------

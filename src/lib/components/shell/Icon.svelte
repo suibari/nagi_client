@@ -46,6 +46,8 @@
 		newspaper:
 			'M3 6h13v13H5a2 2 0 0 1-2-2V6Zm13 3h5v8a2 2 0 0 1-2 2h-3M6.5 9.5h6M6.5 12.5h6M6.5 15.5h4',
 		pin: 'M8 3h8l-1 6 3 3v2h-5v7l-1 1-1-1v-7H6v-2l3-3-1-6Z',
+		arrowUp: 'M12 19V5M5 12l7-7 7 7',
+		arrowDown: 'M12 5v14M5 12l7 7 7-7',
 		bluesky:
 			'M12 10.8C10.5 7.8 6.4 3 3.7 4.8 1.8 6.1 2.8 10 3.2 11.2c.5 1.6 2.3 2 4.2 1.7-3 .5-5.6 1.8-2.1 5 2 1.9 4.6-.3 5.9-2.8.5-.9.8-1.8.9-2.7.1.9.4 1.8.9 2.7 1.3 2.5 3.9 4.7 5.9 2.8 3.5-3.2.9-4.5-2.1-5 1.9.3 3.7-.1 4.2-1.7.4-1.2 1.4-5.1-.5-6.4-2.7-1.8-6.8 3-8.3 6Z',
 	};
@@ -60,6 +62,22 @@
 		style="width: {size}px; height: {size}px;"
 		aria-hidden="true"
 	></span>
+{:else if name === 'bot-off' || name === 'botOff'}
+	<span class="icon-bot-off-wrapper" style="width: {size}px; height: {size}px;" aria-hidden="true">
+		<span class="icon icon-mask icon-bot" style="width: {size}px; height: {size}px;"></span>
+		<svg
+			class="icon icon-slash"
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+		>
+			<line x1="4" y1="4" x2="20" y2="20" />
+		</svg>
+	</span>
 {:else}
 	<svg
 		class="icon"
@@ -90,5 +108,19 @@
 	.icon-nagi {
 		-webkit-mask: url('/nagi_icon_trans.png') center / contain no-repeat;
 		mask: url('/nagi_icon_trans.png') center / contain no-repeat;
+	}
+
+	.icon-bot-off-wrapper {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.icon-slash {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
 	}
 </style>

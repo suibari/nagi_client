@@ -25,14 +25,13 @@ const current = (viewerDid: string | undefined = get(session)?.did) =>
 export const openNewsUnreadView = (viewerDid?: string): UnreadView => current(viewerDid).openView();
 
 /**
- * my Nagi では未読の有無だけを確認し、未読だった位置はまだ既読へ進めない。
- * これにより「もっと見る」のニュース一覧が同じ基準で各記事を未読表示できる。
- * 初回利用・空一覧・すでに既読の場合は、現在位置との同期だけ行う。
+ * my Nagi 表示時にもニュースの既読位置を進めるようポリシー統一済み。
+ * 互換性のために残しており、現在は readLatest と同等または readLatest を使用します。
  */
 export function previewUnreadNews(view: UnreadView | undefined, latest?: ReadPosition): boolean {
 	if (!view) return false;
 	const unread = latest ? view.isUnread(latest) : false;
-	if (!unread) view.advance(latest);
+	view.advance(latest);
 	return unread;
 }
 

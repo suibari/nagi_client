@@ -17,6 +17,7 @@ import { m } from '$lib/i18n/i18n.svelte';
 import { postFollowNotice, postHref } from '$lib/feed/post-follow.svelte';
 import { postedSignal } from '$lib/feed/posted-signal.svelte';
 import { session } from '$lib/oauth/session.svelte';
+import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 
 /**
  * ニュースを引用して投稿するときの状態。
@@ -93,7 +94,7 @@ export class NewsQuote {
 			postedSignal.notify();
 			postFollowNotice.show(postHref(response.data.uri));
 		} catch (e) {
-			this.error = e instanceof Error ? e.message : m.postFailed();
+			this.error = postSubmissionErrorMessage(e);
 		} finally {
 			this.busy = false;
 		}

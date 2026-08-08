@@ -26,6 +26,7 @@
 	import ComposerEditor from './ComposerEditor.svelte';
 	import InlinePostComposer from './InlinePostComposer.svelte';
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
+	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
 		restorePostEditState,
 		validChannelSelections,
@@ -502,7 +503,7 @@
 		} catch (error) {
 			optimisticPosts.remove(optimisticId);
 			postFollow.fail();
-			postError = error instanceof Error ? error.message : m.postFailed();
+			postError = postSubmissionErrorMessage(error);
 			await tick();
 			scrollToElement(postRow);
 		} finally {

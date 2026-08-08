@@ -48,6 +48,7 @@
 	<h1>{m.settingsDeleteTitle()}</h1>
 	<p>{m.deleteDataWarning()}</p>
 	<p>{m.draftsClearedNote()}</p>
+	<p class="delete-data-kept">{m.deleteDataKeptNote()}</p>
 	{#if !$session && $oauthReady}
 		<p>{m.deleteDataLoginRequired()}</p>
 		<a class="login" href="/login">{m.login()}</a>
