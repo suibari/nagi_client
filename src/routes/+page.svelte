@@ -27,6 +27,7 @@
 	} from '$lib/my-nagi/unread.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import { threadToConversationItem } from '$lib/thread/conversation';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	import { onMount, untrack } from 'svelte';
@@ -176,22 +177,40 @@
 	}
 
 	let loadedFor = $state<string | undefined>(undefined);
+	let initializedFor: string | undefined;
+
+	async function initialize(key: string, did: string | undefined) {
+		// openView() は「開いた時点」の既読基準を固定する。別端末の基準を取得する前に
+		// 作ると、この初回表示だけ端末ローカルの基準になってしまうため、先に同期を待つ。
+		await syncPreferences(did);
+		// 待っている間にアカウントまたは言語が変わった場合、古い完了結果は使わない。
+		if (loadedFor !== key) return;
+		newsUnreadView = openNewsUnreadView(did);
+		// botたんセクションは公開だが、既読はアカウント同期するので DID で分ける。
+		botUnreadView = openMyNagiUnreadView('bot', did);
+		listUnreadView = did ? openMyNagiUnreadView('list', did) : undefined;
+		channelsUnreadView = did ? openMyNagiUnreadView('channels', did) : undefined;
+		initializedFor = key;
+		if (did) loadAll();
+		else loadPublic();
+	}
+
 	$effect(() => {
 		if (!$oauthReady) return;
-		const key = `${$session?.did ?? 'guest'}:${i18n.locale}`;
+		const did = $session?.did;
+		const key = `${did ?? 'guest'}:${i18n.locale}`;
 		if (key === loadedFor) return;
 		loadedFor = key;
+		initializedFor = undefined;
 		newsUnread = false;
 		botUnread = false;
 		listUnread = false;
 		channelsUnread = false;
-		newsUnreadView = openNewsUnreadView($session?.did);
-		// botたんセクションは公開だが、既読はアカウント同期するので DID で分ける。
-		botUnreadView = openMyNagiUnreadView('bot', $session?.did);
-		listUnreadView = $session ? openMyNagiUnreadView('list', $session.did) : undefined;
-		channelsUnreadView = $session ? openMyNagiUnreadView('channels', $session.did) : undefined;
-		if ($session) loadAll();
-		else loadPublic();
+		newsUnreadView = undefined;
+		botUnreadView = undefined;
+		listUnreadView = undefined;
+		channelsUnreadView = undefined;
+		void initialize(key, did);
 	});
 	/**
 	 * タブ復帰と60秒ポーリングで各セクションを取り直す。フィードは FeedShell が同じ形で
@@ -199,7 +218,7 @@
 	 * 既読ビューは作り直さない（凍結した基準のまま新着ぶんだけドットが点く）。
 	 */
 	function reload() {
-		if (!loadedFor) return;
+		if (!loadedFor || initializedFor !== loadedFor) return;
 		if ($session) loadAll();
 		else loadPublic();
 	}

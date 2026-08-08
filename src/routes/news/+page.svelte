@@ -8,6 +8,7 @@
 	import { i18n, m, dayHeading, dayKey } from '$lib/i18n/i18n.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	let items = $state<NewsView[]>([]),
 		botActor = $state<ActorView>(),
@@ -47,13 +48,20 @@
 		}
 	}
 	let readyFor = $state<string | undefined>();
+	async function initialize(key: string, did: string | undefined) {
+		await syncPreferences(did);
+		if (readyFor !== key) return;
+		unreadView = openNewsUnreadView(did);
+		void load(true);
+	}
 	$effect(() => {
 		if (!$oauthReady) return;
-		const key = $session?.did ?? 'guest';
+		const did = $session?.did;
+		const key = did ?? 'guest';
 		if (readyFor === key) return;
 		readyFor = key;
-		unreadView = openNewsUnreadView($session?.did);
-		void load(true);
+		unreadView = undefined;
+		void initialize(key, did);
 	});
 	$effect(() => {
 		const lang = i18n.locale;
