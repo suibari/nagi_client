@@ -233,6 +233,13 @@ export const ja = {
 	markdownStrikePlaceholder: '打ち消す文字',
 	postSending: '送信中…',
 	postFailed: '投稿できませんでした',
+	postFailedRetry: '投稿できませんでした。通信状態を確認して、もう一度投稿してください。',
+	postImageUploadFailed:
+		'画像をアップロードできませんでした。通信状態を確認して、もう一度投稿してください。',
+	postLinkCardUploadFailed:
+		'リンクカードの画像をアップロードできませんでした。通信状態を確認して、もう一度投稿してください。',
+	postRecordCreateFailed:
+		'投稿を保存できませんでした。通信状態を確認して、もう一度投稿してください。',
 	postImageAdd: '画像を追加',
 	postImageProcessing: '画像を処理中…',
 	postImageRemove: '画像を削除',

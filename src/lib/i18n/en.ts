@@ -221,6 +221,11 @@ export const en: Messages = {
 	markdownStrikePlaceholder: 'strikethrough text',
 	postSending: 'Posting…',
 	postFailed: 'Could not post',
+	postFailedRetry: 'Could not post. Check your connection and try again.',
+	postImageUploadFailed: 'Could not upload the image. Check your connection and try again.',
+	postLinkCardUploadFailed:
+		'Could not upload the link card image. Check your connection and try again.',
+	postRecordCreateFailed: 'Could not save the post. Check your connection and try again.',
 	postImageAdd: 'Add images',
 	postImageProcessing: 'Processing image…',
 	postImageRemove: 'Remove image',

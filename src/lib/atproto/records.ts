@@ -16,6 +16,7 @@ import { forgetPublicationCache } from '$lib/standardsite/cache';
 import { deleteNagiStandardSiteRecords } from '$lib/standardsite/repo';
 import { hasContentWarning } from './contentWarning';
 import { BLUESKY_PROFILE_COLLECTION_SCOPE } from '$lib/oauth/client';
+import { PostSubmissionError } from '$lib/post/submission-error';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
@@ -268,32 +269,40 @@ export async function uploadPostAssets(draft: PostDraft): Promise<PostAssets> {
 	const agent = new Agent(s);
 	const images = await Promise.all(
 		draft.attachments.map(async (attachment) => {
-			const response = await agent.com.atproto.repo.uploadBlob(attachment.blob, {
-				encoding: attachment.blob.type,
-			});
-			return {
-				image: response.data.blob,
-				alt: attachment.alt,
-				...(attachment.contentWarning ? { contentWarning: true } : {}),
-				aspectRatio: attachment.aspectRatio,
-			};
+			try {
+				const response = await agent.com.atproto.repo.uploadBlob(attachment.blob, {
+					encoding: attachment.blob.type,
+				});
+				return {
+					image: response.data.blob,
+					alt: attachment.alt,
+					...(attachment.contentWarning ? { contentWarning: true } : {}),
+					aspectRatio: attachment.aspectRatio,
+				};
+			} catch (cause) {
+				throw new PostSubmissionError('image-upload', cause);
+			}
 		}),
 	);
 	const cards = await Promise.all(
 		draft.linkCards.map(async (card) => {
-			const thumb = card.thumbnail
-				? (
-						await agent.com.atproto.repo.uploadBlob(card.thumbnail, {
-							encoding: card.thumbnail.type,
-						})
-					).data.blob
-				: undefined;
-			return {
-				uri: card.uri,
-				title: card.title,
-				...(card.description ? { description: card.description } : {}),
-				...(thumb ? { thumb } : {}),
-			};
+			try {
+				const thumb = card.thumbnail
+					? (
+							await agent.com.atproto.repo.uploadBlob(card.thumbnail, {
+								encoding: card.thumbnail.type,
+							})
+						).data.blob
+					: undefined;
+				return {
+					uri: card.uri,
+					title: card.title,
+					...(card.description ? { description: card.description } : {}),
+					...(thumb ? { thumb } : {}),
+				};
+			} catch (cause) {
+				throw new PostSubmissionError('link-card-upload', cause);
+			}
 		}),
 	);
 	return { images, cards };
@@ -308,27 +317,31 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 		: images.length
 			? { $type: `${POST}#images`, images }
 			: undefined;
-	return agent.com.atproto.repo.createRecord({
-		repo: s.did,
-		collection: POST,
-		validate: false,
-		record: {
-			$type: POST,
-			text: draft.text,
-			facets: draft.facets,
-			langs: draft.langs,
-			createdAt: draft.createdAt,
-			...(draft.cwRestricted && { cwRestricted: true }),
-			...(draft.kossori && { kossori: true }),
-			...(draft.botSilent && { botSilent: true }),
-			...(draft.channel && { channel: draft.channel }),
-			...(draft.channel && draft.channelOnly && { channelOnly: true }),
-			...(draft.reply && { reply: draft.reply }),
-			// ニュース記事そのものは引用カードで描画し、本文中の別URLだけがここへ入る。
-			...(cards.length && { linkCards: cards }),
-			...(embed && { embed }),
-		},
-	});
+	try {
+		return await agent.com.atproto.repo.createRecord({
+			repo: s.did,
+			collection: POST,
+			validate: false,
+			record: {
+				$type: POST,
+				text: draft.text,
+				facets: draft.facets,
+				langs: draft.langs,
+				createdAt: draft.createdAt,
+				...(draft.cwRestricted && { cwRestricted: true }),
+				...(draft.kossori && { kossori: true }),
+				...(draft.botSilent && { botSilent: true }),
+				...(draft.channel && { channel: draft.channel }),
+				...(draft.channel && draft.channelOnly && { channelOnly: true }),
+				...(draft.reply && { reply: draft.reply }),
+				// ニュース記事そのものは引用カードで描画し、本文中の別URLだけがここへ入る。
+				...(cards.length && { linkCards: cards }),
+				...(embed && { embed }),
+			},
+		});
+	} catch (cause) {
+		throw new PostSubmissionError('record-create', cause);
+	}
 }
 /**
  * 既存のトップレベル投稿のこっそり状態だけを切り替える。text/embed/facets 等は

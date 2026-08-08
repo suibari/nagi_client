@@ -34,6 +34,7 @@
 		usableAsCoverImage,
 	} from '$lib/standardsite/document';
 	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
+	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
 		getExternalTarget,
 		setLastPostScope,
@@ -339,7 +340,7 @@
 		} catch (e) {
 			optimisticPosts.remove(optimisticId);
 			postFollow.fail();
-			error = e instanceof Error ? e.message : m.postFailed();
+			error = postSubmissionErrorMessage(e);
 		} finally {
 			busy = false;
 			onsendingchange?.(false);
@@ -480,7 +481,7 @@
 			</button>
 		</div>
 	</div>
-	{#if error}<p class="error">{error}</p>{/if}{#if draftError}<p class="error">
+	{#if error}<p class="error" role="alert">{error}</p>{/if}{#if draftError}<p class="error">
 			{draftError}
 		</p>{/if}{#if warning}<p class="error">
 			{m.crosspostWarning({ reason: warning })}
