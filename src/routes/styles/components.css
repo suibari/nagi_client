@@ -3741,6 +3741,45 @@ a.about-feature:focus-visible {
 	color: var(--text-muted);
 }
 
+/* botたん返信確率 */
+.bot-reply-freq-page .bot-reply-freq-container {
+	display: grid;
+	gap: 16px;
+	margin-top: 16px;
+}
+.bot-reply-freq-page .bot-reply-freq-current {
+	background: var(--surface-2);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	padding: 12px 16px;
+	font-size: 1.1rem;
+	font-weight: bold;
+	text-align: center;
+	color: var(--text-strong);
+}
+.bot-reply-freq-page .bot-reply-freq-slider-wrapper {
+	display: grid;
+	gap: 6px;
+}
+.bot-reply-freq-page .bot-reply-freq-slider {
+	width: 100%;
+	accent-color: var(--accent);
+	cursor: pointer;
+}
+.bot-reply-freq-page .bot-reply-freq-labels {
+	display: flex;
+	justify-content: space-between;
+	font-size: 0.8rem;
+	color: var(--text-faint);
+}
+.bot-reply-freq-page .bot-reply-freq-actions {
+	display: flex;
+	gap: 8px;
+}
+.bot-reply-freq-page .bot-reply-freq-saved {
+	color: var(--text-muted);
+}
+
 .delete-data-page strong {
 	display: block;
 	margin: 8px 0;
