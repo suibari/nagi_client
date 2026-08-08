@@ -17,7 +17,7 @@
 		<li><strong>You must be 18 or older</strong> to use Nagi.</li>
 		<li><strong>Bot-tan is an AI</strong>, not a human.</li>
 		<li><strong>Saying that things are hard is welcome here.</strong></li>
-		<li>What we prohibit is <strong>conduct that actually harms people</strong> — nothing more.</li>
+		<li>What we prohibit is <strong>conduct that actually harms people</strong> - nothing more.</li>
 		<li>
 			<strong>Use a Content Warning (CW) when the content of your post calls for one.</strong>
 		</li>
@@ -51,7 +51,7 @@
 
 <h2 id="t1">1. Definitions</h2>
 <p>
-	The Service is a fully affirming social network running on the AT Protocol. Your posts are stored
+	The Service is a fully supportive social network running on the AT Protocol. Your posts are stored
 	in your own account (PDS), and the Service acts as an AppView that displays and searches them.
 </p>
 <ul>
@@ -60,7 +60,7 @@
 		operator.
 	</li>
 	<li>
-		<strong>PDS</strong>: Where your account and records live on the AT Protocol — a provider you
+		<strong>PDS</strong>: Where your account and records live on the AT Protocol - a provider you
 		chose, or a server you run yourself.
 	</li>
 	<li>
@@ -103,7 +103,7 @@
 <ul>
 	<li><strong>You retain the rights to the content you post.</strong></li>
 	<li>
-		The operator uses it only as needed to provide the Service — displaying it in timelines,
+		The operator uses it only as needed to provide the Service - displaying it in timelines,
 		searching, translating, and generating Bot-tan's replies and anonymous summaries.
 	</li>
 	<li>
@@ -114,7 +114,7 @@
 <div class="callout warn">
 	<p>
 		<strong>"Kossori" (quiet) posts are not private posts.</strong> Their bodies stay out of shared timelines,
-		but an anonymous Bot-tan summary may appear in "Affirm together." A reaction made from that summary
+		but an anonymous Bot-tan summary may appear in "Support together." A reaction made from that summary
 		is delivered directly to the original post. They are also stored in your PDS as ordinary public records,
 		so other applications can read them. Please do not post anything you need to keep secret.
 	</p>
@@ -132,7 +132,7 @@
 <ul>
 	<li>
 		<strong>Receive first.</strong> Feelings you can't quite put into words, complaints, moments of weakness
-		— they are welcome here.
+		- they are welcome here.
 	</li>
 	<li>
 		<strong>Assume difference.</strong> Holding different opinions, values, or ways of living is not a
@@ -290,7 +290,7 @@
 <div class="callout">
 	<p>
 		<strong>Bot-tan is an AI, not a human.</strong> Bot-tan's replies and conversations, the automatic
-		analysis of your profile, diaries, card comments, news selection, and the anonymous summaries in "Affirm
+		analysis of your profile, diaries, card comments, news selection, and the anonymous summaries in "Support
 		together" are all produced by generative AI.
 	</p>
 </div>
