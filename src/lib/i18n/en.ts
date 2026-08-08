@@ -756,6 +756,8 @@ export const en: Messages = {
 	appLinksAdd: 'Add',
 	appLinksIconSourceLabel: 'Icon source URL',
 	appLinksRemove: 'Remove this connection',
+	appLinksMoveUp: 'Move up',
+	appLinksMoveDown: 'Move down',
 	appLinksSave: 'Save',
 	appLinksSaving: 'Saving…',
 	appLinksSaved: 'Saved.',

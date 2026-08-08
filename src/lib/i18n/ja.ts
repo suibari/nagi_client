@@ -784,6 +784,8 @@ export const ja = {
 	appLinksAdd: '追加',
 	appLinksIconSourceLabel: 'アイコンの取得元URL',
 	appLinksRemove: 'この連携を削除',
+	appLinksMoveUp: '上へ移動',
+	appLinksMoveDown: '下へ移動',
 	appLinksSave: '保存',
 	appLinksSaving: '保存中…',
 	appLinksSaved: '保存しました。',

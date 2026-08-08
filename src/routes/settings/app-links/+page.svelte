@@ -5,6 +5,9 @@
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import AppLinkCard from '$lib/components/AppLinkCard.svelte';
+	import AppLinkChoiceList from './AppLinkChoiceList.svelte';
+	import Icon from '$lib/components/shell/Icon.svelte';
+	import { createSortable } from '$lib/dnd/sortable.svelte';
 	import {
 		getOwnAppLinks,
 		putAppLinks,
@@ -25,8 +28,9 @@
 		type ArrayCandidate,
 	} from '$lib/atproto/appLinks';
 
-	type FieldChoice = { path: string; sample: string; role: AppLinkFieldRole; shown: boolean };
+	type FieldChoice = { id: string; path: string; sample: string; role: AppLinkFieldRole; shown: boolean };
 	type LinkEditor = {
+		id: string;
 		collection: string;
 		label: string;
 		appUri: string;
@@ -53,8 +57,24 @@
 	let saving = $state(false);
 	let saveState = $state<'idle' | 'saved' | 'failed'>('idle');
 
+	const cardSortable = createSortable<LinkEditor>({
+		items: () => editors,
+		commit: (next) => {
+			editors = next;
+		},
+		ghostClass: 'link-sort-ghost',
+		handleSelector: '[data-card-drag-handle]',
+	});
+
+	function keydownCard(event: KeyboardEvent, id: string) {
+		if (!cardSortable.moveByKey(id, event.key)) return;
+		event.preventDefault();
+		cardSortable.refocus(id, '[data-card-drag-handle]');
+	}
+
 	function toEditor(link: AppLink): LinkEditor {
 		return {
+			id: link.collection,
 			collection: link.collection,
 			label: link.label ?? '',
 			appUri: link.appUri ?? '',
@@ -80,12 +100,31 @@
 		if (!element || typeof element !== 'object') return [];
 		const target = element as Record<string, unknown>;
 		const shown = new Set(autoDefault ? autoSelectFields(target) : editor.savedPaths);
-		return collectLeaves(target).map((l) => ({
-			path: l.path,
-			sample: sampleText(l),
-			role: l.role,
-			shown: shown.has(l.path),
-		}));
+		const leaves = collectLeaves(target);
+		// 既存の選択状態・順序を維持しつつ作成
+		const existingMap = new Map(editor.choices.map((c) => [c.path, c]));
+		const leavesMap = new Set(leaves.map((l) => l.path));
+
+		const result: FieldChoice[] = [];
+		// 既に存在していた順序を保つ
+		for (const choice of editor.choices) {
+			if (leavesMap.has(choice.path)) {
+				result.push(choice);
+			}
+		}
+		// 新たに検出されたリーフを追加
+		for (const l of leaves) {
+			if (!existingMap.has(l.path)) {
+				result.push({
+					id: l.path,
+					path: l.path,
+					sample: sampleText(l),
+					role: l.role,
+					shown: shown.has(l.path),
+				});
+			}
+		}
+		return result;
 	}
 
 	/** リスト展開トグル。ON で配列候補を検出し先頭を repeat に採用、OFF で単一表示へ戻す。 */
@@ -217,6 +256,7 @@
 			return;
 		}
 		const editor: LinkEditor = {
+			id: c,
 			collection: c,
 			label: c.split('.').slice(-2).join('.'),
 			appUri: '',
@@ -343,84 +383,97 @@
 				</div>
 			{/if}
 
-			{#each editors as editor, i (editor.collection + i)}
-				<div class="link" id={`link-${editor.collection}`}>
-					<AppLinkCard
-						link={previewOf(editor)}
-						editable
-						editing={editor.expanded}
-						onedit={() => toggleExpand(editor)}
-					/>
-					{#if editor.expanded}
-						<div class="editor">
-							<label class="field">
-								<span>{m.appLinksLabelLabel()}</span>
-								<input type="text" placeholder={editor.collection} bind:value={editor.label} />
-							</label>
+			<div class="editor-list" use:cardSortable.container>
+				{#each editors as editor, i (editor.id)}
+					<div
+						class="link"
+						class:dragging={cardSortable.draggingId === editor.id}
+						class:drop-target={cardSortable.isDropTarget(editor.id)}
+						data-sortable-id={editor.id}
+						id={`link-${editor.collection}`}
+					>
+						<div class="link-card-row">
+							<button
+								type="button"
+								class="drag-handle card-handle"
+								data-card-drag-handle
+								aria-label={`${editor.label || editor.collection}の順序を変更（上下キーで並び替え）`}
+								title="ドラッグまたは上下キーで並び替え"
+								onpointerdown={(e) => e.stopPropagation()}
+								onkeydown={(event) => keydownCard(event, editor.id)}
+							>
+								<Icon name="drag" size={18} />
+							</button>
+							<div class="link-card-wrap">
+								<AppLinkCard
+									link={previewOf(editor)}
+									editable
+									editing={editor.expanded}
+									onedit={() => toggleExpand(editor)}
+								/>
+							</div>
+						</div>
+						{#if editor.expanded}
+							<div class="editor">
+								<label class="field">
+									<span>{m.appLinksLabelLabel()}</span>
+									<input type="text" placeholder={editor.collection} bind:value={editor.label} />
+								</label>
 
-							<label class="field">
-								<span>{m.appLinksAppUriLabel()}</span>
-								<span class="with-button">
-									<input type="url" placeholder="https://" bind:value={editor.appUri} />
-									<button
-										type="button"
-										disabled={!editor.appUri.trim()}
-										onclick={() => refetchIcon(editor)}
-									>
-										{m.appLinksResolveIcon()}
-									</button>
-								</span>
-							</label>
+								<label class="field">
+									<span>{m.appLinksAppUriLabel()}</span>
+									<span class="with-button">
+										<input type="url" placeholder="https://" bind:value={editor.appUri} />
+										<button
+											type="button"
+											disabled={!editor.appUri.trim()}
+											onclick={() => refetchIcon(editor)}
+										>
+											{m.appLinksResolveIcon()}
+										</button>
+									</span>
+								</label>
 
-							{#if editor.loading}
-								<p class="muted">{m.appLinksLoadingSample()}</p>
-							{:else if !editor.record}
-								<p class="muted">{m.appLinksNoSample()}</p>
-							{:else}
-								{#if editor.arrayCandidates.length}
-									<div class="field-row expand-row">
-										<ToggleSwitch
-											checked={!!editor.repeat}
-											label={m.appLinksExpandList()}
-											onchange={(v) => toggleRepeat(editor, v)}
-										/>
-									</div>
-									{#if editor.repeat && editor.arrayCandidates.length > 1}
-										<label class="field">
-											<span>{m.appLinksArrayField()}</span>
-											<select
-												class="add-select"
-												value={editor.repeat}
-												onchange={(e) => selectRepeat(editor, e.currentTarget.value)}
-											>
-												{#each editor.arrayCandidates as cand (cand.path)}
-													<option value={cand.path}>{cand.path} ({cand.length})</option>
-												{/each}
-											</select>
-										</label>
-									{/if}
-								{/if}
-								<p class="fields-hint muted">{m.appLinksChooseFields()}</p>
-								<div class="field-list">
-									{#each editor.choices as choice (choice.path)}
-										<div class="field-row" title={`${choice.path}: ${choice.sample}`}>
+								{#if editor.loading}
+									<p class="muted">{m.appLinksLoadingSample()}</p>
+								{:else if !editor.record}
+									<p class="muted">{m.appLinksNoSample()}</p>
+								{:else}
+									{#if editor.arrayCandidates.length}
+										<div class="field-row expand-row">
 											<ToggleSwitch
-												checked={choice.shown}
-												label={fieldName(choice.path)}
-												onchange={(v) => (choice.shown = v)}
+												checked={!!editor.repeat}
+												label={m.appLinksExpandList()}
+												onchange={(v) => toggleRepeat(editor, v)}
 											/>
 										</div>
-									{/each}
-								</div>
-							{/if}
+										{#if editor.repeat && editor.arrayCandidates.length > 1}
+											<label class="field">
+												<span>{m.appLinksArrayField()}</span>
+												<select
+													class="add-select"
+													value={editor.repeat}
+													onchange={(e) => selectRepeat(editor, e.currentTarget.value)}
+												>
+													{#each editor.arrayCandidates as cand (cand.path)}
+														<option value={cand.path}>{cand.path} ({cand.length})</option>
+													{/each}
+												</select>
+											</label>
+										{/if}
+									{/if}
+									<p class="fields-hint muted">{m.appLinksChooseFields()}</p>
+									<AppLinkChoiceList bind:choices={editor.choices} />
+								{/if}
 
-							<button type="button" class="remove" onclick={() => removeLink(i)}
-								>{m.appLinksRemove()}</button
-							>
-						</div>
-					{/if}
-				</div>
-			{/each}
+								<button type="button" class="remove" onclick={() => removeLink(i)}
+									>{m.appLinksRemove()}</button
+								>
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
 
 			{#if availableCollections.length}
 				<div class="add-row">
@@ -460,8 +513,62 @@
 		   0 に下げて内側の flex 省略(ellipsis)を効かせる。 */
 		min-inline-size: 0;
 	}
-	/* カード自身もグリッド／フレックス文脈で縮めるようにして横あふれを防ぐ。 */
+	.editor-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
 	.link {
+		min-inline-size: 0;
+		transition: opacity 120ms ease, border-color 120ms ease;
+	}
+	.link.dragging {
+		opacity: 0.3;
+	}
+	.link.drop-target {
+		border-radius: var(--radius-m);
+		box-shadow: 0 0 0 2px var(--accent-strong);
+	}
+	:global(.link-sort-ghost) {
+		position: fixed;
+		z-index: 10000;
+		margin: 0;
+		opacity: 0.92;
+		box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
+		pointer-events: none;
+		background: var(--bg-inset, var(--bg-raised));
+		border: 1px solid var(--accent);
+		border-radius: var(--radius-m);
+		transform: scale(1.01);
+	}
+	.link-card-row {
+		display: flex;
+		align-items: center;
+		gap: 0.2rem;
+		min-inline-size: 0;
+	}
+	.drag-handle {
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6px 4px;
+		border: 0;
+		background: transparent;
+		color: var(--text-muted);
+		border-radius: var(--radius-s);
+		cursor: grab;
+		touch-action: none;
+	}
+	.drag-handle:hover {
+		color: var(--text);
+		background: var(--bg-inset);
+	}
+	.drag-handle:active {
+		cursor: grabbing;
+	}
+	.link-card-wrap {
+		flex: 1;
 		min-inline-size: 0;
 	}
 	.muted {
@@ -501,9 +608,6 @@
 	.favicon-btn img {
 		border-radius: var(--radius-s);
 	}
-	.link {
-		margin-block: 0.6rem;
-	}
 	.editor {
 		border: 1px solid var(--line);
 		border-block-start: 0;
@@ -516,16 +620,6 @@
 	}
 	.fields-hint {
 		margin: 0.2rem 0 0;
-	}
-	.field-list {
-		display: flex;
-		flex-direction: column;
-	}
-	.field-row {
-		border-block-start: 1px solid var(--line);
-	}
-	.field-row:first-child {
-		border-block-start: 0;
 	}
 	.expand-row {
 		border-block-start: 0;
