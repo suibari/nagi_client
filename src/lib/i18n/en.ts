@@ -360,6 +360,8 @@ export const en: Messages = {
 	// conversation grouping
 	threadMore: (p: { count: number }) => `${p.count} more in this conversation`,
 	threadViewAll: 'View full conversation',
+	showReplies: (p: { count: number }) => (p.count > 1 ? `Show replies (${p.count})` : 'Show reply'),
+	hideReplies: 'Hide replies',
 	showAllMedia: 'Show all',
 
 	reactWithAria: (p) => `React with ${p.emoji}`,

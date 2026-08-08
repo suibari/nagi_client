@@ -372,6 +372,8 @@ export const ja = {
 	// conversation grouping
 	threadMore: (p: { count: number }) => `${p.count}件のやりとり`,
 	threadViewAll: 'やりとりを全部見る',
+	showReplies: (p: { count: number }) => (p.count > 1 ? `返信を表示 (${p.count}件)` : '返信を表示'),
+	hideReplies: '返信を隠す',
 	showAllMedia: '全部見る',
 
 	// reactions

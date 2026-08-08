@@ -25,7 +25,7 @@
 		openMyNagiUnreadView,
 		readLatest,
 	} from '$lib/my-nagi/unread.svelte';
-	import { openNewsUnreadView, previewUnreadNews } from '$lib/news/unread.svelte';
+	import { openNewsUnreadView } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { threadToConversationItem } from '$lib/thread/conversation';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
@@ -41,22 +41,22 @@
 	let newsLoading = $state(true);
 	let newsError = $state('');
 	let newsUnread = $state(false);
-	let newsUnreadView: UnreadView | undefined;
+	let newsUnreadView = $state<UnreadView | undefined>(undefined);
 
 	let botPosts = $state<PostView[]>([]);
 	let botActor = $state<ActorView>();
 	let botLoading = $state(true);
 	let botError = $state('');
 	let botUnread = $state(false);
-	let botUnreadView: UnreadView | undefined;
+	let botUnreadView = $state<UnreadView | undefined>(undefined);
 
 	let listActivity = $state<MyNagiView>({ listUsers: [], channels: [] });
 	let listLoading = $state(true);
 	let listError = $state('');
 	let listUnread = $state(false);
 	let channelsUnread = $state(false);
-	let listUnreadView: UnreadView | undefined;
-	let channelsUnreadView: UnreadView | undefined;
+	let listUnreadView = $state<UnreadView | undefined>(undefined);
+	let channelsUnreadView = $state<UnreadView | undefined>(undefined);
 	let newsCarousel = $state<{
 		scrollPrevious: () => void;
 		scrollNext: () => void;
@@ -87,7 +87,7 @@
 		try {
 			const page = await getPositiveNews(i18n.locale);
 			news = page.items.slice(0, NEWS_COUNT);
-			newsUnread = previewUnreadNews(
+			newsUnread = readLatest(
 				activeUnreadView,
 				latestReadPosition(news, (item) => ({
 					indexedAt: item.indexedAt,
@@ -253,7 +253,13 @@
 	>
 		{#if botPosts[0]}
 			<div class="my-nagi-bot-card">
-				<ThreadUnit item={botPosts[0]} unread={botUnread} {botActor} onposted={loadBotPosts} />
+				<ThreadUnit
+					item={botPosts[0]}
+					unread={botUnread}
+					{botActor}
+					onposted={loadBotPosts}
+					collapsibleReplies={true}
+				/>
 			</div>
 		{/if}
 	</MyNagiSection>
@@ -318,6 +324,7 @@
 						unread={readLatest(listUnreadView, entry.post)}
 						{botActor}
 						onposted={loadListActivity}
+						collapsibleReplies={true}
 					/>
 				</div>
 			{/each}
@@ -347,6 +354,7 @@
 						unread={readLatest(channelsUnreadView, entry.post)}
 						{botActor}
 						onposted={loadListActivity}
+						collapsibleReplies={true}
 					/>
 				</div>
 			{/each}
