@@ -248,6 +248,8 @@
 			<p class="muted home-list-note">{m.homeListLimitReached()}</p>
 		{/if}
 		{#if profile?.description}<ProfileDescription text={profile.description} />{/if}
+		<ProfileWebsiteCard did={profile?.did} />
+		<ProfileAppLinks did={profile?.did} />
 		<div class="profile-stats">
 			<span
 				><strong>{profile?.postCount ?? 0}</strong>
@@ -255,8 +257,6 @@
 			>
 			{#if joined}<span>{m.profileJoinedSince({ date: joined })}</span>{/if}
 		</div>
-		<ProfileWebsiteCard did={profile?.did} />
-		<ProfileAppLinks did={profile?.did} />
 	</header>
 	<nav class="profile-tabs" aria-label={m.profileTabsAria()}>
 		{#each tabs as t (t.id)}
