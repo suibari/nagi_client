@@ -12,6 +12,7 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { latestReadPosition, openMyNagiUnreadView, readLatest } from '$lib/my-nagi/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	import CarouselArrows from './CarouselArrows.svelte';
 	import ChatBubble from './ChatBubble.svelte';
@@ -35,7 +36,7 @@
 	let error = $state('');
 	let authError = $state(false);
 	let unread = $state(false);
-	let unreadView: UnreadView | undefined;
+	let unreadView = $state<UnreadView | undefined>(undefined);
 	let loadedKey = $state('');
 	let completed = $state(false);
 	let responseBotActor = $state<ActorView>();
@@ -126,9 +127,18 @@
 		if (openPickerUri === uri) openPickerUri = undefined;
 	}
 
+	async function initialize(key: string, did: string | undefined) {
+		await syncPreferences(did);
+		if (loadedKey !== key) return;
+		unreadView = did ? openMyNagiUnreadView('community', did) : undefined;
+		if (did) void load();
+		else loading = false;
+	}
+
 	$effect(() => {
 		if (!$oauthReady) return;
-		const key = `${$session?.did ?? 'guest'}:${i18n.locale}`;
+		const did = $session?.did;
+		const key = `${did ?? 'guest'}:${i18n.locale}`;
 		if (key === loadedKey) return;
 		loadedKey = key;
 		items = [];
@@ -137,9 +147,8 @@
 		error = '';
 		authError = false;
 		unread = false;
-		unreadView = $session ? openMyNagiUnreadView('community', $session.did) : undefined;
-		if ($session) void load();
-		else loading = false;
+		unreadView = undefined;
+		void initialize(key, did);
 	});
 </script>
 
