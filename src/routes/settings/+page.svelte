@@ -43,6 +43,12 @@
 					description={m.settingsLanguageDescription()}
 				/>
 				<SettingsCategoryCard
+					href="/settings/bot-name"
+					icon="profile"
+					title={m.settingsBotNameTitle()}
+					description={m.settingsBotNameDescription()}
+				/>
+				<SettingsCategoryCard
 					href="/settings/notifications"
 					icon="bell"
 					title={m.settingsNotificationsTitle()}

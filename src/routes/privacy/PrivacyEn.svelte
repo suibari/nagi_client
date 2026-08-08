@@ -305,11 +305,19 @@
 	<li>AI-generated analysis, diaries, card comments, and anonymous summaries</li>
 	<li>Your conversation history with Bot-tan</li>
 	<li>Notifications, push notification destinations, mute settings, and your Home list</li>
+	<li>
+		Channel subscriptions (both yours, and records of other people subscribing to your channels)
+	</li>
 </ul>
 <p>We also delete entries where another user had added you to their Home.</p>
 
 <h3>What is not deleted</h3>
 <ul>
+	<li>
+		<strong>Your visit history and gifts in Bot-tan's Room, and your Discord link.</strong> These belong
+		to Bot-tan's Room and community, not to Nagi. They are deliberately left alone so you can keep using
+		them after leaving Nagi. If you want them removed, please ask through each of those services.
+	</li>
 	<li>
 		<strong>Other records in your PDS.</strong> This includes Bluemoji created by other apps and Bluemoji
 		registered before Nagi introduced creation markers. To remove them completely, you must delete them

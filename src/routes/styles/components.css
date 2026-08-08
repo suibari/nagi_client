@@ -3713,10 +3713,49 @@ a.about-feature:focus-visible {
 	}
 }
 
+/* botたんの呼び方。1項目だけの短い設定なので、専用の枠は持たせず素直に縦に積む。 */
+.bot-name-page .bot-name-current {
+	background: var(--surface-2);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	padding: 10px 12px;
+}
+.bot-name-page label {
+	display: grid;
+	gap: 6px;
+	margin: 12px 0;
+}
+.bot-name-page .bot-name-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+/* 解除は破壊的だが取り返しがつく（表示名に戻るだけ）ので、danger ではなく控えめに。 */
+.bot-name-page .bot-name-clear {
+	background: transparent;
+	border: 1px solid var(--line);
+	color: var(--text-muted);
+}
+.bot-name-page .bot-name-saved {
+	color: var(--text-muted);
+}
+
 .delete-data-page strong {
 	display: block;
 	margin: 8px 0;
 	color: var(--text-strong);
+}
+/*
+	「残るもの」の注記。警告文と並ぶが役割が逆（消えない範囲の説明）なので、
+	danger の赤ではなく落ち着いた面で区別する。
+*/
+.delete-data-page .delete-data-kept {
+	background: var(--surface-2);
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	padding: 12px 14px;
+	color: var(--text-muted);
+	font-size: 0.92em;
 }
 .auth-card > button.danger-button,
 .auth-card > button.retry-delete {
