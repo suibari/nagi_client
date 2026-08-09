@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Facet } from '$lib/atproto/facets';
 import { parsePostText } from '$lib/atproto/facets';
-import { splitForBluesky } from './bluesky';
+import type { PostAssets, PostDraft } from '$lib/atproto/records';
+import { prepareCrosspostContent, splitForBluesky } from './bluesky';
 
 const bytes = (value: string) => new TextEncoder().encode(value).length;
 const graphemeCount = (value: string) =>
@@ -11,6 +12,17 @@ const link = (byteStart: number, byteEnd: number, uri: string): Facet => ({
 	index: { byteStart, byteEnd },
 	features: [{ $type: 'app.bsky.richtext.facet#link', uri }],
 });
+
+const draft = (text = ''): PostDraft => ({
+	text,
+	facets: [],
+	langs: ['ja'],
+	createdAt: '2026-08-09T00:00:00.000Z',
+	attachments: [],
+	linkCards: [],
+});
+
+const emptyAssets = (): PostAssets => ({ images: [], cards: [] });
 
 describe('splitForBluesky', () => {
 	it('returns a single chunk when the text fits', () => {
@@ -94,5 +106,64 @@ describe('splitForBluesky', () => {
 		const tail = 'い'.repeat(100);
 		const chunks = splitForBluesky(`${head}\n${tail}`);
 		for (const chunk of chunks) expect(chunk.text).toBe(chunk.text.trim());
+	});
+});
+
+describe('prepareCrosspostContent', () => {
+	it('creates an empty-text chunk for a link-card-only post', () => {
+		const assets: PostAssets = {
+			images: [],
+			cards: [
+				{
+					uri: 'https://example.com/article',
+					title: 'Example article',
+					description: 'Description',
+				},
+			],
+		};
+
+		expect(prepareCrosspostContent(draft(), assets)).toEqual({
+			chunks: [{ text: '', facets: [] }],
+			embed: {
+				$type: 'app.bsky.embed.external',
+				external: {
+					uri: 'https://example.com/article',
+					title: 'Example article',
+					description: 'Description',
+				},
+			},
+		});
+	});
+
+	it('creates an empty-text chunk for an image-only post', () => {
+		const image = {
+			image: { ref: 'blob-ref' },
+			alt: 'alt text',
+			aspectRatio: { width: 1200, height: 800 },
+		};
+		const assets: PostAssets = { images: [image], cards: [] };
+
+		expect(prepareCrosspostContent(draft(), assets)).toEqual({
+			chunks: [{ text: '', facets: [] }],
+			embed: { $type: 'app.bsky.embed.images', images: [image] },
+		});
+	});
+
+	it('does not create a chunk when both text and embeds are absent', () => {
+		expect(prepareCrosspostContent(draft(), emptyAssets())).toEqual({
+			chunks: [],
+			embed: undefined,
+		});
+	});
+
+	it('keeps normal text and its link card together', () => {
+		const assets: PostAssets = {
+			images: [],
+			cards: [{ uri: 'https://example.com', title: 'Example' }],
+		};
+
+		const result = prepareCrosspostContent(draft('本文あり'), assets);
+		expect(result.chunks).toEqual([{ text: '本文あり', facets: [] }]);
+		expect(result.embed?.$type).toBe('app.bsky.embed.external');
 	});
 });
