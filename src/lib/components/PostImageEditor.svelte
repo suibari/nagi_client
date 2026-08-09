@@ -9,6 +9,7 @@
 		releaseImage,
 		type PostEditImage,
 	} from '$lib/images';
+	import type { GifCompressionProgress } from '$lib/gif-compression';
 	import Icon from './shell/Icon.svelte';
 	import SortableImageList from './SortableImageList.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
@@ -26,6 +27,10 @@
 	} = $props();
 
 	let errors = $state<string[]>([]);
+	let compressionProgress = $state<GifCompressionProgress | null>(null);
+	const processingLabel = $derived(
+		compressionProgress ? m.postGifProcessing(compressionProgress) : m.postImageProcessing(),
+	);
 	let input: HTMLInputElement;
 	let tracked = new Map<string, Extract<PostEditImage, { kind: 'new' }>>();
 	let destroyed = false;
@@ -62,8 +67,11 @@
 		processing = true;
 		try {
 			for (const file of files.slice(0, available)) {
+				compressionProgress = null;
 				try {
-					const image = await processImage(file);
+					const image = await processImage(file, (progress) => {
+						if (!destroyed) compressionProgress = progress;
+					});
 					if (destroyed) {
 						releaseImage(image);
 						break;
@@ -75,6 +83,7 @@
 				}
 			}
 		} finally {
+			compressionProgress = null;
 			if (!destroyed) processing = false;
 		}
 	}
@@ -140,13 +149,19 @@
 		class="ghost attachment-add"
 		type="button"
 		disabled={disabled || processing || images.length >= MAX_IMAGE_COUNT}
-		aria-label={processing ? m.postImageProcessing() : m.postImageAdd()}
-		title={processing ? m.postImageProcessing() : m.postImageAdd()}
+		aria-label={processing ? processingLabel : m.postImageAdd()}
+		title={processing ? processingLabel : m.postImageAdd()}
 		onclick={() => input.click()}
 	>
-		<Icon name="image" size={18} />
-		<span>{images.length}/{MAX_IMAGE_COUNT}</span>
+		{#if processing}
+			<span class="attachment-processing-spinner" aria-hidden="true"></span>
+			<span>{processingLabel}</span>
+		{:else}
+			<Icon name="image" size={18} />
+			<span>{images.length}/{MAX_IMAGE_COUNT}</span>
+		{/if}
 	</button>
+	<span class="visually-hidden" aria-live="polite">{processing ? processingLabel : ''}</span>
 	{#if images.length}
 		<SortableImageList bind:items={images} {disabled}>
 			{#snippet children(image)}

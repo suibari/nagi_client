@@ -1,4 +1,4 @@
-import { compressGif } from './gif-compression';
+import { compressGif, type GifCompressionProgress } from './gif-compression';
 
 export const MAX_IMAGE_COUNT = 4;
 export const MAX_IMAGE_INPUT_SIZE = 25_000_000;
@@ -46,7 +46,10 @@ async function dimensions(blob: Blob) {
 const canvasBlob = (canvas: HTMLCanvasElement, quality: number) =>
 	new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
 
-export async function processImage(file: File): Promise<ImageAttachment> {
+export async function processImage(
+	file: File,
+	onGifCompressionProgress?: (progress: GifCompressionProgress) => void,
+): Promise<ImageAttachment> {
 	if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
 		throw new ImageProcessingError('Unsupported image type', 'type');
 	}
@@ -57,7 +60,7 @@ export async function processImage(file: File): Promise<ImageAttachment> {
 		let blob: Blob = file;
 		if (file.size > MAX_IMAGE_BLOB_SIZE) {
 			try {
-				blob = (await compressGif(file, MAX_IMAGE_BLOB_SIZE)) ?? file;
+				blob = (await compressGif(file, MAX_IMAGE_BLOB_SIZE, onGifCompressionProgress)) ?? file;
 			} catch {
 				throw new ImageProcessingError('Could not compress GIF', 'gif-size');
 			}

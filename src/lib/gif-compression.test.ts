@@ -4,13 +4,15 @@ import { compressGifBuffer } from './gif-compression-codec';
 import {
 	GIF_COMPRESSION_STAGES,
 	hasTransparentPixel,
+	initialGifCompressionStageIndex,
+	nextSmallerGifCompressionStageIndex,
 	resizeRgba,
 	scaledGifDimensions,
 } from './gif-compression-core';
 
 describe('GIF compression stages', () => {
 	it('orders stages from full-size color reduction to stronger resizing', () => {
-		expect(GIF_COMPRESSION_STAGES).toHaveLength(8);
+		expect(GIF_COMPRESSION_STAGES).toHaveLength(6);
 		expect(GIF_COMPRESSION_STAGES[0]).toEqual({ scale: 1, maxColors: 255 });
 		expect(GIF_COMPRESSION_STAGES.at(-1)).toEqual({ scale: 0.25, maxColors: 16 });
 		expect(
@@ -18,6 +20,16 @@ describe('GIF compression stages', () => {
 				(stage, index) => index === 0 || stage.scale <= GIF_COMPRESSION_STAGES[index - 1].scale,
 			),
 		).toBe(true);
+	});
+
+	it('starts near the scale estimated from the input-to-target size ratio', () => {
+		expect(initialGifCompressionStageIndex(3_000_000, 2_000_000)).toBe(2);
+		expect(initialGifCompressionStageIndex(10_000_000, 2_000_000)).toBe(4);
+	});
+
+	it('skips ineffective stages using the previous encoded size', () => {
+		expect(nextSmallerGifCompressionStageIndex(2, 4_000_000, 2_000_000)).toBe(4);
+		expect(nextSmallerGifCompressionStageIndex(5, 4_000_000, 2_000_000)).toBeNull();
 	});
 
 	it('never reduces dimensions below one pixel', () => {
@@ -30,7 +42,7 @@ describe('GIF compression stages', () => {
 		]);
 		const resized = resizeRgba(source, 2, 2, 1, 1);
 
-		expect([...resized]).toEqual([128, 128, 128, 191]);
+		expect([...resized]).toEqual([128, 128, 128, 0]);
 		expect(hasTransparentPixel(resized)).toBe(true);
 		expect(hasTransparentPixel(new Uint8ClampedArray([0, 0, 0, 255]))).toBe(false);
 	});
@@ -56,7 +68,10 @@ describe('GIF compression stages', () => {
 				{ data: blue, delay: 120 },
 			],
 		});
-		const output = await compressGifBuffer(source, source.byteLength);
+		const progress: number[] = [];
+		const output = await compressGifBuffer(source, source.byteLength, ({ attempt }) => {
+			progress.push(attempt);
+		});
 
 		expect(output).not.toBeNull();
 		const gif = decode(output!);
@@ -66,5 +81,7 @@ describe('GIF compression stages', () => {
 		expect(frames).toHaveLength(2);
 		expect(frames.map((frame) => frame.delay)).toEqual([80, 120]);
 		expect(frames[0].data[3]).toBe(0);
+		// 上限以下になった時点で、高画質化のための追加試行は行わない。
+		expect(progress).toEqual([1]);
 	});
 });

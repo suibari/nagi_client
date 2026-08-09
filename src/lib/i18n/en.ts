@@ -228,6 +228,7 @@ export const en: Messages = {
 	postRecordCreateFailed: 'Could not save the post. Check your connection and try again.',
 	postImageAdd: 'Add images',
 	postImageProcessing: 'Processing image…',
+	postGifProcessing: (p) => `Compressing GIF… (${p.attempt}/${p.total})`,
 	postImageRemove: 'Remove image',
 	postImageReorder: (p) => `Reorder image ${p.index}`,
 	postImageMoved: (p) => `Moved image to position ${p.position}`,

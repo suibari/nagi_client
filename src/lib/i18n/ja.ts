@@ -242,6 +242,8 @@ export const ja = {
 		'投稿を保存できませんでした。通信状態を確認して、もう一度投稿してください。',
 	postImageAdd: '画像を追加',
 	postImageProcessing: '画像を処理中…',
+	postGifProcessing: (p: { attempt: number; total: number }) =>
+		`GIFを圧縮中…（${p.attempt}/${p.total}）`,
 	postImageRemove: '画像を削除',
 	postImageReorder: (p: { index: number }) => `${p.index}枚目の画像を並べ替え`,
 	postImageMoved: (p: { position: number }) => `画像を${p.position}番目へ移動しました`,

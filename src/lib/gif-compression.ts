@@ -1,8 +1,17 @@
 const GIF_COMPRESSION_TIMEOUT_MS = 120_000;
 
-type CompressionWorkerResponse = { ok: true; buffer: ArrayBuffer } | { ok: false; reason: string };
+export type GifCompressionProgress = { attempt: number; total: number };
 
-export async function compressGif(file: Blob, maxSize: number): Promise<Blob | null> {
+type CompressionWorkerResponse =
+	| { ok: true; progress: GifCompressionProgress }
+	| { ok: true; buffer: ArrayBuffer }
+	| { ok: false; reason: string };
+
+export async function compressGif(
+	file: Blob,
+	maxSize: number,
+	onProgress?: (progress: GifCompressionProgress) => void,
+): Promise<Blob | null> {
 	const worker = new Worker(new URL('./gif-compression.worker.ts', import.meta.url), {
 		type: 'module',
 	});
@@ -24,6 +33,10 @@ export async function compressGif(file: Blob, maxSize: number): Promise<Blob | n
 			const response = event.data;
 			if (!response.ok) {
 				finish(new Error(response.reason));
+				return;
+			}
+			if ('progress' in response) {
+				onProgress?.(response.progress);
 				return;
 			}
 			const blob = new Blob([response.buffer], { type: 'image/gif' });
