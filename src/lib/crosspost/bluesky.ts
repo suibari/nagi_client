@@ -118,6 +118,27 @@ function buildEmbed(assets: PostAssets) {
 }
 
 /**
+ * Bluesky に作成する本文チャンクと embed を組み立てる。
+ * app.bsky.feed.post は embed があれば空の text を許可するため、画像または
+ * リンクカードだけの投稿では空文字のチャンクを1件用意する。
+ */
+export function prepareCrosspostContent(draft: PostDraft, assets: PostAssets) {
+	let chunks = splitForBluesky(draft.text, draft.facets as Facet[]).map((chunk) => ({
+		...chunk,
+		facets: chunk.facets.flatMap((facet) => {
+			// 公式 Bluemoji facet は相互運用のため残し、Nagi の正確な rkey 解決用参照だけ外す。
+			const features = facet.features.filter(
+				(feature) => feature.$type !== 'com.suibari.nagi.richtext#bluemoji',
+			);
+			return features.length ? [{ ...facet, features }] : [];
+		}),
+	}));
+	const embed = buildEmbed(assets);
+	if (!chunks.length && embed) chunks = [{ text: '', facets: [] }];
+	return { chunks, embed };
+}
+
+/**
  * Nagi のトップレベル投稿を Bluesky にも投稿する。
  * 300 文字を超える場合は分割し、2件目以降は直前の投稿へのリプライで芋づるに繋ぐ。
  * blob は Nagi 投稿でアップロード済みのものを使い回す（同一リポジトリ・同一サイズ上限）。
@@ -129,18 +150,8 @@ export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);
-	const chunks = splitForBluesky(draft.text, draft.facets as Facet[]).map((chunk) => ({
-		...chunk,
-		facets: chunk.facets.flatMap((facet) => {
-			// 公式 Bluemoji facet は相互運用のため残し、Nagi の正確な rkey 解決用参照だけ外す。
-			const features = facet.features.filter(
-				(feature) => feature.$type !== 'com.suibari.nagi.richtext#bluemoji',
-			);
-			return features.length ? [{ ...facet, features }] : [];
-		}),
-	}));
+	const { chunks, embed } = prepareCrosspostContent(draft, assets);
 	if (!chunks.length) return;
-	const embed = buildEmbed(assets);
 	const base = Date.parse(draft.createdAt) || Date.now();
 	let root: { uri: string; cid: string } | undefined;
 	let parent: { uri: string; cid: string } | undefined;

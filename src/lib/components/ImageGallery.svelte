@@ -2,6 +2,7 @@
 	import { tick } from 'svelte';
 	import type { PostImage } from '$lib/api/types';
 	import { APPVIEW_URL } from '$lib/api/appview';
+	import { portal } from '$lib/actions/portal';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
@@ -113,6 +114,7 @@
 {#if active !== undefined}
 	<div
 		class="image-viewer"
+		use:portal
 		role="dialog"
 		aria-modal="true"
 		aria-label={m.postImageViewer()}

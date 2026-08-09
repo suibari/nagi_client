@@ -242,6 +242,8 @@ export const ja = {
 		'投稿を保存できませんでした。通信状態を確認して、もう一度投稿してください。',
 	postImageAdd: '画像を追加',
 	postImageProcessing: '画像を処理中…',
+	postGifProcessing: (p: { attempt: number; total: number }) =>
+		`GIFを圧縮中…（${p.attempt}/${p.total}）`,
 	postImageRemove: '画像を削除',
 	postImageReorder: (p: { index: number }) => `${p.index}枚目の画像を並べ替え`,
 	postImageMoved: (p: { position: number }) => `画像を${p.position}番目へ移動しました`,
@@ -251,7 +253,7 @@ export const ja = {
 	postImageCountError: '画像は4枚まで添付できます',
 	postImageTypeError: (p: { name: string }) => `${p.name}: JPEG・PNG・WebP・GIFを選択してください`,
 	postImageInputSizeError: (p: { name: string }) => `${p.name}: 25MB以下の画像を選択してください`,
-	postGifSizeError: (p: { name: string }) => `${p.name}: GIFは2MB以下にしてください`,
+	postGifSizeError: (p: { name: string }) => `${p.name}: GIFを2MB以下に圧縮できませんでした`,
 	postImageCompressError: (p: { name: string }) => `${p.name}: 画像を2MB以下に圧縮できませんでした`,
 	imageProcessFailedNamed: (p: { name: string }) => `${p.name}: 画像を処理できませんでした`,
 	postImageOpen: (p: { index: number }) => `${p.index}枚目の画像を拡大`,
