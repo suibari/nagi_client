@@ -38,6 +38,7 @@
 		"@suibari/nagi-passport": "^0.1.0",
 		"@vercel/analytics": "^2.0.1",
 		"emoji-picker-element": "^1.29.1",
-		"emoji-picker-element-data": "^1.8.0"
+		"emoji-picker-element-data": "^1.8.0",
+		"modern-gif": "^2.1.0"
 	}
 }

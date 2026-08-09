@@ -237,7 +237,7 @@ export const en: Messages = {
 	postImageCountError: 'You can attach up to four images',
 	postImageTypeError: (p) => `${p.name}: choose a JPEG, PNG, WebP, or GIF image`,
 	postImageInputSizeError: (p) => `${p.name}: choose an image no larger than 25MB`,
-	postGifSizeError: (p) => `${p.name}: GIF images must be no larger than 2MB`,
+	postGifSizeError: (p) => `${p.name}: could not compress the GIF below 2MB`,
 	postImageCompressError: (p) => `${p.name}: could not compress the image below 2MB`,
 	imageProcessFailedNamed: (p) => `${p.name}: could not process the image`,
 	postImageOpen: (p) => `Enlarge image ${p.index}`,

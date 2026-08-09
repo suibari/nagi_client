@@ -1,3 +1,5 @@
+import { compressGif } from './gif-compression';
+
 export const MAX_IMAGE_COUNT = 4;
 export const MAX_IMAGE_INPUT_SIZE = 25_000_000;
 export const MAX_IMAGE_BLOB_SIZE = 2_000_000;
@@ -52,15 +54,23 @@ export async function processImage(file: File): Promise<ImageAttachment> {
 		throw new ImageProcessingError('Image input is too large', 'input-size');
 	}
 	if (file.type === 'image/gif') {
+		let blob: Blob = file;
 		if (file.size > MAX_IMAGE_BLOB_SIZE) {
+			try {
+				blob = (await compressGif(file, MAX_IMAGE_BLOB_SIZE)) ?? file;
+			} catch {
+				throw new ImageProcessingError('Could not compress GIF', 'gif-size');
+			}
+		}
+		if (blob.size > MAX_IMAGE_BLOB_SIZE) {
 			throw new ImageProcessingError('GIF is too large', 'gif-size');
 		}
 		return {
 			id: crypto.randomUUID(),
-			blob: file,
-			previewUrl: URL.createObjectURL(file),
+			blob,
+			previewUrl: URL.createObjectURL(blob),
 			alt: '',
-			aspectRatio: await dimensions(file),
+			aspectRatio: await dimensions(blob),
 		};
 	}
 

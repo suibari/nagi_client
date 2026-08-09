@@ -251,7 +251,7 @@ export const ja = {
 	postImageCountError: '画像は4枚まで添付できます',
 	postImageTypeError: (p: { name: string }) => `${p.name}: JPEG・PNG・WebP・GIFを選択してください`,
 	postImageInputSizeError: (p: { name: string }) => `${p.name}: 25MB以下の画像を選択してください`,
-	postGifSizeError: (p: { name: string }) => `${p.name}: GIFは2MB以下にしてください`,
+	postGifSizeError: (p: { name: string }) => `${p.name}: GIFを2MB以下に圧縮できませんでした`,
 	postImageCompressError: (p: { name: string }) => `${p.name}: 画像を2MB以下に圧縮できませんでした`,
 	imageProcessFailedNamed: (p: { name: string }) => `${p.name}: 画像を処理できませんでした`,
 	postImageOpen: (p: { index: number }) => `${p.index}枚目の画像を拡大`,
