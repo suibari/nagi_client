@@ -38,6 +38,8 @@
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
 		getExternalTarget,
+		restorePostScope,
+		scopeAfterExternalEligibility,
 		setLastPostScope,
 		type ExternalTarget,
 		type PostScope,
@@ -101,6 +103,7 @@
 	// 権限はサインイン時にまとめて渡し、機能の有効化と「どちらに出すか」は設定ページ、
 	// 投稿ごとの ON/OFF は投稿範囲ゲージの3段階目で行う。既定は常に OFF。
 	let standardSiteReady = $state(false);
+	let publishingReadinessLoaded = $state(false);
 	let externalTarget = $state<ExternalTarget>('bluesky');
 	let articleTitle = $state('');
 	const kossori = $derived(scope === 'kossori');
@@ -149,8 +152,10 @@
 	const needsArticleTitle = $derived(standardSite && externalEligible && !headingTitle);
 	const articleTitleMissing = $derived(needsArticleTitle && !articleTitle.trim());
 	// 外部に出せない状態に変わったら黙って1段階狭める（意図せぬ公開を作らない）。
+	// OAuth scope の再確認中は前回値を保持し、利用不能だと確定してからだけ狭める。
 	$effect(() => {
-		if (scope === 'external' && !externalEligible) scope = 'feed';
+		const next = scopeAfterExternalEligibility(scope, publishingReadinessLoaded, externalEligible);
+		if (next !== scope) scope = next;
 	});
 
 	$effect(() => {
@@ -166,27 +171,22 @@
 		const loadVersion = ++publishingLoadVersion;
 		crosspostReady = false;
 		standardSiteReady = false;
+		publishingReadinessLoaded = false;
 		externalTarget = getExternalTarget();
-		if (did && getCrosspostEnabled()) {
-			void hasCrosspostScope().then((granted) => {
-				if (
-					$session?.did === did &&
-					publishingPreferencesVersion === preferencesVersion &&
-					publishingLoadVersion === loadVersion
-				)
-					crosspostReady = granted;
-			});
-		}
-		if (did && getStandardSiteEnabled()) {
-			void hasStandardSiteScope().then((granted) => {
-				if (
-					$session?.did === did &&
-					publishingPreferencesVersion === preferencesVersion &&
-					publishingLoadVersion === loadVersion
-				)
-					standardSiteReady = granted;
-			});
-		}
+		void Promise.all([
+			did && getCrosspostEnabled() ? hasCrosspostScope().catch(() => false) : false,
+			did && getStandardSiteEnabled() ? hasStandardSiteScope().catch(() => false) : false,
+		]).then(([crosspostGranted, standardSiteGranted]) => {
+			if (
+				$session?.did !== did ||
+				publishingPreferencesVersion !== preferencesVersion ||
+				publishingLoadVersion !== loadVersion
+			)
+				return;
+			crosspostReady = crosspostGranted;
+			standardSiteReady = standardSiteGranted;
+			publishingReadinessLoaded = true;
+		});
 	});
 
 	function clearComposer() {
@@ -198,7 +198,7 @@
 		emojis = [];
 		dismissedUrls = [];
 		quotePick.clear();
-		scope = defaultScope;
+		scope = restorePostScope(defaultScope);
 		articleTitle = '';
 		botSilent = false;
 	}

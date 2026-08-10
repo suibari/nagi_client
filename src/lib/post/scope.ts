@@ -46,15 +46,30 @@ export function setLastPostScope(scope: PostScope) {
 	}
 }
 
+/** 保存済みの選択を優先し、無ければ呼び出し元の画面別既定値を使う。 */
+export function restorePostScope(defaultScope: PostScope): PostScope {
+	return getLastPostScope() ?? defaultScope;
+}
+
+/**
+ * 外部公開権限の確認中は、保存済みの external を feed へ落とさない。
+ * 確認が終わって実際に利用不能だと確定した場合だけ安全側へ狭める。
+ */
+export function scopeAfterExternalEligibility(
+	scope: PostScope,
+	readinessLoaded: boolean,
+	externalEligible: boolean,
+): PostScope {
+	return scope === 'external' && readinessLoaded && !externalEligible ? 'feed' : scope;
+}
+
 /**
  * そのページで投稿を始めたときの既定の投稿範囲。
  * 端末に前回選択した投稿範囲が保存されている場合はそれを優先し、
  * 未保存の場合はページに応じた既定値（ホーム等はこっそり）を使用する。
  */
 export function defaultScopeForPath(pathname: string): PostScope {
-	const lastScope = getLastPostScope();
-	if (lastScope) return lastScope;
-	return HOME_LIKE.has(pathname) ? 'kossori' : 'feed';
+	return restorePostScope(HOME_LIKE.has(pathname) ? 'kossori' : 'feed');
 }
 
 /**
