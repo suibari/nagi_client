@@ -207,6 +207,7 @@ export const en: Messages = {
 	composerTabWrite: 'Write',
 	composerTabPreview: 'Preview',
 	composerPreviewEmpty: 'Your formatted text will appear here',
+	composerEmbedsAria: 'Attachments and links',
 	markdownPalette: 'Formatting',
 	markdownPaletteAria: 'Text formatting palette',
 	markdownHeading: 'Heading',

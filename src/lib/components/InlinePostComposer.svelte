@@ -10,6 +10,7 @@
 	import ComposerEditor from './ComposerEditor.svelte';
 	import ComposerQuoteEditor from './ComposerQuoteEditor.svelte';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
+	import ImageAttachmentPicker from './ImageAttachmentPicker.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import type { QuotePick } from '$lib/post/quote-pick.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -57,7 +58,7 @@
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
 	let contentWarningValid = $derived(validContentWarningSyntax(text));
-	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
+	let imagePicker: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
 	const scopeLabel = $derived(
 		scope === 'kossori'
@@ -80,7 +81,7 @@
 	<section class="bubble post-composer">
 		<label for={id}>{label}</label>
 		{#snippet editorTools()}
-			<ImageAttachmentEditor bind:this={imageEditor} bind:attachments disabled={busy} />
+			<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
 		{/snippet}
 		<ComposerEditor
 			{id}
@@ -95,10 +96,11 @@
 			{onsubmit}
 			onpaste={(event) => {
 				quote?.handlePaste(event, $session?.did);
-				imageEditor?.handlePaste(event);
+				imagePicker?.handlePaste(event);
 			}}
 			tools={editorTools}
 		/>
+		<ImageAttachmentEditor bind:attachments disabled={busy} />
 		<LinkCardEditor {text} bind:cards={linkCards} disabled={busy} />
 		{#if quote}<ComposerQuoteEditor {quote} disabled={busy} />{/if}
 		<div class="post-composer-foot">

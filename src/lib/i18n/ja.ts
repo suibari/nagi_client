@@ -219,6 +219,7 @@ export const ja = {
 	composerTabWrite: '書く',
 	composerTabPreview: 'プレビュー',
 	composerPreviewEmpty: 'ここに書式のプレビューが出ます',
+	composerEmbedsAria: '添付・リンク',
 	markdownPalette: '文字装飾',
 	markdownPaletteAria: '文字装飾パレット',
 	markdownHeading: '見出し',

@@ -6,6 +6,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import type { ImageAttachment } from '$lib/images';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
+	import ImageAttachmentPicker from './ImageAttachmentPicker.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
@@ -80,9 +81,18 @@
 	let crosspostReady = $state(false);
 	let botSilent = $state(false);
 	let publishingLoadVersion = 0;
-	let imageEditor: { handlePaste: (event: ClipboardEvent) => void } | undefined;
+	let imagePicker: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
+	let hasEmbeds = $derived(
+		Boolean(
+			attachments.length ||
+			linkCards.length ||
+			quotePick.pending ||
+			quotePick.post ||
+			quotePick.error,
+		),
+	);
 	let graphemes = $derived(
 		[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length,
 	);
@@ -377,7 +387,7 @@
 -->
 <section class="composer" class:rich={mode === 'rich'}>
 	{#snippet editorTools()}
-		<ImageAttachmentEditor bind:this={imageEditor} bind:attachments disabled={busy} />
+		<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
 	{/snippet}
 	<ComposerEditor
 		bind:value={text}
@@ -394,12 +404,23 @@
 			// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
 			// それ以外は素通しするので、画像ペーストは従来どおり動く。
 			quotePick.handlePaste(event, $session?.did);
-			imageEditor?.handlePaste(event);
+			imagePicker?.handlePaste(event);
 		}}
 		tools={editorTools}
 	/>
-	<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
-	<ComposerQuoteEditor quote={quotePick} disabled={busy} />
+	<!-- URL取得や Object URL の管理を途切れさせないため、空の間も子はマウントしておく。 -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (スクロール領域をキーボードでも操作可能にする) -->
+	<div
+		class="composer-embeds"
+		role="region"
+		tabindex={hasEmbeds ? 0 : undefined}
+		aria-label={m.composerEmbedsAria()}
+		hidden={!hasEmbeds}
+	>
+		<ImageAttachmentEditor bind:attachments disabled={busy} />
+		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+		<ComposerQuoteEditor quote={quotePick} disabled={busy} />
+	</div>
 	{#if needsArticleTitle}
 		<!-- 本文の先頭が見出しでないときだけ。standard.site の document.title は必須。 -->
 		<div class="composer-article">
