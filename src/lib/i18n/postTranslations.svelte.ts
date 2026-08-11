@@ -15,12 +15,12 @@ export type PostTranslationState =
 	  }
 	| { status: 'translated'; text: string }
 	| { status: 'failed'; code?: string };
-export type TranslationPost = Pick<PostView, 'uri' | 'text'> & Partial<PostView>;
+export type TranslationPost = Pick<PostView, 'uri' | 'cid' | 'text'> & Partial<PostView>;
 
 const CACHE_BATCH_SIZE = 50;
 const MAX_CONCURRENT_TRANSLATIONS = 2;
 const POST_URI = /^at:\/\/did:(?:plc|web):[^/]+\/com\.suibari\.nagi\.post\/[^/]+$/;
-const keyOf = (uri: string, target: SupportedLanguage) => `${uri}\n${target}`;
+const keyOf = (uri: string, cid: string, target: SupportedLanguage) => `${uri}\n${cid}\n${target}`;
 
 export function isTranslationCandidate(post: TranslationPost, target: SupportedLanguage) {
 	const source = normalizeSupportedLanguage(post.langs?.[0]);
@@ -100,8 +100,8 @@ class PostTranslations {
 	#target: SupportedLanguage | undefined;
 	#controller: AbortController | undefined;
 
-	entry(uri: string, target = languagePreferences.translationLanguage) {
-		return this.#entries.get(keyOf(uri, target));
+	entry(uri: string, cid: string, target = languagePreferences.translationLanguage) {
+		return this.#entries.get(keyOf(uri, cid, target));
 	}
 
 	#replace(key: string, state?: PostTranslationState) {
@@ -147,7 +147,9 @@ class PostTranslations {
 				);
 				if (signal.aborted) return;
 				for (const translated of result.translations) {
-					const key = keyOf(translated.uri, target);
+					const post = batch.find((candidate) => candidate.uri === translated.uri);
+					if (!post) continue;
+					const key = keyOf(translated.uri, post.cid, target);
 					const existing = this.#entries.get(key);
 					if (existing?.status !== 'loading') continue;
 					this.#replace(key, {
@@ -184,7 +186,7 @@ class PostTranslations {
 		);
 		const waiting = new Set<Promise<void>>();
 		const pending = candidates.filter((post) => {
-			const existing = this.#entries.get(keyOf(post.uri, target));
+			const existing = this.#entries.get(keyOf(post.uri, post.cid, target));
 			if (existing?.status === 'loading') waiting.add(existing.promise);
 			return !existing;
 		});
@@ -204,7 +206,7 @@ class PostTranslations {
 					if (signal.aborted) return;
 					const translated = result.translations[0];
 					this.#replace(
-						keyOf(post.uri, target),
+						keyOf(post.uri, post.cid, target),
 						translated
 							? { status: 'translated', text: translated.text }
 							: { status: 'failed', code: result.failures[0]?.code },
@@ -212,9 +214,9 @@ class PostTranslations {
 				})
 				.catch(() => {
 					if (signal.aborted) return;
-					this.#replace(keyOf(post.uri, target), { status: 'failed' });
+					this.#replace(keyOf(post.uri, post.cid, target), { status: 'failed' });
 				});
-			this.#replace(keyOf(post.uri, target), {
+			this.#replace(keyOf(post.uri, post.cid, target), {
 				status: 'loading',
 				promise: request,
 				...(normalizeSupportedLanguage(post.langs?.[0]) === 'en'
@@ -229,7 +231,7 @@ class PostTranslations {
 
 	async retry(post: TranslationPost) {
 		const target = languagePreferences.translationLanguage;
-		this.#replace(keyOf(post.uri, target));
+		this.#replace(keyOf(post.uri, post.cid, target));
 		await this.prepare([post]);
 	}
 }

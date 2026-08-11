@@ -48,6 +48,7 @@
 						? [
 								{
 									uri: item.post.uri,
+									cid: item.post.cid,
 									text: item.post.text,
 									langs: item.post.langs,
 									contentWarning: item.post.contentWarning,
@@ -130,7 +131,7 @@
 		if (!post || !languagePreferences.autoTranslate) return undefined;
 		const target = languagePreferences.translationLanguage;
 		if (!isTranslationCandidate(post, target)) return undefined;
-		const entry = postTranslations.entry(post.uri, target);
+		const entry = postTranslations.entry(post.uri, post.cid, target);
 		return entry?.status === 'translated' ? entry.text : undefined;
 	}
 	const relativeTime = (createdAt: string) => {

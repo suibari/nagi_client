@@ -384,6 +384,7 @@
 			// putRecord を取り込むと同じ内容へ収束するため、即時 refresh は呼ばない
 			// （取り込み前は旧本文が返り楽観反映を打ち消してしまうため）。
 			post.text = draft.text;
+			post.cid = result.response.data.cid;
 			post.facets = draft.facets as PostView['facets'];
 			const parsedContentWarning = parseContentWarning(draft.text);
 			post.contentWarning =
@@ -639,6 +640,7 @@
 		{:else}
 			<TranslateToggle
 				uri={post.uri}
+				cid={post.cid}
 				text={post.text}
 				langs={post.langs}
 				facets={post.facets}

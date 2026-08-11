@@ -22,6 +22,7 @@
 >
 	<TranslateToggle
 		uri={post.uri}
+		cid={post.cid}
 		text={post.text}
 		facets={post.facets}
 		langs={post.langs}

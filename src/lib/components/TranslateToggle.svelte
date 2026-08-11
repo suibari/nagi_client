@@ -15,6 +15,7 @@
 
 	let {
 		uri,
+		cid,
 		text,
 		langs,
 		facets,
@@ -25,6 +26,7 @@
 		onoverflowchange,
 	}: {
 		uri: string;
+		cid: string;
 		text: string;
 		langs?: string[];
 		facets?: Facet[];
@@ -40,13 +42,13 @@
 		!disabled &&
 			languagePreferences.autoTranslate &&
 			isTranslationCandidate(
-				{ uri, text, langs, facets, deleted },
+				{ uri, cid, text, langs, facets, deleted },
 				languagePreferences.translationLanguage,
 			),
 	);
 	let translation = $derived(
 		translationEligible
-			? postTranslations.entry(uri, languagePreferences.translationLanguage)
+			? postTranslations.entry(uri, cid, languagePreferences.translationLanguage)
 			: undefined,
 	);
 	let translated = $derived(translation?.status === 'translated' ? translation.text : '');
@@ -70,17 +72,24 @@
 		});
 	});
 
+	// フィード／スレッドの定期更新では同じ投稿の props が差し替わる。
+	// 開閉状態は翻訳要求の変化と分離し、投稿の改訂か翻訳先が変わった時だけ戻す。
 	$effect(() => {
 		const targetLang = languagePreferences.translationLanguage;
 		void uri;
+		void cid;
 		void targetLang;
 		originalExpanded = false;
+	});
+
+	// 翻訳可否やキャッシュ状態の変化はこちらだけで扱い、原文の開閉状態には触れない。
+	$effect(() => {
 		if (!translationEligible || translation) return;
-		postTranslations.ensure({ uri, text, langs, facets, deleted });
+		postTranslations.ensure({ uri, cid, text, langs, facets, deleted });
 	});
 
 	function retry() {
-		void postTranslations.retry({ uri, text, langs, facets, deleted });
+		void postTranslations.retry({ uri, cid, text, langs, facets, deleted });
 	}
 
 	// 文字数ではなく実際の行数で「続きを読む」の要否を決める。
