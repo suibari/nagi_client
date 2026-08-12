@@ -173,6 +173,38 @@ export type CommunityAffirmationView = {
 export type CommunityAffirmationPage = Page<CommunityAffirmationView>;
 /** 本人だけが取得できる、ホームに表示するユーザーの非公開一覧。 */
 export type PrivateListView = { members: ActorView[]; limit: 200 };
+export type BookmarkSubjectType = 'post' | 'news' | 'diary';
+export type BookmarkFolderView = {
+	id: string;
+	name: string;
+	isDefault: boolean;
+	count: number;
+	createdAt: string;
+	updatedAt: string;
+};
+export type BookmarkFoldersView = {
+	folders: BookmarkFolderView[];
+	folderLimit: number;
+	bookmarkLimit: number;
+};
+export type BookmarkStateView = { subjectUri: string; folderId?: string; createdAt?: string };
+export type BookmarkItemView = {
+	id: string;
+	folderId: string;
+	subjectUri: string;
+	createdAt: string;
+	content:
+		| { kind: 'post'; post: PostView }
+		| { kind: 'news'; news: NewsView }
+		| { kind: 'diary'; diary: DiaryView }
+		| { kind: 'unavailable'; subjectType: BookmarkSubjectType; subjectUri: string };
+};
+export type BookmarksPage = {
+	items: BookmarkItemView[];
+	cursor?: string;
+	hasMore: boolean;
+	botActor?: ActorView;
+};
 export type NewsPage = Page<NewsView>;
 export type ProfileFeedFilter = 'posts' | 'replies' | 'media' | 'reactions';
 export type ProfileDetail = ActorView & {

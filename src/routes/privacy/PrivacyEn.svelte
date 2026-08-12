@@ -96,6 +96,11 @@
 		<strong>Your Home list.</strong> Visible only to you. We keep it on our servers rather than in your
 		PDS so the people you add are not made public.
 	</li>
+	<li>
+		<strong>Bookmarks and folders.</strong> We store only folder names and the URIs of bookmarked items
+		on our servers, visible only to you. They are not stored in your PDS, and we do not create a snapshot
+		of the bookmarked content.
+	</li>
 	<li><strong>Translation cache and card collection records.</strong></li>
 </ul>
 <p>
@@ -304,7 +309,10 @@
 	<li>Semantic vectors used for search</li>
 	<li>AI-generated analysis, diaries, card comments, and anonymous summaries</li>
 	<li>Your conversation history with Bot-tan</li>
-	<li>Notifications, push notification destinations, mute settings, and your Home list</li>
+	<li>
+		Notifications, push notification destinations, mute settings, your Home list, bookmarks, and
+		folders
+	</li>
 	<li>
 		Channel subscriptions (both yours, and records of other people subscribing to your channels)
 	</li>

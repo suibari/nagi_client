@@ -5,6 +5,10 @@ import { env } from '$env/dynamic/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
 	CardCollectionView,
+	BookmarkFolderView,
+	BookmarkFoldersView,
+	BookmarkStateView,
+	BookmarksPage,
 	ChannelsPage,
 	ChannelView,
 	CommunityAffirmationPage,
@@ -423,6 +427,64 @@ export const setPrivateListMember = (memberDid: string, included: boolean) =>
 		'com.suibari.nagi.setPrivateListMember',
 		'/xrpc/com.suibari.nagi.setPrivateListMember',
 		{ method: 'POST', body: JSON.stringify({ memberDid, included }) },
+		'required',
+	);
+export const getBookmarkFolders = (lang: 'ja' | 'en') =>
+	call<BookmarkFoldersView>(
+		'com.suibari.nagi.getBookmarkFolders',
+		`/xrpc/com.suibari.nagi.getBookmarkFolders?lang=${lang}`,
+		{},
+		'required',
+	);
+export const putBookmarkFolder = (input: { id?: string; name: string; lang: 'ja' | 'en' }) =>
+	call<BookmarkFolderView>(
+		'com.suibari.nagi.putBookmarkFolder',
+		'/xrpc/com.suibari.nagi.putBookmarkFolder',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
+export const deleteBookmarkFolder = (id: string) =>
+	call<{ deleted: true }>(
+		'com.suibari.nagi.deleteBookmarkFolder',
+		'/xrpc/com.suibari.nagi.deleteBookmarkFolder',
+		{ method: 'POST', body: JSON.stringify({ id }) },
+		'required',
+	);
+export const getBookmarkStates = (uris: string[]) =>
+	call<{ states: BookmarkStateView[] }>(
+		'com.suibari.nagi.getBookmarkStates',
+		'/xrpc/com.suibari.nagi.getBookmarkStates',
+		{ method: 'POST', body: JSON.stringify({ uris }) },
+		'required',
+	);
+export const getBookmarks = (input: {
+	folderId?: string;
+	cursor?: string;
+	limit?: number;
+	lang: 'ja' | 'en';
+}) => {
+	const params = new URLSearchParams({ lang: input.lang, limit: String(input.limit ?? 30) });
+	if (input.folderId) params.set('folderId', input.folderId);
+	if (input.cursor) params.set('cursor', input.cursor);
+	return call<BookmarksPage>(
+		'com.suibari.nagi.getBookmarks',
+		`/xrpc/com.suibari.nagi.getBookmarks?${params}`,
+		{},
+		'required',
+	);
+};
+export const putBookmark = (folderId: string, subjectUri: string) =>
+	call<BookmarkStateView>(
+		'com.suibari.nagi.putBookmark',
+		'/xrpc/com.suibari.nagi.putBookmark',
+		{ method: 'POST', body: JSON.stringify({ folderId, subjectUri }) },
+		'required',
+	);
+export const deleteBookmark = (subjectUri: string) =>
+	call<{ deleted: true }>(
+		'com.suibari.nagi.deleteBookmark',
+		'/xrpc/com.suibari.nagi.deleteBookmark',
+		{ method: 'POST', body: JSON.stringify({ subjectUri }) },
 		'required',
 	);
 // 同期する設定（既読位置・お気に入り絵文字）。既読位置は閲覧履歴そのものなので、

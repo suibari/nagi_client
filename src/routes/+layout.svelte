@@ -5,7 +5,7 @@
 	import MobileHeader from '$lib/components/shell/MobileHeader.svelte';
 	import MobileNav from '$lib/components/shell/MobileNav.svelte';
 	import { initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
-	import { initLocale, m } from '$lib/i18n/i18n.svelte';
+	import { initLocale, m, i18n } from '$lib/i18n/i18n.svelte';
 	import { getOwnNagiProfile } from '$lib/atproto/records';
 	import { resolvePendingOptIns } from '$lib/optin/scope-optin';
 	import { beforeNavigate, goto } from '$app/navigation';
@@ -29,6 +29,7 @@
 	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
+	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -71,6 +72,7 @@
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let privateListDid: string | undefined;
+	let bookmarksKey: string | undefined;
 	let pushSyncedDid: string | undefined;
 	let preferencesDid: string | undefined;
 	beforeNavigate(() => {
@@ -91,6 +93,14 @@
 		mutesDid = did;
 		if (did) void mutes.load();
 		else mutes.clear();
+	});
+	$effect(() => {
+		const did = $session?.did;
+		const key = did ? `${did}:${i18n.locale}` : undefined;
+		if (!$oauthReady || bookmarksKey === key) return;
+		bookmarksKey = key;
+		if (did) void bookmarks.load(did, i18n.locale);
+		else bookmarks.clear();
 	});
 	// ホームリストは本人だけの非公開状態。サインアウト時は同じtickで破棄し、
 	// 次の利用者へ前セッションの一覧を見せない。

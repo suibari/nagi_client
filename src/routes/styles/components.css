@@ -954,6 +954,11 @@
 	gap: 6px;
 	margin-top: 6px;
 }
+@media (max-width: 380px) {
+	.post-actions {
+		gap: 4px;
+	}
+}
 .post-actions button {
 	display: inline-flex;
 	align-items: center;
@@ -982,50 +987,6 @@
 	background: var(--accent-softer);
 }
 .post-actions button.danger {
-	color: var(--danger);
-}
-.post-action-menu-wrap {
-	position: relative;
-	display: inline-flex;
-}
-.post-action-menu {
-	position: absolute;
-	z-index: 16;
-	top: calc(100% + 5px);
-	right: 0;
-	display: grid;
-	min-width: 180px;
-	padding: 5px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius-m);
-	background: var(--bg-raised);
-	box-shadow: var(--shadow-pop);
-}
-.mine .post-action-menu {
-	right: auto;
-	left: 0;
-}
-.post-action-menu button {
-	width: 100%;
-	height: auto;
-	min-height: 36px;
-	justify-content: flex-start;
-	gap: 9px;
-	padding: 7px 9px;
-	border-radius: 8px;
-	color: var(--text);
-	text-align: left;
-	white-space: nowrap;
-}
-.post-action-menu button:hover,
-.post-action-menu button:focus-visible {
-	background: var(--bg-hover);
-}
-.post-action-menu button.active {
-	color: var(--accent-strong);
-	background: var(--accent-soft);
-}
-.post-action-menu button.danger {
 	color: var(--danger);
 }
 /* リプライ／引用フォーム（InlinePostComposer）は親投稿の下に、自分側の吹き出しとして
@@ -2837,6 +2798,21 @@
 	border-radius: var(--radius-pill);
 	background: var(--accent);
 	transform: translateX(-50%);
+}
+@media (max-width: 600px) {
+	.profile-tabs {
+		overflow-x: auto;
+		overflow-y: hidden;
+		scroll-padding-inline: 12px;
+		overscroll-behavior-inline: contain;
+		-webkit-overflow-scrolling: touch;
+	}
+	.profile-tabs button {
+		flex: 0 0 auto;
+		min-width: max-content;
+		padding-inline: 14px;
+		white-space: nowrap;
+	}
 }
 
 /* --- notifications --- */

@@ -24,6 +24,7 @@
 		close: 'M5 5l14 14M19 5 5 19',
 		check: 'm5 12.5 5 5L19 7',
 		plus: 'M12 5v14M5 12h14',
+		folderPlus: 'M3 6h7l2 2h9v11H3V6ZM16 11v5M13.5 13.5h5',
 		send: 'M3 11.5 21 3l-8.5 18-2.2-7.3L3 11.5Zm7.3 2.2L21 3',
 		refresh: 'M20 7v5h-5M4 17v-5h5M6.1 8.5A7 7 0 0 1 18.7 7M5.3 17A7 7 0 0 0 17.9 15.5',
 		more: 'm7 10 5 5 5-5',
@@ -46,6 +47,8 @@
 		newspaper:
 			'M3 6h13v13H5a2 2 0 0 1-2-2V6Zm13 3h5v8a2 2 0 0 1-2 2h-3M6.5 9.5h6M6.5 12.5h6M6.5 15.5h4',
 		pin: 'M8 3h8l-1 6 3 3v2h-5v7l-1 1-1-1v-7H6v-2l3-3-1-6Z',
+		bookmark: 'M6 3h12v18l-6-4-6 4V3Z',
+		bookmarkFilled: 'M6 3h12v18l-6-4-6 4V3Z',
 		arrowUp: 'M12 19V5M5 12l7-7 7 7',
 		arrowDown: 'M12 5v14M5 12l7 7 7-7',
 		bluesky:
@@ -84,7 +87,7 @@
 		width={size}
 		height={size}
 		viewBox="0 0 24 24"
-		fill="none"
+		fill={name === 'bookmarkFilled' ? 'currentColor' : 'none'}
 		stroke="currentColor"
 		stroke-width="1.5"
 		stroke-linecap="round"
