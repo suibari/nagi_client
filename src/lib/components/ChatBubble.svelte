@@ -24,7 +24,7 @@
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
-	import InlinePostComposer from './InlinePostComposer.svelte';
+	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
@@ -242,13 +242,11 @@
 			return;
 		}
 		postError = '';
-		if (composeMode === mode) {
-			cancelComposer();
+		const defaultScope = post.kossori ? 'kossori' : 'feed';
+		if (mode === 'reply') {
+			composerHost.openReply(post, defaultScope);
 		} else {
-			if (mode === 'reply') channels = [];
-			// 返信↔引用を切り替えたら、貼り付けで付いていた引用は持ち越さない。
-			if (composeMode !== mode) quotePick.clear();
-			composeMode = mode;
+			composerHost.openQuote(post, defaultScope);
 		}
 	}
 	function toggleReactionPicker() {
@@ -685,7 +683,7 @@
 			<div class="post-actions">
 				<button
 					class="ghost timeline-action"
-					class:active={composeMode === 'reply'}
+					class:active={composerHost.open && composerHost.replyTarget?.post.cid === post.cid}
 					type="button"
 					aria-label={m.replyPost()}
 					title={m.replyPost()}
@@ -693,7 +691,7 @@
 				>
 				{#if post.isBot || mine}<button
 						class="ghost timeline-action"
-						class:active={composeMode === 'quote'}
+						class:active={composerHost.open && composerHost.quoteTarget?.post?.cid === post.cid}
 						type="button"
 						aria-label={m.quotePost()}
 						title={m.quotePost()}
@@ -800,31 +798,9 @@
 				{/if}
 			</div>
 		{/if}
-		{#if postError && !composeMode}<p class="error" role="alert">{postError}</p>{/if}
+		{#if postError}<p class="error" role="alert">{postError}</p>{/if}
 	</div>
 </div>
-{#if composeMode && !displayOnly}
-	<!-- リプライ／引用も「自分のアバター＋吹き出し」で、投稿後のカードと同じ並びに見せる -->
-	<InlinePostComposer
-		id={`compose-${post.cid}`}
-		label={composeMode === 'reply' ? m.replyComposerLabel() : m.quoteComposerLabel()}
-		placeholder={composeMode === 'reply' ? m.replyPlaceholder() : m.quotePlaceholder()}
-		bind:text={composeText}
-		bind:mentions
-		bind:channels
-		bind:emojis
-		channelSuggestionsEnabled={composeMode === 'quote'}
-		bind:attachments
-		bind:linkCards
-		quote={composeMode === 'reply' ? quotePick : undefined}
-		busy={posting}
-		error={postError}
-		scope={post.kossori ? 'kossori' : 'feed'}
-		channelName={post.channel?.name}
-		onsubmit={() => void submitPost()}
-		oncancel={cancelComposer}
-	/>
-{/if}
 {#if deleteOpen}
 	<PostDeleteDialog
 		busy={deleting}

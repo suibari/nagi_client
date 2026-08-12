@@ -48,15 +48,20 @@
 		right: 0;
 		display: grid;
 		place-items: center;
-		width: 32px;
-		height: 32px;
+		width: 28px;
+		height: 28px;
 		padding: 0;
 		border: 0;
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--text-muted) 82%, transparent);
-		color: white;
-		font-size: 24px;
+		border-radius: var(--r-sm);
+		background: transparent;
+		color: var(--text-sub);
+		font-size: 20px;
 		line-height: 1;
+		cursor: pointer;
+	}
+	.composer-quote-remove:hover {
+		color: var(--text);
+		background: var(--surface-2);
 	}
 	.composer-quote-error {
 		margin-top: 4px;

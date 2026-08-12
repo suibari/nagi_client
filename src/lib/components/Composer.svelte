@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { composerHost } from '$lib/post/composer-host.svelte';
+	import Avatar from './Avatar.svelte';
+	import QuoteCard from './QuoteCard.svelte';
+	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import { untrack } from 'svelte';
-	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
+import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
 	import { crosspostToBluesky } from '$lib/crosspost/bluesky';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -89,10 +93,10 @@
 	let hasEmbeds = $derived(
 		Boolean(
 			attachments.length ||
-			linkCards.length ||
-			quotePick.pending ||
-			quotePick.post ||
-			quotePick.error,
+				linkCards.length ||
+				quotePick.pending ||
+				quotePick.post ||
+				quotePick.error,
 		),
 	);
 	let graphemes = $derived(
@@ -133,7 +137,12 @@
 	 * 引用は本文に現れないため、どちらも参照が黙って消える。
 	 */
 	const externalEligible = $derived(
-		externalReady && !effectiveChannel && !hasContentWarningSetting && !quotePick.active,
+		externalReady &&
+			!effectiveChannel &&
+			!hasContentWarningSetting &&
+			!quotePick.active &&
+			!composerHost.replyTarget &&
+			!composerHost.quoteTarget,
 	);
 	const externalDisabledReason = $derived(
 		!externalReady
@@ -198,6 +207,7 @@
 		emojis = [];
 		dismissedUrls = [];
 		quotePick.clear();
+		composerHost.clearAllTargets();
 		scope = restorePostScope(defaultScope);
 		articleTitle = '';
 		botSilent = false;
@@ -269,11 +279,18 @@
 			wantsExternal && externalTarget === 'standardSite' && !hasContentWarningSetting
 				? { title: (headingTitle ?? articleTitle).trim() }
 				: undefined;
-		const quotedPost = quotePick.post;
+		const reply = composerHost.replyTarget
+			? { root: composerHost.replyTarget.root, parent: composerHost.replyTarget.parent }
+			: undefined;
+		const replyPost = composerHost.replyTarget?.post;
+		const quotedPost = composerHost.quoteTarget?.post ?? quotePick.post;
+		const quoteRef = composerHost.quoteTarget
+			? { uri: composerHost.quoteTarget.uri, cid: composerHost.quoteTarget.cid }
+			: quotePick.ref;
 		const draft = preparePostDraft(
 			text,
-			undefined,
-			quotePick.ref,
+			reply,
+			quoteRef,
 			attachments,
 			linkCards,
 			mentions,
@@ -285,6 +302,7 @@
 			botSilent,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
+			...(replyPost && { replyParent: replyPost }),
 			...(quotedPost && { quote: quotedPost }),
 			...(effectiveChannel && { channel: effectiveChannel }),
 			threadKossori: kossori,
@@ -389,6 +407,82 @@
 	{#snippet editorTools()}
 		<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
 	{/snippet}
+
+	{#if composerHost.replyTarget || composerHost.quoteTarget}
+		<div class="composer-target-box">
+			{#if composerHost.replyTarget}
+				<div class="composer-target-card reply">
+					<div class="composer-target-header">
+						<div class="composer-target-badge">
+							<Icon name="reply" size={14} />
+							<span>{m.replyTargetLabel()}</span>
+							<span class="composer-target-sub">@{composerHost.replyTarget.post.author.handle}</span>
+						</div>
+						<button
+							type="button"
+							class="composer-target-remove icon-action"
+							disabled={busy}
+							aria-label={m.replyRemove()}
+							title={m.replyRemove()}
+							onclick={() => composerHost.clearReply()}
+						>
+							<Icon name="close" size={16} />
+						</button>
+					</div>
+					<div class="composer-target-body">
+						<Avatar actor={composerHost.replyTarget.post.author} size="small" />
+						<div class="composer-target-content">
+							<div class="composer-target-meta">
+								<span class="name">{composerHost.replyTarget.post.author.displayName || composerHost.replyTarget.post.author.handle}</span>
+							</div>
+							<p class="composer-target-text">{composerHost.replyTarget.post.text}</p>
+						</div>
+					</div>
+				</div>
+			{:else if composerHost.quoteTarget}
+				<div class="composer-target-card quote">
+					<div class="composer-target-header">
+						<div class="composer-target-badge">
+							<Icon name="quote" size={14} />
+							<span>{m.quoteTargetLabel()}</span>
+							{#if composerHost.quoteTarget.post}
+								<span class="composer-target-sub">@{composerHost.quoteTarget.post.author.handle}</span>
+							{/if}
+						</div>
+						<button
+							type="button"
+							class="composer-target-remove icon-action"
+							disabled={busy}
+							aria-label={m.quoteRemove()}
+							title={m.quoteRemove()}
+							onclick={() => composerHost.clearQuote()}
+						>
+							<Icon name="close" size={16} />
+						</button>
+					</div>
+					<div class="composer-target-body">
+						{#if composerHost.quoteTarget.post}
+							<Avatar actor={composerHost.quoteTarget.post.author} size="small" />
+							<div class="composer-target-content">
+								<div class="composer-target-meta">
+									<span class="name">{composerHost.quoteTarget.post.author.displayName || composerHost.quoteTarget.post.author.handle}</span>
+								</div>
+								<p class="composer-target-text">{composerHost.quoteTarget.post.text}</p>
+							</div>
+						{:else if composerHost.quoteTarget.news}
+							<div class="composer-target-content">
+								<div class="composer-target-meta">
+									<span class="name">{composerHost.quoteTarget.news.sourceName || 'News'}</span>
+								</div>
+								<p class="composer-target-text">{composerHost.quoteTarget.news.title}</p>
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
 	<ComposerEditor
 		bind:value={text}
 		bind:mentions

@@ -7,7 +7,7 @@
 	import { deleteOwnNews } from '$lib/atproto/records';
 	import Icon from './shell/Icon.svelte';
 	import ChatBubble from './ChatBubble.svelte';
-	import InlinePostComposer from './InlinePostComposer.svelte';
+	import { composerHost } from '$lib/post/composer-host.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	let {
 		news,
@@ -52,7 +52,7 @@
 			location.href = '/login';
 			return;
 		}
-		quote.toggle();
+		composerHost.openQuoteNews(news);
 	}
 	function toggleReactionPicker() {
 		if (!$session) {
@@ -117,6 +117,7 @@
 					>{/if}
 				<button
 					class="ghost icon-action timeline-action"
+					class:active={composerHost.open && composerHost.quoteTarget?.news?.uri === news.uri}
 					type="button"
 					onclick={toggleQuote}
 					aria-label={m.newsQuote()}
@@ -151,22 +152,6 @@
 				>
 			</div>
 		</div>
-		{#if quote.composing}<InlinePostComposer
-				id={`news-quote-${news.cid}`}
-				label={m.newsQuoteLabel()}
-				placeholder={m.quotePlaceholder()}
-				bind:text={quote.text}
-				bind:mentions={quote.mentions}
-				bind:channels={quote.channels}
-				bind:emojis={quote.emojis}
-				channelSuggestionsEnabled
-				bind:attachments={quote.attachments}
-				bind:linkCards={quote.linkCards}
-				busy={quote.busy}
-				error={quote.error}
-				onsubmit={() => void quote.submit(news)}
-				oncancel={() => quote.cancel()}
-			/>{/if}
 		{#if shareError}<p class="error" role="alert">{shareError}</p>{/if}
 	</article>{/if}
 
