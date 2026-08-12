@@ -68,6 +68,7 @@
 		clampLines,
 		maxImages,
 		maxLinkCards,
+		collapsible = true,
 	}: {
 		post: PostView;
 		/** ニュース引用ブロックの botたんヘッダーに使う実データ。 */
@@ -89,6 +90,8 @@
 		maxImages?: number;
 		/** リンクカードの初期表示枚数上限。未指定時は制限なし。 */
 		maxLinkCards?: number;
+		/** falseなら本文を最初から全表示し、「続きを読む」を出さない。 */
+		collapsible?: boolean;
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
@@ -143,15 +146,9 @@
 		maxImages && !showAllImages ? post.images?.slice(0, maxImages) : post.images,
 	);
 	let imageToggleable = $derived(
-		Boolean(
-			maxImages &&
-				post.images &&
-				(post.images.length > maxImages || hasTallImage),
-		),
+		Boolean(maxImages && post.images && (post.images.length > maxImages || hasTallImage)),
 	);
-	let clampTallImages = $derived(
-		Boolean(maxImages && !showAllImages && hasTallImage),
-	);
+	let clampTallImages = $derived(Boolean(maxImages && !showAllImages && hasTallImage));
 	let visibleLinkCards = $derived(
 		maxLinkCards && !showAllLinkCards ? post.linkCards?.slice(0, maxLinkCards) : post.linkCards,
 	);
@@ -643,13 +640,14 @@
 				langs={post.langs}
 				facets={post.facets}
 				deleted={post.deleted}
-				collapsed={!expanded}
+				collapsed={collapsible && !expanded}
 				disabled={optimistic}
 				{clampLines}
 				onoverflowchange={(value) => (overflowing = value)}
 			/>
-			{#if overflowing || expanded}<button class="read" onclick={() => (expanded = !expanded)}
-					>{expanded ? m.readLess() : m.readMore()}</button
+			{#if collapsible && (overflowing || expanded)}<button
+					class="read"
+					onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
 				>{/if}
 		{/if}{#if !editing && visibleImages?.length}<ImageGallery
 				images={visibleImages}

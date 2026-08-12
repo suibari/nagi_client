@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { getDiaries } from '$lib/api/appview';
 	import type { ActorView, DiaryView, PostView } from '$lib/api/types';
+	import { buildDiaryGraph, diaryActivityIntensity, diaryMonthLabels } from '$lib/diary/calendar';
 	import { i18n, m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import { tick } from 'svelte';
+	import AvatarLink from './AvatarLink.svelte';
 	import ChatBubble from './ChatBubble.svelte';
 
 	let {
@@ -14,108 +17,91 @@
 		botActor?: ActorView;
 	} = $props();
 
-	/** "YYYY-MM" */
-	const monthOf = (date: string) => date.slice(0, 7);
-	const todayMonth = () => {
-		const now = new Date();
-		return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-	};
-
-	let month = $state(todayMonth());
+	const graph = buildDiaryGraph();
+	const monthLabels = diaryMonthLabels(graph.weeks);
 	let selected = $state<string | undefined>();
-	// 通知から日付付きで来たときはその月を開く。マウントしたまま別の日記に
-	// 飛んでも追随するよう $effect で見る。
-	$effect(() => {
-		if (!initialDate) return;
-		month = monthOf(initialDate);
-		selected = initialDate;
-	});
+	let hovered = $state<string | undefined>();
 	let entries = $state<DiaryView[]>([]);
 	let loading = $state(true);
 	let error = $state('');
-	// 月ごとのキャッシュ。行き来しても取り直さない。
+	let graphScroll = $state<HTMLDivElement>();
+	let loadVersion = 0;
+	let scrolledKey = '';
 	const cache = new Map<string, DiaryView[]>();
 
 	$effect(() => {
+		if (!initialDate || initialDate < graph.from || initialDate > graph.to) return;
+		selected = initialDate;
+	});
+
+	$effect(() => {
 		const actor = did;
-		const target = month;
 		if (!actor) return;
-		const cached = cache.get(`${actor}:${target}`);
+		const key = `${actor}:${graph.from}:${graph.to}`;
+		const version = ++loadVersion;
+		const finish = async () => {
+			await tick();
+			if (!graphScroll || scrolledKey === key) return;
+			scrolledKey = key;
+			if (initialDate && initialDate >= graph.from && initialDate <= graph.to) {
+				graphScroll
+					.querySelector<HTMLElement>(`[data-date="${initialDate}"]`)
+					?.scrollIntoView({ block: 'nearest', inline: 'center' });
+			} else {
+				graphScroll.scrollLeft = graphScroll.scrollWidth;
+			}
+		};
+		const cached = cache.get(key);
 		if (cached) {
 			entries = cached;
 			loading = false;
 			error = '';
+			void finish();
 			return;
 		}
 		loading = true;
 		error = '';
-		getDiaries(actor, { month: target })
+		entries = [];
+		getDiaries(actor, { from: graph.from, to: graph.to })
 			.then((page) => {
-				cache.set(`${actor}:${target}`, page.items);
+				if (version !== loadVersion) return;
+				cache.set(key, page.items);
 				entries = page.items;
 			})
-			.catch((e) => {
-				error = e instanceof Error ? e.message : m.diaryFetchFailed();
+			.catch((cause) => {
+				if (version === loadVersion)
+					error = cause instanceof Error ? cause.message : m.diaryFetchFailed();
 			})
 			.finally(() => {
+				if (version !== loadVersion) return;
 				loading = false;
+				void finish();
 			});
 	});
 
 	const byDate = $derived(new Map(entries.map((entry) => [entry.date, entry])));
 	const current = $derived(selected ? byDate.get(selected) : undefined);
+	const detail = $derived((hovered ? byDate.get(hovered) : undefined) ?? current);
 	const maxPostCount = $derived(
-		entries.reduce((max, entry) => Math.max(max, entry.postCount ?? 0), 0),
-	);
-	/**
-	 * 当月最大を1とする線形の連続強度。投稿数の比率をそのまま色差へ反映し、
-	 * 活発な日が一目で突出して見えるようにする。
-	 */
-	const activityIntensity = (entry: DiaryView): number | undefined => {
-		if (entry.postCount === undefined || maxPostCount === 0) return undefined;
-		return entry.postCount / maxPostCount;
-	};
-
-	const shiftMonth = (delta: number) => {
-		const [year, mon] = month.split('-').map(Number);
-		const date = new Date(year, mon - 1 + delta, 1);
-		month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-		selected = undefined;
-	};
-
-	/** その月の日付セル。頭の空白は前月ぶんの詰め物。 */
-	const cells = $derived.by(() => {
-		const [year, mon] = month.split('-').map(Number);
-		const first = new Date(year, mon - 1, 1);
-		const days = new Date(year, mon, 0).getDate();
-		const out: Array<{ date: string; day: number } | null> = Array(first.getDay()).fill(null);
-		for (let day = 1; day <= days; day++) {
-			out.push({ date: `${month}-${String(day).padStart(2, '0')}`, day });
-		}
-		return out;
-	});
-
-	const monthLabel = $derived(
-		new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1).toLocaleDateString(
-			dateLocale(),
-			{ year: 'numeric', month: 'long' },
-		),
+		entries.reduce((maximum, entry) => Math.max(maximum, entry.postCount ?? 0), 0),
 	);
 	const weekdays = $derived.by(() => {
 		const formatter = new Intl.DateTimeFormat(dateLocale(), { weekday: 'narrow' });
-		// 1970-01-04 は日曜。曜日の並びは日曜始まり（getDay と揃える）。
 		return Array.from({ length: 7 }, (_, index) =>
 			formatter.format(new Date(Date.UTC(1970, 0, 4 + index))),
 		);
 	});
 	const longDate = (date: string) =>
-		new Date(`${date}T00:00:00`).toLocaleDateString(dateLocale(), {
+		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), {
 			year: 'numeric',
 			month: 'long',
 			day: 'numeric',
 		});
+	const monthLabel = (date: string) =>
+		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { month: 'short' });
 	const entryTitle = (entry: DiaryView) =>
 		i18n.locale === 'ja' ? (entry.titleJa ?? entry.titleEn) : (entry.titleEn ?? entry.titleJa);
+	const actorName = (actor: ActorView) => actor.displayName ?? actor.handle;
 	const diaryPost = $derived.by((): PostView | undefined => {
 		if (!current) return undefined;
 		return {
@@ -142,80 +128,119 @@
 
 <section class="diary card">
 	<header class="diary-head">
-		<button
-			class="icon-action"
-			type="button"
-			aria-label={m.diaryPrevMonth()}
-			title={m.diaryPrevMonth()}
-			onclick={() => shiftMonth(-1)}>‹</button
-		>
-		<h2>{monthLabel}</h2>
-		<button
-			class="icon-action"
-			type="button"
-			aria-label={m.diaryNextMonth()}
-			title={m.diaryNextMonth()}
-			onclick={() => shiftMonth(1)}>›</button
-		>
+		<div>
+			<h2>{m.diaryAnnualActivity()}</h2>
+			<p>{longDate(graph.from)} – {longDate(graph.to)}</p>
+		</div>
 	</header>
 
 	{#if error}
 		<div class="state error">{error}</div>
 	{:else}
-		<div class="diary-grid" aria-busy={loading}>
-			{#each weekdays as weekday, index (index)}
-				<span class="diary-weekday">{weekday}</span>
-			{/each}
-			{#each cells as cell, index (cell?.date ?? `pad-${index}`)}
-				{@const entry = cell ? byDate.get(cell.date) : undefined}
-				{@const title = entry ? entryTitle(entry) : undefined}
-				{@const intensity = entry ? activityIntensity(entry) : undefined}
-				{#if !cell}
-					<span class="diary-cell diary-cell--pad"></span>
-				{:else if entry}
-					<button
-						class="diary-cell diary-cell--has"
-						class:selected={selected === cell.date}
-						class:diary-cell--activity={intensity !== undefined}
-						class:diary-cell--activity-strong={intensity !== undefined && intensity >= 0.62}
-						style={intensity === undefined
-							? undefined
-							: `--diary-activity-percent: ${12 + intensity * 88}%`}
-						type="button"
-						title={title ? m.diaryTitleLabel({ title }) : undefined}
-						aria-pressed={selected === cell.date}
-						aria-label={m.diaryDayAria({
-							date: longDate(cell.date),
-							postCount: entry.postCount,
-							emoji: entry.emoji,
-							title,
-						})}
-						onclick={() => (selected = selected === cell.date ? undefined : cell.date)}
-						><span class="diary-cell-day">{cell.day}</span>
-						{#if entry.emoji}
-							<span class="diary-cell-emoji" aria-hidden="true">{entry.emoji}</span>
-						{/if}</button
-					>
-				{:else}
-					<span class="diary-cell">{cell.day}</span>
-				{/if}
-			{/each}
+		<div
+			class="diary-graph-scroll"
+			bind:this={graphScroll}
+			aria-busy={loading}
+			aria-label={m.diaryGraphAria()}
+		>
+			<div class="diary-graph">
+				<div class="diary-months" aria-hidden="true">
+					{#each monthLabels as label (label.date)}
+						<span style={`grid-column: ${label.week + 1}`}>{monthLabel(label.date)}</span>
+					{/each}
+				</div>
+				<div class="diary-graph-body">
+					<div class="diary-weekdays" aria-hidden="true">
+						{#each weekdays as weekday, index (index)}
+							<span>{index % 2 === 1 ? weekday : ''}</span>
+						{/each}
+					</div>
+					<div class="diary-weeks">
+						{#each graph.weeks as week (week[0].date)}
+							<div class="diary-week">
+								{#each week as day (day.date)}
+									{@const entry = byDate.get(day.date)}
+									{@const intensity = entry
+										? diaryActivityIntensity(entry.postCount, maxPostCount)
+										: undefined}
+									{#if entry && !day.future}
+										<button
+											class="diary-day diary-day--has"
+											class:selected={selected === day.date}
+											class:diary-day--activity={intensity !== undefined}
+											style={intensity === undefined
+												? undefined
+												: `--diary-activity-percent: ${12 + intensity * 88}%`}
+											type="button"
+											data-date={day.date}
+											title={longDate(day.date)}
+											aria-pressed={selected === day.date}
+											aria-label={m.diaryDayAria({
+												date: longDate(day.date),
+												postCount: entry.postCount,
+												title: entryTitle(entry),
+											})}
+											onmouseenter={() => (hovered = day.date)}
+											onmouseleave={() => (hovered = undefined)}
+											onfocus={() => (hovered = day.date)}
+											onblur={() => (hovered = undefined)}
+											onclick={() => (selected = selected === day.date ? undefined : day.date)}
+										></button>
+									{:else}
+										<span
+											class="diary-day"
+											class:diary-day--future={day.future}
+											title={!day.future ? longDate(day.date) : undefined}
+										></span>
+									{/if}
+								{/each}
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
 		</div>
 
 		{#if loading}
 			<div class="state">{m.loading()}</div>
-		{:else if current && diaryPost}
-			<article class="diary-entry">
-				<h3>{longDate(current.date)}</h3>
-				{#if entryTitle(current)}
-					<p class="diary-title">{m.diaryTitleLabel({ title: entryTitle(current)! })}</p>
+		{:else if detail}
+			<article class="diary-day-detail" aria-live="polite">
+				<div>
+					<h3>{longDate(detail.date)}</h3>
+					{#if entryTitle(detail)}
+						<p class="diary-title">{m.diaryTitleLabel({ title: entryTitle(detail)! })}</p>
+					{/if}
+				</div>
+				{#if detail.involvedActors?.length}
+					<div class="diary-connections">
+						<span>{m.diaryInvolvedPeople()}</span>
+						<div class="reaction-actors" role="group" aria-label={m.diaryInvolvedPeople()}>
+							{#each detail.involvedActors as actor (actor.did)}
+								<AvatarLink
+									{actor}
+									size="small"
+									className="reaction-avatar"
+									ariaLabel={m.viewProfileOfAria({ name: actorName(actor) })}
+									title={actorName(actor)}
+								/>
+							{/each}
+							{#if detail.involvedActorsHasMore}
+								<span class="reaction-more" aria-label={m.diaryMoreConnectionsAria()}>…</span>
+							{/if}
+						</div>
+					</div>
 				{/if}
-				<ChatBubble post={diaryPost} displayOnly />
 			</article>
 		{:else if entries.length}
-			<p class="diary-hint">{m.diaryPickDate()}</p>
+			<p class="diary-hint">{m.diaryHoverHint()}</p>
 		{:else}
-			<p class="diary-hint">{m.diaryEmptyMonth()}</p>
+			<p class="diary-hint">{m.diaryEmptyYear()}</p>
+		{/if}
+
+		{#if current && diaryPost}
+			<article class="diary-entry">
+				<ChatBubble post={diaryPost} displayOnly collapsible={false} />
+			</article>
 		{/if}
 		<p class="diary-about">{m.diaryAbout()}</p>
 	{/if}
@@ -229,51 +254,80 @@
 		min-inline-size: 0;
 		max-inline-size: 100%;
 	}
-	.diary-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-	}
 	.diary-head h2 {
 		font-size: 15px;
 		font-weight: 800;
 		color: var(--text-strong);
 	}
-	.diary-grid {
-		display: grid;
-		grid-template-columns: repeat(7, 1fr);
-		gap: 4px;
-	}
-	.diary-weekday {
-		text-align: center;
+	.diary-head p {
+		margin-top: 2px;
 		font-size: 11px;
-		font-weight: 700;
 		color: var(--text-faint);
-		padding-bottom: 2px;
 	}
-	.diary-cell {
+	.diary-graph-scroll {
+		overflow-x: auto;
+		overflow-y: hidden;
+		padding: 2px 2px 8px;
+		scrollbar-width: thin;
+	}
+	.diary-graph {
+		--diary-cell: 11px;
+		--diary-gap: 3px;
+		inline-size: max-content;
+		min-inline-size: 100%;
+	}
+	.diary-months {
 		display: grid;
-		place-items: center;
-		aspect-ratio: 1;
-		border-radius: var(--radius-s);
+		grid-template-columns: repeat(53, var(--diary-cell));
+		column-gap: var(--diary-gap);
+		margin-inline-start: 25px;
+		block-size: 18px;
+		font-size: 10px;
+		color: var(--text-faint);
+	}
+	.diary-months span {
+		white-space: nowrap;
+	}
+	.diary-graph-body {
+		display: flex;
+		gap: 5px;
+	}
+	.diary-weekdays,
+	.diary-week {
+		display: grid;
+		grid-template-rows: repeat(7, var(--diary-cell));
+		row-gap: var(--diary-gap);
+	}
+	.diary-weekdays {
+		inline-size: 20px;
+		font-size: 9px;
+		line-height: var(--diary-cell);
+		color: var(--text-faint);
+		text-align: end;
+	}
+	.diary-weeks {
+		display: flex;
+		gap: var(--diary-gap);
+	}
+	.diary-day {
+		inline-size: var(--diary-cell);
+		block-size: var(--diary-cell);
+		box-sizing: border-box;
 		border: 1px solid transparent;
-		background: none;
-		font-size: 12px;
-		color: var(--text-muted);
+		border-radius: 3px;
+		background: color-mix(in srgb, var(--surface-soft), var(--text-faint) 8%);
 	}
-	.diary-cell--pad {
-		visibility: hidden;
+	.diary-day--future {
+		background: transparent;
 	}
-	/* 日記がある日だけ押せる */
-	.diary-cell--has {
+	.diary-day--has {
+		padding: 0;
 		background: var(--accent-softer);
 		border-color: var(--accent-border);
-		color: var(--accent-strong);
-		font-weight: 800;
 		cursor: pointer;
+		position: relative;
 	}
-	.diary-cell--activity {
+	.diary-day--activity {
 		background: color-mix(
 			in srgb,
 			var(--accent-softer),
@@ -285,51 +339,64 @@
 			var(--accent-strong) var(--diary-activity-percent)
 		);
 	}
-	.diary-cell--activity-strong {
-		color: var(--text-on-accent);
+	.diary-day--has:hover,
+	.diary-day--has:focus-visible {
+		border-color: var(--text-strong);
+		outline: none;
 	}
-	.diary-cell--has:hover {
-		background: var(--accent-soft);
-		color: var(--accent-strong);
+	.diary-day--has.selected {
+		z-index: 1;
+		box-shadow:
+			0 0 0 1px var(--surface),
+			0 0 0 3px var(--focus-ring);
 	}
-	.diary-cell--has.selected {
-		background: var(--accent-soft);
-		color: var(--accent-strong);
-		box-shadow: 0 0 0 2px var(--focus-ring);
+	.diary-day-detail {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 18px;
+		padding: 12px;
+		border-radius: var(--radius-m);
+		background: var(--surface-soft);
+		min-block-size: 62px;
 	}
-	.diary-cell-day {
-		line-height: 1;
-	}
-	.diary-cell-emoji {
-		font-size: clamp(9px, 2.4vw, 12px);
-		line-height: 1;
-		margin-top: 2px;
-		white-space: nowrap;
-	}
-	.diary-entry h3 {
-		font-size: 14px;
+	.diary-day-detail h3 {
+		font-size: 12px;
 		font-weight: 800;
 		color: var(--text-strong);
-		margin-bottom: 6px;
-	}
-	.diary-entry {
-		min-inline-size: 0;
 	}
 	.diary-title {
 		display: inline-block;
 		max-inline-size: 100%;
+		margin-top: 6px;
 		border-radius: var(--radius-pill);
 		background: var(--badge-title-bg);
 		color: var(--badge-title-fg);
 		padding: 3px 10px;
 		font-size: 11px;
 		font-weight: 800;
-		margin-bottom: 8px;
 		overflow-wrap: anywhere;
+	}
+	.diary-connections {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		white-space: nowrap;
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--text-muted);
+	}
+	.diary-entry {
+		min-inline-size: 0;
 	}
 	.diary-hint,
 	.diary-about {
 		font-size: 12px;
 		color: var(--text-faint);
+	}
+	@media (max-width: 560px) {
+		.diary-day-detail {
+			flex-direction: column;
+		}
 	}
 </style>

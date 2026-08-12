@@ -214,10 +214,12 @@ export type DiaryView = {
 	text: string;
 	titleJa?: string;
 	titleEn?: string;
-	/** その日の具体的な出来事を表すUnicode絵文字3つ。旧レコードは1つの場合がある。 */
-	emoji?: string;
 	/** 日記生成の材料にした、返信を含むNagiポスト数。 */
 	postCount?: number;
+	/** その日のリアクション・返信・引用で、本人から多く関わった相手（最大10人）。 */
+	involvedActors?: ActorView[];
+	/** 11人目以降の関わった相手がいる。 */
+	involvedActorsHasMore?: boolean;
 	langs?: string[];
 	createdAt: string;
 	indexedAt: string;
