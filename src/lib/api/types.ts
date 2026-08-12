@@ -407,13 +407,23 @@ export type CardView = {
 	acquiredAt?: string;
 	firstOwnerDid?: string;
 };
-/** 本日引けるか。自分のコレクションを見ているときだけ返る。 */
+export type CardDrawSource = 'my_nagi' | 'reaction';
+export type CardDrawSlotStatus = {
+	canDraw: boolean;
+	cardVolume?: number;
+	cardId?: number;
+};
+/** 本日の2つの取得枠。自分のコレクションを見ているときだけ返る。 */
 export type CardDrawStatus = {
+	/** 旧AppView互換。通常枠の状態。 */
 	canDraw: boolean;
 	/** 次に引ける時刻（ISO8601）。JST 4:00 が境界。 */
 	nextDrawAt: string;
 	todayCardVolume?: number;
 	todayCardId?: number;
+	/** 段階配備中の旧AppView応答では未定義。 */
+	myNagi?: CardDrawSlotStatus;
+	reaction?: CardDrawSlotStatus;
 };
 export type CardCollectionView = {
 	cards: CardView[];
@@ -423,7 +433,8 @@ export type CardCollectionView = {
 };
 export type DrawCardResult = {
 	card: CardView;
-	/** true なら本日は引き済みで、返っているのはその日のカード。 */
+	source: CardDrawSource;
+	/** true ならその枠は引き済みで、返っているのはその枠のカード。 */
 	alreadyDrawn: boolean;
 	isNew: boolean;
 	/** true の間は botたんコメントを生成中。getCards で取り直す。 */

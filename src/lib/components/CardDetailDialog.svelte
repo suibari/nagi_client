@@ -168,7 +168,15 @@
 		</div>
 
 		{#if draw}
-			<p class="draw-next">{m.cardNextDrawAt({ time: formatTime(draw.drawStatus.nextDrawAt) })}</p>
+			<p class="draw-next">
+				{#if draw.source === 'my_nagi' && draw.drawStatus.reaction?.canDraw}
+					{m.cardReactionNextHint()}
+				{:else if draw.source === 'reaction' && draw.drawStatus.myNagi?.canDraw}
+					{m.cardMyNagiNextHint()}
+				{:else}
+					{m.cardNextDrawAt({ time: formatTime(draw.drawStatus.nextDrawAt) })}
+				{/if}
+			</p>
 		{:else if card.acquiredAt}
 			<p class="draw-next">{m.cardAcquiredAt({ time: formatTime(card.acquiredAt) })}</p>
 		{/if}

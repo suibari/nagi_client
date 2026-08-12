@@ -4,6 +4,7 @@
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
 	import { displayEmojiName } from '$lib/atproto/bluemoji';
 	import { myProfile } from '$lib/profile/me.svelte';
+	import { reactionCardReward } from '$lib/cards/reaction-reward.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import BluemojiMedia from './BluemojiMedia.svelte';
@@ -127,6 +128,11 @@
 					keyOf(r) === key ? { ...r, viewerReactionUri: res.data.uri } : r,
 				);
 				ontoggled?.(true);
+				// リアクション自体の成功を確定してから、独立したカード報酬を請求する。
+				// 報酬側の一時失敗で、PDSに作成済みのリアクションを巻き戻してはいけない。
+				if (uri.split('/')[2] !== viewerDid) {
+					reactionCardReward.claim(viewerDid, res.data.uri);
+				}
 			}
 		} catch {
 			local = snapshot;

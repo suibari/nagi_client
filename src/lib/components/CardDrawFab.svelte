@@ -6,6 +6,8 @@
 		drawing = false,
 		error = '',
 		shifted = false,
+		label,
+		hint,
 		ondraw,
 		ondismisserror,
 	}: {
@@ -13,6 +15,8 @@
 		error?: string;
 		/** 下部に一時通知（PostFollowNotice）が出ている間だけ true。モバイルで 1 段上げる。 */
 		shifted?: boolean;
+		label?: string;
+		hint?: string;
 		ondraw: () => void;
 		ondismisserror: () => void;
 	} = $props();
@@ -33,9 +37,9 @@
 	<button
 		type="button"
 		class="card-fab"
-		aria-label={m.cardDrawButton()}
+		aria-label={label ?? m.cardDrawButton()}
 		aria-describedby={hintId}
-		title={m.cardDrawButton()}
+		title={label ?? m.cardDrawButton()}
 		disabled={drawing}
 		aria-busy={drawing}
 		onclick={ondraw}
@@ -44,8 +48,8 @@
 			<CardBack />
 			{#if drawing}<span class="card-fab-spinner" aria-hidden="true"></span>{/if}
 		</span>
-		<span class="card-fab-label">{drawing ? m.cardDrawing() : m.cardFabLabel()}</span>
-		<span id={hintId} class="visually-hidden">{m.cardFabUndrawn()}</span>
+		<span class="card-fab-label">{drawing ? m.cardDrawing() : (label ?? m.cardFabLabel())}</span>
+		<span id={hintId} class="visually-hidden">{hint ?? m.cardFabUndrawn()}</span>
 	</button>
 </div>
 
