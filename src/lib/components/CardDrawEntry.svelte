@@ -13,6 +13,7 @@
 	import CardDetailDialog from './CardDetailDialog.svelte';
 	import CardDrawFab from './CardDrawFab.svelte';
 	import CardMilestoneDialog from './CardMilestoneDialog.svelte';
+	import CardReactionGuideDialog from './CardReactionGuideDialog.svelte';
 
 	let {
 		variant = 'header',
@@ -27,6 +28,7 @@
 	let drawResult = $state<DrawCardResult>();
 	let openedCard = $state<CardView>();
 	let pendingMilestone = $state<number>();
+	let guideOpen = $state(false);
 	let myDid = $derived($session?.did);
 	const forceFab = $derived(
 		dev &&
@@ -37,10 +39,18 @@
 	let showFab = $derived(
 		variant === 'fab' &&
 			!openedCard &&
-			(Boolean(myDid && cardCollections.canDrawToday) || forceFab || drawing || Boolean(drawError)),
+			(Boolean(myDid && (cardCollections.canDrawMyNagi || cardCollections.canDrawWithReaction)) ||
+				forceFab ||
+				drawing ||
+				Boolean(drawError)),
 	);
 	let showHeader = $derived(
-		variant === 'header' && $oauthReady && (forceFab || !myDid || cardCollections.canDrawToday),
+		variant === 'header' &&
+			$oauthReady &&
+			(forceFab || !myDid || cardCollections.canDrawMyNagi || cardCollections.canDrawWithReaction),
+	);
+	let reactionNext = $derived(
+		Boolean(myDid && !cardCollections.canDrawMyNagi && cardCollections.canDrawWithReaction),
 	);
 
 	$effect(() => {
@@ -59,12 +69,16 @@
 			location.href = '/login';
 			return;
 		}
+		if (reactionNext) {
+			guideOpen = true;
+			return;
+		}
 		if (drawing) return;
 		drawing = true;
 		drawError = '';
 		try {
 			// drawCard は抽選済みの日には同じカードを返すので、「見る」入口にも共用できる。
-			const result = await drawCard();
+			const result = await drawCard({ source: 'my_nagi' });
 			const current = cardCollections.view(did);
 			pendingMilestone = reachedCardMilestone(current?.ownedCount, current?.totalCount, result);
 			cardCollections.applyDraw(did, result);
@@ -96,7 +110,13 @@
 			<span class="card-header-card" aria-hidden="true">
 				<span class="card-header-card-face"><CardBack mark="52%" frame={false} /></span>
 			</span>
-			<span>{drawing ? m.cardDrawing() : m.cardHeaderLabel()}</span>
+			<span
+				>{drawing
+					? m.cardDrawing()
+					: reactionNext
+						? m.cardReactionNextLabel()
+						: m.cardHeaderLabel()}</span
+			>
 		</button>
 		{#if drawError}<p class="card-header-error" role="alert">{drawError}</p>{/if}
 	</div>
@@ -107,7 +127,13 @@
 		{shifted}
 		ondraw={openTodayCard}
 		ondismisserror={() => (drawError = '')}
+		label={reactionNext ? m.cardReactionNextLabel() : undefined}
+		hint={reactionNext ? m.cardReactionGuideBody() : undefined}
 	/>
+{/if}
+
+{#if guideOpen}
+	<CardReactionGuideDialog onclose={() => (guideOpen = false)} />
 {/if}
 
 {#if openedCard && myDid}

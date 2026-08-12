@@ -958,6 +958,16 @@ export const en: Messages = {
 	// Affirmation cards (one draw per day)
 	cardDrawButton: "Draw today's card",
 	cardHeaderLabel: "Today's card!",
+	cardReactionNextLabel: 'Next: React for one more!',
+	cardReactionNextHint: 'You can draw one more card today by reacting to someone!',
+	cardMyNagiNextHint: 'You can draw your other card today from the card button in my Nagi!',
+	cardReactionGuideTitle: 'React for one more card!',
+	cardReactionGuideBody:
+		"React to someone's post or an Affirmation News story to draw your second Affirmation Card of the day!",
+	cardReactionGuideNote: 'Reactions to your own posts do not qualify.',
+	cardReactionGuideClose: 'Got it',
+	cardReactionRewardFailed:
+		'Your reaction was posted, but the card could not open. You can try claiming it again.',
 	cardDrawing: 'Drawing…',
 	cardDrawFailed: 'Could not draw a card',
 	cardFetchFailed: 'Could not load cards',

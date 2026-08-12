@@ -466,15 +466,15 @@ export const getCards = (actor: string) =>
 		'com.suibari.nagi.getCards',
 		`/xrpc/com.suibari.nagi.getCards?actor=${encodeURIComponent(actor)}`,
 	);
-/**
- * 今日のカードを1枚引く。抽選はサーバ側なので入力は無い。
- * 既に引いている日に呼んでもエラーにはならず、その日のカードが alreadyDrawn=true で返る。
- */
-export const drawCard = () =>
+/** 通常枠またはリアクション枠のカードを1枚引く。同じ枠への再送は冪等。 */
+export const drawCard = (
+	input:
+		{ source?: 'my_nagi'; reactionUri?: never } | { source: 'reaction'; reactionUri: string } = {},
+) =>
 	call<DrawCardResult>(
 		'com.suibari.nagi.drawCard',
 		'/xrpc/com.suibari.nagi.drawCard',
-		{ method: 'POST' },
+		{ method: 'POST', body: JSON.stringify(input) },
 		'required',
 	);
 /**

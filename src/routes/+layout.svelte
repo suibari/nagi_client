@@ -29,6 +29,7 @@
 	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
+	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -221,4 +222,5 @@
 {/if}
 {#if $session}
 	<PostModal />
+	<ReactionCardRewardHost />
 {/if}

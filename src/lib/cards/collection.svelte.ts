@@ -18,7 +18,7 @@ type Entry = {
 	drawnStatus?: CardCollectionView['drawStatus'];
 };
 
-/** canDraw が true（＝FAB を出している）間の再取得の下限間隔。 */
+/** どちらかの取得枠が残っている間の再取得の下限間隔。 */
 const UNDRAWN_RECHECK_MS = 60_000;
 
 /**
@@ -61,8 +61,17 @@ class CardCollections {
 	 * 未取得や、権限切れで公開フォールバックに落ちて drawStatus が消えた場合は出さない。
 	 * どのみちその状態では drawCard()（auth 必須）も通らないので、出しても押せない。
 	 */
+	get canDrawMyNagi(): boolean {
+		const status = this.selfDrawStatus;
+		return status?.myNagi?.canDraw ?? status?.canDraw === true;
+	}
+	/** 新AppViewの状態が確認できた場合だけ有効にする（旧応答ではfail closed）。 */
+	get canDrawWithReaction(): boolean {
+		return this.selfDrawStatus?.reaction?.canDraw === true;
+	}
+	/** 既存呼び出しとの互換名。通常のmy Nagi枠を指す。 */
 	get canDrawToday(): boolean {
-		return this.selfDrawStatus?.canDraw === true;
+		return this.canDrawMyNagi;
 	}
 
 	#patch(actor: string, patch: Partial<Entry>) {
@@ -94,7 +103,7 @@ class CardCollections {
 	/**
 	 * 自分のぶんだけ、必要なときに取り直す。復帰のたびに叩かないよう条件を絞る。
 	 * - 未取得 → 取る
-	 * - 引ける状態（FAB 表示中）で 60 秒以上経っている → 取る（別タブで引いた場合を拾う）
+	 * - どちらかの枠を引ける状態で 60 秒以上経っている → 取る（別タブで引いた場合を拾う）
 	 * - 引けない状態で nextDrawAt を過ぎた → 取る（JST 4:00 の境界をまたいだ）
 	 */
 	refreshSelfIfStale(): void {
@@ -107,7 +116,8 @@ class CardCollections {
 		}
 		const status = entry.view.drawStatus;
 		if (!status) return;
-		if (status.canDraw) {
+		const canDrawAny = (status.myNagi?.canDraw ?? status.canDraw) || status.reaction?.canDraw;
+		if (canDrawAny) {
 			if (Date.now() - entry.fetchedAt >= UNDRAWN_RECHECK_MS) void this.refresh(did);
 			return;
 		}
@@ -135,7 +145,7 @@ class CardCollections {
 	}
 
 	/**
-	 * ドロー結果を反映する。drawStatus.canDraw が落ちるので FAB は即座に消える。
+	 * ドロー結果を反映する。通常枠とリアクション枠を含むdrawStatusを丸ごと同期する。
 	 * コレクション未取得のまま TOP で引いたときも、drawStatus だけは持っておく。
 	 */
 	applyDraw(actor: string, result: DrawCardResult) {

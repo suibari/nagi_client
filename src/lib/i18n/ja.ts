@@ -987,9 +987,19 @@ export const ja = {
 	channelDeleteConfirm: '削除する',
 	channelDeleting: '削除中…',
 	channelDeleteFailed: 'チャンネルを削除できませんでした',
-	// 全肯定カード（1日1回引けるトレカ）
+	// 全肯定カード（通常枠＋リアクション枠で1日最大2枚）
 	cardDrawButton: '今日のカードを引く',
 	cardHeaderLabel: '今日の一枚！',
+	cardReactionNextLabel: 'Next: リアクションでもう一枚！',
+	cardReactionNextHint: '今日は、誰かへのリアクションでもう一枚引けるよ！',
+	cardMyNagiNextHint: 'my Nagiのカードボタンから、今日のもう一枚を引けるよ！',
+	cardReactionGuideTitle: 'リアクションでもう一枚！',
+	cardReactionGuideBody:
+		'誰かの投稿や全肯定ニュースへのリアクションで、今日2枚目の全肯定カードが引けます！',
+	cardReactionGuideNote: '自分の投稿へのリアクションは対象外です。',
+	cardReactionGuideClose: 'わかった',
+	cardReactionRewardFailed:
+		'リアクションはできましたが、カードを開けませんでした。もう一度取得できます。',
 	cardDrawing: '引いています…',
 	cardDrawFailed: 'カードを引けませんでした',
 	cardFetchFailed: 'カードを取得できません',
