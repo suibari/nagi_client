@@ -9,6 +9,7 @@
 	import ChatBubble from './ChatBubble.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import ReactionBar from './ReactionBar.svelte';
+	import BookmarkActions from './BookmarkActions.svelte';
 	let {
 		news,
 		botActor,
@@ -135,6 +136,7 @@
 				>
 					<Icon name="emojiPlus" size={18} />
 				</button>
+				<BookmarkActions subject={{ kind: 'news', uri: news.uri }} />
 				{#if news.submittedBy?.did === $session?.did}<button
 						class="ghost icon-action timeline-action"
 						type="button"

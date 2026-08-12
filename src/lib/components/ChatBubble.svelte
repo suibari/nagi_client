@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActorView, PostView } from '$lib/api/types';
+	import type { BookmarkSubjectType } from '$lib/api/types';
 	import ReactionBar from './ReactionBar.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -54,6 +55,8 @@
 		parseContentWarning,
 		validContentWarningSyntax,
 	} from '$lib/atproto/contentWarning';
+	import BookmarkActions from './BookmarkActions.svelte';
+	import ActionMenu from './ActionMenu.svelte';
 	let {
 		post,
 		botActor,
@@ -68,6 +71,7 @@
 		clampLines,
 		maxImages,
 		maxLinkCards,
+		bookmarkSubject,
 	}: {
 		post: PostView;
 		/** ニュース引用ブロックの botたんヘッダーに使う実データ。 */
@@ -89,6 +93,8 @@
 		maxImages?: number;
 		/** リンクカードの初期表示枚数上限。未指定時は制限なし。 */
 		maxLinkCards?: number;
+		/** 読み取り専用の実体（日記）だけが明示する。合成コメントには渡さない。 */
+		bookmarkSubject?: { kind: BookmarkSubjectType; uri: string };
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
@@ -127,9 +133,6 @@
 	let editImageEditor = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 	let reactionPickerOpen = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
-	let actionMenuOpen = $state(false);
-	let actionMenuTrigger = $state<HTMLButtonElement>();
-	let actionMenu = $state<HTMLDivElement>();
 	let postRow: HTMLDivElement;
 	let mine = $derived($session?.did === post.author.did);
 	let hasTallImage = $derived(
@@ -143,15 +146,9 @@
 		maxImages && !showAllImages ? post.images?.slice(0, maxImages) : post.images,
 	);
 	let imageToggleable = $derived(
-		Boolean(
-			maxImages &&
-				post.images &&
-				(post.images.length > maxImages || hasTallImage),
-		),
+		Boolean(maxImages && post.images && (post.images.length > maxImages || hasTallImage)),
 	);
-	let clampTallImages = $derived(
-		Boolean(maxImages && !showAllImages && hasTallImage),
-	);
+	let clampTallImages = $derived(Boolean(maxImages && !showAllImages && hasTallImage));
 	let visibleLinkCards = $derived(
 		maxLinkCards && !showAllLinkCards ? post.linkCards?.slice(0, maxLinkCards) : post.linkCards,
 	);
@@ -174,57 +171,14 @@
 	);
 	let editContentWarningValid = $derived(validContentWarningSyntax(editText));
 	let composeContentWarningValid = $derived(validContentWarningSyntax(composeText));
-	$effect(() => {
-		if (!actionMenuOpen) return;
-		const closeFromOutside = (event: PointerEvent) => {
-			const target = event.target as Node;
-			if (!actionMenu?.contains(target) && !actionMenuTrigger?.contains(target)) {
-				actionMenuOpen = false;
-			}
-		};
-		const closeFromEscape = (event: KeyboardEvent) => {
-			if (event.key !== 'Escape') return;
-			actionMenuOpen = false;
-			requestAnimationFrame(() => actionMenuTrigger?.focus());
-		};
-		document.addEventListener('pointerdown', closeFromOutside);
-		document.addEventListener('keydown', closeFromEscape);
-		return () => {
-			document.removeEventListener('pointerdown', closeFromOutside);
-			document.removeEventListener('keydown', closeFromEscape);
-		};
-	});
-	function toggleActionMenu() {
-		actionMenuOpen = !actionMenuOpen;
-		if (actionMenuOpen) {
-			void tick().then(() =>
-				actionMenu?.querySelector<HTMLButtonElement>('[role^="menuitem"]')?.focus(),
-			);
-		}
-	}
-	function handleActionMenuKeydown(event: KeyboardEvent) {
-		const items = [
-			...(actionMenu?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]') ?? []),
-		];
-		if (!items.length) return;
-		const current = Math.max(0, items.indexOf(document.activeElement as HTMLButtonElement));
-		let next: number | undefined;
-		if (event.key === 'ArrowDown') next = (current + 1) % items.length;
-		if (event.key === 'ArrowUp') next = (current - 1 + items.length) % items.length;
-		if (event.key === 'Home') next = 0;
-		if (event.key === 'End') next = items.length - 1;
-		if (next === undefined) return;
-		event.preventDefault();
-		items[next]?.focus();
-	}
 	function runSecondaryAction(
+		closeMenu: (restoreFocus?: boolean) => void,
 		action: () => void,
 		focusAfter: 'trigger' | 'editor' | 'none' = 'trigger',
 	) {
-		actionMenuOpen = false;
+		closeMenu(focusAfter === 'trigger');
 		action();
 		void tick().then(() => {
-			if (focusAfter === 'trigger') actionMenuTrigger?.focus();
 			if (focusAfter === 'editor') postRow?.querySelector<HTMLTextAreaElement>('textarea')?.focus();
 		});
 	}
@@ -709,93 +663,88 @@
 				>
 					<Icon name="emojiPlus" size={18} />
 				</button>
+				<BookmarkActions subject={{ kind: 'post', uri: post.uri }} />
 				{#if hasSecondaryActions}
-					<div class="post-action-menu-wrap">
-						<button
-							bind:this={actionMenuTrigger}
-							class="ghost timeline-action"
-							class:active={actionMenuOpen}
-							type="button"
-							aria-label={m.morePostActions()}
-							title={m.morePostActions()}
-							aria-haspopup="menu"
-							aria-expanded={actionMenuOpen}
-							onclick={toggleActionMenu}><Icon name="moreHorizontal" size={18} /></button
-						>
-						{#if actionMenuOpen}
-							<div
-								bind:this={actionMenu}
-								class="post-action-menu"
-								role="menu"
-								tabindex="-1"
-								aria-label={m.morePostActions()}
-								onkeydown={handleActionMenuKeydown}
-							>
-								{#if canTranslateExternally}
-									<button
-										role="menuitem"
-										onclick={() => runSecondaryAction(openExternalTranslation)}
-									>
-										<Icon name="language" size={17} />
-										<span>{m.translateExternally()}</span>
-									</button>
-								{/if}
-								{#if canPin}
-									<button
-										role="menuitemcheckbox"
-										class:active={pinned}
-										disabled={pinBusy}
-										aria-checked={pinned}
-										onclick={() => runSecondaryAction(() => void ontogglepin?.(post))}
-									>
-										<Icon name="pin" size={17} />
-										<span>{pinned ? m.channelUnpinPost() : m.channelPinPost()}</span>
-									</button>
-								{/if}
-								{#if mine}
-									<button
-										role="menuitem"
-										class:active={editing}
-										onclick={() =>
-											runSecondaryAction(
-												editing ? cancelEdit : startEdit,
-												editing ? 'trigger' : 'editor',
-											)}
-									>
-										<Icon name="edit" size={17} />
-										<span>{editing ? m.cancel() : m.editPost()}</span>
-									</button>
-								{/if}
-								{#if mine && topLevel}
-									<button
-										role="menuitemcheckbox"
-										class:active={post.kossori}
-										disabled={kossoriBusy}
-										aria-checked={Boolean(post.kossori)}
-										onclick={() => runSecondaryAction(() => void toggleKossori())}
-									>
-										<Icon name="hide" size={17} />
-										<span>{post.kossori ? m.kossoriDisable() : m.kossoriEnable()}</span>
-									</button>
-								{/if}
-								{#if mine}
-									<button
-										class="danger"
-										role="menuitem"
-										onclick={() =>
-											runSecondaryAction(() => {
+					<ActionMenu
+						label={m.morePostActions()}
+						icon="moreHorizontal"
+						align={mine ? 'start' : 'end'}
+					>
+						{#snippet menu(closeMenu)}
+							{#if canTranslateExternally}
+								<button
+									role="menuitem"
+									onclick={() => runSecondaryAction(closeMenu, openExternalTranslation)}
+								>
+									<Icon name="language" size={17} />
+									<span>{m.translateExternally()}</span>
+								</button>
+							{/if}
+							{#if canPin}
+								<button
+									role="menuitemcheckbox"
+									class:active={pinned}
+									disabled={pinBusy}
+									aria-checked={pinned}
+									onclick={() => runSecondaryAction(closeMenu, () => void ontogglepin?.(post))}
+								>
+									<Icon name="pin" size={17} />
+									<span>{pinned ? m.channelUnpinPost() : m.channelPinPost()}</span>
+								</button>
+							{/if}
+							{#if mine}
+								<button
+									role="menuitem"
+									class:active={editing}
+									onclick={() =>
+										runSecondaryAction(
+											closeMenu,
+											editing ? cancelEdit : startEdit,
+											editing ? 'trigger' : 'editor',
+										)}
+								>
+									<Icon name="edit" size={17} />
+									<span>{editing ? m.cancel() : m.editPost()}</span>
+								</button>
+							{/if}
+							{#if mine && topLevel}
+								<button
+									role="menuitemcheckbox"
+									class:active={post.kossori}
+									disabled={kossoriBusy}
+									aria-checked={Boolean(post.kossori)}
+									onclick={() => runSecondaryAction(closeMenu, () => void toggleKossori())}
+								>
+									<Icon name="hide" size={17} />
+									<span>{post.kossori ? m.kossoriDisable() : m.kossoriEnable()}</span>
+								</button>
+							{/if}
+							{#if mine}
+								<button
+									class="danger"
+									role="menuitem"
+									onclick={() =>
+										runSecondaryAction(
+											closeMenu,
+											() => {
 												deleteError = '';
 												deleteOpen = true;
-											}, 'none')}
-									>
-										<Icon name="trash" size={17} />
-										<span>{m.deletePost()}</span>
-									</button>
-								{/if}
-							</div>
-						{/if}
-					</div>
+											},
+											'none',
+										)}
+								>
+									<Icon name="trash" size={17} />
+									<span>{m.deletePost()}</span>
+								</button>
+							{/if}
+						{/snippet}
+					</ActionMenu>
 				{/if}
+			</div>
+		{/if}
+		{#if displayOnly && bookmarkSubject && !post.deleted}
+			<div class="post-actions bookmark-only-actions">
+				<BookmarkActions subject={bookmarkSubject} />
 			</div>
 		{/if}
 		{#if postError}<p class="error" role="alert">{postError}</p>{/if}

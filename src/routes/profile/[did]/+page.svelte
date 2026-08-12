@@ -22,11 +22,12 @@
 	import ProfileDescription from '$lib/components/ProfileDescription.svelte';
 	import ProfileWebsiteCard from '$lib/components/ProfileWebsiteCard.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
+	import BookmarksPanel from '$lib/components/BookmarksPanel.svelte';
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
-	import { onMount, untrack } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
@@ -34,8 +35,8 @@
 	import { privateList } from '$lib/private-list/private-list.svelte';
 
 	// 日記・カードはポストではないので Feed には載らない。タブだけ同じ並びに足す。
-	type ProfileTab = ProfileFeedFilter | 'diary' | 'cards';
-	const tabs: Array<{ id: ProfileTab; label: () => string }> = [
+	type ProfileTab = ProfileFeedFilter | 'diary' | 'cards' | 'bookmarks';
+	const publicTabs: Array<{ id: ProfileTab; label: () => string }> = [
 		{ id: 'posts', label: m.profileTabPosts },
 		{ id: 'replies', label: m.profileTabReplies },
 		{ id: 'media', label: m.profileTabMedia },
@@ -44,6 +45,17 @@
 		{ id: 'cards', label: m.profileTabCards },
 	];
 	let did = $derived(page.params.did ?? '');
+	let isSelf = $derived(Boolean($session?.did && $session.did === did));
+	let tabs = $derived(
+		isSelf
+			? [
+					...publicTabs.slice(0, 4),
+					{ id: 'bookmarks' as const, label: m.bookmarkTab },
+					...publicTabs.slice(4),
+				]
+			: publicTabs,
+	);
+	let tabsNav = $state<HTMLElement>();
 	// 通知から ?tab=diary&date=YYYY-MM-DD で該当日を開く。
 	const initialDiaryDate = $derived(page.url.searchParams.get('date') ?? undefined);
 	let tab = $state<ProfileTab>('posts');
@@ -89,13 +101,22 @@
 		feed = undefined;
 		reactionFeed = undefined;
 		const requested = page.url.searchParams.get('tab');
-		tab = requested === 'diary' || requested === 'cards' ? requested : 'posts';
+		tab =
+			requested === 'diary' || requested === 'cards' || (requested === 'bookmarks' && isSelf)
+				? requested
+				: 'posts';
+		void tick().then(() =>
+			tabsNav
+				?.querySelector<HTMLElement>('[aria-current="page"]')
+				?.scrollIntoView({ inline: 'center', block: 'nearest' }),
+		);
 	});
 	$effect(() => {
 		const actor = did;
 		const locale = i18n.locale;
 		// 日記・カードタブでもプロフィール欄は要るので、投稿フィードは読んでおく。
-		const filter: ProfileFeedFilter = tab === 'diary' || tab === 'cards' ? 'posts' : tab;
+		const filter: ProfileFeedFilter =
+			tab === 'diary' || tab === 'cards' || tab === 'bookmarks' ? 'posts' : tab;
 		if (!actor) return;
 		if (filter === 'reactions') {
 			const key = `${actor}:reactions:${locale}`;
@@ -258,16 +279,26 @@
 			{#if joined}<span>{m.profileJoinedSince({ date: joined })}</span>{/if}
 		</div>
 	</header>
-	<nav class="profile-tabs" aria-label={m.profileTabsAria()}>
+	<nav bind:this={tabsNav} class="profile-tabs" aria-label={m.profileTabsAria()}>
 		{#each tabs as t (t.id)}
 			<button
 				class:active={tab === t.id}
 				aria-current={tab === t.id ? 'page' : undefined}
-				onclick={() => (tab = t.id)}>{t.label()}</button
+				onclick={(event) => {
+					tab = t.id;
+					(event.currentTarget as HTMLElement).scrollIntoView({
+						inline: 'center',
+						block: 'nearest',
+					});
+				}}>{t.label()}</button
 			>
 		{/each}
 	</nav>
-	{#if tab === 'diary'}
+	{#if tab === 'bookmarks' && isSelf}
+		<section class="timeline">
+			<BookmarksPanel />
+		</section>
+	{:else if tab === 'diary'}
 		<section class="timeline">
 			<DiaryCalendar {did} initialDate={initialDiaryDate} botActor={feed?.botActor} />
 		</section>

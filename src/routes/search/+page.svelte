@@ -7,8 +7,16 @@
 		searchChannelsByQuery,
 		searchNewsByQuery,
 		searchActors,
+		getBookmarkFolders,
+		getBookmarks,
 	} from '$lib/api/appview';
-	import type { ActorView, ChannelView, NewsView } from '$lib/api/types';
+	import type {
+		ActorView,
+		BookmarkFolderView,
+		BookmarkItemView,
+		ChannelView,
+		NewsView,
+	} from '$lib/api/types';
 	import { Feed, feedKey } from '$lib/feed/feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
@@ -16,8 +24,10 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
+	import BookmarkSearchSections from '$lib/components/BookmarkSearchSections.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { startVisiblePolling } from '$lib/polling';
+	import { session } from '$lib/oauth/session.svelte';
 
 	// 自由文検索(?q=)を優先。無ければタグ検索(?tag=、小文字で正規化して保存側と一致)。
 	let q = $derived((page.url.searchParams.get('q') ?? '').trim());
@@ -31,14 +41,20 @@
 
 	// 自由文モードは対象ごとにタブを分ける。各タブの中は「一致」→「botたんの気まぐれ」の順に
 	// 縦に並べ、一致側には見出しを付けない（タブ名から自明なため）。
-	type TabId = 'posts' | 'users' | 'channels' | 'news';
-	const tabs: { id: TabId; label: () => string }[] = [
+	type TabId = 'posts' | 'users' | 'channels' | 'news' | 'bookmarks';
+	const publicTabs: { id: TabId; label: () => string }[] = [
 		{ id: 'posts', label: () => m.searchTabPosts() },
 		{ id: 'users', label: () => m.searchTabUsers() },
 		{ id: 'channels', label: () => m.searchTabChannels() },
 		{ id: 'news', label: () => m.searchTabNews() },
 	];
+	let tabs = $derived(
+		$session
+			? [...publicTabs, { id: 'bookmarks' as const, label: () => m.searchTabBookmarks() }]
+			: publicTabs,
+	);
 	let tab = $state<TabId>('posts');
+	let tabsElement = $state<HTMLDivElement>();
 
 	// 投稿は Feed に載せる（楽観投稿の突合・削除反映・ページングが乗るため）。
 	let postsExact = $state<Feed>();
@@ -52,6 +68,13 @@
 	let channelsFuzzy = $state<ChannelView[]>([]);
 	let newsExact = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
 	let newsFuzzy = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
+	let bookmarkItems = $state<BookmarkItemView[]>([]);
+	let bookmarkFolders = $state<BookmarkFolderView[]>([]);
+	let bookmarkBotActor = $state<ActorView>();
+	let bookmarkCursor = $state<string>();
+	let bookmarkHasMore = $state(false);
+	let bookmarkLoadingMore = $state(false);
+	let bookmarkError = $state('');
 	// 描画用の「そのタブの結果が揃ったか」。未取得と0件を区別するために要る（投稿タブは Feed の
 	// loading があるので使わない）。
 	let readyExact = $state<Record<TabId, boolean>>({
@@ -59,12 +82,14 @@
 		users: false,
 		channels: false,
 		news: false,
+		bookmarks: false,
 	});
 	let readyFuzzy = $state<Record<TabId, boolean>>({
 		posts: false,
 		users: false,
 		channels: false,
 		news: false,
+		bookmarks: true,
 	});
 	// タブを自分で選んだらもう自動で移動しない。
 	let tabPicked = $state(false);
@@ -84,8 +109,14 @@
 		channelsFuzzy = [];
 		newsExact = { items: [] };
 		newsFuzzy = { items: [] };
-		readyExact = { posts: false, users: false, channels: false, news: false };
-		readyFuzzy = { posts: false, users: false, channels: false, news: false };
+		bookmarkItems = [];
+		bookmarkFolders = [];
+		bookmarkBotActor = undefined;
+		bookmarkCursor = undefined;
+		bookmarkHasMore = false;
+		bookmarkError = '';
+		readyExact = { posts: false, users: false, channels: false, news: false, bookmarks: false };
+		readyFuzzy = { posts: false, users: false, channels: false, news: false, bookmarks: true };
 		tabPicked = false;
 		loadedFuzzy = {};
 	}
@@ -97,7 +128,10 @@
 	 */
 	function loadExact(at: string, locale: 'ja' | 'en') {
 		const fresh = () => currentKey === at;
-		postsExact = new Feed((c) => searchPostsByQuery(q, c, 'exact'), () => false);
+		postsExact = new Feed(
+			(c) => searchPostsByQuery(q, c, 'exact'),
+			() => false,
+		);
 		void postsExact.load().then(() => fresh() && (readyExact.posts = true));
 		void searchActors(q, 20, 'exact')
 			.then((r) => fresh() && (usersExact = r.actors))
@@ -111,6 +145,21 @@
 			.then((r) => fresh() && (newsExact = { items: r.items, botActor: r.botActor }))
 			.catch(() => {})
 			.finally(() => fresh() && (readyExact.news = true));
+		if ($session) {
+			void Promise.all([getBookmarkFolders(locale), getBookmarks({ q, lang: locale, limit: 30 })])
+				.then(([folderView, result]) => {
+					if (!fresh()) return;
+					bookmarkFolders = folderView.folders;
+					bookmarkItems = result.items;
+					bookmarkBotActor = result.botActor;
+					bookmarkCursor = result.cursor;
+					bookmarkHasMore = result.hasMore;
+				})
+				.catch(() => fresh() && (bookmarkError = m.loadFailed()))
+				.finally(() => fresh() && (readyExact.bookmarks = true));
+		} else {
+			readyExact.bookmarks = true;
+		}
 	}
 
 	/** 気まぐれ側は埋め込み生成が要るので、開いたタブのぶんだけ遅れて読む。 */
@@ -118,7 +167,10 @@
 		const fresh = () => currentKey === at;
 		const done = () => fresh() && (readyFuzzy[target] = true);
 		if (target === 'posts') {
-			postsFuzzy = new Feed((c) => searchPostsByQuery(q, c, 'semantic'), () => false);
+			postsFuzzy = new Feed(
+				(c) => searchPostsByQuery(q, c, 'semantic'),
+				() => false,
+			);
 			void postsFuzzy.load().then(done);
 		} else if (target === 'users') {
 			void searchActors(q, 20, 'semantic')
@@ -130,18 +182,43 @@
 				.then((r) => fresh() && (channelsFuzzy = r.channels))
 				.catch(() => {})
 				.finally(done);
-		} else {
+		} else if (target === 'news') {
 			void searchNewsByQuery(q, locale, undefined, 'semantic')
 				.then((r) => fresh() && (newsFuzzy = { items: r.items, botActor: r.botActor }))
 				.catch(() => {})
 				.finally(done);
 		}
 	}
+	async function loadMoreBookmarks() {
+		if (!bookmarkCursor || bookmarkLoadingMore) return;
+		bookmarkLoadingMore = true;
+		bookmarkError = '';
+		try {
+			const result = await getBookmarks({
+				q,
+				lang: i18n.locale,
+				limit: 30,
+				cursor: bookmarkCursor,
+			});
+			bookmarkItems = [...bookmarkItems, ...result.items];
+			bookmarkCursor = result.cursor;
+			bookmarkHasMore = result.hasMore;
+			bookmarkBotActor = result.botActor ?? bookmarkBotActor;
+		} catch {
+			bookmarkError = m.loadFailed();
+		} finally {
+			bookmarkLoadingMore = false;
+		}
+	}
 
 	// 閲覧は未認証（AppView 直読み）なのでセッション復元を待たない。
 	$effect(() => {
 		const locale = i18n.locale;
-		const key = q ? `q:${q}:${locale}` : tag ? `tag:${tag}:${locale}` : '';
+		const key = q
+			? `q:${q}:${locale}:${$session?.did ?? 'public'}`
+			: tag
+				? `tag:${tag}:${locale}`
+				: '';
 		const target = tab;
 		if (key !== currentKey) {
 			currentKey = key;
@@ -151,7 +228,10 @@
 		if (!q) {
 			if (loadedFuzzy.tag) return;
 			loadedFuzzy.tag = true;
-			tagFeed = new Feed((c) => searchPosts(tag, c), () => false);
+			tagFeed = new Feed(
+				(c) => searchPosts(tag, c),
+				() => false,
+			);
 			tagFeed.load();
 			return;
 		}
@@ -159,7 +239,7 @@
 			loadedKey = key;
 			loadExact(key, locale);
 		}
-		if (loadedFuzzy[target]) return;
+		if (target === 'bookmarks' || loadedFuzzy[target]) return;
 		loadedFuzzy[target] = true;
 		loadFuzzy(target, key, locale);
 	});
@@ -170,9 +250,14 @@
 		users: usersExact.length,
 		channels: channelsExact.length,
 		news: newsExact.items.length,
+		bookmarks: bookmarkItems.length,
 	});
 	let allExactReady = $derived(
-		readyExact.posts && readyExact.users && readyExact.channels && readyExact.news,
+		readyExact.posts &&
+			readyExact.users &&
+			readyExact.channels &&
+			readyExact.news &&
+			readyExact.bookmarks,
 	);
 	// 自分でタブを選ぶ前に限り、当たりのあるタブへ寄せる。「チャンネルはあるのに検索して
 	// ヒットしない」と見えてしまう事故を防ぐのが目的。
@@ -180,6 +265,14 @@
 		if (!allExactReady || tabPicked || exactCounts[tab] > 0) return;
 		const hit = tabs.find((t) => exactCounts[t.id] > 0);
 		if (hit) tab = hit.id;
+	});
+	$effect(() => {
+		void tab;
+		requestAnimationFrame(() =>
+			tabsElement
+				?.querySelector<HTMLElement>('[aria-selected="true"]')
+				?.scrollIntoView({ inline: 'center', block: 'nearest' }),
+		);
 	});
 
 	// 一致セクションだけ新着が効く。気まぐれは並びがスコア依存で揺れるので自動更新しない。
@@ -257,18 +350,26 @@
 {#if !hasQuery}
 	<section class="timeline"><div class="state">{m.searchNoQuery()}</div></section>
 {:else if q}
-	<div class="search-tabs" role="tablist">
+	<div bind:this={tabsElement} class="search-tabs" role="tablist">
 		{#each tabs as t (t.id)}
 			<button
 				role="tab"
 				aria-selected={tab === t.id}
 				class:active={tab === t.id}
-				onclick={() => {
+				onclick={(event) => {
 					tabPicked = true;
 					tab = t.id;
+					(event.currentTarget as HTMLElement).scrollIntoView({
+						inline: 'center',
+						block: 'nearest',
+					});
 				}}
-				>{t.label()}{#if readyExact[t.id]}<span class="tab-count" class:zero={exactCounts[t.id] === 0}
-						>{exactCounts[t.id]}{#if t.id === 'posts' && postsExact?.hasMore}+{/if}</span
+				>{t.label()}{#if readyExact[t.id]}<span
+						class="tab-count"
+						class:zero={exactCounts[t.id] === 0}
+						>{exactCounts[
+							t.id
+						]}{#if (t.id === 'posts' && postsExact?.hasMore) || (t.id === 'bookmarks' && bookmarkHasMore)}+{/if}</span
 					>{/if}</button
 			>
 		{/each}
@@ -349,7 +450,7 @@
 				</div>
 			{/if}
 		</section>
-	{:else}
+	{:else if tab === 'news'}
 		<section class="search-section">
 			{#if !readyExact.news}
 				{@render spinner()}
@@ -369,6 +470,34 @@
 				{#each newsFuzzy.items as item (item.uri)}
 					<NewsCard news={item} botActor={newsFuzzy.botActor} />
 				{/each}
+			{/if}
+		</section>
+	{:else if tab === 'bookmarks'}
+		<section class="search-section bookmark-search-section" aria-busy={!readyExact.bookmarks}>
+			{#if !readyExact.bookmarks}
+				{@render spinner()}
+			{:else if bookmarkError && !bookmarkItems.length}
+				<div class="state error">
+					{bookmarkError}<button class="search-more" onclick={() => location.reload()}
+						>{m.retry()}</button
+					>
+				</div>
+			{:else if !bookmarkItems.length}
+				<div class="state">{m.searchBookmarksEmpty()}</div>
+			{:else}
+				<BookmarkSearchSections
+					items={bookmarkItems}
+					folders={bookmarkFolders}
+					botActor={bookmarkBotActor}
+				/>
+				{#if bookmarkError}<div class="state error">{bookmarkError}</div>{/if}
+				{#if bookmarkHasMore}
+					<button
+						class="search-more"
+						disabled={bookmarkLoadingMore}
+						onclick={() => void loadMoreBookmarks()}>{m.searchLoadMore()}</button
+					>
+				{/if}
 			{/if}
 		</section>
 	{/if}
@@ -411,8 +540,10 @@
 		gap: 4px;
 		padding: 0 1rem;
 		border-bottom: 1px solid var(--line);
+		min-inline-size: 0;
 	}
 	.search-tabs button {
+		flex: 0 0 auto;
 		padding: 0.6rem 0.9rem;
 		border: 0;
 		border-bottom: 2px solid transparent;
@@ -420,6 +551,18 @@
 		color: var(--text-faint);
 		font-size: 0.9rem;
 		font-weight: 700;
+	}
+	@media (max-width: 600px) {
+		.search-tabs {
+			overflow-x: auto;
+			overflow-y: hidden;
+			scroll-padding-inline: 1rem;
+			overscroll-behavior-inline: contain;
+			-webkit-overflow-scrolling: touch;
+		}
+		.search-tabs button {
+			white-space: nowrap;
+		}
 	}
 	.search-tabs button.active {
 		color: var(--text);

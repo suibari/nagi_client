@@ -210,7 +210,11 @@
 				{#if entryTitle(current)}
 					<p class="diary-title">{m.diaryTitleLabel({ title: entryTitle(current)! })}</p>
 				{/if}
-				<ChatBubble post={diaryPost} displayOnly />
+				<ChatBubble
+					post={diaryPost}
+					displayOnly
+					bookmarkSubject={{ kind: 'diary', uri: current.uri }}
+				/>
 			</article>
 		{:else if entries.length}
 			<p class="diary-hint">{m.diaryPickDate()}</p>
