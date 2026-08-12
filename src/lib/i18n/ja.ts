@@ -571,18 +571,19 @@ export const ja = {
 	profileEmptyReactions: 'まだリアクションがありません。',
 
 	// diary
-	diaryEmptyMonth: 'この月の日記はまだありません。',
+	diaryAnnualActivity: '年間アクティビティ',
+	diaryGraphAria: '過去53週間の日記アクティビティ',
+	diaryInvolvedPeople: 'この日のつながり',
+	diaryMoreConnectionsAria: 'ほかにもこの日につながりがあった人がいます',
+	diaryHoverHint: '日記のある日に触れると、その日の称号と関わった人を確認できます。',
+	diaryEmptyYear: '過去1年間の日記はまだありません。',
 	diaryFetchFailed: '日記を取得できません',
-	diaryPrevMonth: '前の月',
-	diaryNextMonth: '次の月',
-	diaryPickDate: '日記のある日を選ぶと本文が読めます。',
 	diaryTitleLabel: (p: { title: string }) => `今日の称号: ${p.title}`,
-	diaryDayAria: (p: { date: string; postCount?: number; emoji?: string; title?: string }) =>
+	diaryDayAria: (p: { date: string; postCount?: number; title?: string }) =>
 		[
 			`${p.date}の日記`,
 			p.title === undefined ? undefined : `今日の称号 ${p.title}`,
 			p.postCount === undefined ? undefined : `${p.postCount}件のポスト`,
-			p.emoji === undefined ? undefined : `今日の絵文字 ${p.emoji}`,
 		]
 			.filter(Boolean)
 			.join('、'),

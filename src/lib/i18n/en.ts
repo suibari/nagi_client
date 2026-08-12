@@ -546,20 +546,21 @@ export const en: Messages = {
 	profileEmptyPosts: 'No posts yet.',
 	profileEmptyReactions: 'No reactions yet.',
 
-	diaryEmptyMonth: 'No diary entries for this month yet.',
+	diaryAnnualActivity: 'Yearly activity',
+	diaryGraphAria: 'Diary activity for the past 53 weeks',
+	diaryInvolvedPeople: "This day's connections",
+	diaryMoreConnectionsAria: 'More people were connected on this day',
+	diaryHoverHint: 'Hover over or focus a diary day to see its title and people involved.',
+	diaryEmptyYear: 'No diary entries in the past year yet.',
 	diaryFetchFailed: 'Could not fetch the diary',
-	diaryPrevMonth: 'Previous month',
-	diaryNextMonth: 'Next month',
-	diaryPickDate: 'Pick a highlighted day to read that entry.',
 	diaryTitleLabel: (p) => `Today's title: ${p.title}`,
-	diaryDayAria: (p: { date: string; postCount?: number; emoji?: string; title?: string }) =>
+	diaryDayAria: (p: { date: string; postCount?: number; title?: string }) =>
 		[
 			`Diary for ${p.date}`,
 			p.title === undefined ? undefined : `title ${p.title}`,
 			p.postCount === undefined
 				? undefined
 				: `${p.postCount} ${p.postCount === 1 ? 'post' : 'posts'}`,
-			p.emoji === undefined ? undefined : `emoji ${p.emoji}`,
 		]
 			.filter(Boolean)
 			.join(', '),

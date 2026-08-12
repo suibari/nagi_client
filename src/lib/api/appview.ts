@@ -322,10 +322,15 @@ export const getProfileWebsite = (actor: string) =>
 		{},
 		'none',
 	);
-/** 日記は公開コンテンツなので認証不要。month は "YYYY-MM"。 */
-export const getDiaries = (actor: string, opts: { month?: string; cursor?: string } = {}) => {
+/** 日記は公開コンテンツなので認証不要。年間グラフは from/to を1組で渡す。 */
+export const getDiaries = (
+	actor: string,
+	opts: { month?: string; from?: string; to?: string; cursor?: string } = {},
+) => {
 	const params = new URLSearchParams({ actor });
 	if (opts.month) params.set('month', opts.month);
+	if (opts.from) params.set('from', opts.from);
+	if (opts.to) params.set('to', opts.to);
 	if (opts.cursor) params.set('cursor', opts.cursor);
 	return call<DiaryPage>(
 		'com.suibari.nagi.getDiaries',

@@ -71,6 +71,7 @@
 		clampLines,
 		maxImages,
 		maxLinkCards,
+		collapsible = true,
 		bookmarkSubject,
 	}: {
 		post: PostView;
@@ -93,6 +94,8 @@
 		maxImages?: number;
 		/** リンクカードの初期表示枚数上限。未指定時は制限なし。 */
 		maxLinkCards?: number;
+		/** falseなら本文を最初から全表示し、「続きを読む」を出さない。 */
+		collapsible?: boolean;
 		/** 読み取り専用の実体（日記）だけが明示する。合成コメントには渡さない。 */
 		bookmarkSubject?: { kind: BookmarkSubjectType; uri: string };
 	} = $props();
@@ -597,13 +600,14 @@
 				langs={post.langs}
 				facets={post.facets}
 				deleted={post.deleted}
-				collapsed={!expanded}
+				collapsed={collapsible && !expanded}
 				disabled={optimistic}
 				{clampLines}
 				onoverflowchange={(value) => (overflowing = value)}
 			/>
-			{#if overflowing || expanded}<button class="read" onclick={() => (expanded = !expanded)}
-					>{expanded ? m.readLess() : m.readMore()}</button
+			{#if collapsible && (overflowing || expanded)}<button
+					class="read"
+					onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
 				>{/if}
 		{/if}{#if !editing && visibleImages?.length}<ImageGallery
 				images={visibleImages}
