@@ -462,10 +462,12 @@ export const getBookmarks = (input: {
 	cursor?: string;
 	limit?: number;
 	lang: 'ja' | 'en';
+	q?: string;
 }) => {
 	const params = new URLSearchParams({ lang: input.lang, limit: String(input.limit ?? 30) });
 	if (input.folderId) params.set('folderId', input.folderId);
 	if (input.cursor) params.set('cursor', input.cursor);
+	if (input.q) params.set('q', input.q);
 	return call<BookmarksPage>(
 		'com.suibari.nagi.getBookmarks',
 		`/xrpc/com.suibari.nagi.getBookmarks?${params}`,

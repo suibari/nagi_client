@@ -985,6 +985,8 @@ export const ja = {
 	searchTabUsers: 'ユーザー',
 	searchTabChannels: 'チャンネル',
 	searchTabNews: 'ニュース',
+	searchTabBookmarks: 'ブックマーク',
+	searchBookmarksEmpty: '一致するブックマークはありませんでした。',
 	searchSectionFuzzy: 'botたんの気まぐれ',
 	searchExactEmpty: '一致するものはありませんでした。',
 	searchFuzzyEmpty: '気まぐれに拾えるものはありませんでした。',

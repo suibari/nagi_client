@@ -955,6 +955,8 @@ export const en: Messages = {
 	searchTabUsers: 'Users',
 	searchTabChannels: 'Channels',
 	searchTabNews: 'News',
+	searchTabBookmarks: 'Bookmarks',
+	searchBookmarksEmpty: 'No matching bookmarks.',
 	searchSectionFuzzy: "bot-tan's whim",
 	searchExactEmpty: 'No exact matches.',
 	searchFuzzyEmpty: 'Nothing came to bot-tan on a whim.',
