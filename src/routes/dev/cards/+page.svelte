@@ -3,6 +3,7 @@
 	import AffirmationCard from '$lib/components/AffirmationCard.svelte';
 	import CardDetailDialog from '$lib/components/CardDetailDialog.svelte';
 	import CardDrawFab from '$lib/components/CardDrawFab.svelte';
+	import CardMilestoneDialog from '$lib/components/CardMilestoneDialog.svelte';
 
 	/*
 	 * カードまわりの見た目をまとめて確認するための開発専用ページ（/dev/cards）。
@@ -59,13 +60,16 @@
 	let fabFixed = $state(false);
 
 	// --- CardDetailDialog --------------------------------------------------
-	type DialogCase = 'new' | 'again' | 'already' | 'pending' | 'review';
+	type DialogCase = 'new-sr' | 'new-ur' | 'new-aar' | 'again' | 'already' | 'pending' | 'review';
 	let dialogCase = $state<DialogCase | undefined>();
+	let milestone = $state<number | undefined>();
 	// 演出をやり直すための再マウント用キー。
 	let replay = $state(0);
 
 	const DIALOG_CASES: Array<{ id: DialogCase; label: string; note: string }> = [
-		{ id: 'new', label: '新規（UR）', note: 'isNew: フリップ＋レアリティの閃光' },
+		{ id: 'new-sr', label: '新規（SR）', note: 'NEW CARD＋少量コンフェッティ' },
+		{ id: 'new-ur', label: '新規（UR）', note: 'NEW CARD＋中量コンフェッティ' },
+		{ id: 'new-aar', label: '新規（AAR）', note: 'NEW CARD＋最大量コンフェッティ' },
 		{ id: 'again', label: '重複（R ×3）', note: 'isNew=false: 「また会えたね」＋×3 バッジ' },
 		{ id: 'already', label: '本日引き済み（SR）', note: 'alreadyDrawn: 別タブが先に引いた場合' },
 		{ id: 'pending', label: 'コメント生成中（AAR）', note: 'コメント未着。getCards を叩きに行く' },
@@ -79,8 +83,12 @@
 
 	function dialogCard(kind: DialogCase): CardView {
 		switch (kind) {
-			case 'new':
+			case 'new-sr':
+				return mock('SR', 'wind', { commentJa: '新しい出会いだね。今日はしっかりお祝いしよう！' });
+			case 'new-ur':
 				return mock('UR', 'fire', { commentJa: 'よく来たね。今日のきみ、いい顔してる。' });
+			case 'new-aar':
+				return mock('AAR', 'light', { commentJa: 'すごい！ この出会いは、ずっと覚えていたいね。' });
 			case 'again':
 				return mock('R', 'water', {
 					duplicateCount: 3,
@@ -102,7 +110,7 @@
 		return {
 			card: dialogCard(kind),
 			alreadyDrawn: kind === 'already',
-			isNew: kind === 'new',
+			isNew: kind.startsWith('new-'),
 			commentPending: kind === 'pending',
 			drawStatus,
 		};
@@ -135,6 +143,13 @@
 		>
 		<label><input type="checkbox" bind:checked={fabShifted} /> shifted（通知回避）</label>
 		<label><input type="checkbox" bind:checked={fabFixed} /> 実際の fixed 位置で出す</label>
+	</div>
+	<div class="dev-controls">
+		{#each [10, 50, 100] as percent (percent)}
+			<button type="button" class="ghost" onclick={() => (milestone = percent)}>
+				マイルストーン {percent}%
+			</button>
+		{/each}
 	</div>
 	{#if fabFixed}
 		<CardDrawFab
@@ -207,6 +222,12 @@
 			onclose={() => (dialogCase = undefined)}
 		/>
 	{/key}
+{:else if milestone}
+	<CardMilestoneDialog
+		percent={milestone}
+		collectionHref="/dev/cards"
+		onclose={() => (milestone = undefined)}
+	/>
 {/if}
 
 <style>

@@ -1,10 +1,16 @@
 <script lang="ts">
 	import { drawCard } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
+	import {
+		cardCompletionPercent,
+		nextCardMilestone,
+		reachedCardMilestone,
+	} from '$lib/cards/celebration';
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
+	import CardMilestoneDialog from './CardMilestoneDialog.svelte';
 
 	let {
 		did,
@@ -21,6 +27,8 @@
 	let drawResult = $state<DrawCardResult | undefined>();
 	// モーダルで開いているカード（引いた直後 / 一覧からタップ の両方）。
 	let opened = $state<CardView | undefined>();
+	// カード詳細を閉じたあとに出す。モーダルを二重に重ねないため別状態で待機させる。
+	let pendingMilestone = $state<number | undefined>();
 
 	// コレクションは cardCollections が DID ごとに 1 度だけ取る。フィードの FAB と同じ
 	// 実体を見ているので、TOP で引いた直後にここへ来ても drawStatus がズレない。
@@ -39,6 +47,12 @@
 	 * 所持順やレアリティ順に寄せると、1枚引くたびに全部の位置がずれて図鑑にならない。
 	 */
 	const cards = $derived(collection?.cards ?? []);
+	const completionPercent = $derived(
+		collection ? cardCompletionPercent(collection.ownedCount, collection.totalCount) : 0,
+	);
+	const nextMilestone = $derived(
+		collection ? nextCardMilestone(collection.ownedCount, collection.totalCount) : undefined,
+	);
 
 	function formatTime(iso: string): string {
 		const date = new Date(iso);
@@ -57,6 +71,11 @@
 		drawError = '';
 		try {
 			const result = await drawCard();
+			pendingMilestone = reachedCardMilestone(
+				collection?.ownedCount,
+				collection?.totalCount,
+				result,
+			);
 			cardCollections.applyDraw(did, result);
 			drawResult = result;
 			opened = result.card;
@@ -79,6 +98,27 @@
 </script>
 
 <section class="cards">
+	{#if collection}
+		<div class="cards-progress">
+			<div class="cards-progress-heading">
+				<strong>{m.cardCollectionPercent({ percent: completionPercent })}</strong>
+				<span>
+					{m.cardCollectionProgress({
+						owned: collection.ownedCount,
+						total: collection.totalCount,
+					})}
+				</span>
+			</div>
+			<progress value={collection.ownedCount} max={collection.totalCount}>
+				{completionPercent}%
+			</progress>
+			<small>
+				{nextMilestone
+					? m.cardCollectionNextMilestone({ percent: nextMilestone })
+					: m.cardCollectionComplete()}
+			</small>
+		</div>
+	{/if}
 	{#if isSelf}
 		<div class="cards-draw">
 			{#if status?.canDraw}
@@ -97,12 +137,6 @@
 	{:else if error}
 		<p class="cards-error" role="alert">{error}</p>
 	{:else if collection}
-		<p class="cards-progress">
-			{m.cardCollectionProgress({
-				owned: collection.ownedCount,
-				total: collection.totalCount,
-			})}
-		</p>
 		<ul class="cards-grid">
 			{#each cards as card (`${card.volume}-${card.id}`)}
 				<li>
@@ -124,6 +158,8 @@
 
 {#if opened}
 	<CardDetailDialog initial={opened} actor={did} draw={drawResult} onclose={closeDialog} />
+{:else if pendingMilestone}
+	<CardMilestoneDialog percent={pendingMilestone} onclose={() => (pendingMilestone = undefined)} />
 {/if}
 
 <style>
@@ -138,9 +174,46 @@
 		gap: 0.4rem;
 	}
 	.cards-progress {
-		margin: 0;
+		display: grid;
+		gap: 0.45rem;
+		padding: 0.75rem 0.85rem;
+		border: 1px solid var(--line);
+		border-radius: var(--radius-m);
+		background: var(--bg-inset);
+	}
+	.cards-progress-heading {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+	.cards-progress-heading strong {
+		color: var(--text-strong);
+		font-size: 0.95rem;
+	}
+	.cards-progress-heading span,
+	.cards-progress small {
 		color: var(--text-muted);
-		font-size: 0.85rem;
+		font-size: 0.78rem;
+	}
+	.cards-progress progress {
+		inline-size: 100%;
+		block-size: 10px;
+		border: 0;
+		border-radius: 999px;
+		accent-color: var(--accent);
+		overflow: hidden;
+	}
+	.cards-progress progress::-webkit-progress-bar {
+		background: var(--bg-raised);
+	}
+	.cards-progress progress::-webkit-progress-value {
+		border-radius: 999px;
+		background: linear-gradient(90deg, var(--accent), var(--card-rarity-aar));
+	}
+	.cards-progress progress::-moz-progress-bar {
+		border-radius: 999px;
+		background: linear-gradient(90deg, var(--accent), var(--card-rarity-aar));
 	}
 	.cards-note,
 	.cards-next {

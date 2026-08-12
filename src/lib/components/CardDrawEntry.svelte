@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { drawCard } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
+	import { reachedCardMilestone } from '$lib/cards/celebration';
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
@@ -11,6 +12,7 @@
 	import CardBack from './CardBack.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
 	import CardDrawFab from './CardDrawFab.svelte';
+	import CardMilestoneDialog from './CardMilestoneDialog.svelte';
 
 	let {
 		variant = 'header',
@@ -24,6 +26,7 @@
 	let drawError = $state('');
 	let drawResult = $state<DrawCardResult>();
 	let openedCard = $state<CardView>();
+	let pendingMilestone = $state<number>();
 	let myDid = $derived($session?.did);
 	const forceFab = $derived(
 		dev &&
@@ -62,6 +65,8 @@
 		try {
 			// drawCard は抽選済みの日には同じカードを返すので、「見る」入口にも共用できる。
 			const result = await drawCard();
+			const current = cardCollections.view(did);
+			pendingMilestone = reachedCardMilestone(current?.ownedCount, current?.totalCount, result);
 			cardCollections.applyDraw(did, result);
 			drawResult = result;
 			openedCard = result.card;
@@ -110,8 +115,14 @@
 		initial={openedCard}
 		actor={myDid}
 		draw={drawResult}
-		collectionHref={`/profile/${myDid}?tab=cards`}
+		collectionHref={pendingMilestone ? undefined : `/profile/${myDid}?tab=cards`}
 		onclose={closeDraw}
+	/>
+{:else if pendingMilestone}
+	<CardMilestoneDialog
+		percent={pendingMilestone}
+		collectionHref={myDid ? `/profile/${myDid}?tab=cards` : undefined}
+		onclose={() => (pendingMilestone = undefined)}
 	/>
 {/if}
 

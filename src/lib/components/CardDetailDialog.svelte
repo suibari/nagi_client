@@ -2,9 +2,11 @@
 	import { onMount } from 'svelte';
 	import { getCards } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
+	import { rarityConfettiLevel } from '$lib/cards/celebration';
 	import { dateLocale, i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardBack from './CardBack.svelte';
+	import Confetti from './Confetti.svelte';
 
 	/** 時刻表示。日付境界は JST 4:00 だが、表示は閲覧者のローカル時刻に合わせる。 */
 	function formatTime(iso: string): string {
@@ -54,6 +56,9 @@
 	const comment = $derived(ja ? card.commentJa : card.commentEn);
 	// ja/en どちらかが埋まればコメントは届いたとみなす（片方だけ生成される事故に強くする）。
 	const hasComment = $derived(!!(card.commentJa || card.commentEn));
+	// 初回の実ドローだけを祝う。当日カードの冪等再取得では演出を繰り返さない。
+	const isFreshDraw = $derived(!!draw && !draw.alreadyDrawn);
+	const confettiLevel = $derived(isFreshDraw ? rarityConfettiLevel(card.rarity) : undefined);
 
 	onMount(() => {
 		closeButton?.focus();
@@ -106,9 +111,16 @@
 </script>
 
 <svelte:window onkeydown={keydown} />
+{#if revealed && confettiLevel}
+	<Confetti level={confettiLevel} />
+{/if}
 <div class="draw-backdrop" role="presentation" onclick={backdropClick}>
 	<div class="draw-dialog" role="dialog" aria-modal="true" aria-labelledby="draw-title">
-		<h2 id="draw-title" class="draw-title">
+		<h2
+			id="draw-title"
+			class="draw-title"
+			class:visually-hidden={!!draw?.isNew && !draw.alreadyDrawn}
+		>
 			{#if !draw}
 				{name}
 			{:else if draw.alreadyDrawn}
@@ -119,6 +131,16 @@
 				{m.cardDrawAgainTitle()}
 			{/if}
 		</h2>
+		{#if draw?.isNew && !draw.alreadyDrawn}
+			<!-- フォントファイルは再配布せず、指定文言だけを描画したマスクで字形を使う。 -->
+			<div class="new-card-wrap" aria-hidden="true">
+				<span class="new-card-art" class:ja></span>
+				<span class="new-card-shimmer" class:ja></span>
+				<i class="new-card-sparkle sparkle-one"></i>
+				<i class="new-card-sparkle sparkle-two"></i>
+				<i class="new-card-sparkle sparkle-three"></i>
+			</div>
+		{/if}
 
 		<div class="draw-stage rarity-{card.rarity.toLowerCase()}" class:revealed class:flip={!!draw}>
 			<div class="draw-flip">
@@ -189,6 +211,102 @@
 	.draw-title {
 		margin: 0;
 		font-size: 1.05rem;
+	}
+	/* 「どっとじ」で描いた完成画像をマスクにし、フォント本体をブラウザへ再配布しない。 */
+	.new-card-wrap {
+		position: relative;
+		inline-size: min(100%, 340px);
+		block-size: 48px;
+		margin: -0.25rem 0 -0.15rem;
+	}
+	.new-card-art,
+	.new-card-shimmer {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			90deg,
+			#ff4f87 0%,
+			#ffd166 17%,
+			#55f5ba 34%,
+			#45d9ff 51%,
+			#8f8cff 68%,
+			#ff68dc 85%,
+			#ff4f87 100%
+		);
+		background-size: 220% 100%;
+		-webkit-mask: url('/card-effects/new-card-en.png') center / contain no-repeat;
+		mask: url('/card-effects/new-card-en.png') center / contain no-repeat;
+	}
+	.new-card-art.ja,
+	.new-card-shimmer.ja {
+		-webkit-mask-image: url('/card-effects/new-card-ja.png');
+		mask-image: url('/card-effects/new-card-ja.png');
+	}
+	.new-card-art {
+		filter: drop-shadow(0 0 3px rgb(95 230 255 / 0.95)) drop-shadow(0 0 8px rgb(255 79 196 / 0.82));
+		animation:
+			new-card-rainbow 2.5s linear infinite,
+			new-card-pulse 1.4s ease-in-out infinite alternate;
+	}
+	.new-card-shimmer {
+		background: linear-gradient(105deg, transparent 38%, white 49%, transparent 60%);
+		background-size: 260% 100%;
+		mix-blend-mode: screen;
+		animation: new-card-shimmer 2.1s ease-in-out infinite;
+	}
+	.new-card-sparkle {
+		position: absolute;
+		inline-size: 9px;
+		block-size: 9px;
+		background: white;
+		clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+		filter: drop-shadow(0 0 5px #8ff7ff) drop-shadow(0 0 8px #ff72dc);
+		animation: new-card-sparkle 1.8s ease-in-out infinite;
+	}
+	.sparkle-one {
+		inset-block-start: 2px;
+		inset-inline-start: 7%;
+	}
+	.sparkle-two {
+		inset-block-start: 4px;
+		inset-inline-end: 13%;
+		animation-delay: -0.65s;
+	}
+	.sparkle-three {
+		inset-block-end: 1px;
+		inset-inline-start: 57%;
+		animation-delay: -1.2s;
+	}
+	@keyframes new-card-rainbow {
+		to {
+			background-position: 220% 0;
+		}
+	}
+	@keyframes new-card-pulse {
+		to {
+			filter: drop-shadow(0 0 5px rgb(95 230 255 / 1)) drop-shadow(0 0 13px rgb(255 79 196 / 1));
+		}
+	}
+	@keyframes new-card-shimmer {
+		0%,
+		22% {
+			background-position: 220% 0;
+		}
+		72%,
+		100% {
+			background-position: -120% 0;
+		}
+	}
+	@keyframes new-card-sparkle {
+		0%,
+		100% {
+			opacity: 0.25;
+			transform: scale(0.45) rotate(0deg);
+		}
+		48% {
+			opacity: 1;
+			transform: scale(1.2) rotate(90deg);
+		}
 	}
 	.draw-actions {
 		display: flex;
@@ -317,6 +435,11 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.new-card-art,
+		.new-card-shimmer,
+		.new-card-sparkle {
+			animation: none;
+		}
 		.draw-stage.flip .draw-flip {
 			transition: none;
 		}
