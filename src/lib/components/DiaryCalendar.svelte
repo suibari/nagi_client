@@ -230,11 +230,6 @@
 						</div>
 					</div>
 				{/if}
-				<ChatBubble
-					post={diaryPost}
-					displayOnly
-					bookmarkSubject={{ kind: 'diary', uri: current.uri }}
-				/>
 			</article>
 		{:else if entries.length}
 			<p class="diary-hint">{m.diaryHoverHint()}</p>
