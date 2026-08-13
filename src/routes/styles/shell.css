@@ -578,12 +578,14 @@
 		display: flex;
 		align-items: center;
 		position: fixed;
-		bottom: 0;
+		/* 一部の Android Chrome では right/bottom の固定配置基準だけが layout viewport
+		   まで拡大する。正しく保たれる viewport 単位から左上座標を決める。 */
+		inset-block-start: calc(100dvh - 68px - env(safe-area-inset-bottom));
 		inset-inline-start: 0;
 		inline-size: 100vw;
 		max-inline-size: 100vw;
+		block-size: calc(68px + env(safe-area-inset-bottom));
 		z-index: 20;
-		min-height: calc(68px + env(safe-area-inset-bottom));
 		background: var(--surface-1);
 		border-top: 1px solid var(--line);
 		padding: 6px 8px calc(10px + env(safe-area-inset-bottom));

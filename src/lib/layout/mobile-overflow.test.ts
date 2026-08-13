@@ -11,6 +11,11 @@ const myNagiPage = read('../../routes/+page.svelte');
 const baseCss = read('../../routes/styles/base.css');
 const shellCss = read('../../routes/styles/shell.css');
 const componentsCss = read('../../routes/styles/components.css');
+const postFab = read('../components/PostFab.svelte');
+const cardDrawFab = read('../components/CardDrawFab.svelte');
+const postFollowNotice = read('../components/PostFollowNotice.svelte');
+const reactionRewardHost = read('../components/ReactionCardRewardHost.svelte');
+const postModal = read('../components/PostModal.svelte');
 
 describe('mobile overflow layout contracts', () => {
 	it('contains horizontal carousel content inside its own scroll viewport', () => {
@@ -49,10 +54,46 @@ describe('mobile overflow layout contracts', () => {
 		expect(componentsCss).toMatch(/\.post-actions\s*\{[^}]*flex-wrap:\s*wrap;/s);
 	});
 
-	it('pins the mobile navigation to the viewport even if document content overflows', () => {
+	it('positions persistent mobile controls from the reliable viewport top-left coordinates', () => {
 		expect(shellCss).toMatch(
-			/\.mobile-nav\s*\{[^}]*position:\s*fixed;[^}]*inset-inline-start:\s*0;[^}]*inline-size:\s*100vw;[^}]*max-inline-size:\s*100vw;/s,
+			/\.mobile-nav\s*\{[^}]*position:\s*fixed;[^}]*inset-block-start:\s*calc\(100dvh - 68px - env\(safe-area-inset-bottom\)\);[^}]*inset-inline-start:\s*0;[^}]*inline-size:\s*100vw;[^}]*block-size:\s*calc\(68px \+ env\(safe-area-inset-bottom\)\);/s,
+		);
+		expect(postFab).toMatch(
+			/inset-block-start:\s*calc\(100dvh - 138px - env\(safe-area-inset-bottom\)\);[^}]*inset-inline-start:\s*calc\(100vw - 72px\);/s,
 		);
 		expect(baseCss).toMatch(/html,\s*body\s*\{[^}]*overflow-x:\s*hidden;[^}]*overflow-x:\s*clip;/s);
+	});
+
+	it('does not use the enlarged bottom edge for other floating mobile controls', () => {
+		expect(cardDrawFab).toMatch(
+			/@media \(max-width:\s*767px\)[\s\S]*?\.card-fab-wrap\s*\{[^}]*bottom:\s*auto;[^}]*top:\s*calc\(100dvh - 82px - env\(safe-area-inset-bottom\)\);[^}]*translate:\s*0 -100%;/,
+		);
+		expect(postFollowNotice).toMatch(
+			/left:\s*50vw;[^}]*top:\s*calc\(100dvh - 24px\);[^}]*translate:\s*-50% -100%;/s,
+		);
+		expect(reactionRewardHost).toMatch(
+			/inset-inline-start:\s*50vw;[^}]*inset-block-start:\s*calc\(100dvh - 84px - env\(safe-area-inset-bottom\)\);[^}]*translate:\s*-50% -100%;/s,
+		);
+	});
+
+	it('gives full-screen overlays an explicit viewport size', () => {
+		expect(postModal).toMatch(
+			/\.post-modal-backdrop\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*inline-size:\s*100vw;[^}]*block-size:\s*100dvh;/s,
+		);
+		for (const selector of [
+			'draft-backdrop',
+			'reaction-picker-backdrop',
+			'image-viewer',
+			'cropper-backdrop',
+			'delete-backdrop',
+			'card-backdrop',
+		]) {
+			expect(componentsCss).toMatch(
+				new RegExp(
+					`\\.${selector}\\s*\\{[^}]*position:\\s*fixed;[^}]*inset:\\s*0;[^}]*inline-size:\\s*100vw;[^}]*block-size:\\s*100dvh;`,
+					's',
+				),
+			);
+		}
 	});
 });

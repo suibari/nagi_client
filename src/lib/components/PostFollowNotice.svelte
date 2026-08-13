@@ -31,9 +31,9 @@
 	.post-follow-notice {
 		position: fixed;
 		z-index: 40;
-		left: 50%;
-		bottom: 24px;
-		transform: translateX(-50%);
+		left: 50vw;
+		top: calc(100dvh - 24px);
+		translate: -50% -100%;
 		box-sizing: border-box;
 		width: min(420px, calc(100% - 24px));
 		display: flex;
@@ -71,7 +71,7 @@
 	}
 	@media (max-width: 767px) {
 		.post-follow-notice {
-			bottom: calc(82px + env(safe-area-inset-bottom));
+			top: calc(100dvh - 82px - env(safe-area-inset-bottom));
 		}
 	}
 </style>

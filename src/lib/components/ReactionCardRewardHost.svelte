@@ -60,8 +60,8 @@
 	.reaction-card-error {
 		position: fixed;
 		z-index: 119;
-		inset-inline: 50% auto;
-		inset-block-end: calc(84px + env(safe-area-inset-bottom));
+		inset-inline-start: 50vw;
+		inset-block-start: calc(100dvh - 84px - env(safe-area-inset-bottom));
 		display: flex;
 		align-items: center;
 		gap: 0.55rem;
@@ -71,7 +71,7 @@
 		border-radius: var(--radius-m);
 		background: var(--bg-raised);
 		box-shadow: var(--shadow-pop);
-		transform: translateX(-50%);
+		translate: -50% -100%;
 	}
 	.reaction-card-error span {
 		flex: 1;

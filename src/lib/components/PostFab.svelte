@@ -35,9 +35,10 @@
 			z-index: 25;
 			display: grid;
 			place-items: center;
-			/* .mobile-nav（fixed, 68px + safe-area）を avoid する。基準値はカードFABと揃える。 */
-			bottom: calc(82px + env(safe-area-inset-bottom));
-			right: 16px;
+			/* Android Chrome で right/bottom の固定配置基準が拡大しても、正しい vw/dvh を
+			   基準に右下へ置く。56px はこのボタン自身、82px はナビ回避分。 */
+			inset-block-start: calc(100dvh - 138px - env(safe-area-inset-bottom));
+			inset-inline-start: calc(100vw - 72px);
 			width: 56px;
 			height: 56px;
 			padding: 0;
@@ -53,7 +54,7 @@
 
 	@media (max-width: 380px) {
 		.post-fab {
-			right: 12px;
+			inset-inline-start: calc(100vw - 68px);
 		}
 	}
 
