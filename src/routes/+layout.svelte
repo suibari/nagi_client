@@ -31,6 +31,8 @@
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
 	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
 	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
+	import LayoutDebug from '$lib/layout/LayoutDebug.svelte';
+	import { browser } from '$app/environment';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -70,6 +72,10 @@
 			!NO_FAB.some((path) => page.url.pathname.startsWith(path)),
 	);
 	const defaultScope = $derived(defaultScopeForPath(page.url.pathname));
+	// プリレンダリング中の page.url は検索パラメータを公開しない。診断はブラウザでのみ有効化する。
+	const layoutDebug = $derived(
+		browser && new URLSearchParams(window.location.search).get('layout-debug') === '1',
+	);
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let privateListDid: string | undefined;
@@ -216,6 +222,7 @@
      取得に失敗したら href の ?did= がそのまま使われる。 -->
 <svelte:document onclick={interceptSiblingLinkClick} />
 
+{#if layoutDebug}<LayoutDebug />{/if}
 <MobileHeader />
 <!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。 -->
 <div class="shell">
