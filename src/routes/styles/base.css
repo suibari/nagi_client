@@ -8,19 +8,19 @@
 * {
 	box-sizing: border-box;
 }
-html,
-body {
-	/* 横のはみ出しと、指で数 px ずらせてしまうラバーバンドを止める */
-	/* clip 非対応の古い Android ブラウザでも文書全体の横スクロールを許さない。 */
-	overflow-x: hidden;
-	overflow-x: clip;
-	overscroll-behavior-x: none;
-}
 html {
+	/* Android Chrome では clip がスクロール境界を作らず、内側の横カルーセルの
+	   scrollWidth が html へ伝播することがある。root 自身を横スクロール境界にする。 */
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior-x: none;
 	/* 短いページと長いページを行き来しても、中央のシェル位置を動かさない。 */
 	scrollbar-gutter: stable;
 }
 body {
+	/* body の描画だけは切り、縦スクロールは scrollingElement の html に一本化する。 */
+	overflow-x: clip;
+	overscroll-behavior-x: none;
 	margin: 0;
 	background: var(--bg);
 	color: var(--text);

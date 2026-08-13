@@ -20,7 +20,7 @@ const postModal = read('../components/PostModal.svelte');
 describe('mobile overflow layout contracts', () => {
 	it('contains horizontal carousel content inside its own scroll viewport', () => {
 		expect(carousel).toMatch(
-			/\.horizontal-carousel\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;[^}]*overflow-x:\s*auto;[^}]*contain:\s*inline-size;/s,
+			/\.horizontal-carousel\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;[^}]*overflow-x:\s*auto;[^}]*contain:\s*inline-size layout paint;/s,
 		);
 		expect(carousel).toMatch(
 			/\.horizontal-carousel\s+:global\(\.horizontal-carousel-track\)\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
@@ -61,7 +61,12 @@ describe('mobile overflow layout contracts', () => {
 		expect(postFab).toMatch(
 			/inset-block-start:\s*calc\(100dvh - 138px - env\(safe-area-inset-bottom\)\);[^}]*inset-inline-start:\s*calc\(100vw - 72px\);/s,
 		);
-		expect(baseCss).toMatch(/html,\s*body\s*\{[^}]*overflow-x:\s*hidden;[^}]*overflow-x:\s*clip;/s);
+		expect(baseCss).toMatch(
+			/html\s*\{[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-x:\s*none;/s,
+		);
+		expect(baseCss).toMatch(
+			/body\s*\{[^}]*overflow-x:\s*clip;[^}]*overscroll-behavior-x:\s*none;/s,
+		);
 	});
 
 	it('does not use the enlarged bottom edge for other floating mobile controls', () => {

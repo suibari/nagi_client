@@ -80,7 +80,9 @@
 		padding: 12px 24px 12px 0;
 		overflow-x: auto;
 		overflow-y: hidden;
-		contain: inline-size;
+		/* inline-size だけでは一部の Android Chrome で子のscrollWidthがhtmlへ伝播した。
+		   layout/paint も隔離し、横幅はこのスクロール領域の中だけで完結させる。 */
+		contain: inline-size layout paint;
 		overscroll-behavior-x: contain;
 		scroll-padding-inline: 0;
 		scroll-snap-type: x mandatory;
