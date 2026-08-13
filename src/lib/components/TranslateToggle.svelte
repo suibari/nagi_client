@@ -97,11 +97,13 @@
 	// 折りたたみ中／展開中どちらでも同じ判定になる。
 	$effect(() => {
 		const target = body;
-		if (!target || translated || busy) {
+		if (!target) {
 			onoverflowchange?.(false);
 			return;
 		}
 		void text;
+		void translated;
+		void englishFallback?.text;
 		const measure = () => {
 			const style = getComputedStyle(target);
 			const lines = clampLines ?? (Number.parseFloat(style.getPropertyValue('--clamp-lines')) || 6);
@@ -122,7 +124,12 @@
 		{#if englishFallback}
 			<div class="translated">
 				<p class="label">{m.translatingTo({ language: targetLanguageName })}</p>
-				<div class="post-text text">
+				<div
+					class="post-text text"
+					class:collapsed
+					style={clampLines ? `--clamp-lines: ${clampLines};` : undefined}
+					bind:this={body}
+				>
 					<RichText
 						text={englishFallback.text}
 						facets={englishFallback.original ? facets : undefined}
@@ -135,7 +142,14 @@
 	{:else if translated}
 		<div class="translated">
 			<p class="label">{m.translationLabel()}</p>
-			<div class="post-text text"><RichText text={translated} /></div>
+			<div
+				class="post-text text"
+				class:collapsed
+				style={clampLines ? `--clamp-lines: ${clampLines};` : undefined}
+				bind:this={body}
+			>
+				<RichText text={translated} />
+			</div>
 		</div>
 		<button
 			class="original-toggle"
