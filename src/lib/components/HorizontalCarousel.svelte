@@ -74,8 +74,13 @@
 
 <style>
 	.horizontal-carousel {
+		inline-size: 100%;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		padding: 12px 24px 12px 0;
 		overflow-x: auto;
+		overflow-y: hidden;
+		contain: inline-size;
 		overscroll-behavior-x: contain;
 		scroll-padding-inline: 0;
 		scroll-snap-type: x mandatory;
@@ -95,6 +100,9 @@
 	.horizontal-carousel :global(.horizontal-carousel-track) {
 		display: flex;
 		align-items: stretch;
+		inline-size: 100%;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		gap: 16px;
 		margin: 0;
 		padding: 0;
@@ -103,7 +111,8 @@
 
 	.horizontal-carousel :global(.horizontal-carousel-item) {
 		flex: 0 0 min(320px, 88%);
-		min-width: 0;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		scroll-snap-align: start;
 	}
 </style>

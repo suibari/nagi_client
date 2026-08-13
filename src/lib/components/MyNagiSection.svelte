@@ -80,6 +80,9 @@
 
 <style>
 	.my-nagi-section {
+		inline-size: 100%;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		margin-bottom: 32px;
 		border: 0;
 		border-radius: 0;
@@ -90,6 +93,8 @@
 	header {
 		display: flex;
 		align-items: center;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		gap: 8px;
 		min-height: 37px;
 		padding: 0 0 10px;
@@ -106,6 +111,7 @@
 	}
 
 	h2 {
+		min-inline-size: 0;
 		margin: 0;
 		color: var(--text-strong);
 		font-size: 13px;
@@ -126,6 +132,8 @@
 	.my-nagi-section-actions {
 		display: flex;
 		align-items: center;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		gap: 6px;
 		margin-inline-start: auto;
 	}
@@ -157,7 +165,9 @@
 	}
 
 	.my-nagi-section-body {
-		min-width: 0;
+		inline-size: 100%;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		padding: 8px 0 0;
 	}
 

@@ -11,6 +11,8 @@
 html,
 body {
 	/* 横のはみ出しと、指で数 px ずらせてしまうラバーバンドを止める */
+	/* clip 非対応の古い Android ブラウザでも文書全体の横スクロールを許さない。 */
+	overflow-x: hidden;
 	overflow-x: clip;
 	overscroll-behavior-x: none;
 }

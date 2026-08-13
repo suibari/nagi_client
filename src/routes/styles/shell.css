@@ -195,6 +195,9 @@
 /* my Nagi のセクションとして縦に並ぶので、.my-nagi-section と同じ間隔を空ける。 */
 .community-affirmation {
 	display: grid;
+	inline-size: 100%;
+	min-inline-size: 0;
+	max-inline-size: 100%;
 	margin-bottom: 32px;
 	border: 0;
 	border-radius: 0;
@@ -204,6 +207,8 @@
 .community-affirmation-titlebar {
 	display: flex;
 	align-items: center;
+	min-inline-size: 0;
+	max-inline-size: 100%;
 	gap: 8px;
 	min-height: 37px;
 	padding: 0 0 10px;
@@ -574,8 +579,9 @@
 		align-items: center;
 		position: fixed;
 		bottom: 0;
-		left: 0;
-		right: 0;
+		inset-inline-start: 0;
+		inline-size: 100vw;
+		max-inline-size: 100vw;
 		z-index: 20;
 		min-height: calc(68px + env(safe-area-inset-bottom));
 		background: var(--surface-1);

@@ -392,7 +392,9 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		min-width: 0;
+		inline-size: 100%;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		margin-bottom: 12px;
 	}
 
