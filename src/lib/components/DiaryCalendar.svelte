@@ -268,7 +268,26 @@
 		overflow-x: auto;
 		overflow-y: hidden;
 		padding: 2px 2px 8px;
+		overscroll-behavior-inline: contain;
+		-webkit-overflow-scrolling: touch;
 		scrollbar-width: thin;
+		scrollbar-color: color-mix(in srgb, var(--text-faint), transparent 35%) transparent;
+	}
+	.diary-graph-scroll::-webkit-scrollbar {
+		block-size: 8px;
+	}
+	.diary-graph-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.diary-graph-scroll::-webkit-scrollbar-thumb {
+		border: 2px solid transparent;
+		border-radius: var(--radius-pill);
+		background: color-mix(in srgb, var(--text-faint), transparent 35%);
+		background-clip: padding-box;
+	}
+	.diary-graph-scroll::-webkit-scrollbar-thumb:hover {
+		background: color-mix(in srgb, var(--accent-strong), transparent 20%);
+		background-clip: padding-box;
 	}
 	.diary-graph {
 		--diary-cell: 11px;
