@@ -112,6 +112,7 @@
 		}
 	}
 	.card-fab-label {
+		max-inline-size: calc(100vw - 32px);
 		padding: 4px 9px;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-pill);
@@ -121,7 +122,8 @@
 		font-size: 11px;
 		font-weight: 800;
 		line-height: 1.2;
-		white-space: nowrap;
+		text-align: center;
+		overflow-wrap: anywhere;
 	}
 	.card-fab:disabled {
 		cursor: progress;

@@ -380,6 +380,8 @@
 
 <style>
 	.my-nagi-title {
+		flex: 0 1 auto;
+		min-width: 0;
 		margin: 0;
 		font-size: 1.1rem;
 		font-weight: 800;
@@ -390,6 +392,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
+		min-width: 0;
 		margin-bottom: 12px;
 	}
 

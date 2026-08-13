@@ -110,13 +110,16 @@
 			<span class="card-header-card" aria-hidden="true">
 				<span class="card-header-card-face"><CardBack mark="52%" frame={false} /></span>
 			</span>
-			<span
-				>{drawing
-					? m.cardDrawing()
-					: reactionNext
-						? m.cardReactionNextLabel()
-						: m.cardHeaderLabel()}</span
-			>
+			{#if drawing}
+				<span>{m.cardDrawing()}</span>
+			{:else if reactionNext}
+				<span class="card-header-reaction-label">
+					<span>{m.cardReactionNextLead()}</span>
+					<span>{m.cardReactionNextText()}</span>
+				</span>
+			{:else}
+				<span>{m.cardHeaderLabel()}</span>
+			{/if}
 		</button>
 		{#if drawError}<p class="card-header-error" role="alert">{drawError}</p>{/if}
 	</div>
@@ -155,7 +158,9 @@
 <style>
 	.card-header-entry {
 		position: relative;
-		flex: 0 0 auto;
+		flex: 0 1 auto;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 	}
 
 	.card-header-button {
@@ -171,6 +176,8 @@
 		font: inherit;
 		font-size: 13px;
 		font-weight: 800;
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		cursor: pointer;
 		transition:
 			color 0.14s ease,
@@ -214,6 +221,17 @@
 		--card-back-border: 1px;
 		transform-style: preserve-3d;
 		animation: card-header-flip 3.8s ease-in-out infinite;
+	}
+
+	.card-header-reaction-label {
+		display: grid;
+		min-inline-size: 0;
+		line-height: 1.2;
+		text-align: start;
+	}
+
+	.card-header-reaction-label > span {
+		overflow-wrap: anywhere;
 	}
 
 	/* 読み始めを邪魔しないよう長く静止し、周期の終わりだけ1回転して存在を知らせる。 */

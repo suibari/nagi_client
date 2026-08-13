@@ -1018,6 +1018,8 @@ export const ja = {
 	cardDrawButton: '今日のカードを引く',
 	cardHeaderLabel: '今日の一枚！',
 	cardReactionNextLabel: 'Next: リアクションでもう一枚！',
+	cardReactionNextLead: 'NEXT:',
+	cardReactionNextText: 'リアクションでもう一枚！',
 	cardReactionNextHint: '今日は、誰かへのリアクションでもう一枚引けるよ！',
 	cardMyNagiNextHint: 'my Nagiのカードボタンから、今日のもう一枚を引けるよ！',
 	cardReactionGuideTitle: 'リアクションでもう一枚！',

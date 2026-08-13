@@ -986,6 +986,8 @@ export const en: Messages = {
 	cardDrawButton: "Draw today's card",
 	cardHeaderLabel: "Today's card!",
 	cardReactionNextLabel: 'Next: React for one more!',
+	cardReactionNextLead: 'NEXT:',
+	cardReactionNextText: 'React for one more!',
 	cardReactionNextHint: 'You can draw one more card today by reacting to someone!',
 	cardMyNagiNextHint: 'You can draw your other card today from the card button in my Nagi!',
 	cardReactionGuideTitle: 'React for one more card!',
