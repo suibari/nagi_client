@@ -2801,6 +2801,7 @@
 }
 @media (max-width: 600px) {
 	.profile-tabs {
+		min-inline-size: 0;
 		overflow-x: auto;
 		overflow-y: hidden;
 		scroll-padding-inline: 12px;

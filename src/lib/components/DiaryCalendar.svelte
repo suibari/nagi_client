@@ -265,6 +265,8 @@
 		color: var(--text-faint);
 	}
 	.diary-graph-scroll {
+		min-inline-size: 0;
+		max-inline-size: 100%;
 		overflow-x: auto;
 		overflow-y: hidden;
 		padding: 2px 2px 8px;
