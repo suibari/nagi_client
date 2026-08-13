@@ -1,4 +1,5 @@
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
+import { createOAuthClientMetadata } from './deployment';
 
 /** Bluesky が提供する PDS 群の共通 OAuth / アカウント作成入口。 */
 export const BLUESKY_ENTRYWAY_URL = 'https://bsky.social';
@@ -73,25 +74,25 @@ export function getOAuthClient(): BrowserOAuthClient {
 	}
 	if (oauthClient) return oauthClient;
 
-	const production = location.hostname === 'nagi.suibari.com';
 	const origin = location.origin;
+	const localDevelopment =
+		location.protocol === 'http:' &&
+		['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+	if (!localDevelopment && origin !== __NAGI_OAUTH_DEPLOYMENT__.clientOrigin) {
+		location.replace(
+			`${__NAGI_OAUTH_DEPLOYMENT__.clientOrigin}${location.pathname}${location.search}${location.hash}`,
+		);
+		throw new Error('Moving to the canonical OAuth origin');
+	}
+
 	oauthClient = new BrowserOAuthClient({
 		onSessionDeleted: (sub, cause) => {
 			for (const handler of sessionDeletedHandlers) handler(sub, cause);
 		},
-		clientMetadata: production
-			? {
-					client_id: 'https://nagi.suibari.com/client-metadata.json',
-					client_name: 'Nagi',
-					client_uri: 'https://nagi.suibari.com',
-					redirect_uris: ['https://nagi.suibari.com/oauth/callback'],
-					grant_types: ['authorization_code', 'refresh_token'],
-					response_types: ['code'],
-					scope,
-					token_endpoint_auth_method: 'none',
-					application_type: 'web',
-					dpop_bound_access_tokens: true,
-				}
+		// 本番だけでなく preview(develop) でもサインインできるよう、client metadata は
+		// デプロイ先から組み立てる。ローカル開発だけは loopback client を使う。
+		clientMetadata: !localDevelopment
+			? createOAuthClientMetadata(__NAGI_OAUTH_DEPLOYMENT__, scope)
 			: {
 					client_id: `http://localhost?redirect_uri=${encodeURIComponent(`${origin}/oauth/callback`)}&scope=${encodeURIComponent(scope)}`,
 					client_name: 'Nagi (local development)',

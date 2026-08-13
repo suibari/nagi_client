@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { loadEnv } from 'vite';
+import { resolveOAuthDeployment } from './src/lib/oauth/deployment';
 // defineConfig は vitest/config のもの（vite の型を包含し、test ブロックを足せる）。
 import { defineConfig } from 'vitest/config';
 
@@ -9,13 +10,18 @@ export default defineConfig(({ command, mode }) => {
 	// mode は任意名に変更できるため、開発サーバーか本番ビルドかは command で判定する。
 	const isDev = command === 'serve';
 	const publicEnv = loadEnv(mode, '.', 'PUBLIC_');
+	const deploymentEnv = loadEnv(mode, '.', '');
 	const directAppView = publicEnv.PUBLIC_APPVIEW_DIRECT === 'true';
 	const appViewTarget = publicEnv.PUBLIC_APPVIEW_URL || 'http://127.0.0.1:3202';
+	const oauthDeployment = resolveOAuthDeployment(deploymentEnv);
 
 	// 本番は https ホスト（appview・PDS・bsky.social）のみに接続するが、dev では
 	// ローカル appview に http://localhost で接続する（XRPC も blob 画像も）ため、
 	// dev のときだけ connect-src / img-src で許可する。
 	return {
+		define: {
+			__NAGI_OAUTH_DEPLOYMENT__: JSON.stringify(oauthDeployment),
+		},
 		// ブラウザからローカル AppView を直接参照すると、svelte-kit sync が生成した本番用
 		// CSP を開発サーバーが再利用した際に拒否される。開発時は同一オリジンへ寄せ、
 		// Vite が AppView へ転送することで CSP の生成タイミングに依存させない。
