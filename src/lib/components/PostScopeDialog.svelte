@@ -144,8 +144,6 @@
 	.scope-backdrop {
 		position: fixed;
 		inset: 0;
-		inline-size: 100vw;
-		block-size: 100dvh;
 		z-index: 120;
 		display: flex;
 		align-items: center;

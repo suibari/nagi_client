@@ -502,8 +502,6 @@
 .draft-backdrop {
 	position: fixed;
 	inset: 0;
-	inline-size: 100vw;
-	block-size: 100dvh;
 	z-index: 110;
 	display: grid;
 	place-items: center;
@@ -1477,8 +1475,6 @@
 .reaction-picker-backdrop {
 	position: fixed;
 	inset: 0;
-	inline-size: 100vw;
-	block-size: 100dvh;
 	z-index: 140;
 	display: block;
 	width: 100%;
@@ -2431,8 +2427,6 @@
 .image-viewer {
 	position: fixed;
 	inset: 0;
-	inline-size: 100vw;
-	block-size: 100dvh;
 	/* body 直下へポータル化した画像ビューを、既存のダイアログやパレットより前面に保つ。 */
 	z-index: 160;
 	display: grid;
@@ -2667,8 +2661,6 @@
 .cropper-backdrop {
 	position: fixed;
 	inset: 0;
-	inline-size: 100vw;
-	block-size: 100dvh;
 	/* 別モーダル（作成ダイアログ .draft-backdrop = 110）の上に重ねてトリミングできるようにする。 */
 	z-index: 120;
 	display: grid;
@@ -2734,8 +2726,6 @@
 .delete-backdrop {
 	position: fixed;
 	inset: 0;
-	inline-size: 100vw;
-	block-size: 100dvh;
 	z-index: 110;
 	display: grid;
 	place-items: center;
@@ -2970,8 +2960,6 @@ a.notification-main::before {
 	.emoji-picker-backdrop {
 		position: fixed;
 		inset: 0;
-		inline-size: 100vw;
-		block-size: 100dvh;
 		z-index: 140;
 		display: block;
 		width: 100%;
@@ -4436,8 +4424,6 @@ a.about-feature:focus-visible {
 .card-backdrop {
 	position: fixed;
 	inset: 0;
-	inline-size: 100vw;
-	block-size: 100dvh;
 	z-index: 120;
 	display: grid;
 	place-items: center;

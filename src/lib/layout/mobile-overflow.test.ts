@@ -16,6 +16,26 @@ const cardDrawFab = read('../components/CardDrawFab.svelte');
 const postFollowNotice = read('../components/PostFollowNotice.svelte');
 const reactionRewardHost = read('../components/ReactionCardRewardHost.svelte');
 const postModal = read('../components/PostModal.svelte');
+const fixedOverlayComponents = [
+	[read('../components/BookmarkFolderDialog.svelte'), 'folder-dialog-backdrop'],
+	[read('../components/CardDetailDialog.svelte'), 'draw-backdrop'],
+	[read('../components/CardMilestoneDialog.svelte'), 'milestone-backdrop'],
+	[read('../components/CardReactionGuideDialog.svelte'), 'card-guide-backdrop'],
+	[read('../components/Confetti.svelte'), 'confetti-layer'],
+	[read('../components/NewsSubmissionDialog.svelte'), 'news-submit-backdrop'],
+	[postModal, 'post-modal-backdrop'],
+	[read('../components/PostScopeDialog.svelte'), 'scope-backdrop'],
+] as const;
+
+function cssRule(source: string, selector: string): string {
+	return source.match(new RegExp(`\\.${selector}\\s*\\{[^}]*\\}`, 's'))?.[0] ?? '';
+}
+
+function cssRules(source: string, selector: string): string[] {
+	return [...source.matchAll(new RegExp(`\\.${selector}\\s*\\{[^}]*\\}`, 'gs'))].map(
+		(match) => match[0],
+	);
+}
 
 describe('mobile overflow layout contracts', () => {
 	it('contains horizontal carousel content inside its own scroll viewport', () => {
@@ -54,13 +74,15 @@ describe('mobile overflow layout contracts', () => {
 		expect(componentsCss).toMatch(/\.post-actions\s*\{[^}]*flex-wrap:\s*wrap;/s);
 	});
 
-	it('positions persistent mobile controls from the reliable viewport top-left coordinates', () => {
+	it('anchors persistent mobile controls to viewport edges across dynamic viewport changes', () => {
 		expect(shellCss).toMatch(
-			/\.mobile-nav\s*\{[^}]*position:\s*fixed;[^}]*inset-block-start:\s*calc\(100dvh - 68px - env\(safe-area-inset-bottom\)\);[^}]*inset-inline-start:\s*0;[^}]*inline-size:\s*100vw;[^}]*block-size:\s*calc\(68px \+ env\(safe-area-inset-bottom\)\);/s,
+			/\.mobile-nav\s*\{[^}]*position:\s*fixed;[^}]*inset-inline:\s*0;[^}]*inset-block-end:\s*0;[^}]*min-block-size:\s*calc\(68px \+ env\(safe-area-inset-bottom\)\);/s,
 		);
 		expect(postFab).toMatch(
-			/inset-block-start:\s*calc\(100dvh - 138px - env\(safe-area-inset-bottom\)\);[^}]*inset-inline-start:\s*calc\(100vw - 72px\);/s,
+			/inset-block-end:\s*calc\(82px \+ env\(safe-area-inset-bottom\)\);[^}]*inset-inline-end:\s*16px;/s,
 		);
+		for (const rule of cssRules(shellCss, 'mobile-nav')) expect(rule).not.toMatch(/100[vd]?[wh]/);
+		for (const rule of cssRules(postFab, 'post-fab')) expect(rule).not.toMatch(/100[vd]?[wh]/);
 		expect(baseCss).toMatch(
 			/html\s*\{[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior-x:\s*none;/s,
 		);
@@ -69,22 +91,25 @@ describe('mobile overflow layout contracts', () => {
 		);
 	});
 
-	it('does not use the enlarged bottom edge for other floating mobile controls', () => {
+	it('anchors other floating mobile controls to the bottom edge', () => {
 		expect(cardDrawFab).toMatch(
-			/@media \(max-width:\s*767px\)[\s\S]*?\.card-fab-wrap\s*\{[^}]*bottom:\s*auto;[^}]*top:\s*calc\(100dvh - 82px - env\(safe-area-inset-bottom\)\);[^}]*translate:\s*0 -100%;/,
+			/@media \(max-width:\s*767px\)[\s\S]*?\.card-fab-wrap\s*\{[^}]*bottom:\s*calc\(82px \+ env\(safe-area-inset-bottom\)\);/,
 		);
 		expect(postFollowNotice).toMatch(
-			/left:\s*50vw;[^}]*top:\s*calc\(100dvh - 24px\);[^}]*translate:\s*-50% -100%;/s,
+			/left:\s*50%;[^}]*bottom:\s*24px;[^}]*transform:\s*translateX\(-50%\);/s,
 		);
 		expect(reactionRewardHost).toMatch(
-			/inset-inline-start:\s*50vw;[^}]*inset-block-start:\s*calc\(100dvh - 84px - env\(safe-area-inset-bottom\)\);[^}]*translate:\s*-50% -100%;/s,
+			/inset-inline:\s*50% auto;[^}]*inset-block-end:\s*calc\(84px \+ env\(safe-area-inset-bottom\)\);[^}]*transform:\s*translateX\(-50%\);/s,
 		);
 	});
 
-	it('gives full-screen overlays an explicit viewport size', () => {
-		expect(postModal).toMatch(
-			/\.post-modal-backdrop\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;[^}]*inline-size:\s*100vw;[^}]*block-size:\s*100dvh;/s,
-		);
+	it('sizes full-screen overlays from fixed edges instead of dynamic viewport units', () => {
+		for (const [source, selector] of fixedOverlayComponents) {
+			const rule = cssRule(source, selector);
+			expect(rule).toMatch(/position:\s*fixed;/);
+			expect(rule).toMatch(/inset:\s*0;/);
+			expect(rule).not.toMatch(/(?:inline|block)-size:\s*100[vd]?[wh];/);
+		}
 		for (const selector of [
 			'draft-backdrop',
 			'reaction-picker-backdrop',
@@ -93,12 +118,13 @@ describe('mobile overflow layout contracts', () => {
 			'delete-backdrop',
 			'card-backdrop',
 		]) {
-			expect(componentsCss).toMatch(
-				new RegExp(
-					`\\.${selector}\\s*\\{[^}]*position:\\s*fixed;[^}]*inset:\\s*0;[^}]*inline-size:\\s*100vw;[^}]*block-size:\\s*100dvh;`,
-					's',
-				),
-			);
+			const rules = cssRules(componentsCss, selector);
+			expect(rules.length).toBeGreaterThan(0);
+			const fixedRule = rules.find((rule) => /position:\s*fixed;/.test(rule));
+			expect(fixedRule).toMatch(/inset:\s*0;/);
+			for (const rule of rules) {
+				expect(rule).not.toMatch(/(?:inline|block)-size:\s*100[vd]?[wh];/);
+			}
 		}
 	});
 });

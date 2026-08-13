@@ -113,8 +113,6 @@
 	.post-modal-backdrop {
 		position: fixed;
 		inset: 0;
-		inline-size: 100vw;
-		block-size: 100dvh;
 		z-index: 110;
 		display: flex;
 		align-items: flex-start;

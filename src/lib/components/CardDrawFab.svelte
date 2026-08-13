@@ -203,12 +203,9 @@
 	       この幅では右下が投稿ボタン（.post-fab）の定位置なので、こちらは左へ逃がす。 --- */
 	@media (max-width: 767px) {
 		.card-fab-wrap {
-			bottom: auto;
-			top: calc(100dvh - 82px - env(safe-area-inset-bottom));
+			bottom: calc(82px + env(safe-area-inset-bottom));
 			right: auto;
 			left: 16px;
-			/* 要素自身の高さはラベルやエラーで変わるので、下端を top へ合わせて持ち上げる。 */
-			translate: 0 -100%;
 			justify-items: start;
 		}
 		.card-fab {
@@ -223,7 +220,7 @@
 		}
 		/* 一時通知はこの幅だと画面幅いっぱいに出るので、その上へ逃がす。 */
 		.card-fab-wrap.shifted {
-			top: calc(100dvh - 148px - env(safe-area-inset-bottom));
+			bottom: calc(148px + env(safe-area-inset-bottom));
 		}
 	}
 
