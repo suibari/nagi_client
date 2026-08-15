@@ -52,6 +52,8 @@
 	} from '$lib/atproto/contentWarning';
 	import BookmarkActions from './BookmarkActions.svelte';
 	import ActionMenu from './ActionMenu.svelte';
+	import ContentWarningOverlay from './ContentWarningOverlay.svelte';
+	import { postModerationDisplay } from '$lib/moderation/preferences.svelte';
 	let {
 		post,
 		botActor,
@@ -154,6 +156,14 @@
 	);
 	let linkCardToggleable = $derived(
 		Boolean(maxLinkCards && post.linkCards && post.linkCards.length > maxLinkCards),
+	);
+	let moderationDisplay = $derived(postModerationDisplay(post));
+	let moderationWarningText = $derived(
+		moderationDisplay.reason === 'amateras'
+			? m.moderationAmaterasWarning()
+			: moderationDisplay.reason === 'selfNsfw'
+				? m.moderationSelfNsfwWarning()
+				: m.moderationSelfAiWarning(),
 	);
 	let topLevel = $derived(!post.reply);
 	/**
@@ -510,6 +520,7 @@
 	class="post-row"
 	class:mine
 	class:bot={post.isBot}
+	class:moderation-hidden={moderationDisplay.hidden}
 	data-post-uri={post.uri}
 	bind:this={postRow}
 >
@@ -555,81 +566,82 @@
 				</div>
 			{/if}
 		</div>
-		{#if editing}
-			<div class="inline-edit">
-				{#snippet editTools()}
-					<PostImageEditor
-						bind:this={editImageEditor}
-						bind:images={editImages}
-						bind:processing={editImageProcessing}
+		<ContentWarningOverlay shouldBlur={moderationDisplay.warn} warningText={moderationWarningText}>
+			{#if editing}
+				<div class="inline-edit">
+					{#snippet editTools()}
+						<PostImageEditor
+							bind:this={editImageEditor}
+							bind:images={editImages}
+							bind:processing={editImageProcessing}
+							disabled={editBusy}
+							contentWarningEnabled={Boolean(post.cwRestricted)}
+						/>
+					{/snippet}
+					<ComposerEditor
+						id={`edit-${post.cid}`}
+						bind:value={editText}
+						bind:mentions={editMentions}
+						bind:channels={editChannels}
+						bind:emojis={editEmojis}
+						channelSuggestionsEnabled={!post.reply}
+						placeholder={m.editPlaceholder()}
 						disabled={editBusy}
 						contentWarningEnabled={Boolean(post.cwRestricted)}
+						onsubmit={() => void submitEdit()}
+						onpaste={(event) => editImageEditor?.handlePaste(event)}
+						tools={editTools}
 					/>
-				{/snippet}
-				<ComposerEditor
-					id={`edit-${post.cid}`}
-					bind:value={editText}
-					bind:mentions={editMentions}
-					bind:channels={editChannels}
-					bind:emojis={editEmojis}
-					channelSuggestionsEnabled={!post.reply}
-					placeholder={m.editPlaceholder()}
-					disabled={editBusy}
-					contentWarningEnabled={Boolean(post.cwRestricted)}
-					onsubmit={() => void submitEdit()}
-					onpaste={(event) => editImageEditor?.handlePaste(event)}
-					tools={editTools}
-				/>
-				<div class="post-composer-foot">
-					{#if editError}<span class="error" role="alert">{editError}</span>{/if}
-					<button
-						class="primary icon-action primary-icon"
-						type="button"
-						disabled={editBusy ||
-							editImageProcessing ||
-							!editHasContent ||
-							!editContentWarningValid}
-						aria-label={editBusy ? m.composerSubmitting() : m.composerSubmit()}
-						title={editBusy ? m.composerSubmitting() : m.composerSubmit()}
-						onclick={() => void submitEdit()}
-						><Icon name={editBusy ? 'refresh' : 'send'} size={18} /></button
-					>
+					<div class="post-composer-foot">
+						{#if editError}<span class="error" role="alert">{editError}</span>{/if}
+						<button
+							class="primary icon-action primary-icon"
+							type="button"
+							disabled={editBusy ||
+								editImageProcessing ||
+								!editHasContent ||
+								!editContentWarningValid}
+							aria-label={editBusy ? m.composerSubmitting() : m.composerSubmit()}
+							title={editBusy ? m.composerSubmitting() : m.composerSubmit()}
+							onclick={() => void submitEdit()}
+							><Icon name={editBusy ? 'refresh' : 'send'} size={18} /></button
+						>
+					</div>
+					{#if post.cwRestricted}<p class="cw-restricted-note">
+							{m.contentWarningRestricted()}
+						</p>{/if}
 				</div>
-				{#if post.cwRestricted}<p class="cw-restricted-note">
-						{m.contentWarningRestricted()}
-					</p>{/if}
-			</div>
-		{:else}
-			<TranslateToggle
-				uri={post.uri}
-				cid={post.cid}
-				text={post.text}
-				langs={post.langs}
-				facets={post.facets}
-				deleted={post.deleted}
-				collapsed={collapsible && !expanded}
-				disabled={optimistic}
-				{clampLines}
-				onoverflowchange={(value) => (overflowing = value)}
-			/>
-			{#if collapsible && (overflowing || expanded)}<button
-					class="read"
-					onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
-				>{/if}
-		{/if}{#if !editing && visibleImages?.length}<ImageGallery
-				images={visibleImages}
-				clampTall={clampTallImages}
-			/>{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
-					>{showAllImages ? m.readLess() : m.showAllMedia()}</button
-				>{/if}{/if}{#if visibleLinkCards?.length}<div class="link-cards">
-				{#each visibleLinkCards as card}<LinkCard {card} />{/each}
-			</div>
-			{#if linkCardToggleable}<button
-					class="read"
-					onclick={() => (showAllLinkCards = !showAllLinkCards)}
-					>{showAllLinkCards ? m.readLess() : m.showAllMedia()}</button
-				>{/if}{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
-		{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} {botActor} />{/if}
+			{:else}
+				<TranslateToggle
+					uri={post.uri}
+					cid={post.cid}
+					text={post.text}
+					langs={post.langs}
+					facets={post.facets}
+					deleted={post.deleted}
+					collapsed={collapsible && !expanded}
+					disabled={optimistic}
+					{clampLines}
+					onoverflowchange={(value) => (overflowing = value)}
+				/>
+				{#if collapsible && (overflowing || expanded)}<button
+						class="read"
+						onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
+					>{/if}
+			{/if}{#if !editing && visibleImages?.length}
+				<ImageGallery images={visibleImages} clampTall={clampTallImages} />
+				{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
+						>{showAllImages ? m.readLess() : m.showAllMedia()}</button
+					>{/if}{/if}{#if visibleLinkCards?.length}<div class="link-cards">
+					{#each visibleLinkCards as card}<LinkCard {card} />{/each}
+				</div>
+				{#if linkCardToggleable}<button
+						class="read"
+						onclick={() => (showAllLinkCards = !showAllLinkCards)}
+						>{showAllLinkCards ? m.readLess() : m.showAllMedia()}</button
+					>{/if}{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
+			{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} {botActor} />{/if}
+		</ContentWarningOverlay>
 		{#if !displayOnly}{#if optimistic}
 				<div class="post-sending" role="status" aria-live="polite">
 					<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -769,6 +781,9 @@
 		border-radius: 50%;
 		background: var(--surface-2);
 		color: var(--text-muted);
+	}
+	.post-row.moderation-hidden {
+		display: none;
 	}
 	.bubble.sending {
 		border-style: dashed;

@@ -20,6 +20,7 @@
 	import ComposerEditor from './ComposerEditor.svelte';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ComposerQuoteEditor from './ComposerQuoteEditor.svelte';
+	import SelfLabelPicker from './SelfLabelPicker.svelte';
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -87,6 +88,7 @@
 	let crosspostReady = $state(false);
 	let botSilent = $state(false);
 	let silentReply = $state(false);
+	let selfLabels = $state<string[]>([]);
 	let publishingLoadVersion = 0;
 	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
 	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
@@ -240,6 +242,7 @@
 		articleTitle = '';
 		botSilent = false;
 		silentReply = false;
+		selfLabels = [];
 	}
 
 	async function saveDraft() {
@@ -339,6 +342,7 @@
 			false,
 			reply ? false : botSilent,
 			reply ? silentReply : false,
+			selfLabels,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(replyPost && { replyParent: replyPost }),
@@ -445,8 +449,12 @@
 -->
 <section class="composer" class:rich={mode === 'rich'}>
 	{#snippet editorTools()}
+		<!-- こっそりは画像を持てず、他人にも見えないのでセルフラベルの出番もない。 -->
 		{#if !kossori}
-			<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
+			<div class="flex items-center gap-1.5">
+				<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
+				<SelfLabelPicker bind:selectedLabels={selfLabels} disabled={busy} />
+			</div>
 		{/if}
 	{/snippet}
 

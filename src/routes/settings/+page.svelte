@@ -66,6 +66,12 @@
 					title={m.settingsMuteTitle()}
 					description={m.settingsMuteDescription()}
 				/>
+				<SettingsCategoryCard
+					href="/settings/moderation"
+					icon="warning"
+					title={m.settingsModerationTitle()}
+					description={m.settingsModerationDescription()}
+				/>
 			</div>
 		</section>
 

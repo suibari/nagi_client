@@ -48,6 +48,9 @@ class OptimisticPosts {
 			facets: draft.facets,
 			...(draft.cwRestricted && { cwRestricted: true }),
 			langs: draft.langs,
+			...(draft.labels?.values.length && {
+				selfLabels: draft.labels.values.map((label) => label.val),
+			}),
 			createdAt: draft.createdAt,
 			indexedAt: draft.createdAt,
 			...(draft.reply && { reply: draft.reply }),

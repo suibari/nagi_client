@@ -7,6 +7,7 @@
 	import { clearLanguagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { oauthReady, session, signOut } from '$lib/oauth/session.svelte';
 	import { clearThemePreference } from '$lib/theme';
+	import { clearModerationPreferences } from '$lib/moderation/preferences.svelte';
 	import { drafts } from '$lib/drafts/drafts.svelte';
 	import { clearLocalPreferenceCache } from '$lib/preferences/sync.svelte';
 	import { clearBookmarkPreferenceCache } from '$lib/bookmarks/bookmarks.svelte';
@@ -30,6 +31,7 @@
 			// AppViewの下書きはサーバ削除済み。移行未完了の画像付き旧下書きも端末から消す。
 			await drafts.clear(did).catch(() => undefined);
 			clearThemePreference();
+			clearModerationPreferences();
 			clearLanguagePreferences();
 			clearLocalePreference();
 			// 既読位置とお気に入りは AppView と端末の両方にある。サーバー側は

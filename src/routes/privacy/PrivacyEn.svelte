@@ -181,6 +181,8 @@
 	we use the search capability of the <strong>Gemini API provided by Google LLC (paid tier)</strong
 	>. In that case only these two things are sent to Google:
 </p>
+<h3>Data sent to Google (Gemini API)</h3>
+<p>To provide AI features, the following is sent to Google:</p>
 <ul>
 	<li>
 		The <strong>search queries</strong> assembled by the local AI model. They never contain personal names,
@@ -197,10 +199,8 @@
 <h3>How Google handles it (paid-tier terms)</h3>
 <ul>
 	<li>
-		<strong>
-			Google does not use the inputs or the generated outputs to improve or train its products or AI
-			models.
-		</strong>
+		<strong>How OpenAI handles it</strong>: Data submitted through the OpenAI API is not used to
+		train or improve OpenAI models unless the API organization explicitly opts in to data sharing.
 	</li>
 	<li>
 		The search queries and the URLs you shared are retained by Google for <strong>30 days</strong>.
@@ -220,13 +220,13 @@
 	Gemini API, whose terms require it. See Section 2 of the <a href="/terms">Terms of Service</a>.
 </p>
 
-<h2 id="p6">6. Where data goes outside the Service</h2>
+<h2 id="p6">6. Where information is sent</h2>
 <div class="table-scroll">
 	<table>
 		<thead>
 			<tr>
 				<th>Recipient</th>
-				<th>What is sent</th>
+				<th>Content</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -235,8 +235,12 @@
 				<td>As set out in Section 5 (search queries and shared link URLs only)</td>
 			</tr>
 			<tr>
-				<td>Your PDS provider</td>
-				<td>Sign-in, and reading and writing records</td>
+				<td>OpenAI (OpenAI Moderation API)</td>
+				<td>As set out in Section 5 (Automated content moderation and safety evaluation)</td>
+			</tr>
+			<tr>
+				<td>Your PDS operator</td>
+				<td>Login authentication, reading and writing records</td>
 			</tr>
 			<tr>
 				<td>Our hosting provider (Vercel)</td>

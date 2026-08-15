@@ -293,25 +293,37 @@
 	carefully and will try not to err toward over-removal.
 </p>
 
-<h2 id="t8">8. Enforcement</h2>
+<h2 id="t8">8. Moderation and enforcement</h2>
 <p>
-	Where a violation of these Terms is confirmed, the operator will respond in stages according to
-	the nature and severity of the violation. In urgent cases, steps may be skipped.
+	To maintain a safe and supportive community, the operator uses automated AI-based moderation.
+	Where violations of these Terms or sensitive content are detected, the operator may take the
+	following actions according to severity:
 </p>
 <ol>
+	<li>
+		<strong>Applying labels and blurs via Labeler</strong>: For posts containing sensitive content
+		(such as explicit, violent, or graphic media), signed moderation labels are applied through our
+		labeler service (amateras), displaying media blurs and content warning overlays in client apps.
+	</li>
+	<li>
+		<strong>Excluding from AppView indexing and DB persistence</strong>: Posts identified as severe
+		violations (such as illegal content, severe hate speech, threats, or child safety violations)
+		will be dropped from AppView database storage and indexing, preventing them from being served or
+		displayed on the Service.
+	</li>
 	<li>Hiding the content on the Service</li>
-	<li>A warning to the user</li>
-	<li>Restricting access to some features</li>
+	<li>A warning to the user and restricting access to features</li>
 	<li>Suspending display of the account on the Service</li>
 	<li>Reporting to law enforcement where required by law</li>
 </ol>
 <div class="callout warn">
 	<p>
-		<strong>Hiding something on the Service does not delete the record from your PDS.</strong> The Service
-		is an AppView; your posts actually live in your PDS. To delete something completely, you must delete
-		the record from your PDS yourself. The operator also cannot stop other AppViews from displaying the
-		same public records. "Kossori" posts and the diaries that contain them are the exception: they have
-		no counterpart in any PDS, so deleting them on the Service removes them completely.
+		<strong
+			>Hiding or refusing to store content on the Service does not delete the record from your PDS.</strong
+		> The Service is an AppView; your posts actually live in your PDS. To delete something completely,
+		you must delete the record from your PDS yourself. The operator also cannot stop other AppViews from
+		displaying the same public records. "Kossori" posts and the diaries that contain them are the exception:
+		they have no counterpart in any PDS, so deleting them on the Service removes them completely.
 	</p>
 </div>
 

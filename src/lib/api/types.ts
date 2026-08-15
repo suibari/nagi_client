@@ -98,6 +98,8 @@ export type PostView = {
 	facets?: Facet[];
 	contentWarning?: { byteStart: number; byteEnd: number };
 	langs?: string[];
+	selfLabels?: string[];
+	moderationLabels?: string[];
 	createdAt: string;
 	indexedAt: string;
 	reply?: { root: StrongRef; parent: StrongRef };

@@ -181,6 +181,8 @@ export type PostDraft = {
 	botSilent?: boolean;
 	/** サイレントリプライ。true の返信は直接の返信先へ通知しない。 */
 	silentReply?: boolean;
+	/** セルフラベル (com.atproto.label.defs#selfLabels) */
+	labels?: { $type: string; values: Array<{ val: string }> };
 };
 
 export function preparePostDraft(
@@ -197,6 +199,7 @@ export function preparePostDraft(
 	channelOnly = false,
 	botSilent = false,
 	silentReply = false,
+	selfLabels: string[] = [],
 ): PostDraft {
 	const leadingWhitespace = text.length - text.trimStart().length;
 	const source = text.trim();
@@ -235,6 +238,14 @@ export function preparePostDraft(
 		...(channel && channelOnly ? { channelOnly: true } : {}),
 		...(botSilent ? { botSilent: true } : {}),
 		...(reply && silentReply ? { silentReply: true } : {}),
+		...(selfLabels.length > 0
+			? {
+					labels: {
+						$type: 'com.atproto.label.defs#selfLabels',
+						values: selfLabels.map((val) => ({ val })),
+					},
+				}
+			: {}),
 	};
 }
 
@@ -413,6 +424,7 @@ export async function createPost(
 				// ニュース記事そのものは引用カードで描画し、本文中の別URLだけがここへ入る。
 				...(cards.length && { linkCards: cards }),
 				...(embed && { embed }),
+				...(draft.labels && { labels: draft.labels }),
 			},
 		});
 		return { uri: data.uri, cid: data.cid };

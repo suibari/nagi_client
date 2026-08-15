@@ -15,6 +15,12 @@ const encoder = new TextEncoder();
 
 export type CrosspostChunk = { text: string; facets: Facet[] };
 
+export function getCrosspostSelfLabels(draft: Pick<PostDraft, 'labels'>) {
+	return draft.labels?.values.filter((label) =>
+		['porn', 'sexual', 'nudity', 'graphic-media'].includes(label.val),
+	);
+}
+
 type Segment = { text: string; start: number; end: number };
 
 function graphemes(text: string): Segment[] {
@@ -155,6 +161,7 @@ export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
 	const base = Date.parse(draft.createdAt) || Date.now();
 	let root: { uri: string; cid: string } | undefined;
 	let parent: { uri: string; cid: string } | undefined;
+	const crosspostSelfLabels = getCrosspostSelfLabels(draft);
 
 	for (const [index, chunk] of chunks.entries()) {
 		const response = await agent.com.atproto.repo.createRecord({
@@ -165,6 +172,14 @@ export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
 				text: chunk.text,
 				...(chunk.facets.length ? { facets: chunk.facets } : {}),
 				langs: draft.langs,
+				...(crosspostSelfLabels?.length
+					? {
+							labels: {
+								$type: 'com.atproto.label.defs#selfLabels',
+								values: crosspostSelfLabels,
+							},
+						}
+					: {}),
 				createdAt: new Date(base + index).toISOString(),
 				via: VIA,
 				...(index === 0 && embed ? { embed } : {}),

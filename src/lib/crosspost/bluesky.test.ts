@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Facet } from '$lib/atproto/facets';
 import { parsePostText } from '$lib/atproto/facets';
 import type { PostAssets, PostDraft } from '$lib/atproto/records';
-import { prepareCrosspostContent, splitForBluesky } from './bluesky';
+import { getCrosspostSelfLabels, prepareCrosspostContent, splitForBluesky } from './bluesky';
 
 const bytes = (value: string) => new TextEncoder().encode(value).length;
 const graphemeCount = (value: string) =>
@@ -165,5 +165,18 @@ describe('prepareCrosspostContent', () => {
 		const result = prepareCrosspostContent(draft('本文あり'), assets);
 		expect(result.chunks).toEqual([{ text: '本文あり', facets: [] }]);
 		expect(result.embed?.$type).toBe('app.bsky.embed.external');
+	});
+});
+
+describe('getCrosspostSelfLabels', () => {
+	it('keeps standard NSFW labels but does not publish the Nagi-local AI label to Bluesky', () => {
+		expect(
+			getCrosspostSelfLabels({
+				labels: {
+					$type: 'com.atproto.label.defs#selfLabels',
+					values: [{ val: 'ai-generated' }, { val: 'sexual' }],
+				},
+			}),
+		).toEqual([{ val: 'sexual' }]);
 	});
 });
