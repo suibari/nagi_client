@@ -1,21 +1,46 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getChannels } from '$lib/api/appview';
+	import { getChannels, type ChannelDirectoryView } from '$lib/api/appview';
 	import { createChannel } from '$lib/atproto/records';
 	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
 	import type { ChannelView } from '$lib/api/types';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import ChannelCard from '$lib/components/ChannelCard.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { session } from '$lib/oauth/session.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
-	let channels = $state<ChannelView[]>([]);
-	let cursor = $state<string | undefined>(undefined);
-	let hasMore = $state(false);
-	let loading = $state(false);
-	let error = $state('');
+	type DirectoryState = {
+		channels: ChannelView[];
+		cursor?: string;
+		hasMore: boolean;
+		loading: boolean;
+		loaded: boolean;
+		error: string;
+		requestId: number;
+	};
+	const emptyDirectory = (): DirectoryState => ({
+		channels: [],
+		hasMore: false,
+		loading: false,
+		loaded: false,
+		error: '',
+		requestId: 0,
+	});
+	const tabs: Array<{ id: ChannelDirectoryView; label: () => string }> = [
+		{ id: 'trend', label: () => m.channelsTabTrend() },
+		{ id: 'list', label: () => m.channelsTabList() },
+		{ id: 'mine', label: () => m.channelsTabMine() },
+	];
+	let active = $state<ChannelDirectoryView>('trend');
+	let directories = $state<Record<ChannelDirectoryView, DirectoryState>>({
+		trend: emptyDirectory(),
+		list: emptyDirectory(),
+		mine: emptyDirectory(),
+	});
+	let current = $derived(directories[active]);
+	let privateDid = $state<string | undefined>();
 
 	// 新規作成ダイアログの状態。
 	let createOpen = $state(false);
@@ -34,38 +59,64 @@
 		return `/channels/${rest[0]}/${rest[2]}`;
 	};
 	// 削除直後は取り込み反映まで API がまだ返すので、楽観的に除外する。
-	let visibleChannels = $derived(channels.filter((c) => !deletedChannels.has(c.uri)));
+	let visibleChannels = $derived(current.channels.filter((c) => !deletedChannels.has(c.uri)));
 
-	async function load() {
-		loading = true;
-		error = '';
+	async function load(view: ChannelDirectoryView, reset = false) {
+		const state = directories[view];
+		if (state.loading || (!reset && state.loaded)) return;
+		const requestId = ++state.requestId;
+		state.loading = true;
+		state.error = '';
 		try {
-			const page = await getChannels();
-			channels = page.channels;
-			cursor = page.cursor;
-			hasMore = page.hasMore;
+			const page = await getChannels(view);
+			if (requestId !== state.requestId) return;
+			state.channels = page.channels;
+			state.cursor = page.cursor;
+			state.hasMore = page.hasMore;
+			state.loaded = true;
 		} catch (e) {
-			error = e instanceof Error ? e.message : m.loadFailed();
+			if (requestId === state.requestId)
+				state.error = e instanceof Error ? e.message : m.loadFailed();
 		} finally {
-			loading = false;
+			if (requestId === state.requestId) state.loading = false;
 		}
 	}
 	async function loadMore() {
-		if (!cursor || loading) return;
-		loading = true;
+		const view = active;
+		const state = directories[view];
+		if (!state.cursor || state.loading) return;
+		const requestId = ++state.requestId;
+		state.loading = true;
+		state.error = '';
 		try {
-			const page = await getChannels(cursor);
-			channels = [...channels, ...page.channels];
-			cursor = page.cursor;
-			hasMore = page.hasMore;
+			const page = await getChannels(view, state.cursor);
+			if (requestId !== state.requestId) return;
+			state.channels = [...state.channels, ...page.channels];
+			state.cursor = page.cursor;
+			state.hasMore = page.hasMore;
 		} catch (e) {
-			error = e instanceof Error ? e.message : m.loadFailed();
+			if (requestId === state.requestId)
+				state.error = e instanceof Error ? e.message : m.loadFailed();
 		} finally {
-			loading = false;
+			if (requestId === state.requestId) state.loading = false;
 		}
 	}
-	// 閲覧は未認証（AppView 直読み）なのでセッション復元を待つ必要はない。
-	onMount(load);
+	function selectTab(view: ChannelDirectoryView) {
+		active = view;
+		if (view === 'trend' || $session) void load(view);
+	}
+	// 公開のトレンドはセッション復元を待たずに読み始める。本人向けタブだけは上の分岐で待つ。
+	onMount(() => void load('trend'));
+
+	// アカウントが切り替わったとき、前の本人向け一覧を画面やメモリに残さない。
+	$effect(() => {
+		const did = $session?.did;
+		if (did === privateDid) return;
+		privateDid = did;
+		directories.list = emptyDirectory();
+		directories.mine = emptyDirectory();
+		if (did && active !== 'trend') void load(active);
+	});
 
 	function openCreate() {
 		name = '';
@@ -142,24 +193,62 @@
 <!-- Bluesky から来た人・Nagi 初心者向け。「入らないと書けない場所」に見せないための一文。 -->
 <p class="channels-intro">{m.channelsIntro()}</p>
 
-<section class="channels-list" aria-busy={loading}>
-	{#if loading && !channels.length}
+<div class="channel-tabs" role="tablist" aria-label={m.channelsTabsAria()}>
+	{#each tabs as tab (tab.id)}
+		<button
+			type="button"
+			role="tab"
+			aria-selected={active === tab.id}
+			class:active={active === tab.id}
+			onclick={() => selectTab(tab.id)}>{tab.label()}</button
+		>
+	{/each}
+</div>
+
+<p class="channel-tab-description">
+	{active === 'trend'
+		? m.channelsTrendDescription()
+		: active === 'list'
+			? m.channelsListDescription()
+			: m.channelsMineDescription()}
+</p>
+
+<section class="channels-list" aria-busy={current.loading}>
+	{#if active !== 'trend' && !$oauthReady}
 		<div class="timeline-loading" role="status" aria-label={m.loading()}>
 			<span class="spinner" aria-hidden="true"></span>
 		</div>
-	{:else if error && !channels.length}
+	{:else if active !== 'trend' && !$session}
+		<div class="state channel-sign-in">
+			<p>{m.channelsSignInRequired()}</p>
+			<a href="/login">{m.login()}</a>
+		</div>
+	{:else if current.loading && !current.channels.length}
+		<div class="timeline-loading" role="status" aria-label={m.loading()}>
+			<span class="spinner" aria-hidden="true"></span>
+		</div>
+	{:else if current.error && !current.channels.length}
 		<div class="state error">
-			{error}<button class="icon-action" type="button" aria-label={m.retry()} onclick={load}
-				><Icon name="refresh" size={18} /></button
+			{current.error}<button
+				class="icon-action"
+				type="button"
+				aria-label={m.retry()}
+				onclick={() => load(active, true)}><Icon name="refresh" size={18} /></button
 			>
 		</div>
 	{:else if !visibleChannels.length}
-		<div class="state">{m.channelsEmpty()}</div>
+		<div class="state">
+			{active === 'trend'
+				? m.channelsTrendEmpty()
+				: active === 'list'
+					? m.channelsListEmpty()
+					: m.channelsMineEmpty()}
+		</div>
 	{:else}
 		{#each visibleChannels as channel (channel.uri)}
 			<ChannelCard {channel} />
 		{/each}
-		{#if hasMore}
+		{#if current.hasMore}
 			<button
 				class="more icon-action"
 				type="button"

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getChannels, getMyNagi, searchChannelsByQuery } from '$lib/api/appview';
+	import { getChannels, searchChannelsByQuery } from '$lib/api/appview';
 	import type { ChannelView } from '$lib/api/types';
 	import { rememberChannelLabel } from '$lib/feed-tabs/labels.svelte';
 	import {
@@ -78,24 +78,24 @@
 	let searching = $state(false);
 
 	/**
-	 * 参加中だけを返す API は無いので、my Nagi（リストに追加済み）と一覧を合流させ、
-	 * viewerSubscribed で二分する。追加済みを上、それ以外を下に並べる。
+	 * 参加中とトレンドを合流させ、viewerSubscribed で二分する。
+	 * 追加済みを上、それ以外を下に並べる。
 	 */
 	async function loadChannels() {
 		if (channels.length || channelsLoading) return;
 		channelsLoading = true;
 		channelsError = '';
 		try {
-			const [mine, all] = await Promise.all([
+			const [subscribed, trending] = await Promise.all([
 				$session
-					? getMyNagi(20)
-							.then((view) => view.channels.map((entry) => entry.channel))
+					? getChannels('list')
+							.then((page) => page.channels)
 							.catch(() => [] as ChannelView[])
 					: Promise.resolve([] as ChannelView[]),
-				getChannels().then((page) => page.channels),
+				getChannels('trend').then((page) => page.channels),
 			]);
 			const byUri = new Map<string, ChannelView>();
-			for (const channel of [...mine, ...all]) {
+			for (const channel of [...subscribed, ...trending]) {
 				const merged = { ...byUri.get(channel.uri), ...channel };
 				byUri.set(channel.uri, merged);
 			}

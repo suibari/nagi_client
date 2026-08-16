@@ -199,17 +199,16 @@ export const ensureRecord = (uri: string, cid: string) =>
 		},
 		'required',
 	);
-// チャンネル閲覧・検索は公開コンテンツだが、ミュートを効かせるには viewerDid が要る。
-// viewerDid は PDS プロキシ経由の service-auth JWT からしか取れないので、ログイン中は
-// 認証付きで叩き、permission-set のキャッシュ未反映で弾かれたときだけ公開取得へ落とす
-// （withPublicFallback）。未ログインは従来どおり AppView 直読みで、ミュートは元々効かない。
-export const getChannels = (cursor?: string) => {
-	const params = new URLSearchParams({ limit: '50' });
+// トレンドは公開コンテンツなので、認証が拒否された場合だけ公開取得へ落とせる。
+// リスト（参加中）とmine（作成者本人）は本人向け一覧なので、公開フォールバックさせない。
+export type ChannelDirectoryView = 'trend' | 'list' | 'mine';
+export const getChannels = (view: ChannelDirectoryView = 'trend', cursor?: string) => {
+	const params = new URLSearchParams({ limit: '50', view });
 	if (cursor) params.set('cursor', cursor);
-	return withPublicFallback<ChannelsPage>(
-		'com.suibari.nagi.getChannels',
-		`/xrpc/com.suibari.nagi.getChannels?${params}`,
-	);
+	const path = `/xrpc/com.suibari.nagi.getChannels?${params}`;
+	return view === 'trend'
+		? withPublicFallback<ChannelsPage>('com.suibari.nagi.getChannels', path)
+		: call<ChannelsPage>('com.suibari.nagi.getChannels', path, {}, 'required');
 };
 export const getChannel = (uri: string) =>
 	withPublicFallback<{ channel: ChannelView }>(

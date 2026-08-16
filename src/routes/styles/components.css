@@ -3939,6 +3939,54 @@ a.about-feature:focus-visible {
 	font-size: 0.85rem;
 	line-height: 1.7;
 }
+.channel-tabs {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	margin-block-end: 8px;
+	border-block-end: 1px solid var(--line);
+}
+.channel-tabs button {
+	position: relative;
+	min-inline-size: 0;
+	padding: 10px 6px;
+	border: 0;
+	background: transparent;
+	color: var(--text-muted);
+	font: inherit;
+	font-size: 0.86rem;
+	font-weight: 700;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.channel-tabs button:hover,
+.channel-tabs button:focus-visible {
+	color: var(--accent-strong);
+}
+.channel-tabs button.active {
+	color: var(--accent-strong);
+}
+.channel-tabs button.active::after {
+	content: '';
+	position: absolute;
+	inset-inline: 8px;
+	inset-block-end: -1px;
+	block-size: 3px;
+	border-radius: 3px 3px 0 0;
+	background: var(--accent);
+}
+.channel-tab-description {
+	min-block-size: 1.5em;
+	margin: 0 0 12px;
+	color: var(--text-muted);
+	font-size: 0.8rem;
+	line-height: 1.5;
+}
+.channel-sign-in p {
+	margin-block-start: 0;
+}
+.channel-sign-in a {
+	display: inline-block;
+}
 .channels-head button.primary {
 	display: inline-flex;
 	align-items: center;
