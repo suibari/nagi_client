@@ -62,6 +62,16 @@ describe('mobile overflow layout contracts', () => {
 		);
 	});
 
+	it('contains the custom feed-tab preview inside the settings card', () => {
+		expect(componentsCss).toMatch(
+			/\.feed-tab-preview\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
+		);
+		expect(componentsCss).toMatch(
+			/\.feed-tab-preview \.feed-tabs\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
+		);
+		expect(shellCss).toMatch(/\.feed-tabs\.scrollable\s*\{[^}]*overflow-x:\s*auto;/s);
+	});
+
 	it('keeps post controls shrinkable and wrapping on narrow screens', () => {
 		for (const selector of ['timeline', 'post-row', 'post-actions', 'reactions']) {
 			expect(componentsCss).toMatch(

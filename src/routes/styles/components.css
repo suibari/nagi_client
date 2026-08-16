@@ -4707,6 +4707,12 @@ a.about-feature:focus-visible {
 }
 /* プレビュー。実物と同じ .feed-tabs を使うので、sticky だけ打ち消す。 */
 .feed-tab-preview {
+	/* 横並びのタブ名を grid の min-content 幅として親へ伝えない。
+	   ここが縮められないと、タブが多い利用者だけ設定カードから行全体がはみ出し、
+	   デスクトップでは右サイドバーが削除ボタンのクリックを覆ってしまう。 */
+	inline-size: 100%;
+	min-inline-size: 0;
+	max-inline-size: 100%;
 	margin-top: 20px;
 	padding-top: 12px;
 	border-top: 1px solid var(--line);
@@ -4718,6 +4724,9 @@ a.about-feature:focus-visible {
 }
 .feed-tab-preview .feed-tabs {
 	position: static;
+	inline-size: 100%;
+	min-inline-size: 0;
+	max-inline-size: 100%;
 	margin-bottom: 8px;
 }
 .feed-tab-preview-tab {
