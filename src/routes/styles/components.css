@@ -3974,13 +3974,6 @@ a.about-feature:focus-visible {
 	border-radius: 3px 3px 0 0;
 	background: var(--accent);
 }
-.channel-tab-description {
-	min-block-size: 1.5em;
-	margin: 0 0 12px;
-	color: var(--text-muted);
-	font-size: 0.8rem;
-	line-height: 1.5;
-}
 .channel-sign-in p {
 	margin-block-start: 0;
 }

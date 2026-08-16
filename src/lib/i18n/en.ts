@@ -925,10 +925,6 @@ export const en: Messages = {
 	channelsTabTrend: 'Trending',
 	channelsTabList: 'My list',
 	channelsTabMine: 'My channels',
-	channelsTrendDescription:
-		'Channels where people besides the owner and bot-tan have been talking recently.',
-	channelsListDescription: 'Channels you have joined by adding them to your list.',
-	channelsMineDescription: 'Channels you created.',
 	channelsTrendEmpty: 'No channels are trending right now.',
 	channelsListEmpty: 'You have not added any channels to your list yet.',
 	channelsMineEmpty: 'You have not created any channels yet.',

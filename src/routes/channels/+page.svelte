@@ -205,14 +205,6 @@
 	{/each}
 </div>
 
-<p class="channel-tab-description">
-	{active === 'trend'
-		? m.channelsTrendDescription()
-		: active === 'list'
-			? m.channelsListDescription()
-			: m.channelsMineDescription()}
-</p>
-
 <section class="channels-list" aria-busy={current.loading}>
 	{#if active !== 'trend' && !$oauthReady}
 		<div class="timeline-loading" role="status" aria-label={m.loading()}>
