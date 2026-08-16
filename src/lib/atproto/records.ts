@@ -14,6 +14,7 @@ import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
 import { hasOptInScope } from '$lib/optin/scope-optin';
 import { forgetPublicationCache } from '$lib/standardsite/cache';
 import { deleteNagiStandardSiteRecords } from '$lib/standardsite/repo';
+import { APP_LINKS } from './appLinks';
 import { hasContentWarning } from './contentWarning';
 import { BLUESKY_PROFILE_COLLECTION_SCOPE } from '$lib/oauth/client';
 import { PostSubmissionError } from '$lib/post/submission-error';
@@ -22,6 +23,14 @@ const POST = 'com.suibari.nagi.post',
 	PROFILE = 'com.suibari.nagi.profile',
 	CHANNEL = 'com.suibari.nagi.channel';
 const NEWS = 'com.suibari.nagi.news';
+export const NAGI_ACCOUNT_DATA_COLLECTIONS = [
+	POST,
+	REACTION,
+	PROFILE,
+	CHANNEL,
+	NEWS,
+	APP_LINKS,
+] as const;
 const current = () => {
 	const value = get(session);
 	if (!value) throw new Error('Authentication required');
@@ -723,7 +732,9 @@ export async function deleteAllNagiRecords() {
 			rkey: marker.rkey,
 		});
 	}
-	for (const collection of [POST, REACTION, PROFILE]) {
+	// Nagi がユーザー自身の PDS に作る公開レコードはここですべて消す。
+	// コレクションを追加したときは回帰テストの期待値も更新し、全データ削除から漏らさない。
+	for (const collection of NAGI_ACCOUNT_DATA_COLLECTIONS) {
 		let cursor: string | undefined;
 		do {
 			const response = await agent.com.atproto.repo.listRecords({
