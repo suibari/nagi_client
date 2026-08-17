@@ -18,6 +18,7 @@ import { APP_LINKS } from './appLinks';
 import { hasContentWarning } from './contentWarning';
 import { BLUESKY_PROFILE_COLLECTION_SCOPE } from '$lib/oauth/client';
 import { PostSubmissionError } from '$lib/post/submission-error';
+import { ensureRecord } from '$lib/api/appview';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
@@ -36,6 +37,41 @@ const current = () => {
 	if (!value) throw new Error('Authentication required');
 	return value;
 };
+
+/**
+ * 書き込み直後に AppView へ「PDS の現在状態を取りに来い」と伝える。
+ *
+ * 取り込みは本来 firehose 経由だが、上流が止まっている間は次の reconcile まで反映されない。
+ * 自分の操作だけはこの経路で確実に通す。失敗しても firehose と reconcile が拾うので握り潰す。
+ */
+async function indexed<T extends { data: { uri: string; cid: string } }>(
+	write: Promise<T>,
+): Promise<T> {
+	const response = await write;
+	await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
+	return response;
+}
+
+/**
+ * レコードを消し、消えた事実を AppView へ伝える。
+ *
+ * ensureRecord は lexicon 上 cid が必須だが、削除後の PDS からは取れない。呼び出し側が
+ * 持っていなければ消す前に読んでおく（AppView は URI で引くので、値は削除直前のもので足りる）。
+ * cid が取れなくても削除自体は続行し、その場合の反映は reconcile に委ねる。
+ */
+async function deleteAndIndex(collection: string, rkey: string, cid?: string) {
+	const s = current();
+	const agent = new Agent(s);
+	const known =
+		cid ??
+		(await agent.com.atproto.repo
+			.getRecord({ repo: s.did, collection, rkey })
+			.then((r) => r.data.cid)
+			.catch(() => undefined));
+	const response = await agent.com.atproto.repo.deleteRecord({ repo: s.did, collection, rkey });
+	if (known) await ensureRecord(`at://${s.did}/${collection}/${rkey}`, known).catch(() => undefined);
+	return response;
+}
 
 export type ProfileDraft = {
 	displayName: string;
@@ -370,13 +406,15 @@ export async function setPostKossori(rkey: string, kossori: boolean) {
 	};
 	if (kossori) record.kossori = true;
 	else delete record.kossori;
-	return agent.com.atproto.repo.putRecord({
-		repo: s.did,
-		collection: POST,
-		rkey,
-		validate: false,
-		record,
-	});
+	return indexed(
+		agent.com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: POST,
+			rkey,
+			validate: false,
+			record,
+		}),
+	);
 }
 type StoredPostImage = {
 	image: unknown;
@@ -535,13 +573,15 @@ export async function updatePost(
 		}
 	}
 
-	const response = await agent.com.atproto.repo.putRecord({
-		repo: s.did,
-		collection: POST,
-		rkey,
-		validate: false,
-		record,
-	});
+	const response = await indexed(
+		agent.com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: POST,
+			rkey,
+			validate: false,
+			record,
+		}),
+	);
 	return { response, imageViews };
 }
 export async function createReaction(
@@ -550,50 +590,53 @@ export async function createReaction(
 ) {
 	const s = current();
 	const custom = typeof emoji === 'string' ? undefined : emoji;
-	return new Agent(s).com.atproto.repo.createRecord({
-		repo: s.did,
-		collection: REACTION,
-		validate: false,
-		record: {
-			$type: REACTION,
-			subject,
-			// カスタム絵文字では emoji はフォールバックテキスト（":name:"）。
-			emoji: custom ? custom.name : (emoji as string).normalize('NFC'),
-			...(custom ? { bluemoji: bluemojiRefOf(custom) } : {}),
-			createdAt: new Date().toISOString(),
-		},
-	});
+	return indexed(
+		new Agent(s).com.atproto.repo.createRecord({
+			repo: s.did,
+			collection: REACTION,
+			validate: false,
+			record: {
+				$type: REACTION,
+				subject,
+				// カスタム絵文字では emoji はフォールバックテキスト（":name:"）。
+				emoji: custom ? custom.name : (emoji as string).normalize('NFC'),
+				...(custom ? { bluemoji: bluemojiRefOf(custom) } : {}),
+				createdAt: new Date().toISOString(),
+			},
+		}),
+	);
 }
 export async function createNewsRecord(preview: NewsSubmissionPreview) {
 	const s = current();
-	return new Agent(s).com.atproto.repo.createRecord({
-		repo: s.did,
-		collection: NEWS,
-		validate: false,
-		record: {
-			$type: NEWS,
-			articleId: preview.articleId,
-			url: preview.url,
-			titleJa: preview.title,
-			sourceName: preview.sourceName,
-			sourceUrl: preview.sourceUrl,
-			...(preview.publishedAt ? { publishedAt: preview.publishedAt } : {}),
-			langs: ['ja'],
-			createdAt: new Date().toISOString(),
-		},
-	});
+	return indexed(
+		new Agent(s).com.atproto.repo.createRecord({
+			repo: s.did,
+			collection: NEWS,
+			validate: false,
+			record: {
+				$type: NEWS,
+				articleId: preview.articleId,
+				url: preview.url,
+				titleJa: preview.title,
+				sourceName: preview.sourceName,
+				sourceUrl: preview.sourceUrl,
+				...(preview.publishedAt ? { publishedAt: preview.publishedAt } : {}),
+				langs: ['ja'],
+				createdAt: new Date().toISOString(),
+			},
+		}),
+	);
 }
 
-export async function deleteOwnNews(uri: string) {
+export async function deleteOwnNews(uri: string, cid?: string) {
 	const s = current();
 	const prefix = `at://${s.did}/${NEWS}/`;
 	const rkey = uri.startsWith(prefix) ? uri.slice(prefix.length) : '';
 	if (!rkey || rkey.includes('/')) throw new Error('News record owner does not match');
-	return new Agent(s).com.atproto.repo.deleteRecord({ repo: s.did, collection: NEWS, rkey });
+	return deleteAndIndex(NEWS, rkey, cid);
 }
-export async function deleteRecord(collection: string, rkey: string) {
-	const s = current();
-	return new Agent(s).com.atproto.repo.deleteRecord({ repo: s.did, collection, rkey });
+export async function deleteRecord(collection: string, rkey: string, cid?: string) {
+	return deleteAndIndex(collection, rkey, cid);
 }
 /**
  * チャンネルを作成する。誰でも作成でき、作成者が所有者（レコードは作成者の PDS）。
@@ -606,18 +649,20 @@ export async function createChannel(input: { name: string; description?: string;
 		? (await agent.com.atproto.repo.uploadBlob(input.banner, { encoding: input.banner.type })).data
 				.blob
 		: undefined;
-	return agent.com.atproto.repo.createRecord({
-		repo: s.did,
-		collection: CHANNEL,
-		validate: false,
-		record: {
-			$type: CHANNEL,
-			name: input.name,
-			...(input.description ? { description: input.description } : {}),
-			...(banner ? { banner } : {}),
-			createdAt: new Date().toISOString(),
-		},
-	});
+	return indexed(
+		agent.com.atproto.repo.createRecord({
+			repo: s.did,
+			collection: CHANNEL,
+			validate: false,
+			record: {
+				$type: CHANNEL,
+				name: input.name,
+				...(input.description ? { description: input.description } : {}),
+				...(banner ? { banner } : {}),
+				createdAt: new Date().toISOString(),
+			},
+		}),
+	);
 }
 /**
  * チャンネルの表示情報を更新する。banner は undefined=維持、null=削除、Blob=差し替え。
@@ -648,14 +693,16 @@ export async function updateChannel(
 	else delete record.description;
 	if (banner === null) delete record.banner;
 	else if (banner !== undefined) record.banner = banner;
-	return agent.com.atproto.repo.putRecord({
-		repo: s.did,
-		collection: CHANNEL,
-		rkey,
-		validate: false,
-		swapRecord: data.cid,
-		record,
-	});
+	return indexed(
+		agent.com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: CHANNEL,
+			rkey,
+			validate: false,
+			swapRecord: data.cid,
+			record,
+		}),
+	);
 }
 /**
  * チャンネルのピンを設定・解除する。PDS はログイン中ユーザー自身の repo にしか書かないため、
@@ -678,18 +725,20 @@ export async function setChannelPinnedPost(
 	};
 	if (pinnedPost) record.pinnedPost = pinnedPost;
 	else delete record.pinnedPost;
-	return agent.com.atproto.repo.putRecord({
-		repo: s.did,
-		collection: CHANNEL,
-		rkey,
-		validate: false,
-		swapRecord: data.cid,
-		record,
-	});
+	return indexed(
+		agent.com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: CHANNEL,
+			rkey,
+			validate: false,
+			swapRecord: data.cid,
+			record,
+		}),
+	);
 }
 /** チャンネル削除。所有者だけが自分の PDS のレコードを消せる。所属投稿は残る。 */
-export async function deleteChannel(rkey: string) {
-	return deleteRecord(CHANNEL, rkey);
+export async function deleteChannel(rkey: string, cid?: string) {
+	return deleteRecord(CHANNEL, rkey, cid);
 }
 export async function deleteAllNagiRecords() {
 	const s = current();
@@ -760,17 +809,19 @@ export async function deleteAllNagiRecords() {
 }
 export async function putProfile(displayName: string, description: string, draft?: ProfileDraft) {
 	const s = current();
-	return new Agent(s).com.atproto.repo.putRecord({
-		repo: s.did,
-		collection: PROFILE,
-		rkey: 'self',
-		validate: false,
-		record: {
-			$type: PROFILE,
-			displayName,
-			description,
-			...(draft?.avatar !== undefined ? { avatar: draft.avatar } : {}),
-			createdAt: draft?.createdAt ?? new Date().toISOString(),
-		},
-	});
+	return indexed(
+		new Agent(s).com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: PROFILE,
+			rkey: 'self',
+			validate: false,
+			record: {
+				$type: PROFILE,
+				displayName,
+				description,
+				...(draft?.avatar !== undefined ? { avatar: draft.avatar } : {}),
+				createdAt: draft?.createdAt ?? new Date().toISOString(),
+			},
+		}),
+	);
 }

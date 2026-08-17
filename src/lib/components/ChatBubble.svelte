@@ -476,7 +476,7 @@
 		deleting = true;
 		deleteError = '';
 		try {
-			await deleteRecord(match[1], match[2]);
+			await deleteRecord(match[1], match[2], post.cid);
 			// 記事にしてある投稿なら standard.site 側も消す。
 			void syncStandardSiteDocument(match[2]);
 			deleteOpen = false;
