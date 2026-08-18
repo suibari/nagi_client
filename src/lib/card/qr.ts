@@ -1,4 +1,5 @@
 import encodeQR from '@paulmillr/qr';
+import { QR_QUIET_MODULES, QR_SIZE } from './design';
 
 /**
  * QR のモジュール行列。true が黒。
@@ -16,4 +17,30 @@ const ECC = 'high' as const;
 
 export function qrMatrix(text: string): QrMatrix {
 	return encodeQR(text, 'raw', { ecc: ECC });
+}
+
+export type QrRenderData = {
+	matrix: QrMatrix;
+	modules: number;
+	cell: number;
+	quiet: number;
+	/** SVGのviewBoxで使える、黒モジュールをまとめたパス。 */
+	path: string;
+};
+
+/** Canvas版とOGP版が同じQR内容・セル寸法・クワイエットゾーンを使うための共通データ。 */
+export function qrRenderData(text: string, size = QR_SIZE): QrRenderData {
+	const matrix = qrMatrix(text);
+	const modules = matrix.length;
+	const cell = size / modules;
+	const path = matrix
+		.flatMap((row, y) => row.flatMap((enabled, x) => (enabled ? [`M${x} ${y}h1v1h-1z`] : [])))
+		.join('');
+	return {
+		matrix,
+		modules,
+		cell,
+		quiet: cell * QR_QUIET_MODULES,
+		path,
+	};
 }

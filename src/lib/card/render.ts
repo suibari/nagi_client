@@ -1,7 +1,29 @@
 import { APPVIEW_URL } from '$lib/api/appview';
 import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 import type { BusinessCardData } from './data';
-import { qrMatrix } from './qr';
+import {
+	AVATAR_SIZE,
+	BRAND_LOGO_HEIGHT,
+	BRAND_LOGO_WIDTH,
+	CARD_COLOR as COLOR,
+	CARD_HEIGHT as H,
+	CARD_PADDING as PAD,
+	CARD_WIDTH as W,
+	CONTENT_COLUMN_X as COL_X,
+	QR_CONTAINER_RADIUS,
+	QR_ICON_PADDING,
+	QR_ICON_RADIUS,
+	QR_ICON_SIZE,
+	QR_SIZE,
+	QR_X,
+	QR_Y,
+	TAGLINE_FONT_SIZE,
+	TAGLINE_LINE_HEIGHT,
+	TAGLINE_MAX_LINES,
+	TAGLINE_MAX_WIDTH,
+	TAGLINE_TOP,
+} from './design';
+import { qrRenderData } from './qr';
 
 /**
  * 名刺カードを PNG 画像として描く。
@@ -17,46 +39,6 @@ import { qrMatrix } from './qr';
  * ⚠ テーマは追従させない。共有された画像は相手のテーマで見られるので、
  *    閲覧者ごとに色が変わると「送ったものと違う絵」になる。ライト基調で固定する。
  */
-
-const W = 1200;
-const H = 630;
-const PAD = 64;
-
-/** アバターが主役。右側に名前・ハンドル・タグを積んで、その3行と高さを釣り合わせる。 */
-const AVATAR_SIZE = 224;
-/** アバター右の列の開始 x。 */
-const COL_X = PAD + AVATAR_SIZE + 40;
-/**
- * QR は 49 モジュール（プロフィール URL の長さ + ecc=high での実測）。200px なら
- * 1モジュール約4pxで、写真に撮っても読める大きさになる。小さくしすぎると潰れる。
- */
-const QR_SIZE = 200;
-/** 右下のブランドロゴ。透明余白を除いた画像の比率（737:158）を維持する。 */
-const BRAND_LOGO_WIDTH = 280;
-const BRAND_LOGO_HEIGHT = (BRAND_LOGO_WIDTH * 158) / 737;
-/** アバター下端(PAD + AVATAR_SIZE = 288)より下から始める。 */
-const TAGLINE_TOP = 316;
-/**
- * tagline は最大120文字。この幅(840px)ではフォント30pxで約28文字/行なので5行あれば収まる。
- * 行数・字送りを変えるときは、最終行が日付行(y=566)に重ならないか必ず計算し直すこと。
- */
-const TAGLINE_FONT_SIZE = 30;
-const TAGLINE_LINE_HEIGHT = 42;
-const TAGLINE_MAX_LINES = 5;
-
-/** tokens.css のライトテーマ相当。画像は固定テーマなので値を直接持つ。 */
-const COLOR = {
-	bg: '#ffffff',
-	glow: '#dffbfc',
-	text: '#2f3542',
-	textStrong: '#202632',
-	textMuted: '#747d8c',
-	line: '#d5e5e7',
-	accent: '#00ced1',
-	accentStrong: '#007b7e',
-	accentSoft: '#c9f7f7',
-	decorative: '#ff9ff3',
-} as const;
 
 const FONT_STACK =
 	'"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif';
@@ -235,13 +217,12 @@ function drawTags(ctx: CanvasRenderingContext2D, tags: string[], rows: HeadRows)
 
 function drawTagline(ctx: CanvasRenderingContext2D, tagline: string) {
 	// QR と重ならない幅で折り返す。
-	const maxWidth = W - PAD - QR_SIZE - PAD - 32;
 	ctx.fillStyle = COLOR.text;
 	ctx.font = font(TAGLINE_FONT_SIZE);
 	ctx.textAlign = 'left';
 	ctx.textBaseline = 'alphabetic';
 
-	const lines = wrapText(ctx, tagline, maxWidth, TAGLINE_MAX_LINES);
+	const lines = wrapText(ctx, tagline, TAGLINE_MAX_WIDTH, TAGLINE_MAX_LINES);
 	lines.forEach((line, i) => {
 		ctx.fillText(line, PAD, TAGLINE_TOP + TAGLINE_FONT_SIZE + i * TAGLINE_LINE_HEIGHT);
 	});
@@ -261,18 +242,19 @@ function drawDates(ctx: CanvasRenderingContext2D, data: BusinessCardData) {
 }
 
 async function drawQr(ctx: CanvasRenderingContext2D, url: string) {
-	const matrix = qrMatrix(url);
-	const x = W - PAD - QR_SIZE;
-	// 右下のブランドロゴとクワイエットゾーンが重ならない位置まで上げる。
-	const y = H - PAD - QR_SIZE - 88;
-	const modules = matrix.length;
-	const cell = QR_SIZE / modules;
+	const { matrix, modules, cell, quiet } = qrRenderData(url);
 
 	// QR の周りに白い余白（クワイエットゾーン）が無いと読み取れない。
 	// 規格が要求するのは4モジュールぶんなので、px 直値ではなくセル幅から出す。
-	const quiet = cell * 4;
-	roundRect(ctx, x - quiet, y - quiet, QR_SIZE + quiet * 2, QR_SIZE + quiet * 2, 16);
-	ctx.fillStyle = '#ffffff';
+	roundRect(
+		ctx,
+		QR_X - quiet,
+		QR_Y - quiet,
+		QR_SIZE + quiet * 2,
+		QR_SIZE + quiet * 2,
+		QR_CONTAINER_RADIUS,
+	);
+	ctx.fillStyle = COLOR.bg;
 	ctx.fill();
 	ctx.strokeStyle = COLOR.line;
 	ctx.lineWidth = 2;
@@ -283,20 +265,26 @@ async function drawQr(ctx: CanvasRenderingContext2D, url: string) {
 		for (let col = 0; col < modules; col++) {
 			if (!matrix[row][col]) continue;
 			// 隣接セルの隙間を無くすため切り上げる。
-			ctx.fillRect(x + col * cell, y + row * cell, Math.ceil(cell), Math.ceil(cell));
+			ctx.fillRect(QR_X + col * cell, QR_Y + row * cell, Math.ceil(cell), Math.ceil(cell));
 		}
 	}
 
 	// 中央の Nagi アイコン。誤り訂正 high なのでこの程度の欠損は復元できる。
 	const icon = await loadIcon();
 	if (!icon) return;
-	const iconBox = QR_SIZE * 0.26;
-	const ix = x + (QR_SIZE - iconBox) / 2;
-	const iy = y + (QR_SIZE - iconBox) / 2;
-	roundRect(ctx, ix - 6, iy - 6, iconBox + 12, iconBox + 12, 10);
-	ctx.fillStyle = '#ffffff';
+	const ix = QR_X + (QR_SIZE - QR_ICON_SIZE) / 2;
+	const iy = QR_Y + (QR_SIZE - QR_ICON_SIZE) / 2;
+	roundRect(
+		ctx,
+		ix - QR_ICON_PADDING,
+		iy - QR_ICON_PADDING,
+		QR_ICON_SIZE + QR_ICON_PADDING * 2,
+		QR_ICON_SIZE + QR_ICON_PADDING * 2,
+		QR_ICON_RADIUS,
+	);
+	ctx.fillStyle = COLOR.bg;
 	ctx.fill();
-	ctx.drawImage(icon, ix, iy, iconBox, iconBox);
+	ctx.drawImage(icon, ix, iy, QR_ICON_SIZE, QR_ICON_SIZE);
 }
 
 async function drawBrandLogo(ctx: CanvasRenderingContext2D) {
