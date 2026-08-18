@@ -72,6 +72,14 @@
 		}
 	],
 	"rewrites": [
+		{
+			"source": "/profile/:did",
+			"destination": "/api/spa?did=:did"
+		},
+		{
+			"source": "/thread/:did/:rkey",
+			"destination": "/api/spa?did=:did"
+		},
 		{ "source": "/affirmation", "destination": "/200" },
 		{ "source": "/channels/:path*", "destination": "/200" },
 		{ "source": "/dev/:path*", "destination": "/200" },
