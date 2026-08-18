@@ -9,6 +9,8 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { defaultScopeForPath } from '$lib/post/scope';
+	import { oauthReady } from '$lib/oauth/session.svelte';
+	import { guestComposerHost } from '$lib/guest-posts/composer-host.svelte';
 </script>
 
 <aside class="sidebar sidebar-left">
@@ -32,8 +34,13 @@
 		{/each}
 	</nav>
 	<div class="spacer"></div>
-	{#if $session}
-		<PostButton onclick={() => composerHost.show(defaultScopeForPath(page.url.pathname))} />
+	{#if $oauthReady}
+		<PostButton
+			onclick={() =>
+				$session
+					? composerHost.show(defaultScopeForPath(page.url.pathname))
+					: guestComposerHost.show()}
+		/>
 	{/if}
 	<AccountCard />
 </aside>

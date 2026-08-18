@@ -2954,9 +2954,43 @@ a.notification-main::before {
 	margin: 8px 0 10px;
 	color: var(--text-strong);
 }
-.hero > p:last-child {
+.hero-body {
 	color: var(--text-muted);
 	margin: 0;
+}
+.hero-actions {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	margin-top: 20px;
+}
+.hero-actions a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 42px;
+	padding: 8px 16px;
+	border: 1px solid var(--accent);
+	border-radius: var(--r-md);
+	font-weight: 700;
+	text-decoration: none;
+}
+.hero-about {
+	background: transparent;
+	color: var(--accent-strong);
+}
+.hero-join {
+	background: var(--accent);
+	color: var(--text-on-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+	.hero-about:hover {
+		background: var(--accent-soft);
+	}
+	.hero-join:hover {
+		background: var(--accent-strong);
+	}
 }
 
 /* --- small screens --- */
@@ -2991,6 +3025,9 @@ a.notification-main::before {
 	}
 	.hero {
 		padding-top: 18px;
+	}
+	.hero-actions {
+		flex-wrap: wrap;
 	}
 	.profile-header {
 		padding: 16px;

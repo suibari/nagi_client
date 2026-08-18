@@ -319,6 +319,25 @@ export const en: Messages = {
 	postScopeStandardSiteDetail: 'Publishes to standard.site as an article as well as Nagi.',
 	postScopeExternalUnavailable: 'Enable cross-posting in settings to use this',
 	postScopeExternalChannel: 'Channel posts cannot be sent outside Nagi',
+	guestPostTitle: 'Post only on this device',
+	guestPostScope: 'Private on this device',
+	guestPostScopeDetail:
+		'Saved on this device only. It will not appear in feeds or Affirm together.',
+	guestPostPlaceholder: 'Write what is on your mind…',
+	guestPostSubmit: 'Post privately',
+	guestPostSaving: 'Saving…',
+	guestPostSaveFailed: 'Could not save the post on this device',
+	guestPostConsentBefore: 'I am 18 or older and agree to the ',
+	guestPostConsentAnd: ' and ',
+	guestPostConsentAfter: '',
+	guestPostAuthor: 'You on this device',
+	guestPostStoredOnDevice: 'Saved on this device',
+	guestPostWaiting: 'bot-tan is taking in your words…',
+	guestPostReplyFailed: 'Could not receive bot-tan’s reply.',
+	guestPostDelete: 'Delete from this device',
+	guestPostSignupTitle: 'You can keep going privately',
+	guestPostSignupBody:
+		'Sign up or sign in to keep future posts across devices and have bot-tan turn each day into a diary.',
 	externalTargetLegend: 'Where to cross-post',
 	externalTargetHelp:
 		'First choose one destination for posts whose scope is set to “Also outside”.',
@@ -581,6 +600,7 @@ export const en: Messages = {
 	loginSignupBody:
 		'You can start even if you do not use Bluesky. The account you create can also be used on Bluesky.',
 	loginSignupSubmit: 'Start using Nagi',
+	loginOrStart: 'Sign in / Start using Nagi',
 	loginSignupRedirecting: 'Opening registration…',
 	loginStartFailed: 'Could not open the next screen. Please try again.',
 	loginFederateLabel: 'Also post to other AT Protocol services',

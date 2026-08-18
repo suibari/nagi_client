@@ -22,8 +22,8 @@
 			<strong>Use a Content Warning (CW) when the content of your post calls for one.</strong>
 		</li>
 		<li>
-			<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan</strong> - though an
-			anonymous summary of one may appear in "Support together."
+			<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan</strong> - though an anonymous
+			summary of one may appear in "Support together."
 		</li>
 	</ul>
 </div>
@@ -117,10 +117,12 @@
 </ul>
 <div class="callout warn">
 	<p>
-		<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan.</strong> Their bodies are stored
-		on the Service's servers, never in your PDS, so neither other users nor other applications can read
-		them, and only you and Bot-tan can reply. In exchange,
-		<strong>Kossori posts are lost if the Service shuts down and cannot be taken to another app.</strong>
+		<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan.</strong> Their bodies are
+		stored on the Service's servers, never in your PDS, so neither other users nor other
+		applications can read them, and only you and Bot-tan can reply. In exchange,
+		<strong
+			>Kossori posts are lost if the Service shuts down and cannot be taken to another app.</strong
+		>
 		Images cannot be attached.
 	</p>
 	<p>
@@ -137,10 +139,23 @@
 		them, delete the records from your PDS yourself.
 	</p>
 </div>
+<div class="callout">
+	<p>
+		“Private on this device” while signed out is a device-local feature, separate from ordinary
+		Kossori posts. The post and Bot-tan’s reply are stored in your browser and never appear in
+		shared timelines, search, profiles, or “Affirm together.” They may be impossible to recover
+		after browser-data deletion, the end of a private-browsing session, or loss of the device.
+	</p>
+	<p>
+		An Affirmation Card drawn while signed out is added to your Card File if you sign in during the
+		same card day. The local card is deleted after the card-day boundary, and cards from earlier
+		days are not added later.
+	</p>
+</div>
 <p>
 	Channel-only posts may also be anonymously summarized even though their bodies stay out of shared
-	timelines outside the channel. Unlike Kossori posts, they are stored in your PDS as ordinary public
-	records. Posts with a Content Warning are excluded from these summaries.
+	timelines outside the channel. Unlike Kossori posts, they are stored in your PDS as ordinary
+	public records. Posts with a Content Warning are excluded from these summaries.
 </p>
 <p>
 	Among the diaries Bot-tan writes,

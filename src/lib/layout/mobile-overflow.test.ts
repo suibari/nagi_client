@@ -14,7 +14,7 @@ const postFab = read('../components/PostFab.svelte');
 const cardDrawFab = read('../components/CardDrawFab.svelte');
 const postFollowNotice = read('../components/PostFollowNotice.svelte');
 const reactionRewardHost = read('../components/ReactionCardRewardHost.svelte');
-const postModal = read('../components/PostModal.svelte');
+const postModalShell = read('../components/PostModalShell.svelte');
 const fixedOverlayComponents = [
 	[read('../components/BookmarkFolderDialog.svelte'), 'folder-dialog-backdrop'],
 	[read('../components/CardDetailDialog.svelte'), 'draw-backdrop'],
@@ -22,7 +22,7 @@ const fixedOverlayComponents = [
 	[read('../components/CardReactionGuideDialog.svelte'), 'card-guide-backdrop'],
 	[read('../components/Confetti.svelte'), 'confetti-layer'],
 	[read('../components/NewsSubmissionDialog.svelte'), 'news-submit-backdrop'],
-	[postModal, 'post-modal-backdrop'],
+	[postModalShell, 'post-modal-backdrop'],
 	[read('../components/PostScopeDialog.svelte'), 'scope-backdrop'],
 ] as const;
 

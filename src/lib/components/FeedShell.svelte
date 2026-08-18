@@ -10,6 +10,7 @@
 	import Icon from './shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import GuestPostSection from './GuestPostSection.svelte';
 
 	/**
 	 * フィード1本の描画。タブ（ホーム/グローバル/カスタム/チャンネル/検索）はすべて
@@ -98,11 +99,6 @@
 </script>
 
 {#if spec.showGuestHero && !$session}
-	<section class="hero">
-		<p class="eyebrow">{m.heroEyebrow()}</p>
-		<h1>{m.heroTitle()}</h1>
-		<p>{m.heroBody()}</p>
-	</section>
 	<aside class="welcome">
 		<div>
 			<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
@@ -110,6 +106,8 @@
 		</div>
 		<a href="/login">{m.joinCta()}</a>
 	</aside>
+	<!-- 歓迎カードを必ずタブ直下に置き、その次に端末保存スレッドを通常フィードと同じ列で並べる。 -->
+	<GuestPostSection botActor={feed.botActor} />
 {/if}
 <section class="timeline" aria-busy={feed.loading}>
 	{#if feed.loading && !feed.visibleItems.length}

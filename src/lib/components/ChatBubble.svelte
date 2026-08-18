@@ -68,6 +68,7 @@
 		maxLinkCards,
 		collapsible = true,
 		bookmarkSubject,
+		localGuest = false,
 	}: {
 		post: PostView;
 		/** ニュース引用ブロックの botたんヘッダーに使う実データ。 */
@@ -93,6 +94,8 @@
 		collapsible?: boolean;
 		/** 読み取り専用の実体（日記）だけが明示する。合成コメントには渡さない。 */
 		bookmarkSubject?: { kind: BookmarkSubjectType; uri: string };
+		/** 端末だけにある未サインイン投稿。プロフィール導線を作らず専用アイコンを使う。 */
+		localGuest?: boolean;
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
@@ -131,7 +134,7 @@
 	let reactionPickerOpen = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
 	let postRow: HTMLDivElement;
-	let mine = $derived($session?.did === post.author.did);
+	let mine = $derived(localGuest || $session?.did === post.author.did);
 	let hasTallImage = $derived(
 		Boolean(
 			post.images?.some(
@@ -466,8 +469,7 @@
 			// 画面に出せない投稿（検索タブなど）では、postFollow が導線へ切り替える。
 			postFollow.settle(created.uri, postHref(created.uri));
 			// こっそりは PDS に取りに行く相手が居ないので、AppView への即時反映は不要。
-			if (!draft.kossori)
-				await ensureRecord(created.uri, created.cid).catch(() => undefined);
+			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
 			await Promise.resolve(onposted?.()).catch(() => undefined);
 		} catch (error) {
 			optimisticPosts.remove(optimisticId);
@@ -511,13 +513,22 @@
 	data-post-uri={post.uri}
 	bind:this={postRow}
 >
-	<!-- ホバーで名刺、クリックで従来どおりプロフィールへ。 -->
-	<AvatarLink actor={post.author} />
+	{#if localGuest}
+		<span class="guest-avatar" aria-hidden="true"><Icon name="hide" size={22} /></span>
+	{:else}
+		<!-- ホバーで名刺、クリックで従来どおりプロフィールへ。 -->
+		<AvatarLink actor={post.author} />
+	{/if}
 	<div class="bubble" class:sending={optimistic}>
 		<div class="meta">
 			<div class="meta-author-line">
-				<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a>
-				<div class="meta-badges"><ActorBadges actor={post.author} /></div>
+				{#if localGuest}
+					<span>{m.guestPostAuthor()}</span>
+				{:else}
+					<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
+					>
+					<div class="meta-badges"><ActorBadges actor={post.author} /></div>
+				{/if}
 			</div>
 			{#if !hideTimestamp || post.edited}
 				<div class="meta-time">
@@ -748,6 +759,17 @@
 {/if}
 
 <style>
+	.guest-avatar {
+		display: grid;
+		place-items: center;
+		flex: 0 0 40px;
+		width: 40px;
+		height: 40px;
+		border: 1px solid var(--line);
+		border-radius: 50%;
+		background: var(--surface-2);
+		color: var(--text-muted);
+	}
 	.bubble.sending {
 		border-style: dashed;
 	}

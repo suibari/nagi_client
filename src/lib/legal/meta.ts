@@ -3,7 +3,7 @@
  * 4ファイル（Terms/Privacy の ja/en）に同じ日付を散らすと必ずずれるので1箇所に置く。
  * 本文を実質的に変更したときだけ更新すること。static/sitemap.xml の lastmod も合わせる。
  */
-export const LEGAL_LAST_UPDATED = '2026-08-12';
+export const LEGAL_LAST_UPDATED = '2026-08-19';
 
 const [year, month, day] = LEGAL_LAST_UPDATED.split('-').map(Number);
 

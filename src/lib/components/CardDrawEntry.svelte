@@ -7,6 +7,7 @@
 	import { anniversaryCardReward } from '$lib/cards/anniversary-reward.svelte';
 	import { reachedCardMilestone } from '$lib/cards/celebration';
 	import { cardCollections } from '$lib/cards/collection.svelte';
+	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { startVisiblePolling } from '$lib/polling';
@@ -55,7 +56,7 @@
 		variant === 'header' &&
 			$oauthReady &&
 			(forceFab ||
-				!myDid ||
+				(!myDid && guestCardDraw.canDrawToday) ||
 				anniversaryPending ||
 				cardCollections.canDrawMyNagi ||
 				cardCollections.canDrawWithReaction),
@@ -68,16 +69,33 @@
 		if (myDid) void cardCollections.ensure(myDid);
 	});
 
-	onMount(() =>
-		startVisiblePolling(() => cardCollections.refreshSelfIfStale(), 5 * 60_000, {
-			onReturn: true,
-		}),
-	);
+	onMount(() => {
+		guestCardDraw.hydrate();
+		return startVisiblePolling(
+			() => {
+				guestCardDraw.refreshDay();
+				cardCollections.refreshSelfIfStale();
+			},
+			5 * 60_000,
+			{ onReturn: true },
+		);
+	});
 
 	async function openTodayCard() {
 		const did = myDid;
 		if (!did) {
-			location.href = '/login';
+			if (drawing) return;
+			drawing = true;
+			drawError = '';
+			try {
+				const result = await guestCardDraw.draw();
+				drawResult = result;
+				openedCard = result.card;
+			} catch (error) {
+				drawError = error instanceof Error ? error.message : m.cardDrawFailed();
+			} finally {
+				drawing = false;
+			}
 			return;
 		}
 		// 記念日があるときは抽選より先に受け取らせる。開いたモーダルは Host が出す。
@@ -163,12 +181,13 @@
 	<CardReactionGuideDialog onclose={() => (guideOpen = false)} />
 {/if}
 
-{#if openedCard && myDid}
+{#if openedCard}
 	<CardDetailDialog
 		initial={openedCard}
 		actor={myDid}
 		draw={drawResult}
-		collectionHref={pendingMilestone ? undefined : `/profile/${myDid}?tab=cards`}
+		revealUnowned={!myDid}
+		collectionHref={myDid && !pendingMilestone ? `/profile/${myDid}?tab=cards` : undefined}
 		onclose={closeDraw}
 	/>
 {:else if pendingMilestone}

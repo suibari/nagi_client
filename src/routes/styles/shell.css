@@ -141,22 +141,20 @@
 	border-radius: 50%;
 }
 .account-login {
-	margin: 16px 6px 0;
-	display: grid;
-	gap: 8px;
-	text-align: center;
-}
-.account-login .login {
-	display: block;
-}
-.account-login span {
+	margin: 0 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	white-space: nowrap;
 	font-size: 12px;
-	color: var(--text-faint);
 }
-.account-login .signup-link {
+.account-login a {
+	color: var(--text-sub);
+	font-weight: 600;
+}
+.account-login a:hover {
 	color: var(--accent-strong);
-	font-size: 12px;
-	font-weight: 700;
 	text-decoration: underline;
 	text-underline-offset: 2px;
 }
@@ -522,14 +520,6 @@
 		display: none;
 	}
 	.account-login {
-		margin-inline: 0;
-	}
-	.account-login .login {
-		padding: 10px;
-		font-size: 12px;
-	}
-	.account-login span,
-	.account-login .signup-link {
 		display: none;
 	}
 }

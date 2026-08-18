@@ -18,6 +18,7 @@
 		mentions = $bindable<MentionSelection[]>([]),
 		channels = $bindable<ChannelSelection[]>([]),
 		emojis = $bindable<EmojiSelection[]>([]),
+		mentionSuggestionsEnabled = true,
 		channelSuggestionsEnabled = false,
 		id,
 		placeholder,
@@ -31,6 +32,7 @@
 		mentions?: MentionSelection[];
 		channels?: ChannelSelection[];
 		emojis?: EmojiSelection[];
+		mentionSuggestionsEnabled?: boolean;
 		channelSuggestionsEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
@@ -155,7 +157,9 @@
 	function detectToken() {
 		onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd);
 		const caret = textarea.selectionStart;
-		const match = /(^|[\s(\[{])@([^\s@]*)$/.exec(value.slice(0, caret));
+		const match = mentionSuggestionsEnabled
+			? /(^|[\s(\[{])@([^\s@]*)$/.exec(value.slice(0, caret))
+			: undefined;
 		if (match?.[2]) {
 			token = {
 				kind: 'mention',

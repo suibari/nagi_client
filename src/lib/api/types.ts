@@ -491,3 +491,7 @@ export type DrawCardResult = {
 	 */
 	cards?: CardView[];
 };
+export type GuestCardDrawResult = DrawCardResult & {
+	/** 通常カードと同じ JST 4:00 境界。これを越えたローカル結果は破棄する。 */
+	expiresAt: string;
+};

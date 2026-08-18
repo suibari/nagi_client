@@ -20,7 +20,9 @@
 		mentions = $bindable<MentionSelection[]>([]),
 		channels = $bindable<ChannelSelection[]>([]),
 		emojis = $bindable<EmojiSelection[]>([]),
+		mentionSuggestionsEnabled = true,
 		channelSuggestionsEnabled = false,
+		emojiPickerEnabled = true,
 		id,
 		placeholder,
 		ariaLabel,
@@ -35,7 +37,9 @@
 		mentions?: MentionSelection[];
 		channels?: ChannelSelection[];
 		emojis?: EmojiSelection[];
+		mentionSuggestionsEnabled?: boolean;
 		channelSuggestionsEnabled?: boolean;
+		emojiPickerEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
 		ariaLabel?: string;
@@ -117,6 +121,7 @@
 		bind:mentions
 		bind:channels
 		bind:emojis
+		{mentionSuggestionsEnabled}
 		{channelSuggestionsEnabled}
 		{id}
 		{placeholder}
@@ -129,19 +134,20 @@
 	<div class="composer-tools" class:with-leading={tools}>
 		{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}
 		<div class="composer-format-tools">
-			<button
-				bind:this={emojiButton}
-				class="icon-action"
-				class:active={emojiPickerOpen}
-				type="button"
-				{disabled}
-				aria-label={m.insertEmoji()}
-				title={m.insertEmoji()}
-				aria-haspopup="dialog"
-				aria-expanded={emojiPickerOpen}
-				onmousedown={(event) => event.preventDefault()}
-				onclick={() => (emojiPickerOpen = !emojiPickerOpen)}><Icon name="emoji" size={17} /></button
-			>
+			{#if emojiPickerEnabled}<button
+					bind:this={emojiButton}
+					class="icon-action"
+					class:active={emojiPickerOpen}
+					type="button"
+					{disabled}
+					aria-label={m.insertEmoji()}
+					title={m.insertEmoji()}
+					aria-haspopup="dialog"
+					aria-expanded={emojiPickerOpen}
+					onmousedown={(event) => event.preventDefault()}
+					onclick={() => (emojiPickerOpen = !emojiPickerOpen)}
+					><Icon name="emoji" size={17} /></button
+				>{/if}
 			{#if contentWarningEnabled}<button
 					class="icon-action content-warning-tool"
 					class:active={contentWarning.status === 'valid'}
@@ -158,13 +164,13 @@
 		</div>
 	</div>
 </div>
-<QuickEmojiPalette
-	bind:open={emojiPickerOpen}
-	anchor={emojiButton}
-	select={(emoji) => editor?.insertEmoji(emoji)}
-	ariaLabel={m.insertEmojiPickerAria()}
-	choiceAriaLabel={(emoji) => m.insertEmojiChoiceAria({ emoji })}
-/>
+{#if emojiPickerEnabled}<QuickEmojiPalette
+		bind:open={emojiPickerOpen}
+		anchor={emojiButton}
+		select={(emoji) => editor?.insertEmoji(emoji)}
+		ariaLabel={m.insertEmojiPickerAria()}
+		choiceAriaLabel={(emoji) => m.insertEmojiChoiceAria({ emoji })}
+	/>{/if}
 {#if contentWarningError}<p class="error cw-error" role="alert">{contentWarningError}</p>{/if}
 
 <style>

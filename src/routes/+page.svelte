@@ -255,6 +255,18 @@
 		<CardDrawEntry variant="header" />
 	</div>
 
+	{#if !$session}
+		<section class="hero">
+			<p class="eyebrow">{m.heroEyebrow()}</p>
+			<h1>{m.heroTitle()}</h1>
+			<p class="hero-body">{m.heroBody()}</p>
+			<div class="hero-actions">
+				<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>
+				<a class="hero-join" href="/login">{m.joinCta()}</a>
+			</div>
+		</section>
+	{/if}
+
 	<MyNagiSection
 		title={m.myNagiBotTitle()}
 		icon="bot"

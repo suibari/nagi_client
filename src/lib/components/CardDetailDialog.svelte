@@ -24,15 +24,18 @@
 		initial,
 		actor,
 		draw,
+		revealUnowned = false,
 		collectionHref,
 		onclose,
 	}: {
 		/** 表示するカード。draw があるときはその結果のカード。 */
 		initial: CardView;
 		/** コメント生成待ちのポーリング先（= 所有者の DID）。 */
-		actor: string;
+		actor?: string;
 		/** 引いた直後だけ渡す。無ければ所持カードを見返しているだけ（演出なし）。 */
 		draw?: DrawCardResult;
+		/** ゲスト抽選など、まだ所持化されていない当選カードの表面を見せる。 */
+		revealUnowned?: boolean;
 		/**
 		 * 渡すと「コレクションを見る」リンクを出す。図鑑の外（フィードの FAB）から
 		 * 引いたときだけ使う。カードタブから開いたときは自分自身への導線になるので渡さない。
@@ -74,7 +77,7 @@
 		// botたんコメントは bot_server が非同期で書き込むので、届くまで getCards で取り直す。
 		// 引いた直後だけでなく「コメントがまだ無い所持カードを開いたとき」も拾いに行くので、
 		// 演出中に間に合わなくても、あとから開き直せば読める。
-		if (hasComment || !card.owned) return () => clearTimeout(flip);
+		if (hasComment || !card.owned || !actor) return () => clearTimeout(flip);
 
 		let stopped = false;
 		let timer: ReturnType<typeof setTimeout>;
@@ -153,7 +156,7 @@
 					<CardBack />
 				</div>
 				<div class="draw-front" aria-hidden={!revealed}>
-					<AffirmationCard {card} size="full" />
+					<AffirmationCard {card} size="full" {revealUnowned} />
 				</div>
 			</div>
 		</div>

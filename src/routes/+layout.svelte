@@ -32,6 +32,11 @@
 	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
 	import AnniversaryCardHost from '$lib/components/AnniversaryCardHost.svelte';
 	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
+	import GuestPostModal from '$lib/components/GuestPostModal.svelte';
+	import { guestComposerHost } from '$lib/guest-posts/composer-host.svelte';
+	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
+	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
+	import { cardCollections } from '$lib/cards/collection.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -65,9 +70,9 @@
 	// サインインの動線そのものを塞がないページでは投稿ボタンを出さない。
 	const NO_FAB = ['/login', '/onboarding', '/oauth'];
 	const showPostFab = $derived(
-		!!$session &&
-			$oauthReady &&
+		$oauthReady &&
 			!composerHost.open &&
+			!guestComposerHost.open &&
 			!NO_FAB.some((path) => page.url.pathname.startsWith(path)),
 	);
 	const defaultScope = $derived(defaultScopeForPath(page.url.pathname));
@@ -77,6 +82,7 @@
 	let bookmarksKey: string | undefined;
 	let pushSyncedDid: string | undefined;
 	let preferencesDid: string | undefined;
+	let guestCardClaimKey: string | undefined;
 	beforeNavigate(() => {
 		postTranslations.cancelPending();
 		// 画面を移ったら投稿の追従は打ち切る。移った先で急に画面が動くほうが戸惑う。
@@ -87,6 +93,24 @@
 			languagePreferences.translationLanguage,
 			languagePreferences.autoTranslate,
 		);
+	});
+	// 未サインイン中に引いた当日カードは、OAuth復元後ただちに同日の通常枠へ移す。
+	// 成功するまで端末側を消さないので、通信失敗でカードが失われることはない。
+	$effect(() => {
+		const did = $oauthReady ? $session?.did : undefined;
+		const pending = guestCardDraw.result;
+		if (!did || !guestCardDraw.ready || !pending) return;
+		const key = `${did}:${pending.expiresAt}`;
+		if (guestCardClaimKey === key) return;
+		guestCardClaimKey = key;
+		void guestCardDraw
+			.claim()
+			.then((result) => {
+				if (!result) return;
+				cardCollections.applyDraw(did, result);
+				void cardCollections.refresh(did);
+			})
+			.catch((error) => console.error('Failed to claim guest card:', error));
 	});
 	// ミュート一覧はサインインごとに1回だけ読み、サインアウトで捨てる。
 	$effect(() => {
@@ -174,8 +198,10 @@
 		// ここで一度読まないと、サインインしない人のカスタムが永久に反映されない
 		// （サインイン後は syncPreferences が DID スコープで読み直す）。
 		feedTabs.hydrate();
+		guestCardDraw.hydrate();
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
 		void initOAuth().then(() => resolvePendingOptIns());
+		void guestPosts.load();
 		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。
 		startUnreadPolling();
 		// 公開ニュースの新着有無を端末内の既読基準と照合する。
@@ -229,11 +255,15 @@
 <!-- 投稿はページごとではなくアプリ全体の1つの入口に統一する。Composer は
      PostModal の中で常時マウントしたままにする（添付画像を失わないため）。 -->
 {#if showPostFab}
-	<PostFab onclick={() => composerHost.show(defaultScope)} />
+	<PostFab
+		onclick={() => ($session ? composerHost.show(defaultScope) : guestComposerHost.show())}
+	/>
 {/if}
 {#if $session}
 	<PostModal />
 	<ReactionCardRewardHost />
 	<!-- 記念日はその日しか来ないので、どの画面にいても受け取れるよう常駐させる。 -->
 	<AnniversaryCardHost />
+{:else if $oauthReady}
+	<GuestPostModal open={guestComposerHost.open} onclose={() => guestComposerHost.hide()} />
 {/if}

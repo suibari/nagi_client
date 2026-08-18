@@ -5,10 +5,13 @@
 	let {
 		card,
 		size = 'grid',
+		revealUnowned = false,
 	}: {
 		card: CardView;
 		/** grid = コレクション一覧、full = ドロー演出や詳細で1枚だけ大きく出すとき。 */
 		size?: 'grid' | 'full';
+		/** ゲストが今引いた1枚など、所持化前でも表面を見せる表示専用フラグ。 */
+		revealUnowned?: boolean;
 	} = $props();
 
 	/** 属性は絵文字1つで表す（イラスト枠を持たない構成なので、ここが唯一の絵柄）。 */
@@ -59,14 +62,15 @@
 			: `v${card.volume}-${String(card.id).padStart(3, '0')}`,
 	);
 	// 未所持カードでは背景を出さない。何のカードかを伏せる演出のほうが優先。
-	const art = $derived(card.owned ? card.art : undefined);
+	const revealed = $derived(card.owned || revealUnowned);
+	const art = $derived(revealed ? card.art : undefined);
 </script>
 
 <article
 	class="card rarity-{card.rarity.toLowerCase()} attr-{card.attribute} size-{size}"
-	class:locked={!card.owned}
+	class:locked={!revealed}
 	class:has-art={!!art}
-	aria-label={card.owned ? name : m.cardLocked()}
+	aria-label={revealed ? name : m.cardLocked()}
 >
 	{#if art}
 		<!--
@@ -83,7 +87,7 @@
 		/>
 		<div class="card-art-veil" aria-hidden="true"></div>
 	{/if}
-	{#if card.owned}
+	{#if revealed}
 		<header class="card-head">
 			<h3 class="card-name">{name}</h3>
 			<span class="card-attr" title={attributeLabel} aria-label={attributeLabel}>

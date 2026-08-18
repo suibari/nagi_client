@@ -14,6 +14,7 @@ import type {
 	CommunityAffirmationPage,
 	DiaryPage,
 	DrawCardResult,
+	GuestCardDrawResult,
 	EmojiView,
 	LinkCardView,
 	MuteSubjectType,
@@ -206,6 +207,29 @@ export const createKossoriPost = (input: {
 		'/xrpc/com.suibari.nagi.createKossoriPost',
 		{ method: 'POST', body: JSON.stringify(input) },
 		'required',
+	);
+
+export type GuestAffirmationCredentials = { id: string; token: string };
+export const createGuestAffirmation = (text: string, language: 'ja' | 'en') =>
+	call<GuestAffirmationCredentials & { state: 'pending'; expiresAt: string }>(
+		'com.suibari.nagi.createGuestAffirmation',
+		'/xrpc/com.suibari.nagi.createGuestAffirmation',
+		{ method: 'POST', body: JSON.stringify({ text, language }) },
+		'none',
+	);
+export const getGuestAffirmation = (credentials: GuestAffirmationCredentials) =>
+	call<{ state: 'pending' | 'processing' | 'posted' | 'failed'; reply?: string }>(
+		'com.suibari.nagi.getGuestAffirmation',
+		'/xrpc/com.suibari.nagi.getGuestAffirmation',
+		{ method: 'POST', body: JSON.stringify(credentials) },
+		'none',
+	);
+export const deleteGuestAffirmation = (credentials: GuestAffirmationCredentials) =>
+	call<{ deleted: true }>(
+		'com.suibari.nagi.deleteGuestAffirmation',
+		'/xrpc/com.suibari.nagi.deleteGuestAffirmation',
+		{ method: 'POST', body: JSON.stringify(credentials) },
+		'none',
 	);
 /** こっそり投稿の削除。PDS に控えが無いので、これで本文は完全に消える。 */
 export const deleteKossoriPost = (uri: string) =>
@@ -565,6 +589,14 @@ export const getCards = (actor: string) =>
 		'com.suibari.nagi.getCards',
 		`/xrpc/com.suibari.nagi.getCards?actor=${encodeURIComponent(actor)}`,
 	);
+/** DID の無い端末に、通常枠と同じ抽選ロジックで当日の1枚を返す。 */
+export const drawGuestCard = (deviceToken: string) =>
+	call<GuestCardDrawResult>(
+		'com.suibari.nagi.drawGuestCard',
+		'/xrpc/com.suibari.nagi.drawGuestCard',
+		{ method: 'POST', body: JSON.stringify({ deviceToken }) },
+		'none',
+	);
 /**
  * 通常枠またはリアクション枠のカードを1枚引く。同じ枠への再送は冪等。
  * source=anniversary は抽選ではなく、その日が記念日なら未受領ぶんをまとめて受け取る
@@ -572,7 +604,7 @@ export const getCards = (actor: string) =>
  */
 export const drawCard = (
 	input:
-		| { source?: 'my_nagi'; reactionUri?: never }
+		| { source?: 'my_nagi'; reactionUri?: never; guestToken?: string }
 		| { source: 'reaction'; reactionUri: string }
 		| { source: 'anniversary'; reactionUri?: never } = {},
 ) =>
