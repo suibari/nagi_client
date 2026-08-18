@@ -234,10 +234,7 @@ export type ProfileKossoriReactionItem = {
 	reactionUri: string;
 	reactedAt: string;
 };
-export type ProfileFeedItem =
-	| FeedItem
-	| ProfileNewsReactionItem
-	| ProfileKossoriReactionItem;
+export type ProfileFeedItem = FeedItem | ProfileNewsReactionItem | ProfileKossoriReactionItem;
 export type ProfilePage = { profile: ProfileDetail; feed: Page<FeedItem> };
 export type ProfileReactionPage = {
 	profile: ProfileDetail;
@@ -400,7 +397,10 @@ export type CardAttribute = 'light' | 'dark' | 'fire' | 'water' | 'wind' | 'eart
  * ja/en 双方が入っているのは、ロケール切替を再フェッチ無しで効かせるため。
  */
 export type CardView = {
-	/** 段内の通し番号。カードの同一性は (volume, id) の組で決まる。表示は v1-001 形式。 */
+	/**
+	 * 段内の通し番号。カードの同一性は (volume, id) の組で決まる。表示は v1-001 形式。
+	 * 記念日カード（volume = 0）では 西暦*100 + slot が入るので、カード面には year を出す。
+	 */
 	id: number;
 	/** カード段（初段=1）。 */
 	volume: number;
@@ -424,8 +424,23 @@ export type CardView = {
 	duplicateCount?: number;
 	acquiredAt?: string;
 	firstOwnerDid?: string;
+	/** カード面に敷く背景画像のベース名。`/card-art/{art}.webp` を引く。無ければ文字だけのカード。 */
+	art?: string;
+	/** 記念日カードなら true。図鑑とは別枠に置き、コンプ率にも数えない。 */
+	anniversary?: boolean;
+	/** 記念日カードのみ。何年ぶんの1枚か。図鑑番号の代わりにこれを出す。 */
+	year?: number;
 };
-export type CardDrawSource = 'my_nagi' | 'reaction';
+/** my_nagi と reaction は1日1回の抽選枠、anniversary は記念日に配られる特別枠。 */
+export type CardDrawSource = 'my_nagi' | 'reaction' | 'anniversary';
+/** その日が記念日で、まだ受け取っていない1枚。 */
+export type PendingAnniversary = {
+	slot: number;
+	nameJa: string;
+	nameEn: string;
+	/** モーダルを開く前に先読みするための背景画像名。 */
+	art?: string;
+};
 export type CardDrawSlotStatus = {
 	canDraw: boolean;
 	cardVolume?: number;
@@ -445,9 +460,14 @@ export type CardDrawStatus = {
 };
 export type CardCollectionView = {
 	cards: CardView[];
+	/** 図鑑の枚数。**記念日カードは含まない**（コンプ率を動かさないため）。 */
 	ownedCount: number;
 	totalCount: number;
 	drawStatus?: CardDrawStatus;
+	/** 所持している記念日カード。図鑑とは別枠で、取得の古い順。 */
+	anniversaryCards?: CardView[];
+	/** 本日ぶんの未受領の記念日。自分のコレクションを見ているときだけ返る。 */
+	pendingAnniversary?: PendingAnniversary[];
 };
 export type DrawCardResult = {
 	card: CardView;
@@ -458,4 +478,9 @@ export type DrawCardResult = {
 	/** true の間は botたんコメントを生成中。getCards で取り直す。 */
 	commentPending: boolean;
 	drawStatus: CardDrawStatus;
+	/**
+	 * source=anniversary のみ。同じ日に複数の記念日が重なることがあるので、今回受け取った
+	 * ぶんを全部返す。card はこの先頭と同じ。
+	 */
+	cards?: CardView[];
 };

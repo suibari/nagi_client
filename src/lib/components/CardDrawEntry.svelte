@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { drawCard } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
+	import { anniversaryCardReward } from '$lib/cards/anniversary-reward.svelte';
 	import { reachedCardMilestone } from '$lib/cards/celebration';
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -36,6 +37,12 @@
 				([key, value]) => key.toLowerCase() === 'cardfab' && value === '1',
 			),
 	);
+	/*
+	 * 記念日の受け取りは AnniversaryCardHost が自動で開くのが主導線で、こちらは保険。
+	 * うっかり閉じた・自動で開けなかったときに、その日のうちなら取りに戻れるようにしておく
+	 * （記念日は1日しか来ないので、逃したときのやり直しが効かないのが一番まずい）。
+	 */
+	let anniversaryPending = $derived(Boolean(myDid && cardCollections.pendingAnniversary.length));
 	let showFab = $derived(
 		variant === 'fab' &&
 			!openedCard &&
@@ -47,7 +54,11 @@
 	let showHeader = $derived(
 		variant === 'header' &&
 			$oauthReady &&
-			(forceFab || !myDid || cardCollections.canDrawMyNagi || cardCollections.canDrawWithReaction),
+			(forceFab ||
+				!myDid ||
+				anniversaryPending ||
+				cardCollections.canDrawMyNagi ||
+				cardCollections.canDrawWithReaction),
 	);
 	let reactionNext = $derived(
 		Boolean(myDid && !cardCollections.canDrawMyNagi && cardCollections.canDrawWithReaction),
@@ -67,6 +78,17 @@
 		const did = myDid;
 		if (!did) {
 			location.href = '/login';
+			return;
+		}
+		// 記念日があるときは抽選より先に受け取らせる。開いたモーダルは Host が出す。
+		if (anniversaryPending) {
+			void anniversaryCardReward.claim(
+				did,
+				cardCollections.pendingAnniversary
+					.map((a) => a.slot)
+					.sort((a, b) => a - b)
+					.join(','),
+			);
 			return;
 		}
 		if (reactionNext) {
@@ -112,6 +134,8 @@
 			</span>
 			{#if drawing}
 				<span>{m.cardDrawing()}</span>
+			{:else if anniversaryPending}
+				<span>{m.cardAnniversaryEntryLabel()}</span>
 			{:else if reactionNext}
 				<span class="card-header-reaction-label">
 					<span>{m.cardReactionNextLead()}</span>

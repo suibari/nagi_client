@@ -21,3 +21,6 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# カード背景の原本（変換して static/card-art/*.webp にしたもの）。配信もビルドもしない。
+/art-src

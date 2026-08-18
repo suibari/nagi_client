@@ -69,6 +69,14 @@ class CardCollections {
 	get canDrawWithReaction(): boolean {
 		return this.selfDrawStatus?.reaction?.canDraw === true;
 	}
+	/**
+	 * 本日ぶんの未受領の記念日。自動モーダルの発火条件そのものなので、コレクションを
+	 * 取得できていないうちは空にしておく（fail closed。どのみち受け取り API も通らない）。
+	 */
+	get pendingAnniversary() {
+		if (!this.#selfDid) return [];
+		return this.#entries.get(this.#selfDid)?.view?.pendingAnniversary ?? [];
+	}
 	/** 既存呼び出しとの互換名。通常のmy Nagi枠を指す。 */
 	get canDrawToday(): boolean {
 		return this.canDrawMyNagi;
@@ -162,6 +170,22 @@ class CardCollections {
 	applyCard(actor: string, card: CardView, drawStatus = this.view(actor)?.drawStatus) {
 		const view = this.view(actor);
 		if (!view) return;
+		// 記念日カードは図鑑の升目を持たない別枠。cards 側に混ぜると ownedCount が動いて
+		// コンプ率が変わってしまうので、必ずこちらに入れる。
+		if (card.anniversary) {
+			const current = view.anniversaryCards ?? [];
+			const known = current.some((c) => c.volume === card.volume && c.id === card.id);
+			this.#patch(actor, {
+				view: {
+					...view,
+					anniversaryCards: known
+						? current.map((c) => (c.volume === card.volume && c.id === card.id ? card : c))
+						: [...current, card],
+					...(drawStatus ? { drawStatus } : {}),
+				},
+			});
+			return;
+		}
 		const cards = view.cards.map((c) => (c.volume === card.volume && c.id === card.id ? card : c));
 		this.#patch(actor, {
 			view: {
@@ -171,6 +195,18 @@ class CardCollections {
 				...(drawStatus ? { drawStatus } : {}),
 			},
 		});
+	}
+
+	/**
+	 * 記念日カードを受け取ったあとの反映。受け取った枚数ぶんを足したうえで、
+	 * pendingAnniversary を空にして自動モーダルの再発火を止める
+	 * （サーバも冪等だが、次の getCards まで待つとモーダルが二度出る）。
+	 */
+	applyAnniversaryClaim(actor: string, cards: CardView[]) {
+		for (const card of cards) this.applyCard(actor, card);
+		const view = this.view(actor);
+		if (!view) return;
+		this.#patch(actor, { view: { ...view, pendingAnniversary: [] } });
 	}
 }
 

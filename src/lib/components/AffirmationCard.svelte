@@ -49,15 +49,40 @@
 	 * 図鑑番号。段内の通し番号がそのままコレクションでの配置位置なので、
 	 * この番号を見れば「何番目の枠のカードか」が分かる。
 	 * レアリティは枠のデザインと配置位置で示すので、カード面には出さない。
+	 *
+	 * 記念日カードは図鑑の枠を持たず、id には西暦*100+slot が入っていて番号として読めない。
+	 * 代わりに「何年ぶんの1枚か」を出す（同じ記念日でも年が違えば別のカード）。
 	 */
-	const code = $derived(`v${card.volume}-${String(card.id).padStart(3, '0')}`);
+	const code = $derived(
+		card.anniversary
+			? String(card.year ?? Math.floor(card.id / 100))
+			: `v${card.volume}-${String(card.id).padStart(3, '0')}`,
+	);
+	// 未所持カードでは背景を出さない。何のカードかを伏せる演出のほうが優先。
+	const art = $derived(card.owned ? card.art : undefined);
 </script>
 
 <article
 	class="card rarity-{card.rarity.toLowerCase()} attr-{card.attribute} size-{size}"
 	class:locked={!card.owned}
+	class:has-art={!!art}
 	aria-label={card.owned ? name : m.cardLocked()}
 >
+	{#if art}
+		<!--
+			背景は background-image ではなく img で敷く。記念日カードのモーダルは一発勝負の
+			演出なので、読み込みを eager に指定できるほうが確実。装飾なので alt は空。
+		-->
+		<img
+			class="card-art"
+			src="/card-art/{art}.webp"
+			alt=""
+			aria-hidden="true"
+			loading="eager"
+			decoding="async"
+		/>
+		<div class="card-art-veil" aria-hidden="true"></div>
+	{/if}
 	{#if card.owned}
 		<header class="card-head">
 			<h3 class="card-name">{name}</h3>
@@ -108,6 +133,66 @@
 	.card.size-full {
 		inline-size: min(100%, 300px);
 		padding: 0.8rem 0.85rem 0.7rem;
+	}
+
+	/*
+	 * 背景つきカード。イラスト枠を持たない構成のまま、絵をカード全面に敷いて文字を上に乗せる。
+	 *
+	 * ここで一番大事なのは「絵が見える面積を確保する」こと。フレーバー欄は元々 flex:1 で
+	 * カードの中央から下を丸ごと占有していて、そのままだとキャラの顔が完全に隠れる。
+	 * 背景があるときだけ内容ぶんの高さに縮めて下端へ寄せ、中央を絵のために空ける。
+	 * 濃さと位置のノブは tokens.css に集約する（絵ごとに最適値が変わるため）。
+	 */
+	/*
+	 * 絵はカードいっぱいに敷く。ずらして置くと必ずどこかに地の色の帯ができるので、
+	 * inset は 0 に固定する。絵の中の「どこを見せるか」を寄せたいときは、
+	 * カード比（59:86）より縦長の画像を用意して --card-art-position で選ぶ
+	 * （cover が溢れたぶんを切るので、この方法なら隙間が出ない）。
+	 */
+	.card-art {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+		object-position: var(--card-art-position);
+	}
+	/* 図鑑の升目は文字が小さく、絵をそのまま出すと名前もフレーバーも潰れる。 */
+	.card.size-grid .card-art {
+		opacity: var(--card-art-grid-opacity);
+	}
+	.card-art-veil {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		background: linear-gradient(
+			to bottom,
+			color-mix(in srgb, var(--card-face) 88%, transparent) 0%,
+			color-mix(in srgb, var(--card-face) var(--card-art-veil-min), transparent) 16%,
+			color-mix(in srgb, var(--card-face) var(--card-art-veil-min), transparent) 64%,
+			color-mix(in srgb, var(--card-face) 86%, transparent) 100%
+		);
+	}
+	/* 背景の上に文字を出す。z-index を持たない子は絵に隠れてしまう。 */
+	.card.has-art > :not(.card-art):not(.card-art-veil) {
+		position: relative;
+		z-index: 1;
+	}
+	/*
+	 * 中央を絵に明け渡す。margin-block-start:auto でフレーバーと ATK/DEF を下端へ寄せ、
+	 * flex:1 を外して内容ぶんの高さにする（元の版はここが伸びて絵を全部覆っていた）。
+	 */
+	.card.has-art .card-text {
+		flex: 0 0 auto;
+		margin-block-start: auto;
+		background: color-mix(in srgb, var(--card-face-band) var(--card-art-band-alpha), transparent);
+		backdrop-filter: blur(3px);
+	}
+	/* 帯の下地を薄くしたぶん、名前と数値は縁取りで背景から浮かせる。 */
+	.card.has-art .card-name,
+	.card.has-art .card-foot {
+		text-shadow: 0 1px 3px var(--card-face);
 	}
 
 	.card-head {
@@ -265,8 +350,7 @@
 		background-clip: padding-box, border-box;
 	}
 	.rarity-ur {
-		background-image:
-			linear-gradient(var(--card-face), var(--card-face)), var(--card-foil-ur);
+		background-image: linear-gradient(var(--card-face), var(--card-face)), var(--card-foil-ur);
 		background-size:
 			auto,
 			300% 300%;
@@ -275,8 +359,7 @@
 			var(--shadow-card);
 	}
 	.rarity-aar {
-		background-image:
-			linear-gradient(var(--card-face), var(--card-face)), var(--card-foil-aar);
+		background-image: linear-gradient(var(--card-face), var(--card-face)), var(--card-foil-aar);
 		background-size:
 			auto,
 			400% 400%;

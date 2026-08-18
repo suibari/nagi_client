@@ -59,6 +59,13 @@
 	// 初回の実ドローだけを祝う。当日カードの冪等再取得では演出を繰り返さない。
 	const isFreshDraw = $derived(!!draw && !draw.alreadyDrawn);
 	const confettiLevel = $derived(isFreshDraw ? rarityConfettiLevel(card.rarity) : undefined);
+	/*
+	 * 「NEW CARD」の演出は図鑑を1枠埋めたことのお祝い。記念日カードは図鑑の外にあり、
+	 * 見出しも「記念日おめでとう」のほうが伝えたいことなので、こちらは出さずに見出しを見せる。
+	 */
+	const showNewCardArt = $derived(
+		!!draw?.isNew && !draw.alreadyDrawn && draw.source !== 'anniversary',
+	);
 
 	onMount(() => {
 		closeButton?.focus();
@@ -116,13 +123,11 @@
 {/if}
 <div class="draw-backdrop" role="presentation" onclick={backdropClick}>
 	<div class="draw-dialog" role="dialog" aria-modal="true" aria-labelledby="draw-title">
-		<h2
-			id="draw-title"
-			class="draw-title"
-			class:visually-hidden={!!draw?.isNew && !draw.alreadyDrawn}
-		>
+		<h2 id="draw-title" class="draw-title" class:visually-hidden={showNewCardArt}>
 			{#if !draw}
 				{name}
+			{:else if draw.source === 'anniversary'}
+				{m.cardAnniversaryTitle()}
 			{:else if draw.alreadyDrawn}
 				{m.cardDrawAlreadyTitle()}
 			{:else if draw.isNew}
@@ -131,7 +136,7 @@
 				{m.cardDrawAgainTitle()}
 			{/if}
 		</h2>
-		{#if draw?.isNew && !draw.alreadyDrawn}
+		{#if showNewCardArt}
 			<!-- フォントファイルは再配布せず、指定文言だけを描画したマスクで字形を使う。 -->
 			<div class="new-card-wrap" aria-hidden="true">
 				<span class="new-card-art" class:ja></span>
@@ -167,7 +172,10 @@
 			{/if}
 		</div>
 
-		{#if draw}
+		<!-- 記念日は抽選枠を消費しないので「次に引ける時刻」を出さない（別の話になってしまう）。 -->
+		{#if draw && draw.source === 'anniversary'}
+			<p class="draw-next">{m.cardAnniversaryHint()}</p>
+		{:else if draw}
 			<p class="draw-next">
 				{#if draw.source === 'my_nagi' && draw.drawStatus.reaction?.canDraw}
 					{m.cardReactionNextHint()}

@@ -49,6 +49,11 @@
 	 * 所持順やレアリティ順に寄せると、1枚引くたびに全部の位置がずれて図鑑にならない。
 	 */
 	const cards = $derived(collection?.cards ?? []);
+	/*
+	 * 記念日カードは図鑑の升目を持たない別枠。コンプ率の分母にも分子にも入らないので、
+	 * ownedCount / totalCount には触らず、一覧の一番下に独立したセクションで並べる。
+	 */
+	const anniversaryCards = $derived(collection?.anniversaryCards ?? []);
 	const completionPercent = $derived(
 		collection ? cardCompletionPercent(collection.ownedCount, collection.totalCount) : 0,
 	);
@@ -159,6 +164,22 @@
 				</li>
 			{/each}
 		</ul>
+		{#if anniversaryCards.length}
+			<section class="cards-anniversary">
+				<h3>{m.cardAnniversarySectionTitle()}</h3>
+				<p class="cards-note">{m.cardAnniversarySectionNote()}</p>
+				<ul class="cards-grid">
+					{#each anniversaryCards as card (`${card.volume}-${card.id}`)}
+						<li>
+							<button type="button" class="cards-slot" onclick={() => (opened = card)}>
+								<AffirmationCard {card} />
+								<span class="visually-hidden">{m.cardOpenDetail()}</span>
+							</button>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 	{/if}
 </section>
 
@@ -182,6 +203,19 @@
 		display: grid;
 		justify-items: center;
 		gap: 0.4rem;
+	}
+	/* 図鑑の続きではなく別の棚だと分かるように、線で切ってから並べる。 */
+	.cards-anniversary {
+		display: grid;
+		gap: 0.5rem;
+		margin-block-start: 0.4rem;
+		padding-block-start: 0.9rem;
+		border-block-start: 1px solid var(--line);
+	}
+	.cards-anniversary h3 {
+		margin: 0;
+		color: var(--text-strong);
+		font-size: 0.95rem;
 	}
 	.cards-progress {
 		display: grid;

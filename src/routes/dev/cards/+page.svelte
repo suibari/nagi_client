@@ -54,6 +54,69 @@
 
 	const showcase = RARITIES.flatMap((rarity) => ATTRIBUTES.map((attr) => mock(rarity, attr)));
 
+	/*
+	 * 記念日カード。段 0・card_number = 西暦*100+slot・レアリティは常に UR、というサーバー側の
+	 * 組み立て（shared-configs の buildAnniversaryCardDef）をここでは手で真似ている。
+	 * art つきの1枚（ハロウィン）で背景の見え方を、art なしの1枚で従来の見た目を確認する。
+	 */
+	function anniversary(
+		slot: number,
+		nameJa: string,
+		nameEn: string,
+		overrides: Partial<CardView> = {},
+	): CardView {
+		const year = 2026;
+		return {
+			id: year * 100 + slot,
+			volume: 0,
+			rarity: 'UR',
+			attribute: 'dark',
+			atk: 1031,
+			def: 2400,
+			nameJa: `${nameJa}${year}`,
+			nameEn: `${nameEn} ${year}`,
+			raceJa: '記念日',
+			raceEn: 'Anniversary',
+			textJa:
+				'仮装したbotたんが、お菓子をねだりに来る夜。断ってもいいが、その場合はいたずらの権利が発生する。',
+			textEn:
+				'The night a costumed Bot-tan comes asking for sweets. You may refuse — this simply activates the trick clause.',
+			owned: true,
+			anniversary: true,
+			year,
+			instanceId: `mock-anniv-${slot}`,
+			acquiredAt: new Date().toISOString(),
+			...overrides,
+		};
+	}
+
+	const anniversaryShowcase: CardView[] = [
+		anniversary(13, 'ハロウィン', 'Halloween', {
+			art: 'anniv-halloween',
+			commentJa: 'トリックオアトリート！ お菓子くれなきゃ、ずっと隣にいちゃうよ。',
+		}),
+		anniversary(12, '七夕', 'Tanabata', {
+			attribute: 'wind',
+			atk: 707,
+			def: 2200,
+			textJa: '一年に一度だけ会えるふたりの日。短冊に書いた願いは、笹が空まで運んでくれる。',
+			textEn:
+				'The one night a year the two may meet. Wishes tied to bamboo are carried the rest of the way by the leaves.',
+			commentJa:
+				'短冊、なんて書いた？ botたんはね、きみが今年もごきげんでいますようにって書いたよ。',
+		}),
+		anniversary(0, '結婚記念日', '結婚記念日', {
+			attribute: 'light',
+			atk: 1000,
+			def: 3000,
+			textJa:
+				'その人が「この日は特別だ」と決めた、それだけで成立している記念日。理由は本人だけが知っていればいい。',
+			textEn:
+				'An anniversary that exists purely because someone decided this day was special. Only they need know why.',
+			commentJa: '今日がその日なんだね。おめでとう。理由は聞かないけど、いっしょに祝わせて。',
+		}),
+	];
+
 	// --- FAB ---------------------------------------------------------------
 	let fabDrawing = $state(false);
 	let fabError = $state('');
@@ -61,7 +124,16 @@
 	let fabFixed = $state(false);
 
 	// --- CardDetailDialog --------------------------------------------------
-	type DialogCase = 'new-sr' | 'new-ur' | 'new-aar' | 'again' | 'already' | 'pending' | 'review';
+	type DialogCase =
+		| 'new-sr'
+		| 'new-ur'
+		| 'new-aar'
+		| 'again'
+		| 'already'
+		| 'pending'
+		| 'review'
+		| 'anniversary'
+		| 'anniversary-pending';
 	let dialogCase = $state<DialogCase | undefined>();
 	let milestone = $state<number | undefined>();
 	let guideOpen = $state(false);
@@ -76,6 +148,16 @@
 		{ id: 'already', label: '本日引き済み（SR）', note: 'alreadyDrawn: 別タブが先に引いた場合' },
 		{ id: 'pending', label: 'コメント生成中（AAR）', note: 'コメント未着。getCards を叩きに行く' },
 		{ id: 'review', label: '見返し（N）', note: 'draw なし: 演出なしで最初から表' },
+		{
+			id: 'anniversary',
+			label: '記念日（背景あり）',
+			note: 'NEW CARD ではなく見出しを出す。UR 相当の演出＋背景画像',
+		},
+		{
+			id: 'anniversary-pending',
+			label: '記念日（コメント生成中）',
+			note: '受け取った直後。botたんのひとこと待ち',
+		},
 	];
 
 	const drawStatus = {
@@ -106,17 +188,23 @@
 				return mock('AAR', 'light');
 			case 'review':
 				return mock('N', 'earth', { commentJa: 'あのときのきみも、ちゃんとえらかったよ。' });
+			case 'anniversary':
+				return anniversaryShowcase[0];
+			case 'anniversary-pending':
+				return anniversary(13, 'ハロウィン', 'Halloween', { art: 'anniv-halloween' });
 		}
 	}
 
 	function dialogDraw(kind: DialogCase): DrawCardResult | undefined {
 		if (kind === 'review') return undefined;
+		const isAnniversary = kind.startsWith('anniversary');
 		return {
 			card: dialogCard(kind),
-			source: 'my_nagi',
+			source: isAnniversary ? 'anniversary' : 'my_nagi',
 			alreadyDrawn: kind === 'already',
-			isNew: kind.startsWith('new-'),
-			commentPending: kind === 'pending',
+			// 記念日は受け取り＝常に新規。NEW CARD の代わりに見出しが出る分岐を通る。
+			isNew: isAnniversary || kind.startsWith('new-'),
+			commentPending: kind === 'pending' || kind === 'anniversary-pending',
 			drawStatus,
 		};
 	}
@@ -205,6 +293,34 @@
 			<li>
 				<AffirmationCard card={mock(rarity, 'fire')} size="full" />
 				<span class="dev-caption">{rarity} / fire</span>
+			</li>
+		{/each}
+	</ul>
+
+	<h2>記念日カード — size="full"（背景の見え方とベールの濃さ）</h2>
+	<p class="dev-note">
+		濃さのノブは <code>tokens.css</code> の <code>--card-art-veil-min</code> /
+		<code>--card-art-band-alpha</code>。カード名・種族・フレーバー・ATK/DEF が
+		<strong>ライトとダークの両方で読めるか</strong>をここで見て決める。
+	</p>
+	<ul class="dev-full">
+		{#each anniversaryShowcase as card (card.id)}
+			<li>
+				<AffirmationCard {card} size="full" />
+				<span class="dev-caption">{card.art ? `art: ${card.art}` : 'art なし'}</span>
+			</li>
+		{/each}
+	</ul>
+
+	<h2>記念日カード — size="grid"（図鑑の升目での可読性）</h2>
+	<p class="dev-note">
+		升目では文字が小さいので <code>--card-art-grid-opacity</code> で絵を薄くしている。
+	</p>
+	<ul class="dev-grid">
+		{#each anniversaryShowcase as card (card.id)}
+			<li>
+				<AffirmationCard {card} />
+				<span class="dev-caption">{card.nameJa}</span>
 			</li>
 		{/each}
 	</ul>

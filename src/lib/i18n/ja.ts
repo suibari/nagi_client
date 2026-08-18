@@ -1053,6 +1053,13 @@ export const ja = {
 	cardCommentThinking: 'botたんがひとことを考えています…',
 	cardCommentNotReady: 'botたんはまだ考え中みたい。あとでもう一度開いてみてね',
 	cardOpenDetail: 'カードの詳細を開く',
+	// --- 記念日カード。図鑑とは別枠で、コンプ率にも数えない ---
+	cardAnniversaryTitle: '記念日おめでとう！',
+	cardAnniversaryHint: 'この一枚は今日だけ。カードは図鑑の一番下に置いておくね',
+	cardAnniversaryEntryLabel: '記念日のカードが届いてるよ！',
+	cardAnniversarySectionTitle: '記念日のカード',
+	cardAnniversarySectionNote: '記念日にもらえる特別なカード。コンプ率には含まれません。',
+	cardAnniversaryClaimFailed: '記念日のカードを受け取れませんでした',
 	cardAcquiredAt: (p: { time: string }) => `${p.time} に入手`,
 	cardCollectionProgress: (p: { owned: number; total: number }) => `${p.total}枚中 ${p.owned}枚`,
 	cardCollectionPercent: (p: { percent: number }) => `コンプ率 ${p.percent}%`,

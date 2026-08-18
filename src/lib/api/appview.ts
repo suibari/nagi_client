@@ -565,10 +565,16 @@ export const getCards = (actor: string) =>
 		'com.suibari.nagi.getCards',
 		`/xrpc/com.suibari.nagi.getCards?actor=${encodeURIComponent(actor)}`,
 	);
-/** 通常枠またはリアクション枠のカードを1枚引く。同じ枠への再送は冪等。 */
+/**
+ * 通常枠またはリアクション枠のカードを1枚引く。同じ枠への再送は冪等。
+ * source=anniversary は抽選ではなく、その日が記念日なら未受領ぶんをまとめて受け取る
+ * （1日1回の枠を消費しない。結果は result.cards に全部入る）。
+ */
 export const drawCard = (
 	input:
-		{ source?: 'my_nagi'; reactionUri?: never } | { source: 'reaction'; reactionUri: string } = {},
+		| { source?: 'my_nagi'; reactionUri?: never }
+		| { source: 'reaction'; reactionUri: string }
+		| { source: 'anniversary'; reactionUri?: never } = {},
 ) =>
 	call<DrawCardResult>(
 		'com.suibari.nagi.drawCard',

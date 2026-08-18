@@ -30,6 +30,7 @@
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
 	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
+	import AnniversaryCardHost from '$lib/components/AnniversaryCardHost.svelte';
 	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
@@ -233,4 +234,6 @@
 {#if $session}
 	<PostModal />
 	<ReactionCardRewardHost />
+	<!-- 記念日はその日しか来ないので、どの画面にいても受け取れるよう常駐させる。 -->
+	<AnniversaryCardHost />
 {/if}

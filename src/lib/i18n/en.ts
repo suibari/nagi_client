@@ -1021,6 +1021,13 @@ export const en: Messages = {
 	cardCommentThinking: 'Bot-tan is thinking of something to say…',
 	cardCommentNotReady: 'Bot-tan is still thinking. Try opening this card again in a bit.',
 	cardOpenDetail: 'Open card details',
+	cardAnniversaryTitle: 'Happy anniversary!',
+	cardAnniversaryHint: "This one is only for today. I'll keep it at the bottom of your collection",
+	cardAnniversaryEntryLabel: 'An anniversary card is waiting!',
+	cardAnniversarySectionTitle: 'Anniversary cards',
+	cardAnniversarySectionNote:
+		'Special cards given on anniversaries. They do not count toward completion.',
+	cardAnniversaryClaimFailed: 'Could not collect your anniversary card',
 	cardAcquiredAt: (p) => `Obtained ${p.time}`,
 	cardCollectionProgress: (p) => `${p.owned} of ${p.total} collected`,
 	cardCollectionPercent: (p: { percent: number }) => `${p.percent}% complete`,

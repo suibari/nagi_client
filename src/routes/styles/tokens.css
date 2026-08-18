@@ -126,6 +126,15 @@
 	--card-foil-ur: linear-gradient(135deg, #ffe9a8, #e0a53c, #fff6d8, #c98a1f);
 	--card-foil-aar: linear-gradient(135deg, #ff9ff3, #48dbfb, #ffe9a8, #00ced1, #ff6fc8);
 	--card-locked: #dbe6ea;
+	/* --- カード背景画像の調整ノブ（AffirmationCard の .card-art / .card-art-veil） --- */
+	/* ベールの一番薄いところ。絵をどこまで見せるか。上げるほど文字が読みやすく絵が沈む。 */
+	--card-art-veil-min: 14%;
+	/* 図鑑の升目では文字が小さいので、絵そのものを薄くする。 */
+	--card-art-grid-opacity: 0.4;
+	/* フレーバー欄の帯。背景ありのときだけ半透明にして下の絵を透かす。 */
+	--card-art-band-alpha: 72%;
+	/* 絵のどこを見せるか。カード比より縦長の画像を用意したときだけ効く（cover の切り取り位置）。 */
+	--card-art-position: center top;
 	--card-attr-light: #e0a300;
 	--card-attr-dark: #6b4fa8;
 	--card-attr-fire: #d64528;
@@ -251,6 +260,15 @@
 	--card-foil-ur: linear-gradient(135deg, #ffdf9a, #c98a1f, #fff2c9, #a8721a);
 	--card-foil-aar: linear-gradient(135deg, #fda7df, #00e5ff, #ffdf9a, #1dd1a1, #ff8fd6);
 	--card-locked: #3d4956;
+	/* --- カード背景画像の調整ノブ（AffirmationCard の .card-art / .card-art-veil） --- */
+	/* ベールの一番薄いところ。絵をどこまで見せるか。上げるほど文字が読みやすく絵が沈む。 */
+	--card-art-veil-min: 14%;
+	/* 図鑑の升目では文字が小さいので、絵そのものを薄くする。 */
+	--card-art-grid-opacity: 0.4;
+	/* フレーバー欄の帯。背景ありのときだけ半透明にして下の絵を透かす。 */
+	--card-art-band-alpha: 72%;
+	/* 絵のどこを見せるか。カード比より縦長の画像を用意したときだけ効く（cover の切り取り位置）。 */
+	--card-art-position: center top;
 	--card-attr-light: #ffd257;
 	--card-attr-dark: #b79bff;
 	--card-attr-fire: #ff8a6b;
@@ -355,6 +373,15 @@
 		--card-foil-ur: linear-gradient(135deg, #ffdf9a, #c98a1f, #fff2c9, #a8721a);
 		--card-foil-aar: linear-gradient(135deg, #fda7df, #00e5ff, #ffdf9a, #1dd1a1, #ff8fd6);
 		--card-locked: #3d4956;
+		/* --- カード背景画像の調整ノブ（AffirmationCard の .card-art / .card-art-veil） --- */
+		/* ベールの一番薄いところ。絵をどこまで見せるか。上げるほど文字が読みやすく絵が沈む。 */
+		--card-art-veil-min: 14%;
+		/* 図鑑の升目では文字が小さいので、絵そのものを薄くする。 */
+		--card-art-grid-opacity: 0.4;
+		/* フレーバー欄の帯。背景ありのときだけ半透明にして下の絵を透かす。 */
+		--card-art-band-alpha: 72%;
+		/* 絵のどこを見せるか。カード比より縦長の画像を用意したときだけ効く（cover の切り取り位置）。 */
+		--card-art-position: center top;
 		--card-attr-light: #ffd257;
 		--card-attr-dark: #b79bff;
 		--card-attr-fire: #ff8a6b;
