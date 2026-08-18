@@ -2,8 +2,6 @@ import { ImageResponse } from '@vercel/og';
 import React from 'react';
 import { isSafeDid } from '../src/lib/og/html.js';
 
-export const config = { runtime: 'edge' };
-
 type Profile = {
 	did: string;
 	handle: string;

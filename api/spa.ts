@@ -1,7 +1,5 @@
 import { isSafeDid, withProfileCardMeta } from '../src/lib/og/html.js';
 
-export const config = { runtime: 'edge' };
-
 function shellUrl() {
 	if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/200`;
 	// `vercel dev` だけのフォールバック。デプロイ環境では信頼済みの VERCEL_URL を必ず使い、
