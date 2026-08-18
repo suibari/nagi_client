@@ -30,19 +30,21 @@
 	);
 </script>
 
-<article class="post-row reaction-kossori">
-	<div class="avatar hidden-author" aria-hidden="true"><Icon name="hide" size={20} /></div>
-	<div class="bubble">
-		<p>{m.reactionKossoriHidden()}</p>
-		{#if reaction}<ReactionBar
-				uri=""
-				cid=""
-				reactions={[reaction]}
-				readOnly={!removable}
-				ontoggled={(active) => {
-					if (!active) onremoved?.();
-				}}
-			/>{/if}
+<article class="thread-unit reaction-kossori">
+	<div class="post-row">
+		<div class="avatar hidden-author" aria-hidden="true"><Icon name="hide" size={20} /></div>
+		<div class="bubble">
+			<p>{m.reactionKossoriHidden()}</p>
+			{#if reaction}<ReactionBar
+					uri=""
+					cid=""
+					reactions={[reaction]}
+					readOnly={!removable}
+					ontoggled={(active) => {
+						if (!active) onremoved?.();
+					}}
+				/>{/if}
+		</div>
 	</div>
 </article>
 
