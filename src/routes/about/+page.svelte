@@ -31,6 +31,10 @@
 	const features: Feature[] = [
 		{ icon: 'hash', title: m.aboutChannelsTitle, body: m.aboutChannelsBody, href: '/channels' },
 		{ icon: 'emoji', title: m.aboutReactionTitle, body: m.aboutReactionBody },
+		{ icon: 'draft', title: m.aboutDiaryTitle, body: m.aboutDiaryBody },
+		// こっそりは「選べる公開範囲のひとつ」。つながる機能の後に置いて、Nagi 全体が
+		// こっそり前提の場所に見えないようにする。
+		{ icon: 'hide', title: m.aboutKossoriTitle, body: m.aboutKossoriBody },
 		{
 			icon: 'emojiPlus',
 			title: m.aboutCustomEmojiTitle,

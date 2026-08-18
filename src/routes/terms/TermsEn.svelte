@@ -21,7 +21,10 @@
 		<li>
 			<strong>Use a Content Warning (CW) when the content of your post calls for one.</strong>
 		</li>
-		<li><strong>"Kossori" (quiet) posts are not private posts.</strong></li>
+		<li>
+			<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan</strong> - though an
+			anonymous summary of one may appear in "Support together."
+		</li>
 	</ul>
 </div>
 
@@ -107,21 +110,43 @@
 		searching, translating, and generating Bot-tan's replies and anonymous summaries.
 	</li>
 	<li>
-		Your posts are stored in your own PDS. Because of how the AT Protocol works, public records can
-		also be fetched and displayed by applications other than the Service.
+		Your posts are stored in your own PDS (except "Kossori" posts - see below). Because of how the
+		AT Protocol works, public records can also be fetched and displayed by applications other than
+		the Service.
 	</li>
 </ul>
 <div class="callout warn">
 	<p>
-		<strong>"Kossori" (quiet) posts are not private posts.</strong> Their bodies stay out of shared timelines,
-		but an anonymous Bot-tan summary may appear in "Support together." A reaction made from that summary
-		is delivered directly to the original post. They are also stored in your PDS as ordinary public records,
-		so other applications can read them. Please do not post anything you need to keep secret.
+		<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan.</strong> Their bodies are stored
+		on the Service's servers, never in your PDS, so neither other users nor other applications can read
+		them, and only you and Bot-tan can reply. In exchange,
+		<strong>Kossori posts are lost if the Service shuts down and cannot be taken to another app.</strong>
+		Images cannot be attached.
+	</p>
+	<p>
+		However, <strong
+			>an anonymous Bot-tan summary - with neither your name nor the original wording - may appear
+			in "Support together."</strong
+		> Readers can react to that summary, but they cannot trace it back to you or to the original text.
+		Summaries are AI-generated, so they may differ from what you actually wrote.
+	</p>
+	<p>
+		Note that <strong
+			>Kossori posts made before 18 August 2026 remain in your PDS as ordinary public records.</strong
+		> The Service shows them only to you, but anyone reading your PDS directly can fetch them. To remove
+		them, delete the records from your PDS yourself.
 	</p>
 </div>
 <p>
 	Channel-only posts may also be anonymously summarized even though their bodies stay out of shared
-	timelines outside the channel. Posts with a Content Warning are excluded from these summaries.
+	timelines outside the channel. Unlike Kossori posts, they are stored in your PDS as ordinary public
+	records. Posts with a Content Warning are excluded from these summaries.
+</p>
+<p>
+	Among the diaries Bot-tan writes,
+	<strong>a diary for a day that includes a Kossori post is readable only by you.</strong> Like Kossori
+	posts, it is never stored in a PDS. Other users see only the date and the post count (the cell in the
+	annual graph on your profile), never the text.
 </p>
 
 <h2 id="t5">5. Our stance</h2>
@@ -269,7 +294,8 @@
 		<strong>Hiding something on the Service does not delete the record from your PDS.</strong> The Service
 		is an AppView; your posts actually live in your PDS. To delete something completely, you must delete
 		the record from your PDS yourself. The operator also cannot stop other AppViews from displaying the
-		same public records.
+		same public records. "Kossori" posts and the diaries that contain them are the exception: they have
+		no counterpart in any PDS, so deleting them on the Service removes them completely.
 	</p>
 </div>
 
@@ -326,6 +352,8 @@
 <p>
 	Even if the Service shuts down, your posts remain in your PDS. That is a benefit of building on
 	the AT Protocol: in principle, your data is not lost when the Service ends.
+	<strong>"Kossori" posts and the diaries that contain them are the one exception</strong> - they are
+	never stored in a PDS, so they are lost when the Service ends.
 </p>
 
 <h2 id="t12">12. Disclaimer</h2>

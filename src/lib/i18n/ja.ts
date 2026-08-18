@@ -168,6 +168,10 @@ export const ja = {
 	// about page — Nagi ならではの機能一覧。カード化するので本文は1行に抑える。
 	aboutFeaturesHeading: 'ほかにもできること',
 	aboutFeaturesLead: 'Blueskyとは少し違う、Nagiならではの機能です。',
+	aboutDiaryTitle: '日記',
+	aboutDiaryBody: 'botたんが毎日その日の投稿を読んで、日記を書いてくれます',
+	aboutKossoriTitle: 'こっそり投稿',
+	aboutKossoriBody: '公開範囲は投稿ごとに選べます。自分とbotたんだけ、にもできます',
 	aboutChannelsTitle: 'チャンネル',
 	aboutChannelsBody: '同じ興味の人が集まる場所',
 	aboutChannelsLink: 'チャンネルを見る',
@@ -192,7 +196,7 @@ export const ja = {
 	aboutProfileBody: 'Blueskyとは独立した姿でいられます',
 	aboutProfileLink: 'プロフィールを編集する',
 	aboutDataTitle: 'データはあなたのもの',
-	aboutDataBody: '投稿はあなた自身のPDSに残ります',
+	aboutDataBody: '投稿はあなた自身のPDSに残ります（こっそり投稿を除く）',
 	aboutDataLink: '全データを削除する',
 
 	// about page — なぜ AT Protocol なのか（従来のSNSとの比較）
@@ -215,7 +219,8 @@ export const ja = {
 	aboutAtprotoMoveLabel: '引っ越し',
 	aboutAtprotoMoveOld: 'できない',
 	aboutAtprotoMoveNagi: 'できる',
-	aboutAtprotoNote: '合わなければ、書いたものを持ったまま出ていけます。',
+	aboutAtprotoNote:
+		'合わなければ、書いたものを持ったまま出ていけます。ただし「こっそり投稿」と、それを含む日の日記だけは例外で、PDSに置かないぶんNagiの中だけに残ります。',
 
 	// about page — 締めの導線
 	aboutFinalHeading: 'はじめてみませんか',
@@ -311,7 +316,7 @@ export const ja = {
 	postScopeKossori: 'こっそり',
 	postScopeKossoriShort: 'こっそり',
 	postScopeKossoriDetail:
-		'自分のプロフィールにだけ投稿します。（botたんが投稿を匿名化して「みんなで全肯定」で紹介することがあります）',
+		'プライベートで投稿します。内容は自分とbotたんだけが読めます。（botたんが投稿を匿名化して「みんなで全肯定」で紹介することがあります）',
 	postScopeFeed: 'このフィード',
 	postScopeFeedShort: 'みんなに',
 	postScopeFeedDetail: 'Nagiの共有タイムラインに投稿します。',
@@ -380,13 +385,9 @@ export const ja = {
 	deletingPost: '削除中…',
 	deletePostFailed: '投稿を削除できませんでした',
 	kossoriBadge: 'こっそり',
+	reactionKossoriHidden: 'こっそり投稿へのリアクションです。内容は表示できません。',
 	kossoriBadgeAria:
-		'こっそり投稿（共有タイムラインに本文は表示されませんが、匿名要約の候補になります）',
-	kossoriEnable: 'こっそりにする',
-	kossoriEnableAria: 'この投稿をこっそりにする',
-	kossoriDisable: '公開に戻す',
-	kossoriDisableAria: 'この投稿を公開に戻す',
-	kossoriToggleFailed: 'こっそり設定を変更できませんでした',
+		'こっそり投稿（自分とbotたんだけが読めます。作者を伏せた匿名要約の候補にはなります）',
 	editPost: '編集',
 	editPostAria: 'この投稿を編集',
 	editPlaceholder: '投稿を編集',
@@ -587,6 +588,7 @@ export const ja = {
 		]
 			.filter(Boolean)
 			.join('、'),
+	diaryPrivate: 'こっそり投稿を含む日なので、この日の日記は本人だけが読めます。',
 	diaryAbout: 'botたんが、その日の投稿をもとに書いてくれた日記です。',
 
 	// login

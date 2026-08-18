@@ -10,6 +10,7 @@
 	import { markAllSeen } from '$lib/notifications/unread.svelte';
 	import { pageRefresh } from '$lib/components/shell/nav';
 	import { startVisiblePolling } from '$lib/polling';
+	import { postHref } from '$lib/feed/post-follow.svelte';
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
@@ -106,10 +107,7 @@
 		refreshHandled = requested;
 		untrack(() => void reload());
 	});
-	const threadHref = (uri: string) => {
-		const [, , did, , rkey] = uri.split('/');
-		return `/thread/${did}/${rkey}`;
-	};
+	const threadHref = (uri: string) => postHref(uri);
 	/**
 	 * 日記はスレッドが無いので、本人のプロフィールの日記タブに飛ばす。
 	 * 名刺の更新も同じくポストが無いので、名刺が置いてある自分のプロフィールへ。

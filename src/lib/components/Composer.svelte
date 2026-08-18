@@ -18,6 +18,7 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 	import { postFollow, postHref } from '$lib/feed/post-follow.svelte';
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
+	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ComposerQuoteEditor from './ComposerQuoteEditor.svelte';
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
@@ -87,7 +88,8 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 	let crosspostReady = $state(false);
 	let botSilent = $state(false);
 	let publishingLoadVersion = 0;
-	let imagePicker: { handlePaste: (event: ClipboardEvent) => void } | undefined;
+	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
+	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
 	let hasEmbeds = $derived(
@@ -111,6 +113,14 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 	let externalTarget = $state<ExternalTarget>('bluesky');
 	let articleTitle = $state('');
 	const kossori = $derived(scope === 'kossori');
+	// こっそりは画像とリンクカードを持てない。blob は参照レコードのある PDS でしか
+	// 保持されず、こっそり投稿にはその参照レコードが無いので、いずれ壊れた画像になる。
+	// 切り替えた時点で添付を落とす（そのまま投稿できてしまうと黙って消える）。
+	$effect(() => {
+		if (!kossori) return;
+		if (attachments.length) attachments = [];
+		if (linkCards.length) linkCards = [];
+	});
 	const selectedChannel = $derived(validChannelSelections(text, channels)[0]);
 	const effectiveChannel = $derived(
 		channel ??
@@ -160,6 +170,24 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
 	const needsArticleTitle = $derived(standardSite && externalEligible && !headingTitle);
 	const articleTitleMissing = $derived(needsArticleTitle && !articleTitle.trim());
+	/**
+	 * こっそりスレッドへの返信か。
+	 *
+	 * こっそりは「共有TLに出すか」ではなく「PDS と AppView のどちらに保存するか」を
+	 * 決める設定なので、スレッドの途中で切り替えられない。ここで固定しないと、
+	 * こっそりスレッドへの返信だけが PDS の公開レコードとして書き出されてしまう。
+	 *
+	 * 判定はスレッドルートの URI（AppView 発行なら必ずこっそり）。移行前のこっそり投稿は
+	 * URI から分からないので、直接の返信のときに post.kossori で補う。
+	 */
+	const kossoriThread = $derived.by(() => {
+		const target = composerHost.replyTarget;
+		if (!target) return false;
+		return isAppviewOwnedUri(target.root.uri) || Boolean(target.post.kossori);
+	});
+	$effect(() => {
+		if (kossoriThread && scope !== 'kossori') scope = 'kossori';
+	});
 	// 外部に出せない状態に変わったら黙って1段階狭める（意図せぬ公開を作らない）。
 	// OAuth scope の再確認中は前回値を保持し、利用不能だと確定してからだけ狭める。
 	$effect(() => {
@@ -317,10 +345,11 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 		draftError = '';
 		try {
 			const assets = await uploadPostAssets(draft);
-			const response = await createPost(draft, assets);
-			optimisticPosts.markCreated(optimisticId, response.data);
-			postFollow.settle(response.data.uri, postHref(response.data.uri));
-			await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
+			const created = await createPost(draft, assets);
+			optimisticPosts.markCreated(optimisticId, created);
+			postFollow.settle(created.uri, postHref(created.uri));
+			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
+			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
 			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
 			// エラーではなく警告として伝える。
 			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの
@@ -348,7 +377,7 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 			// standard.site も同じ扱い。document の rkey は Nagi 投稿の rkey を使い回す。
 			if (article && !draft.cwRestricted && !draft.quote) {
 				try {
-					const uri = response.data.uri;
+					const uri = created.uri;
 					const cover = assets.images[0]?.image;
 					await publishStandardSiteDocument({
 						rkey: uri.slice(uri.lastIndexOf('/') + 1),
@@ -364,7 +393,7 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 			}
 			setLastPostScope(scope);
 			clearComposer();
-			await Promise.resolve(onposted(response.data.uri)).catch(() => undefined);
+			await Promise.resolve(onposted(created.uri)).catch(() => undefined);
 		} catch (e) {
 			optimisticPosts.remove(optimisticId);
 			postFollow.fail();
@@ -405,7 +434,9 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 -->
 <section class="composer" class:rich={mode === 'rich'}>
 	{#snippet editorTools()}
-		<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
+		{#if !kossori}
+			<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
+		{/if}
 	{/snippet}
 
 	{#if composerHost.replyTarget || composerHost.quoteTarget}
@@ -511,8 +542,10 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 		aria-label={m.composerEmbedsAria()}
 		hidden={!hasEmbeds}
 	>
-		<ImageAttachmentEditor bind:attachments disabled={busy} />
-		<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+		{#if !kossori}
+			<ImageAttachmentEditor bind:attachments disabled={busy} />
+			<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+		{/if}
 		<ComposerQuoteEditor quote={quotePick} disabled={busy} />
 	</div>
 	{#if needsArticleTitle}
@@ -535,11 +568,11 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 		<button
 			class="scope-button"
 			type="button"
-			disabled={busy}
+			disabled={busy || kossoriThread}
 			aria-haspopup="dialog"
 			aria-expanded={scopeDialogOpen}
 			aria-label={m.postScopeOpenAria({ scope: scopeLabel })}
-			title={m.postScopeOpenAria({ scope: scopeLabel })}
+			title={kossoriThread ? m.postScopeKossoriDetail() : m.postScopeOpenAria({ scope: scopeLabel })}
 			onclick={() => (scopeDialogOpen = true)}
 		>
 			<Icon name={scopeIcon} size={15} />

@@ -5,6 +5,7 @@
 	import type { ProfileDetail, ProfileFeedFilter } from '$lib/api/types';
 	import { Feed, feedKey } from '$lib/feed/feed.svelte';
 	import {
+		isKossoriReactionItem,
 		isNewsReactionItem,
 		ProfileReactionFeed,
 		reactionItemUri,
@@ -326,6 +327,12 @@
 				{#each reactionFeed.items as item (reactionItemUri(item))}
 					{#if isNewsReactionItem(item)}
 						<NewsCard news={item.news} botActor={reactionFeed.botActor} />
+					{:else if isKossoriReactionItem(item)}
+						<!-- こっそり投稿。作者も本文も辿れないので、押した事実だけを残す。 -->
+						<article class="reaction-kossori">
+							<Icon name="hide" size={16} />
+							<p>{m.reactionKossoriHidden()}</p>
+						</article>
 					{:else}
 						<ThreadUnit {item} botActor={reactionFeed.botActor} ondeleted={postDeleted} />
 					{/if}

@@ -160,6 +160,10 @@ export const en: Messages = {
 
 	aboutFeaturesHeading: 'And a few more things',
 	aboutFeaturesLead: 'Features that make Nagi a little different from Bluesky.',
+	aboutDiaryTitle: 'Diaries',
+	aboutDiaryBody: 'Bot-tan reads the day’s posts every night and writes you a diary',
+	aboutKossoriTitle: 'Limited posts',
+	aboutKossoriBody: 'Pick the reach per post — including one only you and bot-tan can read',
 	aboutChannelsTitle: 'Channels',
 	aboutChannelsBody: 'Where people who share an interest gather',
 	aboutChannelsLink: 'Browse channels',
@@ -184,7 +188,7 @@ export const en: Messages = {
 	aboutProfileBody: 'Independent from your Bluesky one',
 	aboutProfileLink: 'Edit your profile',
 	aboutDataTitle: 'Your data stays yours',
-	aboutDataBody: 'Posts are stored in your own PDS',
+	aboutDataBody: 'Posts are stored in your own PDS (Limited posts excepted)',
 	aboutDataLink: 'Delete all of your data',
 
 	aboutAtprotoHeading: 'Why the AT Protocol?',
@@ -206,7 +210,8 @@ export const en: Messages = {
 	aboutAtprotoMoveLabel: 'Moving elsewhere',
 	aboutAtprotoMoveOld: 'Not possible',
 	aboutAtprotoMoveNagi: 'Always possible',
-	aboutAtprotoNote: 'If it isn’t for you, walk away and take everything you wrote with you.',
+	aboutAtprotoNote:
+		'If it isn’t for you, walk away and take everything you wrote with you. The one exception is a Limited post, and any diary that contains one: those never touch your PDS, so they stay inside Nagi.',
 
 	aboutFinalHeading: 'Ready to start?',
 	aboutFinalBody: 'A single line is enough. Bot-tan is waiting.',
@@ -296,7 +301,7 @@ export const en: Messages = {
 	postScopeKossori: 'Limited',
 	postScopeKossoriShort: 'Limited',
 	postScopeKossoriDetail:
-		'Posts to your profile only. (Bot-tan may anonymize it and share it in Affirm together.)',
+		'Posts privately. Only you and bot-tan can read it. (Bot-tan may anonymize it and share it in Affirm together.)',
 	postScopeFeed: 'This feed',
 	postScopeFeedShort: 'Everyone',
 	postScopeFeedDetail: 'Posts to the shared Nagi timeline.',
@@ -366,13 +371,9 @@ export const en: Messages = {
 	deletingPost: 'Deleting…',
 	deletePostFailed: 'Could not delete post',
 	kossoriBadge: 'Limited',
+	reactionKossoriHidden: 'A reaction to a Limited post. Its contents cannot be shown.',
 	kossoriBadgeAria:
-		'Limited post (the body is hidden from shared timelines but may be anonymously summarized)',
-	kossoriEnable: 'Make limited',
-	kossoriEnableAria: 'Hide this post from the timelines',
-	kossoriDisable: 'Make public',
-	kossoriDisableAria: 'Show this post on the timelines again',
-	kossoriToggleFailed: 'Could not change the limited mode setting',
+		'Limited post (only you and bot-tan can read it; it may still be summarized anonymously)',
 	editPost: 'Edit',
 	editPostAria: 'Edit this post',
 	editPlaceholder: 'Edit your post',
@@ -564,6 +565,7 @@ export const en: Messages = {
 		]
 			.filter(Boolean)
 			.join(', '),
+	diaryPrivate: 'This day includes a Limited post, so only its author can read the diary.',
 	diaryAbout: "Bot-tan writes these entries from that day's posts.",
 
 	loginTitle: 'Join Nagi',

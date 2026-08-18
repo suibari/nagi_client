@@ -5,13 +5,11 @@
 	import ImageGallery from './ImageGallery.svelte';
 	import LinkCard from './LinkCard.svelte';
 	import QuoteFrame from './QuoteFrame.svelte';
+	import { postHref } from '$lib/feed/post-follow.svelte';
 	let { post }: { post: PostView } = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
-	let threadHref = $derived.by(() => {
-		const [did, , rkey] = post.uri.slice('at://'.length).split('/');
-		return `/thread/${did}/${rkey}`;
-	});
+	let threadHref = $derived(postHref(post.uri));
 </script>
 
 <QuoteFrame

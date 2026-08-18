@@ -224,7 +224,20 @@ export type ProfileDetail = ActorView & {
 	cardUpdatedAt?: string;
 };
 export type ProfileNewsReactionItem = { kind: 'news'; news: NewsView };
-export type ProfileFeedItem = FeedItem | ProfileNewsReactionItem;
+/**
+ * こっそり投稿に対するリアクション。作者も本文も辿れないので、リアクションタブでは
+ * 中身の代わりにこれが返る。黙って消すと「押したはずのものが無い」になるため、
+ * 時系列の位置は保ったままプレースホルダとして描く。
+ */
+export type ProfileKossoriReactionItem = {
+	kind: 'kossori';
+	reactionUri: string;
+	reactedAt: string;
+};
+export type ProfileFeedItem =
+	| FeedItem
+	| ProfileNewsReactionItem
+	| ProfileKossoriReactionItem;
 export type ProfilePage = { profile: ProfileDetail; feed: Page<FeedItem> };
 export type ProfileReactionPage = {
 	profile: ProfileDetail;
@@ -252,6 +265,11 @@ export type DiaryView = {
 	involvedActors?: ActorView[];
 	/** 11人目以降の関わった相手がいる。 */
 	involvedActorsHasMore?: boolean;
+	/**
+	 * その日の材料にこっそり投稿が含まれる日記。本人以外には text / titleJa / titleEn /
+	 * involvedActors が伏せられる（date と postCount は返るのでコミットグラフには出る）。
+	 */
+	isPrivate?: boolean;
 	langs?: string[];
 	createdAt: string;
 	indexedAt: string;

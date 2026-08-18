@@ -86,13 +86,13 @@ export class NewsQuote {
 		try {
 			const assets = await uploadPostAssets(draft);
 			// ニュース引用もNagi内レコードを参照するため、Blueskyへはクロスポストしない。
-			const response = await createPost(draft, assets);
+			const created = await createPost(draft, assets);
 			this.clear();
 			this.composing = false;
 			// ニュース一覧に投稿は並ばないので、追従できない代わりに導線を出す。
 			// フィードを開いている場合に備えて合図も送る。
 			postedSignal.notify();
-			postFollowNotice.show(postHref(response.data.uri));
+			postFollowNotice.show(postHref(created.uri));
 		} catch (e) {
 			this.error = postSubmissionErrorMessage(e);
 		} finally {

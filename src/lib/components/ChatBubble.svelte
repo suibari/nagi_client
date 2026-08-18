@@ -11,13 +11,8 @@
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
-	import {
-		createPost,
-		deleteRecord,
-		preparePostDraft,
-		setPostKossori,
-		updatePost,
-	} from '$lib/atproto/records';
+	import { createPost, deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
+	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
 	import type { ImageAttachment, PostEditImage } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
@@ -118,7 +113,6 @@
 	let mentions = $state<MentionSelection[]>([]);
 	let channels = $state<ChannelSelection[]>([]);
 	let emojis = $state<EmojiSelection[]>([]);
-	let kossoriBusy = $state(false);
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
 	let editing = $state(false);
 	let editText = $state('');
@@ -159,8 +153,24 @@
 		Boolean(maxLinkCards && post.linkCards && post.linkCards.length > maxLinkCards),
 	);
 	let topLevel = $derived(!post.reply);
+	/**
+	 * この投稿への返信がこっそりスレッドに入るか。
+	 *
+	 * こっそりは「共有TLに出すかどうか」ではなく「どこに保存するか」を決めるので、
+	 * 返信レコードにも必ず引き継ぐ必要がある。引き継ぎ損ねると、こっそりスレッドへの
+	 * 返信だけが PDS の公開レコードとして書き出されてしまう。
+	 *
+	 * 判定はスレッドルートの URI で行う。threadKossori は CH 限定と合流していて、
+	 * 保存先の判断には使えない（CH 限定はこっそりではない）。ルートが PDS 上にある
+	 * 移行前のこっそり投稿だけは URI から分からないので、直接の返信のときに post.kossori で補う。
+	 */
+	let replyIsKossori = $derived(
+		isAppviewOwnedUri(post.reply?.root.uri ?? post.uri) || Boolean(post.kossori),
+	);
 	let optimistic = $derived(Boolean(post.optimisticState));
-	let threadHref = $derived(`/thread/${post.author.did}/${post.uri.split('/').pop()}`);
+	// リンクは URI から組む。こっそり投稿の URI は著者ではなく AppView の DID 配下なので、
+	// author.did から組むとスレッドを開けない。
+	let threadHref = $derived(postHref(post.uri));
 	// 外国語の投稿にだけ「選択したプロバイダーで翻訳」ボタンを出す。
 	let translateSourceLang = $derived(normalizeSupportedLanguage(post.langs?.[0]));
 	let canTranslateExternally = $derived(
@@ -199,7 +209,7 @@
 			return;
 		}
 		postError = '';
-		const defaultScope = post.kossori ? 'kossori' : 'feed';
+		const defaultScope = replyIsKossori ? 'kossori' : 'feed';
 		if (mode === 'reply') {
 			composerHost.openReply(post, defaultScope);
 		} else {
@@ -409,8 +419,9 @@
 			mentions,
 			mode === 'quote' ? channels : [],
 			emojis,
-			// こっそりはスレッドルートだけが所有するため、返信レコードへ複製しない。
-			false,
+			// こっそりは「共有TLに出すか」ではなく「どこに保存するか」の設定なので、
+			// スレッドルートだけの所有にはできず、返信にも引き継ぐ。
+			mode === 'reply' && replyIsKossori,
 			targetChannel,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
@@ -450,11 +461,13 @@
 		quotePick.clear();
 		try {
 			// 返信・引用はNagi内の投稿文脈を参照するため、Blueskyへはクロスポストしない。
-			const response = await createPost(draft);
-			optimisticPosts.markCreated(optimisticId, response.data);
+			const created = await createPost(draft);
+			optimisticPosts.markCreated(optimisticId, created);
 			// 画面に出せない投稿（検索タブなど）では、postFollow が導線へ切り替える。
-			postFollow.settle(response.data.uri, postHref(response.data.uri));
-			await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
+			postFollow.settle(created.uri, postHref(created.uri));
+			// こっそりは PDS に取りに行く相手が居ないので、AppView への即時反映は不要。
+			if (!draft.kossori)
+				await ensureRecord(created.uri, created.cid).catch(() => undefined);
 			await Promise.resolve(onposted?.()).catch(() => undefined);
 		} catch (error) {
 			optimisticPosts.remove(optimisticId);
@@ -468,41 +481,24 @@
 	}
 	async function removePost() {
 		if (deleting) return;
-		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
-		if (!match) {
+		const rkey = post.uri.split('/').pop();
+		if (!rkey) {
 			deleteError = m.deletePostFailed();
 			return;
 		}
 		deleting = true;
 		deleteError = '';
 		try {
-			await deleteRecord(match[1], match[2], post.cid);
-			// 記事にしてある投稿なら standard.site 側も消す。
-			void syncStandardSiteDocument(match[2]);
+			// こっそりは PDS に正本が無いので AppView 側の手続きへ振り分ける（deletePost が判定）。
+			await deletePost(post.uri, post.cid);
+			// 記事にしてある投稿なら standard.site 側も消す。こっそりは記事化できないので空振りする。
+			void syncStandardSiteDocument(rkey);
 			deleteOpen = false;
 			ondeleted?.(post.uri);
 		} catch (error) {
 			deleteError = error instanceof Error ? error.message : m.deletePostFailed();
 		} finally {
 			deleting = false;
-		}
-	}
-	async function toggleKossori() {
-		if (kossoriBusy) return;
-		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
-		if (!match) {
-			postError = m.kossoriToggleFailed();
-			return;
-		}
-		kossoriBusy = true;
-		postError = '';
-		try {
-			await setPostKossori(match[2], !post.kossori);
-			await Promise.resolve(onposted?.()).catch(() => undefined);
-		} catch (error) {
-			postError = error instanceof Error ? error.message : m.kossoriToggleFailed();
-		} finally {
-			kossoriBusy = false;
 		}
 	}
 </script>
@@ -709,18 +705,6 @@
 								>
 									<Icon name="edit" size={17} />
 									<span>{editing ? m.cancel() : m.editPost()}</span>
-								</button>
-							{/if}
-							{#if mine && topLevel}
-								<button
-									role="menuitemcheckbox"
-									class:active={post.kossori}
-									disabled={kossoriBusy}
-									aria-checked={Boolean(post.kossori)}
-									onclick={() => runSecondaryAction(closeMenu, () => void toggleKossori())}
-								>
-									<Icon name="hide" size={17} />
-									<span>{post.kossori ? m.kossoriDisable() : m.kossoriEnable()}</span>
 								</button>
 							{/if}
 							{#if mine}

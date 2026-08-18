@@ -6,6 +6,7 @@
 	import { tick } from 'svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import ChatBubble from './ChatBubble.svelte';
+	import Icon from './shell/Icon.svelte';
 
 	let {
 		did,
@@ -103,7 +104,8 @@
 		i18n.locale === 'ja' ? (entry.titleJa ?? entry.titleEn) : (entry.titleEn ?? entry.titleJa);
 	const actorName = (actor: ActorView) => actor.displayName ?? actor.handle;
 	const diaryPost = $derived.by((): PostView | undefined => {
-		if (!current) return undefined;
+		// こっそりを含む日の日記は本人以外に本文が返らない。吹き出しの代わりに理由を出す。
+		if (!current || current.isPrivate) return undefined;
 		return {
 			uri: current.uri,
 			cid: current.cid,
@@ -237,7 +239,12 @@
 			<p class="diary-hint">{m.diaryEmptyYear()}</p>
 		{/if}
 
-		{#if current && diaryPost}
+		{#if current?.isPrivate}
+			<article class="diary-entry diary-private">
+				<Icon name="hide" size={16} />
+				<p>{m.diaryPrivate()}</p>
+			</article>
+		{:else if current && diaryPost}
 			<article class="diary-entry">
 				<ChatBubble post={diaryPost} displayOnly collapsible={false} />
 			</article>
@@ -409,6 +416,16 @@
 	}
 	.diary-entry {
 		min-inline-size: 0;
+	}
+	.diary-private {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 12px 14px;
+		border: 1px dashed var(--border);
+		border-radius: 12px;
+		font-size: 13px;
+		color: var(--text-muted);
 	}
 	.diary-hint,
 	.diary-about {

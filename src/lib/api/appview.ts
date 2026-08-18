@@ -188,6 +188,33 @@ export const getThread = (uri: string) =>
 		'com.suibari.nagi.getThread',
 		`/xrpc/com.suibari.nagi.getThread?uri=${encodeURIComponent(uri)}`,
 	);
+/**
+ * こっそり投稿は PDS レコードにせず AppView にだけ置く。よって createRecord ではなく
+ * この手続きを通し、ensureRecord も呼ばない（PDS に取りに行く相手が居ない）。
+ * 返る URI は著者 DID を含まない AppView 発行のもの。
+ */
+export const createKossoriPost = (input: {
+	text: string;
+	facets?: unknown;
+	langs?: string[];
+	createdAt: string;
+	botSilent?: boolean;
+	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
+}) =>
+	call<{ uri: string; cid: string }>(
+		'com.suibari.nagi.createKossoriPost',
+		'/xrpc/com.suibari.nagi.createKossoriPost',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
+/** こっそり投稿の削除。PDS に控えが無いので、これで本文は完全に消える。 */
+export const deleteKossoriPost = (uri: string) =>
+	call<{ deleted: boolean }>(
+		'com.suibari.nagi.deleteKossoriPost',
+		'/xrpc/com.suibari.nagi.deleteKossoriPost',
+		{ method: 'POST', body: JSON.stringify({ uri }) },
+		'required',
+	);
 export const ensureRecord = (uri: string, cid: string) =>
 	call<{ uri: string; cid: string; indexed: true }>(
 		'com.suibari.nagi.ensureRecord',
@@ -321,7 +348,11 @@ export const getProfileWebsite = (actor: string) =>
 		{},
 		'none',
 	);
-/** 日記は公開コンテンツなので認証不要。年間グラフは from/to を1組で渡す。 */
+/**
+ * 日記は基本的に公開コンテンツだが、こっそり投稿を含む日だけは本人にしか本文が返らない。
+ * サインインしていれば自分の分を読めるよう optional で送る（未ログインでも日付と件数は返る）。
+ * 年間グラフは from/to を1組で渡す。
+ */
 export const getDiaries = (
 	actor: string,
 	opts: { month?: string; from?: string; to?: string; cursor?: string } = {},
@@ -335,7 +366,7 @@ export const getDiaries = (
 		'com.suibari.nagi.getDiaries',
 		`/xrpc/com.suibari.nagi.getDiaries?${params}`,
 		{},
-		'none',
+		'optional',
 	);
 };
 export const searchActors = (

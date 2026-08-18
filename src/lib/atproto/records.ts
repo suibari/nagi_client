@@ -18,7 +18,8 @@ import { APP_LINKS } from './appLinks';
 import { hasContentWarning } from './contentWarning';
 import { BLUESKY_PROFILE_COLLECTION_SCOPE } from '$lib/oauth/client';
 import { PostSubmissionError } from '$lib/post/submission-error';
-import { ensureRecord } from '$lib/api/appview';
+import { createKossoriPost, deleteKossoriPost, ensureRecord } from '$lib/api/appview';
+import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
@@ -353,9 +354,33 @@ export async function uploadPostAssets(draft: PostDraft): Promise<PostAssets> {
 	return { images, cards };
 }
 
-export async function createPost(draft: PostDraft, assets?: PostAssets) {
+/**
+ * 投稿を作る。返り値は経路によらず `{ uri, cid }` に揃える。こっそりは PDS レコードでは
+ * ないので createRecord のレスポンス形（`.data`）を通せないため。
+ */
+export async function createPost(
+	draft: PostDraft,
+	assets?: PostAssets,
+): Promise<{ uri: string; cid: string }> {
 	const s = current();
 	const agent = new Agent(s);
+	// こっそりは PDS に置かない。本文は AppView だけが持ち、URI も著者 DID を含まない
+	// AppView 発行のものになる。画像とリンクカードは扱わない（blob は参照レコードのある
+	// PDS でしか保持されず、こっそりにはその参照レコードが無いため）。
+	if (draft.kossori) {
+		try {
+			return await createKossoriPost({
+				text: draft.text,
+				facets: draft.facets,
+				langs: draft.langs,
+				createdAt: draft.createdAt,
+				...(draft.botSilent && { botSilent: true }),
+				...(draft.reply && { reply: draft.reply }),
+			});
+		} catch (cause) {
+			throw new PostSubmissionError('record-create', cause);
+		}
+	}
 	const { images, cards } = assets ?? (await uploadPostAssets(draft));
 	const embed = draft.quote
 		? { $type: `${POST}#quote`, record: draft.quote, ...(images.length ? { images } : {}) }
@@ -363,7 +388,7 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 			? { $type: `${POST}#images`, images }
 			: undefined;
 	try {
-		return await agent.com.atproto.repo.createRecord({
+		const { data } = await agent.com.atproto.repo.createRecord({
 			repo: s.did,
 			collection: POST,
 			validate: false,
@@ -374,7 +399,7 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 				langs: draft.langs,
 				createdAt: draft.createdAt,
 				...(draft.cwRestricted && { cwRestricted: true }),
-				...(draft.kossori && { kossori: true }),
+				// kossori はここへ来ない（上で AppView 経路へ分岐済み）。
 				...(draft.botSilent && { botSilent: true }),
 				...(draft.channel && { channel: draft.channel }),
 				...(draft.channel && draft.channelOnly && { channelOnly: true }),
@@ -384,37 +409,23 @@ export async function createPost(draft: PostDraft, assets?: PostAssets) {
 				...(embed && { embed }),
 			},
 		});
+		return { uri: data.uri, cid: data.cid };
 	} catch (cause) {
 		throw new PostSubmissionError('record-create', cause);
 	}
 }
 /**
- * 既存のトップレベル投稿のこっそり状態だけを切り替える。text/embed/facets 等は
- * getRecord で取得した値をそのまま putRecord で書き戻して保持する。
+ * 投稿を削除する。こっそりは PDS に正本が無いので AppView の手続きを通す。
+ * 通常の投稿は従来どおり PDS のレコードを消して AppView へ伝える。
+ *
+ * こっそり⇄公開の後からの切り替えは無い。保管場所が PDS と AppView で分かれており、
+ * 移し替えると URI が変わってリアクションやブックマークが外れるため、投稿時に確定させる。
  */
-export async function setPostKossori(rkey: string, kossori: boolean) {
-	const s = current();
-	const agent = new Agent(s);
-	const { data } = await agent.com.atproto.repo.getRecord({
-		repo: s.did,
-		collection: POST,
-		rkey,
-	});
-	const record: Record<string, unknown> = {
-		...(data.value as Record<string, unknown>),
-		$type: POST,
-	};
-	if (kossori) record.kossori = true;
-	else delete record.kossori;
-	return indexed(
-		agent.com.atproto.repo.putRecord({
-			repo: s.did,
-			collection: POST,
-			rkey,
-			validate: false,
-			record,
-		}),
-	);
+export async function deletePost(uri: string, cid?: string) {
+	if (isAppviewOwnedUri(uri)) return deleteKossoriPost(uri);
+	const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(uri);
+	if (!match) throw new Error('Invalid post URI');
+	return deleteRecord(match[1], match[2], cid);
 }
 type StoredPostImage = {
 	image: unknown;
