@@ -233,6 +233,9 @@ export type ProfileKossoriReactionItem = {
 	kind: 'kossori';
 	reactionUri: string;
 	reactedAt: string;
+	/** 元投稿を伏せたまま、本人が押したリアクションだけを表示する。 */
+	emoji: string;
+	bluemoji?: EmojiView;
 };
 export type ProfileFeedItem = FeedItem | ProfileNewsReactionItem | ProfileKossoriReactionItem;
 export type ProfilePage = { profile: ProfileDetail; feed: Page<FeedItem> };

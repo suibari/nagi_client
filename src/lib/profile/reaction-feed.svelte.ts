@@ -15,9 +15,8 @@ export const isNewsReactionItem = (item: ProfileFeedItem): item is ProfileNewsRe
 	'kind' in item && item.kind === 'news';
 
 /** こっそり投稿へのリアクション。元投稿は辿れないのでプレースホルダとして描く。 */
-export const isKossoriReactionItem = (
-	item: ProfileFeedItem,
-): item is ProfileKossoriReactionItem => 'kind' in item && item.kind === 'kossori';
+export const isKossoriReactionItem = (item: ProfileFeedItem): item is ProfileKossoriReactionItem =>
+	'kind' in item && item.kind === 'kossori';
 
 const isPostReactionItem = (item: ProfileFeedItem): item is FeedItem =>
 	!isNewsReactionItem(item) && !isKossoriReactionItem(item);
@@ -89,5 +88,9 @@ export class ProfileReactionFeed {
 
 	removePost(uri: string) {
 		this.items = this.items.filter((item) => !isPostReactionItem(item) || item.uri !== uri);
+	}
+
+	removeReaction(uri: string) {
+		this.items = this.items.filter((item) => reactionItemUri(item) !== uri);
 	}
 }

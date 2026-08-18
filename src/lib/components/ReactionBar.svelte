@@ -18,6 +18,7 @@
 		ontoggled,
 		onpickerclose,
 		showReactors = true,
+		readOnly = false,
 	}: {
 		uri: string;
 		cid: string;
@@ -27,6 +28,8 @@
 		ontoggled?: (active: boolean) => void;
 		onpickerclose?: () => void;
 		showReactors?: boolean;
+		/** 履歴など、リアクションの表示だけを許可して追加・解除をさせない場所。 */
+		readOnly?: boolean;
 	} = $props();
 	const REACTION = 'com.suibari.nagi.reaction';
 	// The appview only learns about reactions via jetstream (a few seconds behind),
@@ -144,23 +147,33 @@
 	<div class="reactions">
 		{#each local as reaction (keyOf(reaction))}
 			<div class="reaction-group">
-				<button
-					class="reaction-emoji"
-					class:active={reactedByViewer(reaction)}
-					aria-pressed={reactedByViewer(reaction)}
-					aria-label={m.reactWithAria({ emoji: labelOf(reaction) })}
-					onclick={() => toggle(reaction.bluemoji ?? reaction.emoji)}
-				>
-					{#if reaction.bluemoji && !unavailable.includes(reaction.bluemoji.uri)}
-						<BluemojiMedia
-							class="reaction-image"
-							emoji={reaction.bluemoji}
-							onunavailable={() => (unavailable = [...unavailable, reaction.bluemoji!.uri])}
-						/>
-					{:else}
-						{labelOf(reaction)}
-					{/if}
-				</button>
+				{#if readOnly}<span class="reaction-emoji">
+						{#if reaction.bluemoji && !unavailable.includes(reaction.bluemoji.uri)}
+							<BluemojiMedia
+								class="reaction-image"
+								emoji={reaction.bluemoji}
+								onunavailable={() => (unavailable = [...unavailable, reaction.bluemoji!.uri])}
+							/>
+						{:else}
+							{labelOf(reaction)}
+						{/if}
+					</span>{:else}<button
+						class="reaction-emoji"
+						class:active={reactedByViewer(reaction)}
+						aria-pressed={reactedByViewer(reaction)}
+						aria-label={m.reactWithAria({ emoji: labelOf(reaction) })}
+						onclick={() => toggle(reaction.bluemoji ?? reaction.emoji)}
+					>
+						{#if reaction.bluemoji && !unavailable.includes(reaction.bluemoji.uri)}
+							<BluemojiMedia
+								class="reaction-image"
+								emoji={reaction.bluemoji}
+								onunavailable={() => (unavailable = [...unavailable, reaction.bluemoji!.uri])}
+							/>
+						{:else}
+							{labelOf(reaction)}
+						{/if}
+					</button>{/if}
 				{#if showReactors}
 					<div class="reaction-actors">
 						{#each reaction.reactors as actor (actor.did)}
@@ -185,9 +198,9 @@
 	</div>
 {/if}
 
-<QuickEmojiPalette
-	bind:open={pickerOpen}
-	anchor={pickerAnchor}
-	select={toggle}
-	close={onpickerclose}
-/>
+{#if !readOnly}<QuickEmojiPalette
+		bind:open={pickerOpen}
+		anchor={pickerAnchor}
+		select={toggle}
+		close={onpickerclose}
+	/>{/if}

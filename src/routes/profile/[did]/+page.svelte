@@ -12,6 +12,7 @@
 	} from '$lib/profile/reaction-feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
+	import KossoriReactionBubble from '$lib/components/KossoriReactionBubble.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import BusinessCardDialog from '$lib/components/BusinessCardDialog.svelte';
 	import { cardFromProfile } from '$lib/card/data';
@@ -61,6 +62,7 @@
 	const initialDiaryDate = $derived(page.url.searchParams.get('date') ?? undefined);
 	let tab = $state<ProfileTab>('posts');
 	let profile = $state<ProfileDetail>();
+	let reactionActor = $derived(profile ?? { did, handle: did });
 	let muteError = $state('');
 	let homeListError = $state('');
 	async function toggleMute() {
@@ -328,11 +330,12 @@
 					{#if isNewsReactionItem(item)}
 						<NewsCard news={item.news} botActor={reactionFeed.botActor} />
 					{:else if isKossoriReactionItem(item)}
-						<!-- こっそり投稿。作者も本文も辿れないので、押した事実だけを残す。 -->
-						<article class="reaction-kossori">
-							<Icon name="hide" size={16} />
-							<p>{m.reactionKossoriHidden()}</p>
-						</article>
+						<KossoriReactionBubble
+							{item}
+							actor={reactionActor}
+							removable={isSelf}
+							onremoved={() => reactionFeed?.removeReaction(item.reactionUri)}
+						/>
 					{:else}
 						<ThreadUnit {item} botActor={reactionFeed.botActor} ondeleted={postDeleted} />
 					{/if}

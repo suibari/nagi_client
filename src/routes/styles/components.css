@@ -1415,10 +1415,10 @@
 	font-size: 12px;
 	transition: transform 0.1s ease;
 }
-.reaction-emoji:hover {
+button.reaction-emoji:hover {
 	border-color: var(--accent-border);
 }
-.reaction-emoji:active {
+button.reaction-emoji:active {
 	transform: scale(1.15);
 }
 .reaction-emoji.active {
