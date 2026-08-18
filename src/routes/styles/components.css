@@ -235,9 +235,13 @@
 	color: var(--text);
 	text-align: left;
 }
-.mention-suggestions button:hover,
+.mention-suggestions button:hover {
+	background: var(--bg-hover);
+}
 .mention-suggestions button.active {
-	background: var(--bg-subtle);
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+	box-shadow: inset 3px 0 0 var(--accent);
 }
 .mention-suggestions button span {
 	display: grid;
@@ -269,7 +273,7 @@
 .suggestion-skeleton-figure,
 .suggestion-skeleton-bar {
 	border-radius: var(--radius-s);
-	background: var(--bg-subtle);
+	background: var(--bg-hover);
 	animation: suggestion-skeleton-pulse 1.2s ease-in-out infinite;
 }
 .suggestion-skeleton-figure {
@@ -1294,7 +1298,7 @@
 	padding: 3px 12px;
 	font-size: 12px;
 	color: var(--text-faint);
-	background: var(--bg-subtle);
+	background: var(--bg-inset);
 	border: 1px solid var(--line);
 	border-radius: var(--radius-pill);
 	text-decoration: none;
@@ -1584,7 +1588,7 @@
 	padding: 5px 8px;
 	border: 0;
 	border-radius: 8px;
-	background: var(--bg-subtle);
+	background: var(--bg-inset);
 	color: var(--text-muted);
 	font-size: 12px;
 	font-weight: 700;
@@ -2053,7 +2057,7 @@
 	min-height: 60px;
 	padding: 6px;
 	border-radius: var(--radius-m);
-	background: var(--bg-soft);
+	background: var(--bg-inset);
 }
 .emoji-settings-item .bluemoji-media {
 	width: 44px;
