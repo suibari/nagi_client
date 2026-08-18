@@ -160,6 +160,10 @@ export const en: Messages = {
 
 	aboutFeaturesHeading: 'And a few more things',
 	aboutFeaturesLead: 'Features that make Nagi a little different from Bluesky.',
+	aboutCategoryConnect: 'Connect, gently',
+	aboutCategoryKeep: 'Write and keep',
+	aboutCategoryOwn: 'At your own pace',
+	aboutCategoryReach: 'Reach further',
 	aboutDiaryTitle: 'Diaries',
 	aboutDiaryBody: 'Bot-tan reads the day’s posts every night and writes you a diary',
 	aboutKossoriTitle: 'Limited posts',

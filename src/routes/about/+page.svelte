@@ -13,6 +13,13 @@
 		body: () => string;
 		href?: string;
 	};
+	/**
+	 * 機能カードのカテゴリ。12枚を平らに並べると「羅列」に見えて、どれも同じ重みの
+	 * 設定項目のように読めてしまうので、意味のまとまりごとに見出しと色を与える。
+	 * 色だけだと何の色か分からないため、必ず見出しとセットで出す。
+	 */
+	type FeatureCategory = 'connect' | 'keep' | 'own' | 'reach';
+	type FeatureGroup = { category: FeatureCategory; label: () => string; items: Feature[] };
 	type CompareRow = { label: () => string; old: () => string; nagi: () => string };
 
 	// 「選ばれる理由」。ここで語ったものは下の機能一覧には重ねない。
@@ -28,50 +35,74 @@
 	];
 	// 一覧で圧倒しないよう、1枚 = アイコン + 見出し + 1行。詳細は各設定ページに任せ、
 	// href があるカードは全体をリンクにする。
-	const features: Feature[] = [
-		{ icon: 'hash', title: m.aboutChannelsTitle, body: m.aboutChannelsBody, href: '/channels' },
-		{ icon: 'emoji', title: m.aboutReactionTitle, body: m.aboutReactionBody },
-		{ icon: 'draft', title: m.aboutDiaryTitle, body: m.aboutDiaryBody },
-		// こっそりは「選べる公開範囲のひとつ」。つながる機能の後に置いて、Nagi 全体が
-		// こっそり前提の場所に見えないようにする。
-		{ icon: 'hide', title: m.aboutKossoriTitle, body: m.aboutKossoriBody },
+	// 並びは「人とつながる → 残る → 自分で決める → 外へ」。こっそりを先頭に置くと
+	// Nagi 全体がこっそり前提の場所に見えるので、つながる機能の後に置く。
+	const featureGroups: FeatureGroup[] = [
 		{
-			icon: 'emojiPlus',
-			title: m.aboutCustomEmojiTitle,
-			body: m.aboutCustomEmojiBody,
-			href: '/settings/emoji',
-		},
-		{ icon: 'markdown', title: m.aboutMarkdownTitle, body: m.aboutMarkdownBody },
-		{ icon: 'edit', title: m.aboutEditTitle, body: m.aboutEditBody },
-		{
-			icon: 'language',
-			title: m.aboutTranslateTitle,
-			body: m.aboutTranslateBody,
-			href: '/settings/language',
-		},
-		{
-			icon: 'send',
-			title: m.aboutCrosspostTitle,
-			body: m.aboutCrosspostBody,
-			href: '/settings/crosspost',
+			category: 'connect',
+			label: m.aboutCategoryConnect,
+			items: [
+				{ icon: 'hash', title: m.aboutChannelsTitle, body: m.aboutChannelsBody, href: '/channels' },
+				{ icon: 'emoji', title: m.aboutReactionTitle, body: m.aboutReactionBody },
+				{
+					icon: 'emojiPlus',
+					title: m.aboutCustomEmojiTitle,
+					body: m.aboutCustomEmojiBody,
+					href: '/settings/emoji',
+				},
+				{
+					icon: 'language',
+					title: m.aboutTranslateTitle,
+					body: m.aboutTranslateBody,
+					href: '/settings/language',
+				},
+			],
 		},
 		{
-			icon: 'link',
-			title: m.aboutStandardSiteTitle,
-			body: m.aboutStandardSiteBody,
-			href: '/settings/crosspost',
+			category: 'keep',
+			label: m.aboutCategoryKeep,
+			items: [
+				{ icon: 'draft', title: m.aboutDiaryTitle, body: m.aboutDiaryBody },
+				{ icon: 'markdown', title: m.aboutMarkdownTitle, body: m.aboutMarkdownBody },
+				{ icon: 'edit', title: m.aboutEditTitle, body: m.aboutEditBody },
+			],
 		},
 		{
-			icon: 'profile',
-			title: m.aboutProfileTitle,
-			body: m.aboutProfileBody,
-			href: '/settings/profile',
+			category: 'own',
+			label: m.aboutCategoryOwn,
+			items: [
+				{ icon: 'hide', title: m.aboutKossoriTitle, body: m.aboutKossoriBody },
+				{
+					icon: 'profile',
+					title: m.aboutProfileTitle,
+					body: m.aboutProfileBody,
+					href: '/settings/profile',
+				},
+				{
+					icon: 'shield',
+					title: m.aboutDataTitle,
+					body: m.aboutDataBody,
+					href: '/settings/delete-data',
+				},
+			],
 		},
 		{
-			icon: 'shield',
-			title: m.aboutDataTitle,
-			body: m.aboutDataBody,
-			href: '/settings/delete-data',
+			category: 'reach',
+			label: m.aboutCategoryReach,
+			items: [
+				{
+					icon: 'send',
+					title: m.aboutCrosspostTitle,
+					body: m.aboutCrosspostBody,
+					href: '/settings/crosspost',
+				},
+				{
+					icon: 'link',
+					title: m.aboutStandardSiteTitle,
+					body: m.aboutStandardSiteBody,
+					href: '/settings/crosspost',
+				},
+			],
 		},
 	];
 	const compareRows: CompareRow[] = [
@@ -160,21 +191,26 @@
 	<section class="about-section">
 		<h2 class="about-heading">{m.aboutFeaturesHeading()}</h2>
 		<p class="about-lead">{m.aboutFeaturesLead()}</p>
-		<ul class="about-features">
-			{#each features as feature (feature.icon)}
-				<li>
-					<svelte:element
-						this={feature.href ? 'a' : 'div'}
-						class="about-feature"
-						href={feature.href}
-					>
-						<span class="about-feature-icon"><Icon name={feature.icon} size={20} /></span>
-						<h3>{feature.title()}</h3>
-						<p>{feature.body()}</p>
-					</svelte:element>
-				</li>
-			{/each}
-		</ul>
+		{#each featureGroups as group (group.category)}
+			<div class="about-feature-group" data-category={group.category}>
+				<h3 class="about-feature-group-label">{group.label()}</h3>
+				<ul class="about-features">
+					{#each group.items as feature (feature.icon)}
+						<li>
+							<svelte:element
+								this={feature.href ? 'a' : 'div'}
+								class="about-feature"
+								href={feature.href}
+							>
+								<span class="about-feature-icon"><Icon name={feature.icon} size={20} /></span>
+								<h4>{feature.title()}</h4>
+								<p>{feature.body()}</p>
+							</svelte:element>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{/each}
 	</section>
 
 	<section class="about-section">

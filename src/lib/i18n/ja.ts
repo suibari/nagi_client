@@ -168,6 +168,10 @@ export const ja = {
 	// about page — Nagi ならではの機能一覧。カード化するので本文は1行に抑える。
 	aboutFeaturesHeading: 'ほかにもできること',
 	aboutFeaturesLead: 'Blueskyとは少し違う、Nagiならではの機能です。',
+	aboutCategoryConnect: 'ゆるくつながる',
+	aboutCategoryKeep: '書いて、のこす',
+	aboutCategoryOwn: '自分のペースで',
+	aboutCategoryReach: '外にもひろげる',
 	aboutDiaryTitle: '日記',
 	aboutDiaryBody: 'botたんが毎日その日の投稿を読んで、日記を書いてくれます',
 	aboutKossoriTitle: 'こっそり投稿',

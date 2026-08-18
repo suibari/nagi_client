@@ -3490,10 +3490,55 @@ button.settings-category {
 }
 
 /* --- 機能一覧 --- */
-/* 縦に長い箇条書きだと圧倒されるので、1枚 = アイコン + 見出し + 1行のカードに畳む。 */
+/* 縦に長い箇条書きだと圧倒されるので、1枚 = アイコン + 見出し + 1行のカードに畳む。
+   さらに、12枚を平らに並べると「羅列」に見えて全部が同じ重みの設定項目に読めるため、
+   意味のまとまりごとに見出しと色を付ける。色は補助で、意味を運ぶのは見出しの側。 */
+.about-feature-group {
+	display: grid;
+	gap: 10px;
+}
+.about-feature-group + .about-feature-group {
+	margin-block-start: 22px;
+}
+.about-feature-group-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: var(--about-cat-fg);
+}
+/* 見出しの左に、そのカテゴリ色の短い罫。文字色だけだと弱くて群の切れ目が読めない。 */
+.about-feature-group-label::before {
+	content: '';
+	inline-size: 18px;
+	block-size: 3px;
+	border-radius: 999px;
+	background: currentColor;
+}
+.about-feature-group[data-category='connect'] {
+	--about-cat-fg: var(--about-cat-connect-fg);
+	--about-cat-bg: var(--about-cat-connect-bg);
+}
+.about-feature-group[data-category='keep'] {
+	--about-cat-fg: var(--about-cat-keep-fg);
+	--about-cat-bg: var(--about-cat-keep-bg);
+}
+.about-feature-group[data-category='own'] {
+	--about-cat-fg: var(--about-cat-own-fg);
+	--about-cat-bg: var(--about-cat-own-bg);
+}
+.about-feature-group[data-category='reach'] {
+	--about-cat-fg: var(--about-cat-reach-fg);
+	--about-cat-bg: var(--about-cat-reach-bg);
+}
+/* 群ごとに枚数が違うので auto-fit だと 2 枚の群だけカードが横に伸びて不揃いになる。
+   auto-fill で空トラックを残し、どの群でもカード幅を揃える。 */
 .about-features {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 	gap: 12px;
 	margin: 0;
 	padding: 0;
@@ -3530,11 +3575,11 @@ a.about-feature:focus-visible {
 	place-items: center;
 	inline-size: 38px;
 	block-size: 38px;
-	color: var(--text-mute);
-	background: var(--surface-2);
+	color: var(--about-cat-fg, var(--text-mute));
+	background: var(--about-cat-bg, var(--surface-2));
 	border-radius: var(--r-md);
 }
-.about-feature h3 {
+.about-feature h4 {
 	margin: 0;
 	font-size: 0.95rem;
 	color: var(--text-strong);
@@ -3777,8 +3822,11 @@ a.about-feature:focus-visible {
 		block-size: 32px;
 		border-radius: 10px;
 	}
-	.about-feature h3 {
+	.about-feature h4 {
 		font-size: 0.88rem;
+	}
+	.about-feature-group + .about-feature-group {
+		margin-block-start: 18px;
 	}
 	.about-feature p {
 		font-size: 0.78rem;
