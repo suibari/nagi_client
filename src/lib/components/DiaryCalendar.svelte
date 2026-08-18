@@ -2,11 +2,12 @@
 	import { getDiaries } from '$lib/api/appview';
 	import type { ActorView, DiaryView, PostView } from '$lib/api/types';
 	import { buildDiaryGraph, diaryActivityIntensity, diaryMonthLabels } from '$lib/diary/calendar';
+	import { isDiaryBodyHidden } from '$lib/diary/privacy';
 	import { i18n, m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick } from 'svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import ChatBubble from './ChatBubble.svelte';
-	import Icon from './shell/Icon.svelte';
+	import DiaryPrivateNotice from './DiaryPrivateNotice.svelte';
 
 	let {
 		did,
@@ -104,8 +105,8 @@
 		i18n.locale === 'ja' ? (entry.titleJa ?? entry.titleEn) : (entry.titleEn ?? entry.titleJa);
 	const actorName = (actor: ActorView) => actor.displayName ?? actor.handle;
 	const diaryPost = $derived.by((): PostView | undefined => {
-		// こっそりを含む日の日記は本人以外に本文が返らない。吹き出しの代わりに理由を出す。
-		if (!current || current.isPrivate) return undefined;
+		// 本人限定属性そのものではなく、API がこの閲覧者向けに本文を伏せた場合だけ隠す。
+		if (!current || isDiaryBodyHidden(current)) return undefined;
 		return {
 			uri: current.uri,
 			cid: current.cid,
@@ -239,10 +240,9 @@
 			<p class="diary-hint">{m.diaryEmptyYear()}</p>
 		{/if}
 
-		{#if current?.isPrivate}
+		{#if isDiaryBodyHidden(current)}
 			<article class="diary-entry diary-private">
-				<Icon name="hide" size={16} />
-				<p>{m.diaryPrivate()}</p>
+				<DiaryPrivateNotice />
 			</article>
 		{:else if current && diaryPost}
 			<article class="diary-entry">
@@ -416,16 +416,6 @@
 	}
 	.diary-entry {
 		min-inline-size: 0;
-	}
-	.diary-private {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 12px 14px;
-		border: 1px dashed var(--border);
-		border-radius: 12px;
-		font-size: 13px;
-		color: var(--text-muted);
 	}
 	.diary-hint,
 	.diary-about {

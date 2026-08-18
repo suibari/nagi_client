@@ -9,12 +9,14 @@
 	} from '$lib/api/types';
 	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
 	import { dateLocale, i18n, m } from '$lib/i18n/i18n.svelte';
+	import { isDiaryBodyHidden } from '$lib/diary/privacy';
 	import ChatBubble from './ChatBubble.svelte';
 	import NewsCard from './NewsCard.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
 	import { untrack } from 'svelte';
 	import Icon from './shell/Icon.svelte';
 	import BookmarkFolderDialog from './BookmarkFolderDialog.svelte';
+	import DiaryPrivateNotice from './DiaryPrivateNotice.svelte';
 	import { session, signIn } from '$lib/oauth/session.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 
@@ -220,11 +222,15 @@
 					<article class="bookmark-item bookmark-diary">
 						<h3>{diaryDate(item.content.diary)}</h3>
 						{#if diaryTitle(item.content.diary)}<p>{diaryTitle(item.content.diary)}</p>{/if}
-						<ChatBubble
-							post={diaryPost(item.content.diary)}
-							displayOnly
-							bookmarkSubject={{ kind: 'diary', uri: item.content.diary.uri }}
-						/>
+						{#if isDiaryBodyHidden(item.content.diary)}
+							<DiaryPrivateNotice />
+						{:else}
+							<ChatBubble
+								post={diaryPost(item.content.diary)}
+								displayOnly
+								bookmarkSubject={{ kind: 'diary', uri: item.content.diary.uri }}
+							/>
+						{/if}
 					</article>
 				{:else}
 					<article class="bookmark-item bookmark-unavailable">
