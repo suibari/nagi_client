@@ -1,5 +1,5 @@
 import encodeQR from '@paulmillr/qr';
-import { QR_QUIET_MODULES, QR_SIZE } from './design';
+import { QR_QUIET_MODULES, QR_SIZE } from './design.js';
 
 /**
  * QR のモジュール行列。true が黒。
