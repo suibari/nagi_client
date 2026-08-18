@@ -2,6 +2,17 @@ import { ImageResponse } from '@vercel/og';
 import React from 'react';
 import { isSafeDid } from '../src/lib/og/html.js';
 
+type FunctionRequest = {
+	method?: string;
+	query: Record<string, string | string[] | undefined>;
+};
+
+type FunctionResponse = {
+	status(code: number): FunctionResponse;
+	setHeader(name: string, value: string): void;
+	end(body?: Uint8Array): void;
+};
+
 type Profile = {
 	did: string;
 	handle: string;
@@ -56,15 +67,18 @@ const initials = (profile: Profile) =>
 		1,
 	);
 
-function fallback(request: Request) {
-	return Response.redirect(new URL('/nagi_ogp.jpg', request.url), 307);
+const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+
+function fallback(response: FunctionResponse) {
+	response.status(307);
+	response.setHeader('Location', '/nagi_ogp.jpg');
+	return response.end();
 }
 
-export default async function handler(request: Request) {
-	if (request.method !== 'GET' && request.method !== 'HEAD')
-		return new Response(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
-	const did = new URL(request.url).searchParams.get('did');
-	if (!isSafeDid(did)) return fallback(request);
+export default async function handler(request: FunctionRequest, response: FunctionResponse) {
+	if (request.method !== 'GET' && request.method !== 'HEAD') return response.status(405).end();
+	const did = first(request.query.did);
+	if (!isSafeDid(did)) return fallback(response);
 
 	try {
 		const profile = await getProfile(did);
@@ -81,7 +95,7 @@ export default async function handler(request: Request) {
 			.filter(Boolean)
 			.join('　・　');
 
-		return new ImageResponse(
+		const image = new ImageResponse(
 			<div
 				style={{
 					width: '100%',
@@ -219,8 +233,12 @@ export default async function handler(request: Request) {
 				},
 			},
 		);
+		image.headers.forEach((value, key) => response.setHeader(key, value));
+		response.status(image.status);
+		if (request.method === 'HEAD') return response.end();
+		return response.end(new Uint8Array(await image.arrayBuffer()));
 	} catch (error) {
 		console.error('Failed to generate profile OGP:', error);
-		return fallback(request);
+		return fallback(response);
 	}
 }

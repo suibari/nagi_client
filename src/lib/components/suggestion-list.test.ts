@@ -1,5 +1,4 @@
-// テスト実行環境は Node だが、クライアント全体の tsconfig には Node 型を混ぜない。
-// @ts-expect-error node:fs は Vitest 実行時にのみ使用する。
+// 静的ソース検査は Vitest の Node 環境で実行する。
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
