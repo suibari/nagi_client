@@ -19,6 +19,7 @@ export type TranslationPost = Pick<PostView, 'uri' | 'cid' | 'text'> & Partial<P
 
 const CACHE_BATCH_SIZE = 50;
 const MAX_CONCURRENT_TRANSLATIONS = 2;
+const MAX_EXPANDED_ORIGINALS = 100;
 const POST_URI = /^at:\/\/did:(?:plc|web):[^/]+\/com\.suibari\.nagi\.post\/[^/]+$/;
 const keyOf = (uri: string, cid: string, target: SupportedLanguage) => `${uri}\n${cid}\n${target}`;
 
@@ -92,8 +93,12 @@ class TranslationRequestPool {
 	}
 }
 
-class PostTranslations {
+export class PostTranslations {
 	#entries = $state(new Map<string, PostTranslationState>());
+	// Feed polling can replace the whole ChatBubble/TranslateToggle component when a post
+	// changes between standalone and conversation layouts. Keep this disclosure state beside
+	// the translation cache so the same translation identity survives that remount.
+	#expandedOriginals = $state(new Set<string>());
 	#queued = new Map<string, TranslationPost>();
 	#ensureScheduled = false;
 	#translationRequests = new TranslationRequestPool();
@@ -102,6 +107,24 @@ class PostTranslations {
 
 	entry(uri: string, cid: string, target = languagePreferences.translationLanguage) {
 		return this.#entries.get(keyOf(uri, cid, target));
+	}
+
+	originalExpanded(uri: string, cid: string, target = languagePreferences.translationLanguage) {
+		return this.#expandedOriginals.has(keyOf(uri, cid, target));
+	}
+
+	toggleOriginal(uri: string, cid: string, target = languagePreferences.translationLanguage) {
+		const key = keyOf(uri, cid, target);
+		const next = new Set(this.#expandedOriginals);
+		if (next.has(key)) {
+			next.delete(key);
+		} else {
+			next.add(key);
+			// Only open disclosures are retained. Bound the session cache so browsing many posts
+			// cannot grow UI-only state indefinitely.
+			if (next.size > MAX_EXPANDED_ORIGINALS) next.delete(next.values().next().value!);
+		}
+		this.#expandedOriginals = next;
 	}
 
 	#replace(key: string, state?: PostTranslationState) {

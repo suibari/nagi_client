@@ -37,7 +37,9 @@
 		onoverflowchange?: (overflowing: boolean) => void;
 	} = $props();
 	let body = $state<HTMLElement>();
-	let originalExpanded = $state(false);
+	let originalExpanded = $derived(
+		postTranslations.originalExpanded(uri, cid, languagePreferences.translationLanguage),
+	);
 	let translationEligible = $derived(
 		!disabled &&
 			languagePreferences.autoTranslate &&
@@ -70,16 +72,6 @@
 			from: normalizeSupportedLanguage(langs?.[0]),
 			to: languagePreferences.translationLanguage,
 		});
-	});
-
-	// フィード／スレッドの定期更新では同じ投稿の props が差し替わる。
-	// 開閉状態は翻訳要求の変化と分離し、投稿の改訂か翻訳先が変わった時だけ戻す。
-	$effect(() => {
-		const targetLang = languagePreferences.translationLanguage;
-		void uri;
-		void cid;
-		void targetLang;
-		originalExpanded = false;
 	});
 
 	// 翻訳可否やキャッシュ状態の変化はこちらだけで扱い、原文の開閉状態には触れない。
@@ -155,7 +147,8 @@
 			class="original-toggle"
 			type="button"
 			aria-expanded={originalExpanded}
-			onclick={() => (originalExpanded = !originalExpanded)}
+			onclick={() =>
+				postTranslations.toggleOriginal(uri, cid, languagePreferences.translationLanguage)}
 			>{originalExpanded ? m.hideOriginalText() : m.showOriginalText()}</button
 		>
 		{#if originalExpanded}
