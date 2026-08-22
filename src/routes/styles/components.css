@@ -1397,22 +1397,24 @@
 	flex-wrap: wrap;
 	min-inline-size: 0;
 	max-inline-size: 100%;
-	gap: 7px;
-	margin-top: 6px;
+	gap: 8px;
+	margin-top: 8px;
 	position: relative;
 }
 .reaction-emoji {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 4px;
-	height: 28px;
+	flex: 0 0 auto;
+	min-width: 36px;
+	height: 36px;
 	border: 1px solid var(--line);
-	background: var(--surface-1);
-	border-radius: var(--r-sm);
-	padding: 0 8px;
+	background: var(--surface-2);
+	border-radius: var(--r-md);
+	padding: 0 10px;
 	color: var(--text-sub);
-	font-size: 12px;
+	font-size: 20px;
+	line-height: 1;
 	transition: transform 0.1s ease;
 }
 button.reaction-emoji:hover {
@@ -1461,9 +1463,9 @@ button.reaction-emoji:active {
 	margin-left: 0;
 }
 .reaction-avatar .avatar.small {
-	width: 24px;
-	height: 24px;
-	font-size: 10px;
+	width: 28px;
+	height: 28px;
+	font-size: 11px;
 }
 .reaction-avatar:hover {
 	position: relative;
@@ -1956,8 +1958,8 @@ button.reaction-emoji:active {
 .reaction-image {
 	display: inline-flex;
 	width: auto;
-	height: 18px;
-	min-width: 18px;
+	height: 26px;
+	min-width: 26px;
 	max-width: 8em;
 	object-fit: contain;
 	vertical-align: -0.3em;
