@@ -47,7 +47,7 @@
 		border-radius: var(--radius-l);
 		background: var(--bg-raised);
 		box-shadow: var(--shadow-pop);
-		text-align: center;
+		text-align: start;
 	}
 	.card-guide-emoji {
 		font-size: 2.4rem;

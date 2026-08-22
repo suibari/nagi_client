@@ -62,7 +62,7 @@
 		border-radius: var(--radius-l);
 		background: var(--bg-raised);
 		box-shadow: var(--shadow-pop);
-		text-align: center;
+		text-align: start;
 	}
 	.milestone-medal {
 		display: grid;

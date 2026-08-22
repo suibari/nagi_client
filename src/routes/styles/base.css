@@ -126,7 +126,7 @@ img.mark {
 	min-inline-size: 0;
 	max-inline-size: 100%;
 	overflow-wrap: anywhere;
-	text-align: center;
+	text-align: start;
 	background: var(--surface-1);
 	border: 1px solid var(--line);
 	border-radius: var(--r-md);

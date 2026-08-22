@@ -93,7 +93,7 @@
 		padding: 12px;
 		color: var(--danger);
 		font-size: 13px;
-		text-align: center;
+		text-align: start;
 		overflow-wrap: anywhere;
 	}
 	.infinite-scroll-error .more {

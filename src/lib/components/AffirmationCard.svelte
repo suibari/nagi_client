@@ -122,6 +122,7 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
+		text-align: start;
 		gap: 0.4rem;
 		padding: 0.55rem 0.6rem 0.5rem;
 		/* 遊戯王リスペクトの縦長。イラスト枠が無いぶんフレーバーに面積を割く。 */

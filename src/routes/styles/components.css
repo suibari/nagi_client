@@ -3218,6 +3218,7 @@ button.settings-category {
 .settings-detail {
 	display: grid;
 	gap: 18px;
+	text-align: start;
 }
 .settings-back {
 	width: fit-content;
@@ -4690,7 +4691,7 @@ a.about-feature:focus-visible {
 	flex: 1 1 auto;
 	flex-direction: column;
 	gap: 2px;
-	/* settings-detail は中央寄せなので、行の中身だけ左に戻す。 */
+	/* 親の文字揃えに依存させず、並べ替え行のラベルを読みやすく保つ。 */
 	text-align: start;
 }
 .feed-tab-row-text strong,

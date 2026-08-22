@@ -505,7 +505,7 @@
 </section>
 
 <style>
-	/* このページはフォーム主体なので、継承される中央寄せ(.auth-card)を左寄せに統一する。 */
+	/* フォーム単体で使われても左揃えを保つ。 */
 	.theme-settings {
 		text-align: left;
 		/* .settings-detail は display:grid で、この fieldset はグリッドアイテム。既定の

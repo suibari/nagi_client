@@ -225,7 +225,7 @@
 		border-radius: var(--radius-l);
 		background: var(--bg-raised);
 		box-shadow: var(--shadow-pop);
-		text-align: center;
+		text-align: start;
 	}
 	.draw-title {
 		margin: 0;
