@@ -55,6 +55,13 @@ export const FULL_SCOPE = buildScope({ crosspost: true, standardSite: true });
 const scope = FULL_SCOPE;
 
 let oauthClient: BrowserOAuthClient | undefined;
+type SessionDeletedHandler = (sub: string, cause: unknown) => void;
+const sessionDeletedHandlers = new Set<SessionDeletedHandler>();
+
+export function onOAuthSessionDeleted(handler: SessionDeletedHandler): () => void {
+	sessionDeletedHandlers.add(handler);
+	return () => sessionDeletedHandlers.delete(handler);
+}
 
 /**
  * BrowserOAuthClient は生成時に IndexedDB を開くため、プリレンダリング中には生成しない。
@@ -69,6 +76,9 @@ export function getOAuthClient(): BrowserOAuthClient {
 	const production = location.hostname === 'nagi.suibari.com';
 	const origin = location.origin;
 	oauthClient = new BrowserOAuthClient({
+		onSessionDeleted: (sub, cause) => {
+			for (const handler of sessionDeletedHandlers) handler(sub, cause);
+		},
 		clientMetadata: production
 			? {
 					client_id: 'https://nagi.suibari.com/client-metadata.json',

@@ -21,7 +21,7 @@
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { defaultScopeForPath } from '$lib/post/scope';
 	import { mutes } from '$lib/mute/mutes.svelte';
-	import { refreshPushState } from '$lib/notifications/push.svelte';
+	import { refreshPushState, refreshPushWithCapability } from '$lib/notifications/push.svelte';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { privateList } from '$lib/private-list/private-list.svelte';
@@ -206,6 +206,21 @@
 		startUnreadPolling();
 		// 公開ニュースの新着有無を端末内の既読基準と照合する。
 		startUnreadNewsPolling();
+		// 長時間開いたPC、スリープ復帰、オフライン復帰でもPush endpointを自己修復する。
+		// capability経路ならOAuth refreshが一時的に失敗していても同じinstallationだけ更新できる。
+		const repairPush = () => {
+			if (!$session || document.visibilityState !== 'visible' || !navigator.onLine) return;
+			void refreshPushWithCapability()
+				.then((repaired) => (repaired ? undefined : refreshPushState()))
+				.catch(() => refreshPushState());
+		};
+		const onVisibility = () => repairPush();
+		window.addEventListener('online', repairPush);
+		document.addEventListener('visibilitychange', onVisibility);
+		return () => {
+			window.removeEventListener('online', repairPush);
+			document.removeEventListener('visibilitychange', onVisibility);
+		};
 	});
 	$effect(() => {
 		const did = $session?.did;

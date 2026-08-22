@@ -1,13 +1,49 @@
 import { writable, get } from 'svelte/store';
 import type { BrowserOAuthClient } from '@atproto/oauth-client-browser';
-import { BLUESKY_ENTRYWAY_URL, buildScope, getOAuthClient, type ScopeOptIns } from './client';
+import {
+	BLUESKY_ENTRYWAY_URL,
+	buildScope,
+	getOAuthClient,
+	onOAuthSessionDeleted,
+	type ScopeOptIns,
+} from './client';
 import { normalizeHandle } from '$lib/atproto/handle';
 import { i18n } from '$lib/i18n/i18n.svelte';
+import {
+	isTransientOAuthFailure,
+	rememberOAuthSuccess,
+	reportOAuthDiagnostic,
+	requestPersistentOAuthStorage,
+} from './diagnostics';
 export type OAuthSession = Awaited<ReturnType<BrowserOAuthClient['restore']>>;
 export const session = writable<OAuthSession | null>(null);
 export const oauthReady = writable(false);
 export const oauthError = writable<string | null>(null);
 const OAUTH_RETURN_TO_KEY = 'nagi.oauth.return-to';
+const OAUTH_DID_KEY = 'nagi.did';
+let explicitSignOut = false;
+
+onOAuthSessionDeleted((sub, cause) => {
+	if (get(session)?.did === sub) session.set(null);
+	try {
+		if (localStorage.getItem(OAUTH_DID_KEY) === sub) localStorage.removeItem(OAUTH_DID_KEY);
+	} catch {
+		// session store側の削除は完了しているのでmarker削除失敗は無視する。
+	}
+	if (!explicitSignOut) reportOAuthDiagnostic('session-deleted', cause);
+});
+
+function rememberSession(value: OAuthSession): void {
+	session.set(value);
+	oauthError.set(null);
+	try {
+		localStorage.setItem(OAUTH_DID_KEY, value.did);
+	} catch {
+		// IndexedDB側のOAuth sessionが真実源。markerは一時障害からの復元補助にすぎない。
+	}
+	rememberOAuthSuccess();
+	void requestPersistentOAuthStorage();
+}
 
 export function setOAuthReturnTo(path: string): void {
 	if (typeof window === 'undefined' || !path.startsWith('/') || path.startsWith('//')) return;
@@ -30,16 +66,36 @@ export function consumeOAuthReturnTo(): string | null {
 }
 
 export async function initOAuth() {
+	let oauthClient: BrowserOAuthClient | undefined;
 	try {
-		const oauthClient = getOAuthClient();
+		oauthClient = getOAuthClient();
 		const result = await oauthClient.init();
-		if (result?.session) session.set(result.session);
+		if (result?.session) rememberSession(result.session);
 		else {
-			const did = localStorage.getItem('nagi.did');
-			if (did) session.set(await oauthClient.restore(did));
+			const did = localStorage.getItem(OAUTH_DID_KEY);
+			if (did) rememberSession(await oauthClient.restore(did));
 		}
 	} catch (e) {
-		oauthError.set(e instanceof Error ? e.message : 'OAuth initialization failed');
+		// public clientのrefresh中に通信だけが落ちた場合、ライブラリ内部の「最後に使ったsub」
+		// markerは外れることがある。Nagi側markerから期限切れtokenを許容してsession objectを
+		// 復元し、次のAPI呼び出し/online復帰でrefreshを再試行する。
+		let recovered = false;
+		if (oauthClient && isTransientOAuthFailure(e)) {
+			try {
+				const did = localStorage.getItem(OAUTH_DID_KEY);
+				if (did) {
+					rememberSession(await oauthClient.restore(did, false));
+					reportOAuthDiagnostic('restore-recovered', e);
+					recovered = true;
+				}
+			} catch {
+				// 元の分類可能なエラーを表示・計測する。
+			}
+		}
+		if (!recovered) {
+			oauthError.set(e instanceof Error ? e.message : 'OAuth initialization failed');
+			reportOAuthDiagnostic('restore-failed', e);
+		}
 	} finally {
 		oauthReady.set(true);
 	}
@@ -81,8 +137,13 @@ export async function signOut() {
 		} catch {
 			// 購読解除に失敗してもサインアウト自体は続行する。
 		}
-		localStorage.removeItem('nagi.did');
-		await current.signOut();
+		localStorage.removeItem(OAUTH_DID_KEY);
+		explicitSignOut = true;
+		try {
+			await current.signOut();
+		} finally {
+			explicitSignOut = false;
+		}
 	}
 	session.set(null);
 }

@@ -1,11 +1,32 @@
 /// <reference types="@sveltejs/kit" />
 /// <reference lib="webworker" />
 
+import { PUBLIC_APPVIEW_URL, PUBLIC_VAPID_KEY } from '$env/static/public';
+import { loadPushInstallation } from '$lib/notifications/push-installation';
+
 // SvelteKit が自動登録する Service Worker。ここではキャッシュは扱わず、Web Push の
 // 受信（push）とクリック（notificationclick）だけを担当する。閉じた PWA でも OS の
 // プッシュサービス経由でこのワーカーが起こされ、通知を表示できる。
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
+const appviewBase = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+	const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+	const raw = atob(base64);
+	const output = new Uint8Array(raw.length);
+	for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+	return output;
+}
+
+function subscriptionInput(sub: PushSubscription) {
+	const keys = sub.toJSON().keys ?? {};
+	return {
+		endpoint: sub.endpoint,
+		keys: { p256dh: keys.p256dh ?? '', auth: keys.auth ?? '' },
+	};
+}
 
 // この SW は薄く保つ。修正しても旧版が居座ると端末に届かないため、判断はできる限り
 // サーバー（payload）に寄せ、ここは受け取ったものを表示するだけにする。
@@ -100,22 +121,37 @@ sw.addEventListener('notificationclick', (event) => {
 /**
  * ブラウザ側の都合（鍵のローテーション等）で購読が差し替わったときに呼ばれる。
  *
- * ここでできるのは「新しい購読を作り直す」までで、AppView への登録はできない。
- * XRPC は PDS プロキシ経由の DPoP セッションを必要とし、SW はそれを持たないため。
- * サーバーへの再登録は、次回アプリ起動時に +layout.svelte が走らせる
- * refreshPushState() が引き受ける（端末に購読があれば idempotent に再登録する）。
+ * installation capability はDIDを変更できない端末固有の秘密なので、OAuth sessionを
+ * 持たないSWからでもAppView上の同じ購読だけを更新できる。失敗時は次回アプリ起動時の
+ * refreshPushState() が認証済み経路で引き受ける。
  * この分担が崩れると「端末は購読済みだがサーバーに行が無い」端末が生まれ、
  * 通知が来ないのにユーザーからは ON に見える状態になる。
  */
 sw.addEventListener('pushsubscriptionchange', (event) => {
 	// pushsubscriptionchange は TS の SW 型定義に含まれないので手当てする。
 	const change = event as ExtendableEvent & { oldSubscription?: PushSubscription | null };
-	const applicationServerKey = change.oldSubscription?.options?.applicationServerKey;
+	const applicationServerKey =
+		change.oldSubscription?.options?.applicationServerKey ??
+		(PUBLIC_VAPID_KEY ? (urlBase64ToUint8Array(PUBLIC_VAPID_KEY) as BufferSource) : undefined);
 	if (!applicationServerKey) return;
 	change.waitUntil(
-		sw.registration.pushManager
-			.subscribe({ userVisibleOnly: true, applicationServerKey })
-			.then(() => undefined)
-			.catch(() => undefined),
+		(async () => {
+			const sub = await sw.registration.pushManager.subscribe({
+				userVisibleOnly: true,
+				applicationServerKey,
+			});
+			const installation = await loadPushInstallation();
+			if (!installation) return;
+			const response = await fetch(`${appviewBase}/xrpc/com.suibari.nagi.refreshPushSubscription`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					installationId: installation.installationId,
+					capability: installation.capability,
+					...subscriptionInput(sub),
+				}),
+			});
+			if (!response.ok) throw new Error(`Push installation refresh failed (${response.status})`);
+		})().catch(() => undefined),
 	);
 });

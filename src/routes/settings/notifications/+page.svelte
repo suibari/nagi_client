@@ -75,7 +75,7 @@
 			<p>{m.pushBlocked()}</p>
 		{:else if $session}
 			<ToggleSwitch
-				checked={pushState.subscribed}
+				checked={pushState.browserSubscribed}
 				label={m.pushEnableLabel()}
 				disabled={pushState.busy || reauthBusy}
 				onchange={toggle}
@@ -88,8 +88,10 @@
 							{reauthBusy ? m.pushReauthPending() : m.pushRefreshPermissions()}
 						</button>
 					{:else if pushState.error !== 'permission-denied'}
-						<button type="button" disabled={pushState.busy} onclick={() => void refreshPushState()}
-							>{m.pushRetry()}</button
+						<button
+							type="button"
+							disabled={pushState.busy}
+							onclick={() => void refreshPushState({ force: true })}>{m.pushRetry()}</button
 						>
 					{/if}
 				</div>

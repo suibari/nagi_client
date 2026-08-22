@@ -635,11 +635,21 @@ export const updateSeen = (seenAt: string) =>
 export const registerPushSubscription = (input: {
 	endpoint: string;
 	keys: { p256dh: string; auth: string };
+	installationId?: string;
+	capability?: string;
 }) =>
 	call<{ registered: boolean }>(
 		'com.suibari.nagi.registerPushSubscription',
 		'/xrpc/com.suibari.nagi.registerPushSubscription',
-		{ method: 'POST', body: JSON.stringify(input) },
+		{
+			method: 'POST',
+			body: JSON.stringify({
+				installationId: input.installationId,
+				capability: input.capability,
+				endpoint: input.endpoint,
+				keys: input.keys,
+			}),
+		},
 		'required',
 	);
 export const deletePushSubscription = (endpoint: string) =>
@@ -648,6 +658,33 @@ export const deletePushSubscription = (endpoint: string) =>
 		'/xrpc/com.suibari.nagi.deletePushSubscription',
 		{ method: 'POST', body: JSON.stringify({ endpoint }) },
 		'required',
+	);
+export const refreshPushSubscription = (input: {
+	installationId: string;
+	capability: string;
+	endpoint: string;
+	keys: { p256dh: string; auth: string };
+}) =>
+	call<{ registered: boolean }>(
+		'com.suibari.nagi.refreshPushSubscription',
+		'/xrpc/com.suibari.nagi.refreshPushSubscription',
+		{
+			method: 'POST',
+			body: JSON.stringify({
+				installationId: input.installationId,
+				capability: input.capability,
+				endpoint: input.endpoint,
+				keys: input.keys,
+			}),
+		},
+		'none',
+	);
+export const deletePushInstallation = (input: { installationId: string; capability: string }) =>
+	call<{ deleted: number }>(
+		'com.suibari.nagi.deletePushInstallation',
+		'/xrpc/com.suibari.nagi.deletePushInstallation',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'none',
 	);
 export const translatePost = (uri: string, targetLang: string) =>
 	call<{ text: string }>(

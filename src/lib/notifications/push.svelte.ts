@@ -3,7 +3,18 @@ import {
 	ApiRequestError,
 	registerPushSubscription,
 	deletePushSubscription,
+	refreshPushSubscription,
+	deletePushInstallation,
 } from '$lib/api/appview';
+import { get } from 'svelte/store';
+import { session } from '$lib/oauth/session.svelte';
+import {
+	clearPushInstallation,
+	createPushInstallation,
+	loadPushInstallation,
+	savePushInstallation,
+} from './push-installation';
+import { failedPushStatus, readyPushStatus } from './push-state';
 
 /**
  * Web Push の購読状態と購読/解除の操作をまとめたモジュール。
@@ -60,6 +71,7 @@ function toInput(sub: PushSubscription) {
 }
 
 export type PushPhase = 'idle' | 'checking' | 'enabling' | 'disabling' | 'error';
+export type PushRegistration = 'none' | 'checking' | 'registered' | 'repair-needed';
 export type PushError =
 	| 'permission-denied'
 	| 'auth-required'
@@ -85,24 +97,23 @@ function classifyError(error: unknown, fallback: PushError): PushError {
 }
 
 function setReady(subscribed: boolean): void {
-	pushState.registered = subscribed;
-	pushState.subscribed = subscribed;
+	Object.assign(pushState, readyPushStatus(subscribed));
 	pushState.error = null;
 	pushState.phase = 'idle';
 }
 
 function setError(error: PushError): void {
-	pushState.registered = false;
-	pushState.subscribed = false;
+	Object.assign(pushState, failedPushStatus(pushState.browserSubscribed));
 	pushState.error = error;
 	pushState.phase = 'error';
 }
 
-/** リアクティブな購読状態。ON は端末購読と AppView 登録の双方が成功した場合だけ。 */
+/** リアクティブな購読状態。トグルは端末側、registeredはAppView側の状態を表す。 */
 export const pushState = $state({
 	supported: false,
 	permission: 'default' as NotificationPermission,
 	browserSubscribed: false,
+	registration: 'none' as PushRegistration,
 	registered: false,
 	subscribed: false,
 	busy: false,
@@ -110,15 +121,43 @@ export const pushState = $state({
 	error: null as PushError | null,
 });
 
+const REFRESH_COOLDOWN_MS = 15_000;
+let refreshInFlight: Promise<void> | null = null;
+let lastRefreshStartedAt = 0;
+
+async function registerCurrentSubscription(sub: PushSubscription): Promise<void> {
+	const did = get(session)?.did;
+	if (!did) throw new Error('Authentication required');
+	let installation = await loadPushInstallation().catch(() => null);
+	if (!installation || installation.recipientDid !== did) {
+		installation = createPushInstallation(did);
+	}
+	await registerPushSubscription({ ...toInput(sub), ...installation });
+	await savePushInstallation(installation);
+}
+
 /**
  * 現在の購読状態を読み直す。端末内に購読があれば AppView へ idempotent に再登録し、
  * 「端末だけ購読済み」の不整合を自動修復する。
  */
-export async function refreshPushState(): Promise<void> {
+export function refreshPushState(options: { force?: boolean } = {}): Promise<void> {
 	pushState.supported = isPushSupported();
-	if (!pushState.supported || pushState.busy) return;
+	if (refreshInFlight) return refreshInFlight;
+	if (!pushState.supported || pushState.busy) return Promise.resolve();
+	if (!options.force && Date.now() - lastRefreshStartedAt < REFRESH_COOLDOWN_MS) {
+		return Promise.resolve();
+	}
+	lastRefreshStartedAt = Date.now();
+	refreshInFlight = refreshPushStateOnce().finally(() => {
+		refreshInFlight = null;
+	});
+	return refreshInFlight;
+}
+
+async function refreshPushStateOnce(): Promise<void> {
 	pushState.busy = true;
 	pushState.phase = 'checking';
+	pushState.registration = 'checking';
 	pushState.error = null;
 	pushState.permission = Notification.permission;
 	try {
@@ -126,10 +165,15 @@ export async function refreshPushState(): Promise<void> {
 		const sub = await reg.pushManager.getSubscription();
 		pushState.browserSubscribed = !!sub;
 		if (!sub) {
+			const installation = await loadPushInstallation().catch(() => null);
+			if (installation) {
+				await deletePushInstallation(installation).catch(() => undefined);
+				await clearPushInstallation().catch(() => undefined);
+			}
 			setReady(false);
 			return;
 		}
-		await registerPushSubscription(toInput(sub));
+		await registerCurrentSubscription(sub);
 		setReady(true);
 	} catch (error) {
 		console.error('[push] refresh/register failed', error);
@@ -166,16 +210,13 @@ export async function enablePush(): Promise<boolean> {
 			}));
 		if (!existing) created = sub;
 		pushState.browserSubscribed = true;
-		await registerPushSubscription(toInput(sub));
+		await registerCurrentSubscription(sub);
 		setReady(true);
 		return true;
 	} catch (error) {
 		console.error('[push] enable failed', error);
-		// 今回作った購読だけを戻す。以前からある不完全な購読は再認証後の修復に使える。
-		if (created) {
-			const removed = await created.unsubscribe().catch(() => false);
-			pushState.browserSubscribed = !removed;
-		}
+		// ブラウザ購読は保持する。online/visibility復帰時にAppView登録を自己修復できる。
+		if (created) pushState.browserSubscribed = true;
 		setError(classifyError(error, 'registration-failed'));
 		return false;
 	} finally {
@@ -213,17 +254,41 @@ async function removeCurrentSubscription(): Promise<void> {
 	if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 	const reg = await navigator.serviceWorker.ready;
 	const sub = await reg.pushManager.getSubscription();
-	if (!sub) return;
+	const installation = await loadPushInstallation().catch(() => null);
+	if (!sub) {
+		if (installation) await deletePushInstallation(installation).catch(() => undefined);
+		await clearPushInstallation().catch(() => undefined);
+		return;
+	}
 
 	let serverError: unknown;
 	try {
-		await deletePushSubscription(sub.endpoint);
+		if (installation) {
+			await deletePushInstallation(installation);
+		} else {
+			await deletePushSubscription(sub.endpoint);
+		}
 	} catch (error) {
 		serverError = error;
 	}
 	const unsubscribed = await sub.unsubscribe();
 	if (!unsubscribed) throw new Error('Browser push subscription could not be removed');
+	await clearPushInstallation().catch(() => undefined);
 	if (serverError) throw serverError;
+}
+
+/** Service Workerと同じcapability経路を、ブラウザ復帰時の軽量な修復にも利用する。 */
+export async function refreshPushWithCapability(): Promise<boolean> {
+	if (!isPushSupported()) return false;
+	const installation = await loadPushInstallation().catch(() => null);
+	if (!installation) return false;
+	const reg = await navigator.serviceWorker.ready;
+	const sub = await reg.pushManager.getSubscription();
+	if (!sub) return false;
+	await refreshPushSubscription({ ...installation, ...toInput(sub) });
+	pushState.browserSubscribed = true;
+	setReady(true);
+	return true;
 }
 
 /**
