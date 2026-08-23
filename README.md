@@ -37,3 +37,7 @@ npm run build
 - URL、ホスト名、ハンドルなど、一行で表示するメタ情報には `overflow: hidden`、`text-overflow: ellipsis`、`white-space: nowrap` を組み合わせる。
 - `body` の `overflow-x` は画面全体の横スクロールを抑える最後の安全策であり、子要素のはみ出しを隠すための修正には使わない。
 - 変更時は 320px、375px、600px の表示幅で、長い URL と空白のない文字列を入れ、カードとページの `scrollWidth` が `clientWidth` を超えないことを確認する。
+
+## ライセンス
+
+本ソフトウェアは MIT License の下で公開されています。詳細は [LICENSE](./LICENSE) を参照してください。
