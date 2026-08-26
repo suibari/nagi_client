@@ -9,6 +9,8 @@
 	import { clearThemePreference } from '$lib/theme';
 	import { drafts } from '$lib/drafts/drafts.svelte';
 	import { clearLocalPreferenceCache } from '$lib/preferences/sync.svelte';
+	import { clearBookmarkPreferenceCache } from '$lib/bookmarks/bookmarks.svelte';
+	import { clearLegacyCommunityAffirmationHandledUris } from '$lib/community-affirmation/seen';
 
 	let confirmation = $state('');
 	let dialogOpen = $state(false);
@@ -25,7 +27,7 @@
 			await prepareDeleteAccountData();
 			await deleteAllNagiRecords();
 			await deleteAccountData();
-			// 下書きは AppView に無く端末ローカルなので、ここで一緒に消す。
+			// AppViewの下書きはサーバ削除済み。移行未完了の画像付き旧下書きも端末から消す。
 			await drafts.clear(did).catch(() => undefined);
 			clearThemePreference();
 			clearLanguagePreferences();
@@ -33,6 +35,8 @@
 			// 既読位置とお気に入りは AppView と端末の両方にある。サーバー側は
 			// deleteAccountData が消すので、端末のキャッシュもここで揃えて消す。
 			clearLocalPreferenceCache(did);
+			clearBookmarkPreferenceCache(did);
+			clearLegacyCommunityAffirmationHandledUris();
 			await signOut().catch(() => undefined);
 			await goto('/');
 		} catch (e) {

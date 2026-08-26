@@ -20,6 +20,17 @@ import { feedTabLabelsStorageKey } from '$lib/feed-tabs/labels.svelte';
 import { myNagiStorageKey, type MyNagiUnreadSection } from '$lib/my-nagi/unread.svelte';
 import { newsStorageKey } from '$lib/news/unread.svelte';
 import { session } from '$lib/oauth/session.svelte';
+import {
+	adoptLanguagePreferences,
+	hasLegacyLanguagePreferences,
+	languagePreferencesSnapshot,
+	languagePreferencesStorageKey,
+	loadStoredLanguagePreferences,
+	setLanguagePreferencesScope,
+	subscribeLanguagePreferencesChanged,
+	type LanguagePreference,
+} from '$lib/i18n/languagePreferences.svelte';
+import type { TranslationProvider } from '$lib/i18n/translationProviders';
 import { clearSections, reconcileSections, sectionWatermark } from '$lib/unread/sections.svelte';
 import { preferences } from './preferences.svelte';
 
@@ -105,6 +116,34 @@ function applyFeedTabs(did: string, view: PreferencesView) {
 		preferences.pushFeedTabs(local.tabs, localUpdatedAt);
 }
 
+function applyLanguagePreferences(did: string, view: PreferencesView) {
+	const local = loadStoredLanguagePreferences(did);
+	const remoteAt = view.languagePreferencesUpdatedAt;
+	if (view.languagePreferences && remoteAt && remoteAt >= (local?.updatedAt ?? '')) {
+		adoptLanguagePreferences(
+			did,
+			view.languagePreferences as {
+				post: LanguagePreference;
+				translation: LanguagePreference;
+				provider: TranslationProvider;
+				autoTranslate: boolean;
+			},
+			remoteAt,
+		);
+		return;
+	}
+	if (local && local.updatedAt > (remoteAt ?? '')) {
+		preferences.pushLanguagePreferences(local, local.updatedAt);
+		return;
+	}
+	// AppView未設定の最初の1回だけ、従来の4キーを一組にして移行する。
+	if (!remoteAt && hasLegacyLanguagePreferences()) {
+		const value = languagePreferencesSnapshot();
+		adoptLanguagePreferences(did, value, value.updatedAt);
+		preferences.pushLanguagePreferences(value, value.updatedAt);
+	}
+}
+
 let syncing: Promise<void> = Promise.resolve();
 let syncedDid: string | undefined;
 
@@ -120,6 +159,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		syncedDid = undefined;
 		setFavoritesScope(undefined);
 		setFeedTabsScope(undefined);
+		setLanguagePreferencesScope(undefined);
 		preferences.clear();
 		syncing = Promise.resolve();
 		return syncing;
@@ -129,6 +169,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 	// タブ構成はサーバー同期の成否に関わらずアカウント単位。load を待たずに切り替える
 	// （待つと、同期できない端末で guest のタブを見せたまま guest のキーへ書いてしまう）。
 	setFeedTabsScope(did);
+	setLanguagePreferencesScope(did);
 	syncing = (async () => {
 		const view = await preferences.load();
 		if (!view || get(session)?.did !== did) return;
@@ -140,6 +181,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		reconcileSections(did);
 		applyFavorites(did, view);
 		applyFeedTabs(did, view);
+		applyLanguagePreferences(did, view);
 	})();
 	return syncing;
 }
@@ -163,6 +205,7 @@ export function clearLocalPreferenceCache(did: string) {
 		firstSyncKey(did),
 		feedTabsStorageKey(),
 		feedTabsStorageKey(did),
+		languagePreferencesStorageKey(did),
 		feedTabLabelsStorageKey,
 		newsStorageKey(),
 		newsStorageKey(did),
@@ -182,6 +225,7 @@ export function clearLocalPreferenceCache(did: string) {
 	clearSections();
 	setFavoritesScope(undefined);
 	setFeedTabsScope(undefined);
+	setLanguagePreferencesScope(undefined);
 	syncedDid = undefined;
 }
 
@@ -199,4 +243,19 @@ preferences.subscribeMerged((view, sent) => {
 		adoptFeedTabs(did, view.feedTabs, view.feedTabsUpdatedAt);
 		feedTabs.adopt(view.feedTabs);
 	}
+	if (sent.language && view.languagePreferences && view.languagePreferencesUpdatedAt)
+		adoptLanguagePreferences(
+			did,
+			view.languagePreferences as {
+				post: LanguagePreference;
+				translation: LanguagePreference;
+				provider: TranslationProvider;
+				autoTranslate: boolean;
+			},
+			view.languagePreferencesUpdatedAt,
+		);
 });
+
+subscribeLanguagePreferencesChanged((value) =>
+	preferences.pushLanguagePreferences(value, value.updatedAt),
+);

@@ -19,24 +19,16 @@ function read(now = Date.now()): HandledEntry[] {
 	}
 }
 
-function write(entries: HandledEntry[]) {
+/** AppView移行専用。受理されるまでは消さず、権限未反映端末でも履歴を失わない。 */
+export function legacyCommunityAffirmationHandledUris(now = Date.now()): string[] {
+	return read(now).map((entry) => entry.uri);
+}
+
+export function clearLegacyCommunityAffirmationHandledUris() {
 	if (typeof window === 'undefined') return;
 	try {
-		window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(-200)));
+		window.localStorage.removeItem(STORAGE_KEY);
 	} catch {
-		// 保存できない環境でも、この表示中のリアクション操作は続けられる。
+		/* 次回に再試行する。 */
 	}
-}
-
-/** リアクション済み、または明示的に閉じた声。保存キーは既存データを引き継ぐ。 */
-export function communityAffirmationHandledUris(now = Date.now()): Set<string> {
-	const entries = read(now);
-	write(entries);
-	return new Set(entries.map((entry) => entry.uri));
-}
-
-export function markCommunityAffirmationHandled(uri: string, now = Date.now()) {
-	const entries = read(now).filter((entry) => entry.uri !== uri);
-	entries.push({ uri, reactedAt: now });
-	write(entries);
 }

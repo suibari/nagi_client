@@ -7,6 +7,7 @@ import type {
 	PutPreferencesInput,
 	ReadPositionSection,
 	RemoteReadPosition,
+	SyncedLanguagePreferences,
 } from '$lib/api/types';
 import type { ReadPosition } from '$lib/unread/watermark.svelte';
 import { session } from '$lib/oauth/session.svelte';
@@ -33,7 +34,7 @@ const isScopeDenied = (error: unknown) =>
 /** マージ後の確定値の通知。sent はこの送信に何を含めたか（含めていない項目で上書きしないため）。 */
 type MergedHandler = (
 	view: PreferencesView,
-	sent: { favorites: boolean; feedTabs: boolean },
+	sent: { favorites: boolean; feedTabs: boolean; language: boolean; bookmark: boolean },
 ) => void;
 
 class Preferences {
@@ -51,6 +52,8 @@ class Preferences {
 	#pendingPositions = new Map<ReadPositionSection, RemoteReadPosition>();
 	#pendingFavorites: { choices: EmojiFavorite[]; updatedAt: string } | undefined;
 	#pendingFeedTabs: { tabs: FeedTab[]; updatedAt: string } | undefined;
+	#pendingLanguage: { value: SyncedLanguagePreferences; updatedAt: string } | undefined;
+	#pendingBookmark: { folderId: string | null; updatedAt: string } | undefined;
 	#flushTimer: ReturnType<typeof setTimeout> | undefined;
 	#flushing: Promise<void> = Promise.resolve();
 	#onMerged: MergedHandler | undefined;
@@ -100,6 +103,8 @@ class Preferences {
 		this.#pendingPositions.clear();
 		this.#pendingFavorites = undefined;
 		this.#pendingFeedTabs = undefined;
+		this.#pendingLanguage = undefined;
+		this.#pendingBookmark = undefined;
 		if (this.#flushTimer) clearTimeout(this.#flushTimer);
 		this.#flushTimer = undefined;
 	}
@@ -120,6 +125,25 @@ class Preferences {
 		if (!this.synced) return;
 		this.#pendingFeedTabs = { tabs, updatedAt };
 		this.#schedule();
+	}
+
+	pushLanguagePreferences(value: SyncedLanguagePreferences, updatedAt: string) {
+		if (!this.synced) return;
+		this.#pendingLanguage = { value, updatedAt };
+		this.#schedule();
+	}
+
+	pushLastBookmarkFolder(folderId: string | null, updatedAt: string = new Date().toISOString()) {
+		if (!this.synced) return;
+		this.#pendingBookmark = { folderId, updatedAt };
+		this.#schedule();
+	}
+
+	noteScopeError(error: unknown): boolean {
+		if (!isScopeDenied(error)) return false;
+		this.synced = false;
+		this.unauthorized = true;
+		return true;
 	}
 
 	/** デバウンスを待たずに送り切りたいとき用。 */
@@ -155,10 +179,14 @@ class Preferences {
 		const positions = [...this.#pendingPositions.values()];
 		const favorites = this.#pendingFavorites;
 		const feedTabs = this.#pendingFeedTabs;
-		if (!positions.length && !favorites && !feedTabs) return;
+		const language = this.#pendingLanguage;
+		const bookmark = this.#pendingBookmark;
+		if (!positions.length && !favorites && !feedTabs && !language && !bookmark) return;
 		this.#pendingPositions.clear();
 		this.#pendingFavorites = undefined;
 		this.#pendingFeedTabs = undefined;
+		this.#pendingLanguage = undefined;
+		this.#pendingBookmark = undefined;
 		const input: PutPreferencesInput = {
 			...(positions.length ? { readPositions: positions } : {}),
 			...(favorites
@@ -167,8 +195,18 @@ class Preferences {
 						emojiFavoritesUpdatedAt: favorites.updatedAt,
 					}
 				: {}),
-			...(feedTabs
-				? { feedTabs: feedTabs.tabs, feedTabsUpdatedAt: feedTabs.updatedAt }
+			...(feedTabs ? { feedTabs: feedTabs.tabs, feedTabsUpdatedAt: feedTabs.updatedAt } : {}),
+			...(language
+				? {
+						languagePreferences: language.value,
+						languagePreferencesUpdatedAt: language.updatedAt,
+					}
+				: {}),
+			...(bookmark
+				? {
+						lastBookmarkFolderId: bookmark.folderId,
+						lastBookmarkFolderUpdatedAt: bookmark.updatedAt,
+					}
 				: {}),
 		};
 		try {
@@ -178,6 +216,8 @@ class Preferences {
 			this.#onMerged?.(view, {
 				favorites: Boolean(favorites),
 				feedTabs: Boolean(feedTabs),
+				language: Boolean(language),
+				bookmark: Boolean(bookmark),
 			});
 		} catch (error) {
 			if (isScopeDenied(error)) {
@@ -193,6 +233,8 @@ class Preferences {
 					this.#pendingPositions.set(position.section, position);
 			if (favorites && !this.#pendingFavorites) this.#pendingFavorites = favorites;
 			if (feedTabs && !this.#pendingFeedTabs) this.#pendingFeedTabs = feedTabs;
+			if (language && !this.#pendingLanguage) this.#pendingLanguage = language;
+			if (bookmark && !this.#pendingBookmark) this.#pendingBookmark = bookmark;
 		}
 	}
 }

@@ -4,7 +4,7 @@
 	import QuoteCard from './QuoteCard.svelte';
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import { untrack } from 'svelte';
-import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
+	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
 	import { crosspostToBluesky } from '$lib/crosspost/bluesky';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -29,8 +29,7 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 		type EmojiSelection,
 		type MentionSelection,
 	} from '$lib/atproto/facets';
-	import { drafts } from '$lib/drafts/drafts.svelte';
-	import { DraftStorageError } from '$lib/drafts/storage';
+	import { drafts, DraftStorageError } from '$lib/drafts/drafts.svelte';
 	import DraftListDialog from './DraftListDialog.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
 	import { getStandardSiteEnabled, hasStandardSiteScope } from '$lib/standardsite/preferences';
@@ -95,10 +94,10 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 	let hasEmbeds = $derived(
 		Boolean(
 			attachments.length ||
-				linkCards.length ||
-				quotePick.pending ||
-				quotePick.post ||
-				quotePick.error,
+			linkCards.length ||
+			quotePick.pending ||
+			quotePick.post ||
+			quotePick.error,
 		),
 	);
 	let graphemes = $derived(
@@ -244,6 +243,13 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 	async function saveDraft() {
 		if (empty || busy || !$session) return;
 		draftError = '';
+		// TODO(ATproto Spaces): Spaces対応後は、非公開のPDS下書きレコードからPDS Blobを
+		// 参照する方式で画像付き下書きを再実装する。Spaces対応前の未参照BlobはGCされ得るため、
+		// 暫定的なPDS Blob保存には利用しない。
+		if (attachments.length) {
+			draftError = m.draftImagesUnsupported();
+			return;
+		}
 		try {
 			await drafts.save($session.did, {
 				text,
@@ -260,7 +266,9 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 			draftError =
 				e instanceof DraftStorageError && e.code === 'limit'
 					? m.draftLimitReached({ max: 30 })
-					: m.draftSaveFailed();
+					: e instanceof DraftStorageError && e.code === 'images'
+						? m.draftImagesUnsupported()
+						: m.draftSaveFailed();
 		}
 	}
 
@@ -447,7 +455,8 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 						<div class="composer-target-badge">
 							<Icon name="reply" size={14} />
 							<span>{m.replyTargetLabel()}</span>
-							<span class="composer-target-sub">@{composerHost.replyTarget.post.author.handle}</span>
+							<span class="composer-target-sub">@{composerHost.replyTarget.post.author.handle}</span
+							>
 						</div>
 						<button
 							type="button"
@@ -464,7 +473,10 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 						<Avatar actor={composerHost.replyTarget.post.author} size="small" />
 						<div class="composer-target-content">
 							<div class="composer-target-meta">
-								<span class="name">{composerHost.replyTarget.post.author.displayName || composerHost.replyTarget.post.author.handle}</span>
+								<span class="name"
+									>{composerHost.replyTarget.post.author.displayName ||
+										composerHost.replyTarget.post.author.handle}</span
+								>
 							</div>
 							<p class="composer-target-text">{composerHost.replyTarget.post.text}</p>
 						</div>
@@ -477,7 +489,9 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 							<Icon name="quote" size={14} />
 							<span>{m.quoteTargetLabel()}</span>
 							{#if composerHost.quoteTarget.post}
-								<span class="composer-target-sub">@{composerHost.quoteTarget.post.author.handle}</span>
+								<span class="composer-target-sub"
+									>@{composerHost.quoteTarget.post.author.handle}</span
+								>
 							{/if}
 						</div>
 						<button
@@ -496,7 +510,10 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 							<Avatar actor={composerHost.quoteTarget.post.author} size="small" />
 							<div class="composer-target-content">
 								<div class="composer-target-meta">
-									<span class="name">{composerHost.quoteTarget.post.author.displayName || composerHost.quoteTarget.post.author.handle}</span>
+									<span class="name"
+										>{composerHost.quoteTarget.post.author.displayName ||
+											composerHost.quoteTarget.post.author.handle}</span
+									>
 								</div>
 								<p class="composer-target-text">{composerHost.quoteTarget.post.text}</p>
 							</div>
@@ -572,7 +589,9 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 			aria-haspopup="dialog"
 			aria-expanded={scopeDialogOpen}
 			aria-label={m.postScopeOpenAria({ scope: scopeLabel })}
-			title={kossoriThread ? m.postScopeKossoriDetail() : m.postScopeOpenAria({ scope: scopeLabel })}
+			title={kossoriThread
+				? m.postScopeKossoriDetail()
+				: m.postScopeOpenAria({ scope: scopeLabel })}
 			onclick={() => (scopeDialogOpen = true)}
 		>
 			<Icon name={scopeIcon} size={15} />
@@ -596,9 +615,9 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 			<button
 				class="icon-action draft-save"
 				type="button"
-				disabled={busy || empty}
+				disabled={busy || empty || attachments.length > 0}
 				aria-label={m.draftSave()}
-				title={m.draftSave()}
+				title={attachments.length ? m.draftImagesUnsupported() : m.draftSave()}
 				onclick={saveDraft}><Icon name="draft" size={18} /></button
 			>
 		{/if}
@@ -629,6 +648,9 @@ import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/rec
 			</button>
 		</div>
 	</div>
+	{#if attachments.length && mode === 'rich'}<p class="draft-image-note">
+			{m.draftImagesUnsupported()}
+		</p>{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}{#if draftError}<p class="error">
 			{draftError}
 		</p>{/if}{#if warning}<p class="error">

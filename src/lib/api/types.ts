@@ -186,6 +186,8 @@ export type BookmarkFoldersView = {
 	folders: BookmarkFolderView[];
 	folderLimit: number;
 	bookmarkLimit: number;
+	lastFolderId?: string;
+	lastFolderUpdatedAt?: string;
 };
 export type BookmarkStateView = { subjectUri: string; folderId?: string; createdAt?: string };
 export type BookmarkItemView = {
@@ -375,6 +377,16 @@ export type PreferencesView = {
 	replyFreq?: number;
 	/** 省略＝未設定。botたんは表示名で呼ぶ。 */
 	preferredName?: string;
+	languagePreferences?: SyncedLanguagePreferences;
+	languagePreferencesUpdatedAt?: string;
+	lastBookmarkFolderId?: string;
+	lastBookmarkFolderUpdatedAt?: string;
+};
+export type SyncedLanguagePreferences = {
+	post: string;
+	translation: string;
+	provider: 'kagi' | 'deepl' | 'google';
+	autoTranslate: boolean;
 };
 export type PutPreferencesInput = {
 	readPositions?: RemoteReadPosition[];
@@ -391,7 +403,31 @@ export type PutPreferencesInput = {
 	 * 送らなければ変更しない。他の項目と違い後勝ちで、updatedAt は不要。
 	 */
 	preferredName?: string;
+	languagePreferences?: SyncedLanguagePreferences;
+	languagePreferencesUpdatedAt?: string;
+	lastBookmarkFolderId?: string | null;
+	lastBookmarkFolderUpdatedAt?: string;
 };
+
+export type DraftLinkCard = { uri: string; title: string; description?: string };
+export type DraftContent = {
+	text: string;
+	mentions: Array<{ start: number; end: number; did: string; handle: string }>;
+	channels: Array<{ start: number; end: number; uri: string; name: string }>;
+	emojis: Array<{ start: number; end: number; uri: string }>;
+	linkCards: DraftLinkCard[];
+	dismissedUrls: string[];
+	quoteUri?: string;
+};
+export type DraftView = DraftContent & { id: string; createdAt: string; updatedAt: string };
+export type DraftSummary = {
+	id: string;
+	text: string;
+	linkCardCount: number;
+	createdAt: string;
+	updatedAt: string;
+};
+export type DraftsView = { drafts: DraftSummary[]; limit: number };
 
 // ---------------------------------------------------------------------------
 // 全肯定カード（1日1回引けるトレカ）

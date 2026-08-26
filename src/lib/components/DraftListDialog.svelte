@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { drafts } from '$lib/drafts/drafts.svelte';
-	import type { StoredDraft } from '$lib/drafts/storage';
+	import type { DraftEntry } from '$lib/drafts/drafts.svelte';
 	import Icon from './shell/Icon.svelte';
 
 	let { onrestore, onclose }: { onrestore: (id: string) => void; onclose: () => void } = $props();
@@ -17,6 +17,7 @@
 	$effect(() => {
 		const wanted = new Map<string, Blob>();
 		for (const draft of drafts.entries) {
+			if (draft.storage !== 'legacy-device') continue;
 			const blob =
 				draft.images[0]?.blob ?? draft.linkCards.find((card) => card.thumbnail)?.thumbnail;
 			if (blob) wanted.set(draft.id, blob);
@@ -36,13 +37,14 @@
 	onMount(() => closeButton.focus());
 	onDestroy(() => thumbnails.forEach((url) => URL.revokeObjectURL(url)));
 
-	const summary = (draft: StoredDraft) => {
+	const summary = (draft: DraftEntry) => {
 		const text = draft.text.trim();
 		if (text) return text;
-		if (draft.images.length) return m.draftImagesOnly({ count: draft.images.length });
+		if (draft.storage === 'legacy-device' && draft.images.length)
+			return m.draftImagesOnly({ count: draft.images.length });
 		return m.draftLinkOnly();
 	};
-	const timestamp = (draft: StoredDraft) =>
+	const timestamp = (draft: DraftEntry) =>
 		new Date(draft.updatedAt).toLocaleString(dateLocale(), {
 			month: 'short',
 			day: 'numeric',
@@ -89,7 +91,11 @@
 						{#if previews[draft.id]}<img class="draft-thumb" src={previews[draft.id]} alt="" />{/if}
 						<div class="draft-body">
 							<p class="draft-text">{summary(draft)}</p>
-							<small>{timestamp(draft)}</small>
+							<small
+								>{timestamp(draft)} · {draft.storage === 'appview'
+									? m.draftSynced()
+									: m.draftLegacyDevice()}</small
+							>
 						</div>
 						<div class="draft-item-actions">
 							<button type="button" class="ghost" onclick={() => onrestore(draft.id)}
@@ -114,6 +120,6 @@
 				{/each}
 			</ul>
 		{/if}
-		<p class="draft-note">{m.draftLocalOnlyNote()}</p>
+		<p class="draft-note">{m.draftSyncedNote()}</p>
 	</div>
 </div>

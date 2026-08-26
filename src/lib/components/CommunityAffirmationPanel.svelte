@@ -1,9 +1,13 @@
 <script lang="ts">
-	import { ApiRequestError, getCommunityAffirmations } from '$lib/api/appview';
+	import {
+		ApiRequestError,
+		getCommunityAffirmations,
+		putCommunityAffirmationDismissals,
+	} from '$lib/api/appview';
 	import type { ActorView, CommunityAffirmationView } from '$lib/api/types';
 	import {
-		communityAffirmationHandledUris,
-		markCommunityAffirmationHandled,
+		clearLegacyCommunityAffirmationHandledUris,
+		legacyCommunityAffirmationHandledUris,
 	} from '$lib/community-affirmation/seen';
 	import {
 		communityAffirmationBotPost,
@@ -13,6 +17,7 @@
 	import { latestReadPosition, openMyNagiUnreadView, readLatest } from '$lib/my-nagi/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
+	import { preferences } from '$lib/preferences/preferences.svelte';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	import CarouselArrows from './CarouselArrows.svelte';
 	import ChatBubble from './ChatBubble.svelte';
@@ -63,8 +68,13 @@
 		authError = false;
 		completed = false;
 		try {
+			const legacyUris = legacyCommunityAffirmationHandledUris();
+			if (legacyUris.length) {
+				await putCommunityAffirmationDismissals(legacyUris);
+				clearLegacyCommunityAffirmationHandledUris();
+			}
 			const pageLimit = Math.min(20, Math.max(10, limit));
-			const handled = communityAffirmationHandledUris();
+			const handled = new Set<string>();
 			const visible: CommunityAffirmationView[] = [];
 			let cursor: string | undefined;
 			let foundAny = false;
@@ -74,8 +84,6 @@
 				foundAny ||= page.items.length > 0;
 				for (const item of page.items) {
 					if (reactedByMe(item)) {
-						markCommunityAffirmationHandled(item.uri);
-						handled.add(item.uri);
 						continue;
 					}
 					if (!handled.has(item.uri) && visible.length < limit) visible.push(item);
@@ -93,6 +101,7 @@
 			);
 			completed = foundAny && visible.length === 0;
 		} catch (cause) {
+			preferences.noteScopeError(cause);
 			authError =
 				cause instanceof ApiRequestError && (cause.status === 401 || cause.status === 403);
 			error = cause instanceof Error ? cause.message : m.communityAffirmationError();
@@ -103,7 +112,6 @@
 
 	function handleItem(uri: string) {
 		if (removingUris.has(uri)) return;
-		markCommunityAffirmationHandled(uri);
 		removingUris = new Set([...removingUris, uri]);
 		if (openPickerUri === uri) openPickerUri = undefined;
 		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -121,6 +129,18 @@
 
 	function handleReactionToggle(uri: string, active: boolean) {
 		if (active) handleItem(uri);
+	}
+
+	async function dismissItem(uri: string) {
+		if (removingUris.has(uri)) return;
+		error = '';
+		try {
+			await putCommunityAffirmationDismissals([uri]);
+			handleItem(uri);
+		} catch (cause) {
+			preferences.noteScopeError(cause);
+			error = m.communityAffirmationDismissSaveFailed();
+		}
 	}
 
 	function handlePickerClose(uri: string) {
@@ -235,7 +255,7 @@
 								class="community-affirmation-dismiss"
 								aria-label={m.communityAffirmationDismissAria()}
 								title={m.communityAffirmationDismissAria()}
-								onclick={() => handleItem(item.uri)}
+								onclick={() => void dismissItem(item.uri)}
 							>
 								{m.communityAffirmationDismiss()}
 							</button>

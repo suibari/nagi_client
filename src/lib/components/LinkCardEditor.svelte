@@ -22,11 +22,10 @@
 	let loading = $state<string[]>([]);
 	let urls = $derived(parsePostText(text).urls);
 	const previews = new Set<string>();
+	const hydrationAttempted = new Set<string>();
 	let previousUrls = new Set<string>();
 
-	const sortableItems = $derived(
-		cards.map((card) => ({ ...card, id: card.id ?? card.uri })),
-	);
+	const sortableItems = $derived(cards.map((card) => ({ ...card, id: card.id ?? card.uri })));
 
 	const sortable = createSortable<LinkCardDraft & { id: string }>({
 		items: () => sortableItems,
@@ -65,6 +64,18 @@
 	});
 
 	$effect(() => {
+		// AppView下書きはサムネイルBlobを持たない。保存済みタイトル・説明を先に表示したまま、
+		// URLから画像を一度だけ再取得する。失敗時も既存テキストは維持する。
+		const candidates = cards.filter(
+			(card) => !card.previewUrl && !hydrationAttempted.has(card.uri),
+		);
+		for (const card of candidates) {
+			hydrationAttempted.add(card.uri);
+			void hydrate(card.uri);
+		}
+	});
+
+	$effect(() => {
 		const current = new Set(cards.flatMap((card) => (card.previewUrl ? [card.previewUrl] : [])));
 		for (const preview of previews) {
 			if (!current.has(preview)) {
@@ -78,8 +89,17 @@
 
 	async function add(uri: string) {
 		if (cards.some((card) => card.uri === uri) || loading.includes(uri)) return;
-		const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${uri}-${Date.now()}`;
+		const id =
+			typeof crypto !== 'undefined' && crypto.randomUUID
+				? crypto.randomUUID()
+				: `${uri}-${Date.now()}`;
 		cards = [...cards, { id, uri, title: new URL(uri).hostname }];
+		hydrationAttempted.add(uri);
+		await hydrate(uri);
+	}
+
+	async function hydrate(uri: string) {
+		if (loading.includes(uri)) return;
 		loading = [...loading, uri];
 		try {
 			let metadata = await getLinkMetadata(uri);

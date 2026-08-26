@@ -112,8 +112,17 @@
 	</li>
 	<li>
 		<strong>Bookmarks and folders.</strong> We store only folder names and the URIs of bookmarked items
-		on our servers, visible only to you. They are not stored in your PDS, and we do not create a snapshot
-		of the bookmarked content.
+		and the last-used folder ID on our servers, visible only to you. They are not stored in your PDS,
+		and we do not create a snapshot of the bookmarked content.
+	</li>
+	<li>
+		<strong>Drafts and synced settings.</strong> For drafts without images, we store text, mentions, channels,
+		Bluemoji, link URL/title/description, and quote URI, plus post and translation settings, visible only
+		to you. We do not store images, link thumbnails, or other binary data.
+	</li>
+	<li>
+		<strong>“Affirm together” dismissals.</strong> We store dismissed post URIs, visible only to you,
+		and delete them when the seven-day candidate period ends.
 	</li>
 	<li><strong>Translation cache and card collection records.</strong></li>
 </ul>
@@ -282,13 +291,12 @@
 <ul>
 	<li>
 		<strong>Local storage</strong>: The DID you are signed in as, theme, display language,
-		translation settings, crosspost settings, frequently used emoji, unread positions in timelines,
-		the post URIs shown in "Affirm together" for seven days, your consent state for signed-out AI
-		use, and a random device value and today’s card for signed-out card draws
+		OAuth-related crosspost settings, local caches of synced data, your consent state for signed-out
+		AI use, and a random device value and today’s card for signed-out card draws
 	</li>
 	<li>
-		<strong>IndexedDB</strong>: Your OAuth session, post drafts, and your signed-out “Private on
-		this device” posts and Bot-tan replies
+		<strong>IndexedDB</strong>: Your OAuth session, legacy device drafts with images that have not
+		migrated, and your signed-out “Private on this device” posts and Bot-tan replies
 	</li>
 </ul>
 <p>

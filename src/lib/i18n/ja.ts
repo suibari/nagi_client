@@ -102,6 +102,7 @@ export const ja = {
 	communityAffirmationReactAria: '元投稿へ届ける絵文字を選ぶ',
 	communityAffirmationDismiss: '今回は見送る',
 	communityAffirmationDismissAria: 'この声を今回は見送る',
+	communityAffirmationDismissSaveFailed: '見送りを保存できませんでした。もう一度お試しください。',
 	communityAffirmationGuest: 'サインインすると、みんなの声に絵文字で気持ちを届けられます。',
 	communityAffirmationScrollPrev: '前の声を見る',
 	communityAffirmationScrollNext: '次の声を見る',
@@ -360,6 +361,7 @@ export const ja = {
 	// drafts
 	draftSave: '下書きに保存',
 	draftSaveFailed: '下書きを保存できませんでした',
+	draftImagesUnsupported: '画像付きの下書きは保存できません。画像を外してから保存してください。',
 	draftLimitReached: (p: { max: number }) => `下書きは${p.max}件まで保存できます`,
 	draftListOpen: '下書き一覧',
 	draftListTitle: '下書き',
@@ -371,8 +373,12 @@ export const ja = {
 	draftDeleteConfirm: '削除する',
 	draftImagesOnly: (p: { count: number }) => `画像${p.count}枚の下書き`,
 	draftLinkOnly: 'リンクのみの下書き',
-	draftLocalOnlyNote: '下書きはこの端末にのみ保存され、他の端末とは同期しません。',
-	draftsClearedNote: 'この端末に保存した下書きも削除されます。',
+	draftSynced: 'アカウント同期',
+	draftLegacyDevice: '旧端末下書き',
+	draftSyncedNote:
+		'画像のない下書きはアカウントに同期されます。旧端末下書きは復元または削除できます。',
+	draftLocalOnlyNote: '画像のない下書きはアカウントに同期されます。',
+	draftsClearedNote: '同期した下書きと、移行前の旧端末下書きも削除されます。',
 
 	// post bubble
 	viewProfileAria: 'プロフィールを見る',
@@ -489,7 +495,7 @@ export const ja = {
 
 	// 端末間同期（permission-set の更新が行き渡るまでのあいだ出る告知）
 	preferencesSyncUnavailable:
-		'この端末はまだ他の端末と同期していません。お気に入り絵文字と未読の位置は、いまはこの端末にだけ保存されています。',
+		'この端末は新しい同期権限がまだ有効ではありません。既存の端末データは残したまま、下書き、見送り、投稿・翻訳設定、ブックマーク保存先などの同期を待機しています。',
 	preferencesSyncReauthorize: '再ログインして同期を有効にする',
 
 	// custom emoji settings
@@ -873,7 +879,8 @@ export const ja = {
 		'あなたの投稿につける言語です。Botたんもこの言語で返信します。次回以降の投稿に適用されます。',
 	postLanguageLabel: '投稿言語を選択',
 	translationLanguageLegend: '翻訳言語',
-	translationLanguageHelp: 'ほかの言語の投稿を、自動でこの言語に翻訳して表示します。',
+	translationLanguageHelp:
+		'投稿・翻訳の設定はアカウントに同期されます。browser選択時は各端末のブラウザ言語を使います。',
 	translationLanguageLabel: '翻訳言語を選択',
 	autoTranslateLegend: '自動翻訳',
 	autoTranslateHelp: 'ほかの言語の投稿を、開いたときに自動で翻訳して表示します。',

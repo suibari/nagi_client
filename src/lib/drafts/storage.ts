@@ -1,10 +1,8 @@
 import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 
 /**
- * 下書きは非公開データだが、AppView に置くと下書き本文と画像バイトをサーバが抱えることに
- * なる（PDS の未参照 blob は GC されるため画像は AppView 保存が必須になり、
- * 「AppView は blob を保存しない」原則が崩れる）。テーマ・ロケール・クロスポスト設定と
- * 同じデバイスローカル方針に揃え、Blob をそのまま入れられる IndexedDB に保存する。
+ * AppView同期以前の下書きを読むための互換形式。新規保存には使わない。
+ * 画像なしはAppViewへ移行し、画像付きは「旧端末下書き」として復元・削除だけを許可する。
  */
 export type StoredDraftImage = {
 	id: string;

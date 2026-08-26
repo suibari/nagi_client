@@ -99,6 +99,7 @@ export const en: Messages = {
 	communityAffirmationReactAria: 'Choose an emoji to send to the original post',
 	communityAffirmationDismiss: 'Skip for now',
 	communityAffirmationDismissAria: 'Skip this voice for now',
+	communityAffirmationDismissSaveFailed: 'Could not save this choice. Please try again.',
 	communityAffirmationGuest: 'Sign in to send a warm emoji to voices from the community.',
 	communityAffirmationScrollPrev: 'See the previous voice',
 	communityAffirmationScrollNext: 'See the next voice',
@@ -347,6 +348,7 @@ export const en: Messages = {
 	// drafts
 	draftSave: 'Save as draft',
 	draftSaveFailed: 'Could not save the draft',
+	draftImagesUnsupported: 'Drafts with images cannot be saved. Remove the images first.',
 	draftLimitReached: (p: { max: number }) => `You can keep up to ${p.max} drafts`,
 	draftListOpen: 'Drafts',
 	draftListTitle: 'Drafts',
@@ -359,8 +361,13 @@ export const en: Messages = {
 	draftImagesOnly: (p: { count: number }) =>
 		p.count === 1 ? 'Draft with 1 image' : `Draft with ${p.count} images`,
 	draftLinkOnly: 'Draft with a link only',
-	draftLocalOnlyNote: 'Drafts are stored only on this device and do not sync across devices.',
-	draftsClearedNote: 'Drafts saved on this device will be deleted too.',
+	draftSynced: 'Synced to account',
+	draftLegacyDevice: 'Legacy device draft',
+	draftSyncedNote:
+		'Drafts without images sync to your account. Legacy device drafts can be restored or deleted.',
+	draftLocalOnlyNote: 'Drafts without images sync to your account.',
+	draftsClearedNote:
+		'Synced drafts and legacy device drafts that have not migrated will be deleted too.',
 
 	viewProfileAria: 'View profile',
 	botBadge: 'Bot-tan',
@@ -474,7 +481,7 @@ export const en: Messages = {
 
 	// Cross-device sync (shown until the updated permission set reaches this session)
 	preferencesSyncUnavailable:
-		'This device is not syncing with your other devices yet. Favorite emoji and read positions are stored on this device only for now.',
+		'The new sync permission is not active on this device yet. Existing device data is kept while drafts, dismissals, post and translation settings, bookmark destinations, and other preferences wait to sync.',
 	preferencesSyncReauthorize: 'Sign in again to enable sync',
 
 	// custom emoji settings
@@ -844,7 +851,8 @@ export const en: Messages = {
 		'The language attached to your posts. Bot-tan replies in this language too. Applies to new posts.',
 	postLanguageLabel: 'Choose post language',
 	translationLanguageLegend: 'Translation language',
-	translationLanguageHelp: 'Posts in other languages are translated into this language for you.',
+	translationLanguageHelp:
+		'Post and translation settings sync to your account. Browser uses each device’s browser language.',
 	translationLanguageLabel: 'Choose translation language',
 	autoTranslateLegend: 'Automatic translation',
 	autoTranslateHelp: 'Posts in other languages are translated automatically when you open them.',

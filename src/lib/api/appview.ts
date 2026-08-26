@@ -12,6 +12,9 @@ import type {
 	ChannelsPage,
 	ChannelView,
 	CommunityAffirmationPage,
+	DraftContent,
+	DraftsView,
+	DraftView,
 	DiaryPage,
 	DrawCardResult,
 	GuestCardDrawResult,
@@ -166,6 +169,46 @@ export const getCommunityAffirmations = (lang: 'ja' | 'en', cursor?: string, lim
 		'required',
 	);
 };
+export const putCommunityAffirmationDismissals = (uris: string[]) =>
+	call<{ accepted: number }>(
+		'com.suibari.nagi.putCommunityAffirmationDismissals',
+		'/xrpc/com.suibari.nagi.putCommunityAffirmationDismissals',
+		{ method: 'POST', body: JSON.stringify({ uris }) },
+		'required',
+	);
+export const getDrafts = () =>
+	call<DraftsView>(
+		'com.suibari.nagi.getDrafts',
+		'/xrpc/com.suibari.nagi.getDrafts',
+		{},
+		'required',
+	);
+export const getDraft = (id: string) =>
+	call<DraftView>(
+		'com.suibari.nagi.getDraft',
+		`/xrpc/com.suibari.nagi.getDraft?id=${encodeURIComponent(id)}`,
+		{},
+		'required',
+	);
+export const putDraft = (input: {
+	id: string;
+	content: DraftContent;
+	createdAt: string;
+	updatedAt: string;
+}) =>
+	call<DraftView>(
+		'com.suibari.nagi.putDraft',
+		'/xrpc/com.suibari.nagi.putDraft',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
+export const deleteDraft = (id: string) =>
+	call<{ deleted: true }>(
+		'com.suibari.nagi.deleteDraft',
+		'/xrpc/com.suibari.nagi.deleteDraft',
+		{ method: 'POST', body: JSON.stringify({ id }) },
+		'required',
+	);
 export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ limit: '20', lang });
 	if (cursor) params.set('cursor', cursor);

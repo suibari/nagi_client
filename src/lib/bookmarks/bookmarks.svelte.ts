@@ -11,6 +11,7 @@ import {
 	ApiRequestError,
 } from '$lib/api/appview';
 import { chooseBookmarkFolder, removeFolderFromBookmarkStates } from './state';
+import { preferences } from '$lib/preferences/preferences.svelte';
 
 const LAST_FOLDER_PREFIX = 'nagi.bookmarks.last-folder.v1.';
 
@@ -28,6 +29,8 @@ class Bookmarks {
 	#known = new Set<string>();
 	#queued = new Set<string>();
 	#batchTimer?: ReturnType<typeof setTimeout>;
+	#lastFolderId?: string;
+	#lastFolderUpdatedAt?: string;
 
 	state(uri: string) {
 		return this.states[uri];
@@ -43,13 +46,7 @@ class Bookmarks {
 	}
 	lastFolder() {
 		const fallback = this.defaultFolder();
-		if (!this.#did || typeof localStorage === 'undefined') return fallback;
-		try {
-			const id = localStorage.getItem(`${LAST_FOLDER_PREFIX}${this.#did}`);
-			return chooseBookmarkFolder(this.folders, id) ?? fallback;
-		} catch {
-			return fallback;
-		}
+		return chooseBookmarkFolder(this.folders, this.#lastFolderId ?? null) ?? fallback;
 	}
 
 	async load(did: string, lang: 'ja' | 'en') {
@@ -71,7 +68,15 @@ class Bookmarks {
 			this.folders = view.folders;
 			this.folderLimit = view.folderLimit;
 			this.bookmarkLimit = view.bookmarkLimit;
+			this.#lastFolderId = view.lastFolderId;
+			this.#lastFolderUpdatedAt = view.lastFolderUpdatedAt;
 			this.loaded = true;
+			if (!view.lastFolderUpdatedAt && typeof localStorage !== 'undefined') {
+				try {
+					const legacyId = localStorage.getItem(`${LAST_FOLDER_PREFIX}${did}`);
+					if (chooseBookmarkFolder(this.folders, legacyId)) this.#rememberFolder(legacyId!);
+				} catch {}
+			}
 			this.#repairLastFolder();
 		} catch (error) {
 			if (request === this.#request && this.#did === did) {
@@ -90,6 +95,8 @@ class Bookmarks {
 		this.loaded = false;
 		this.unauthorized = false;
 		this.#known.clear();
+		this.#lastFolderId = undefined;
+		this.#lastFolderUpdatedAt = undefined;
 		this.#queued.clear();
 		if (this.#batchTimer) clearTimeout(this.#batchTimer);
 		this.#batchTimer = undefined;
@@ -208,7 +215,11 @@ class Bookmarks {
 	}
 
 	#rememberFolder(folderId: string) {
-		if (!this.#did || typeof localStorage === 'undefined') return;
+		if (!this.#did) return;
+		this.#lastFolderId = folderId;
+		this.#lastFolderUpdatedAt = new Date().toISOString();
+		preferences.pushLastBookmarkFolder(folderId, this.#lastFolderUpdatedAt);
+		if (typeof localStorage === 'undefined') return;
 		try {
 			localStorage.setItem(`${LAST_FOLDER_PREFIX}${this.#did}`, folderId);
 		} catch {
@@ -217,7 +228,7 @@ class Bookmarks {
 	}
 	#repairLastFolder() {
 		const folder = this.lastFolder();
-		if (folder) this.#rememberFolder(folder.id);
+		if (folder && folder.id !== this.#lastFolderId) this.#rememberFolder(folder.id);
 	}
 	#adjustFolderCount(folderId: string, delta: number, previousFolderId?: string) {
 		if (previousFolderId) return;
@@ -230,7 +241,11 @@ class Bookmarks {
 		if (!did) return;
 		try {
 			const view = await getBookmarkFolders(this.#lang);
-			if (this.#did === did) this.folders = view.folders;
+			if (this.#did === did) {
+				this.folders = view.folders;
+				this.#lastFolderId = view.lastFolderId;
+				this.#lastFolderUpdatedAt = view.lastFolderUpdatedAt;
+			}
 		} catch {
 			// 本体の保存・解除は成功済み。件数は次回読み込みで収束させる。
 		}
@@ -238,3 +253,10 @@ class Bookmarks {
 }
 
 export const bookmarks = new Bookmarks();
+
+export function clearBookmarkPreferenceCache(did: string) {
+	if (typeof localStorage === 'undefined') return;
+	try {
+		localStorage.removeItem(`${LAST_FOLDER_PREFIX}${did}`);
+	} catch {}
+}

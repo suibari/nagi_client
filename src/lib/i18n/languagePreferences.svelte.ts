@@ -52,6 +52,16 @@ export const POST_LANGUAGE_STORAGE_KEY = 'nagi-post-language';
 export const TRANSLATION_LANGUAGE_STORAGE_KEY = 'nagi-translation-language';
 export const TRANSLATION_PROVIDER_STORAGE_KEY = 'nagi-translation-provider';
 export const AUTO_TRANSLATE_STORAGE_KEY = 'nagi-auto-translate';
+const CACHE_PREFIX = 'nagi.language-preferences.v1.';
+export type StoredLanguagePreferences = {
+	post: LanguagePreference;
+	translation: LanguagePreference;
+	provider: TranslationProvider;
+	autoTranslate: boolean;
+	updatedAt: string;
+};
+let scopedDid: string | undefined;
+let changed: ((value: StoredLanguagePreferences) => void) | undefined;
 
 const supported = new Set<string>(SUPPORTED_LANGUAGES);
 
@@ -120,6 +130,97 @@ const preferences = $state({
 	autoTranslate: storedAutoTranslate(),
 });
 
+export const languagePreferencesStorageKey = (did: string) =>
+	`${CACHE_PREFIX}${encodeURIComponent(did)}`;
+export function loadStoredLanguagePreferences(did: string): StoredLanguagePreferences | undefined {
+	if (typeof window === 'undefined') return;
+	try {
+		const value = JSON.parse(
+			window.localStorage.getItem(languagePreferencesStorageKey(did)) ?? 'null',
+		);
+		if (
+			!value ||
+			typeof value.updatedAt !== 'string' ||
+			!(value.post === 'browser' || normalizeSupportedLanguage(value.post) === value.post) ||
+			!(
+				value.translation === 'browser' ||
+				normalizeSupportedLanguage(value.translation) === value.translation
+			) ||
+			!isTranslationProvider(value.provider) ||
+			typeof value.autoTranslate !== 'boolean'
+		)
+			return;
+		return value;
+	} catch {
+		return;
+	}
+}
+export function hasLegacyLanguagePreferences(): boolean {
+	if (typeof window === 'undefined') return false;
+	try {
+		return [
+			POST_LANGUAGE_STORAGE_KEY,
+			TRANSLATION_LANGUAGE_STORAGE_KEY,
+			TRANSLATION_PROVIDER_STORAGE_KEY,
+			AUTO_TRANSLATE_STORAGE_KEY,
+		].some((key) => window.localStorage.getItem(key) !== null);
+	} catch {
+		return false;
+	}
+}
+export function languagePreferencesSnapshot(
+	updatedAt = new Date().toISOString(),
+): StoredLanguagePreferences {
+	return { ...preferences, updatedAt };
+}
+export function adoptLanguagePreferences(
+	did: string,
+	value: Omit<StoredLanguagePreferences, 'updatedAt'>,
+	updatedAt: string,
+) {
+	preferences.post = value.post;
+	preferences.translation = value.translation;
+	preferences.provider = value.provider;
+	preferences.autoTranslate = value.autoTranslate;
+	try {
+		localStorage.setItem(
+			languagePreferencesStorageKey(did),
+			JSON.stringify({ ...value, updatedAt }),
+		);
+	} catch {}
+}
+export function setLanguagePreferencesScope(did: string | undefined) {
+	scopedDid = did;
+	if (!did) {
+		preferences.post = storedPreference(POST_LANGUAGE_STORAGE_KEY);
+		preferences.translation = storedPreference(TRANSLATION_LANGUAGE_STORAGE_KEY);
+		preferences.provider = storedProvider();
+		preferences.autoTranslate = storedAutoTranslate();
+		return;
+	}
+	const stored = loadStoredLanguagePreferences(did);
+	if (stored) adoptLanguagePreferences(did, stored, stored.updatedAt);
+	else {
+		preferences.post = storedPreference(POST_LANGUAGE_STORAGE_KEY);
+		preferences.translation = storedPreference(TRANSLATION_LANGUAGE_STORAGE_KEY);
+		preferences.provider = storedProvider();
+		preferences.autoTranslate = storedAutoTranslate();
+	}
+}
+export function subscribeLanguagePreferencesChanged(
+	handler: (value: StoredLanguagePreferences) => void,
+) {
+	changed = handler;
+}
+function persistSyncedPreferences() {
+	if (!scopedDid) return;
+	const snapshot = languagePreferencesSnapshot();
+	try {
+		localStorage.setItem(languagePreferencesStorageKey(scopedDid), JSON.stringify(snapshot));
+	} catch {}
+	changed?.(snapshot);
+}
+
 export const languagePreferences = {
 	get postPreference(): LanguagePreference {
 		return preferences.post;
@@ -143,32 +244,36 @@ export const languagePreferences = {
 
 export function setPostLanguagePreference(preference: LanguagePreference): void {
 	preferences.post = preference;
-	storePreference(POST_LANGUAGE_STORAGE_KEY, preference);
+	if (!scopedDid) storePreference(POST_LANGUAGE_STORAGE_KEY, preference);
+	persistSyncedPreferences();
 }
 
 export function setTranslationLanguagePreference(preference: LanguagePreference): void {
 	preferences.translation = preference;
-	storePreference(TRANSLATION_LANGUAGE_STORAGE_KEY, preference);
+	if (!scopedDid) storePreference(TRANSLATION_LANGUAGE_STORAGE_KEY, preference);
+	persistSyncedPreferences();
 }
 
 export function setTranslationProviderPreference(provider: TranslationProvider): void {
 	preferences.provider = provider;
 	if (typeof window === 'undefined') return;
 	try {
-		window.localStorage.setItem(TRANSLATION_PROVIDER_STORAGE_KEY, provider);
+		if (!scopedDid) window.localStorage.setItem(TRANSLATION_PROVIDER_STORAGE_KEY, provider);
 	} catch {
 		// The preference still applies in-memory when storage is unavailable.
 	}
+	persistSyncedPreferences();
 }
 
 export function setAutoTranslatePreference(enabled: boolean): void {
 	preferences.autoTranslate = enabled;
 	if (typeof window === 'undefined') return;
 	try {
-		window.localStorage.setItem(AUTO_TRANSLATE_STORAGE_KEY, enabled ? 'on' : 'off');
+		if (!scopedDid) window.localStorage.setItem(AUTO_TRANSLATE_STORAGE_KEY, enabled ? 'on' : 'off');
 	} catch {
 		// The preference still applies in-memory when storage is unavailable.
 	}
+	persistSyncedPreferences();
 }
 
 export function clearLanguagePreferences(): void {
@@ -181,6 +286,7 @@ export function clearLanguagePreferences(): void {
 	window.localStorage.removeItem(TRANSLATION_LANGUAGE_STORAGE_KEY);
 	window.localStorage.removeItem(TRANSLATION_PROVIDER_STORAGE_KEY);
 	window.localStorage.removeItem(AUTO_TRANSLATE_STORAGE_KEY);
+	if (scopedDid) window.localStorage.removeItem(languagePreferencesStorageKey(scopedDid));
 }
 
 export function languageName(language: SupportedLanguage, displayLocale: string): string {
