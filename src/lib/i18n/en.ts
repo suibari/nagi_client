@@ -237,6 +237,8 @@ export const en: Messages = {
 	botSilentEnableTooltip: 'Bot-tan silent (Bot-tan will not reply to this post)',
 	botSilentDisableTooltip: 'Disable Bot-tan silent',
 	botSilentAria: 'Bot-tan silent mode',
+	silentReplyEnableTooltip: 'Silent reply (does not notify the person you reply to)',
+	silentReplyDisableTooltip: 'Disable silent reply',
 	composerTabsAria: 'Switch between writing and preview',
 	composerTabWrite: 'Write',
 	composerTabPreview: 'Preview',

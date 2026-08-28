@@ -249,6 +249,8 @@ export const ja = {
 	botSilentEnableTooltip: 'botたんサイレント（この投稿にbotたんは返信しません）',
 	botSilentDisableTooltip: 'botたんサイレントを解除',
 	botSilentAria: 'botたんサイレント機能',
+	silentReplyEnableTooltip: 'サイレントリプライ（返信先に通知しません）',
+	silentReplyDisableTooltip: 'サイレントリプライを解除',
 	composerTabsAria: '入力とプレビューの切り替え',
 	composerTabWrite: '書く',
 	composerTabPreview: 'プレビュー',

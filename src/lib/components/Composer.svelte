@@ -86,6 +86,7 @@
 	let loadedDid = $state<string | undefined>(undefined);
 	let crosspostReady = $state(false);
 	let botSilent = $state(false);
+	let silentReply = $state(false);
 	let publishingLoadVersion = 0;
 	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
 	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
@@ -238,6 +239,7 @@
 		scope = restorePostScope(defaultScope);
 		articleTitle = '';
 		botSilent = false;
+		silentReply = false;
 	}
 
 	async function saveDraft() {
@@ -335,7 +337,8 @@
 			kossori,
 			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
 			false,
-			botSilent,
+			reply ? false : botSilent,
+			reply ? silentReply : false,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(replyPost && { replyParent: replyPost }),
@@ -622,18 +625,33 @@
 			>
 		{/if}
 		<div class="composer-submit-actions">
-			<button
-				class="icon-action bot-silent-toggle"
-				class:active={botSilent}
-				type="button"
-				disabled={busy}
-				aria-label={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
-				aria-pressed={botSilent}
-				title={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
-				onclick={() => (botSilent = !botSilent)}
-			>
-				<Icon name="bot-off" size={18} />
-			</button>
+			{#if composerHost.replyTarget}
+				<button
+					class="icon-action bot-silent-toggle"
+					class:active={silentReply}
+					type="button"
+					disabled={busy}
+					aria-label={silentReply ? m.silentReplyDisableTooltip() : m.silentReplyEnableTooltip()}
+					aria-pressed={silentReply}
+					title={silentReply ? m.silentReplyDisableTooltip() : m.silentReplyEnableTooltip()}
+					onclick={() => (silentReply = !silentReply)}
+				>
+					<Icon name="bellOff" size={18} />
+				</button>
+			{:else}
+				<button
+					class="icon-action bot-silent-toggle"
+					class:active={botSilent}
+					type="button"
+					disabled={busy}
+					aria-label={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
+					aria-pressed={botSilent}
+					title={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
+					onclick={() => (botSilent = !botSilent)}
+				>
+					<Icon name="bot-off" size={18} />
+				</button>
+			{/if}
 			<button
 				class="submit-primary"
 				type="button"

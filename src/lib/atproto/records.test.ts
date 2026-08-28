@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const did = 'did:plc:account-data-test';
 const listRecords = vi.fn();
 const deleteRecord = vi.fn();
+const createRecord = vi.fn();
+const createKossoriPost = vi.hoisted(() => vi.fn());
 
 vi.mock('svelte/store', () => ({ get: () => ({ did }) }));
 vi.mock('@atproto/api', () => ({
 	Agent: class {
-		com = { atproto: { repo: { listRecords, deleteRecord } } };
+		com = { atproto: { repo: { listRecords, deleteRecord, createRecord } } };
 	},
 }));
 vi.mock('$lib/oauth/session.svelte', () => ({ session: {} }));
@@ -16,13 +18,125 @@ vi.mock('$lib/optin/scope-optin', () => ({ hasOptInScope: vi.fn(async () => fals
 vi.mock('$lib/standardsite/cache', () => ({ forgetPublicationCache: vi.fn() }));
 vi.mock('$lib/standardsite/repo', () => ({ deleteNagiStandardSiteRecords: vi.fn() }));
 vi.mock('$lib/oauth/client', () => ({ BLUESKY_PROFILE_COLLECTION_SCOPE: '' }));
+vi.mock('$lib/api/appview', async (importOriginal) => ({
+	...(await importOriginal<typeof import('$lib/api/appview')>()),
+	createKossoriPost,
+}));
 
-import { deleteAllNagiRecords, NAGI_ACCOUNT_DATA_COLLECTIONS } from './records';
+import {
+	createPost,
+	deleteAllNagiRecords,
+	NAGI_ACCOUNT_DATA_COLLECTIONS,
+	preparePostDraft,
+} from './records';
+
+const reply = {
+	root: { uri: 'at://did:plc:root/com.suibari.nagi.post/root', cid: 'bafyroot' },
+	parent: { uri: 'at://did:plc:parent/com.suibari.nagi.post/parent', cid: 'bafyparent' },
+};
+
+describe('silent replies', () => {
+	it('adds silentReply only when the draft is a reply', () => {
+		const silentReply = preparePostDraft(
+			'reply',
+			reply,
+			undefined,
+			[],
+			[],
+			[],
+			[],
+			[],
+			false,
+			undefined,
+			false,
+			false,
+			true,
+		);
+		const topLevel = preparePostDraft(
+			'top level',
+			undefined,
+			undefined,
+			[],
+			[],
+			[],
+			[],
+			[],
+			false,
+			undefined,
+			false,
+			true,
+			true,
+		);
+
+		expect(silentReply.silentReply).toBe(true);
+		expect(topLevel.botSilent).toBe(true);
+		expect(topLevel.silentReply).toBeUndefined();
+	});
+
+	it('writes silentReply to the public Nagi post record', async () => {
+		createRecord.mockResolvedValue({
+			data: { uri: 'at://did:plc:self/com.suibari.nagi.post/reply', cid: 'bafyreply' },
+		});
+		const draft = preparePostDraft(
+			'reply',
+			reply,
+			undefined,
+			[],
+			[],
+			[],
+			[],
+			[],
+			false,
+			undefined,
+			false,
+			false,
+			true,
+		);
+
+		await createPost(draft, { images: [], cards: [] });
+
+		expect(createRecord).toHaveBeenCalledWith(
+			expect.objectContaining({
+				record: expect.objectContaining({ reply, silentReply: true }),
+			}),
+		);
+	});
+
+	it('writes silentReply through the AppView-only kossori reply route', async () => {
+		createKossoriPost.mockResolvedValue({
+			uri: 'at://did:web:nagi-api.suibari.com/com.suibari.nagi.post/reply',
+			cid: 'bafykossori',
+		});
+		const draft = preparePostDraft(
+			'reply',
+			reply,
+			undefined,
+			[],
+			[],
+			[],
+			[],
+			[],
+			true,
+			undefined,
+			false,
+			false,
+			true,
+		);
+
+		await createPost(draft);
+
+		expect(createKossoriPost).toHaveBeenCalledWith(
+			expect.objectContaining({ reply, silentReply: true }),
+		);
+	});
+});
 
 describe('deleteAllNagiRecords', () => {
 	beforeEach(() => {
 		listRecords.mockReset();
 		deleteRecord.mockReset();
+		createRecord.mockReset();
+		createKossoriPost.mockReset();
 		listRecords.mockImplementation(async ({ collection }: { collection: string }) => ({
 			data: {
 				records:

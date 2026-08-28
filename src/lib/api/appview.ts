@@ -243,6 +243,7 @@ export const createKossoriPost = (input: {
 	langs?: string[];
 	createdAt: string;
 	botSilent?: boolean;
+	silentReply?: boolean;
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
 }) =>
 	call<{ uri: string; cid: string }>(

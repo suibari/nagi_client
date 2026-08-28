@@ -179,6 +179,8 @@ export type PostDraft = {
 	cwRestricted?: boolean;
 	/** botたんサイレント機能。true の投稿には botたんが返信しない。 */
 	botSilent?: boolean;
+	/** サイレントリプライ。true の返信は直接の返信先へ通知しない。 */
+	silentReply?: boolean;
 };
 
 export function preparePostDraft(
@@ -194,6 +196,7 @@ export function preparePostDraft(
 	channel?: { uri: string; cid: string },
 	channelOnly = false,
 	botSilent = false,
+	silentReply = false,
 ): PostDraft {
 	const leadingWhitespace = text.length - text.trimStart().length;
 	const source = text.trim();
@@ -231,6 +234,7 @@ export function preparePostDraft(
 		...(channel ? { channel } : {}),
 		...(channel && channelOnly ? { channelOnly: true } : {}),
 		...(botSilent ? { botSilent: true } : {}),
+		...(reply && silentReply ? { silentReply: true } : {}),
 	};
 }
 
@@ -375,6 +379,7 @@ export async function createPost(
 				langs: draft.langs,
 				createdAt: draft.createdAt,
 				...(draft.botSilent && { botSilent: true }),
+				...(draft.silentReply && { silentReply: true }),
 				...(draft.reply && { reply: draft.reply }),
 			});
 		} catch (cause) {
@@ -401,6 +406,7 @@ export async function createPost(
 				...(draft.cwRestricted && { cwRestricted: true }),
 				// kossori はここへ来ない（上で AppView 経路へ分岐済み）。
 				...(draft.botSilent && { botSilent: true }),
+				...(draft.silentReply && { silentReply: true }),
 				...(draft.channel && { channel: draft.channel }),
 				...(draft.channel && draft.channelOnly && { channelOnly: true }),
 				...(draft.reply && { reply: draft.reply }),
