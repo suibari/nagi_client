@@ -310,9 +310,10 @@ export const getChannel = (uri: string) =>
 		'com.suibari.nagi.getChannel',
 		`/xrpc/com.suibari.nagi.getChannel?uri=${encodeURIComponent(uri)}`,
 	);
-export const getChannelTimeline = (uri: string, cursor?: string) => {
+export const getChannelTimeline = (uri: string, cursor?: string, filter?: 'media') => {
 	const params = new URLSearchParams({ uri, limit: POST_PAGE_LIMIT });
 	if (cursor) params.set('cursor', cursor);
+	if (filter) params.set('filter', filter);
 	return withPublicFallback<TimelinePage>(
 		'com.suibari.nagi.getChannelTimeline',
 		`/xrpc/com.suibari.nagi.getChannelTimeline?${params}`,

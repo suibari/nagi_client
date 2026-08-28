@@ -2517,6 +2517,63 @@ button.reaction-emoji:active {
 	}
 }
 
+/* --- media grid (プロフィール／チャンネルのメディアタブ) --- */
+/* 1画像1タイル。タイル全体が投稿へのリンクなので、中に操作要素は置かない。 */
+.media-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+	gap: 3px;
+}
+.media-tile {
+	position: relative;
+	display: block;
+	aspect-ratio: 1;
+	overflow: hidden;
+	border-radius: var(--radius-s);
+	background: var(--bg-inset);
+}
+.media-tile img {
+	display: block;
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+.media-tile:hover img,
+.media-tile:focus-visible img {
+	opacity: 0.86;
+}
+.media-tile:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -2px;
+}
+/* バッジ類はタイルの角に重ねる。長い CH 名はタイル幅で切る。 */
+.media-tile-channel {
+	position: absolute;
+	inset: 5px 5px auto 5px;
+	max-inline-size: calc(100% - 10px);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
+}
+.media-tile-alt {
+	position: absolute;
+	inset: auto auto 5px 5px;
+	border-radius: var(--radius-s);
+	background: color-mix(in srgb, #000 62%, transparent);
+	color: #fff;
+	padding: 1px 5px;
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	pointer-events: none;
+}
+@media (max-width: 600px) {
+	.media-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 2px;
+	}
+}
+
 /* --- profile --- */
 .profile-header {
 	display: grid;
@@ -4031,9 +4088,11 @@ a.about-feature:focus-visible {
 	font-size: 0.85rem;
 	line-height: 1.7;
 }
+/* タブ数はページによって違う（一覧=3, CH詳細=2）ので、列は本数に合わせて等分する。 */
 .channel-tabs {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
+	grid-auto-flow: column;
+	grid-auto-columns: minmax(0, 1fr);
 	margin-block-end: 8px;
 	border-block-end: 1px solid var(--line);
 }

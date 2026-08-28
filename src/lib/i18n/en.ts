@@ -577,6 +577,7 @@ export const en: Messages = {
 	profilePostsUnit: (p) => (p.count === 1 ? 'post' : 'posts'),
 	profileJoinedSince: (p) => `Joined ${p.date}`,
 	profileEmptyPosts: 'No posts yet.',
+	profileEmptyMedia: 'No posts with images yet.',
 	profileEmptyReactions: 'No reactions yet.',
 
 	diaryAnnualActivity: 'Yearly activity',
@@ -984,6 +985,10 @@ export const en: Messages = {
 	channelEditFailed: 'Could not save the channel',
 	channelBannerRemove: 'Remove image',
 	channelTimelineEmpty: 'No posts in this channel yet. Say the first word.',
+	channelTabsAria: 'Channel view',
+	channelTabThreads: 'Threads',
+	channelTabMedia: 'Media',
+	channelMediaEmpty: 'No posts with images in this channel yet.',
 	channelSuggestions: 'Channel suggestions',
 	suggestionsLoading: 'Looking for matches…',
 	suggestionsEmpty: 'No matching suggestions',

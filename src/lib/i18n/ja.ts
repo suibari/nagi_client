@@ -599,6 +599,7 @@ export const ja = {
 	profilePostsUnit: (_p: { count: number }) => '投稿',
 	profileJoinedSince: (p: { date: string }) => `${p.date}から`,
 	profileEmptyPosts: 'まだ投稿がありません。',
+	profileEmptyMedia: 'まだ画像つきの投稿がありません。',
 	profileEmptyReactions: 'まだリアクションがありません。',
 
 	// diary
@@ -1012,6 +1013,10 @@ export const ja = {
 	channelEditFailed: 'チャンネルを保存できませんでした',
 	channelBannerRemove: '画像を削除',
 	channelTimelineEmpty: 'このチャンネルにはまだ投稿がありません。最初の一言をどうぞ。',
+	channelTabsAria: 'チャンネルの表示切り替え',
+	channelTabThreads: 'スレッド',
+	channelTabMedia: 'メディア',
+	channelMediaEmpty: 'このチャンネルにはまだ画像つきの投稿がありません。',
 	channelSuggestions: 'チャンネル候補',
 	suggestionsLoading: '候補を探しています…',
 	suggestionsEmpty: '一致する候補はありません',

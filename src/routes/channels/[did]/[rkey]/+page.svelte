@@ -17,6 +17,7 @@
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import BotReplyStatus from '$lib/components/BotReplyStatus.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
+	import MediaGrid from '$lib/components/MediaGrid.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
@@ -32,8 +33,17 @@
 	let rkey = $derived(page.params.rkey);
 	let uri = $derived(`at://${did}/${CHANNEL}/${rkey}`);
 
+	type ChannelTab = 'threads' | 'media';
+	const tabs: Array<{ id: ChannelTab; label: () => string }> = [
+		{ id: 'threads', label: m.channelTabThreads },
+		{ id: 'media', label: m.channelTabMedia },
+	];
+	let tab = $state<ChannelTab>('threads');
+
 	let channel = $state<ChannelView>();
 	let headError = $state('');
+	// タブごとの Feed キャッシュ。往復しても取り直さない（プロフィールページと同じ作り）。
+	const feeds = new Map<string, Feed>();
 	let feed = $state<Feed>();
 	const CREATED_CHANNEL_RETRY_DELAYS = [0, 500, 1_000, 1_500, 2_000, 3_000, 5_000, 7_000];
 	const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -81,18 +91,34 @@
 			currentUri = uri;
 			channel = undefined;
 			headError = '';
+			// CH を移ったら前 CH のフィードは持ち越さない。タブも既定に戻す。
+			feeds.clear();
+			feed = undefined;
+			tab = 'threads';
 			const target = uri;
 			void loadChannel(target, () => cancelled);
-			const nextFeed = new Feed(
-				(cursor) => getChannelTimeline(target, cursor),
-				(item) => item.channel?.uri === target,
-			);
-			feed = nextFeed;
-			void nextFeed.load();
 			return () => {
 				cancelled = true;
 			};
 		}
+	});
+	// タブごとに Feed を1本持つ。media は画像付き投稿だけを投稿単位（group なし）で取る。
+	$effect(() => {
+		const target = uri;
+		const active = tab;
+		if (!target) return;
+		const key = `${target}:${active}`;
+		let f = feeds.get(key);
+		if (!f) {
+			f = new Feed(
+				(cursor) => getChannelTimeline(target, cursor, active === 'media' ? 'media' : undefined),
+				(item) =>
+					item.channel?.uri === target && (active !== 'media' || Boolean(item.images?.length)),
+			);
+			feeds.set(key, f);
+			void f.load();
+		}
+		feed = f;
 	});
 
 	let isOwner = $derived(Boolean($session && channel && channel.did === $session.did));
@@ -274,7 +300,7 @@
 		return savePinnedPost(channel?.pinnedPostRef?.uri === post.uri ? undefined : post);
 	}
 	function onPostDeleted(postUri: string) {
-		feed?.removePost(postUri);
+		for (const cachedFeed of feeds.values()) cachedFeed.removePost(postUri);
 		if (channel?.pinnedPost?.uri === postUri) {
 			const updated = { ...channel };
 			delete updated.pinnedPost;
@@ -307,12 +333,16 @@
 	let isCreatedRecently = $derived(
 		Boolean(
 			channel &&
-				(isCreatedJustNow ||
-					(isOwner && Date.now() - new Date(channel.createdAt).valueOf() < STALE_MS)),
+			(isCreatedJustNow ||
+				(isOwner && Date.now() - new Date(channel.createdAt).valueOf() < STALE_MS)),
 		),
 	);
+	// 歓迎投稿を待っているのはスレッドタブの話。メディアタブが空なのは単に画像が無いだけで、
+	// ここを true にすると画像の無い CH で高速ポーリングが空回りする。
 	let isAwaitingInitialBotPost = $derived(
-		Boolean(isCreatedRecently && feed && !feed.loading && !feed.visibleItems.length),
+		Boolean(
+			tab === 'threads' && isCreatedRecently && feed && !feed.loading && !feed.visibleItems.length,
+		),
 	);
 
 	onMount(() => {
@@ -322,9 +352,7 @@
 		const fast = startVisiblePolling(() => feed?.refresh(), 3_000, {
 			when: () =>
 				Boolean(
-					feed?.hasOptimistic() ||
-						feed?.hasPendingFor($session?.did) ||
-						isAwaitingInitialBotPost,
+					feed?.hasOptimistic() || feed?.hasPendingFor($session?.did) || isAwaitingInitialBotPost,
 				),
 		});
 		return () => {
@@ -417,87 +445,106 @@
 	{/if}
 </section>
 
-{#if channel?.pinnedPost}
-	<section class="channel-pinned" aria-label={m.channelPinnedPost()}>
-		<div class="channel-pinned-head">
-			<span><Icon name="pin" size={16} />{m.channelPinnedPost()}</span>
-		</div>
-		<ThreadUnit
-			item={channel.pinnedPost}
-			canPin={isOwner}
-			pinChannelUri={channel.uri}
-			pinnedPostUri={channel.pinnedPostRef?.uri}
-			{pinBusy}
-			ontogglepin={togglePinnedPost}
-			ondeleted={onPostDeleted}
-			onposted={() => feed?.refresh()}
-		/>
-	</section>
-{:else if isOwner && channel?.pinnedPostRef}
-	<section class="channel-pinned channel-pinned-unavailable">
-		<div class="channel-pinned-head">
-			<span><Icon name="pin" size={16} />{m.channelPinnedPost()}</span>
-			<button class="ghost" type="button" disabled={pinBusy} onclick={() => savePinnedPost()}
-				>{m.channelUnpinPost()}</button
-			>
-		</div>
-		<p>{m.channelPinnedUnavailable()}</p>
-	</section>
-{/if}
-{#if pinError}<p class="error channel-pin-error" role="alert">{pinError}</p>{/if}
+<!-- タブはヘッダー直下。ピン留めより上に置かないと、長いピン留めで押し下げられて見失う。 -->
+<div class="channel-tabs" role="tablist" aria-label={m.channelTabsAria()}>
+	{#each tabs as t (t.id)}
+		<button
+			type="button"
+			role="tab"
+			aria-selected={tab === t.id}
+			class:active={tab === t.id}
+			onclick={() => (tab = t.id)}>{t.label()}</button
+		>
+	{/each}
+</div>
 
-<section class="timeline" aria-busy={feed?.loading}>
-	{#if feed}
-		{#if feed.loading && !feed.visibleItems.length}
-			<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
-				<span class="spinner" aria-hidden="true"></span>
+{#if tab === 'media'}
+	<section class="timeline" aria-busy={feed?.loading}>
+		<MediaGrid {feed} emptyLabel={m.channelMediaEmpty()} />
+	</section>
+{:else}
+	{#if channel?.pinnedPost}
+		<section class="channel-pinned" aria-label={m.channelPinnedPost()}>
+			<div class="channel-pinned-head">
+				<span><Icon name="pin" size={16} />{m.channelPinnedPost()}</span>
 			</div>
-		{:else if feed.error && !feed.visibleItems.length}
-			<div class="state error">
-				{feed.error}<button
-					class="icon-action"
-					type="button"
-					aria-label={m.retry()}
-					title={m.retry()}
-					onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+			<ThreadUnit
+				item={channel.pinnedPost}
+				canPin={isOwner}
+				pinChannelUri={channel.uri}
+				pinnedPostUri={channel.pinnedPostRef?.uri}
+				{pinBusy}
+				ontogglepin={togglePinnedPost}
+				ondeleted={onPostDeleted}
+				onposted={() => feed?.refresh()}
+			/>
+		</section>
+	{:else if isOwner && channel?.pinnedPostRef}
+		<section class="channel-pinned channel-pinned-unavailable">
+			<div class="channel-pinned-head">
+				<span><Icon name="pin" size={16} />{m.channelPinnedPost()}</span>
+				<button class="ghost" type="button" disabled={pinBusy} onclick={() => savePinnedPost()}
+					>{m.channelUnpinPost()}</button
 				>
 			</div>
-		{:else if !feed.visibleItems.length}
-			{#if isAwaitingInitialBotPost}
-				<article class="thread-unit">
-					<BotReplyStatus
-						state="processing"
-						createdAt={channel?.createdAt ?? new Date().toISOString()}
-						botActor={feed.botActor}
-					/>
-				</article>
-			{:else}
-				<div class="state">{m.channelTimelineEmpty()}</div>
-			{/if}
-		{:else}
-			{#each feed.visibleItems as item (feedKey(item))}
-				<ThreadUnit
-					{item}
-					botActor={feed.botActor}
-					ondeleted={onPostDeleted}
-					onposted={() => feed?.refresh()}
-					canPin={isOwner}
-					pinChannelUri={channel?.uri}
-					pinnedPostUri={channel?.pinnedPostRef?.uri}
-					hiddenPostUri={channel?.pinnedPost?.uri}
-					{pinBusy}
-					ontogglepin={togglePinnedPost}
-				/>
-			{/each}
-			<InfiniteScroll
-				hasMore={feed.hasMore}
-				loading={feed.loading}
-				error={feed.error}
-				onload={() => feed?.loadMore()}
-			/>
-		{/if}
+			<p>{m.channelPinnedUnavailable()}</p>
+		</section>
 	{/if}
-</section>
+	{#if pinError}<p class="error channel-pin-error" role="alert">{pinError}</p>{/if}
+
+	<section class="timeline" aria-busy={feed?.loading}>
+		{#if feed}
+			{#if feed.loading && !feed.visibleItems.length}
+				<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
+					<span class="spinner" aria-hidden="true"></span>
+				</div>
+			{:else if feed.error && !feed.visibleItems.length}
+				<div class="state error">
+					{feed.error}<button
+						class="icon-action"
+						type="button"
+						aria-label={m.retry()}
+						title={m.retry()}
+						onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+					>
+				</div>
+			{:else if !feed.visibleItems.length}
+				{#if isAwaitingInitialBotPost}
+					<article class="thread-unit">
+						<BotReplyStatus
+							state="processing"
+							createdAt={channel?.createdAt ?? new Date().toISOString()}
+							botActor={feed.botActor}
+						/>
+					</article>
+				{:else}
+					<div class="state">{m.channelTimelineEmpty()}</div>
+				{/if}
+			{:else}
+				{#each feed.visibleItems as item (feedKey(item))}
+					<ThreadUnit
+						{item}
+						botActor={feed.botActor}
+						ondeleted={onPostDeleted}
+						onposted={() => feed?.refresh()}
+						canPin={isOwner}
+						pinChannelUri={channel?.uri}
+						pinnedPostUri={channel?.pinnedPostRef?.uri}
+						hiddenPostUri={channel?.pinnedPost?.uri}
+						{pinBusy}
+						ontogglepin={togglePinnedPost}
+					/>
+				{/each}
+				<InfiniteScroll
+					hasMore={feed.hasMore}
+					loading={feed.loading}
+					error={feed.error}
+					onload={() => feed?.loadMore()}
+				/>
+			{/if}
+		{/if}
+	</section>
+{/if}
 
 {#if editOpen}
 	<div class="draft-backdrop" role="presentation">

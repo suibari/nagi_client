@@ -24,6 +24,7 @@
 	import ProfileDescription from '$lib/components/ProfileDescription.svelte';
 	import ProfileWebsiteCard from '$lib/components/ProfileWebsiteCard.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
+	import MediaGrid from '$lib/components/MediaGrid.svelte';
 	import BookmarksPanel from '$lib/components/BookmarksPanel.svelte';
 	import { actorBadges } from '$lib/badges/badges';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -107,6 +108,7 @@
 		tab =
 			requested === 'diary' ||
 			requested === 'cards' ||
+			requested === 'media' ||
 			((requested === 'bookmarks' || requested === 'reactions') && isSelf)
 				? requested
 				: 'posts';
@@ -151,17 +153,21 @@
 		if (!f) {
 			f = new Feed(
 				(cursor) =>
-					getProfile(actor, { filter, cursor, lang: locale, group: true }).then((r) => {
-						if (actor !== r.profile.did)
-							void goto(`/profile/${encodeURIComponent(r.profile.did)}${page.url.search}`, {
-								replaceState: true,
-								noScroll: true,
-								keepFocus: true,
-							});
-						profile = r.profile;
-						optimisticPosts.rememberActor(r.profile);
-						return r.feed;
-					}),
+					// メディアはグリッド（1画像1タイル）なので、会話グループ化せず投稿単位で受け取る。
+					// 畳むと同じスレッドの2枚目以降の画像がグリッドから落ちてしまう。
+					getProfile(actor, { filter, cursor, lang: locale, group: filter !== 'media' }).then(
+						(r) => {
+							if (actor !== r.profile.did)
+								void goto(`/profile/${encodeURIComponent(r.profile.did)}${page.url.search}`, {
+									replaceState: true,
+									noScroll: true,
+									keepFocus: true,
+								});
+							profile = r.profile;
+							optimisticPosts.rememberActor(r.profile);
+							return r.feed;
+						},
+					),
 				(item) => {
 					if (item.author.did !== actor) return false;
 					if (filter === 'posts') return !item.reply;
@@ -349,6 +355,10 @@
 					onload={() => reactionFeed?.loadMore()}
 				/>
 			{/if}
+		</section>
+	{:else if tab === 'media'}
+		<section class="timeline" aria-busy={feed?.loading}>
+			<MediaGrid {feed} showChannel emptyLabel={m.profileEmptyMedia()} />
 		</section>
 	{:else}
 		<section class="timeline" aria-busy={feed?.loading}>
