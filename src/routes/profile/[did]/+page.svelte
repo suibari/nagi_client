@@ -42,7 +42,6 @@
 		{ id: 'posts', label: m.profileTabPosts },
 		{ id: 'replies', label: m.profileTabReplies },
 		{ id: 'media', label: m.profileTabMedia },
-		{ id: 'reactions', label: m.profileTabReactions },
 		{ id: 'diary', label: m.profileTabDiary },
 		{ id: 'cards', label: m.profileTabCards },
 	];
@@ -51,9 +50,10 @@
 	let tabs = $derived(
 		isSelf
 			? [
-					...publicTabs.slice(0, 4),
+					...publicTabs.slice(0, 3),
+					{ id: 'reactions' as const, label: m.profileTabReactions },
 					{ id: 'bookmarks' as const, label: m.bookmarkTab },
-					...publicTabs.slice(4),
+					...publicTabs.slice(3),
 				]
 			: publicTabs,
 	);
@@ -105,7 +105,9 @@
 		reactionFeed = undefined;
 		const requested = page.url.searchParams.get('tab');
 		tab =
-			requested === 'diary' || requested === 'cards' || (requested === 'bookmarks' && isSelf)
+			requested === 'diary' ||
+			requested === 'cards' ||
+			((requested === 'bookmarks' || requested === 'reactions') && isSelf)
 				? requested
 				: 'posts';
 		void tick().then(() =>

@@ -71,18 +71,20 @@
 		const existing = local.find((r) => keyOf(r) === key);
 		const snapshot = local.map((r) => ({ ...r, reactors: [...r.reactors] }));
 		const viewerDid = $session.did;
-		// 楽観表示用の自分。AppView が追いつくまでの間もアバターを出したいので、
-		// 同じ投稿の既存リアクター → 自分のプロフィール → DIDだけ、の順で埋める。
-		const viewer =
-			local.flatMap((reaction) => reaction.reactors).find((actor) => actor.did === viewerDid) ??
-			(myProfile.current?.did === viewerDid
-				? ({
-						did: viewerDid,
-						handle: myProfile.current.handle,
-						displayName: myProfile.current.displayName,
-						avatar: myProfile.current.avatar,
-					} satisfies ActorView)
-				: ({ did: viewerDid, handle: viewerDid } satisfies ActorView));
+		const viewerOwnsSubject = uri.split('/')[2] === viewerDid;
+		// 楽観表示用の自分。受け取った本人だけが送信者を見る仕様なので、
+		// 他人の投稿への更新では自分のActor情報もリアクター配列へ足さない。
+		const viewer = viewerOwnsSubject
+			? (local.flatMap((reaction) => reaction.reactors).find((actor) => actor.did === viewerDid) ??
+				(myProfile.current?.did === viewerDid
+					? ({
+							did: viewerDid,
+							handle: myProfile.current.handle,
+							displayName: myProfile.current.displayName,
+							avatar: myProfile.current.avatar,
+						} satisfies ActorView)
+					: ({ did: viewerDid, handle: viewerDid } satisfies ActorView)))
+			: undefined;
 		holdUntil = Date.now() + HOLD_MS;
 		try {
 			if (existing && reactedByViewer(existing)) {
@@ -108,10 +110,12 @@
 							keyOf(r) === key
 								? {
 										...r,
-										reactors: [
-											viewer,
-											...r.reactors.filter((actor) => actor.did !== viewerDid),
-										].slice(0, 5),
+										reactors: viewer
+											? [viewer, ...r.reactors.filter((actor) => actor.did !== viewerDid)].slice(
+													0,
+													5,
+												)
+											: r.reactors,
 										hasMoreReactors: r.hasMoreReactors || r.reactors.length >= 5 || undefined,
 										reactedByMe: true,
 									}
@@ -122,7 +126,7 @@
 							{
 								emoji,
 								...(custom ? { bluemoji: custom } : {}),
-								reactors: [viewer],
+								reactors: viewer ? [viewer] : [],
 								reactedByMe: true,
 							},
 						];
@@ -174,7 +178,7 @@
 							{labelOf(reaction)}
 						{/if}
 					</button>{/if}
-				{#if showReactors}
+				{#if showReactors && reaction.reactors.length}
 					<div class="reaction-actors">
 						{#each reaction.reactors as actor (actor.did)}
 							<AvatarLink

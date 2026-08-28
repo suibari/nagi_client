@@ -319,8 +319,10 @@
 <h2 id="p8">8. How public your data is</h2>
 <ul>
 	<li>
-		Posts, reactions, and profiles on the Service are public AT Protocol records. Applications other
-		than the Service can fetch and display them.
+		Posts, reactions, and profiles on the Service are public AT Protocol records. Nagi's interface
+		and AppView do not show third parties who reacted or another person's reaction history. However,
+		these public records can still be fetched directly from a PDS or displayed by applications other
+		than the Service.
 	</li>
 	<li>Mute settings are visible only to you. The person you muted is not notified.</li>
 	<li>Your Home list is visible only to you. People you add are not notified.</li>
