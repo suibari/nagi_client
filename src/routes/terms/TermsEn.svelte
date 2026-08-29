@@ -76,8 +76,9 @@
 <h2 id="t2">2. Eligibility</h2>
 <div class="callout">
 	<p>
-		<strong>The Service is available only to people aged 18 or older.</strong> The Service uses Google's
-		Gemini API for its AI features, and those terms require users to be 18 or older.
+		<strong>The Service is available only to people aged 18 or older.</strong> The Service's AI features
+		use Google's Gemini API to search for current information, and those terms require users to be 18
+		or older.
 	</p>
 </div>
 <ul>

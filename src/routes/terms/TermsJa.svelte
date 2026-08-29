@@ -70,7 +70,8 @@
 <h2 id="t2">2. 利用資格</h2>
 <div class="callout">
 	<p>
-		<strong>本サービスは、18歳以上の方のみ利用できます。</strong>本サービスはAI機能にGoogleのGemini
+		<strong>本サービスは、18歳以上の方のみ利用できます。</strong
+		>本サービスのAI機能は、最新の情報を確かめる検索にGoogleのGemini
 		APIを利用しており、その利用規約が18歳以上を要件としているためです。
 	</p>
 </div>

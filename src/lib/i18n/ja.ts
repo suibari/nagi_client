@@ -641,7 +641,8 @@ export const ja = {
 	loginFederateLabel: 'ほかのAT Protocolサービスにも投稿する',
 	loginFederateNote:
 		'ONにすると、Blueskyへのクロスポストと、ブログ（standard.site）としての公開ができるようになります。あなたのPDSへ書き込む権限を認可します。あとから設定で変更できます。',
-	// AI機能に使っている Gemini API の規約が18歳以上を要件にしているので、入口で告知する。
+	// 最新情報の検索に使っている Gemini API の規約が18歳以上を要件にしているので、入口で告知する。
+	// 本文の生成自体はローカルLLMだが、検索を使う以上この要件は外せない。
 	loginAgeNotice: '本サービスは18歳以上の方のみご利用いただけます。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
 	loginAgreeSeparator: 'と',
