@@ -21,6 +21,7 @@ describe('dynamic OGP HTML', () => {
 
 		expect(output).not.toContain('nagi_ogp.jpg');
 		expect(output.match(/api\/profile-card/g)).toHaveLength(2);
+		expect(output.match(/profile-card\?v=2&amp;did=/g)).toHaveLength(2);
 		expect(output).toContain('content="image/png"');
 		expect(output.match(/Nagiのプロフィールカード/g)).toHaveLength(2);
 	});

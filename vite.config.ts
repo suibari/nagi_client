@@ -75,7 +75,7 @@ export default defineConfig(({ command, mode }) => {
 		// 対象は UI を持たない純ロジック（facet 計算・URL 解釈・レコード組み立てなど）。
 		// コンポーネントは jsdom を足すまで対象外なので、拾うのは .ts のテストだけにする。
 		test: {
-			include: ['src/**/*.test.ts'],
+			include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
 			environment: 'node',
 		},
 	};

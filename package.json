@@ -45,6 +45,7 @@
 		"emoji-picker-element": "^1.29.1",
 		"emoji-picker-element-data": "^1.8.0",
 		"modern-gif": "^2.1.0",
-		"react": "^19.2.8"
+		"react": "^19.2.8",
+		"sharp": "^0.35.3"
 	}
 }

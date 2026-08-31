@@ -19,7 +19,8 @@ function replaceMeta(html, selector, key, content) {
  * script を足さないため、SvelteKit が生成した CSP hash は変更不要。
  */
 export function withProfileCardMeta(html, did) {
-    const image = `https://nagi.suibari.com/api/profile-card?did=${encodeURIComponent(did)}`;
+    // v2 は WebP アバターを直接埋め込んでいた旧画像の長期キャッシュを回避する。
+    const image = `https://nagi.suibari.com/api/profile-card?v=2&did=${encodeURIComponent(did)}`;
     const alt = 'Nagiのプロフィールカード';
     let output = replaceMeta(html, 'property', 'og:image', image);
     output = replaceMeta(output, 'property', 'og:image:type', 'image/png');

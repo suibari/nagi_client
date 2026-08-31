@@ -21,6 +21,7 @@ import {
 } from '../src/lib/card/design.js';
 import { qrRenderData } from '../src/lib/card/qr.js';
 import { isSafeDid } from '../src/lib/og/html.js';
+import { prepareOgpAvatar } from './profile-card-image.js';
 
 type FunctionRequest = {
 	method?: string;
@@ -102,7 +103,7 @@ export default async function handler(request: FunctionRequest, response: Functi
 
 	try {
 		const profile = await getProfile(did);
-		const avatar = absoluteAvatar(profile.avatar);
+		const avatar = await prepareOgpAvatar(absoluteAvatar(profile.avatar), AVATAR_SIZE);
 		const tags = (profile.tags ?? []).slice(0, 3);
 		const tagline =
 			flatten(profile.tagline) ||
@@ -294,7 +295,7 @@ export default async function handler(request: FunctionRequest, response: Functi
 				width: CARD_WIDTH,
 				height: CARD_HEIGHT,
 				headers: {
-					'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+					'cache-control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
 					'Content-Disposition': `inline; filename="nagi-profile-${encodeURIComponent(did)}.png"`,
 				},
 			},
