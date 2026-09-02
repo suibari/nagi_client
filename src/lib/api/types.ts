@@ -383,6 +383,11 @@ export type PreferencesView = {
 	languagePreferencesUpdatedAt?: string;
 	lastBookmarkFolderId?: string;
 	lastBookmarkFolderUpdatedAt?: string;
+	/**
+	 * 年齢確認の状態。生年月日そのものは返らない。
+	 * declared が false なら未申告＝未成年扱い。
+	 */
+	ageAssurance?: { isAdult: boolean; declared: boolean };
 };
 export type SyncedLanguagePreferences = {
 	post: string;
@@ -409,6 +414,12 @@ export type PutPreferencesInput = {
 	languagePreferencesUpdatedAt?: string;
 	lastBookmarkFolderId?: string | null;
 	lastBookmarkFolderUpdatedAt?: string;
+	/**
+	 * 生年月日の申告（YYYY-MM-DD）。設定できるのは1度だけで、2度目は 409 になる。
+	 * 18歳未満なら parentalConsent: true が必須。
+	 */
+	birthDate?: string;
+	parentalConsent?: boolean;
 };
 
 export type DraftLinkCard = { uri: string; title: string; description?: string };

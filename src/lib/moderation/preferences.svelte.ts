@@ -1,12 +1,17 @@
-import type { PostView } from '$lib/api/types';
+/**
+ * ラベル付きコンテンツの見せ方の設定。
+ *
+ * これは「成人ユーザーが自分の好みで選ぶ」ための設定。未成年に成人向けを見せない
+ * 強制はサーバ側が行っており（AppView がそもそも返さない）、ここでは解除できない。
+ */
 
 export type ModerationPreference = 'warn' | 'hide' | 'ignore';
-export type ModerationPreferenceKey = 'amateras' | 'selfAi' | 'selfNsfw';
+export type ModerationPreferenceKey = 'automatic' | 'selfAi' | 'selfNsfw';
 
 const STORAGE_KEY = 'nagi:moderation-preferences:v1';
 const NSFW_SELF_LABELS = new Set(['porn', 'sexual', 'nudity', 'graphic-media']);
 const DEFAULTS: Record<ModerationPreferenceKey, ModerationPreference> = {
-	amateras: 'warn',
+	automatic: 'warn',
 	selfAi: 'ignore',
 	selfNsfw: 'warn',
 };
@@ -20,7 +25,7 @@ function load(): Record<ModerationPreferenceKey, ModerationPreference> {
 	try {
 		const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
 		return {
-			amateras: valid(stored.amateras) ? stored.amateras : DEFAULTS.amateras,
+			automatic: valid(stored.automatic) ? stored.automatic : DEFAULTS.automatic,
 			selfAi: valid(stored.selfAi) ? stored.selfAi : DEFAULTS.selfAi,
 			selfNsfw: valid(stored.selfNsfw) ? stored.selfNsfw : DEFAULTS.selfNsfw,
 		};
@@ -32,8 +37,8 @@ function load(): Record<ModerationPreferenceKey, ModerationPreference> {
 let state = $state(load());
 
 export const moderationPreferences = {
-	get amateras() {
-		return state.amateras;
+	get automatic() {
+		return state.automatic;
 	},
 	get selfAi() {
 		return state.selfAi;
@@ -53,22 +58,29 @@ export function clearModerationPreferences() {
 	if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY);
 }
 
-export type PostModerationDisplay = {
+export type ModerationDisplay = {
 	hidden: boolean;
 	warn: boolean;
-	reason: 'amateras' | 'selfAi' | 'selfNsfw' | undefined;
+	reason: ModerationPreferenceKey | undefined;
 };
 
-export function postModerationDisplay(post: Pick<PostView, 'selfLabels' | 'moderationLabels'>) {
+/**
+ * ラベルの付いたコンテンツをどう見せるか。投稿だけでなく、プロフィール・
+ * チャンネル・カスタム絵文字にも同じ規則を使う。
+ */
+export function contentModerationDisplay(content: {
+	selfLabels?: string[];
+	moderationLabels?: string[];
+}): ModerationDisplay {
 	const candidates: Array<{
 		preference: ModerationPreference;
-		reason: NonNullable<PostModerationDisplay['reason']>;
+		reason: ModerationPreferenceKey;
 	}> = [];
-	if (post.moderationLabels?.length)
-		candidates.push({ preference: state.amateras, reason: 'amateras' });
-	if (post.selfLabels?.includes('ai-generated'))
+	if (content.moderationLabels?.length)
+		candidates.push({ preference: state.automatic, reason: 'automatic' });
+	if (content.selfLabels?.includes('ai-generated'))
 		candidates.push({ preference: state.selfAi, reason: 'selfAi' });
-	if (post.selfLabels?.some((label) => NSFW_SELF_LABELS.has(label)))
+	if (content.selfLabels?.some((label) => NSFW_SELF_LABELS.has(label)))
 		candidates.push({ preference: state.selfNsfw, reason: 'selfNsfw' });
 
 	const hidden = candidates.find((candidate) => candidate.preference === 'hide');

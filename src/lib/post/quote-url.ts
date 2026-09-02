@@ -6,8 +6,7 @@ const POST_COLLECTION = 'com.suibari.nagi.post';
 
 export type QuoteUrlTarget = { did: string; rkey: string };
 export type QuoteResolution =
-	| { ok: true; post: PostView }
-	| { ok: false; reason: 'notFound' | 'forbidden' };
+	{ ok: true; post: PostView } | { ok: false; reason: 'notFound' | 'forbidden' };
 
 /**
  * 貼り付けられた文字列が Nagi のスレッドURL（/thread/{did}/{rkey}）なら、その参照先を返す。

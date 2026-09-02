@@ -14,7 +14,10 @@
 <div class="summary">
 	<h2>Before anything else</h2>
 	<ul>
-		<li><strong>You must be 18 or older</strong> to use Nagi.</li>
+		<li>
+			<strong>You must be 13 or older</strong> to use Nagi.
+			<strong>If you are under 18, use it with your parent or guardian's permission.</strong>
+		</li>
 		<li><strong>Bot-tan is an AI</strong>, not a human.</li>
 		<li><strong>Saying that things are hard is welcome here.</strong></li>
 		<li>What we prohibit is <strong>conduct that actually harms people</strong> - nothing more.</li>
@@ -76,14 +79,26 @@
 <h2 id="t2">2. Eligibility</h2>
 <div class="callout">
 	<p>
-		<strong>The Service is available only to people aged 18 or older.</strong> The Service's AI features
-		use Google's Gemini API to search for current information, and those terms require users to be 18
-		or older.
+		<strong
+			>The Service is available to people aged 13 or older. If you are under 18, use it with your
+			parent or guardian's permission.</strong
+		> The Service uses OpenAI's API for automated moderation, and those terms require users to be at least
+		13, and to have a parent or guardian's permission if under 18.
 	</p>
 </div>
 <ul>
-	<li>If you are under 18, please do not use the Service.</li>
-	<li>If we learn that a user is under 18, the operator may stop providing the Service to them.</li>
+	<li>If you are under 13, please do not use the Service.</li>
+	<li>
+		You may optionally declare your date of birth when you sign up. You can set it only once and
+		cannot change it afterwards.
+	</li>
+	<li>
+		<strong>If you have not declared a date of birth, you are treated as being under 18.</strong>
+		Content carrying adult labels is not shown to you. Once you turn 18, your declared date of birth makes
+		you an adult automatically.
+	</li>
+	<li>People who were already using the Service before this revision are treated as adults.</li>
+	<li>If we learn that a user is under 13, the operator may stop providing the Service to them.</li>
 </ul>
 
 <h2 id="t3">3. Accounts and authentication</h2>
@@ -301,15 +316,15 @@
 </p>
 <ol>
 	<li>
-		<strong>Applying labels and blurs via Labeler</strong>: For posts containing sensitive content
-		(such as explicit, violent, or graphic media), signed moderation labels are applied through our
-		labeler service (amateras), displaying media blurs and content warning overlays in client apps.
+		<strong>Applying labels and blurs</strong>: Content judged to contain sensitive material (such
+		as explicit, violent, or graphic media) is labelled, and client apps show media blurs and
+		content warning overlays. Labelled content is not shown to accounts under 18.
 	</li>
 	<li>
-		<strong>Excluding from AppView indexing and DB persistence</strong>: Posts identified as severe
-		violations (such as illegal content, severe hate speech, threats, or child safety violations)
-		will be dropped from AppView database storage and indexing, preventing them from being served or
-		displayed on the Service.
+		<strong>Refusing to store it in the AppView</strong>: Content judged to be sexually explicit,
+		excessively violent, sexualising a minor, or a severe violation of these Terms (such as hate
+		speech or threats) may not be stored in the Service's database at all, and will not be displayed
+		on the Service.
 	</li>
 	<li>Hiding the content on the Service</li>
 	<li>A warning to the user and restricting access to features</li>

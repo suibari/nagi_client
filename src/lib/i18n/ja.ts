@@ -344,7 +344,7 @@ export const ja = {
 	guestPostSubmit: 'こっそり投稿',
 	guestPostSaving: '保存中…',
 	guestPostSaveFailed: 'この端末に投稿を保存できませんでした',
-	guestPostConsentBefore: '18歳以上で、',
+	guestPostConsentBefore: '13歳以上（18歳未満の場合は保護者の同意を得ています）で、',
 	guestPostConsentAnd: 'と',
 	guestPostConsentAfter: 'に同意します',
 	guestPostAuthor: 'この端末のあなた',
@@ -641,9 +641,10 @@ export const ja = {
 	loginFederateLabel: 'ほかのAT Protocolサービスにも投稿する',
 	loginFederateNote:
 		'ONにすると、Blueskyへのクロスポストと、ブログ（standard.site）としての公開ができるようになります。あなたのPDSへ書き込む権限を認可します。あとから設定で変更できます。',
-	// 最新情報の検索に使っている Gemini API の規約が18歳以上を要件にしているので、入口で告知する。
-	// 本文の生成自体はローカルLLMだが、検索を使う以上この要件は外せない。
-	loginAgeNotice: '本サービスは18歳以上の方のみご利用いただけます。',
+	// 自動モデレーションに使っている OpenAI の規約が13歳以上・18歳未満は保護者の同意を
+	// 要件にしているので、入口で告知する。
+	loginAgeNotice:
+		'本サービスは13歳以上の方がご利用いただけます。18歳未満の方は保護者の同意を得てご利用ください。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
 	loginAgreeSeparator: 'と',
 	loginAgreeAfter: 'に同意したものとみなされます。',
@@ -686,16 +687,33 @@ export const ja = {
 	settingsMuteDescription: '表示したくないユーザーとチャンネル',
 	settingsModerationTitle: 'コンテンツ表示',
 	settingsModerationDescription: 'モデレーションとセルフラベルの表示方法',
+	ageSectionTitle: '年齢確認',
+	ageDeclaredAdult: '成人として登録されています。',
+	ageDeclaredMinor:
+		'18歳未満として登録されています。18歳の誕生日を過ぎると自動的に成人向けの設定が使えるようになります。',
+	ageUndeclared:
+		'生年月日が未登録です。登録するまでは18歳未満として扱われ、成人向けのコンテンツは表示されません。',
+	ageBirthDateLabel: '生年月日',
+	ageOnceOnlyNote: '登録できるのは1度だけで、あとから変更できません。',
+	ageParentalConsentLabel: '18歳未満です。保護者の同意を得ています。',
+	ageSubmit: '登録する',
+	ageErrorInvalid: '生年月日を正しく入力してください。',
+	ageErrorConsentRequired: '18歳未満の方は、保護者の同意の確認が必要です。',
+	ageErrorAlreadySet: 'すでに登録済みのため変更できません。',
+	ageErrorFailed: '登録できませんでした。時間をおいて試してください。',
+	ageAdultLocked: '成人向けのコンテンツは、18歳未満のアカウントには表示されません。',
+	onboardingAgeIntro:
+		'Nagiは13歳以上の方がご利用いただけます。18歳未満の方は保護者の同意を得てご利用ください。',
 	moderationSettingsHelp:
-		'自動モデレーション（Amateras）による判定と、投稿者が付けたセルフラベルごとに表示方法を選べます。この設定はこの端末に保存されます。',
-	moderationAmaterasLabel: '自動モデレーション（Amateras）のラベル',
+		'自動モデレーションによる判定と、投稿者が付けたセルフラベルごとに表示方法を選べます。この設定はこの端末に保存されます。',
+	moderationAutomaticLabel: '自動モデレーションが付けたラベル',
 	moderationSelfAiLabel: 'AI生成セルフラベル',
 	moderationSelfNsfwLabel: 'NSFWセルフラベル',
 	moderationOptionWarn: '警告して表示',
 	moderationOptionHide: '非表示',
 	moderationOptionIgnore: 'なし（通常表示）',
 	moderationWarning: '閲覧注意コンテンツ',
-	moderationAmaterasWarning: '自動モデレーション（Amateras）による警告',
+	moderationAutomaticWarning: '自動モデレーションによる警告',
 	moderationSelfAiWarning: 'AI生成コンテンツ',
 	moderationSelfNsfwWarning: 'NSFWコンテンツ',
 	moderationRevealHelp: '選択すると内容を表示します',

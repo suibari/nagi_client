@@ -38,7 +38,7 @@
 		<li><a href="#p7">What is stored on your device</a></li>
 		<li><a href="#p8">How public your data is</a></li>
 		<li><a href="#p9">Retention and deletion</a></li>
-		<li><a href="#p10">People under 18</a></li>
+		<li><a href="#p10">Age verification and people under 18</a></li>
 		<li><a href="#p11">Changes to this Policy</a></li>
 		<li><a href="#p12">Contact</a></li>
 		<li><a href="#p13">Governing language</a></li>
@@ -199,10 +199,6 @@
 <h3>How Google handles it (paid-tier terms)</h3>
 <ul>
 	<li>
-		<strong>How OpenAI handles it</strong>: Data submitted through the OpenAI API is not used to
-		train or improve OpenAI models unless the API organization explicitly opts in to data sharing.
-	</li>
-	<li>
 		The search queries and the URLs you shared are retained by Google for <strong>30 days</strong>.
 	</li>
 	<li>
@@ -215,9 +211,40 @@
 		facilities.
 	</li>
 </ul>
+<h3>What we send to OpenAI for automated moderation</h3>
 <p>
-	The Service is limited to people aged 18 or older because the search capability above uses the
-	Gemini API, whose terms require it. See Section 2 of the <a href="/terms">Terms of Service</a>.
+	To keep this a place people can relax in, <strong
+		>user-generated content that other people see</strong
+	>
+	is checked with the Moderation API (omni-moderation) provided by OpenAI, Inc. We send:
+</p>
+<ul>
+	<li>Post text, image alt text, and link card titles and descriptions</li>
+	<li>
+		Profile display names and bios, channel names and descriptions, and custom emoji names and alt
+		text
+	</li>
+	<li>News headlines and source names</li>
+	<li>
+		The <strong>URLs of the public images</strong> attached to the above (OpenAI fetches them through
+		the Service)
+	</li>
+</ul>
+<div class="callout">
+	<p>
+		<strong>"Kossori" posts are never sent to OpenAI.</strong> Neither are drafts, bookmarks, settings,
+		or the diaries bot-tan writes.
+	</p>
+</div>
+<h3>How OpenAI handles it</h3>
+<ul>
+	<li>OpenAI does <strong>not use what we send to train its models</strong>.</li>
+	<li>Logs are retained for <strong>up to 30 days</strong> for abuse monitoring.</li>
+</ul>
+<p>
+	The Service requires you to be at least 13, and to have a parent or guardian's permission if you
+	are under 18, because OpenAI's terms require it. See Section 2 of the
+	<a href="/terms">Terms of Service</a>.
 </p>
 
 <h2 id="p6">6. Where information is sent</h2>
@@ -235,8 +262,11 @@
 				<td>As set out in Section 5 (search queries and shared link URLs only)</td>
 			</tr>
 			<tr>
-				<td>OpenAI (OpenAI Moderation API)</td>
-				<td>As set out in Section 5 (Automated content moderation and safety evaluation)</td>
+				<td>OpenAI (Moderation API for automated moderation)</td>
+				<td>
+					As set out in Section 5 (public user-generated text and public image URLs; kossori posts
+					are excluded)
+				</td>
 			</tr>
 			<tr>
 				<td>Your PDS operator</td>
@@ -387,6 +417,7 @@
 		Notifications, push notification destinations, mute settings, your Home list, bookmarks, and
 		folders
 	</li>
+	<li>The date of birth you declared</li>
 	<li>
 		Channel subscriptions (both yours, and records of other people subscribing to your channels)
 	</li>
@@ -421,12 +452,29 @@
 	data, we unlink those records from your DID.
 </p>
 
-<h2 id="p10">10. People under 18</h2>
+<h2 id="p10">10. Age verification and people under 18</h2>
 <p>
-	The Service is for people aged 18 or older, and we do not knowingly collect information from
-	anyone under 18. If we learn that information from someone under 18 is held, we will delete it
-	promptly.
+	The Service is for people aged 13 or older. If you are under 18, please use it with your parent or
+	guardian's permission. If we learn that information from someone under 13 is held, we will delete
+	it promptly.
 </p>
+<h3>How we handle your date of birth</h3>
+<ul>
+	<li>
+		Providing it is optional. If you do not, you are treated as being under 18 and content carrying
+		adult labels is not shown to you.
+	</li>
+	<li>
+		It is stored <strong>only in the Service's database</strong>, never as a record in your PDS
+		(records in a PDS are readable by anyone).
+	</li>
+	<li>
+		<strong>It is never shown to other users.</strong> It is used only to decide what to display for your
+		age.
+	</li>
+	<li>Deleting all your account data deletes your date of birth too.</li>
+	<li>You can set it only once and cannot change it afterwards.</li>
+</ul>
 
 <h2 id="p11">11. Changes to this Policy</h2>
 <p>

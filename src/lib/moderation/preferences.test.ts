@@ -1,25 +1,25 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
 	clearModerationPreferences,
-	postModerationDisplay,
+	contentModerationDisplay,
 	setModerationPreference,
 } from './preferences.svelte';
 
 afterEach(() => clearModerationPreferences());
 
 describe('post moderation preferences', () => {
-	it('defaults Amateras and NSFW to warning, while AI is ignored', () => {
-		expect(postModerationDisplay({ moderationLabels: ['harassment'] })).toEqual({
+	it('defaults automatic moderation and NSFW to warning, while AI is ignored', () => {
+		expect(contentModerationDisplay({ moderationLabels: ['harassment'] })).toEqual({
 			hidden: false,
 			warn: true,
-			reason: 'amateras',
+			reason: 'automatic',
 		});
-		expect(postModerationDisplay({ selfLabels: ['ai-generated'] })).toEqual({
+		expect(contentModerationDisplay({ selfLabels: ['ai-generated'] })).toEqual({
 			hidden: false,
 			warn: false,
 			reason: undefined,
 		});
-		expect(postModerationDisplay({ selfLabels: ['sexual'] })).toEqual({
+		expect(contentModerationDisplay({ selfLabels: ['sexual'] })).toEqual({
 			hidden: false,
 			warn: true,
 			reason: 'selfNsfw',
@@ -28,11 +28,11 @@ describe('post moderation preferences', () => {
 
 	it('lets ignore remove an NSFW warning and hide take priority over warning', () => {
 		setModerationPreference('selfNsfw', 'ignore');
-		expect(postModerationDisplay({ selfLabels: ['sexual'] }).warn).toBe(false);
+		expect(contentModerationDisplay({ selfLabels: ['sexual'] }).warn).toBe(false);
 
 		setModerationPreference('selfAi', 'hide');
 		expect(
-			postModerationDisplay({
+			contentModerationDisplay({
 				selfLabels: ['ai-generated'],
 				moderationLabels: ['harassment'],
 			}),

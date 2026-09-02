@@ -1,8 +1,9 @@
 /**
- * AT Protocol / nagi_amateras モデレーションラベル定義および判定ユーティリティ
+ * モデレーションラベルの定義と判定。
+ *
+ * ラベルの出所はAppViewだけ。公開ATプロトコルラベラーは廃止したので、
+ * `src` で発行者を絞る処理も、ラベラーDIDのハードコードも持たない。
  */
-
-export const AMATERAS_LABELER_DID = 'did:plc:gvlryvidmd4yju24sdqi5rao';
 
 export interface SelfLabelOption {
 	value: string;
@@ -45,52 +46,39 @@ export const AVAILABLE_SELF_LABELS: SelfLabelOption[] = [
 ];
 
 /**
- * 投稿データまたは画像からラベルを判定する
+ * メディアをぼかす対象のラベル。
+ * サーバが未成年へ丸ごと出さないラベル（ADULT_LABELS）と同じ集合にしてある。
  */
+const BLURRING_LABELS = ['sexual', 'porn', 'nudity', 'graphic-media', '!hide'];
+
 export interface LabelInfo {
 	val: string;
-	src?: string;
-	isSelfLabel?: boolean;
+	/** 投稿者自身が付けたか（true）、自動判定が付けたか（false）。 */
+	isSelfLabel: boolean;
 }
 
-export function extractPostLabels(post: any): LabelInfo[] {
+/** 表示に使うラベルを、AppViewが返した2つの配列からまとめる。 */
+export function extractPostLabels(post: {
+	selfLabels?: string[];
+	moderationLabels?: string[];
+}): LabelInfo[] {
 	const labels: LabelInfo[] = [];
-
-	// 1. AppViewが検証して返すセルフラベル
-	if (Array.isArray(post?.selfLabels)) {
-		for (const val of post.selfLabels) {
-			if (typeof val === 'string') labels.push({ val, isSelfLabel: true });
-		}
-	} else if (post?.record?.labels?.values && Array.isArray(post.record.labels.values)) {
-		// 旧fixture/外部PostViewとの互換経路。
-		for (const item of post.record.labels.values)
-			if (item?.val) labels.push({ val: item.val, isSelfLabel: true });
-	}
-
-	// 2. AppViewがAmaterasの現在CIDについて検証したラベル
-	if (Array.isArray(post?.moderationLabels)) {
-		for (const val of post.moderationLabels) {
-			if (typeof val === 'string')
-				labels.push({ val, src: AMATERAS_LABELER_DID, isSelfLabel: false });
-		}
-	} else if (Array.isArray(post?.labels)) {
-		// 公式PostView互換。ただしAmateras以外のラベルはNagiの設定へ混ぜない。
-		for (const item of post.labels) {
-			if (item?.val && !item.neg && item.src === AMATERAS_LABELER_DID) {
-				labels.push({ val: item.val, src: item.src, isSelfLabel: false });
-			}
-		}
-	}
-
+	for (const val of post?.selfLabels ?? [])
+		if (typeof val === 'string') labels.push({ val, isSelfLabel: true });
+	for (const val of post?.moderationLabels ?? [])
+		if (typeof val === 'string') labels.push({ val, isSelfLabel: false });
 	return labels;
 }
 
 /**
  * 画像・メディアをぼかす（Blur）対象か判定
  */
-export function shouldBlurMedia(labels: LabelInfo[]): { shouldBlur: boolean; labelName?: string } {
+export function shouldBlurMedia(labels: LabelInfo[] | { val: string }[]): {
+	shouldBlur: boolean;
+	labelName?: string;
+} {
 	for (const label of labels) {
-		if (['sexual', 'porn', 'nudity', 'graphic-media', '!hide'].includes(label.val)) {
+		if (BLURRING_LABELS.includes(label.val)) {
 			const match = AVAILABLE_SELF_LABELS.find((l) => l.value === label.val);
 			return {
 				shouldBlur: true,

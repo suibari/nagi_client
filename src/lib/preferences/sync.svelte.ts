@@ -1,4 +1,5 @@
 import { get } from 'svelte/store';
+import { applyAgeAssurance, clearAgeAssurance } from '$lib/moderation/age.svelte';
 import type { EmojiFavorite, PreferencesView } from '$lib/api/types';
 import type { ReactionChoice } from '$lib/emoji/reactionUsage';
 import {
@@ -161,6 +162,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		setFeedTabsScope(undefined);
 		setLanguagePreferencesScope(undefined);
 		preferences.clear();
+		clearAgeAssurance();
 		syncing = Promise.resolve();
 		return syncing;
 	}
@@ -182,6 +184,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		applyFavorites(did, view);
 		applyFeedTabs(did, view);
 		applyLanguagePreferences(did, view);
+		applyAgeAssurance(view.ageAssurance);
 	})();
 	return syncing;
 }
@@ -234,6 +237,7 @@ export function clearLocalPreferenceCache(did: string) {
 preferences.subscribeMerged((view, sent) => {
 	const did = get(session)?.did;
 	if (!did) return;
+	applyAgeAssurance(view.ageAssurance);
 	reconcileSections(did);
 	// 送っていない項目を応答で上書きすると、デバウンス待ちの編集を巻き戻して
 	// しまう。自分が送った回の結果だけ取り込む。

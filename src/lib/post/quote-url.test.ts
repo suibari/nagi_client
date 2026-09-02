@@ -46,12 +46,8 @@ describe('parseNagiPostUrl', () => {
 	});
 
 	it('rejects text that merely contains a thread URL', () => {
-		expect(
-			parseNagiPostUrl(`見て https://nagi.suibari.com/thread/${DID}/${RKEY}`),
-		).toBeUndefined();
-		expect(
-			parseNagiPostUrl(`https://nagi.suibari.com/thread/${DID}/${RKEY} これ`),
-		).toBeUndefined();
+		expect(parseNagiPostUrl(`見て https://nagi.suibari.com/thread/${DID}/${RKEY}`)).toBeUndefined();
+		expect(parseNagiPostUrl(`https://nagi.suibari.com/thread/${DID}/${RKEY} これ`)).toBeUndefined();
 	});
 
 	it('rejects empty and non-URL input', () => {

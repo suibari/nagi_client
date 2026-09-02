@@ -53,7 +53,7 @@
 	import BookmarkActions from './BookmarkActions.svelte';
 	import ActionMenu from './ActionMenu.svelte';
 	import ContentWarningOverlay from './ContentWarningOverlay.svelte';
-	import { postModerationDisplay } from '$lib/moderation/preferences.svelte';
+	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
 	let {
 		post,
 		botActor,
@@ -157,10 +157,10 @@
 	let linkCardToggleable = $derived(
 		Boolean(maxLinkCards && post.linkCards && post.linkCards.length > maxLinkCards),
 	);
-	let moderationDisplay = $derived(postModerationDisplay(post));
+	let moderationDisplay = $derived(contentModerationDisplay(post));
 	let moderationWarningText = $derived(
-		moderationDisplay.reason === 'amateras'
-			? m.moderationAmaterasWarning()
+		moderationDisplay.reason === 'automatic'
+			? m.moderationAutomaticWarning()
 			: moderationDisplay.reason === 'selfNsfw'
 				? m.moderationSelfNsfwWarning()
 				: m.moderationSelfAiWarning(),
