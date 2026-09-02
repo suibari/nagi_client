@@ -19,6 +19,7 @@
 	import { myProfile } from '$lib/profile/me.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
 	import AgeAssuranceForm from '$lib/components/AgeAssuranceForm.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { syncExistingPublicationFromProfile } from '$lib/standardsite/publication';
 	import { onDestroy } from 'svelte';
@@ -188,9 +189,8 @@
 	<p>{m.profileSettingsNote()}</p>
 	{#if onboarding}<p>{m.onboardingLoadedNote()}</p>{/if}
 	{#if !$session && $oauthReady}
-		<p>{m.loginRequired()}</p>
-		<a class="login" href="/login">{m.login()}</a>
-	{:else}
+		<SignedOutNotice message={m.loginRequired()} />
+	{:else if $session}
 		<div class="avatar-setting">
 			{#if avatarPreview}<img
 					class="avatar-preview"

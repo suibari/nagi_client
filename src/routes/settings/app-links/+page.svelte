@@ -5,6 +5,7 @@
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import AppLinkCard from '$lib/components/AppLinkCard.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import AppLinkChoiceList from './AppLinkChoiceList.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { createSortable } from '$lib/dnd/sortable.svelte';
@@ -355,7 +356,7 @@
 		<p class="muted">{m.appLinksPublicNote()}</p>
 
 		{#if !$session && $oauthReady}
-			<p>{m.appLinksSignInRequired()}</p>
+			<SignedOutNotice message={m.appLinksSignInRequired()} />
 		{:else if $session && !loaded}
 			<p>{m.loading()}</p>
 		{:else if $session}

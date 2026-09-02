@@ -805,7 +805,7 @@ export const ja = {
 		'返信・メンション・リアクション・日記をこの端末にプッシュ通知します。アプリを閉じていても届きます。',
 	pushEnableLabel: 'この端末で通知を受け取る',
 	pushDeviceNote: 'この設定は、この端末でのみ有効です。',
-	pushSignInRequired: 'プッシュ通知を有効にするにはサインインが必要です。',
+	pushSignInRequired: 'プッシュ通知を有効にするにはログインしてください。',
 	pushUnsupported: 'この端末・ブラウザはプッシュ通知に対応していません。',
 	pushBlocked:
 		'通知がブラウザ側でブロックされています。サイトの通知設定を「許可」に変更してください。',
@@ -996,7 +996,7 @@ export const ja = {
 	botReplyFreqSaved: '保存しました。',
 	botReplyFreqLoadFailed: '返信確率を読み込めませんでした',
 	botReplyFreqSaveFailed: '返信確率を保存できませんでした',
-	botReplyFreqLoginRequired: '返信確率を設定するにはログインが必要です。',
+	botReplyFreqLoginRequired: '返信確率を設定するにはログインしてください。',
 	saving: '保存中…',
 	saved: '保存しました',
 	saveFailed: '保存できませんでした',

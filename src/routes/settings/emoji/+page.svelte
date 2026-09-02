@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		createBluemojiItem,
@@ -272,9 +273,8 @@
 	<h1>{m.emojiSettingsTitle()}</h1>
 	<p>{m.emojiSettingsNote()}</p>
 	{#if !$session && $oauthReady}
-		<p>{m.loginRequired()}</p>
-		<a class="login" href="/login">{m.login()}</a>
-	{:else}
+		<SignedOutNotice message={m.loginRequired()} />
+	{:else if $session}
 		<div class="emoji-upload">
 			{#if singlePreviewEmoji}<BluemojiMedia
 					class="emoji-upload-preview"

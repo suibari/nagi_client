@@ -3,6 +3,7 @@
 	import { getPreferences, putPreferences } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 
 	/** lexicon の maxGraphemes と揃えること（サーバ側も同じ値で弾く）。 */
 	const MAX_LENGTH = 40;
@@ -60,8 +61,7 @@
 	<p>{m.botNameHelp()}</p>
 
 	{#if !$session && $oauthReady}
-		<p>{m.botNameLoginRequired()}</p>
-		<a class="login" href="/login">{m.login()}</a>
+		<SignedOutNotice message={m.botNameLoginRequired()} />
 	{:else if $session}
 		{#if loading}
 			<p>{m.loading()}</p>

@@ -4,6 +4,7 @@
 	import { oauthReady, session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import {
 		pushState,
 		refreshPushState,
@@ -66,7 +67,7 @@
 		<legend>{m.pushLegend()}</legend>
 		<p>{m.pushHelp()}</p>
 		{#if !$session && $oauthReady}
-			<p>{m.pushSignInRequired()}</p>
+			<SignedOutNotice message={m.pushSignInRequired()} />
 		{:else if $session && needsStandalone}
 			<p>{m.pushIosInstallNote()}</p>
 		{:else if $session && !pushState.supported}

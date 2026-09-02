@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { privateList } from '$lib/private-list/private-list.svelte';
@@ -41,10 +42,7 @@
 	<h1>{m.settingsHomeListTitle()}</h1>
 
 	{#if !$session && $oauthReady}
-		<fieldset class="theme-settings">
-			<legend>{m.settingsHomeListTitle()}</legend>
-			<p>{m.homeListSignInRequired()}</p>
-		</fieldset>
+		<SignedOutNotice message={m.homeListSignInRequired()} legend={m.settingsHomeListTitle()} />
 	{:else if $session}
 		<fieldset class="theme-settings">
 			<legend>{m.settingsHomeListTitle()}</legend>

@@ -3,6 +3,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import type { ActorView, ChannelView } from '$lib/api/types';
 
@@ -50,10 +51,7 @@
 	<h1>{m.settingsMuteTitle()}</h1>
 
 	{#if !$session && $oauthReady}
-		<fieldset class="theme-settings">
-			<legend>{m.settingsMuteTitle()}</legend>
-			<p>{m.muteSignInRequired()}</p>
-		</fieldset>
+		<SignedOutNotice message={m.muteSignInRequired()} legend={m.settingsMuteTitle()} />
 	{:else if $session}
 		<fieldset class="theme-settings">
 			<legend>{m.settingsMuteTitle()}</legend>

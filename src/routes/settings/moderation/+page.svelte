@@ -2,6 +2,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import AgeAssuranceForm from '$lib/components/AgeAssuranceForm.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { ageAssurance } from '$lib/moderation/age.svelte';
 	import {
 		moderationPreferences,
@@ -31,8 +32,7 @@
 		成人向けの出し分けもサーバが行う）。他の設定ページと同じくログインを必須にする。
 	-->
 	{#if !$session && $oauthReady}
-		<p>{m.moderationLoginRequired()}</p>
-		<a class="login" href="/login">{m.login()}</a>
+		<SignedOutNotice message={m.moderationLoginRequired()} />
 	{:else if $session}
 		<AgeAssuranceForm />
 		<p>{m.moderationSettingsHelp()}</p>

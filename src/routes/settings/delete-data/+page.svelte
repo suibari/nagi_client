@@ -6,6 +6,7 @@
 	import { clearLocalePreference, m } from '$lib/i18n/i18n.svelte';
 	import { clearLanguagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { oauthReady, session, signOut } from '$lib/oauth/session.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { clearThemePreference } from '$lib/theme';
 	import { clearModerationPreferences } from '$lib/moderation/preferences.svelte';
 	import { drafts } from '$lib/drafts/drafts.svelte';
@@ -56,8 +57,7 @@
 	<p>{m.draftsClearedNote()}</p>
 	<p class="delete-data-kept">{m.deleteDataKeptNote()}</p>
 	{#if !$session && $oauthReady}
-		<p>{m.deleteDataLoginRequired()}</p>
-		<a class="login" href="/login">{m.login()}</a>
+		<SignedOutNotice message={m.deleteDataLoginRequired()} />
 	{:else if $session}
 		<label
 			>{m.deleteDataInstruction()}<strong>{m.deleteDataPhrase()}</strong><input

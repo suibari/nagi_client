@@ -3,6 +3,7 @@
 	import { getPreferences, putPreferences } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 
 	let loading = $state(true);
 	let saving = $state(false);
@@ -55,8 +56,7 @@
 	<p>{m.botReplyFreqHelp()}</p>
 
 	{#if !$session && $oauthReady}
-		<p>{m.botReplyFreqLoginRequired()}</p>
-		<a class="login" href="/login">{m.login()}</a>
+		<SignedOutNotice message={m.botReplyFreqLoginRequired()} />
 	{:else if $session}
 		{#if loading}
 			<p>{m.loading()}</p>

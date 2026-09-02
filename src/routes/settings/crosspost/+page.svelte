@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session, signIn } from '$lib/oauth/session.svelte';
+	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import {
 		getCrosspostEnabled,
 		hasCrosspostScope,
@@ -105,7 +106,7 @@
 			<legend>{m.blueskyPublishingTitle()}</legend>
 			<p>{m.crosspostHelp()}</p>
 			{#if !$session && $oauthReady}
-				<p>{m.crosspostSignInRequired()}</p>
+				<SignedOutNotice message={m.crosspostSignInRequired()} />
 			{:else if $session && blueskyGranted}
 				<ToggleSwitch
 					checked={blueskyEnabled}
@@ -130,7 +131,7 @@
 			<legend>{m.blogPublishingTitle()}</legend>
 			<p>{m.blogPublishingHelp()}</p>
 			{#if !$session && $oauthReady}
-				<p>{m.standardSiteSignInRequired()}</p>
+				<SignedOutNotice message={m.standardSiteSignInRequired()} />
 			{:else if $session && blogGranted}
 				<ToggleSwitch
 					checked={blogEnabled}
