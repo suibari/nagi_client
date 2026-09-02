@@ -331,7 +331,7 @@ export const en: Messages = {
 	guestPostSaving: 'Saving…',
 	guestPostSaveFailed: 'Could not save the post on this device',
 	guestPostConsentBefore:
-		"I am 13 or older (and, if under 18, have my parent or guardian's permission) and agree to the ",
+		"If I am under 18 I have my parent or guardian's permission, and I agree to the ",
 	guestPostConsentAnd: ' and ',
 	guestPostConsentAfter: '',
 	guestPostAuthor: 'You on this device',
@@ -619,8 +619,7 @@ export const en: Messages = {
 		'When on, Nagi can crosspost to Bluesky and publish blog posts (standard.site). It authorizes writing those records to your PDS. You can change this later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
-	loginAgeNotice:
-		"Nagi is for people aged 13 and over. If you are under 18, use it with your parent or guardian's permission.",
+	loginAgeNotice: "If you are under 18, use Nagi with your parent or guardian's permission.",
 	loginAgreeBefore: 'By continuing to log in or register, you agree to the ',
 	loginAgreeSeparator: ' and the ',
 	loginAgreeAfter: '.',
@@ -682,7 +681,7 @@ export const en: Messages = {
 	ageErrorFailed: 'Could not save. Please try again later.',
 	ageAdultLocked: 'Adult content is not shown to accounts under 18.',
 	onboardingAgeIntro:
-		"Nagi is for people aged 13 and over. If you are under 18, please use it with your parent or guardian's permission.",
+		"If you are under 18, please use Nagi with your parent or guardian's permission.",
 	moderationLoginRequired: 'Please log in to change how content is displayed.',
 	moderationSettingsHelp:
 		'Choose how Nagi displays automated moderation decisions and labels added by post authors. These choices are stored on this device.',

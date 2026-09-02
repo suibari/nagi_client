@@ -344,7 +344,7 @@ export const ja = {
 	guestPostSubmit: 'こっそり投稿',
 	guestPostSaving: '保存中…',
 	guestPostSaveFailed: 'この端末に投稿を保存できませんでした',
-	guestPostConsentBefore: '13歳以上（18歳未満の場合は保護者の同意を得ています）で、',
+	guestPostConsentBefore: '18歳未満の場合は保護者の同意を得たうえで、',
 	guestPostConsentAnd: 'と',
 	guestPostConsentAfter: 'に同意します',
 	guestPostAuthor: 'この端末のあなた',
@@ -641,10 +641,8 @@ export const ja = {
 	loginFederateLabel: 'ほかのAT Protocolサービスにも投稿する',
 	loginFederateNote:
 		'ONにすると、Blueskyへのクロスポストと、ブログ（standard.site）としての公開ができるようになります。あなたのPDSへ書き込む権限を認可します。あとから設定で変更できます。',
-	// 自動モデレーションに使っている OpenAI の規約が13歳以上・18歳未満は保護者の同意を
-	// 要件にしているので、入口で告知する。
-	loginAgeNotice:
-		'本サービスは13歳以上の方がご利用いただけます。18歳未満の方は保護者の同意を得てご利用ください。',
+	// 未成年の保護者同意は入口で告知する。押す前に目に入る位置に置く。
+	loginAgeNotice: '18歳未満の方は保護者の同意を得てご利用ください。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
 	loginAgreeSeparator: 'と',
 	loginAgreeAfter: 'に同意したものとみなされます。',
@@ -709,8 +707,7 @@ export const ja = {
 	ageErrorAlreadySet: 'すでに登録済みのため変更できません。',
 	ageErrorFailed: '登録できませんでした。時間をおいて試してください。',
 	ageAdultLocked: '成人向けのコンテンツは、18歳未満のアカウントには表示されません。',
-	onboardingAgeIntro:
-		'Nagiは13歳以上の方がご利用いただけます。18歳未満の方は保護者の同意を得てご利用ください。',
+	onboardingAgeIntro: '18歳未満の方は、保護者の同意を得てご利用ください。',
 	moderationLoginRequired: 'コンテンツの表示設定を変えるにはログインしてください。',
 	moderationSettingsHelp:
 		'自動モデレーションによる判定と、投稿者が付けたセルフラベルごとに表示方法を選べます。この設定はこの端末に保存されます。',

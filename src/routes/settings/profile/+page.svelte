@@ -18,6 +18,7 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
+	import AgeAssuranceForm from '$lib/components/AgeAssuranceForm.svelte';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { syncExistingPublicationFromProfile } from '$lib/standardsite/publication';
 	import { onDestroy } from 'svelte';
@@ -235,6 +236,17 @@
 				</button>
 			</div>
 		{/if}
+		{#if onboarding}
+			<!--
+				初回登録でだけ年齢を訊く。任意なので、入力せず「保存」で先へ進める
+				（その場合は18歳未満として扱われ、あとから設定→コンテンツ表示で
+				1度だけ登録できる）。
+			-->
+			<section class="onboarding-age">
+				<p class="onboarding-age-intro">{m.onboardingAgeIntro()}</p>
+				<AgeAssuranceForm />
+			</section>
+		{/if}
 		<button disabled={busy || !loaded} onclick={save}>{busy ? m.saving() : m.save()}</button>
 		{#if status}<p>{status}</p>{/if}
 		{#if syncWarning}<p class="error" role="status">{syncWarning}</p>{/if}
@@ -257,6 +269,19 @@
 	/>{/if}
 
 <style>
+	.onboarding-age {
+		display: grid;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--line);
+		text-align: left;
+	}
+	.onboarding-age-intro {
+		margin: 0;
+		color: var(--text-muted);
+		font-size: 0.9rem;
+	}
 	.profile-card-settings {
 		display: grid;
 		gap: 0.75rem;

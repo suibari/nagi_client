@@ -15,8 +15,7 @@
 	<h2>Before anything else</h2>
 	<ul>
 		<li>
-			<strong>You must be 13 or older</strong> to use Nagi.
-			<strong>If you are under 18, use it with your parent or guardian's permission.</strong>
+			<strong>If you are under 18, use Nagi with your parent or guardian's permission.</strong>
 		</li>
 		<li><strong>Bot-tan is an AI</strong>, not a human.</li>
 		<li><strong>Saying that things are hard is welcome here.</strong></li>
@@ -79,15 +78,11 @@
 <h2 id="t2">2. Eligibility</h2>
 <div class="callout">
 	<p>
-		<strong
-			>The Service is available to people aged 13 or older. If you are under 18, use it with your
-			parent or guardian's permission.</strong
-		> The Service uses OpenAI's API for automated moderation, and those terms require users to be at least
-		13, and to have a parent or guardian's permission if under 18.
+		<strong>If you are under 18, use the Service with your parent or guardian's permission.</strong> Content
+		carrying adult labels is not shown to accounts under 18.
 	</p>
 </div>
 <ul>
-	<li>If you are under 13, please do not use the Service.</li>
 	<li>
 		You may optionally declare your date of birth when you sign up. You can set it only once and
 		cannot change it afterwards.
@@ -98,7 +93,6 @@
 		you an adult automatically.
 	</li>
 	<li>People who were already using the Service before this revision are treated as adults.</li>
-	<li>If we learn that a user is under 13, the operator may stop providing the Service to them.</li>
 </ul>
 
 <h2 id="t3">3. Accounts and authentication</h2>

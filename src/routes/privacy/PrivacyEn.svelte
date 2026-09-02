@@ -242,8 +242,8 @@
 	<li>Logs are retained for <strong>up to 30 days</strong> for abuse monitoring.</li>
 </ul>
 <p>
-	The Service requires you to be at least 13, and to have a parent or guardian's permission if you
-	are under 18, because OpenAI's terms require it. See Section 2 of the
+	If you are under 18 you need a parent or guardian's permission to use the Service, because some of
+	what you post is sent to the recipients above. See Section 2 of the
 	<a href="/terms">Terms of Service</a>.
 </p>
 
@@ -454,9 +454,8 @@
 
 <h2 id="p10">10. Age verification and people under 18</h2>
 <p>
-	The Service is for people aged 13 or older. If you are under 18, please use it with your parent or
-	guardian's permission. If we learn that information from someone under 13 is held, we will delete
-	it promptly.
+	If you are under 18, please use the Service with your parent or guardian's permission. Content
+	carrying adult labels is not shown to accounts under 18.
 </p>
 <h3>How we handle your date of birth</h3>
 <ul>
