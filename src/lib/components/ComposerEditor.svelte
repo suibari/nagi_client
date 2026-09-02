@@ -14,6 +14,7 @@
 	import { parseContentWarning } from '$lib/atproto/contentWarning';
 	import type { EmojiView } from '$lib/api/types';
 	import QuickEmojiPalette from './QuickEmojiPalette.svelte';
+	import ContentWarningPicker from './ContentWarningPicker.svelte';
 
 	let {
 		value = $bindable(''),
@@ -28,6 +29,8 @@
 		ariaLabel,
 		disabled = false,
 		contentWarningEnabled = true,
+		contentWarningLabelsEnabled = false,
+		selfLabels = $bindable<string[]>([]),
 		mode = 'rich',
 		onsubmit,
 		onpaste,
@@ -45,6 +48,8 @@
 		ariaLabel?: string;
 		disabled?: boolean;
 		contentWarningEnabled?: boolean;
+		contentWarningLabelsEnabled?: boolean;
+		selfLabels?: string[];
 		/**
 		 * simple（あっさり）はプレビュータブと文字装飾を畳み、本文・画像・CW だけにする。
 		 * 返信や引用の InlinePostComposer は従来どおり rich のまま。
@@ -64,6 +69,8 @@
 	}>();
 	let emojiPickerOpen = $state(false);
 	let emojiButton = $state<HTMLButtonElement>();
+	let contentWarningPickerOpen = $state(false);
+	let contentWarningButton = $state<HTMLButtonElement>();
 	// あっさりへ戻したときにプレビューのまま固まらないようにする。
 	$effect(() => {
 		if (mode === 'simple' && preview) preview = false;
@@ -149,14 +156,24 @@
 					><Icon name="emoji" size={17} /></button
 				>{/if}
 			{#if contentWarningEnabled}<button
+					bind:this={contentWarningButton}
 					class="icon-action content-warning-tool"
-					class:active={contentWarning.status === 'valid'}
+					class:active={contentWarning.status === 'valid' || selfLabels.length > 0}
 					type="button"
-					disabled={disabled || !hasSelection || contentWarning.status === 'invalid'}
-					aria-label={m.contentWarningSet()}
-					title={m.contentWarningSet()}
+					disabled={disabled ||
+						(!contentWarningLabelsEnabled &&
+							(!hasSelection || contentWarning.status === 'invalid'))}
+					aria-label={contentWarningLabelsEnabled
+						? m.contentWarningMenuTitle()
+						: m.contentWarningSet()}
+					title={contentWarningLabelsEnabled ? m.contentWarningMenuTitle() : m.contentWarningSet()}
+					aria-haspopup={contentWarningLabelsEnabled ? 'menu' : undefined}
+					aria-expanded={contentWarningLabelsEnabled ? contentWarningPickerOpen : undefined}
 					onmousedown={(event) => event.preventDefault()}
-					onclick={() => editor?.applyContentWarning()}><Icon name="warning" size={17} /></button
+					onclick={() => {
+						if (contentWarningLabelsEnabled) contentWarningPickerOpen = !contentWarningPickerOpen;
+						else editor?.applyContentWarning();
+					}}><Icon name="warning" size={17} /></button
 				>{/if}
 			{#if mode === 'rich'}
 				<MarkdownPalette {disabled} onformat={(format) => editor?.applyMarkdown(format)} />
@@ -170,6 +187,15 @@
 		select={(emoji) => editor?.insertEmoji(emoji)}
 		ariaLabel={m.insertEmojiPickerAria()}
 		choiceAriaLabel={(emoji) => m.insertEmojiChoiceAria({ emoji })}
+	/>{/if}
+{#if contentWarningEnabled && contentWarningLabelsEnabled}<ContentWarningPicker
+		bind:open={contentWarningPickerOpen}
+		anchor={contentWarningButton}
+		bind:selectedLabels={selfLabels}
+		{hasSelection}
+		textWarningDisabled={contentWarning.status === 'invalid'}
+		{disabled}
+		ontextwarning={() => editor?.applyContentWarning()}
 	/>{/if}
 {#if contentWarningError}<p class="error cw-error" role="alert">{contentWarningError}</p>{/if}
 

@@ -20,7 +20,6 @@
 	import ComposerEditor from './ComposerEditor.svelte';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ComposerQuoteEditor from './ComposerQuoteEditor.svelte';
-	import SelfLabelPicker from './SelfLabelPicker.svelte';
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -449,12 +448,9 @@
 -->
 <section class="composer" class:rich={mode === 'rich'}>
 	{#snippet editorTools()}
-		<!-- こっそりは画像を持てず、他人にも見えないのでセルフラベルの出番もない。 -->
+		<!-- こっそりは画像を持てない。セルフラベルも統合CWメニュー側で無効にする。 -->
 		{#if !kossori}
-			<div class="flex items-center gap-1.5">
-				<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
-				<SelfLabelPicker bind:selectedLabels={selfLabels} disabled={busy} />
-			</div>
+			<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
 		{/if}
 	{/snippet}
 
@@ -551,6 +547,8 @@
 		placeholder={m.composerPlaceholder()}
 		ariaLabel={m.composerAria()}
 		disabled={busy}
+		contentWarningLabelsEnabled={!kossori}
+		bind:selfLabels
 		{mode}
 		onsubmit={() => submit()}
 		onpaste={(event) => {

@@ -131,6 +131,43 @@ describe('silent replies', () => {
 	});
 });
 
+describe('content warning storage boundaries', () => {
+	it('keeps self-labels on the post and per-image warnings on each attachment', () => {
+		const draft = preparePostDraft(
+			'warning boundaries',
+			undefined,
+			undefined,
+			[
+				{
+					id: 'image-1',
+					blob: new Blob(['image'], { type: 'image/png' }),
+					previewUrl: 'blob:image-1',
+					alt: '',
+					contentWarning: true,
+					aspectRatio: { width: 1, height: 1 },
+				},
+			],
+			[],
+			[],
+			[],
+			[],
+			false,
+			undefined,
+			false,
+			false,
+			false,
+			['sexual', 'ai-generated'],
+		);
+
+		expect(draft.labels).toEqual({
+			$type: 'com.atproto.label.defs#selfLabels',
+			values: [{ val: 'sexual' }, { val: 'ai-generated' }],
+		});
+		expect(draft.attachments[0]).toEqual(expect.objectContaining({ contentWarning: true }));
+		expect(draft.attachments[0]).not.toHaveProperty('labels');
+	});
+});
+
 describe('deleteAllNagiRecords', () => {
 	beforeEach(() => {
 		listRecords.mockReset();
