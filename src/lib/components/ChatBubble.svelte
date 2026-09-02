@@ -52,7 +52,7 @@
 	} from '$lib/atproto/contentWarning';
 	import BookmarkActions from './BookmarkActions.svelte';
 	import ActionMenu from './ActionMenu.svelte';
-	import ContentWarningOverlay from './ContentWarningOverlay.svelte';
+	import ContentWarningMask from './ContentWarningMask.svelte';
 	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
 	let {
 		post,
@@ -566,7 +566,11 @@
 				</div>
 			{/if}
 		</div>
-		<ContentWarningOverlay shouldBlur={moderationDisplay.warn} warningText={moderationWarningText}>
+		<ContentWarningMask
+			kind="content"
+			active={moderationDisplay.warn}
+			title={moderationWarningText}
+		>
 			{#if editing}
 				<div class="inline-edit">
 					{#snippet editTools()}
@@ -641,7 +645,7 @@
 						>{showAllLinkCards ? m.readLess() : m.showAllMedia()}</button
 					>{/if}{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
 			{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} {botActor} />{/if}
-		</ContentWarningOverlay>
+		</ContentWarningMask>
 		{#if !displayOnly}{#if optimistic}
 				<div class="post-sending" role="status" aria-live="polite">
 					<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>

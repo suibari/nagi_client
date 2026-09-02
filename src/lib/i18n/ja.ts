@@ -727,7 +727,7 @@ export const ja = {
 	moderationAutomaticWarning: '自動モデレーションによる警告',
 	moderationSelfAiWarning: 'AI生成コンテンツ',
 	moderationSelfNsfwWarning: 'NSFWコンテンツ',
-	moderationRevealHelp: '選択すると内容を表示します',
+	moderationRevealHelp: 'クリックすると内容を表示します',
 	moderationReveal: '表示する',
 	moderationHideAgain: 'もう一度隠す',
 	selfLabelButton: 'ラベル',

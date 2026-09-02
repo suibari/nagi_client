@@ -700,7 +700,7 @@ export const en: Messages = {
 	moderationAutomaticWarning: 'Automated moderation warning',
 	moderationSelfAiWarning: 'AI-generated content',
 	moderationSelfNsfwWarning: 'NSFW content',
-	moderationRevealHelp: 'Choose show to reveal this content',
+	moderationRevealHelp: 'Click to show the content',
 	moderationReveal: 'Show',
 	moderationHideAgain: 'Hide again',
 	selfLabelButton: 'Labels',
