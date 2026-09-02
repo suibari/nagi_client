@@ -693,6 +693,13 @@ export const ja = {
 		'18歳未満として登録されています。18歳の誕生日を過ぎると自動的に成人向けの設定が使えるようになります。',
 	ageUndeclared:
 		'生年月日が未登録です。登録するまでは18歳未満として扱われ、成人向けのコンテンツは表示されません。',
+	ageConfirmTitle: 'この生年月日で登録しますか？',
+	ageConfirmBody: (p: { date: string }) =>
+		`${p.date} で登録します。一度登録すると、あとから変更することはできません。`,
+	ageConfirmSubmit: '登録する',
+	ageYourBirthDate: '登録した生年月日',
+	ageBirthDatePrivate:
+		'この情報は他のユーザーには公開されません。年齢に応じた表示の切り替えにだけ使います。',
 	ageBirthDateLabel: '生年月日',
 	ageOnceOnlyNote: '登録できるのは1度だけで、あとから変更できません。',
 	ageParentalConsentLabel: '18歳未満です。保護者の同意を得ています。',

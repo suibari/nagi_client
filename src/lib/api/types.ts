@@ -384,10 +384,15 @@ export type PreferencesView = {
 	lastBookmarkFolderId?: string;
 	lastBookmarkFolderUpdatedAt?: string;
 	/**
-	 * 年齢確認の状態。生年月日そのものは返らない。
+	 * 年齢確認の状態。本人にだけ返る（他人の分は引けない）。
 	 * declared が false なら未申告＝未成年扱い。
 	 */
-	ageAssurance?: { isAdult: boolean; declared: boolean };
+	ageAssurance?: {
+		isAdult: boolean;
+		declared: boolean;
+		/** 申告済みなら本人が確認できるよう返る。改定前からの既存ユーザーは未申告なので省略。 */
+		birthDate?: string;
+	};
 };
 export type SyncedLanguagePreferences = {
 	post: string;

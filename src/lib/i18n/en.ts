@@ -665,6 +665,13 @@ export const en: Messages = {
 		'Your account is registered as under 18. Adult settings unlock automatically once you turn 18.',
 	ageUndeclared:
 		'No date of birth on file. Until you add one you are treated as under 18, and adult content stays hidden.',
+	ageConfirmTitle: 'Register this date of birth?',
+	ageConfirmBody: (p: { date: string }) =>
+		`We will register ${p.date}. Once set, it cannot be changed.`,
+	ageConfirmSubmit: 'Register',
+	ageYourBirthDate: 'Your date of birth',
+	ageBirthDatePrivate:
+		'This is never shown to other users. It is used only to decide what to display for your age.',
 	ageBirthDateLabel: 'Date of birth',
 	ageOnceOnlyNote: 'You can set this only once; it cannot be changed later.',
 	ageParentalConsentLabel: "I am under 18 and have my parent or guardian's permission.",

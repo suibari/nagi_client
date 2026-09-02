@@ -17,6 +17,8 @@ export type AgeState = {
 	isAdult: boolean;
 	/** 生年月日を申告済みか。false なら未申告＝未成年扱い。 */
 	declared: boolean;
+	/** 申告した生年月日（YYYY-MM-DD）。本人にだけ返る。未申告なら undefined。 */
+	birthDate?: string;
 };
 
 const INITIAL: AgeState = { loading: true, isAdult: false, declared: false };
@@ -33,6 +35,10 @@ export const ageAssurance = {
 	get declared() {
 		return state.declared;
 	},
+	/** 本人が設定画面で確認するための値。他人には見えない。 */
+	get birthDate() {
+		return state.birthDate;
+	},
 	/** 申告を促すべきか。未申告のユーザーにだけ導線を出す。 */
 	get shouldPrompt() {
 		return !state.loading && !state.declared;
@@ -40,7 +46,11 @@ export const ageAssurance = {
 };
 
 /** getPreferences のレスポンスから取り込む。設定同期と同じ経路に相乗りしている。 */
-export function applyAgeAssurance(value?: { isAdult: boolean; declared: boolean }) {
+export function applyAgeAssurance(value?: {
+	isAdult: boolean;
+	declared: boolean;
+	birthDate?: string;
+}) {
 	state = value
 		? { loading: false, ...value }
 		: { loading: false, isAdult: false, declared: false };
