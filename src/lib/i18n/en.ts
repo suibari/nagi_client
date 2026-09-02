@@ -1110,6 +1110,7 @@ export const en: Messages = {
 	cardDrawNewTitle: 'A new card!',
 	cardDrawAgainTitle: 'Look who is back',
 	cardDrawAlreadyTitle: "Today's card",
+	cardDrawSkip: 'Skip animation',
 	cardNextDrawAt: (p) => `Next draw at ${p.time}`,
 	cardCommentThinking: 'Bot-tan is thinking of something to say…',
 	cardCommentNotReady: 'Bot-tan is still thinking. Try opening this card again in a bit.',

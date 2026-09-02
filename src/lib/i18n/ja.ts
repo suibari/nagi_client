@@ -1138,6 +1138,7 @@ export const ja = {
 	cardDrawNewTitle: 'あたらしいカードだ！',
 	cardDrawAgainTitle: 'また会えたね',
 	cardDrawAlreadyTitle: '今日のカード',
+	cardDrawSkip: '演出をスキップ',
 	cardNextDrawAt: (p: { time: string }) => `次に引けるのは ${p.time}`,
 	cardCommentThinking: 'botたんがひとことを考えています…',
 	cardCommentNotReady: 'botたんはまだ考え中みたい。あとでもう一度開いてみてね',

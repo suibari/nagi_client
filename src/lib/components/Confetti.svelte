@@ -12,8 +12,12 @@
 	} = $props();
 
 	const COLORS = ['#ff5f87', '#ffbd3f', '#5ee6a8', '#54b9ff', '#a78bfa', '#ff77d2'];
-	const amount = $derived(level === 'sr' ? 24 : level === 'ur' ? 46 : level === 'aar' ? 42 : 54);
-	const duration = $derived(level === 'sr' ? 2100 : level === 'ur' ? 2600 : 3000);
+	const amount = $derived(
+		level === 'r' ? 12 : level === 'sr' ? 24 : level === 'ur' ? 46 : level === 'aar' ? 42 : 54,
+	);
+	const duration = $derived(
+		level === 'r' ? 1600 : level === 'sr' ? 2100 : level === 'ur' ? 2600 : 3000,
+	);
 </script>
 
 {#if fullscreen}
@@ -41,14 +45,14 @@
 	<div class="confetti-layer local" aria-hidden="true">
 		<div class="confetti-origin">
 			<SvelteConfetti
-				size={level === 'sr' ? 8 : 10}
-				x={level === 'sr' ? [-0.75, 0.75] : [-1.25, 1.25]}
-				y={level === 'sr' ? [1, 1.8] : [1.5, 2.7]}
+				size={level === 'r' ? 7 : level === 'sr' ? 8 : 10}
+				x={level === 'r' ? [-0.5, 0.5] : level === 'sr' ? [-0.75, 0.75] : [-1.25, 1.25]}
+				y={level === 'r' ? [0.7, 1.25] : level === 'sr' ? [1, 1.8] : [1.5, 2.7]}
 				{duration}
-				delay={[0, level === 'sr' ? 180 : 300]}
+				delay={[0, level === 'r' ? 120 : level === 'sr' ? 180 : 300]}
 				colorArray={COLORS}
 				{amount}
-				fallDistance={level === 'sr' ? '340px' : '58vh'}
+				fallDistance={level === 'r' ? '240px' : level === 'sr' ? '340px' : '58vh'}
 				cone
 				xSpread={0.64}
 				disableForReducedMotion

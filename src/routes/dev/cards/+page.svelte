@@ -137,6 +137,8 @@
 
 	// --- CardDetailDialog --------------------------------------------------
 	type DialogCase =
+		| 'new-n'
+		| 'new-r'
 		| 'new-sr'
 		| 'new-ur'
 		| 'new-aar'
@@ -153,6 +155,8 @@
 	let replay = $state(0);
 
 	const DIALOG_CASES: Array<{ id: DialogCase; label: string; note: string }> = [
+		{ id: 'new-n', label: '新規（N）', note: '短いタメ。追加エフェクトなし' },
+		{ id: 'new-r', label: '新規（R）', note: '少し長いタメ＋小量コンフェッティ' },
 		{ id: 'new-sr', label: '新規（SR）', note: 'NEW CARD＋少量コンフェッティ' },
 		{ id: 'new-ur', label: '新規（UR）', note: 'NEW CARD＋中量コンフェッティ' },
 		{ id: 'new-aar', label: '新規（AAR）', note: 'NEW CARD＋最大量コンフェッティ' },
@@ -181,6 +185,10 @@
 
 	function dialogCard(kind: DialogCase): CardView {
 		switch (kind) {
+			case 'new-n':
+				return mock('N', 'earth', { commentJa: '今日の一枚も、ちゃんときみの味方だよ。' });
+			case 'new-r':
+				return mock('R', 'water', { commentJa: 'いい一枚が来たね。きみの今日を応援してるよ。' });
 			case 'new-sr':
 				return mock('SR', 'wind', { commentJa: '新しい出会いだね。今日はしっかりお祝いしよう！' });
 			case 'new-ur':
@@ -282,6 +290,11 @@
 	{/if}
 
 	<h2>CardDetailDialog</h2>
+	<p class="dev-note">
+		各レア度色を2秒ずつ見せるタメ、徐々に強くなるカード振動、R→SR→UR→AARと昇格する波紋色、
+		公開後の集中線を確認する。右上の「演出をスキップ」で即時表示でき、AARは
+		白い＋へのCRT収束→完全暗転→白フラッシュ→全画面コンフェッティとなる。
+	</p>
 	<div class="dev-controls">
 		{#each DIALOG_CASES as c (c.id)}
 			<button type="button" class="ghost" onclick={() => open(c.id)} title={c.note}>

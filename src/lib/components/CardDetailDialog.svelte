@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { getCards } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
-	import { rarityConfettiLevel } from '$lib/cards/celebration';
+	import { cardRevealEffect, rarityConfettiLevel } from '$lib/cards/celebration';
 	import { dateLocale, i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardBack from './CardBack.svelte';
+	import CardDrawEffects from './CardDrawEffects.svelte';
 	import Confetti from './Confetti.svelte';
 
 	/** 時刻表示。日付境界は JST 4:00 だが、表示は閲覧者のローカル時刻に合わせる。 */
@@ -44,15 +45,21 @@
 		onclose: (final: CardView) => void;
 	} = $props();
 
-	// 引いた直後は裏 → 表のフリップを見せる。見返しのときは最初から表。
+	// ダイアログ表示中に draw が差し替わることはなく、別結果は親の key で再マウントされる。
 	// svelte-ignore state_referenced_locally
-	let revealed = $state(!draw);
+	const shouldAnimate = !!draw && !draw.alreadyDrawn;
+	// 初回ドローはタメてから裏 → 表。見返し・当日分の再表示は最初から表。
+	// svelte-ignore state_referenced_locally
+	let revealed = $state(!shouldAnimate);
+	let skipped = $state(false);
 	// 表示中のカード。コメントが届いたら差し替える編集可能なコピー。
 	// svelte-ignore state_referenced_locally
 	let card = $state<CardView>(initial);
 	// 待っても届かなかった状態。「…」のまま放置せず、その旨を出す。
 	let commentTimedOut = $state(false);
-	let closeButton: HTMLButtonElement;
+	let closeButton = $state<HTMLButtonElement>();
+	let skipButton = $state<HTMLButtonElement>();
+	let revealTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const ja = $derived(i18n.locale === 'ja');
 	const name = $derived(ja ? card.nameJa : card.nameEn);
@@ -62,35 +69,44 @@
 	// 初回の実ドローだけを祝う。当日カードの冪等再取得では演出を繰り返さない。
 	const isFreshDraw = $derived(!!draw && !draw.alreadyDrawn);
 	const confettiLevel = $derived(isFreshDraw ? rarityConfettiLevel(card.rarity) : undefined);
+	const revealEffect = $derived(cardRevealEffect(card.rarity));
 	/*
 	 * 「NEW CARD」の演出は図鑑を1枠埋めたことのお祝い。記念日カードは図鑑の外にあり、
 	 * 見出しも「記念日おめでとう」のほうが伝えたいことなので、こちらは出さずに見出しを見せる。
 	 */
 	const showNewCardArt = $derived(
-		!!draw?.isNew && !draw.alreadyDrawn && draw.source !== 'anniversary',
+		revealed && !!draw?.isNew && !draw.alreadyDrawn && draw.source !== 'anniversary',
 	);
 
 	onMount(() => {
-		closeButton?.focus();
-		const flip = revealed ? undefined : setTimeout(() => (revealed = true), 120);
+		(skipButton ?? closeButton)?.focus();
+		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (shouldAnimate && !reduceMotion) {
+			revealTimer = setTimeout(finishReveal, revealEffect.chargeMs);
+			const touchDevice =
+				navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+			if (touchDevice && typeof navigator.vibrate === 'function') {
+				navigator.vibrate(revealEffect.vibration);
+			}
+		} else if (shouldAnimate) {
+			finishReveal();
+		}
 
 		// botたんコメントは bot_server が非同期で書き込むので、届くまで getCards で取り直す。
 		// 引いた直後だけでなく「コメントがまだ無い所持カードを開いたとき」も拾いに行くので、
 		// 演出中に間に合わなくても、あとから開き直せば読める。
-		if (hasComment || !card.owned || !actor) return () => clearTimeout(flip);
-
 		let stopped = false;
 		let timer: ReturnType<typeof setTimeout>;
 		// Gemini の生成待ちなので、演出の尺より十分長く待つ。
 		const deadline = Date.now() + 60_000;
-		const poll = async () => {
+		const poll = async (pollActor: string) => {
 			if (stopped) return;
 			if (Date.now() > deadline) {
 				commentTimedOut = true;
 				return;
 			}
 			try {
-				const collection = await getCards(actor);
+				const collection = await getCards(pollActor);
 				const fresh = collection.cards.find((c) => c.volume === card.volume && c.id === card.id);
 				if (fresh?.commentJa || fresh?.commentEn) {
 					card = fresh;
@@ -99,17 +115,36 @@
 			} catch {
 				// 一時的な失敗は無視して次のポーリングに任せる。
 			}
-			if (!stopped) timer = setTimeout(poll, 2_000);
+			if (!stopped) timer = setTimeout(() => poll(pollActor), 2_000);
 		};
-		timer = setTimeout(poll, 1_500);
+		if (!hasComment && card.owned && actor) timer = setTimeout(() => poll(actor), 1_500);
 		return () => {
 			stopped = true;
-			clearTimeout(flip);
+			clearTimeout(revealTimer);
 			clearTimeout(timer);
+			if (typeof navigator.vibrate === 'function') navigator.vibrate(0);
 		};
 	});
 
+	function finishReveal() {
+		clearTimeout(revealTimer);
+		revealTimer = undefined;
+		if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+			navigator.vibrate(0);
+		}
+		revealed = true;
+		void tick().then(() => closeButton?.focus());
+	}
+
+	function skipReveal() {
+		skipped = true;
+		finishReveal();
+	}
+
 	function close() {
+		if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+			navigator.vibrate(0);
+		}
 		onclose(card);
 	}
 	function keydown(event: KeyboardEvent) {
@@ -121,13 +156,21 @@
 </script>
 
 <svelte:window onkeydown={keydown} />
-{#if revealed && confettiLevel}
+{#if revealed && confettiLevel && !skipped}
 	<Confetti level={confettiLevel} />
 {/if}
 <div class="draw-backdrop" role="presentation" onclick={backdropClick}>
+	<CardDrawEffects rarity={card.rarity} {revealed} active={shouldAnimate && !skipped} />
 	<div class="draw-dialog" role="dialog" aria-modal="true" aria-labelledby="draw-title">
+		{#if shouldAnimate && !revealed}
+			<button bind:this={skipButton} type="button" class="draw-skip ghost" onclick={skipReveal}>
+				{m.cardDrawSkip()}
+			</button>
+		{/if}
 		<h2 id="draw-title" class="draw-title" class:visually-hidden={showNewCardArt}>
-			{#if !draw}
+			{#if shouldAnimate && !revealed}
+				{m.cardDrawing()}
+			{:else if !draw}
 				{name}
 			{:else if draw.source === 'anniversary'}
 				{m.cardAnniversaryTitle()}
@@ -150,57 +193,69 @@
 			</div>
 		{/if}
 
-		<div class="draw-stage rarity-{card.rarity.toLowerCase()}" class:revealed class:flip={!!draw}>
-			<div class="draw-flip">
-				<div class="draw-back" aria-hidden={revealed}>
-					<CardBack />
-				</div>
-				<div class="draw-front" aria-hidden={!revealed}>
-					<AffirmationCard {card} size="full" {revealUnowned} />
+		<div class="draw-effect-shell">
+			<div
+				class="draw-stage rarity-{card.rarity.toLowerCase()}"
+				class:revealed
+				class:flip={shouldAnimate}
+				class:charging={shouldAnimate && !revealed && !skipped}
+				style={`--mid-delay: ${Math.floor(revealEffect.chargeMs * 0.34)}ms; --hard-delay: ${Math.floor(revealEffect.chargeMs * 0.67)}ms`}
+			>
+				<div class="draw-shake">
+					<div class="draw-flip">
+						<div class="draw-back" aria-hidden={revealed}>
+							<CardBack />
+						</div>
+						<div class="draw-front" aria-hidden={!revealed}>
+							<AffirmationCard {card} size="full" {revealUnowned} />
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- botたんのひとこと。カードのフレーバーとは別に、引いたその人へ向けた言葉。 -->
-		<div class="draw-comment" aria-live="polite">
-			{#if hasComment}
-				<p class="draw-bubble">{comment}</p>
-			{:else if commentTimedOut}
-				<p class="draw-bubble muted">{m.cardCommentNotReady()}</p>
-			{:else if card.owned}
-				<p class="draw-bubble thinking">
-					<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
-					<span class="visually-hidden">{m.cardCommentThinking()}</span>
-				</p>
-			{/if}
-		</div>
-
-		<!-- 記念日は抽選枠を消費しないので「次に引ける時刻」を出さない（別の話になってしまう）。 -->
-		{#if draw && draw.source === 'anniversary'}
-			<p class="draw-next">{m.cardAnniversaryHint()}</p>
-		{:else if draw}
-			<p class="draw-next">
-				{#if draw.source === 'my_nagi' && draw.drawStatus.reaction?.canDraw}
-					{m.cardReactionNextHint()}
-				{:else if draw.source === 'reaction' && draw.drawStatus.myNagi?.canDraw}
-					{m.cardMyNagiNextHint()}
-				{:else}
-					{m.cardNextDrawAt({ time: formatTime(draw.drawStatus.nextDrawAt) })}
+		{#if revealed}
+			<!-- botたんのひとこと。カードのフレーバーとは別に、引いたその人へ向けた言葉。 -->
+			<div class="draw-comment" aria-live="polite">
+				{#if hasComment}
+					<p class="draw-bubble">{comment}</p>
+				{:else if commentTimedOut}
+					<p class="draw-bubble muted">{m.cardCommentNotReady()}</p>
+				{:else if card.owned}
+					<p class="draw-bubble thinking">
+						<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
+						<span class="visually-hidden">{m.cardCommentThinking()}</span>
+					</p>
 				{/if}
-			</p>
-		{:else if card.acquiredAt}
-			<p class="draw-next">{m.cardAcquiredAt({ time: formatTime(card.acquiredAt) })}</p>
-		{/if}
-		<div class="draw-actions">
-			<button bind:this={closeButton} type="button" class="ghost" onclick={close}>
-				{m.cardClose()}
-			</button>
-			{#if collectionHref}
-				<a class="draw-collection" href={collectionHref} onclick={close}
-					>{m.cardViewCollection()} →</a
-				>
+			</div>
+
+			<!-- 記念日は抽選枠を消費しないので「次に引ける時刻」を出さない。 -->
+			{#if draw && draw.source === 'anniversary'}
+				<p class="draw-next">{m.cardAnniversaryHint()}</p>
+			{:else if draw}
+				<p class="draw-next">
+					{#if draw.source === 'my_nagi' && draw.drawStatus.reaction?.canDraw}
+						{m.cardReactionNextHint()}
+					{:else if draw.source === 'reaction' && draw.drawStatus.myNagi?.canDraw}
+						{m.cardMyNagiNextHint()}
+					{:else}
+						{m.cardNextDrawAt({ time: formatTime(draw.drawStatus.nextDrawAt) })}
+					{/if}
+				</p>
+			{:else if card.acquiredAt}
+				<p class="draw-next">{m.cardAcquiredAt({ time: formatTime(card.acquiredAt) })}</p>
 			{/if}
-		</div>
+			<div class="draw-actions">
+				<button bind:this={closeButton} type="button" class="ghost" onclick={close}>
+					{m.cardClose()}
+				</button>
+				{#if collectionHref}
+					<a class="draw-collection" href={collectionHref} onclick={close}
+						>{m.cardViewCollection()} →</a
+					>
+				{/if}
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -215,17 +270,34 @@
 		background: rgb(0 0 0 / 0.62);
 	}
 	.draw-dialog {
+		position: relative;
+		z-index: 1;
 		display: grid;
 		justify-items: center;
 		gap: 0.9rem;
 		inline-size: min(100%, 380px);
 		max-block-size: 90dvh;
 		overflow-y: auto;
+		overscroll-behavior: contain;
+		scrollbar-width: none;
 		padding: 1.4rem 1.2rem 1.2rem;
 		border-radius: var(--radius-l);
 		background: var(--bg-raised);
 		box-shadow: var(--shadow-pop);
 		text-align: start;
+	}
+	.draw-dialog::-webkit-scrollbar {
+		display: none;
+	}
+	.draw-skip {
+		position: fixed;
+		z-index: 160;
+		inset-block-start: max(14px, env(safe-area-inset-top));
+		inset-inline-end: max(14px, env(safe-area-inset-right));
+		border-color: rgb(255 255 255 / 0.45);
+		background: rgb(16 18 25 / 0.72);
+		color: white;
+		backdrop-filter: blur(6px);
 	}
 	.draw-title {
 		margin: 0;
@@ -341,9 +413,78 @@
 	}
 
 	/* --- 裏 → 表のフリップ（引いた直後だけ） --- */
-	.draw-stage {
-		perspective: 1200px;
+	.draw-effect-shell {
+		position: relative;
 		inline-size: min(100%, 300px);
+	}
+	.draw-stage {
+		position: relative;
+		z-index: 1;
+		perspective: 1200px;
+		inline-size: 100%;
+		--shake-soft-x: 0.3px;
+		--shake-soft-angle: 0.05deg;
+		--shake-mid-x: 0.7px;
+		--shake-mid-angle: 0.12deg;
+		--shake-x: 1.2px;
+		--shake-angle: 0.2deg;
+		--shake-soft-speed: 0.34s;
+		--shake-mid-speed: 0.24s;
+		--shake-hard-speed: 0.17s;
+	}
+	.draw-stage.rarity-r {
+		--shake-soft-x: 0.45px;
+		--shake-soft-angle: 0.08deg;
+		--shake-mid-x: 1.1px;
+		--shake-mid-angle: 0.2deg;
+		--shake-x: 2px;
+		--shake-angle: 0.35deg;
+		--shake-soft-speed: 0.3s;
+		--shake-mid-speed: 0.19s;
+		--shake-hard-speed: 0.12s;
+	}
+	.draw-stage.rarity-sr {
+		--shake-soft-x: 0.65px;
+		--shake-soft-angle: 0.11deg;
+		--shake-mid-x: 1.6px;
+		--shake-mid-angle: 0.28deg;
+		--shake-x: 4px;
+		--shake-angle: 0.7deg;
+		--shake-soft-speed: 0.25s;
+		--shake-mid-speed: 0.14s;
+		--shake-hard-speed: 0.075s;
+	}
+	.draw-stage.rarity-ur {
+		--shake-soft-x: 0.9px;
+		--shake-soft-angle: 0.15deg;
+		--shake-mid-x: 2.3px;
+		--shake-mid-angle: 0.4deg;
+		--shake-x: 7px;
+		--shake-angle: 1.15deg;
+		--shake-soft-speed: 0.22s;
+		--shake-mid-speed: 0.11s;
+		--shake-hard-speed: 0.055s;
+	}
+	.draw-stage.rarity-aar {
+		--shake-soft-x: 1.2px;
+		--shake-soft-angle: 0.2deg;
+		--shake-mid-x: 3px;
+		--shake-mid-angle: 0.52deg;
+		--shake-x: 11px;
+		--shake-angle: 1.65deg;
+		--shake-soft-speed: 0.2s;
+		--shake-mid-speed: 0.085s;
+		--shake-hard-speed: 0.045s;
+	}
+	.draw-shake {
+		position: relative;
+	}
+	.draw-stage.charging .draw-shake {
+		animation:
+			draw-shake-soft var(--shake-soft-speed) ease-in-out infinite alternate,
+			draw-shake-mid var(--shake-mid-speed) ease-in-out var(--mid-delay) infinite alternate,
+			draw-shake-hard var(--shake-hard-speed) ease-in-out var(--hard-delay) infinite alternate;
+		will-change: transform;
 	}
 	.draw-flip {
 		position: relative;
@@ -395,6 +536,32 @@
 		}
 		100% {
 			filter: drop-shadow(0 0 0 var(--flash));
+		}
+	}
+	@keyframes draw-shake-soft {
+		from {
+			transform: translateX(calc(0px - var(--shake-soft-x)))
+				rotate(calc(0deg - var(--shake-soft-angle)));
+		}
+		to {
+			transform: translateX(var(--shake-soft-x)) rotate(var(--shake-soft-angle));
+		}
+	}
+	@keyframes draw-shake-mid {
+		from {
+			transform: translateX(calc(0px - var(--shake-mid-x)))
+				rotate(calc(0deg - var(--shake-mid-angle)));
+		}
+		to {
+			transform: translateX(var(--shake-mid-x)) rotate(var(--shake-mid-angle));
+		}
+	}
+	@keyframes draw-shake-hard {
+		from {
+			transform: translateX(calc(0px - var(--shake-x))) rotate(calc(0deg - var(--shake-angle)));
+		}
+		to {
+			transform: translateX(var(--shake-x)) rotate(var(--shake-angle));
 		}
 	}
 
@@ -463,6 +630,9 @@
 			transition: none;
 		}
 		.draw-stage.revealed {
+			animation: none;
+		}
+		.draw-stage.charging .draw-shake {
 			animation: none;
 		}
 	}
