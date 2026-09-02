@@ -95,6 +95,25 @@
 	flex: 1;
 	min-height: 0;
 }
+.composer.rich .composer-editor-panes {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+.composer.rich .composer-editor-panes.realtime-preview {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 12px;
+}
+.composer.rich .composer-editor-panes.realtime-preview .composer-write {
+	order: 0;
+	min-width: 0;
+}
+.composer.rich .composer-editor-panes.realtime-preview .composer-preview {
+	order: 1;
+	min-width: 0;
+}
 /* hidden（プレビュー中）の入力欄まで display で復活させないこと。 */
 .composer.rich .composer-write:not([hidden]) {
 	display: flex;
@@ -337,6 +356,25 @@
 .channel-suggestions .channel-suggestion-copy {
 	align-content: center;
 }
+.emoji-suggestions .emoji-suggestion-media {
+	display: grid;
+	flex: 0 0 32px;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+}
+.emoji-suggestions .emoji-suggestion-media .bluemoji-media,
+.emoji-suggestions .emoji-suggestion-media img,
+.emoji-suggestions .emoji-suggestion-media canvas {
+	display: block;
+	width: 30px;
+	height: 30px;
+	object-fit: contain;
+}
+.emoji-suggestions .emoji-suggestion-copy {
+	display: block;
+	min-width: 0;
+}
 /*
 	投稿範囲は必ず左端、送信は必ず右端で対にする。以前は狭い画面で折り返して
 	投稿範囲だけが1行を占めていたので、ここでは折り返さず文字数の方を削る。
@@ -483,12 +521,20 @@
 	opacity: 0.45;
 	cursor: not-allowed;
 }
-.composer-foot .draft-save:disabled {
-	opacity: 0.45;
-	cursor: not-allowed;
+.draft-control {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
 }
 .draft-open {
 	position: relative;
+}
+.draft-save-status {
+	color: var(--text-muted);
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
 }
 .draft-count {
 	position: absolute;
@@ -523,6 +569,23 @@
 	border-radius: var(--r-md);
 	background: var(--surface-1);
 	box-shadow: var(--shadow-pop);
+}
+.draft-save-current {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	min-height: 38px;
+	padding: 7px 12px;
+	border: 1px solid var(--accent);
+	border-radius: var(--r-sm);
+	background: var(--accent);
+	color: var(--text-on-accent);
+	font-weight: 700;
+}
+.draft-save-current:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
 }
 .draft-confirm {
 	width: min(100%, 380px);
@@ -1234,13 +1297,13 @@
 	color: var(--text);
 }
 .post-text h3 {
-	font-size: 17px;
+	font-size: 20px;
 }
 .post-text h4 {
-	font-size: 15px;
+	font-size: 18px;
 }
 .post-text h5 {
-	font-size: 1.05em;
+	font-size: 16px;
 }
 .post-text ul,
 .post-text ol {

@@ -320,6 +320,7 @@ export async function searchAvailableBluemoji(opts: {
 	q?: string;
 	limit: number;
 	cursor?: AvailableEmojiCursor;
+	signal?: AbortSignal;
 }) {
 	const s = current();
 	const q = opts.q?.trim().toLowerCase() ?? '';
@@ -352,6 +353,7 @@ export async function searchAvailableBluemoji(opts: {
 				excludeRepo: s.did,
 				limit: remaining,
 				cursor: appviewCursor,
+				signal: opts.signal,
 			});
 			emojis.push(...result.emojis);
 			appviewCursor = result.cursor;

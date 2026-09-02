@@ -47,6 +47,14 @@ describe('parseRichText', () => {
 		expect(ul && 'items' in ul && ul.items.map(flatten)).toEqual(['a', 'b']);
 	});
 
+	it('keeps all three supported heading levels distinct', () => {
+		expect(parseRichText('# h1\n## h2\n### h3').map((block) => block.type)).toEqual([
+			'h1',
+			'h2',
+			'h3',
+		]);
+	});
+
 	it('carries inline marks on the runs', () => {
 		const [block] = parseRichText('**ふとい**と*ななめ*と~~とりけし~~と`コード`');
 		const runs = 'runs' in block ? block.runs : [];
@@ -103,6 +111,11 @@ describe('parseRichText', () => {
 	it('marks the content warning range on the runs', () => {
 		const [block] = parseRichText('まえ 隠す あと', [], { start: 3, end: 5 });
 		const runs = 'runs' in block ? block.runs : [];
-		expect(runs.filter((run) => run.contentWarning).map((run) => run.text).join('')).toBe('隠す');
+		expect(
+			runs
+				.filter((run) => run.contentWarning)
+				.map((run) => run.text)
+				.join(''),
+		).toBe('隠す');
 	});
 });

@@ -32,6 +32,7 @@
 		contentWarningLabelsEnabled = false,
 		selfLabels = $bindable<string[]>([]),
 		mode = 'rich',
+		realtimePreviewEnabled = false,
 		onsubmit,
 		onpaste,
 		tools,
@@ -55,12 +56,15 @@
 		 * 返信や引用の InlinePostComposer は従来どおり rich のまま。
 		 */
 		mode?: 'simple' | 'rich';
+		/** ポストモーダルの広幅時だけ、入力とプレビューを常時並べる。 */
+		realtimePreviewEnabled?: boolean;
 		onsubmit?: () => void;
 		onpaste?: (event: ClipboardEvent) => void;
 		tools?: Snippet;
 	} = $props();
 
 	let preview = $state(false);
+	let realtimePreview = $state(false);
 	let editor = $state<{
 		applyMarkdown: (format: MarkdownFormat) => void;
 		applyContentWarning: () => void;
@@ -75,9 +79,22 @@
 	$effect(() => {
 		if (mode === 'simple' && preview) preview = false;
 	});
+	$effect(() => {
+		if (!realtimePreviewEnabled || mode !== 'rich') {
+			realtimePreview = false;
+			return;
+		}
+		const media = window.matchMedia('(min-width: 1024px)');
+		const update = () => (realtimePreview = media.matches);
+		update();
+		media.addEventListener('change', update);
+		return () => media.removeEventListener('change', update);
+	});
 	let hasSelection = $state(false);
 	// 投稿時と同じ変換をかけ、[ラベル](URL)・生URL・メンションが facet になった状態を見せる
-	let parsed = $derived(preview ? parsePostText(value, mentions, channels, emojis) : undefined);
+	let parsed = $derived(
+		preview || realtimePreview ? parsePostText(value, mentions, channels, emojis) : undefined,
+	);
 	let contentWarning = $derived(parseContentWarning(parsed?.text ?? value));
 	let contentWarningError = $derived(
 		contentWarning.status === 'invalid'
@@ -90,7 +107,7 @@
 	);
 </script>
 
-{#if mode === 'rich'}
+{#if mode === 'rich' && !realtimePreview}
 	<div class="composer-tabs" role="tablist" aria-label={m.composerTabsAria()}>
 		<button
 			type="button"
@@ -108,76 +125,80 @@
 		>
 	</div>
 {/if}
-{#if preview}
-	<div class="post-text composer-preview">
-		{#if parsed?.text.trim()}<RichText text={parsed.text} facets={parsed.facets} />{:else}<p
-				class="muted"
-			>
-				{m.composerPreviewEmpty()}
-			</p>{/if}
-	</div>
-{/if}
-<!--
-	プレビュー中も入力UIを破棄しない。tools 内の画像・リンクカードエディタが
-	一時的なアンマウントで Object URL を解放し、復帰後に再読込できなくなるのを防ぐ。
--->
-<div class="composer-write" hidden={preview}>
-	<MentionTextarea
-		bind:this={editor}
-		bind:value
-		bind:mentions
-		bind:channels
-		bind:emojis
-		{mentionSuggestionsEnabled}
-		{channelSuggestionsEnabled}
-		{id}
-		{placeholder}
-		{ariaLabel}
-		{disabled}
-		{onsubmit}
-		{onpaste}
-		onselectionchange={(selected) => (hasSelection = selected)}
-	/>
-	<div class="composer-tools" class:with-leading={tools}>
-		{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}
-		<div class="composer-format-tools">
-			{#if emojiPickerEnabled}<button
-					bind:this={emojiButton}
-					class="icon-action"
-					class:active={emojiPickerOpen}
-					type="button"
-					{disabled}
-					aria-label={m.insertEmoji()}
-					title={m.insertEmoji()}
-					aria-haspopup="dialog"
-					aria-expanded={emojiPickerOpen}
-					onmousedown={(event) => event.preventDefault()}
-					onclick={() => (emojiPickerOpen = !emojiPickerOpen)}
-					><Icon name="emoji" size={17} /></button
-				>{/if}
-			{#if contentWarningEnabled}<button
-					bind:this={contentWarningButton}
-					class="icon-action content-warning-tool"
-					class:active={contentWarning.status === 'valid' || selfLabels.length > 0}
-					type="button"
-					disabled={disabled ||
-						(!contentWarningLabelsEnabled &&
-							(!hasSelection || contentWarning.status === 'invalid'))}
-					aria-label={contentWarningLabelsEnabled
-						? m.contentWarningMenuTitle()
-						: m.contentWarningSet()}
-					title={contentWarningLabelsEnabled ? m.contentWarningMenuTitle() : m.contentWarningSet()}
-					aria-haspopup={contentWarningLabelsEnabled ? 'menu' : undefined}
-					aria-expanded={contentWarningLabelsEnabled ? contentWarningPickerOpen : undefined}
-					onmousedown={(event) => event.preventDefault()}
-					onclick={() => {
-						if (contentWarningLabelsEnabled) contentWarningPickerOpen = !contentWarningPickerOpen;
-						else editor?.applyContentWarning();
-					}}><Icon name="warning" size={17} /></button
-				>{/if}
-			{#if mode === 'rich'}
-				<MarkdownPalette {disabled} onformat={(format) => editor?.applyMarkdown(format)} />
-			{/if}
+<div class="composer-editor-panes" class:realtime-preview={realtimePreview}>
+	{#if preview || realtimePreview}
+		<div class="post-text composer-preview">
+			{#if parsed?.text.trim()}<RichText text={parsed.text} facets={parsed.facets} />{:else}<p
+					class="muted"
+				>
+					{m.composerPreviewEmpty()}
+				</p>{/if}
+		</div>
+	{/if}
+	<!--
+		プレビュー中も入力UIを破棄しない。tools 内の画像・リンクカードエディタが
+		一時的なアンマウントで Object URL を解放し、復帰後に再読込できなくなるのを防ぐ。
+	-->
+	<div class="composer-write" hidden={preview && !realtimePreview}>
+		<MentionTextarea
+			bind:this={editor}
+			bind:value
+			bind:mentions
+			bind:channels
+			bind:emojis
+			{mentionSuggestionsEnabled}
+			{channelSuggestionsEnabled}
+			{id}
+			{placeholder}
+			{ariaLabel}
+			{disabled}
+			{onsubmit}
+			{onpaste}
+			onselectionchange={(selected) => (hasSelection = selected)}
+		/>
+		<div class="composer-tools" class:with-leading={tools}>
+			{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}
+			<div class="composer-format-tools">
+				{#if emojiPickerEnabled}<button
+						bind:this={emojiButton}
+						class="icon-action"
+						class:active={emojiPickerOpen}
+						type="button"
+						{disabled}
+						aria-label={m.insertEmoji()}
+						title={m.insertEmoji()}
+						aria-haspopup="dialog"
+						aria-expanded={emojiPickerOpen}
+						onmousedown={(event) => event.preventDefault()}
+						onclick={() => (emojiPickerOpen = !emojiPickerOpen)}
+						><Icon name="emoji" size={17} /></button
+					>{/if}
+				{#if contentWarningEnabled}<button
+						bind:this={contentWarningButton}
+						class="icon-action content-warning-tool"
+						class:active={contentWarning.status === 'valid' || selfLabels.length > 0}
+						type="button"
+						disabled={disabled ||
+							(!contentWarningLabelsEnabled &&
+								(!hasSelection || contentWarning.status === 'invalid'))}
+						aria-label={contentWarningLabelsEnabled
+							? m.contentWarningMenuTitle()
+							: m.contentWarningSet()}
+						title={contentWarningLabelsEnabled
+							? m.contentWarningMenuTitle()
+							: m.contentWarningSet()}
+						aria-haspopup={contentWarningLabelsEnabled ? 'menu' : undefined}
+						aria-expanded={contentWarningLabelsEnabled ? contentWarningPickerOpen : undefined}
+						onmousedown={(event) => event.preventDefault()}
+						onclick={() => {
+							if (contentWarningLabelsEnabled) contentWarningPickerOpen = !contentWarningPickerOpen;
+							else editor?.applyContentWarning();
+						}}><Icon name="warning" size={17} /></button
+					>{/if}
+				{#if mode === 'rich'}
+					<MarkdownPalette {disabled} onformat={(format) => editor?.applyMarkdown(format)} />
+				{/if}
+			</div>
 		</div>
 	</div>
 </div>

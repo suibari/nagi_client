@@ -31,6 +31,7 @@ export type ComposerSnapshot = {
 };
 export type DraftEntry =
 	(DraftSummary & { storage: 'appview' }) | (StoredDraft & { storage: 'legacy-device' });
+export type DraftSaveTarget = { id: string; createdAt: string };
 
 const remoteContent = (draft: StoredDraft | ComposerSnapshot): DraftContent => ({
 	text: draft.text,
@@ -86,17 +87,25 @@ class Drafts {
 		].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 	}
 
-	async save(did: string, snapshot: ComposerSnapshot) {
+	async save(
+		did: string,
+		snapshot: ComposerSnapshot,
+		target?: DraftSaveTarget,
+	): Promise<DraftSaveTarget & { updatedAt: string }> {
 		if (snapshot.attachments.length) throw new DraftStorageError('images');
 		const now = new Date().toISOString();
-		const id = crypto.randomUUID();
+		const id = target?.id ?? crypto.randomUUID();
+		const existing = this.entries.find((entry) => entry.id === id);
+		const createdAt = target?.createdAt ?? existing?.createdAt ?? now;
 		try {
 			const saved = await putRemoteDraft({
 				id,
 				content: remoteContent(snapshot),
-				createdAt: now,
+				createdAt,
 				updatedAt: now,
 			});
+			if (this.#did !== did)
+				return { id: saved.id, createdAt: saved.createdAt, updatedAt: saved.updatedAt };
 			this.entries = [
 				{
 					id: saved.id,
@@ -104,10 +113,11 @@ class Drafts {
 					linkCardCount: saved.linkCards.length,
 					createdAt: saved.createdAt,
 					updatedAt: saved.updatedAt,
-					storage: 'appview',
+					storage: 'appview' as const,
 				},
-				...this.entries,
-			];
+				...this.entries.filter((entry) => entry.id !== saved.id),
+			].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+			return { id: saved.id, createdAt: saved.createdAt, updatedAt: saved.updatedAt };
 		} catch (error) {
 			preferences.noteScopeError(error);
 			if (error instanceof ApiRequestError && error.code === 'draft_limit')

@@ -7,7 +7,15 @@
 	import { portal } from '$lib/actions/portal';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
 	import ChannelSuggestionList from './ChannelSuggestionList.svelte';
+	import EmojiSuggestionList from './EmojiSuggestionList.svelte';
 	import type { MarkdownFormat } from './MarkdownPalette.svelte';
+	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
+	import {
+		detectComposerSuggestionToken,
+		replaceEmojiSuggestion,
+		type ComposerSuggestionToken,
+	} from '$lib/post/composer-suggestion';
+	import { textareaCaretRect } from './textarea-caret';
 	import {
 		applyContentWarning as wrapContentWarning,
 		remapContentWarningSelection,
@@ -63,16 +71,25 @@
 			matches: (channel, query) => channel.name.toLowerCase().includes(query),
 		},
 	);
+	const emojiSuggest = createTypeaheadSearch<EmojiView>(
+		(query, signal) =>
+			searchAvailableBluemoji({ q: query, limit: 10, signal }).then((result) => result.emojis),
+		{
+			debounceMs: 80,
+			leading: true,
+			matches: (emoji, query) =>
+				displayEmojiName(emoji.name).toLowerCase().includes(query.toLowerCase()),
+		},
+	);
 	let activeIndex = $state(0);
 	let suggestionLayer = $state<HTMLDivElement>();
 	let suggestionStyle = $state('');
 	let suggestionPositioned = $state(false);
-	let token = $state<
-		| { kind: 'mention'; start: number; end: number; query: string }
-		| { kind: 'channel'; start: number; end: number; query: string; marker: '#' | '＃' }
-	>();
+	let token = $state<ComposerSuggestionToken>();
 	// いま候補を出している方（トークンの種類で決まる）。件数・確定はこれ経由で扱う。
-	let activeSuggest = $derived(token?.kind === 'channel' ? channelSuggest : suggest);
+	let activeSuggest = $derived(
+		token?.kind === 'channel' ? channelSuggest : token?.kind === 'emoji' ? emojiSuggest : suggest,
+	);
 
 	function shiftedSelections<T extends { start: number; end: number }>(
 		selections: T[],
@@ -111,6 +128,7 @@
 		suggestionPositioned = false;
 		suggest.reset();
 		channelSuggest.reset();
+		emojiSuggest.reset();
 		activeIndex = 0;
 	}
 
@@ -121,19 +139,20 @@
 		const updatePosition = () => {
 			frame = undefined;
 			const rect = textarea.getBoundingClientRect();
+			const caret = textareaCaretRect(textarea);
 			const margin = 12;
 			const gap = 4;
-			const width = Math.min(rect.width, Math.max(0, window.innerWidth - margin * 2));
-			const belowSpace = window.innerHeight - margin - rect.bottom - gap;
-			const aboveSpace = rect.top - gap - margin;
+			const width = Math.min(360, rect.width, Math.max(0, window.innerWidth - margin * 2));
+			const belowSpace = window.innerHeight - margin - caret.bottom - gap;
+			const aboveSpace = caret.top - gap - margin;
 			const openBelow = belowSpace >= 280 || belowSpace >= aboveSpace;
 			const maxHeight = Math.max(0, Math.min(280, openBelow ? belowSpace : aboveSpace));
 			const height = Math.min(layer.offsetHeight, maxHeight);
 			const left = Math.min(
-				Math.max(margin, rect.left),
+				Math.max(margin, caret.left),
 				Math.max(margin, window.innerWidth - margin - width),
 			);
-			const top = openBelow ? rect.bottom + gap : Math.max(margin, rect.top - gap - height);
+			const top = openBelow ? caret.bottom + gap : Math.max(margin, caret.top - gap - height);
 			suggestionStyle = `left:${left}px;top:${top}px;width:${width}px;--suggestion-max-height:${maxHeight}px;`;
 			suggestionPositioned = true;
 		};
@@ -157,33 +176,29 @@
 	function detectToken() {
 		onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd);
 		const caret = textarea.selectionStart;
-		const match = mentionSuggestionsEnabled
-			? /(^|[\s(\[{])@([^\s@]*)$/.exec(value.slice(0, caret))
-			: undefined;
-		if (match?.[2]) {
-			token = {
-				kind: 'mention',
-				start: caret - match[2].length - 1,
-				end: caret,
-				query: match[2],
-			};
+		const next = detectComposerSuggestionToken(value, caret, {
+			mentions: mentionSuggestionsEnabled,
+			channels: channelSuggestionsEnabled,
+		});
+		if (next?.kind === 'mention') {
+			token = next;
 			channelSuggest.reset();
-			suggest.search(match[2], () => (activeIndex = 0));
+			emojiSuggest.reset();
+			suggest.search(next.query, () => (activeIndex = 0));
 			return;
 		}
-		const channelMatch = channelSuggestionsEnabled
-			? /(^|[\s(\[{])([#＃])([^\s#＃]*)$/.exec(value.slice(0, caret))
-			: undefined;
-		if (channelMatch?.[3]) {
-			token = {
-				kind: 'channel',
-				start: caret - channelMatch[3].length - 1,
-				end: caret,
-				query: channelMatch[3],
-				marker: channelMatch[2] as '#' | '＃',
-			};
+		if (next?.kind === 'channel') {
+			token = next;
 			suggest.reset();
-			channelSuggest.search(channelMatch[3], () => (activeIndex = 0));
+			emojiSuggest.reset();
+			channelSuggest.search(next.query, () => (activeIndex = 0));
+			return;
+		}
+		if (next?.kind === 'emoji') {
+			token = next;
+			suggest.reset();
+			channelSuggest.reset();
+			emojiSuggest.search(next.query, () => (activeIndex = 0));
 			return;
 		}
 		close();
@@ -427,6 +442,24 @@
 		});
 	}
 
+	function chooseEmoji(emoji: EmojiView) {
+		if (!token || token.kind !== 'emoji') return;
+		const replacement = replaceEmojiSuggestion(value, token, emoji);
+		value = replacement.text;
+		mentions = shiftedSelections(mentions, token.start, token.end, replacement.delta);
+		channels = shiftedSelections(channels, token.start, token.end, replacement.delta);
+		emojis = [
+			...shiftedSelections(emojis, token.start, token.end, replacement.delta),
+			{ start: replacement.start, end: replacement.end, emoji },
+		].sort((a, b) => a.start - b.start);
+		const caret = replacement.end;
+		close();
+		requestAnimationFrame(() => {
+			textarea.focus();
+			textarea.setSelectionRange(caret, caret);
+		});
+	}
+
 	function handleKeydown(event: KeyboardEvent) {
 		// Ctrl/Cmd+Enter は投稿送信。メンション候補の Enter 確定より優先させる。
 		// IME 変換確定中（isComposing）は誤爆を避けるため無視する。
@@ -467,6 +500,7 @@
 		} else if (event.key === 'Enter' || event.key === 'Tab') {
 			event.preventDefault();
 			if (token.kind === 'channel') chooseChannel(channelSuggest.items[activeIndex]);
+			else if (token.kind === 'emoji') chooseEmoji(emojiSuggest.items[activeIndex]);
 			else choose(suggest.items[activeIndex]);
 		} else if (event.key === 'Escape') {
 			event.preventDefault();
@@ -509,12 +543,19 @@
 					{activeIndex}
 					onchoose={choose}
 				/>
-			{:else}
+			{:else if token.kind === 'channel'}
 				<ChannelSuggestionList
 					channels={channelSuggest.items}
 					pending={channelSuggest.pending}
 					{activeIndex}
 					onchoose={chooseChannel}
+				/>
+			{:else}
+				<EmojiSuggestionList
+					emojis={emojiSuggest.items}
+					pending={emojiSuggest.pending}
+					{activeIndex}
+					onchoose={chooseEmoji}
 				/>
 			{/if}
 		</div>

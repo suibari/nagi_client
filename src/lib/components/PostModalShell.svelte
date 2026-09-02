@@ -152,6 +152,11 @@
 		background: var(--surface-2);
 		color: var(--text);
 	}
+	@media (min-width: 1024px) {
+		.post-modal.rich {
+			width: min(calc(100vw - 32px), 1040px);
+		}
+	}
 	@media (max-width: 767px) {
 		.post-modal-backdrop {
 			padding: 8px 8px calc(8px + env(safe-area-inset-bottom));

@@ -472,7 +472,14 @@ export const searchActorsTypeahead = async (
 	return res.json() as Promise<SearchActorsResult>;
 };
 export const searchEmojis = (
-	opts: { q?: string; repo?: string; excludeRepo?: string; limit?: number; cursor?: string } = {},
+	opts: {
+		q?: string;
+		repo?: string;
+		excludeRepo?: string;
+		limit?: number;
+		cursor?: string;
+		signal?: AbortSignal;
+	} = {},
 ) => {
 	const params = new URLSearchParams();
 	if (opts.q) params.set('q', opts.q);
@@ -483,7 +490,7 @@ export const searchEmojis = (
 	return call<{ emojis: EmojiView[]; cursor?: string }>(
 		'com.suibari.nagi.searchEmojis',
 		`/xrpc/com.suibari.nagi.searchEmojis?${params}`,
-		{},
+		{ signal: opts.signal },
 		'none',
 	);
 };

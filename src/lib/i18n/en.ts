@@ -355,8 +355,12 @@ export const en: Messages = {
 
 	// drafts
 	draftSave: 'Save as draft',
+	draftSaveCurrent: 'Save current content as a draft',
+	draftSaving: 'Saving',
+	draftSaved: 'Saved',
 	draftSaveFailed: 'Could not save the draft',
-	draftImagesUnsupported: 'Drafts with images cannot be saved. Remove the images first.',
+	draftImagesUnsupported:
+		'Images are not saved in drafts. Text and other non-image content will be saved.',
 	draftLimitReached: (p: { max: number }) => `You can keep up to ${p.max} drafts`,
 	draftListOpen: 'Drafts',
 	draftListTitle: 'Drafts',
@@ -1043,6 +1047,7 @@ export const en: Messages = {
 	channelTabMedia: 'Media',
 	channelMediaEmpty: 'No posts with images in this channel yet.',
 	channelSuggestions: 'Channel suggestions',
+	emojiSuggestions: 'Custom emoji suggestions',
 	suggestionsLoading: 'Looking for matches…',
 	suggestionsEmpty: 'No matching suggestions',
 	channelBadge: (o: { name: string }) => `#${o.name}`,

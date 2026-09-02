@@ -5,7 +5,17 @@
 	import type { DraftEntry } from '$lib/drafts/drafts.svelte';
 	import Icon from './shell/Icon.svelte';
 
-	let { onrestore, onclose }: { onrestore: (id: string) => void; onclose: () => void } = $props();
+	let {
+		cansave,
+		onsavecurrent,
+		onrestore,
+		onclose,
+	}: {
+		cansave: boolean;
+		onsavecurrent: () => void | Promise<void>;
+		onrestore: (id: string) => void;
+		onclose: () => void;
+	} = $props();
 	let confirmingId = $state<string | null>(null);
 	let closeButton: HTMLButtonElement;
 
@@ -82,6 +92,10 @@
 				onclick={onclose}><Icon name="close" size={18} /></button
 			>
 		</header>
+		<button class="draft-save-current" type="button" disabled={!cansave} onclick={onsavecurrent}>
+			<Icon name="draft" size={17} />
+			<span>{m.draftSaveCurrent()}</span>
+		</button>
 		{#if !drafts.entries.length}
 			<p class="draft-empty">{m.draftListEmpty()}</p>
 		{:else}

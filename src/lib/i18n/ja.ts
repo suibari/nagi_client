@@ -367,8 +367,11 @@ export const ja = {
 
 	// drafts
 	draftSave: '下書きに保存',
+	draftSaveCurrent: '現在の内容を下書きに保存',
+	draftSaving: '保存中',
+	draftSaved: '保存済み',
 	draftSaveFailed: '下書きを保存できませんでした',
-	draftImagesUnsupported: '画像付きの下書きは保存できません。画像を外してから保存してください。',
+	draftImagesUnsupported: '画像は下書きに保存されません。本文など画像以外の内容を保存します。',
 	draftLimitReached: (p: { max: number }) => `下書きは${p.max}件まで保存できます`,
 	draftListOpen: '下書き一覧',
 	draftListTitle: '下書き',
@@ -1070,6 +1073,7 @@ export const ja = {
 	channelTabMedia: 'メディア',
 	channelMediaEmpty: 'このチャンネルにはまだ画像つきの投稿がありません。',
 	channelSuggestions: 'チャンネル候補',
+	emojiSuggestions: 'カスタム絵文字候補',
 	suggestionsLoading: '候補を探しています…',
 	suggestionsEmpty: '一致する候補はありません',
 	channelBadge: (o: { name: string }) => `#${o.name}`,

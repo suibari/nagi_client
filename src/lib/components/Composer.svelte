@@ -29,7 +29,12 @@
 		type EmojiSelection,
 		type MentionSelection,
 	} from '$lib/atproto/facets';
-	import { drafts, DraftStorageError } from '$lib/drafts/drafts.svelte';
+	import {
+		drafts,
+		DraftStorageError,
+		type ComposerSnapshot,
+		type DraftSaveTarget,
+	} from '$lib/drafts/drafts.svelte';
 	import DraftListDialog from './DraftListDialog.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
 	import { getStandardSiteEnabled, hasStandardSiteScope } from '$lib/standardsite/preferences';
@@ -82,6 +87,9 @@
 	const quotePick = new QuotePick();
 	let draftListOpen = $state(false);
 	let draftError = $state('');
+	let draftSaveStatus = $state<'idle' | 'saving' | 'saved'>('idle');
+	let activeDraftTarget = $state<DraftSaveTarget>();
+	let lastSavedDraftKey = $state('');
 	let pendingRestoreId = $state<string | null>(null);
 	let loadedDid = $state<string | undefined>(undefined);
 	let crosspostReady = $state(false);
@@ -89,10 +97,25 @@
 	let silentReply = $state(false);
 	let selfLabels = $state<string[]>([]);
 	let publishingLoadVersion = 0;
+	let draftSaveInFlight = false;
+	let draftSaveTask: Promise<boolean> | undefined;
+	let pendingAutoSave = false;
 	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
 	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 
 	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
+	let draftSaveable = $derived(Boolean(text.trim() || linkCards.length || quotePick.ref));
+	let draftKey = $derived(
+		JSON.stringify({
+			text,
+			mentions,
+			channels: channels.map(({ start, end, uri, name }) => ({ start, end, uri, name })),
+			emojis: emojis.map(({ start, end, emoji }) => ({ start, end, uri: emoji.uri })),
+			linkCards: linkCards.map(({ uri, title, description }) => ({ uri, title, description })),
+			dismissedUrls,
+			quoteUri: quotePick.ref?.uri,
+		}),
+	);
 	let hasEmbeds = $derived(
 		Boolean(
 			attachments.length ||
@@ -200,7 +223,23 @@
 		const did = $session?.did;
 		if (did === loadedDid) return;
 		loadedDid = did;
+		activeDraftTarget = undefined;
+		lastSavedDraftKey = '';
+		draftSaveStatus = 'idle';
 		void drafts.load(did);
+	});
+
+	$effect(() => {
+		const key = draftKey;
+		const did = $session?.did;
+		if (mode !== 'rich' || !did || !text.trim() || key === lastSavedDraftKey) {
+			if (draftSaveStatus !== 'saving')
+				draftSaveStatus = key === lastSavedDraftKey && Boolean(key) ? 'saved' : 'idle';
+			return;
+		}
+		if (draftSaveStatus !== 'saving') draftSaveStatus = 'idle';
+		const timer = setTimeout(() => void startDraftSave(key, draftSnapshot()), 1500);
+		return () => clearTimeout(timer);
 	});
 
 	$effect(() => {
@@ -242,38 +281,85 @@
 		botSilent = false;
 		silentReply = false;
 		selfLabels = [];
+		activeDraftTarget = undefined;
+		lastSavedDraftKey = '';
+		draftSaveStatus = 'idle';
 	}
 
-	async function saveDraft() {
-		if (empty || busy || !$session) return;
-		draftError = '';
-		// TODO(ATproto Spaces): Spaces対応後は、非公開のPDS下書きレコードからPDS Blobを
-		// 参照する方式で画像付き下書きを再実装する。Spaces対応前の未参照BlobはGCされ得るため、
-		// 暫定的なPDS Blob保存には利用しない。
-		if (attachments.length) {
-			draftError = m.draftImagesUnsupported();
-			return;
+	function draftSnapshot(): ComposerSnapshot {
+		return {
+			text,
+			// 画像Blobは現在のAppView下書き形式に含めない。本文などの保存は継続する。
+			attachments: [],
+			linkCards,
+			mentions,
+			channels,
+			emojis,
+			dismissedUrls,
+			quoteUri: quotePick.ref?.uri,
+		};
+	}
+
+	async function persistDraft(key: string, snapshot: ComposerSnapshot): Promise<boolean> {
+		const currentSession = $session;
+		if (!currentSession || busy || !draftSaveable) return false;
+		if (draftSaveInFlight) {
+			pendingAutoSave = true;
+			return false;
 		}
+		draftSaveInFlight = true;
+		draftSaveStatus = 'saving';
+		draftError = '';
 		try {
-			await drafts.save($session.did, {
-				text,
-				attachments,
-				linkCards,
-				mentions,
-				channels,
-				emojis,
-				dismissedUrls,
-				quoteUri: quotePick.ref?.uri,
-			});
-			clearComposer();
+			const saved = await drafts.save(currentSession.did, snapshot, activeDraftTarget);
+			if ($session?.did !== currentSession.did) return false;
+			activeDraftTarget = { id: saved.id, createdAt: saved.createdAt };
+			lastSavedDraftKey = key;
+			draftSaveStatus = draftKey === key ? 'saved' : 'idle';
+			return true;
 		} catch (e) {
+			draftSaveStatus = 'idle';
 			draftError =
 				e instanceof DraftStorageError && e.code === 'limit'
 					? m.draftLimitReached({ max: 30 })
 					: e instanceof DraftStorageError && e.code === 'images'
 						? m.draftImagesUnsupported()
 						: m.draftSaveFailed();
+			return false;
+		} finally {
+			draftSaveInFlight = false;
+			if (pendingAutoSave) {
+				pendingAutoSave = false;
+				if (mode === 'rich' && text.trim() && draftKey !== lastSavedDraftKey)
+					void startDraftSave(draftKey, draftSnapshot());
+			}
 		}
+	}
+
+	function startDraftSave(key: string, snapshot: ComposerSnapshot): Promise<boolean> {
+		if (draftSaveInFlight) {
+			pendingAutoSave = true;
+			return draftSaveTask ?? Promise.resolve(false);
+		}
+		const task = persistDraft(key, snapshot);
+		draftSaveTask = task;
+		void task.finally(() => {
+			if (draftSaveTask === task) draftSaveTask = undefined;
+		});
+		return task;
+	}
+
+	async function finishDraftSaves() {
+		while (draftSaveTask) {
+			const task = draftSaveTask;
+			await task.catch(() => false);
+			if (draftSaveTask === task) break;
+		}
+	}
+
+	async function saveDraft() {
+		if (!draftSaveable) return false;
+		return startDraftSave(draftKey, draftSnapshot());
 	}
 
 	async function restoreDraft(id: string) {
@@ -281,9 +367,13 @@
 			pendingRestoreId = id;
 			return;
 		}
+		await finishDraftSaves();
 		pendingRestoreId = null;
 		const draft = await drafts.restore(id);
 		if (!draft) return;
+		activeDraftTarget = undefined;
+		lastSavedDraftKey = '';
+		draftSaveStatus = 'idle';
 		draftListOpen = false;
 		draftError = '';
 		// previewUrl は保存していないので、blob から作り直す。解放は
@@ -307,6 +397,7 @@
 	async function confirmRestore() {
 		const id = pendingRestoreId;
 		if (!id) return;
+		await finishDraftSaves();
 		clearComposer();
 		await restoreDraft(id);
 	}
@@ -406,6 +497,10 @@
 				}
 			}
 			setLastPostScope(scope);
+			// 投稿開始前から進行中だった自動保存を待ち、その保存分も確実に片付ける。
+			await finishDraftSaves();
+			const savedDraftId = activeDraftTarget?.id;
+			if (savedDraftId) await drafts.remove(savedDraftId).catch(() => undefined);
 			clearComposer();
 			await Promise.resolve(onposted(created.uri)).catch(() => undefined);
 		} catch (e) {
@@ -550,6 +645,7 @@
 		contentWarningLabelsEnabled={!kossori}
 		bind:selfLabels
 		{mode}
+		realtimePreviewEnabled
 		onsubmit={() => submit()}
 		onpaste={(event) => {
 			// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
@@ -609,27 +705,24 @@
 		<div class="composer-status">
 			<span>{graphemes} / 3000</span>
 		</div>
-		{#if mode === 'rich'}
-			{#if drafts.count}
-				<button
-					class="icon-action draft-open"
-					type="button"
-					disabled={busy}
-					aria-label={m.draftListOpen()}
-					title={m.draftListOpen()}
-					onclick={() => (draftListOpen = true)}
-					><Icon name="draft" size={18} /><span class="draft-count">{drafts.count}</span></button
-				>
-			{/if}
+		<div class="draft-control">
 			<button
-				class="icon-action draft-save"
+				class="icon-action draft-open"
 				type="button"
-				disabled={busy || empty || attachments.length > 0}
-				aria-label={m.draftSave()}
-				title={attachments.length ? m.draftImagesUnsupported() : m.draftSave()}
-				onclick={saveDraft}><Icon name="draft" size={18} /></button
+				disabled={busy}
+				aria-label={m.draftListOpen()}
+				title={m.draftListOpen()}
+				onclick={() => (draftListOpen = true)}
+				><Icon name="draft" size={18} />{#if drafts.count}<span class="draft-count"
+						>{drafts.count}</span
+					>{/if}</button
 			>
-		{/if}
+			{#if mode === 'rich' && draftSaveStatus !== 'idle'}
+				<span class="draft-save-status" aria-live="polite">
+					{draftSaveStatus === 'saving' ? m.draftSaving() : m.draftSaved()}
+				</span>
+			{/if}
+		</div>
 		<div class="composer-submit-actions">
 			{#if composerHost.replyTarget}
 				<button
@@ -672,7 +765,7 @@
 			</button>
 		</div>
 	</div>
-	{#if attachments.length && mode === 'rich'}<p class="draft-image-note">
+	{#if attachments.length}<p class="draft-image-note">
 			{m.draftImagesUnsupported()}
 		</p>{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}{#if draftError}<p class="error">
@@ -696,7 +789,14 @@
 	/>
 {/if}
 {#if draftListOpen}
-	<DraftListDialog onrestore={restoreDraft} onclose={() => (draftListOpen = false)} />
+	<DraftListDialog
+		cansave={draftSaveable && !busy}
+		onsavecurrent={async () => {
+			if (await saveDraft()) draftListOpen = false;
+		}}
+		onrestore={restoreDraft}
+		onclose={() => (draftListOpen = false)}
+	/>
 {/if}
 {#if pendingRestoreId}
 	<div class="draft-backdrop" role="presentation">
