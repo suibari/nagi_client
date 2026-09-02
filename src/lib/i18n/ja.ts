@@ -715,8 +715,9 @@ export const ja = {
 	onboardingAgeIntro:
 		'18歳未満の方は、保護者の同意を得てご利用ください。任意で生年月日を登録すると、誕生日にプロフィールの風船やカードなどのお祝いがあります。',
 	moderationLoginRequired: 'コンテンツの表示設定を変えるにはログインしてください。',
+	moderationSectionTitle: 'コンテンツ表示設定',
 	moderationSettingsHelp:
-		'自動モデレーションによる判定と、投稿者が付けたセルフラベルごとに表示方法を選べます。この設定はこの端末に保存されます。',
+		'自動モデレーションによる判定と、投稿者が付けたセルフラベルごとに表示方法を選べます。この設定はアカウントに同期されます。',
 	moderationAutomaticLabel: '自動モデレーションが付けたラベル',
 	moderationSelfAiLabel: 'AI生成セルフラベル',
 	moderationSelfNsfwLabel: 'NSFWセルフラベル',

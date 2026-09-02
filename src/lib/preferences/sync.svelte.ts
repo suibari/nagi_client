@@ -1,5 +1,12 @@
 import { get } from 'svelte/store';
 import { applyAgeAssurance, clearAgeAssurance } from '$lib/moderation/age.svelte';
+import {
+	adoptModerationPreferences,
+	loadStoredModerationPreferences,
+	moderationPreferencesStorageKey,
+	setModerationPreferencesScope,
+	subscribeModerationPreferencesChanged,
+} from '$lib/moderation/preferences.svelte';
 import type { EmojiFavorite, PreferencesView } from '$lib/api/types';
 import type { ReactionChoice } from '$lib/emoji/reactionUsage';
 import {
@@ -145,6 +152,19 @@ function applyLanguagePreferences(did: string, view: PreferencesView) {
 	}
 }
 
+/** 3ラベルの表示方法は一組の設定として、updatedAt が新しい側を採用する。 */
+function applyModerationPreferences(did: string, view: PreferencesView) {
+	const local = loadStoredModerationPreferences(did);
+	const remote = view.moderationPreferences;
+	const remoteAt = view.moderationPreferencesUpdatedAt;
+	if (remote && remoteAt && remoteAt >= (local?.updatedAt ?? '')) {
+		adoptModerationPreferences(did, remote, remoteAt);
+		return;
+	}
+	if (local && local.updatedAt > (remoteAt ?? ''))
+		preferences.pushModerationPreferences(local, local.updatedAt);
+}
+
 let syncing: Promise<void> = Promise.resolve();
 let syncedDid: string | undefined;
 
@@ -161,6 +181,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		setFavoritesScope(undefined);
 		setFeedTabsScope(undefined);
 		setLanguagePreferencesScope(undefined);
+		setModerationPreferencesScope(undefined);
 		preferences.clear();
 		clearAgeAssurance();
 		syncing = Promise.resolve();
@@ -172,6 +193,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 	// （待つと、同期できない端末で guest のタブを見せたまま guest のキーへ書いてしまう）。
 	setFeedTabsScope(did);
 	setLanguagePreferencesScope(did);
+	setModerationPreferencesScope(did);
 	syncing = (async () => {
 		const view = await preferences.load();
 		if (!view || get(session)?.did !== did) return;
@@ -184,6 +206,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		applyFavorites(did, view);
 		applyFeedTabs(did, view);
 		applyLanguagePreferences(did, view);
+		applyModerationPreferences(did, view);
 		applyAgeAssurance(view.ageAssurance);
 	})();
 	return syncing;
@@ -209,6 +232,7 @@ export function clearLocalPreferenceCache(did: string) {
 		feedTabsStorageKey(),
 		feedTabsStorageKey(did),
 		languagePreferencesStorageKey(did),
+		moderationPreferencesStorageKey(did),
 		feedTabLabelsStorageKey,
 		newsStorageKey(),
 		newsStorageKey(did),
@@ -229,6 +253,7 @@ export function clearLocalPreferenceCache(did: string) {
 	setFavoritesScope(undefined);
 	setFeedTabsScope(undefined);
 	setLanguagePreferencesScope(undefined);
+	setModerationPreferencesScope(undefined);
 	syncedDid = undefined;
 }
 
@@ -258,8 +283,17 @@ preferences.subscribeMerged((view, sent) => {
 			},
 			view.languagePreferencesUpdatedAt,
 		);
+	if (sent.moderation && view.moderationPreferences && view.moderationPreferencesUpdatedAt)
+		adoptModerationPreferences(
+			did,
+			view.moderationPreferences,
+			view.moderationPreferencesUpdatedAt,
+		);
 });
 
 subscribeLanguagePreferencesChanged((value) =>
 	preferences.pushLanguagePreferences(value, value.updatedAt),
+);
+subscribeModerationPreferencesChanged((value) =>
+	preferences.pushModerationPreferences(value, value.updatedAt),
 );

@@ -688,8 +688,9 @@ export const en: Messages = {
 	onboardingAgeIntro:
 		"If you are under 18, please use Nagi with your parent or guardian's permission. If you optionally add your date of birth, your birthday brings profile balloons, a card, and other celebrations.",
 	moderationLoginRequired: 'Please log in to change how content is displayed.',
+	moderationSectionTitle: 'Content display settings',
 	moderationSettingsHelp:
-		'Choose how Nagi displays automated moderation decisions and labels added by post authors. These choices are stored on this device.',
+		'Choose how Nagi displays automated moderation decisions and labels added by post authors. These choices sync with your account.',
 	moderationAutomaticLabel: 'Automated moderation labels',
 	moderationSelfAiLabel: 'AI-generated self-labels',
 	moderationSelfNsfwLabel: 'NSFW self-labels',

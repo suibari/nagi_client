@@ -32,7 +32,7 @@
 			// AppViewの下書きはサーバ削除済み。移行未完了の画像付き旧下書きも端末から消す。
 			await drafts.clear(did).catch(() => undefined);
 			clearThemePreference();
-			clearModerationPreferences();
+			clearModerationPreferences(did);
 			clearLanguagePreferences();
 			clearLocalePreference();
 			// 既読位置とお気に入りは AppView と端末の両方にある。サーバー側は

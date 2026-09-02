@@ -10,7 +10,7 @@
 		type DeclareResult,
 	} from '$lib/moderation/age.svelte';
 
-	let { onsaved }: { onsaved?: () => void } = $props();
+	let { onsaved, hideHeading = false }: { onsaved?: () => void; hideHeading?: boolean } = $props();
 
 	let birthDate = $state('');
 	let parentalConsent = $state(false);
@@ -67,8 +67,8 @@
 	置き場所を増やしても安全なように、ガードは各ページではなくここに持たせる。
 -->
 {#if $session}
-	<section class="age-assurance">
-		<h2>{m.ageSectionTitle()}</h2>
+	<div class="age-assurance">
+		{#if !hideHeading}<h2>{m.ageSectionTitle()}</h2>{/if}
 		{#if ageAssurance.loading}
 			<p class="note">…</p>
 		{:else if ageAssurance.declared}
@@ -101,7 +101,7 @@
 				<button class="login" type="submit" disabled={busy || !birthDate}>{m.ageSubmit()}</button>
 			</form>
 		{/if}
-	</section>
+	</div>
 {/if}
 
 {#if confirming}

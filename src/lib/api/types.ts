@@ -383,6 +383,8 @@ export type PreferencesView = {
 	preferredName?: string;
 	languagePreferences?: SyncedLanguagePreferences;
 	languagePreferencesUpdatedAt?: string;
+	moderationPreferences?: SyncedModerationPreferences;
+	moderationPreferencesUpdatedAt?: string;
 	lastBookmarkFolderId?: string;
 	lastBookmarkFolderUpdatedAt?: string;
 	/**
@@ -402,6 +404,11 @@ export type SyncedLanguagePreferences = {
 	provider: 'kagi' | 'deepl' | 'google';
 	autoTranslate: boolean;
 };
+export type SyncedModerationPreferences = {
+	automatic: 'warn' | 'hide' | 'ignore';
+	selfAi: 'warn' | 'hide' | 'ignore';
+	selfNsfw: 'warn' | 'hide' | 'ignore';
+};
 export type PutPreferencesInput = {
 	readPositions?: RemoteReadPosition[];
 	emojiFavorites?: EmojiFavorite[];
@@ -419,6 +426,8 @@ export type PutPreferencesInput = {
 	preferredName?: string;
 	languagePreferences?: SyncedLanguagePreferences;
 	languagePreferencesUpdatedAt?: string;
+	moderationPreferences?: SyncedModerationPreferences;
+	moderationPreferencesUpdatedAt?: string;
 	lastBookmarkFolderId?: string | null;
 	lastBookmarkFolderUpdatedAt?: string;
 	/**

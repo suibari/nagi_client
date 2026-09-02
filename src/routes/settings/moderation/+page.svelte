@@ -12,9 +12,9 @@
 	} from '$lib/moderation/preferences.svelte';
 
 	const groups: Array<{ key: ModerationPreferenceKey; label: () => string }> = [
-		{ key: 'automatic', label: () => m.moderationAutomaticLabel() },
-		{ key: 'selfAi', label: () => m.moderationSelfAiLabel() },
 		{ key: 'selfNsfw', label: () => m.moderationSelfNsfwLabel() },
+		{ key: 'selfAi', label: () => m.moderationSelfAiLabel() },
+		{ key: 'automatic', label: () => m.moderationAutomaticLabel() },
 	];
 	const options: Array<{ value: ModerationPreference; label: () => string }> = [
 		{ value: 'warn', label: () => m.moderationOptionWarn() },
@@ -34,38 +34,54 @@
 	{#if !$session && $oauthReady}
 		<SignedOutNotice message={m.moderationLoginRequired()} />
 	{:else if $session}
-		<AgeAssuranceForm />
-		<p>{m.moderationSettingsHelp()}</p>
-		<!--
-			未成年に成人向けを見せない強制はサーバ側（AppView が返さない）。ここでの設定は
-			成人ユーザーの好みなので、未成年アカウントには効かないことを明示する。
-		-->
-		{#if !ageAssurance.loading && !ageAssurance.isAdult}
-			<p class="adult-locked">{m.ageAdultLocked()}</p>
-		{/if}
-		{#each groups as group (group.key)}
-			<fieldset class="theme-settings">
-				<legend>{group.label()}</legend>
-				<div class="theme-options">
-					{#each options as option (option.value)}
-						<label class:checked={moderationPreferences[group.key] === option.value}>
-							<input
-								type="radio"
-								name={group.key}
-								value={option.value}
-								checked={moderationPreferences[group.key] === option.value}
-								onchange={() => setModerationPreference(group.key, option.value)}
-							/>
-							<span>{option.label()}</span>
-						</label>
-					{/each}
-				</div>
-			</fieldset>
-		{/each}
+		<section class="moderation-section" aria-labelledby="content-display-heading">
+			<h2 id="content-display-heading">{m.moderationSectionTitle()}</h2>
+			<p>{m.moderationSettingsHelp()}</p>
+			<!--
+				未成年に成人向けを見せない強制はサーバ側（AppView が返さない）。ここでの設定は
+				成人ユーザーの好みなので、未成年アカウントには効かないことを明示する。
+			-->
+			{#if !ageAssurance.loading && !ageAssurance.isAdult}
+				<p class="adult-locked">{m.ageAdultLocked()}</p>
+			{/if}
+			{#each groups as group (group.key)}
+				<fieldset class="theme-settings">
+					<legend>{group.label()}</legend>
+					<div class="theme-options">
+						{#each options as option (option.value)}
+							<label class:checked={moderationPreferences[group.key] === option.value}>
+								<input
+									type="radio"
+									name={group.key}
+									value={option.value}
+									checked={moderationPreferences[group.key] === option.value}
+									onchange={() => setModerationPreference(group.key, option.value)}
+								/>
+								<span>{option.label()}</span>
+							</label>
+						{/each}
+					</div>
+				</fieldset>
+			{/each}
+		</section>
+		<section class="moderation-section" aria-labelledby="age-assurance-heading">
+			<h2 id="age-assurance-heading">{m.ageSectionTitle()}</h2>
+			<AgeAssuranceForm hideHeading />
+		</section>
 	{/if}
 </section>
 
 <style>
+	.moderation-section {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.moderation-section h2,
+	.moderation-section p {
+		margin: 0;
+	}
+
 	.adult-locked {
 		color: var(--text-muted);
 		font-size: 0.9rem;

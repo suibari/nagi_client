@@ -8,6 +8,7 @@ import type {
 	ReadPositionSection,
 	RemoteReadPosition,
 	SyncedLanguagePreferences,
+	SyncedModerationPreferences,
 } from '$lib/api/types';
 import type { ReadPosition } from '$lib/unread/watermark.svelte';
 import { session } from '$lib/oauth/session.svelte';
@@ -34,7 +35,13 @@ const isScopeDenied = (error: unknown) =>
 /** マージ後の確定値の通知。sent はこの送信に何を含めたか（含めていない項目で上書きしないため）。 */
 type MergedHandler = (
 	view: PreferencesView,
-	sent: { favorites: boolean; feedTabs: boolean; language: boolean; bookmark: boolean },
+	sent: {
+		favorites: boolean;
+		feedTabs: boolean;
+		language: boolean;
+		moderation: boolean;
+		bookmark: boolean;
+	},
 ) => void;
 
 class Preferences {
@@ -53,6 +60,7 @@ class Preferences {
 	#pendingFavorites: { choices: EmojiFavorite[]; updatedAt: string } | undefined;
 	#pendingFeedTabs: { tabs: FeedTab[]; updatedAt: string } | undefined;
 	#pendingLanguage: { value: SyncedLanguagePreferences; updatedAt: string } | undefined;
+	#pendingModeration: { value: SyncedModerationPreferences; updatedAt: string } | undefined;
 	#pendingBookmark: { folderId: string | null; updatedAt: string } | undefined;
 	#flushTimer: ReturnType<typeof setTimeout> | undefined;
 	#flushing: Promise<void> = Promise.resolve();
@@ -104,6 +112,7 @@ class Preferences {
 		this.#pendingFavorites = undefined;
 		this.#pendingFeedTabs = undefined;
 		this.#pendingLanguage = undefined;
+		this.#pendingModeration = undefined;
 		this.#pendingBookmark = undefined;
 		if (this.#flushTimer) clearTimeout(this.#flushTimer);
 		this.#flushTimer = undefined;
@@ -130,6 +139,19 @@ class Preferences {
 	pushLanguagePreferences(value: SyncedLanguagePreferences, updatedAt: string) {
 		if (!this.synced) return;
 		this.#pendingLanguage = { value, updatedAt };
+		this.#schedule();
+	}
+
+	pushModerationPreferences(value: SyncedModerationPreferences, updatedAt: string) {
+		if (!this.synced) return;
+		this.#pendingModeration = {
+			value: {
+				automatic: value.automatic,
+				selfAi: value.selfAi,
+				selfNsfw: value.selfNsfw,
+			},
+			updatedAt,
+		};
 		this.#schedule();
 	}
 
@@ -180,12 +202,15 @@ class Preferences {
 		const favorites = this.#pendingFavorites;
 		const feedTabs = this.#pendingFeedTabs;
 		const language = this.#pendingLanguage;
+		const moderation = this.#pendingModeration;
 		const bookmark = this.#pendingBookmark;
-		if (!positions.length && !favorites && !feedTabs && !language && !bookmark) return;
+		if (!positions.length && !favorites && !feedTabs && !language && !moderation && !bookmark)
+			return;
 		this.#pendingPositions.clear();
 		this.#pendingFavorites = undefined;
 		this.#pendingFeedTabs = undefined;
 		this.#pendingLanguage = undefined;
+		this.#pendingModeration = undefined;
 		this.#pendingBookmark = undefined;
 		const input: PutPreferencesInput = {
 			...(positions.length ? { readPositions: positions } : {}),
@@ -200,6 +225,12 @@ class Preferences {
 				? {
 						languagePreferences: language.value,
 						languagePreferencesUpdatedAt: language.updatedAt,
+					}
+				: {}),
+			...(moderation
+				? {
+						moderationPreferences: moderation.value,
+						moderationPreferencesUpdatedAt: moderation.updatedAt,
 					}
 				: {}),
 			...(bookmark
@@ -217,6 +248,7 @@ class Preferences {
 				favorites: Boolean(favorites),
 				feedTabs: Boolean(feedTabs),
 				language: Boolean(language),
+				moderation: Boolean(moderation),
 				bookmark: Boolean(bookmark),
 			});
 		} catch (error) {
@@ -234,6 +266,7 @@ class Preferences {
 			if (favorites && !this.#pendingFavorites) this.#pendingFavorites = favorites;
 			if (feedTabs && !this.#pendingFeedTabs) this.#pendingFeedTabs = feedTabs;
 			if (language && !this.#pendingLanguage) this.#pendingLanguage = language;
+			if (moderation && !this.#pendingModeration) this.#pendingModeration = moderation;
 			if (bookmark && !this.#pendingBookmark) this.#pendingBookmark = bookmark;
 		}
 	}
