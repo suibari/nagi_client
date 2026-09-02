@@ -36,6 +36,7 @@
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import { privateList } from '$lib/private-list/private-list.svelte';
+	import BirthdayBalloons from '$lib/components/BirthdayBalloons.svelte';
 
 	// 日記・カードはポストではないので Feed には載らない。タブだけ同じ並びに足す。
 	type ProfileTab = ProfileFeedFilter | 'diary' | 'cards' | 'bookmarks';
@@ -217,6 +218,10 @@
 		return () => clearInterval(timer);
 	});
 </script>
+
+{#key did}
+	{#if profile?.isBirthday}<BirthdayBalloons />{/if}
+{/key}
 
 {#if (tab === 'reactions' ? reactionFeed?.error : feed?.error) && !profile}
 	<div class="state error">{tab === 'reactions' ? reactionFeed?.error : feed?.error}</div>

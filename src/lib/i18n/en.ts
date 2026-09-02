@@ -670,7 +670,7 @@ export const en: Messages = {
 	ageConfirmSubmit: 'Register',
 	ageYourBirthDate: 'Your date of birth',
 	ageBirthDatePrivate:
-		'This is never shown to other users. It is used only to decide what to display for your age.',
+		'Your date of birth stays private and is never shown to other users. On your birthday, balloons appear on your profile and you receive a card and other celebrations. The balloons reveal the month and day, but never your birth year or age.',
 	ageBirthDateLabel: 'Date of birth',
 	ageOnceOnlyNote: 'You can set this only once; it cannot be changed later.',
 	ageParentalConsentLabel: "I am under 18 and have my parent or guardian's permission.",
@@ -681,7 +681,7 @@ export const en: Messages = {
 	ageErrorFailed: 'Could not save. Please try again later.',
 	ageAdultLocked: 'Adult content is not shown to accounts under 18.',
 	onboardingAgeIntro:
-		"If you are under 18, please use Nagi with your parent or guardian's permission.",
+		"If you are under 18, please use Nagi with your parent or guardian's permission. If you optionally add your date of birth, your birthday brings profile balloons, a card, and other celebrations.",
 	moderationLoginRequired: 'Please log in to change how content is displayed.',
 	moderationSettingsHelp:
 		'Choose how Nagi displays automated moderation decisions and labels added by post authors. These choices are stored on this device.',

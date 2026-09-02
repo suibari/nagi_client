@@ -468,8 +468,9 @@
 		(records in a PDS are readable by anyone).
 	</li>
 	<li>
-		<strong>It is never shown to other users.</strong> It is used only to decide what to display for your
-		age.
+		<strong>Your full date of birth, birth year, and age are never shown to other users.</strong> It is
+		used for age-based display controls and birthday celebrations such as a card. Because balloons appear
+		on your profile on your birthday, people who visit that day can learn the month and day.
 	</li>
 	<li>Deleting all your account data deletes your date of birth too.</li>
 	<li>You can set it only once and cannot change it afterwards.</li>

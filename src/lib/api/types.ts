@@ -213,6 +213,8 @@ export type NewsPage = Page<NewsView>;
 export type ProfileFeedFilter = 'posts' | 'replies' | 'media' | 'reactions';
 export type ProfileDetail = ActorView & {
 	postCount: number;
+	/** 当日だけ true。非公開の生年月日・生年・月日は返らない。 */
+	isBirthday?: boolean;
 	firstPostAt?: string;
 	joinedAt?: string;
 	/** botたんの自動分析コメント。閲覧者の言語に合わせた本文（無ければ undefined）。 */

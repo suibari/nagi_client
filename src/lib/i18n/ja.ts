@@ -697,7 +697,7 @@ export const ja = {
 	ageConfirmSubmit: '登録する',
 	ageYourBirthDate: '登録した生年月日',
 	ageBirthDatePrivate:
-		'この情報は他のユーザーには公開されません。年齢に応じた表示の切り替えにだけ使います。',
+		'生年月日は非公開情報で、他のユーザーには表示されません。誕生日当日はプロフィールに風船が飛び、カードなどのお祝いが届きます。風船の表示から誕生日の月日は分かりますが、生年や年齢は公開されません。',
 	ageBirthDateLabel: '生年月日',
 	ageOnceOnlyNote: '登録できるのは1度だけで、あとから変更できません。',
 	ageParentalConsentLabel: '18歳未満です。保護者の同意を得ています。',
@@ -707,7 +707,8 @@ export const ja = {
 	ageErrorAlreadySet: 'すでに登録済みのため変更できません。',
 	ageErrorFailed: '登録できませんでした。時間をおいて試してください。',
 	ageAdultLocked: '成人向けのコンテンツは、18歳未満のアカウントには表示されません。',
-	onboardingAgeIntro: '18歳未満の方は、保護者の同意を得てご利用ください。',
+	onboardingAgeIntro:
+		'18歳未満の方は、保護者の同意を得てご利用ください。任意で生年月日を登録すると、誕生日にプロフィールの風船やカードなどのお祝いがあります。',
 	moderationLoginRequired: 'コンテンツの表示設定を変えるにはログインしてください。',
 	moderationSettingsHelp:
 		'自動モデレーションによる判定と、投稿者が付けたセルフラベルごとに表示方法を選べます。この設定はこの端末に保存されます。',

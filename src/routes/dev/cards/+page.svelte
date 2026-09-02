@@ -91,6 +91,18 @@
 	}
 
 	const anniversaryShowcase: CardView[] = [
+		anniversary(17, 'ハッピーバースデー!', 'Happy Birthday!', {
+			attribute: 'light',
+			atk: 1000,
+			def: 3000,
+			nameJa: 'ハッピーバースデー! 2026',
+			art: 'anniv-hbd',
+			textJa:
+				'あなたが生まれた日を、今年もここで祝える一枚。今日の主役へ、ありったけの肯定とおめでとうを。',
+			textEn:
+				"A card celebrating the day you were born, here again this year. Every affirmation and happy wish goes to today's star.",
+			commentJa: 'ハッピーバースデー！ 生まれてきてくれて、Nagiに来てくれてありがとう。',
+		}),
 		anniversary(13, 'ハロウィン', 'Halloween', {
 			art: 'anniv-halloween',
 			commentJa: 'トリックオアトリート！ お菓子くれなきゃ、ずっと隣にいちゃうよ。',
@@ -150,8 +162,8 @@
 		{ id: 'review', label: '見返し（N）', note: 'draw なし: 演出なしで最初から表' },
 		{
 			id: 'anniversary',
-			label: '記念日（背景あり）',
-			note: 'NEW CARD ではなく見出しを出す。UR 相当の演出＋背景画像',
+			label: '誕生日（背景あり）',
+			note: 'ハッピーバースデー見出し。UR 相当の演出＋anniv-hbd背景',
 		},
 		{
 			id: 'anniversary-pending',
