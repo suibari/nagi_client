@@ -711,6 +711,7 @@ export const ja = {
 	ageAdultLocked: '成人向けのコンテンツは、18歳未満のアカウントには表示されません。',
 	onboardingAgeIntro:
 		'Nagiは13歳以上の方がご利用いただけます。18歳未満の方は保護者の同意を得てご利用ください。',
+	moderationLoginRequired: 'コンテンツの表示設定を変えるにはログインしてください。',
 	moderationSettingsHelp:
 		'自動モデレーションによる判定と、投稿者が付けたセルフラベルごとに表示方法を選べます。この設定はこの端末に保存されます。',
 	moderationAutomaticLabel: '自動モデレーションが付けたラベル',

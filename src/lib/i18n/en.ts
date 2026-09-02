@@ -683,6 +683,7 @@ export const en: Messages = {
 	ageAdultLocked: 'Adult content is not shown to accounts under 18.',
 	onboardingAgeIntro:
 		"Nagi is for people aged 13 and over. If you are under 18, please use it with your parent or guardian's permission.",
+	moderationLoginRequired: 'Please log in to change how content is displayed.',
 	moderationSettingsHelp:
 		'Choose how Nagi displays automated moderation decisions and labels added by post authors. These choices are stored on this device.',
 	moderationAutomaticLabel: 'Automated moderation labels',

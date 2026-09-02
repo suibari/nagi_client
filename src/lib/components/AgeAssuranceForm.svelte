@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import ToggleSwitch from './ToggleSwitch.svelte';
 	import AgeConfirmDialog from './AgeConfirmDialog.svelte';
 	import {
@@ -61,41 +62,47 @@
 	}
 </script>
 
-<section class="age-assurance">
-	<h2>{m.ageSectionTitle()}</h2>
-	{#if ageAssurance.loading}
-		<p class="note">…</p>
-	{:else if ageAssurance.declared}
-		<p class="note">{ageAssurance.isAdult ? m.ageDeclaredAdult() : m.ageDeclaredMinor()}</p>
-		{#if ageAssurance.birthDate}
-			<dl class="declared">
-				<dt>{m.ageYourBirthDate()}</dt>
-				<dd>{formatBirthDate(ageAssurance.birthDate)}</dd>
-			</dl>
-		{/if}
-		<p class="note">{m.ageBirthDatePrivate()}</p>
-	{:else}
-		<p class="note">{m.ageUndeclared()}</p>
-		<p class="note">{m.ageBirthDatePrivate()}</p>
-		<form onsubmit={requestConfirm}>
-			<label class="field">
-				<span>{m.ageBirthDateLabel()}</span>
-				<input type="date" bind:value={birthDate} max={today} required disabled={busy} />
-			</label>
-			<p class="note once">{m.ageOnceOnlyNote()}</p>
-			{#if needsConsent}
-				<ToggleSwitch
-					checked={parentalConsent}
-					label={m.ageParentalConsentLabel()}
-					disabled={busy}
-					onchange={(value) => (parentalConsent = value)}
-				/>
+<!--
+	年齢は AppView のアカウントに紐づくので、未ログインでは何も出さない。
+	置き場所を増やしても安全なように、ガードは各ページではなくここに持たせる。
+-->
+{#if $session}
+	<section class="age-assurance">
+		<h2>{m.ageSectionTitle()}</h2>
+		{#if ageAssurance.loading}
+			<p class="note">…</p>
+		{:else if ageAssurance.declared}
+			<p class="note">{ageAssurance.isAdult ? m.ageDeclaredAdult() : m.ageDeclaredMinor()}</p>
+			{#if ageAssurance.birthDate}
+				<dl class="declared">
+					<dt>{m.ageYourBirthDate()}</dt>
+					<dd>{formatBirthDate(ageAssurance.birthDate)}</dd>
+				</dl>
 			{/if}
-			{#if error && !confirming}<p class="error" role="alert">{error}</p>{/if}
-			<button class="login" type="submit" disabled={busy || !birthDate}>{m.ageSubmit()}</button>
-		</form>
-	{/if}
-</section>
+			<p class="note">{m.ageBirthDatePrivate()}</p>
+		{:else}
+			<p class="note">{m.ageUndeclared()}</p>
+			<p class="note">{m.ageBirthDatePrivate()}</p>
+			<form onsubmit={requestConfirm}>
+				<label class="field">
+					<span>{m.ageBirthDateLabel()}</span>
+					<input type="date" bind:value={birthDate} max={today} required disabled={busy} />
+				</label>
+				<p class="note once">{m.ageOnceOnlyNote()}</p>
+				{#if needsConsent}
+					<ToggleSwitch
+						checked={parentalConsent}
+						label={m.ageParentalConsentLabel()}
+						disabled={busy}
+						onchange={(value) => (parentalConsent = value)}
+					/>
+				{/if}
+				{#if error && !confirming}<p class="error" role="alert">{error}</p>{/if}
+				<button class="login" type="submit" disabled={busy || !birthDate}>{m.ageSubmit()}</button>
+			</form>
+		{/if}
+	</section>
+{/if}
 
 {#if confirming}
 	<AgeConfirmDialog
