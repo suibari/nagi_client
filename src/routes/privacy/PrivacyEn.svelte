@@ -11,7 +11,10 @@
 	<h2>The short version</h2>
 	<ul>
 		<li><strong>We never receive your password, and we don't collect your email.</strong></li>
-		<li><strong>No advertising, no analytics.</strong> No cookies either.</li>
+		<li>
+			<strong>No advertising.</strong> We use cookie-free Vercel Web Analytics to collect anonymous traffic
+			statistics for service improvements.
+		</li>
 		<li>
 			Your PDS holds the authoritative copy of your posts. Nagi keeps
 			<strong>a copy for display and search</strong>.
@@ -141,8 +144,9 @@
 	<li><strong>Email addresses</strong>: Not needed to sign up, so we do not collect them.</li>
 	<li><strong>Payment details, phone numbers, location</strong>: Not collected.</li>
 	<li>
-		<strong>Advertising or analytics tracking</strong>: The Service carries no advertising and uses
-		no analytics tools. It does not use cookies.
+		<strong>Advertising identifiers or cookies</strong>: The Service carries no advertising, creates
+		no advertising profiles, and does not track you across sites. It does not use cookies. See
+		<a href="#p6">Section 6</a> for anonymous traffic analytics.
 	</li>
 	<li>
 		<strong>IP addresses</strong>: Held briefly in memory to rate-limit excessive access, never
@@ -161,7 +165,10 @@
 	</li>
 	<li>To deliver notifications</li>
 	<li>To prevent abuse and excessive load</li>
-	<li>To investigate faults and improve the Service</li>
+	<li>
+		To understand anonymous traffic and OAuth recovery trends, investigate faults, and improve the
+		Service
+	</li>
 </ul>
 
 <h2 id="p5">5. AI features and what leaves the Service</h2>
@@ -272,10 +279,24 @@
 				<td>Login authentication, reading and writing records</td>
 			</tr>
 			<tr>
-				<td>Our hosting provider (Vercel)</td>
 				<td>
-					Serving the site. As part of that, access records such as IP addresses and browser type
-					are retained for a limited period
+					Our hosting and analytics provider (<a
+						href="https://vercel.com/docs/analytics/privacy-policy"
+						target="_blank"
+						rel="noreferrer noopener">Vercel</a
+					>)
+				</td>
+				<td>
+					Access records needed to serve the site, such as IP address and browser type. Vercel Web
+					Analytics also receives the page path, referrer, filtered query parameters, timestamp,
+					approximate location derived from the IP address, and device, OS, and browser type. OAuth
+					diagnostics send custom events containing recovery outcome and failure category, online
+					status, Locks API availability, browser or PWA display mode, and hours since the last
+					successful login. Passwords, email addresses, and error text are not sent. Web Analytics
+					uses no cookies; Vercel says the data is anonymous, is not associated with an individual
+					or IP address, and is used for aggregated statistics. Its daily visitor hash is discarded
+					after 24 hours. Aggregated data is subject to the reporting window for the Vercel plan and
+					may be retained longer by Vercel
 				</td>
 			</tr>
 			<tr>
@@ -312,8 +333,8 @@
 </div>
 <p>
 	We do not provide your information to third parties other than the above.
-	<strong>We do not provide information to advertising or analytics companies.</strong> This does not
-	apply where disclosure is required by law.
+	<strong>We do not provide information to advertising companies.</strong> Vercel Web Analytics, described
+	above, is the only analytics service we use. This does not apply where disclosure is required by law.
 </p>
 <p>
 	Features you opt into also <strong>create additional records in your own PDS.</strong> Bluesky
@@ -439,6 +460,10 @@
 	<li>
 		Copies of public records fetched or cached by other AppViews or search engines. These are
 		outside the operator's control.
+	</li>
+	<li>
+		Anonymous, aggregated traffic statistics in Vercel Web Analytics. They are not retained in
+		association with an individual user, so they cannot be deleted account by account.
 	</li>
 </ul>
 <p>
