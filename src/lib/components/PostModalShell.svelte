@@ -9,6 +9,7 @@
 		sending = false,
 		title = m.postModalTitle(),
 		onclose,
+		onmodechange,
 		children,
 	}: {
 		open: boolean;
@@ -16,6 +17,7 @@
 		sending?: boolean;
 		title?: string;
 		onclose: () => void;
+		onmodechange?: (mode: 'simple' | 'rich') => void;
 		children: Snippet;
 	} = $props();
 	let dialog = $state<HTMLDivElement>();
@@ -29,6 +31,11 @@
 			event.preventDefault();
 			onclose();
 		}
+	}
+
+	function selectMode(nextMode: 'simple' | 'rich') {
+		mode = nextMode;
+		onmodechange?.(nextMode);
 	}
 </script>
 
@@ -57,7 +64,7 @@
 					aria-selected={mode === 'simple'}
 					class:active={mode === 'simple'}
 					disabled={sending}
-					onclick={() => (mode = 'simple')}>{m.postModeSimple()}</button
+					onclick={() => selectMode('simple')}>{m.postModeSimple()}</button
 				>
 				<button
 					type="button"
@@ -65,7 +72,7 @@
 					aria-selected={mode === 'rich'}
 					class:active={mode === 'rich'}
 					disabled={sending}
-					onclick={() => (mode = 'rich')}>{m.postModeRich()}</button
+					onclick={() => selectMode('rich')}>{m.postModeRich()}</button
 				>
 			</div>
 			<button

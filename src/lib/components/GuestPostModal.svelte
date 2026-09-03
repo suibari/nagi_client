@@ -3,12 +3,18 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
+	import {
+		getComposerMode,
+		resetComposerMode,
+		setComposerMode,
+		type ComposerMode,
+	} from '$lib/post/composer-mode';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import PostModalShell from './PostModalShell.svelte';
 	import Icon from './shell/Icon.svelte';
 
 	let { open, onclose }: { open: boolean; onclose: () => void } = $props();
-	let mode = $state<'simple' | 'rich'>('simple');
+	let mode = $state<ComposerMode>('simple');
 	let wasOpen = $state(false);
 	let text = $state('');
 	let mentions = $state<MentionSelection[]>([]);
@@ -26,7 +32,7 @@
 		if (open === wasOpen) return;
 		wasOpen = open;
 		if (!open) return;
-		mode = 'simple';
+		mode = getComposerMode();
 		try {
 			agreed = localStorage.getItem('nagi.guest-ai-consent.v1') === '1';
 		} catch {
@@ -49,6 +55,7 @@
 			mentions = [];
 			channels = [];
 			emojis = [];
+			mode = resetComposerMode();
 			onclose();
 			postFollowNotice.show(`/feed#guest-post-${id}`);
 		} catch {
@@ -59,7 +66,14 @@
 	}
 </script>
 
-<PostModalShell bind:mode {open} sending={busy} title={m.guestPostTitle()} {onclose}>
+<PostModalShell
+	bind:mode
+	{open}
+	sending={busy}
+	title={m.guestPostTitle()}
+	{onclose}
+	onmodechange={setComposerMode}
+>
 	<section class="composer guest-composer" class:rich={mode === 'rich'}>
 		<ComposerEditor
 			bind:value={text}

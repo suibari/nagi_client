@@ -5,6 +5,8 @@ const read = (relativePath: string) => readFileSync(new URL(relativePath, import
 const composer = read('./Composer.svelte');
 const editor = read('./ComposerEditor.svelte');
 const modal = read('./PostModalShell.svelte');
+const signedInModal = read('./PostModal.svelte');
+const guestModal = read('./GuestPostModal.svelte');
 const textarea = read('./MentionTextarea.svelte');
 const caret = read('./textarea-caret.ts');
 const styles = read('../../routes/styles/components.css');
@@ -24,6 +26,14 @@ describe('rich composer improvements', () => {
 		expect(composer).toContain('attachments: []');
 		expect(composer).toContain("draftSaveStatus === 'saving'");
 		expect(composer).toContain('await finishDraftSaves()');
+	});
+
+	it('keeps the modal mode until posting and resets it only after success', () => {
+		expect(modal).toContain('onmodechange?.(nextMode)');
+		expect(signedInModal).toContain('mode = getComposerMode()');
+		expect(signedInModal).toContain('mode = resetComposerMode()');
+		expect(guestModal).toContain('mode = getComposerMode()');
+		expect(guestModal).toContain('mode = resetComposerMode()');
 	});
 
 	it('keeps markdown headings larger than the 15px post body', () => {
