@@ -32,6 +32,10 @@ describe('rich composer improvements', () => {
 		expect(styles).toMatch(/\.post-text h5\s*\{\s*font-size: 16px;/);
 	});
 
+	it('keeps markdown lists flush with the surrounding text', () => {
+		expect(styles).toMatch(/\.post-text ul,\s*\.post-text ol\s*\{\s*margin: 0;/);
+	});
+
 	it('routes emoji choices through the shared suggestion keyboard handling', () => {
 		expect(textarea).toContain("token.kind === 'emoji'");
 		expect(textarea).toContain("event.key === 'Enter' || event.key === 'Tab'");
