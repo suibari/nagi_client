@@ -268,18 +268,13 @@
 <h3>6.6 Misuse of AI features</h3>
 <ul>
 	<li>
-		Using AI features for purposes that violate Google's
-		<a
-			href="https://policies.google.com/terms/generative-ai/use-policy"
-			target="_blank"
-			rel="noreferrer noopener">Generative AI Prohibited Use Policy</a
-		>
-	</li>
-	<li>
-		Attempting to make Bot-tan produce output that violates the above, including prompt injection
+		Attempting to make Bot-tan produce output that violates these Terms, including prompt injection
 	</li>
 	<li>Using output from the AI features to develop competing AI models</li>
-	<li>Deliberately invoking AI features at volume in order to run up costs</li>
+	<li>
+		Deliberately invoking AI features at volume in order to disrupt the Service or consume excessive
+		computing resources
+	</li>
 </ul>
 
 <h2 id="t7">7. Protected expression</h2>
@@ -377,7 +372,7 @@
 	</li>
 </ul>
 <p>
-	Providing these features means sending your posts and related data to Google. See the
+	AI-generated text is produced by a model the operator runs at home. See the
 	<a href="/privacy">Privacy Policy</a> for details.
 </p>
 

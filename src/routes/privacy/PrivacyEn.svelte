@@ -19,8 +19,10 @@
 		</li>
 		<li>
 			<strong>AI writing is done by a model running on the operator's home server.</strong> Your
-			post text and images are never sent to an outside provider. Only when current facts must be
-			checked do we send <strong>search queries and the URLs you shared</strong> to Google.
+			post text and images are never sent to an outside AI provider to generate that writing. Only
+			when current facts must be checked do we send
+			<strong>queries about the research subject</strong> to external search engines. The operator's server
+			fetches shared links directly.
 		</li>
 		<li><strong>You can delete all of it from Settings at any time.</strong></li>
 	</ul>
@@ -175,42 +177,29 @@
 		to an outside provider in order to generate them.
 	</strong>
 </p>
-<h3>Google is used only to check current facts</h3>
+<h3>External search is used only to check current facts</h3>
 <p>
 	Only when current facts are needed — the weather, or whether a work or song actually exists — do
-	we use the search capability of the <strong>Gemini API provided by Google LLC (paid tier)</strong
-	>. In that case only these two things are sent to Google:
+	we use external search engines through an operator-managed search system (SearXNG).
 </p>
-<h3>Data sent to Google (Gemini API)</h3>
-<p>To provide AI features, the following is sent to Google:</p>
+<h3>Information sent or fetched for external research</h3>
 <ul>
 	<li>
-		The <strong>search queries</strong> assembled by the local AI model. They never contain personal names,
-		handles, DIDs, conversation history, or Bot-tan's system prompt.
+		The <strong>search queries</strong> assembled by the local AI model are sent to external search engines.
+		They never contain the full post, your name, handle, DID, conversation history, or Bot-tan's system
+		prompt.
 	</li>
 	<li>
-		The <strong>URLs of links you included in a post</strong> (Google fetches the content at those URLs)
+		When a link you included in a post must be checked, <strong
+			>the operator's server accesses that URL directly</strong
+		>. The linked site receives access information from the operator's server, but not your DID or
+		conversation history.
 	</li>
 </ul>
 <p>
 	The research comes back to the local AI model, which writes the final wording. The text and images
-	of your posts themselves are never passed to Google for this research.
+	of your posts themselves are never passed to a generative-AI provider.
 </p>
-<h3>How Google handles it (paid-tier terms)</h3>
-<ul>
-	<li>
-		The search queries and the URLs you shared are retained by Google for <strong>30 days</strong>.
-	</li>
-	<li>
-		Logs are retained for <strong>up to 55 days</strong> to detect and prevent policy violations and to
-		meet legal obligations. During that period, Google staff may review content flagged as potentially
-		violating.
-	</li>
-	<li>
-		Data may be stored or cached transiently in any country where Google or its agents maintain
-		facilities.
-	</li>
-</ul>
 <h3>What we send to OpenAI for automated moderation</h3>
 <p>
 	To keep this a place people can relax in, <strong
@@ -258,8 +247,18 @@
 		</thead>
 		<tbody>
 			<tr>
-				<td>Google (Gemini API search and link fetching)</td>
-				<td>As set out in Section 5 (search queries and shared link URLs only)</td>
+				<td>External search engines (Bing, Wikipedia, and Wikidata)</td>
+				<td>
+					As set out in Section 5 (queries about the research subject only; the full post, name,
+					handle, DID, and conversation history are excluded)
+				</td>
+			</tr>
+			<tr>
+				<td>Sites linked from posts</td>
+				<td>
+					As set out in Section 5 (the URL when its content must be checked, and access information
+					from the operator's server)
+				</td>
 			</tr>
 			<tr>
 				<td>OpenAI (Moderation API for automated moderation)</td>
@@ -437,7 +436,6 @@
 		which are public records in your PDS (Kossori posts made since then are not in any PDS, so they do
 		not apply). To remove them completely, you must delete them from your PDS yourself.
 	</li>
-	<li>Logs Google keeps for abuse detection (deleted within 55 days).</li>
 	<li>
 		Copies of public records fetched or cached by other AppViews or search engines. These are
 		outside the operator's control.
