@@ -4151,13 +4151,24 @@ a.about-feature:focus-visible {
 	font-size: 0.85rem;
 	line-height: 1.7;
 }
-/* タブ数はページによって違う（一覧=3, CH詳細=2）ので、列は本数に合わせて等分する。 */
+/* タブ数はページによって違うので、基本は本数に合わせて等分する。 */
 .channel-tabs {
 	display: grid;
 	grid-auto-flow: column;
 	grid-auto-columns: minmax(0, 1fr);
 	margin-block-end: 8px;
 	border-block-end: 1px solid var(--line);
+}
+.channel-directory-tabs {
+	grid-template-columns: repeat(3, minmax(0, 1fr)) 42px;
+	grid-auto-flow: initial;
+	grid-auto-columns: initial;
+}
+.channel-directory-tabs .channel-search-tab {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding-inline: 8px;
 }
 .channel-tabs button {
 	position: relative;
@@ -4204,6 +4215,28 @@ a.about-feature:focus-visible {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+}
+.channel-search-form {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 42px;
+	gap: 8px;
+	margin-block-end: 12px;
+}
+.channel-search-form input {
+	min-inline-size: 0;
+	padding: 9px 11px;
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-m);
+	background: var(--bg-inset);
+	color: var(--text);
+	font: inherit;
+	font-size: 0.9rem;
+}
+.channel-search-form button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
 }
 /* Misskey 風の大きなヘッダーカード。バナーがカードいっぱいに広がり、
    左上にチャンネル名、下部に説明と更新日時を重ねる。banner が無くても同じ枠で表示。 */

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { getChannels, type ChannelDirectoryView } from '$lib/api/appview';
+	import { getChannels, searchChannelsByQuery, type ChannelDirectoryView } from '$lib/api/appview';
 	import { createChannel } from '$lib/atproto/records';
 	import { createdChannels, deletedChannels } from '$lib/channels/optimistic.svelte';
 	import type { ChannelView } from '$lib/api/types';
@@ -33,13 +33,17 @@
 		{ id: 'list', label: () => m.channelsTabList() },
 		{ id: 'mine', label: () => m.channelsTabMine() },
 	];
-	let active = $state<ChannelDirectoryView>('trend');
+	type ChannelTab = ChannelDirectoryView | 'search';
+	let active = $state<ChannelTab>('trend');
 	let directories = $state<Record<ChannelDirectoryView, DirectoryState>>({
 		trend: emptyDirectory(),
 		list: emptyDirectory(),
 		mine: emptyDirectory(),
 	});
-	let current = $derived(directories[active]);
+	let searchState = $state<DirectoryState>(emptyDirectory());
+	let searchValue = $state('');
+	let searchedQuery = $state('');
+	let current = $derived(active === 'search' ? searchState : directories[active]);
 	let privateDid = $state<string | undefined>();
 
 	// 新規作成ダイアログの状態。
@@ -81,7 +85,8 @@
 			if (requestId === state.requestId) state.loading = false;
 		}
 	}
-	async function loadMore() {
+	async function loadMoreDirectory() {
+		if (active === 'search') return;
 		const view = active;
 		const state = directories[view];
 		if (!state.cursor || state.loading) return;
@@ -101,9 +106,44 @@
 			if (requestId === state.requestId) state.loading = false;
 		}
 	}
-	function selectTab(view: ChannelDirectoryView) {
+	function selectTab(view: ChannelTab) {
 		active = view;
-		if (view === 'trend' || $session) void load(view);
+		if (view !== 'search' && (view === 'trend' || $session)) void load(view);
+	}
+	async function searchChannels(reset = true) {
+		const q = (reset ? searchValue : searchedQuery).trim();
+		if (!q || searchState.loading || (!reset && !searchState.cursor)) return;
+		const requestId = ++searchState.requestId;
+		searchState.loading = true;
+		searchState.error = '';
+		if (reset) {
+			searchedQuery = q;
+			searchState.channels = [];
+			searchState.cursor = undefined;
+			searchState.hasMore = false;
+			searchState.loaded = false;
+		}
+		try {
+			const page = await searchChannelsByQuery(q, reset ? undefined : searchState.cursor);
+			if (requestId !== searchState.requestId) return;
+			searchState.channels = reset ? page.channels : [...searchState.channels, ...page.channels];
+			searchState.cursor = page.cursor;
+			searchState.hasMore = page.hasMore;
+			searchState.loaded = true;
+		} catch (e) {
+			if (requestId === searchState.requestId)
+				searchState.error = e instanceof Error ? e.message : m.loadFailed();
+		} finally {
+			if (requestId === searchState.requestId) searchState.loading = false;
+		}
+	}
+	function submitSearch(event: SubmitEvent) {
+		event.preventDefault();
+		void searchChannels();
+	}
+	function handleSearchKeydown(event: KeyboardEvent) {
+		// IME の変換確定を検索実行として扱わない。
+		if (event.key === 'Enter' && event.isComposing) event.preventDefault();
 	}
 	// 公開のトレンドはセッション復元を待たずに読み始める。本人向けタブだけは上の分岐で待つ。
 	onMount(() => void load('trend'));
@@ -115,7 +155,7 @@
 		privateDid = did;
 		directories.list = emptyDirectory();
 		directories.mine = emptyDirectory();
-		if (did && active !== 'trend') void load(active);
+		if (did && active !== 'trend' && active !== 'search') void load(active);
 	});
 
 	function openCreate() {
@@ -193,7 +233,7 @@
 <!-- Bluesky から来た人・Nagi 初心者向け。「入らないと書けない場所」に見せないための一文。 -->
 <p class="channels-intro">{m.channelsIntro()}</p>
 
-<div class="channel-tabs" role="tablist" aria-label={m.channelsTabsAria()}>
+<div class="channel-tabs channel-directory-tabs" role="tablist" aria-label={m.channelsTabsAria()}>
 	{#each tabs as tab (tab.id)}
 		<button
 			type="button"
@@ -203,14 +243,46 @@
 			onclick={() => selectTab(tab.id)}>{tab.label()}</button
 		>
 	{/each}
+	<button
+		type="button"
+		role="tab"
+		aria-label={m.channelsTabSearch()}
+		title={m.channelsTabSearch()}
+		aria-selected={active === 'search'}
+		class="channel-search-tab"
+		class:active={active === 'search'}
+		onclick={() => selectTab('search')}><Icon name="search" size={17} /></button
+	>
 </div>
 
+{#if active === 'search'}
+	<form class="channel-search-form" role="search" onsubmit={submitSearch}>
+		<label class="visually-hidden" for="channel-search-input">{m.channelSearchLabel()}</label>
+		<input
+			id="channel-search-input"
+			type="search"
+			bind:value={searchValue}
+			maxlength="200"
+			placeholder={m.channelSearchPlaceholder()}
+			onkeydown={handleSearchKeydown}
+		/>
+		<button
+			class="primary"
+			type="submit"
+			disabled={!searchValue.trim() || searchState.loading}
+			aria-label={m.channelSearchSubmit()}><Icon name="search" size={17} /></button
+		>
+	</form>
+{/if}
+
 <section class="channels-list" aria-busy={current.loading}>
-	{#if active !== 'trend' && !$oauthReady}
+	{#if active === 'search' && !searchedQuery}
+		<div class="state">{m.channelSearchPrompt()}</div>
+	{:else if active !== 'trend' && active !== 'search' && !$oauthReady}
 		<div class="timeline-loading" role="status" aria-label={m.loading()}>
 			<span class="spinner" aria-hidden="true"></span>
 		</div>
-	{:else if active !== 'trend' && !$session}
+	{:else if active !== 'trend' && active !== 'search' && !$session}
 		<div class="state channel-sign-in">
 			<p>{m.channelsSignInRequired()}</p>
 			<a href="/login">{m.login()}</a>
@@ -225,16 +297,19 @@
 				class="icon-action"
 				type="button"
 				aria-label={m.retry()}
-				onclick={() => load(active, true)}><Icon name="refresh" size={18} /></button
+				onclick={() => (active === 'search' ? searchChannels(true) : load(active, true))}
+				><Icon name="refresh" size={18} /></button
 			>
 		</div>
 	{:else if !visibleChannels.length}
 		<div class="state">
-			{active === 'trend'
-				? m.channelsTrendEmpty()
-				: active === 'list'
-					? m.channelsListEmpty()
-					: m.channelsMineEmpty()}
+			{active === 'search'
+				? m.channelSearchEmpty({ query: searchedQuery })
+				: active === 'trend'
+					? m.channelsTrendEmpty()
+					: active === 'list'
+						? m.channelsListEmpty()
+						: m.channelsMineEmpty()}
 		</div>
 	{:else}
 		{#each visibleChannels as channel (channel.uri)}
@@ -246,7 +321,8 @@
 				type="button"
 				aria-label={m.loadMore()}
 				title={m.loadMore()}
-				onclick={loadMore}><Icon name="more" size={20} /></button
+				onclick={() => (active === 'search' ? searchChannels(false) : loadMoreDirectory())}
+				><Icon name="more" size={20} /></button
 			>
 		{/if}
 	{/if}
