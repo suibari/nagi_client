@@ -162,11 +162,7 @@
 		days are not added later.
 	</p>
 </div>
-<p>
-	Channel-only posts may also be anonymously summarized even though their bodies stay out of shared
-	timelines outside the channel. Unlike Kossori posts, they are stored in your PDS as ordinary
-	public records. Posts with a Content Warning are excluded from these summaries.
-</p>
+<p>Posts with a Content Warning are excluded from these summaries.</p>
 <p>
 	Among the diaries Bot-tan writes,
 	<strong>a diary for a day that includes a Kossori post is readable only by you.</strong> Like Kossori

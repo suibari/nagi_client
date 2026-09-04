@@ -88,9 +88,7 @@
 		<article class="thread-unit">
 			<ThreadFlags
 				channel={thread.post.channel}
-				kossori={Boolean(
-					thread.post.threadKossori ?? thread.post.kossori ?? thread.post.channelOnly,
-				)}
+				kossori={Boolean(thread.post.threadKossori ?? thread.post.kossori)}
 			/>
 			<div data-post-uri={thread.post.uri}>
 				<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />

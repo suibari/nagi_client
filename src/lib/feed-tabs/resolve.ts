@@ -109,7 +109,7 @@ export function resolveFeedTab(
 			return {
 				key: `${scope}:home`,
 				fetcher: homeFetcher(ctx.onAuthError ?? noop),
-				optimisticFilter: (item) => !item.reply && !item.channelOnly,
+				optimisticFilter: (item) => !item.reply,
 				watermark: homeFeedRead,
 				empty: m.homeFeedEmpty,
 				handleHomeAuthError: true,

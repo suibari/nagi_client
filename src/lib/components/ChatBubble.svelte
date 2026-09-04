@@ -376,7 +376,6 @@
 				post.channel = nextChannel
 					? { uri: nextChannel.uri, cid: nextChannel.cid, name: nextChannel.name }
 					: undefined;
-				if (!nextChannel) post.channelOnly = undefined;
 			}
 			editing = false;
 			editText = '';
@@ -454,7 +453,7 @@
 						}
 					: {}),
 			threadKossori:
-				mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori ?? post.channelOnly) : false,
+				mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori) : false,
 		});
 		// 楽観カード →（サーバー確定後）本物のカード、と2段階で入れ替わるので、追従先は
 		// postFollow に預けて描画のたびに引き直してもらう。ここで一度寄せるだけでは、

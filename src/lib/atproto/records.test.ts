@@ -49,7 +49,6 @@ describe('silent replies', () => {
 			false,
 			undefined,
 			false,
-			false,
 			true,
 		);
 		const topLevel = preparePostDraft(
@@ -63,7 +62,6 @@ describe('silent replies', () => {
 			[],
 			false,
 			undefined,
-			false,
 			true,
 			true,
 		);
@@ -88,7 +86,6 @@ describe('silent replies', () => {
 			[],
 			false,
 			undefined,
-			false,
 			false,
 			true,
 		);
@@ -118,7 +115,6 @@ describe('silent replies', () => {
 			[],
 			true,
 			undefined,
-			false,
 			false,
 			true,
 		);
@@ -153,7 +149,6 @@ describe('content warning storage boundaries', () => {
 			[],
 			false,
 			undefined,
-			false,
 			false,
 			false,
 			['sexual', 'ai-generated'],

@@ -403,8 +403,7 @@
 			in "Affirm together."</strong
 		> The original-post URI stored alongside that summary is an identifier issued by the Service that
 		contains no author DID. Readers can react to the summary, but cannot trace it back to you or to the
-		original text. Channel-only posts may be summarized in the same way, but they are stored in your PDS
-		as ordinary public records.
+		original text.
 	</p>
 	<p>
 		<strong>Kossori posts made before 18 August 2026 remain in your PDS as public records.</strong> The

@@ -173,8 +173,6 @@ export type PostDraft = {
 	kossori?: boolean;
 	/** 所属チャンネルへの参照。返信は親の channel を引き継ぐ。 */
 	channel?: { uri: string; cid: string };
-	/** true なら CH 限定＝グローバルTL非表示。 */
-	channelOnly?: boolean;
 	/** 作成時からCW運用であり、外部コピーを永久に作らない投稿。 */
 	cwRestricted?: boolean;
 	/** botたんサイレント機能。true の投稿には botたんが返信しない。 */
@@ -196,7 +194,6 @@ export function preparePostDraft(
 	emojis: EmojiSelection[] = [],
 	kossori = false,
 	channel?: { uri: string; cid: string },
-	channelOnly = false,
 	botSilent = false,
 	silentReply = false,
 	selfLabels: string[] = [],
@@ -235,7 +232,6 @@ export function preparePostDraft(
 			: {}),
 		...(kossori ? { kossori: true } : {}),
 		...(channel ? { channel } : {}),
-		...(channel && channelOnly ? { channelOnly: true } : {}),
 		...(botSilent ? { botSilent: true } : {}),
 		...(reply && silentReply ? { silentReply: true } : {}),
 		...(selfLabels.length > 0
@@ -419,7 +415,6 @@ export async function createPost(
 				...(draft.botSilent && { botSilent: true }),
 				...(draft.silentReply && { silentReply: true }),
 				...(draft.channel && { channel: draft.channel }),
-				...(draft.channel && draft.channelOnly && { channelOnly: true }),
 				...(draft.reply && { reply: draft.reply }),
 				// ニュース記事そのものは引用カードで描画し、本文中の別URLだけがここへ入る。
 				...(cards.length && { linkCards: cards }),
@@ -471,7 +466,6 @@ function blobCid(blob: unknown): string | undefined {
  * 新規画像だけアップロードする。createdAt・reply・kossori 等のフィールドは保持する。
  *
  * applyChannel を渡したときだけ所属チャンネルを draft の内容で書き直す（未指定なら保持）。
- * channelOnly は channel と対でしか意味を持たないので、外すときは必ず一緒に消す。
  */
 export async function updatePost(
 	rkey: string,
@@ -495,10 +489,7 @@ export async function updatePost(
 	};
 	if (opts.applyChannel) {
 		if (draft.channel) record.channel = draft.channel;
-		else {
-			delete record.channel;
-			delete record.channelOnly;
-		}
+		else delete record.channel;
 	}
 	const cwRestricted = record.cwRestricted === true;
 	if (

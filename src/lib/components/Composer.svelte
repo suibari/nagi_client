@@ -429,7 +429,6 @@
 			emojis,
 			kossori,
 			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
-			false,
 			reply ? false : botSilent,
 			reply ? silentReply : false,
 			selfLabels,

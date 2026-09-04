@@ -57,7 +57,7 @@
 		conv?.root.channel ?? conv?.bubbles.find((b) => b.post.channel)?.post.channel,
 	);
 	let convKossori = $derived(
-		Boolean(conv && (conv.root.threadKossori ?? conv.root.kossori ?? conv.root.channelOnly)),
+		Boolean(conv && (conv.root.threadKossori ?? conv.root.kossori)),
 	);
 	let channel = $derived(item.channel ?? item.replyParent?.channel ?? item.botReply?.channel);
 	let threadKossori = $derived(
@@ -65,8 +65,7 @@
 			item.threadKossori ??
 			item.replyParent?.threadKossori ??
 			item.botReply?.threadKossori ??
-			item.kossori ??
-			item.channelOnly,
+			item.kossori,
 		),
 	);
 	let showParent = $derived(Boolean(item.replyParent && item.replyParent.uri !== hiddenPostUri));
