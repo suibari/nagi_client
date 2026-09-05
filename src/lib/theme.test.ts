@@ -50,12 +50,12 @@ describe('theme appearance', () => {
 		setThemePalette('latte-pink');
 		expect(values.get(THEME_PALETTE_STORAGE_KEY)).toBe('latte-pink');
 		expect(root.dataset.palette).toBe('latte-pink');
-		expect(meta.content).toBe('#fbf8f9');
+		expect(meta.content).toBe('#fafafa');
 
 		setThemePreference('dark');
 		expect(values.get(THEME_STORAGE_KEY)).toBe('dark');
 		expect(root.dataset.theme).toBe('dark');
-		expect(meta.content).toBe('#110f10');
+		expect(meta.content).toBe('#101010');
 	});
 
 	it('clears both settings and restores the bot mint system default', () => {

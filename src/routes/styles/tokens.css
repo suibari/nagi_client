@@ -425,18 +425,18 @@
 }
 
 :root[data-palette='latte-pink'] {
-	--theme-bg: #fbf8f9;
+	--theme-bg: #fafafa;
 	--theme-surface-1: #ffffff;
-	--theme-surface-2: #f4f0f2;
-	--theme-surface-3: #ebe5e8;
-	--theme-bg-pressed: #dfd5d9;
+	--theme-surface-2: #f2f2f2;
+	--theme-surface-3: #e8e8e8;
+	--theme-bg-pressed: #dadada;
 	--theme-text: #3b3035;
 	--theme-text-strong: #2b2025;
 	--theme-text-muted: #806b73;
 	--theme-text-faint: #766169;
 	--theme-text-on-accent: #35121f;
-	--theme-line: #e5dfe2;
-	--theme-line-strong: #cec3c8;
+	--theme-line: #e2e2e2;
+	--theme-line-strong: #c8c8c8;
 	--theme-accent: #db7093;
 	--theme-accent-strong: #a83f68;
 	--theme-accent-soft: #f8dce7;
@@ -451,18 +451,18 @@
 }
 
 :root[data-palette='kotomi-orange'] {
-	--theme-bg: #fbf9f6;
+	--theme-bg: #f8f8f8;
 	--theme-surface-1: #ffffff;
-	--theme-surface-2: #f4f1ed;
-	--theme-surface-3: #ebe6df;
-	--theme-bg-pressed: #dfd7cc;
+	--theme-surface-2: #f0f0f0;
+	--theme-surface-3: #e5e5e5;
+	--theme-bg-pressed: #d6d6d6;
 	--theme-text: #3b332d;
 	--theme-text-strong: #2b241f;
 	--theme-text-muted: #806f61;
 	--theme-text-faint: #756457;
 	--theme-text-on-accent: #351a08;
-	--theme-line: #e5e0d9;
-	--theme-line-strong: #cec5bb;
+	--theme-line: #dfdfdf;
+	--theme-line-strong: #c4c4c4;
 	--theme-accent: #ed7b2f;
 	--theme-accent-strong: #a84b14;
 	--theme-accent-soft: #f9ddc6;
@@ -562,17 +562,17 @@
 }
 
 :root[data-palette='latte-pink'][data-theme='dark'] {
-	--theme-bg: #110f10;
-	--theme-surface-1: #1b1819;
-	--theme-surface-2: #262123;
-	--theme-surface-3: #342d30;
-	--theme-bg-pressed: #42383c;
+	--theme-bg: #101010;
+	--theme-surface-1: #1a1a1a;
+	--theme-surface-2: #242424;
+	--theme-surface-3: #303030;
+	--theme-bg-pressed: #3d3d3d;
 	--theme-text: #faedf2;
 	--theme-text-muted: #cbb0ba;
 	--theme-text-faint: #a98693;
 	--theme-text-on-accent: #33101d;
-	--theme-line: #30292c;
-	--theme-line-strong: #463b40;
+	--theme-line: #2c2c2c;
+	--theme-line-strong: #404040;
 	--theme-accent: #ef83a8;
 	--theme-accent-strong: #ffabc5;
 	--theme-accent-soft: #4a2935;
@@ -587,17 +587,17 @@
 }
 
 :root[data-palette='kotomi-orange'][data-theme='dark'] {
-	--theme-bg: #12100e;
-	--theme-surface-1: #1c1916;
-	--theme-surface-2: #27231f;
-	--theme-surface-3: #35302a;
-	--theme-bg-pressed: #453e36;
+	--theme-bg: #101010;
+	--theme-surface-1: #191919;
+	--theme-surface-2: #232323;
+	--theme-surface-3: #303030;
+	--theme-bg-pressed: #3d3d3d;
 	--theme-text: #faefe5;
 	--theme-text-muted: #ccb7a5;
 	--theme-text-faint: #a88e79;
 	--theme-text-on-accent: #351906;
-	--theme-line: #322d28;
-	--theme-line-strong: #494139;
+	--theme-line: #2d2d2d;
+	--theme-line-strong: #414141;
 	--theme-accent: #f39a55;
 	--theme-accent-strong: #ffb67c;
 	--theme-accent-soft: #4c3020;
@@ -688,18 +688,18 @@
 		--theme-focus-ring: rgba(0, 229, 255, 0.55);
 	}
 	:root[data-palette='latte-pink']:not([data-theme]) {
-		--theme-bg: #110f10;
-		--theme-surface-1: #1b1819;
-		--theme-surface-2: #262123;
-		--theme-surface-3: #342d30;
-		--theme-bg-pressed: #42383c;
+		--theme-bg: #101010;
+		--theme-surface-1: #1a1a1a;
+		--theme-surface-2: #242424;
+		--theme-surface-3: #303030;
+		--theme-bg-pressed: #3d3d3d;
 		--theme-text: #faedf2;
 		--theme-text-strong: #faedf2;
 		--theme-text-muted: #cbb0ba;
 		--theme-text-faint: #a98693;
 		--theme-text-on-accent: #33101d;
-		--theme-line: #30292c;
-		--theme-line-strong: #463b40;
+		--theme-line: #2c2c2c;
+		--theme-line-strong: #404040;
 		--theme-accent: #ef83a8;
 		--theme-accent-strong: #ffabc5;
 		--theme-accent-soft: #4a2935;
@@ -713,18 +713,18 @@
 		--theme-focus-ring: rgba(255, 171, 197, 0.55);
 	}
 	:root[data-palette='kotomi-orange']:not([data-theme]) {
-		--theme-bg: #12100e;
-		--theme-surface-1: #1c1916;
-		--theme-surface-2: #27231f;
-		--theme-surface-3: #35302a;
-		--theme-bg-pressed: #453e36;
+		--theme-bg: #101010;
+		--theme-surface-1: #191919;
+		--theme-surface-2: #232323;
+		--theme-surface-3: #303030;
+		--theme-bg-pressed: #3d3d3d;
 		--theme-text: #faefe5;
 		--theme-text-strong: #faefe5;
 		--theme-text-muted: #ccb7a5;
 		--theme-text-faint: #a88e79;
 		--theme-text-on-accent: #351906;
-		--theme-line: #322d28;
-		--theme-line-strong: #494139;
+		--theme-line: #2d2d2d;
+		--theme-line-strong: #414141;
 		--theme-accent: #f39a55;
 		--theme-accent-strong: #ffb67c;
 		--theme-accent-soft: #4c3020;

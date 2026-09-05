@@ -7,8 +7,8 @@ export const DEFAULT_THEME_PALETTE: ThemePalette = 'bot-mint';
 
 const THEME_COLORS: Record<ThemePalette, { light: string; dark: string }> = {
 	'bot-mint': { light: '#f4fafa', dark: '#08110f' },
-	'latte-pink': { light: '#fbf8f9', dark: '#110f10' },
-	'kotomi-orange': { light: '#fbf9f6', dark: '#12100e' },
+	'latte-pink': { light: '#fafafa', dark: '#101010' },
+	'kotomi-orange': { light: '#f8f8f8', dark: '#101010' },
 	'morpho-blue': { light: '#f7f9fc', dark: '#090e14' },
 	simple: { light: '#ffffff', dark: '#000000' },
 };

@@ -3293,23 +3293,23 @@ a.notification-main::before {
 	--preview-dark-accent: #3fc8da;
 }
 .palette-preview[data-preview-palette='latte-pink'] {
-	--preview-light-bg: #fbf8f9;
-	--preview-light-surface: #f4f0f2;
-	--preview-light-line: #cec3c8;
+	--preview-light-bg: #fafafa;
+	--preview-light-surface: #f2f2f2;
+	--preview-light-line: #c8c8c8;
 	--preview-light-accent: #db7093;
-	--preview-dark-bg: #110f10;
-	--preview-dark-surface: #262123;
-	--preview-dark-line: #463b40;
+	--preview-dark-bg: #101010;
+	--preview-dark-surface: #242424;
+	--preview-dark-line: #404040;
 	--preview-dark-accent: #ef83a8;
 }
 .palette-preview[data-preview-palette='kotomi-orange'] {
-	--preview-light-bg: #fbf9f6;
-	--preview-light-surface: #f4f1ed;
-	--preview-light-line: #cec5bb;
+	--preview-light-bg: #f8f8f8;
+	--preview-light-surface: #f0f0f0;
+	--preview-light-line: #c4c4c4;
 	--preview-light-accent: #ed7b2f;
-	--preview-dark-bg: #12100e;
-	--preview-dark-surface: #27231f;
-	--preview-dark-line: #494139;
+	--preview-dark-bg: #101010;
+	--preview-dark-surface: #232323;
+	--preview-dark-line: #414141;
 	--preview-dark-accent: #f39a55;
 }
 .palette-preview[data-preview-palette='morpho-blue'] {
