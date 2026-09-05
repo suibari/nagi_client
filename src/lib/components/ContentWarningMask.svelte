@@ -192,7 +192,7 @@
 		width: min(4.25rem, 72%);
 		aspect-ratio: 1;
 		max-height: 62%;
-		background: var(--accent-strong);
+		background: var(--content-warning-icon-color, var(--accent-strong));
 		-webkit-mask-position: center;
 		mask-position: center;
 		-webkit-mask-repeat: no-repeat;
