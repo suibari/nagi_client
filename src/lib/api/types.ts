@@ -109,11 +109,6 @@ export type PostView = {
 	reactions: ReactionView[];
 	isBot: boolean;
 	isAffirmation: boolean;
-	/**
-	 * 全肯定フィードの「動的枠」。時系列ではなく興味ベクトルの近さで差し込まれた投稿。
-	 * ラベル表示用で、時系列枠には付かない。
-	 */
-	recommended?: true;
 	cwRestricted?: boolean;
 	/** このレコード自身のこっそり値。新規データではスレッドルートだけが持つ。 */
 	kossori?: boolean;

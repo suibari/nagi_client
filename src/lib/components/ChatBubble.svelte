@@ -540,7 +540,7 @@
 					<div class="meta-badges"><ActorBadges actor={post.author} /></div>
 				{/if}
 			</div>
-			{#if !hideTimestamp || post.edited || post.recommended}
+			{#if !hideTimestamp || post.edited}
 				<div class="meta-time">
 					{#if !hideTimestamp}
 						<time>
@@ -561,8 +561,6 @@
 					{/if}
 					{#if post.edited}<span class="edited-badge" aria-label={m.editedBadgeAria()}
 							>{m.editedBadge()}</span
-						>{/if}{#if post.recommended}<span class="recommended-badge"
-							>{m.feedRecommendedLabel()}</span
 						>{/if}
 				</div>
 			{/if}
@@ -806,11 +804,6 @@
 		font-size: 0.8125rem;
 	}
 	.edited-badge {
-		color: var(--text-mute);
-		font-size: 11px;
-	}
-	/* 全肯定フィードの動的枠。なぜ時系列から外れた投稿が居るのかを控えめに示す。 */
-	.recommended-badge {
 		color: var(--text-mute);
 		font-size: 11px;
 	}

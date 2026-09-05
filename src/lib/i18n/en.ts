@@ -551,7 +551,6 @@ export const en: Messages = {
 	homeFeedRefreshPermissions: 'Sign in again',
 
 	affirmationEmpty: 'Posts that Bot-tan affirmed most strongly gather here.',
-	feedRecommendedLabel: 'Close to you',
 
 	notifFetchFailed: 'Could not fetch notifications',
 	notifEmpty: 'No notifications yet.',

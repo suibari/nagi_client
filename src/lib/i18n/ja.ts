@@ -565,7 +565,6 @@ export const ja = {
 
 	// affirmation
 	affirmationEmpty: 'botたんがとくに強く肯定した投稿が、ここに集まります。',
-	feedRecommendedLabel: 'あなたに近いかも',
 
 	// notifications — name-first suffix pattern; works because both locales put
 	// the actor name first (revisit if a third locale is ever added)
