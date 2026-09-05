@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getPositiveNews } from '$lib/api/appview';
-	import type { ActorView, NewsView } from '$lib/api/types';
+	import type { ActorView, NewsView, RecommendedNewsView } from '$lib/api/types';
 	import NewsCard from '$lib/components/NewsCard.svelte';
 	import NewsSubmissionDialog from '$lib/components/NewsSubmissionDialog.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
@@ -11,6 +11,8 @@
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	let items = $state<NewsView[]>([]),
+		// 動的枠。items とは別枠なので、一覧の時系列も未読判定も従来のまま。
+		recommended = $state<RecommendedNewsView[]>([]),
 		botActor = $state<ActorView>(),
 		cursor = $state<string>(),
 		hasMore = $state(false),
@@ -32,6 +34,8 @@
 		try {
 			const page = await getPositiveNews(i18n.locale, reset ? undefined : cursor);
 			items = reset ? page.items : [...items, ...page.items];
+			// 動的枠はサーバーが1ページ目にだけ載せる。追い読みでは触らない。
+			if (reset) recommended = page.recommended ?? [];
 			botActor = page.botActor ?? botActor;
 			cursor = page.cursor;
 			hasMore = page.hasMore;
@@ -102,7 +106,15 @@
 			>
 		</div>
 	{:else if !items.length}<div class="state">{m.newsEmpty()}</div>
-	{:else}{#each grouped as { news, heading } (news.uri)}{#if heading}<h2 class="news-date">
+	{:else}{#if recommended.length}<section class="news-recommended">
+				<h2 class="news-date">{m.newsRecommendedHeading()}</h2>
+				{#each recommended as news (news.uri)}<NewsCard
+						{news}
+						{botActor}
+						reasonKeyword={news.reason?.keyword}
+						clampTitle={false}
+					/>{/each}
+			</section>{/if}{#each grouped as { news, heading } (news.uri)}{#if heading}<h2 class="news-date">
 					{heading}
 				</h2>{/if}<NewsCard
 				{news}
@@ -124,6 +136,10 @@
 		gap: 12px;
 	}
 	.news-feed {
+		display: grid;
+		gap: 14px;
+	}
+	.news-recommended {
 		display: grid;
 		gap: 14px;
 	}

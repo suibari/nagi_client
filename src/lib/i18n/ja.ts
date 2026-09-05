@@ -61,6 +61,8 @@ export const ja = {
 	myNagiListUnreadAria: 'リストに新しい投稿があります',
 	myNagiChannelsUnreadAria: 'チャンネルに新しい投稿があります',
 	newsEmpty: 'いま掲載できる明るいニュースはありません。',
+	newsRecommendedHeading: 'あなたに近いかも',
+	newsRecommendedReason: (p: { keyword: string }) => `おすすめの理由：${p.keyword}`,
 	newsReadArticle: '記事を読む',
 	newsQuote: '引用',
 	newsShare: '共有',
@@ -563,6 +565,7 @@ export const ja = {
 
 	// affirmation
 	affirmationEmpty: 'botたんがとくに強く肯定した投稿が、ここに集まります。',
+	feedRecommendedLabel: 'あなたに近いかも',
 
 	// notifications — name-first suffix pattern; works because both locales put
 	// the actor name first (revisit if a third locale is ever added)

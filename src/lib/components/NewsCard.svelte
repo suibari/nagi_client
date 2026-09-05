@@ -16,11 +16,17 @@
 		unread = false,
 		embedded = false,
 		clampTitle = true,
+		reasonKeyword,
 	}: {
 		news: NewsView;
 		botActor?: ActorView;
 		/** 前回ニュース一覧を見た時点より新しいか。カード左端にマークを出す。 */
 		unread?: boolean;
+		/**
+		 * 動的枠の「おすすめの理由」に出す単語。指定しなければラベル行ごと出ない
+		 * （一覧・検索・プロフィール・カルーセルは従来どおり）。
+		 */
+		reasonKeyword?: string;
 		/** 外側のセクション内に置くときは、カード自身の枠と影を持たせない。 */
 		embedded?: boolean;
 		/** カルーセルなど高さを揃える表示では、タイトルを2行に収める。 */
@@ -78,6 +84,9 @@
 </script>
 
 {#if !deleted}<article class="news-card" class:unread class:embedded>
+		{#if reasonKeyword}<p class="news-reason">
+				{m.newsRecommendedReason({ keyword: reasonKeyword })}
+			</p>{/if}
 		<div class="news-meta">
 			<span>{news.sourceName ?? m.newsSourceUnknown()}</span>{#if news.publishedAt}<time
 					>{new Date(news.publishedAt).toLocaleString(dateLocale(), {
@@ -170,6 +179,11 @@
 		box-shadow: none;
 	}
 	/* 外枠を復活させず、未読だけ左のアクセントバーで示す。 */
+	.news-reason {
+		margin: 0 0 2px;
+		font-size: 12px;
+		color: var(--text-muted);
+	}
 	.news-card.unread {
 		padding-inline-start: 12px;
 		background: transparent;

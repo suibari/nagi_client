@@ -59,6 +59,8 @@ export const en: Messages = {
 	myNagiListUnreadAria: 'A new post from your list is available',
 	myNagiChannelsUnreadAria: 'A new channel post is available',
 	newsEmpty: 'There are no bright news stories to show right now.',
+	newsRecommendedHeading: 'Close to you',
+	newsRecommendedReason: (p: { keyword: string }) => `Why: ${p.keyword}`,
 	newsReadArticle: 'Read article',
 	newsQuote: 'Quote',
 	newsShare: 'Share',
@@ -549,6 +551,7 @@ export const en: Messages = {
 	homeFeedRefreshPermissions: 'Sign in again',
 
 	affirmationEmpty: 'Posts that Bot-tan affirmed most strongly gather here.',
+	feedRecommendedLabel: 'Close to you',
 
 	notifFetchFailed: 'Could not fetch notifications',
 	notifEmpty: 'No notifications yet.',

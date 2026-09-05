@@ -109,6 +109,11 @@ export type PostView = {
 	reactions: ReactionView[];
 	isBot: boolean;
 	isAffirmation: boolean;
+	/**
+	 * 全肯定フィードの「動的枠」。時系列ではなく興味ベクトルの近さで差し込まれた投稿。
+	 * ラベル表示用で、時系列枠には付かない。
+	 */
+	recommended?: true;
 	cwRestricted?: boolean;
 	/** このレコード自身のこっそり値。新規データではスレッドルートだけが持つ。 */
 	kossori?: boolean;
@@ -207,7 +212,17 @@ export type BookmarksPage = {
 	hasMore: boolean;
 	botActor?: ActorView;
 };
-export type NewsPage = Page<NewsView>;
+/**
+ * 全肯定ニュースの「動的枠」。興味ベクトルに近い記事を items とは別枠で受け取る。
+ * items は時系列のままなので、未読判定（items[0] が最新）はこの追加に影響されない。
+ */
+export type RecommendedNewsView = NewsView & {
+	/** 「おすすめの理由：〜」に出す単語。近い単語が無ければ付かない。 */
+	reason?: { keyword: string };
+};
+export type NewsPage = Page<NewsView> & {
+	recommended?: RecommendedNewsView[];
+};
 export type ProfileFeedFilter = 'posts' | 'replies' | 'media' | 'reactions';
 export type ProfileDetail = ActorView & {
 	postCount: number;
