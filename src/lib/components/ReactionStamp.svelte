@@ -53,6 +53,8 @@
 		height: 72px;
 		margin: -36px 0 0 -36px;
 		pointer-events: none;
+		/* 透明度は transform の強い easing から分離し、消えていく過程を確実に見せる。 */
+		animation: stamp-fade 0.72s linear both;
 	}
 	.reaction-stamp-mark {
 		position: relative;
@@ -64,8 +66,7 @@
 		font-size: 52px;
 		line-height: 1;
 		filter: drop-shadow(0 8px 8px color-mix(in srgb, #000 25%, transparent));
-		/* 花火と同じ尺で拡大しながら消し、終了後に不透明へ戻らないよう both を維持する。 */
-		animation: stamp-pop 0.64s cubic-bezier(0.16, 0.8, 0.2, 1) both;
+		animation: stamp-grow 0.72s cubic-bezier(0.16, 0.8, 0.2, 1) both;
 	}
 	.reaction-firework,
 	.reaction-firework i {
@@ -80,7 +81,7 @@
 		background: hsl(var(--spark-hue) 92% 62%);
 		box-shadow: 0 0 7px hsl(var(--spark-hue) 95% 68% / 0.8);
 		transform-origin: 50% 50%;
-		animation: reaction-spark 0.64s cubic-bezier(0.12, 0.62, 0.24, 1) both;
+		animation: reaction-spark 0.72s cubic-bezier(0.12, 0.62, 0.24, 1) both;
 	}
 	.reaction-stamp :global(.reaction-stamp-image),
 	.reaction-stamp :global(.reaction-stamp-image img),
@@ -88,21 +89,29 @@
 		width: 64px;
 		height: 64px;
 	}
-	@keyframes stamp-pop {
+	@keyframes stamp-fade {
 		0% {
 			opacity: 0;
-			transform: translateY(8px) scale(0.58) rotate(-7deg);
 		}
-		24% {
+		14%,
+		34% {
 			opacity: 1;
-			transform: translateY(0) scale(1) rotate(2deg);
-		}
-		52% {
-			opacity: 0.92;
-			transform: translateY(-3px) scale(1.12) rotate(0deg);
 		}
 		100% {
 			opacity: 0;
+		}
+	}
+	@keyframes stamp-grow {
+		0% {
+			transform: translateY(8px) scale(0.58) rotate(-7deg);
+		}
+		24% {
+			transform: translateY(0) scale(1) rotate(2deg);
+		}
+		52% {
+			transform: translateY(-3px) scale(1.12) rotate(0deg);
+		}
+		100% {
 			transform: translateY(-12px) scale(1.45) rotate(0deg);
 		}
 	}
@@ -122,6 +131,12 @@
 			opacity: 0;
 			transform: rotate(var(--spark-angle)) translateY(calc(var(--spark-distance) - 9px))
 				scale(0.25, 0.7);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		/* 共通の animation:none で静止した巨大絵文字が残り、突然消える状態を避ける。 */
+		.reaction-stamp {
+			display: none;
 		}
 	}
 </style>

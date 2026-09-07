@@ -100,7 +100,7 @@
 			top,
 		};
 		if (stampTimer) clearTimeout(stampTimer);
-		stampTimer = setTimeout(() => (stamp = undefined), 720);
+		stampTimer = setTimeout(() => (stamp = undefined), 800);
 	}
 	async function run(raw: string | EmojiView, origin?: HTMLElement) {
 		if (!$session) return;

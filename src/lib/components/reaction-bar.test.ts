@@ -38,11 +38,18 @@ describe('reaction bar presentation', () => {
 		expect(reactionStamp).toContain("import { portal } from '$lib/actions/portal'");
 		expect(reactionStamp).toContain('use:portal');
 		expect(reactionStamp).toContain('class="reaction-stamp"');
+		expect(reactionStamp).toContain('animation: stamp-fade 0.72s linear both;');
 		expect(reactionStamp).toContain(
-			'animation: stamp-pop 0.64s cubic-bezier(0.16, 0.8, 0.2, 1) both;',
+			'animation: stamp-grow 0.72s cubic-bezier(0.16, 0.8, 0.2, 1) both;',
 		);
 		expect(reactionStamp).toMatch(
-			/@keyframes stamp-pop[\s\S]*scale\(0\.58\)[\s\S]*scale\(1\.45\)[\s\S]*opacity:\s*0;/,
+			/@keyframes stamp-fade[\s\S]*34%[\s\S]*opacity:\s*1;[\s\S]*100%[\s\S]*opacity:\s*0;/,
+		);
+		expect(reactionStamp).toMatch(
+			/@keyframes stamp-grow[\s\S]*scale\(0\.58\)[\s\S]*scale\(1\.45\)/,
+		);
+		expect(reactionStamp).toMatch(
+			/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.reaction-stamp[\s\S]*display:\s*none;/,
 		);
 		expect(reactionBar.indexOf('popStamp(raw, reactionButtons.get(key) ?? origin);')).toBeLessThan(
 			reactionBar.indexOf('await createReaction'),
