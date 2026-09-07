@@ -54,6 +54,7 @@
 	import ActionMenu from './ActionMenu.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
 	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
+	import { trackPostSeen } from '$lib/post/seen';
 	let {
 		post,
 		botActor,
@@ -521,6 +522,11 @@
 	class:moderation-hidden={moderationDisplay.hidden}
 	data-post-uri={post.uri}
 	bind:this={postRow}
+	use:trackPostSeen={{
+		uri: post.uri,
+		viewerDid: $session?.did,
+		disabled: optimistic || localGuest,
+	}}
 >
 	{#if localGuest}
 		<span class="guest-avatar" aria-hidden="true"><Icon name="hide" size={22} /></span>

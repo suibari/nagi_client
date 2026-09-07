@@ -20,10 +20,12 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import {
-		latestIncludedPostPosition,
+		includedPostPositions,
 		latestReadPosition,
 		openMyNagiUnreadView,
+		readIncludedPosts,
 		readLatest,
+		readPositions,
 	} from '$lib/my-nagi/unread.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
@@ -33,6 +35,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { pageRefresh } from '$lib/components/shell/nav';
 	import { startVisiblePolling } from '$lib/polling';
+	import { readMyNagiPageCache, updateMyNagiPageCache } from '$lib/my-nagi/cache';
 
 	const NEWS_COUNT = 5;
 	const BOT_POST_COUNT = 1;
@@ -40,6 +43,7 @@
 
 	let news = $state<NewsView[]>([]);
 	let newsLoading = $state(true);
+	let newsLoaded = false;
 	let newsError = $state('');
 	let newsUnread = $state(false);
 	let newsUnreadView = $state<UnreadView | undefined>(undefined);
@@ -47,12 +51,14 @@
 	let botPosts = $state<PostView[]>([]);
 	let botActor = $state<ActorView>();
 	let botLoading = $state(true);
+	let botLoaded = false;
 	let botError = $state('');
 	let botUnread = $state(false);
 	let botUnreadView = $state<UnreadView | undefined>(undefined);
 
 	let listActivity = $state<MyNagiView>({ listUsers: [], channels: [] });
 	let listLoading = $state(true);
+	let listLoaded = false;
 	let listError = $state('');
 	let listUnread = $state(false);
 	let channelsUnread = $state(false);
@@ -74,20 +80,23 @@
 	const message = (cause: unknown) => (cause instanceof Error ? cause.message : m.loadFailed());
 	function showBotPosts(items: PostView[], unreadView = botUnreadView) {
 		botPosts = items;
-		botUnread = readLatest(unreadView, latestIncludedPostPosition(items));
+		botUnread = readIncludedPosts(unreadView, items);
 	}
 
 	/**
 	 * 定期・復帰時の取り直しでは、すでに出ている内容を消さない。ローディング表示を
 	 * 出し直すと60秒ごとに画面がちらつき、失敗するたびに読めていた内容が消えてしまう。
 	 */
-	async function loadNews() {
+	async function loadNews(key = loadedFor) {
+		if (!key) return;
 		const activeUnreadView = newsUnreadView;
-		newsLoading = news.length === 0;
+		newsLoading = !newsLoaded;
 		newsError = '';
 		try {
 			const page = await getPositiveNews(i18n.locale);
+			if (loadedFor !== key) return;
 			news = page.items.slice(0, NEWS_COUNT);
+			newsLoaded = true;
 			newsUnread = readLatest(
 				activeUnreadView,
 				latestReadPosition(news, (item) => ({
@@ -96,22 +105,27 @@
 				})),
 			);
 			botActor ??= page.botActor;
+			updateMyNagiPageCache(key, { newsLoaded, news, botActor });
 		} catch (cause) {
-			if (!news.length) newsError = message(cause);
+			if (loadedFor === key && !newsLoaded) newsError = message(cause);
 		} finally {
-			newsLoading = false;
+			if (loadedFor === key) newsLoading = false;
 		}
 	}
 
-	async function loadBotPosts() {
+	async function loadBotPosts(key = loadedFor) {
+		if (!key) return;
 		const activeUnreadView = botUnreadView;
-		botLoading = botPosts.length === 0;
+		botLoading = !botLoaded;
 		botError = '';
 		try {
 			// 最新のトップレベル投稿を代表にしつつ、通常タイムラインと同じ会話単位で返信を含める。
 			const did = botActor?.did;
 			if (!did) {
+				if (loadedFor !== key) return;
 				showBotPosts([], activeUnreadView);
+				botLoaded = true;
+				updateMyNagiPageCache(key, { botLoaded, botPosts, botActor });
 				return;
 			}
 			const profile = await getProfile(did, {
@@ -119,59 +133,81 @@
 				limit: BOT_POST_COUNT,
 				lang: i18n.locale,
 			});
+			if (loadedFor !== key) return;
 			const latest = profile.feed.items[0];
 			if (!latest) {
 				showBotPosts([], activeUnreadView);
+				botLoaded = true;
+				updateMyNagiPageCache(key, { botLoaded, botPosts, botActor });
 				return;
 			}
 			// botたん最新は会話の活動順ではなく、最新トップレベル投稿を先に選んでから展開する。
 			try {
 				const { thread } = await getThread(latest.uri);
+				if (loadedFor !== key) return;
 				botActor ??= thread.botActor;
 				showBotPosts([threadToConversationItem(thread)], activeUnreadView);
+				botLoaded = true;
+				updateMyNagiPageCache(key, { botLoaded, botPosts, botActor });
 				return;
 			} catch {
 				// スレッド取得だけが失敗した場合も、取得済みの最新投稿自体は表示する。
 			}
+			if (loadedFor !== key) return;
 			showBotPosts([latest], activeUnreadView);
+			botLoaded = true;
+			updateMyNagiPageCache(key, { botLoaded, botPosts, botActor });
 		} catch (cause) {
-			if (!botPosts.length) botError = message(cause);
+			if (loadedFor === key && !botLoaded) botError = message(cause);
 		} finally {
-			botLoading = false;
+			if (loadedFor === key) botLoading = false;
 		}
 	}
 
-	async function loadListActivity() {
+	async function loadListActivity(key = loadedFor) {
+		if (!key) return;
 		const activeListUnreadView = listUnreadView;
 		const activeChannelsUnreadView = channelsUnreadView;
-		const hadContent = listActivity.listUsers.length > 0 || listActivity.channels.length > 0;
-		listLoading = !hadContent;
+		listLoading = !listLoaded;
 		listError = '';
 		try {
-			listActivity = await getMyNagi(LIST_COUNT);
-			listUnread = readLatest(
+			const next = await getMyNagi(LIST_COUNT);
+			if (loadedFor !== key) return;
+			listActivity = next;
+			listLoaded = true;
+			listUnread = readPositions(
 				activeListUnreadView,
-				latestIncludedPostPosition(listActivity.listUsers.map(({ post }) => post)),
+				includedPostPositions(listActivity.listUsers.map(({ post }) => post)),
 			);
-			channelsUnread = readLatest(
+			channelsUnread = readPositions(
 				activeChannelsUnreadView,
-				latestIncludedPostPosition(listActivity.channels.map(({ post }) => post)),
+				includedPostPositions(listActivity.channels.map(({ post }) => post)),
 			);
+			updateMyNagiPageCache(key, { listLoaded, listActivity });
 		} catch (cause) {
-			if (!hadContent) listError = message(cause);
+			if (loadedFor === key && !listLoaded) listError = message(cause);
 		} finally {
-			listLoading = false;
+			if (loadedFor === key) listLoading = false;
 		}
 	}
 
 	function loadAll() {
-		void loadNews().then(loadBotPosts);
-		void loadListActivity();
+		const key = loadedFor;
+		if (!key) return;
+		void loadNews(key).then(() => {
+			if (loadedFor === key) void loadBotPosts(key);
+		});
+		void loadListActivity(key);
 	}
 
 	function loadPublic() {
-		void loadNews().then(loadBotPosts);
+		const key = loadedFor;
+		if (!key) return;
+		void loadNews(key).then(() => {
+			if (loadedFor === key) void loadBotPosts(key);
+		});
 		listActivity = { listUsers: [], channels: [] };
+		listLoaded = true;
 		listLoading = false;
 		listError = '';
 	}
@@ -190,18 +226,48 @@
 		botUnreadView = openMyNagiUnreadView('bot', did);
 		listUnreadView = did ? openMyNagiUnreadView('list', did) : undefined;
 		channelsUnreadView = did ? openMyNagiUnreadView('channels', did) : undefined;
+		// キャッシュ表示も今回開いた時点の既読基準で評価する。前回すでに表示した内容なら
+		// バーは消え、バックグラウンド取得で新しい内容が来たときだけ再び点く。
+		newsUnread = readLatest(
+			newsUnreadView,
+			latestReadPosition(news, (item) => ({ indexedAt: item.indexedAt, uri: item.uri })),
+		);
+		botUnread = readIncludedPosts(botUnreadView, botPosts);
+		listUnread = readPositions(
+			listUnreadView,
+			includedPostPositions(listActivity.listUsers.map(({ post }) => post)),
+		);
+		channelsUnread = readPositions(
+			channelsUnreadView,
+			includedPostPositions(listActivity.channels.map(({ post }) => post)),
+		);
 		initializedFor = key;
 		if (did) loadAll();
 		else loadPublic();
 	}
 
-	$effect(() => {
+	// ルート再表示の最初の描画より前にキャッシュを戻し、スピナーの一瞬の点滅も避ける。
+	$effect.pre(() => {
 		if (!$oauthReady) return;
 		const did = $session?.did;
 		const key = `${did ?? 'guest'}:${i18n.locale}`;
 		if (key === loadedFor) return;
 		loadedFor = key;
 		initializedFor = undefined;
+		const cached = readMyNagiPageCache(key);
+		news = cached?.news ?? [];
+		newsLoaded = cached?.newsLoaded ?? false;
+		newsLoading = !newsLoaded;
+		botPosts = cached?.botPosts ?? [];
+		botActor = cached?.botActor;
+		botLoaded = cached?.botLoaded ?? false;
+		botLoading = !botLoaded;
+		listActivity = cached?.listActivity ?? { listUsers: [], channels: [] };
+		listLoaded = cached?.listLoaded ?? false;
+		listLoading = !listLoaded;
+		newsError = '';
+		botError = '';
+		listError = '';
 		newsUnread = false;
 		botUnread = false;
 		listUnread = false;
@@ -349,7 +415,7 @@
 					<!-- 返信したら60秒ポーリングを待たずに取り直す（楽観表示はこの画面には無い）。 -->
 					<ThreadUnit
 						item={entry.post}
-						unread={readLatest(listUnreadView, entry.post)}
+						unread={readIncludedPosts(listUnreadView, [entry.post])}
 						{botActor}
 						onposted={loadListActivity}
 						collapsibleReplies={true}
@@ -379,7 +445,7 @@
 				<div class="my-nagi-activity-card">
 					<ThreadUnit
 						item={entry.post}
-						unread={readLatest(channelsUnreadView, entry.post)}
+						unread={readIncludedPosts(channelsUnreadView, [entry.post])}
 						{botActor}
 						onposted={loadListActivity}
 						collapsibleReplies={true}

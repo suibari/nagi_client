@@ -7,6 +7,8 @@
 	import ContentWarningMask from './ContentWarningMask.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
 	import Icon from './shell/Icon.svelte';
+	import { session } from '$lib/oauth/session.svelte';
+	import { trackPostSeen } from '$lib/post/seen';
 
 	let {
 		feed,
@@ -35,7 +37,15 @@
 {:else}
 	<div class="media-grid">
 		{#each tiles as tile (mediaTileKey(tile))}
-			<a class="media-tile" href={postHref(tile.post.uri)}>
+			<a
+				class="media-tile"
+				href={postHref(tile.post.uri)}
+				use:trackPostSeen={{
+					uri: tile.post.uri,
+					viewerDid: $session?.did,
+					disabled: Boolean(tile.post.optimisticState),
+				}}
+			>
 				{#if tile.image.contentWarning}
 					<!-- タイル自体がリンクなので、マスクは操作させない（リンクの中にボタンを置けない）。
 					     解除はスレッドを開いた先の ImageGallery でやってもらう。 -->

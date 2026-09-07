@@ -14,7 +14,7 @@
 		hasCommunityAffirmationTimestamp,
 	} from '$lib/community-affirmation/bot-post';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
-	import { latestReadPosition, openMyNagiUnreadView, readLatest } from '$lib/my-nagi/unread.svelte';
+	import { openMyNagiUnreadView, readLatest, readPositions } from '$lib/my-nagi/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import { preferences } from '$lib/preferences/preferences.svelte';
@@ -24,6 +24,10 @@
 	import HorizontalCarousel from './HorizontalCarousel.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import Icon from './shell/Icon.svelte';
+	import {
+		readCommunityAffirmationCache,
+		updateCommunityAffirmationCache,
+	} from '$lib/my-nagi/cache';
 
 	/**
 	 * 「みんなで全肯定」。サーバ側のストックから未処理の声を最大 limit 件集め、
@@ -38,6 +42,8 @@
 
 	let items = $state<CommunityAffirmationView[]>([]);
 	let loading = $state(false);
+	let loaded = false;
+	let refreshingFor = '';
 	let error = $state('');
 	let authError = $state(false);
 	let unread = $state(false);
@@ -60,13 +66,13 @@
 	const MAX_SCAN_PAGES = 10;
 	const REMOVE_MS = 180;
 
-	async function load() {
-		if (loading) return;
+	async function load(key = loadedKey) {
+		if (refreshingFor === key) return;
+		refreshingFor = key;
 		const activeUnreadView = unreadView;
-		loading = true;
+		loading = !loaded;
 		error = '';
 		authError = false;
-		completed = false;
 		try {
 			const legacyUris = legacyCommunityAffirmationHandledUris();
 			if (legacyUris.length) {
@@ -80,6 +86,7 @@
 			let foundAny = false;
 			for (let pageIndex = 0; pageIndex < MAX_SCAN_PAGES; pageIndex += 1) {
 				const page = await getCommunityAffirmations(i18n.locale, cursor, pageLimit);
+				if (loadedKey !== key) return;
 				responseBotActor = page.botActor ?? responseBotActor;
 				foundAny ||= page.items.length > 0;
 				for (const item of page.items) {
@@ -91,27 +98,38 @@
 				if (visible.length >= limit || !page.hasMore || !page.cursor) break;
 				cursor = page.cursor;
 			}
+			if (loadedKey !== key) return;
 			items = visible;
-			unread = readLatest(
+			loaded = true;
+			unread = readPositions(
 				activeUnreadView,
-				latestReadPosition(visible, (item) => ({
+				visible.map((item) => ({
 					indexedAt: item.createdAt,
 					uri: item.uri,
 				})),
 			);
 			completed = foundAny && visible.length === 0;
+			updateCommunityAffirmationCache(key, {
+				loaded,
+				items,
+				completed,
+				botActor: responseBotActor,
+			});
 		} catch (cause) {
+			if (loadedKey !== key) return;
 			preferences.noteScopeError(cause);
 			authError =
 				cause instanceof ApiRequestError && (cause.status === 401 || cause.status === 403);
-			error = cause instanceof Error ? cause.message : m.communityAffirmationError();
+			if (!loaded) error = cause instanceof Error ? cause.message : m.communityAffirmationError();
 		} finally {
-			loading = false;
+			if (refreshingFor === key) refreshingFor = '';
+			if (loadedKey === key) loading = false;
 		}
 	}
 
 	function handleItem(uri: string) {
 		if (removingUris.has(uri)) return;
+		const key = loadedKey;
 		removingUris = new Set([...removingUris, uri]);
 		if (openPickerUri === uri) openPickerUri = undefined;
 		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -122,6 +140,7 @@
 				nextRemoving.delete(uri);
 				removingUris = nextRemoving;
 				if (items.length === 0) completed = true;
+				if (loadedKey === key) updateCommunityAffirmationCache(key, { items, completed, loaded });
 			},
 			reduceMotion ? 0 : REMOVE_MS,
 		);
@@ -151,19 +170,28 @@
 		await syncPreferences(did);
 		if (loadedKey !== key) return;
 		unreadView = did ? openMyNagiUnreadView('community', did) : undefined;
-		if (did) void load();
+		unread = readPositions(
+			unreadView,
+			items.map((item) => ({ indexedAt: item.createdAt, uri: item.uri })),
+		);
+		if (did) void load(key);
 		else loading = false;
 	}
 
-	$effect(() => {
+	// 親ルートと同じく、再表示の最初の描画より前に直近成功データを戻す。
+	$effect.pre(() => {
 		if (!$oauthReady) return;
 		const did = $session?.did;
 		const key = `${did ?? 'guest'}:${i18n.locale}`;
 		if (key === loadedKey) return;
 		loadedKey = key;
-		items = [];
+		const cached = readCommunityAffirmationCache(key);
+		items = cached?.items ?? [];
+		loaded = cached?.loaded ?? false;
+		loading = false;
 		removingUris = new Set();
-		completed = false;
+		completed = cached?.completed ?? false;
+		responseBotActor = cached?.botActor;
 		error = '';
 		authError = false;
 		unread = false;
