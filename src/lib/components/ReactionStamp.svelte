@@ -64,7 +64,8 @@
 		font-size: 52px;
 		line-height: 1;
 		filter: drop-shadow(0 8px 8px color-mix(in srgb, #000 25%, transparent));
-		animation: stamp-pop 0.5s cubic-bezier(0.16, 0.9, 0.25, 1);
+		/* 花火と同じ尺で拡大しながら消し、終了後に不透明へ戻らないよう both を維持する。 */
+		animation: stamp-pop 0.64s cubic-bezier(0.16, 0.8, 0.2, 1) both;
 	}
 	.reaction-firework,
 	.reaction-firework i {
@@ -90,18 +91,19 @@
 	@keyframes stamp-pop {
 		0% {
 			opacity: 0;
-			transform: translateY(-36px) scale(1.45) rotate(-8deg);
+			transform: translateY(8px) scale(0.58) rotate(-7deg);
 		}
-		42% {
+		24% {
 			opacity: 1;
-			transform: translateY(2px) scale(0.86) rotate(2deg);
+			transform: translateY(0) scale(1) rotate(2deg);
 		}
-		68% {
-			transform: translateY(-5px) scale(1.08) rotate(0deg);
+		52% {
+			opacity: 0.92;
+			transform: translateY(-3px) scale(1.12) rotate(0deg);
 		}
 		100% {
 			opacity: 0;
-			transform: translateY(-9px) scale(1);
+			transform: translateY(-12px) scale(1.45) rotate(0deg);
 		}
 	}
 	@keyframes reaction-spark {
