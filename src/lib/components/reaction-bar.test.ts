@@ -31,14 +31,17 @@ describe('reaction bar presentation', () => {
 	});
 
 	it('pops an added reaction as a temporary stamp at the interaction origin', () => {
-		expect(reactionBar).toContain('popStamp(raw, origin);');
+		expect(reactionBar).toContain('use:registerReactionButton={keyOf(reaction)}');
+		expect(reactionBar).toContain('popStamp(raw, reactionButtons.get(key) ?? origin);');
 		expect(reactionBar).toContain("import ReactionStamp from './ReactionStamp.svelte'");
 		expect(reactionBar).toContain('<ReactionStamp');
+		expect(reactionStamp).toContain("import { portal } from '$lib/actions/portal'");
+		expect(reactionStamp).toContain('use:portal');
 		expect(reactionStamp).toContain('class="reaction-stamp"');
 		expect(reactionStamp).toMatch(
 			/@keyframes stamp-pop[\s\S]*translateY\(-36px\)[\s\S]*scale\(0\.86\)/,
 		);
-		expect(reactionBar.indexOf('popStamp(raw, origin);')).toBeLessThan(
+		expect(reactionBar.indexOf('popStamp(raw, reactionButtons.get(key) ?? origin);')).toBeLessThan(
 			reactionBar.indexOf('await createReaction'),
 		);
 	});

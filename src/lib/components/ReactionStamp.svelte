@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EmojiView } from '$lib/api/types';
+	import { portal } from '$lib/actions/portal';
 	import BluemojiMedia from './BluemojiMedia.svelte';
 
 	let {
@@ -15,7 +16,13 @@
 	}));
 </script>
 
-<div class="reaction-stamp" style:left={`${left}px`} style:top={`${top}px`} aria-hidden="true">
+<div
+	class="reaction-stamp"
+	style:left={`${left}px`}
+	style:top={`${top}px`}
+	aria-hidden="true"
+	use:portal
+>
 	<span class="reaction-firework">
 		{#each sparks as spark}
 			<i

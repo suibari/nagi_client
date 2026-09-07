@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import type { ActorView, EmojiView, ReactionView } from '$lib/api/types';
 	import { session } from '$lib/oauth/session.svelte';
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
@@ -47,6 +47,21 @@
 	>();
 	let stampId = 0;
 	let stampTimer: ReturnType<typeof setTimeout> | undefined;
+	const reactionButtons = new Map<string, HTMLElement>();
+	function registerReactionButton(node: HTMLElement, key: string) {
+		reactionButtons.set(key, node);
+		return {
+			update(nextKey: string) {
+				if (nextKey === key) return;
+				reactionButtons.delete(key);
+				key = nextKey;
+				reactionButtons.set(key, node);
+			},
+			destroy() {
+				if (reactionButtons.get(key) === node) reactionButtons.delete(key);
+			},
+		};
+	}
 	onDestroy(() => {
 		if (stampTimer) clearTimeout(stampTimer);
 	});
@@ -154,8 +169,10 @@
 								reactedByMe: true,
 							},
 						];
-				// 通信を待たず、押した場所へスタンプが着地する手応えを返す。
-				popStamp(raw, origin);
+				// 新規追加では楽観描画されたリアクションボタンを待ち、その中央へ着地させる。
+				// 既存ボタンの押下時も同じ基準を使い、パレットの「＋」位置へは出さない。
+				await tick();
+				popStamp(raw, reactionButtons.get(key) ?? origin);
 				const res = await createReaction({ uri, cid }, custom ?? emoji);
 				local = local.map((r) =>
 					keyOf(r) === key ? { ...r, viewerReactionUri: res.data.uri } : r,
@@ -192,6 +209,7 @@
 						class:active={reactedByViewer(reaction)}
 						aria-pressed={reactedByViewer(reaction)}
 						aria-label={m.reactWithAria({ emoji: labelOf(reaction) })}
+						use:registerReactionButton={keyOf(reaction)}
 						onclick={(event) => toggle(reaction.bluemoji ?? reaction.emoji, event.currentTarget)}
 					>
 						{#if reaction.bluemoji && !unavailable.includes(reaction.bluemoji.uri)}
