@@ -249,13 +249,17 @@
 			<div class="names">
 				<h1>{profile?.displayName ?? profile?.handle ?? did}</h1>
 				<span class="handle">@{profile?.handle ?? did}</span>
-				{#if badges.length}
-					<div class="profile-badges"><ActorBadges actor={profile} /></div>
-				{/if}
-				{#if profileTags.length}
-					<ProfileTagList tags={profileTags} className="profile-tags" />
-				{/if}
 			</div>
+			{#if badges.length || profileTags.length}
+				<div class="profile-meta">
+					{#if badges.length}
+						<div class="profile-badges"><ActorBadges actor={profile} /></div>
+					{/if}
+					{#if profileTags.length}
+						<ProfileTagList tags={profileTags} className="profile-tags" />
+					{/if}
+				</div>
+			{/if}
 			{#if $session?.did === did}
 				<a class="edit" href="/settings/profile">{m.profileEdit()}</a>
 			{:else if $session && profile}
