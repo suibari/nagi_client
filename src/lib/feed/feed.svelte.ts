@@ -73,11 +73,15 @@ export class Feed {
 	loading = $state(false);
 	error = $state('');
 	botActor = $state<ActorView>();
+	enteringKeys = $state<Set<string>>(new Set());
+	enteringPostUris = $state<Set<string>>(new Set());
+	newItemsVersion = $state(0);
 	#fetcher: (cursor?: string) => Promise<Page<FeedItem>>;
 	#optimisticFilter: (item: FeedItem) => boolean;
 	#unread: UnreadView | undefined;
 	#refreshing = false;
 	#loadRequest = 0;
+	#entryGeneration = 0;
 	constructor(
 		fetcher: (cursor?: string) => Promise<Page<FeedItem>>,
 		optimisticFilter: (item: FeedItem) => boolean = () => true,
@@ -136,6 +140,24 @@ export class Feed {
 			this.#unread.isUnread(item),
 		);
 	}
+	isEntering(item: FeedItem) {
+		return this.enteringKeys.has(feedKey(item));
+	}
+	isPostEntering(uri: string) {
+		return this.enteringPostUris.has(uri);
+	}
+	#markEntering(items: FeedItem[], postUris: string[]) {
+		if (!items.length && !postUris.length) return;
+		if (items.length) this.newItemsVersion += 1;
+		const generation = ++this.#entryGeneration;
+		this.enteringKeys = new Set(items.map(feedKey));
+		this.enteringPostUris = new Set(postUris);
+		setTimeout(() => {
+			if (generation !== this.#entryGeneration) return;
+			this.enteringKeys = new Set();
+			this.enteringPostUris = new Set();
+		}, 700);
+	}
 	async load() {
 		const request = ++this.#loadRequest;
 		this.loading = true;
@@ -185,6 +207,9 @@ export class Feed {
 		try {
 			const page = await this.#fetcher();
 			void postTranslations.prepare(page.items);
+			const previousPostUris = new Set(this.items.flatMap(feedUris));
+			// 確定URIへ更新済みの楽観投稿は既に登場演出を済ませているため、再演出しない。
+			const optimisticUris = new Set(optimisticPosts.items.map((item) => item.uri));
 			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
 			// スレッドキーでマージ。新リプライで代表 uri が変わっても同スレッドは in-place 更新され、
 			// 二重表示されない。既存スレッドは位置固定（no-jump）、新規スレッドだけ prepend。
@@ -192,11 +217,19 @@ export class Feed {
 			const incoming = new Map(page.items.map((i) => [feedKey(i), i]));
 			const seen = new Set(this.items.map(feedKey));
 			const fresh = page.items.filter((i) => !seen.has(feedKey(i)));
+			const visuallyFresh = fresh.filter(
+				(item) => !feedUris(item).some((uri) => optimisticUris.has(uri)),
+			);
+			const freshPostUris = page.items
+				.flatMap(feedPosts)
+				.map((post) => post.uri)
+				.filter((uri) => !previousPostUris.has(uri) && !optimisticUris.has(uri));
 			this.items = repositionFollowed(
 				[...fresh, ...this.items.map((i) => incoming.get(feedKey(i)) ?? i)],
 				page.items,
 				postFollow.current?.threadRootUri,
 			);
+			this.#markEntering(visuallyFresh, freshPostUris);
 			this.#unread?.advance(page.items[0]);
 			this.botActor = page.botActor ?? this.botActor;
 			if (!this.cursor) {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import type { ActorView, EmojiView, ReactionView } from '$lib/api/types';
 	import { session } from '$lib/oauth/session.svelte';
 	import { createReaction, deleteRecord } from '$lib/atproto/records';
@@ -9,6 +10,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import BluemojiMedia from './BluemojiMedia.svelte';
 	import QuickEmojiPalette from './QuickEmojiPalette.svelte';
+	import ReactionStamp from './ReactionStamp.svelte';
 	let {
 		uri,
 		cid,
@@ -40,6 +42,14 @@
 	let local = $state<ReactionView[]>([...reactions]);
 	let holdUntil = 0;
 	let unavailable = $state<string[]>([]);
+	let stamp = $state<
+		{ id: number; emoji: string; bluemoji?: EmojiView; left: number; top: number } | undefined
+	>();
+	let stampId = 0;
+	let stampTimer: ReturnType<typeof setTimeout> | undefined;
+	onDestroy(() => {
+		if (stampTimer) clearTimeout(stampTimer);
+	});
 	$effect(() => {
 		const incoming = reactions;
 		if (Date.now() >= holdUntil) local = [...incoming];
@@ -56,14 +66,28 @@
 	// 早期 return で捨てると、同じ絵文字の on→off が viewerReactionUri 未確定のまま
 	// 削除に入って無言で失敗する。
 	let queue: Promise<void> = Promise.resolve();
-	function toggle(raw: string | EmojiView) {
+	function toggle(raw: string | EmojiView, origin?: HTMLElement) {
 		if (!$session) {
 			location.href = '/login';
 			return;
 		}
-		queue = queue.then(() => run(raw)).catch(() => undefined);
+		queue = queue.then(() => run(raw, origin)).catch(() => undefined);
 	}
-	async function run(raw: string | EmojiView) {
+	function popStamp(raw: string | EmojiView, origin?: HTMLElement) {
+		const rect = (origin ?? pickerAnchor)?.getBoundingClientRect();
+		const left = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+		const top = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+		stamp = {
+			id: ++stampId,
+			emoji: typeof raw === 'string' ? raw : raw.name,
+			...(typeof raw === 'string' ? {} : { bluemoji: raw }),
+			left,
+			top,
+		};
+		if (stampTimer) clearTimeout(stampTimer);
+		stampTimer = setTimeout(() => (stamp = undefined), 720);
+	}
+	async function run(raw: string | EmojiView, origin?: HTMLElement) {
 		if (!$session) return;
 		const custom = typeof raw === 'string' ? undefined : raw;
 		const emoji = custom ? custom.name : (raw as string).normalize('NFC');
@@ -130,6 +154,8 @@
 								reactedByMe: true,
 							},
 						];
+				// 通信を待たず、押した場所へスタンプが着地する手応えを返す。
+				popStamp(raw, origin);
 				const res = await createReaction({ uri, cid }, custom ?? emoji);
 				local = local.map((r) =>
 					keyOf(r) === key ? { ...r, viewerReactionUri: res.data.uri } : r,
@@ -166,7 +192,7 @@
 						class:active={reactedByViewer(reaction)}
 						aria-pressed={reactedByViewer(reaction)}
 						aria-label={m.reactWithAria({ emoji: labelOf(reaction) })}
-						onclick={() => toggle(reaction.bluemoji ?? reaction.emoji)}
+						onclick={(event) => toggle(reaction.bluemoji ?? reaction.emoji, event.currentTarget)}
 					>
 						{#if reaction.bluemoji && !unavailable.includes(reaction.bluemoji.uri)}
 							<BluemojiMedia
@@ -208,3 +234,14 @@
 		select={toggle}
 		close={onpickerclose}
 	/>{/if}
+
+{#if stamp}
+	{#key stamp.id}
+		<ReactionStamp
+			emoji={stamp.emoji}
+			bluemoji={stamp.bluemoji}
+			left={stamp.left}
+			top={stamp.top}
+		/>
+	{/key}
+{/if}

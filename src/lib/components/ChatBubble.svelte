@@ -452,8 +452,7 @@
 							},
 						}
 					: {}),
-			threadKossori:
-				mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori) : false,
+			threadKossori: mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori) : false,
 		});
 		// 楽観カード →（サーバー確定後）本物のカード、と2段階で入れ替わるので、追従先は
 		// postFollow に預けて描画のたびに引き直してもらう。ここで一度寄せるだけでは、
@@ -529,7 +528,12 @@
 		<!-- ホバーで名刺、クリックで従来どおりプロフィールへ。 -->
 		<AvatarLink actor={post.author} />
 	{/if}
-	<div class="bubble" class:sending={optimistic}>
+	<div
+		class="bubble"
+		class:sending={optimistic}
+		class:bubble-sending={post.optimisticState === 'sending'}
+		class:bubble-created={post.optimisticState === 'indexing'}
+	>
 		<div class="meta">
 			<div class="meta-author-line">
 				{#if localGuest}
@@ -645,10 +649,15 @@
 					>{/if}{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
 			{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} {botActor} />{/if}
 		</ContentWarningMask>
-		{#if !displayOnly}{#if optimistic}
+		{#if !displayOnly}{#if post.optimisticState === 'sending'}
 				<div class="post-sending" role="status" aria-live="polite">
 					<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
 					<span>{m.postSending()}</span>
+				</div>
+			{:else if post.optimisticState === 'indexing'}
+				<div class="post-sending post-created" role="status" aria-live="polite">
+					<span class="post-created-check" aria-hidden="true">✓</span>
+					<span>{m.postCreated()}</span>
 				</div>
 			{:else}
 				<ReactionBar
@@ -791,9 +800,23 @@
 	.bubble.sending {
 		border-style: dashed;
 	}
-	.bubble.sending::before,
-	.bubble.sending::after {
-		display: none;
+	.bubble.bubble-sending,
+	.bubble.bubble-created {
+		--bubble-motion-x: -20px;
+		--bubble-settle-x: -7px;
+		transform-origin: -12px 18px;
+	}
+	.post-row.mine > .bubble.bubble-sending,
+	.post-row.mine > .bubble.bubble-created {
+		--bubble-motion-x: 20px;
+		--bubble-settle-x: 7px;
+		transform-origin: calc(100% + 12px) 18px;
+	}
+	.bubble.bubble-sending {
+		animation: bubble-sprout 0.48s cubic-bezier(0.16, 0.86, 0.24, 1.18);
+	}
+	.bubble.bubble-created {
+		animation: bubble-settle 0.34s cubic-bezier(0.18, 0.82, 0.24, 1.15);
 	}
 	.post-sending {
 		display: flex;
@@ -802,6 +825,44 @@
 		margin-top: 0.45rem;
 		color: var(--text-muted);
 		font-size: 0.8125rem;
+	}
+	.post-created {
+		color: var(--accent-strong);
+		font-weight: 700;
+	}
+	.post-created-check {
+		display: inline-grid;
+		place-items: center;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		background: var(--accent-soft);
+	}
+	@keyframes bubble-sprout {
+		from {
+			opacity: 0.25;
+			transform: translate(var(--bubble-motion-x), 24px) scale(0.28);
+		}
+		68% {
+			opacity: 1;
+			transform: translate(0, -3px) scale(1.035);
+		}
+		to {
+			transform: none;
+		}
+	}
+	@keyframes bubble-settle {
+		from {
+			opacity: 0.7;
+			transform: translateX(var(--bubble-settle-x)) scale(0.9);
+		}
+		65% {
+			transform: scale(1.025);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
 	}
 	.edited-badge {
 		color: var(--text-mute);

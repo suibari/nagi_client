@@ -38,6 +38,7 @@ export const en: Messages = {
 	close: 'Close',
 	postCreated: 'Posted',
 	viewCreatedPost: 'View post',
+	newPostsAvailable: 'New posts are available',
 	dismissNotice: 'Dismiss notification',
 	dateToday: 'Today',
 	dateYesterday: 'Yesterday',

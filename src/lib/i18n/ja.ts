@@ -39,6 +39,7 @@ export const ja = {
 	close: '閉じる',
 	postCreated: '投稿しました',
 	viewCreatedPost: '投稿を見る',
+	newPostsAvailable: '新しいポストがあります',
 	dismissNotice: '通知を閉じる',
 	dateToday: '今日',
 	dateYesterday: '昨日',

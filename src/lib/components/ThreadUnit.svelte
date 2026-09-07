@@ -20,6 +20,8 @@
 		ontogglepin,
 		unread = false,
 		collapsibleReplies = false,
+		entering = false,
+		isPostEntering = () => false,
 	}: {
 		item: FeedItem;
 		botActor?: ActorView;
@@ -37,6 +39,10 @@
 		unread?: boolean;
 		/** 返信を最初は折りたたんで展開ボタン形式にするか。 */
 		collapsibleReplies?: boolean;
+		/** ポーリングで新しく先頭へ入ったスレッドだけを滑り込ませる。 */
+		entering?: boolean;
+		/** 既存スレッドへ後着した返信だけを発言単位で滑り込ませる。 */
+		isPostEntering?: (uri: string) => boolean;
 	} = $props();
 
 	let repliesExpanded = $state(false);
@@ -56,9 +62,7 @@
 	let convChannel = $derived(
 		conv?.root.channel ?? conv?.bubbles.find((b) => b.post.channel)?.post.channel,
 	);
-	let convKossori = $derived(
-		Boolean(conv && (conv.root.threadKossori ?? conv.root.kossori)),
-	);
+	let convKossori = $derived(Boolean(conv && (conv.root.threadKossori ?? conv.root.kossori)));
 	let channel = $derived(item.channel ?? item.replyParent?.channel ?? item.botReply?.channel);
 	let threadKossori = $derived(
 		Boolean(
@@ -81,6 +85,7 @@
 		class="thread-unit"
 		class:unread
 		class:optimistic={Boolean(item.optimisticState)}
+		class:feed-entering={entering}
 		data-post-uri={item.uri}
 		data-optimistic-key={item.optimisticKey}
 	>
@@ -118,6 +123,7 @@
 					<!-- data-* は投稿後の追従スクロールの目印。楽観返信はここへ合流して出る。 -->
 					<div
 						class="thread-reply"
+						class:message-entering={!entering && isPostEntering(bubble.post.uri)}
 						style="--reply-indent: {replyIndent(bubble.depth)}"
 						data-post-uri={bubble.post.uri}
 						data-optimistic-key={bubble.post.optimisticKey}
@@ -159,6 +165,7 @@
 		class="thread-unit"
 		class:unread
 		class:optimistic={Boolean(item.optimisticState)}
+		class:feed-entering={entering}
 		data-post-uri={item.uri}
 		data-optimistic-key={item.optimisticKey}
 	>
@@ -176,7 +183,7 @@
 			/>
 		{/if}
 		{#if showItem}
-			{#if showParent}<div class="thread-reply">
+			{#if showParent}<div class="thread-reply" class:message-entering={isPostEntering(item.uri)}>
 					<ChatBubble
 						post={item}
 						{botActor}
@@ -211,7 +218,10 @@
 					<span>{m.showReplies({ count: 1 })}</span>
 				</button>
 			{:else}
-				{#if showItem}<div class="thread-reply">
+				{#if showItem}<div
+						class="thread-reply"
+						class:message-entering={isPostEntering(item.botReply.uri)}
+					>
 						<ChatBubble
 							post={item.botReply}
 							{botActor}
@@ -271,7 +281,9 @@
 		font-size: 12px;
 		font-weight: 700;
 		cursor: pointer;
-		transition: background-color 0.15s ease, border-color 0.15s ease;
+		transition:
+			background-color 0.15s ease,
+			border-color 0.15s ease;
 	}
 
 	.thread-reply-toggle-btn:hover {

@@ -14,13 +14,30 @@
 	import { replyDepths, replyIndent } from '$lib/thread/replyIndent';
 	let thread = $state<ThreadView>();
 	let error = $state('');
+	let enteringReplyUris = $state<Set<string>>(new Set());
+	let entryGeneration = 0;
 	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
 	let threadRootUri = $derived(thread?.post.uri ?? uri);
 	async function refreshThread() {
 		const next = (await getThread(uri)).thread;
 		void postTranslations.prepare([next.post, ...next.replies]);
+		const hadThread = Boolean(thread);
+		const previousUris = new Set(thread?.replies.map((reply) => reply.uri) ?? []);
+		const optimisticUris = new Set(optimisticPosts.items.map((item) => item.uri));
 		optimisticPosts.reconcile([next.post, ...next.replies]);
 		thread = next;
+		if (hadThread) {
+			const fresh = next.replies
+				.map((reply) => reply.uri)
+				.filter((replyUri) => !previousUris.has(replyUri) && !optimisticUris.has(replyUri));
+			if (fresh.length) {
+				const generation = ++entryGeneration;
+				enteringReplyUris = new Set(fresh);
+				setTimeout(() => {
+					if (generation === entryGeneration) enteringReplyUris = new Set();
+				}, 700);
+			}
+		}
 	}
 	// 楽観返信は時系列の末尾に置く。先頭に積むと、サーバーが取り込んだ瞬間に本来の位置
 	// （下）へ飛んでしまい、書いたばかりの返信を見失う。
@@ -104,6 +121,7 @@
 				{@const depth = replyDepthByUri.get(reply.uri) ?? 1}
 				<div
 					class="thread-reply"
+					class:message-entering={enteringReplyUris.has(reply.uri)}
 					style="--reply-indent: {replyIndent(depth)}"
 					data-post-uri={reply.uri}
 					data-optimistic-key={reply.optimisticKey}

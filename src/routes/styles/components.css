@@ -845,6 +845,34 @@
 	display: grid;
 	gap: 0;
 }
+/* 初回表示は静止したまま、ポーリングで増えたカードだけ上端から差し込む。 */
+.feed-entering {
+	animation: feed-slide-in 0.52s cubic-bezier(0.18, 0.78, 0.24, 1);
+}
+/* 返信は下から持ち上がって着地し、postFollow の smooth scroll が画面を追従させる。 */
+.message-entering:not(.feed-entering) {
+	animation: reply-slide-up 0.58s cubic-bezier(0.16, 0.82, 0.24, 1);
+}
+@keyframes feed-slide-in {
+	from {
+		opacity: 0;
+		transform: translateY(-42px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@keyframes reply-slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(52px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
 .thread-flags {
 	display: flex;
 	align-items: center;

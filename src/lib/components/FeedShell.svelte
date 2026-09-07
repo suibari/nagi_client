@@ -11,6 +11,7 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import GuestPostSection from './GuestPostSection.svelte';
+	import NewPostsButton from './NewPostsButton.svelte';
 
 	/**
 	 * フィード1本の描画。タブ（ホーム/グローバル/カスタム/チャンネル/検索）はすべて
@@ -47,10 +48,20 @@
 	// 生成は副作用（load を走らせる）なので $derived には置かない。
 	let feed = $state<Feed>(untrack(() => feedFor(spec)));
 	let shownKey = untrack(() => spec.key);
+	let newPostsAvailable = $state(false);
+	let seenNewItemsVersion = untrack(() => feed.newItemsVersion);
 	$effect(() => {
 		if (spec.key === shownKey) return;
 		shownKey = spec.key;
 		feed = feedFor(spec);
+		seenNewItemsVersion = feed.newItemsVersion;
+		newPostsAvailable = false;
+	});
+	$effect(() => {
+		const version = feed.newItemsVersion;
+		if (version === seenNewItemsVersion) return;
+		seenNewItemsVersion = version;
+		if (typeof window !== 'undefined' && window.scrollY > 24) newPostsAvailable = true;
 	});
 
 	onMount(() => {
@@ -60,11 +71,24 @@
 		const fast = startVisiblePolling(() => feed.refresh(), 3_000, {
 			when: () => feed.hasOptimistic() || feed.hasPendingFor($session?.did),
 		});
+		const onScroll = () => {
+			if (window.scrollY <= 24) newPostsAvailable = false;
+		};
+		window.addEventListener('scroll', onScroll, { passive: true });
 		return () => {
 			base();
 			fast();
+			window.removeEventListener('scroll', onScroll);
 		};
 	});
+
+	function scrollToNewest() {
+		newPostsAvailable = false;
+		window.scrollTo({
+			top: 0,
+			behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+		});
+	}
 
 	// 投稿直後の画面追従。楽観カード → 確定カードで DOM が入れ替わるので、
 	// 並びが変わるたびに追従先を引き直す。
@@ -95,8 +119,12 @@
 		cache.clear();
 		shownKey = spec.key;
 		feed = feedFor(spec);
+		seenNewItemsVersion = feed.newItemsVersion;
+		newPostsAvailable = false;
 	}
 </script>
+
+<NewPostsButton visible={newPostsAvailable} onclick={scrollToNewest} />
 
 {#if spec.showGuestHero && !$session}
 	<aside class="welcome">
@@ -133,6 +161,8 @@
 		{#each feed.visibleItems as item (item.conversation?.threadRootUri ?? item.uri)}
 			<ThreadUnit
 				{item}
+				entering={feed.isEntering(item)}
+				isPostEntering={(uri) => feed.isPostEntering(uri)}
 				unread={feed.isUnread(item, $session?.did)}
 				botActor={feed.botActor}
 				ondeleted={(uri) => removeEverywhere(uri)}
