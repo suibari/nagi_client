@@ -517,6 +517,13 @@
 	color: var(--text-faint);
 	overflow-wrap: anywhere;
 }
+.draft-image-note {
+	margin: 0;
+	color: var(--text-faint);
+	font-size: 11px;
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+}
 .composer .submit:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
