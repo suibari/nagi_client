@@ -2,6 +2,7 @@
 	import type { BusinessCardData } from '$lib/card/data';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import Avatar from './Avatar.svelte';
+	import ProfileTagList from './ProfileTagList.svelte';
 
 	/**
 	 * 名刺カードの DOM 表現。
@@ -18,12 +19,17 @@
 		data,
 		size = 'full',
 		onclick,
+		tags = data.tags,
+		clickableTags = false,
 	}: {
 		data: BusinessCardData;
 		/** compact はプロフィールヘッダーとホバーカード用。full は拡大モーダル用。 */
 		size?: 'compact' | 'full';
 		/** 渡すとカード全体がボタンになる（タップで拡大）。 */
 		onclick?: () => void;
+		/** ホバー表示だけが6タグへ差し替える。通常の名刺とPNGは data.tags の3件を保つ。 */
+		tags?: readonly string[];
+		clickableTags?: boolean;
 	} = $props();
 
 	const joined = $derived(
@@ -58,12 +64,8 @@
 		<div class="bc-names">
 			<strong>{data.displayName || data.handle}</strong>
 			<span class="bc-handle">@{data.handle}</span>
-			{#if data.tags.length}
-				<ul class="bc-tags">
-					{#each data.tags as tag (tag)}
-						<li>#{tag}</li>
-					{/each}
-				</ul>
+			{#if tags.length}
+				<ProfileTagList {tags} clickable={clickableTags} className="bc-tags" />
 			{/if}
 		</div>
 	</div>

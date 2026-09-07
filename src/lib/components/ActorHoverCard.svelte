@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { BusinessCardData } from '$lib/card/data';
+	import { selectProfileTags } from '$lib/profile/tags';
 	import { portal } from '$lib/actions/portal';
 	import BusinessCard from './BusinessCard.svelte';
 
@@ -29,6 +30,7 @@
 	let left = $state(0);
 	let top = $state(0);
 	let positioned = $state(false);
+	const tags = $derived.by(() => selectProfileTags(data.tags, data.interestKeywords));
 
 	function updatePosition() {
 		if (!element) return;
@@ -86,5 +88,5 @@
 	onmouseleave={onleave}
 	role="presentation"
 >
-	<BusinessCard {data} size="compact" />
+	<BusinessCard {data} {tags} clickableTags size="compact" />
 </div>

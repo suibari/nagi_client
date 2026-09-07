@@ -37,6 +37,8 @@
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import { privateList } from '$lib/private-list/private-list.svelte';
 	import BirthdayBalloons from '$lib/components/BirthdayBalloons.svelte';
+	import ProfileTagList from '$lib/components/ProfileTagList.svelte';
+	import { selectProfileTags } from '$lib/profile/tags';
 
 	// 日記・カードはポストではないので Feed には載らない。タブだけ同じ並びに足す。
 	type ProfileTab = ProfileFeedFilter | 'diary' | 'cards' | 'bookmarks';
@@ -183,6 +185,9 @@
 		feed = f;
 	});
 	const badges = $derived(actorBadges(profile));
+	const profileTags = $derived.by(() =>
+		profile ? selectProfileTags(profile.tags, profile.interestKeywords) : [],
+	);
 	// 名刺はヘッダーに並べず、アバターを押して開くモーダルに入れる。
 	// アバター・表示名・ハンドルはプロフィール上部と丸ごと重複するので、
 	// 常時出すとヘッダーが同じ情報で縦に伸びるだけになる。
@@ -246,6 +251,9 @@
 				<span class="handle">@{profile?.handle ?? did}</span>
 				{#if badges.length}
 					<div class="profile-badges"><ActorBadges actor={profile} /></div>
+				{/if}
+				{#if profileTags.length}
+					<ProfileTagList tags={profileTags} className="profile-tags" />
 				{/if}
 			</div>
 			{#if $session?.did === did}

@@ -15,6 +15,8 @@ export type BusinessCardData = {
 	avatar?: string;
 	/** ユーザーを表すハッシュタグ（'#' は含まない）。最大3つに丸めて渡す。 */
 	tags: string[];
+	/** ホバーUI専用。Canvas画像や通常の名刺DOMでは描画しない興味テーマ候補。 */
+	interestKeywords?: string[];
 	/** botたんの紹介文。名刺の主役なので必ず何か入る（欠損時は comment から詰める）。 */
 	tagline: string;
 	/** Nagi 登録日（ISO）。 */
@@ -58,6 +60,7 @@ export function cardFromProfile(
 		displayName: profile.displayName,
 		avatar: profile.avatar,
 		tags: (profile.tags ?? []).slice(0, MAX_TAGS),
+		interestKeywords: profile.interestKeywords,
 		tagline,
 		joinedAt: profile.joinedAt,
 		updatedAt: profile.cardUpdatedAt,
