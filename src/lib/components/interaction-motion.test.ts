@@ -10,6 +10,8 @@ const threadPage = read('../../routes/thread/[did]/[rkey]/+page.svelte');
 const chatBubble = read('./ChatBubble.svelte');
 const postFollow = read('../feed/post-follow.svelte.ts');
 const notice = read('./PostFollowNotice.svelte');
+const unavailableNotice = read('./PostUnavailableNotice.svelte');
+const quoteCard = read('./QuoteCard.svelte');
 const componentsCss = read('../../routes/styles/components.css');
 const baseCss = read('../../routes/styles/base.css');
 const devPreview = read('../../routes/dev/interactions/+page.svelte');
@@ -58,6 +60,25 @@ describe('interaction motion contracts', () => {
 		expect(notice).toContain('<aside class="post-follow-notice"');
 		expect(notice).not.toContain('post-notice-avatar');
 		expect(postFollow).not.toContain('postFollowNotice.sending();');
+	});
+
+	// 判定は非同期なので、投稿直後に結果は出ない。ポーリングで追いかけるのはやめ、
+	// 次に開いたときの墓標だけで「削除された」と「保存を拒否された」を区別する。
+	it('distinguishes a rejected post from a deleted one without polling', () => {
+		expect(postFollow).not.toContain('getPostStatus');
+		expect(chatBubble).toContain('reason={post.unavailableReason}');
+		expect(quoteCard).toContain('reason={post.unavailableReason}');
+		expect(unavailableNotice).toContain("reason === 'moderation-policy'");
+		expect(unavailableNotice).toContain("reason === 'processing-failed'");
+	});
+
+	// 「投稿の正本はあなたのPDSに残っています」は投稿者本人にしか成り立たない。
+	// スレッド内の他人の返信や引用先で出ると、事実と違う案内になる。
+	it('shows the PDS note only to the author of the unavailable post', () => {
+		expect(unavailableNotice).toContain('$session?.did === authorDid');
+		expect(unavailableNotice).toContain('{#if showPdsNote}<p>{m.postModerationPdsNote()}</p>{/if}');
+		expect(chatBubble).toContain('authorDid={post.author.did}');
+		expect(quoteCard).toContain('authorDid={post.author.did}');
 	});
 
 	it('retains the global reduced-motion override for every new animation', () => {

@@ -232,6 +232,13 @@
 		or the diaries bot-tan writes.
 	</p>
 </div>
+<h3>We send moderation results to Discord for operator review</h3>
+<p>
+	When automated moderation labels or rejects public content, we send the decision reason, post text
+	or other reviewed text, images, DID, and URI to an operator-only Discord channel so the operator
+	can distinguish false positives from actual violations. Data sent to Discord is handled under
+	Discord's retention and security policies. "Kossori" posts are never sent.
+</p>
 <h3>How OpenAI handles it</h3>
 <ul>
 	<li>OpenAI does <strong>not use what we send to train its models</strong>.</li>
@@ -272,6 +279,13 @@
 				<td>
 					As set out in Section 5 (public user-generated text and public image URLs; kossori posts
 					are excluded)
+				</td>
+			</tr>
+			<tr>
+				<td>Discord (operator-only moderation notifications)</td>
+				<td>
+					Text, images, decision reasons, DID, and URI for public content that was labelled or
+					rejected ("Kossori" posts are excluded)
 				</td>
 			</tr>
 			<tr>

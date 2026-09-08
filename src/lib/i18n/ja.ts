@@ -401,6 +401,10 @@ export const ja = {
 	titleBadge: (p: { title: string }) => `称号: ${p.title}`,
 	titleBadgeAria: (p: { title: string }) => `日記でもらった称号「${p.title}」`,
 	postDeleted: 'この投稿は削除されました',
+	postModerationRejected: 'Nagiのモデレーションにより表示対象外になりました',
+	postProcessingFailed:
+		'Nagiでの処理に失敗したため、現在表示できません（規約違反の判定ではありません）',
+	postModerationPdsNote: '投稿の正本はあなたのPDSに残っています。',
 	readMore: '続きを読む',
 	readLess: '閉じる',
 	replyPost: '返信',

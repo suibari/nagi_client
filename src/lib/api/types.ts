@@ -119,6 +119,7 @@ export type PostView = {
 	/** 投稿後に編集された（AppView が cid 変化を観測した）か。UI の「編集済み」バッジ用。 */
 	edited?: boolean;
 	deleted?: boolean;
+	unavailableReason?: 'moderation-policy' | 'processing-failed';
 	/** Client-only state; never returned by the AppView API. */
 	optimisticState?: 'sending' | 'indexing';
 	/** Client-only stable DOM key used while an optimistic post changes URI/CID. */

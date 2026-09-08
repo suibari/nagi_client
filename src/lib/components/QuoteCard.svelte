@@ -5,6 +5,7 @@
 	import ImageGallery from './ImageGallery.svelte';
 	import LinkCard from './LinkCard.svelte';
 	import QuoteFrame from './QuoteFrame.svelte';
+	import PostUnavailableNotice from './PostUnavailableNotice.svelte';
 	import { postHref } from '$lib/feed/post-follow.svelte';
 	let { post }: { post: PostView } = $props();
 	let expanded = $state(false);
@@ -18,17 +19,20 @@
 	datetime={post.createdAt}
 	timeHref={threadHref}
 >
-	<TranslateToggle
-		uri={post.uri}
-		cid={post.cid}
-		text={post.text}
-		facets={post.facets}
-		langs={post.langs}
-		deleted={post.deleted}
-		collapsed={!expanded}
-		onoverflowchange={(value) => (overflowing = value)}
-	/>
-	{#if overflowing || expanded}<button
+	{#if post.deleted}
+		<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
+	{:else}
+		<TranslateToggle
+			uri={post.uri}
+			cid={post.cid}
+			text={post.text}
+			facets={post.facets}
+			langs={post.langs}
+			collapsed={!expanded}
+			onoverflowchange={(value) => (overflowing = value)}
+		/>
+	{/if}
+	{#if !post.deleted && (overflowing || expanded)}<button
 			class="read"
 			type="button"
 			aria-expanded={expanded}

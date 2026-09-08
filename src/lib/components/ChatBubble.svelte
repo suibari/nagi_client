@@ -55,6 +55,7 @@
 	import ContentWarningMask from './ContentWarningMask.svelte';
 	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
 	import { trackPostSeen } from '$lib/post/seen';
+	import PostUnavailableNotice from './PostUnavailableNotice.svelte';
 	let {
 		post,
 		botActor,
@@ -624,6 +625,8 @@
 							{m.contentWarningRestricted()}
 						</p>{/if}
 				</div>
+			{:else if post.deleted}
+				<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
 			{:else}
 				<TranslateToggle
 					uri={post.uri}
@@ -631,7 +634,6 @@
 					text={post.text}
 					langs={post.langs}
 					facets={post.facets}
-					deleted={post.deleted}
 					collapsed={collapsible && !expanded}
 					disabled={optimistic}
 					{clampLines}

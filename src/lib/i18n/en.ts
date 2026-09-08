@@ -391,6 +391,10 @@ export const en: Messages = {
 	titleBadge: (p: { title: string }) => `Title: ${p.title}`,
 	titleBadgeAria: (p: { title: string }) => `Title "${p.title}" earned from a diary`,
 	postDeleted: 'This post has been deleted',
+	postModerationRejected: 'This post is not displayed on Nagi following moderation',
+	postProcessingFailed:
+		'Nagi could not process this post, so it is currently unavailable (this is not a policy violation)',
+	postModerationPdsNote: 'The source post remains in your PDS.',
 	readMore: 'Read more',
 	readLess: 'Show less',
 	replyPost: 'Reply',

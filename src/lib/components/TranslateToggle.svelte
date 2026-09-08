@@ -19,7 +19,6 @@
 		text,
 		langs,
 		facets,
-		deleted = false,
 		collapsed = false,
 		disabled = false,
 		clampLines,
@@ -30,7 +29,6 @@
 		text: string;
 		langs?: string[];
 		facets?: Facet[];
-		deleted?: boolean;
 		collapsed?: boolean;
 		disabled?: boolean;
 		clampLines?: number;
@@ -44,7 +42,7 @@
 		!disabled &&
 			languagePreferences.autoTranslate &&
 			isTranslationCandidate(
-				{ uri, cid, text, langs, facets, deleted },
+				{ uri, cid, text, langs, facets },
 				languagePreferences.translationLanguage,
 			),
 	);
@@ -77,11 +75,11 @@
 	// 翻訳可否やキャッシュ状態の変化はこちらだけで扱い、原文の開閉状態には触れない。
 	$effect(() => {
 		if (!translationEligible || translation) return;
-		postTranslations.ensure({ uri, cid, text, langs, facets, deleted });
+		postTranslations.ensure({ uri, cid, text, langs, facets });
 	});
 
 	function retry() {
-		void postTranslations.retry({ uri, cid, text, langs, facets, deleted });
+		void postTranslations.retry({ uri, cid, text, langs, facets });
 	}
 
 	// 文字数ではなく実際の行数で「続きを読む」の要否を決める。
@@ -181,7 +179,7 @@
 				style={clampLines ? `--clamp-lines: ${clampLines};` : undefined}
 				bind:this={body}
 			>
-				{#if deleted}<p>{m.postDeleted()}</p>{:else}<RichText {text} {facets} />{/if}
+				<RichText {text} {facets} />
 			</div>
 		</div>
 	{/if}
