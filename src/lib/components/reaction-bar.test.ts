@@ -24,6 +24,15 @@ describe('reaction bar presentation', () => {
 		expect(image).toMatch(/min-width:\s*26px;/);
 	});
 
+	it('animates a reaction chip only while the button is pressed', () => {
+		const active = cssRule('reaction-emoji\\.active');
+		expect(active).not.toMatch(/animation:/);
+		expect(componentsCss).toMatch(
+			/button\.reaction-emoji:active\s*\{[^}]*transform:\s*scale\(1\.15\);/s,
+		);
+		expect(componentsCss).not.toContain('@keyframes reaction-pop');
+	});
+
 	it('keeps reactor avatars visually balanced beside the larger chips', () => {
 		expect(componentsCss).toMatch(
 			/\.reaction-avatar \.avatar\.small\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;/s,

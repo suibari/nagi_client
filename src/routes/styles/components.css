@@ -1526,17 +1526,6 @@ button.reaction-emoji:active {
 	background: var(--accent-soft);
 	color: var(--accent-strong);
 	font-weight: 700;
-	animation: reaction-pop 0.18s ease-out;
-}
-@keyframes reaction-pop {
-	50% {
-		transform: scale(1.12);
-	}
-}
-@media (prefers-reduced-motion: reduce) {
-	.reaction-emoji.active {
-		animation: none;
-	}
 }
 .reaction-group {
 	display: inline-flex;
