@@ -89,6 +89,10 @@ describe('interaction motion contracts', () => {
 
 	it('offers an API-free development preview and excludes it from production', () => {
 		expect(devPreview).toContain('API・PDS・AppViewへは送信しません');
+		expect(devPreview).toContain('<ChatBubble post={basicPost} displayOnly />');
+		expect(devPreview).toContain(
+			'<ChatBubble post={translatedPost} {translatedText} displayOnly clampLines={3} />',
+		);
 		expect(devPreview).toContain('<ReactionStamp');
 		expect(devPreview).toContain('<ThreadUnit');
 		expect(devPreview).toContain('<NewPostsButton');

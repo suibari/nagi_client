@@ -3,6 +3,7 @@
 	import type { ActorView, FeedItem } from '$lib/api/types';
 	import ReactionStamp from '$lib/components/ReactionStamp.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
+	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import NewPostsButton from '$lib/components/NewPostsButton.svelte';
 	import { scrollToElement } from '$lib/feed/post-follow.svelte';
 
@@ -34,6 +35,21 @@
 	let previewNewPostsAvailable = $state(false);
 	let postingItem = $state<FeedItem>();
 	const parent = post(10_000, 'この投稿への返信が、下から上へ滑りながら現れます。');
+	const basicPost = post(20_000, 'AppViewを起動しなくても確認できる、短いモック投稿です。');
+	const translatedPost = {
+		...post(
+			20_001,
+			'This is the original text of a deliberately long preview post. It stays entirely in the browser and is never sent to the AppView.',
+		),
+		langs: ['en'],
+	};
+	const translatedText = [
+		'これは、翻訳と本文省略の表示を確認するための長いモック投稿です。',
+		'AppViewを起動していない状態でも、実際の投稿と同じ幅や行間でレイアウトを確認できます。',
+		'文章を意図的に長くしているため、下部に「続きを読む」が表示されます。',
+		'その右側には言語アイコン付きの「原文を表示」が並び、どちらも個別に操作できます。',
+		'翻訳結果はこのページ内で直接渡しており、翻訳APIへの通信は発生しません。',
+	].join('\n');
 	let replyItem = $state<FeedItem>();
 	let replyPreview = $state<HTMLElement>();
 	let previewTimers: ReturnType<typeof setTimeout>[] = [];
@@ -130,9 +146,24 @@
 <section class="interaction-preview">
 	<header class="preview-head">
 		<p class="eyebrow">Development preview</p>
-		<h1>インタラクション演出</h1>
+		<h1>投稿表示・インタラクション演出</h1>
 		<p>すべてブラウザ内のモック表示です。API・PDS・AppViewへは送信しません。</p>
 	</header>
+
+	<section class="preview-panel">
+		<h2>基本の投稿表示</h2>
+		<p>短文と、翻訳済みの長文を実際の投稿コンポーネントで確認できます。</p>
+		<div class="post-showcase">
+			<div>
+				<h3>短文</h3>
+				<ChatBubble post={basicPost} displayOnly />
+			</div>
+			<div>
+				<h3>翻訳・本文省略</h3>
+				<ChatBubble post={translatedPost} {translatedText} displayOnly clampLines={3} />
+			</div>
+		</div>
+	</section>
 
 	<nav class="preview-controls" aria-label="演出を再生">
 		<button type="button" onclick={previewReaction}>🌊 リアクション</button>
@@ -201,6 +232,7 @@
 	.preview-head h1,
 	.preview-head p,
 	.preview-panel h2,
+	.preview-panel h3,
 	.preview-panel p {
 		margin: 0;
 	}
@@ -237,6 +269,23 @@
 		border-radius: var(--r-md);
 		background: var(--surface-1);
 	}
+	.post-showcase {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 16px;
+		margin-top: 8px;
+	}
+	.post-showcase > div {
+		min-inline-size: 0;
+		padding: 12px;
+		border: 1px dashed var(--line-strong);
+		border-radius: var(--r-sm);
+	}
+	.post-showcase h3 {
+		margin-bottom: 12px;
+		color: var(--text-muted);
+		font-size: 13px;
+	}
 	.reply-distance {
 		display: grid;
 		place-items: center;
@@ -251,6 +300,9 @@
 		user-select: none;
 	}
 	@media (max-width: 767px) {
+		.post-showcase {
+			grid-template-columns: minmax(0, 1fr);
+		}
 		.preview-controls {
 			top: calc(var(--mobile-header-h) + 6px);
 		}

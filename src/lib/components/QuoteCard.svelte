@@ -22,6 +22,14 @@
 	{#if post.deleted}
 		<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
 	{:else}
+		{#snippet collapseToggle()}
+			{#if overflowing || expanded}<button
+					class="read"
+					type="button"
+					aria-expanded={expanded}
+					onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
+				>{/if}
+		{/snippet}
 		<TranslateToggle
 			uri={post.uri}
 			cid={post.cid}
@@ -30,14 +38,9 @@
 			langs={post.langs}
 			collapsed={!expanded}
 			onoverflowchange={(value) => (overflowing = value)}
+			{collapseToggle}
 		/>
 	{/if}
-	{#if !post.deleted && (overflowing || expanded)}<button
-			class="read"
-			type="button"
-			aria-expanded={expanded}
-			onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
-		>{/if}
 	{#if post.images?.length}<ImageGallery images={post.images} />{/if}
 	{#if post.linkCards?.length}<div class="link-cards">
 			{#each post.linkCards as card}<LinkCard {card} />{/each}

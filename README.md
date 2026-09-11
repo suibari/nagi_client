@@ -63,6 +63,10 @@ npm run dev
 npm run dev -- --open
 ```
 
+AppViewを起動せずに投稿の基本表示や翻訳・本文省略、インタラクション演出を確認する場合は、
+開発サーバーの `/dev/interactions` を開きます。このページのモックデータはブラウザ内だけで
+描画され、API・PDS・AppViewへは送信されません。
+
 依存関係をlockfileどおりに再現したい場合は、`npm install` の代わりに `npm ci` を使ってください。
 
 ### 環境変数

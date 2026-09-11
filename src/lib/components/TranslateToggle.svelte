@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import {
 		languageName,
@@ -11,6 +12,7 @@
 	} from '$lib/i18n/translationProviders';
 	import type { Facet } from '$lib/api/types';
 	import RichText from './RichText.svelte';
+	import Icon from './shell/Icon.svelte';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 
 	let {
@@ -23,6 +25,8 @@
 		disabled = false,
 		clampLines,
 		onoverflowchange,
+		collapseToggle,
+		translatedText,
 	}: {
 		uri: string;
 		cid: string;
@@ -33,6 +37,9 @@
 		disabled?: boolean;
 		clampLines?: number;
 		onoverflowchange?: (overflowing: boolean) => void;
+		collapseToggle?: Snippet;
+		/** APIを使わない表示確認などで、訳文を直接描画する。 */
+		translatedText?: string;
 	} = $props();
 	let body = $state<HTMLElement>();
 	let originalExpanded = $derived(
@@ -51,8 +58,14 @@
 			? postTranslations.entry(uri, cid, languagePreferences.translationLanguage)
 			: undefined,
 	);
-	let translated = $derived(translation?.status === 'translated' ? translation.text : '');
-	let busy = $derived(translationEligible && (!translation || translation.status === 'loading'));
+	let translated = $derived(
+		translatedText ?? (translation?.status === 'translated' ? translation.text : ''),
+	);
+	let busy = $derived(
+		translatedText === undefined &&
+			translationEligible &&
+			(!translation || translation.status === 'loading'),
+	);
 	let englishFallback = $derived(
 		translation?.status === 'loading' ? translation.english : undefined,
 	);
@@ -74,7 +87,7 @@
 
 	// 翻訳可否やキャッシュ状態の変化はこちらだけで扱い、原文の開閉状態には触れない。
 	$effect(() => {
-		if (!translationEligible || translation) return;
+		if (translatedText !== undefined || !translationEligible || translation) return;
 		postTranslations.ensure({ uri, cid, text, langs, facets });
 	});
 
@@ -141,13 +154,15 @@
 				<RichText text={translated} />
 			</div>
 		</div>
+		{#if collapseToggle}{@render collapseToggle()}{/if}
 		<button
 			class="original-toggle"
 			type="button"
 			aria-expanded={originalExpanded}
 			onclick={() =>
 				postTranslations.toggleOriginal(uri, cid, languagePreferences.translationLanguage)}
-			>{originalExpanded ? m.hideOriginalText() : m.showOriginalText()}</button
+			><Icon name="language" size={14} />
+			<span>{originalExpanded ? m.hideOriginalText() : m.showOriginalText()}</span></button
 		>
 		{#if originalExpanded}
 			<div class="original separated">
@@ -183,6 +198,7 @@
 			</div>
 		</div>
 	{/if}
+	{#if collapseToggle && !translated}{@render collapseToggle()}{/if}
 </div>
 
 <style>
@@ -208,6 +224,9 @@
 	}
 
 	.original-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
 		margin-top: 0.35rem;
 		padding: 0;
 		border: 0;
