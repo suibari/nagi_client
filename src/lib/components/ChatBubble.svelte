@@ -73,6 +73,7 @@
 		collapsible = true,
 		bookmarkSubject,
 		localGuest = false,
+		translatedText,
 	}: {
 		post: PostView;
 		/** ニュース引用ブロックの botたんヘッダーに使う実データ。 */
@@ -100,6 +101,8 @@
 		bookmarkSubject?: { kind: BookmarkSubjectType; uri: string };
 		/** 端末だけにある未サインイン投稿。プロフィール導線を作らず専用アイコンを使う。 */
 		localGuest?: boolean;
+		/** AppViewを使わない開発プレビュー向けの訳文。 */
+		translatedText?: string;
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
@@ -628,6 +631,13 @@
 			{:else if post.deleted}
 				<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
 			{:else}
+				{#snippet collapseToggle()}
+					{#if collapsible && (overflowing || expanded)}<button
+							class="read"
+							onclick={() => (expanded = !expanded)}
+							>{expanded ? m.readLess() : m.readMore()}</button
+						>{/if}
+				{/snippet}
 				<TranslateToggle
 					uri={post.uri}
 					cid={post.cid}
@@ -638,11 +648,9 @@
 					disabled={optimistic}
 					{clampLines}
 					onoverflowchange={(value) => (overflowing = value)}
+					{collapseToggle}
+					{translatedText}
 				/>
-				{#if collapsible && (overflowing || expanded)}<button
-						class="read"
-						onclick={() => (expanded = !expanded)}>{expanded ? m.readLess() : m.readMore()}</button
-					>{/if}
 			{/if}{#if !editing && visibleImages?.length}
 				<ImageGallery images={visibleImages} clampTall={clampTallImages} />
 				{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
