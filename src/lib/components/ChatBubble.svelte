@@ -281,6 +281,7 @@
 		editing = true;
 	}
 	function cancelEdit() {
+		if (editBusy) return;
 		editing = false;
 		editText = '';
 		editEmojis = [];
@@ -291,6 +292,18 @@
 		editImages = [];
 		editImageProcessing = false;
 		editError = '';
+	}
+	function handleEditKeydown(event: KeyboardEvent) {
+		// メンション等の候補が開いている場合、Esc はまず候補を閉じるために使われる。
+		if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing || editBusy) return;
+		event.preventDefault();
+		cancelEdit();
+	}
+	function editEscape(node: HTMLElement) {
+		node.addEventListener('keydown', handleEditKeydown);
+		return {
+			destroy: () => node.removeEventListener('keydown', handleEditKeydown),
+		};
 	}
 	/**
 	 * 投稿の編集・削除に standard.site の記事を追従させる。
@@ -585,7 +598,7 @@
 			title={moderationWarningText}
 		>
 			{#if editing}
-				<div class="inline-edit">
+				<div class="inline-edit" use:editEscape>
 					{#snippet editTools()}
 						<PostImageEditor
 							bind:this={editImageEditor}
@@ -611,6 +624,14 @@
 					/>
 					<div class="post-composer-foot">
 						{#if editError}<span class="error" role="alert">{editError}</span>{/if}
+						<button
+							class="ghost icon-action"
+							type="button"
+							disabled={editBusy}
+							aria-label={m.cancel()}
+							title={m.cancel()}
+							onclick={cancelEdit}><Icon name="cancel" size={18} /></button
+						>
 						<button
 							class="primary icon-action primary-icon"
 							type="button"
