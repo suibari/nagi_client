@@ -9,7 +9,7 @@ import {
 } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment, PostEditImage } from '$lib/images';
-import type { EmojiView, NewsSubmissionPreview, PostImage } from '$lib/api/types';
+import type { EmojiView, LinkCardView, NewsSubmissionPreview, PostImage } from '$lib/api/types';
 import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
 import { hasOptInScope } from '$lib/optin/scope-optin';
 import { forgetPublicationCache } from '$lib/standardsite/cache';
@@ -70,7 +70,8 @@ async function deleteAndIndex(collection: string, rkey: string, cid?: string) {
 			.then((r) => r.data.cid)
 			.catch(() => undefined));
 	const response = await agent.com.atproto.repo.deleteRecord({ repo: s.did, collection, rkey });
-	if (known) await ensureRecord(`at://${s.did}/${collection}/${rkey}`, known).catch(() => undefined);
+	if (known)
+		await ensureRecord(`at://${s.did}/${collection}/${rkey}`, known).catch(() => undefined);
 	return response;
 }
 
@@ -159,6 +160,8 @@ export type LinkCardDraft = {
 	description?: string;
 	thumbnail?: Blob;
 	previewUrl?: string;
+	/** 投稿編集時に、元レコードのサムネイル BlobRef を再利用するための位置。 */
+	sourceIndex?: number;
 };
 export type PostDraft = {
 	text: string;
@@ -447,6 +450,13 @@ type StoredPostImage = {
 	aspectRatio?: { width: number; height: number };
 };
 
+type StoredPostLinkCard = {
+	uri: string;
+	title: string;
+	description?: string;
+	thumb?: unknown;
+};
+
 function blobCid(blob: unknown): string | undefined {
 	if (!blob || typeof blob !== 'object') return undefined;
 	const ref = (blob as { ref?: unknown }).ref;
@@ -462,8 +472,9 @@ function blobCid(blob: unknown): string | undefined {
 }
 
 /**
- * 既存投稿の本文と画像を編集する。既存画像は getRecord した BlobRef を再利用し、
- * 新規画像だけアップロードする。createdAt・reply・kossori 等のフィールドは保持する。
+ * 既存投稿の本文・画像・リンクカードを編集する。既存の画像とカードサムネイルは
+ * getRecord した BlobRef を再利用し、新規 Blob だけアップロードする。
+ * createdAt・reply・kossori 等のフィールドは保持する。
  *
  * applyChannel を渡したときだけ所属チャンネルを draft の内容で書き直す（未指定なら保持）。
  */
@@ -593,6 +604,62 @@ export async function updatePost(
 		}
 	}
 
+	if (draft.linkCards.length > 4) throw new Error('A post can contain at most four link cards');
+	const storedLinkCards = Array.isArray(record.linkCards)
+		? (record.linkCards as StoredPostLinkCard[])
+		: [];
+	const existingCardIndexes = draft.linkCards.flatMap((card) =>
+		card.sourceIndex === undefined ? [] : [card.sourceIndex],
+	);
+	if (
+		new Set(existingCardIndexes).size !== existingCardIndexes.length ||
+		existingCardIndexes.some(
+			(index) => !Number.isInteger(index) || index < 0 || index >= storedLinkCards.length,
+		)
+	) {
+		throw new Error('The existing link card order is invalid');
+	}
+
+	const uploadedCardThumbs = await Promise.all(
+		draft.linkCards.map(async (card) => {
+			if (!card.thumbnail) return undefined;
+			const response = await agent.com.atproto.repo.uploadBlob(card.thumbnail, {
+				encoding: card.thumbnail.type,
+			});
+			const cid = blobCid(response.data.blob);
+			if (!cid) throw new Error('Could not resolve the uploaded link card thumbnail');
+			return { blob: response.data.blob, cid };
+		}),
+	);
+	const orderedLinkCards = draft.linkCards.map((card, index): StoredPostLinkCard => {
+		const existing = card.sourceIndex === undefined ? undefined : storedLinkCards[card.sourceIndex];
+		const thumb = uploadedCardThumbs[index]?.blob ?? existing?.thumb;
+		return {
+			uri: card.uri,
+			title: card.title,
+			...(card.description ? { description: card.description } : {}),
+			...(thumb ? { thumb } : {}),
+		};
+	});
+	const linkCardViews: LinkCardView[] = draft.linkCards.map((card, index) => {
+		const existing = card.sourceIndex === undefined ? undefined : storedLinkCards[card.sourceIndex];
+		const storedCid = blobCid(existing?.thumb);
+		const thumb = uploadedCardThumbs[index]
+			? `/api/blob/${encodeURIComponent(s.did)}/${encodeURIComponent(uploadedCardThumbs[index].cid)}`
+			: card.previewUrl ||
+				(storedCid
+					? `/api/blob/${encodeURIComponent(s.did)}/${encodeURIComponent(storedCid)}`
+					: undefined);
+		return {
+			uri: card.uri,
+			title: card.title,
+			...(card.description ? { description: card.description } : {}),
+			...(thumb ? { thumb } : {}),
+		};
+	});
+	if (orderedLinkCards.length) record.linkCards = orderedLinkCards;
+	else delete record.linkCards;
+
 	const response = await indexed(
 		agent.com.atproto.repo.putRecord({
 			repo: s.did,
@@ -602,7 +669,7 @@ export async function updatePost(
 			record,
 		}),
 	);
-	return { response, imageViews };
+	return { response, imageViews, linkCardViews };
 }
 export async function createReaction(
 	subject: { uri: string; cid: string },
