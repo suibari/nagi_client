@@ -2,7 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { parsePostText } from '$lib/atproto/facets';
 	import type { LinkCardDraft } from '$lib/atproto/records';
-	import { getLinkMetadata, getLinkThumbnail } from '$lib/api/appview';
+	import { APPVIEW_URL, getLinkMetadata, getLinkThumbnail } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { createSortable } from '$lib/dnd/sortable.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -24,6 +24,7 @@
 	const previews = new Set<string>();
 	const hydrationAttempted = new Set<string>();
 	let previousUrls = new Set<string>();
+	const resolve = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 
 	const sortableItems = $derived(cards.map((card) => ({ ...card, id: card.id ?? card.uri })));
 
@@ -76,7 +77,10 @@
 	});
 
 	$effect(() => {
-		const current = new Set(cards.flatMap((card) => (card.previewUrl ? [card.previewUrl] : [])));
+		// 編集時の既存カードは AppView の相対 URL、新規取得分だけが解放対象の Object URL。
+		const current = new Set(
+			cards.flatMap((card) => (card.previewUrl?.startsWith('blob:') ? [card.previewUrl] : [])),
+		);
 		for (const preview of previews) {
 			if (!current.has(preview)) {
 				URL.revokeObjectURL(preview);
@@ -171,7 +175,7 @@
 					>
 						<Icon name="drag" size={17} />
 					</button>
-					{#if card.previewUrl}<img src={card.previewUrl} alt="" />{/if}
+					{#if card.previewUrl}<img src={resolve(card.previewUrl)} alt="" />{/if}
 					<span>
 						<strong>{card.title}</strong>
 						{#if card.description}<span>{card.description}</span>{/if}

@@ -38,6 +38,7 @@
 	import { tick } from 'svelte';
 	import { postFollow, postHref, scrollToElement } from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
+	import LinkCardEditor from './LinkCardEditor.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import {
@@ -134,6 +135,8 @@
 	let editChannelWasTagged = $state(false);
 	let editEmojis = $state<EmojiSelection[]>([]);
 	let editImages = $state<PostEditImage[]>([]);
+	let editLinkCards = $state<LinkCardDraft[]>([]);
+	let editDismissedUrls = $state<string[]>([]);
 	let editImageProcessing = $state(false);
 	let editBusy = $state(false);
 	let editError = $state('');
@@ -198,7 +201,7 @@
 	);
 	let hasSecondaryActions = $derived(canTranslateExternally || canPin || mine);
 	let editHasContent = $derived(
-		Boolean(editText.trim() || editImages.length || post.linkCards?.length || post.quote),
+		Boolean(editText.trim() || editImages.length || editLinkCards.length || post.quote),
 	);
 	let editContentWarningValid = $derived(validContentWarningSyntax(editText));
 	let composeContentWarningValid = $derived(validContentWarningSyntax(composeText));
@@ -278,6 +281,15 @@
 			contentWarning: image.contentWarning,
 			aspectRatio: image.aspectRatio,
 		}));
+		editLinkCards = (post.linkCards ?? []).map((card, sourceIndex) => ({
+			id: `${post.cid}-link-${sourceIndex}`,
+			sourceIndex,
+			uri: card.uri,
+			title: card.title,
+			description: card.description,
+			previewUrl: card.thumb,
+		}));
+		editDismissedUrls = [];
 		editing = true;
 	}
 	function cancelEdit() {
@@ -289,6 +301,8 @@
 		editOriginalChannel = undefined;
 		editChannelWasTagged = false;
 		editImages = [];
+		editLinkCards = [];
+		editDismissedUrls = [];
 		editImageProcessing = false;
 		editError = '';
 	}
@@ -343,7 +357,7 @@
 			undefined,
 			undefined,
 			[],
-			[],
+			editLinkCards,
 			editMentions,
 			editChannels,
 			editEmojis,
@@ -374,6 +388,7 @@
 				parsedContentWarning.status === 'valid' ? parsedContentWarning.range : undefined;
 			post.langs = draft.langs;
 			post.images = result.imageViews?.length ? result.imageViews : undefined;
+			post.linkCards = result.linkCardViews.length ? result.linkCardViews : undefined;
 			post.edited = true;
 			// 返信では所属を触らないので、楽観反映もルート（=非返信）のときだけ行う。
 			// 配下の返信のバッジは AppView がルートから配り直すので取り込み後に揃う。
@@ -390,6 +405,8 @@
 			editChannelWasTagged = false;
 			editEmojis = [];
 			editImages = [];
+			editLinkCards = [];
+			editDismissedUrls = [];
 			editImageProcessing = false;
 			// standard.site の記事にしてある投稿なら本文を追従させる。記事化していない
 			// 投稿では何も起きない（編集をきっかけに勝手に公開はしない）。
@@ -608,6 +625,12 @@
 						onsubmit={() => void submitEdit()}
 						onpaste={(event) => editImageEditor?.handlePaste(event)}
 						tools={editTools}
+					/>
+					<LinkCardEditor
+						text={editText}
+						bind:cards={editLinkCards}
+						bind:dismissedUrls={editDismissedUrls}
+						disabled={editBusy}
 					/>
 					<div class="post-composer-foot">
 						{#if editError}<span class="error" role="alert">{editError}</span>{/if}
