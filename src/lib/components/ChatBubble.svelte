@@ -58,7 +58,7 @@
 	import { trackPostSeen } from '$lib/post/seen';
 	import PostUnavailableNotice from './PostUnavailableNotice.svelte';
 	let {
-		post,
+		post = $bindable(),
 		botActor,
 		ondeleted,
 		onposted,

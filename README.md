@@ -29,13 +29,13 @@ Nagi（ナギ）は、いいねやフォローの数を気にせず、自由に�
 
 ## 技術スタック
 
-| 分類             | 採用技術                         |
-| ---------------- | -------------------------------- |
-| UI               | Svelte 5, SvelteKit, TypeScript  |
-| ビルド・スタイル | Vite, Tailwind CSS               |
-| プロトコル・認証 | AT Protocol, OAuth               |
-| テスト・整形     | Vitest, svelte-check, Prettier   |
-| ホスティング     | Vercel（静的アプリ + Functions） |
+| 分類             | 採用技術                                   |
+| ---------------- | ------------------------------------------ |
+| UI               | Svelte 5, SvelteKit, TypeScript            |
+| ビルド・スタイル | Vite, Tailwind CSS                         |
+| プロトコル・認証 | AT Protocol, OAuth                         |
+| テスト・整形     | Vitest, Playwright, svelte-check, Prettier |
+| ホスティング     | Vercel（静的アプリ + Functions）           |
 
 このリポジトリはWebクライアントです。タイムラインの集約やbotたんの返信など、AppView側の処理は含みません。
 
@@ -53,6 +53,7 @@ Nagi（ナギ）は、いいねやフォローの数を気にせず、自由に�
 git clone https://github.com/suibari/nagi_client.git
 cd nagi_client
 npm install
+npx playwright install chromium
 cp .env.example .env.local
 npm run dev
 ```
@@ -67,7 +68,7 @@ AppViewを起動せずに投稿の基本表示や翻訳・本文省略、イン�
 開発サーバーの `/dev/interactions` を開きます。このページのモックデータはブラウザ内だけで
 描画され、API・PDS・AppViewへは送信されません。
 
-依存関係をlockfileどおりに再現したい場合は、`npm install` の代わりに `npm ci` を使ってください。
+依存関係をlockfileどおりに再現したい場合は、`npm install` の代わりに `npm ci` を使ってください。Playwrightのブラウザはnpmパッケージと別管理なので、初回とPlaywright更新後に `npx playwright install chromium` を実行します。
 
 ### 環境変数
 
@@ -96,6 +97,8 @@ PUBLIC_VAPID_KEY=
 | `npm run preview`      | 生成した本番ビルドを確認                           |
 | `npm test`             | Vitestのテストを1回実行                            |
 | `npm run test:watch`   | Vitestをwatchモードで実行                          |
+| `npm run test:e2e`     | PlaywrightのブラウザUIテストを実行                 |
+| `npm run test:e2e:ui`  | PlaywrightのUIモードを起動                         |
 | `npm run check`        | APIの型チェック、SvelteKit同期、Svelteの診断を実行 |
 | `npm run format`       | Prettierでファイルを整形                           |
 | `npm run format:check` | 整形差分がないか確認                               |
@@ -104,6 +107,7 @@ PUBLIC_VAPID_KEY=
 
 ```sh
 npm test
+npm run test:e2e
 npm run check
 npm run format:check
 npm run build
@@ -147,6 +151,7 @@ VercelのProject Settingsでは次を設定してください。
 - URL、ホスト名、ハンドルなど、一行で表示するメタ情報には `overflow: hidden`、`text-overflow: ellipsis`、`white-space: nowrap` を組み合わせる。
 - `body` の `overflow-x` は画面全体の横スクロールを抑える最後の安全策であり、子要素のはみ出しを隠すための修正には使わない。
 - 変更時は320px、375px、600pxの表示幅で長いURLと空白のない文字列を入れ、カードとページの `scrollWidth` が `clientWidth` を超えないことを確認する。
+- 操作を伴うUI変更では `npm run test:e2e` を実行し、対応するシナリオを `tests/e2e` に追加する。
 
 ## コントリビューション
 
