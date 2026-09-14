@@ -42,9 +42,19 @@ describe('card celebration', () => {
 			cardRevealEffect(rarity as 'N' | 'R' | 'SR' | 'UR' | 'AAR'),
 		);
 		expect(effects.map((effect) => effect.chargeMs)).toEqual([900, 2000, 4000, 6000, 10500]);
-		expect(effects.map((effect) => effect.vibration.length)).toEqual([1, 7, 11, 13, 15]);
+		expect(effects.map((effect) => effect.vibration.length)).toEqual([5, 9, 17, 25, 43]);
 		expect(effects.at(-1)?.blackout).toBe(true);
 		expect(effects.slice(0, -1).every((effect) => !effect.blackout)).toBe(true);
+	});
+
+	it('keeps haptics running for the full reveal timeline', () => {
+		for (const rarity of ['N', 'R', 'SR', 'UR', 'AAR'] as const) {
+			const effect = cardRevealEffect(rarity);
+			expect(effect.vibration.reduce((total, duration) => total + duration, 0)).toBe(
+				effect.chargeMs,
+			);
+			expect(effect.vibration.length % 2).toBe(1);
+		}
 	});
 
 	it('builds through each lower rarity color before the result color', () => {
