@@ -6,7 +6,7 @@ export const THEME_PALETTE_STORAGE_KEY = 'nagi-theme-palette';
 export const DEFAULT_THEME_PALETTE: ThemePalette = 'bot-mint';
 
 const THEME_COLORS: Record<ThemePalette, { light: string; dark: string }> = {
-	'bot-mint': { light: '#f4fafa', dark: '#08110f' },
+	'bot-mint': { light: '#f7f9f9', dark: '#090d0c' },
 	'latte-pink': { light: '#fafafa', dark: '#101010' },
 	'kotomi-orange': { light: '#f8f8f8', dark: '#101010' },
 	'morpho-blue': { light: '#f7f9fc', dark: '#090e14' },
@@ -22,9 +22,14 @@ function resolvedMode(preference: ThemePreference): 'light' | 'dark' {
 
 function syncThemeColor(preference: ThemePreference, palette: ThemePalette): void {
 	if (typeof document === 'undefined') return;
-	const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-	if (!meta) return;
-	meta.content = THEME_COLORS[palette][resolvedMode(preference)];
+	const metas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+	for (const meta of metas) {
+		if (preference === 'system') {
+			meta.content = THEME_COLORS[palette][meta.media.includes('dark') ? 'dark' : 'light'];
+		} else {
+			meta.content = THEME_COLORS[palette][resolvedMode(preference)];
+		}
+	}
 }
 
 export function isThemePreference(value: unknown): value is ThemePreference {

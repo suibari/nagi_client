@@ -17,12 +17,15 @@ describe('theme appearance', () => {
 		style: Record<string, string>;
 		removeAttribute: ReturnType<typeof vi.fn>;
 	};
-	let meta: { content: string };
+	let metas: Array<{ content: string; media: string }>;
 
 	beforeEach(() => {
 		values = new Map();
 		root = { dataset: {}, style: {}, removeAttribute: vi.fn() };
-		meta = { content: '' };
+		metas = [
+			{ content: '', media: '(prefers-color-scheme: light)' },
+			{ content: '', media: '(prefers-color-scheme: dark)' },
+		];
 		vi.stubGlobal('window', {
 			localStorage: {
 				getItem: (key: string) => values.get(key) ?? null,
@@ -33,7 +36,7 @@ describe('theme appearance', () => {
 		});
 		vi.stubGlobal('document', {
 			documentElement: root,
-			querySelector: () => meta,
+			querySelectorAll: () => metas,
 		});
 	});
 
@@ -50,12 +53,12 @@ describe('theme appearance', () => {
 		setThemePalette('latte-pink');
 		expect(values.get(THEME_PALETTE_STORAGE_KEY)).toBe('latte-pink');
 		expect(root.dataset.palette).toBe('latte-pink');
-		expect(meta.content).toBe('#fafafa');
+		expect(metas.map((meta) => meta.content)).toEqual(['#fafafa', '#101010']);
 
 		setThemePreference('dark');
 		expect(values.get(THEME_STORAGE_KEY)).toBe('dark');
 		expect(root.dataset.theme).toBe('dark');
-		expect(meta.content).toBe('#101010');
+		expect(metas.map((meta) => meta.content)).toEqual(['#101010', '#101010']);
 	});
 
 	it('clears both settings and restores the bot mint system default', () => {
@@ -65,6 +68,6 @@ describe('theme appearance', () => {
 		expect(values.size).toBe(0);
 		expect(root.dataset.palette).toBe('bot-mint');
 		expect(root.removeAttribute).toHaveBeenCalledWith('data-theme');
-		expect(meta.content).toBe('#f4fafa');
+		expect(metas.map((meta) => meta.content)).toEqual(['#f7f9f9', '#090d0c']);
 	});
 });
