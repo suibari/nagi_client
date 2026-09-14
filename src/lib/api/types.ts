@@ -209,12 +209,12 @@ export type BookmarksPage = {
 	botActor?: ActorView;
 };
 /**
- * 全肯定ニュースの「動的枠」。興味ベクトルに近い記事を items とは別枠で受け取る。
+ * 全肯定ニュースの「動的枠」。関心ジャンルが近い記事を items とは別枠で受け取る。
  * items は時系列のままなので、未読判定（items[0] が最新）はこの追加に影響されない。
  */
 export type RecommendedNewsView = NewsView & {
-	/** 「おすすめの理由：〜」に出す単語。近い単語が無ければ付かない。 */
-	reason?: { keyword: string };
+	/** 「おすすめの理由：〜」に出す関心ジャンル。keyword は移行中の旧APIとの互換用。 */
+	reason?: { genre?: string; keyword?: string };
 };
 export type NewsPage = Page<NewsView> & {
 	recommended?: RecommendedNewsView[];

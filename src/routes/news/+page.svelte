@@ -111,7 +111,7 @@
 				{#each recommended as news (news.uri)}<NewsCard
 						{news}
 						{botActor}
-						reasonKeyword={news.reason?.keyword}
+						reasonGenre={news.reason?.genre ?? news.reason?.keyword}
 						clampTitle={false}
 					/>{/each}
 			</section>{/if}{#each grouped as { news, heading } (news.uri)}{#if heading}<h2 class="news-date">

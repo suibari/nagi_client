@@ -63,7 +63,7 @@ export const ja = {
 	myNagiChannelsUnreadAria: 'チャンネルに新しい投稿があります',
 	newsEmpty: 'いま掲載できる明るいニュースはありません。',
 	newsRecommendedHeading: 'あなたに近いかも',
-	newsRecommendedReason: (p: { keyword: string }) => `おすすめの理由：${p.keyword}`,
+	newsRecommendedReason: (p: { genre: string }) => `おすすめの理由：${p.genre}`,
 	newsReadArticle: '記事を読む',
 	newsQuote: '引用',
 	newsShare: '共有',
