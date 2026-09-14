@@ -61,7 +61,7 @@ export const en: Messages = {
 	myNagiChannelsUnreadAria: 'A new channel post is available',
 	newsEmpty: 'There are no bright news stories to show right now.',
 	newsRecommendedHeading: 'Close to you',
-	newsRecommendedReason: (p: { keyword: string }) => `Why: ${p.keyword}`,
+	newsRecommendedReason: (p: { genre: string }) => `Why: ${p.genre}`,
 	newsReadArticle: 'Read article',
 	newsQuote: 'Quote',
 	newsShare: 'Share',
