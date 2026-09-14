@@ -129,7 +129,8 @@
 	</li>
 	<li>
 		<strong>“Affirm together” dismissals.</strong> We store dismissed post URIs, visible only to you,
-		and delete them when the seven-day candidate period ends.
+		and use them to exclude similar posts by the same user from your candidates. We delete the URIs when
+		the seven-day candidate period ends.
 	</li>
 	<li><strong>Translation cache and card collection records.</strong></li>
 </ul>
