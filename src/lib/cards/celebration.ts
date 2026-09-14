@@ -17,30 +17,65 @@ export type CardRevealEffect = {
 };
 
 /**
+ * 抽選開始から公開の瞬間まで、約0.5秒ごとに強くなる鼓動を作る。
+ * 最後の振動が chargeMs ちょうどで終わるため、長い演出でも途中で途切れない。
+ */
+function buildRevealVibration(
+	chargeMs: number,
+	firstPulseMs: number,
+	lastPulseMs: number,
+): number[] {
+	const finalPulseAt = chargeMs - lastPulseMs;
+	const pulseStarts: number[] = [];
+	for (let at = 0; at < finalPulseAt; at += 500) pulseStarts.push(at);
+	if (pulseStarts.at(-1) !== finalPulseAt) pulseStarts.push(finalPulseAt);
+
+	const lastIndex = pulseStarts.length - 1;
+	const pulseDurations = pulseStarts.map((_, index) =>
+		Math.round(firstPulseMs + ((lastPulseMs - firstPulseMs) * index) / lastIndex),
+	);
+	const pattern: number[] = [];
+	for (let index = 0; index < pulseStarts.length; index += 1) {
+		const duration = pulseDurations[index];
+		pattern.push(duration);
+		if (index < lastIndex) {
+			pattern.push(pulseStarts[index + 1] - pulseStarts[index] - duration);
+		}
+	}
+	return pattern;
+}
+
+/**
  * 抽選演出のレアリティ別契約。
  * 強さの調整箇所をダイアログのタイマー・CSS・振動処理へ分散させない。
  */
 export const CARD_REVEAL_EFFECTS: Record<CardRarity, CardRevealEffect> = {
-	N: { chargeMs: 900, stages: [], stageMs: 0, vibration: [35], blackout: false },
+	N: {
+		chargeMs: 900,
+		stages: [],
+		stageMs: 0,
+		vibration: buildRevealVibration(900, 35, 100),
+		blackout: false,
+	},
 	R: {
 		chargeMs: 2_000,
 		stages: ['R'],
 		stageMs: 2_000,
-		vibration: [30, 320, 45, 300, 65, 260, 90],
+		vibration: buildRevealVibration(2_000, 30, 100),
 		blackout: false,
 	},
 	SR: {
 		chargeMs: 4_000,
 		stages: ['R', 'SR'],
 		stageMs: 2_000,
-		vibration: [25, 380, 35, 360, 50, 320, 70, 280, 100, 240, 140],
+		vibration: buildRevealVibration(4_000, 25, 200),
 		blackout: false,
 	},
 	UR: {
 		chargeMs: 6_000,
 		stages: ['R', 'SR', 'UR'],
 		stageMs: 2_000,
-		vibration: [25, 460, 35, 440, 50, 400, 70, 360, 95, 320, 130, 260, 180],
+		vibration: buildRevealVibration(6_000, 25, 220),
 		blackout: false,
 	},
 	AAR: {
@@ -48,7 +83,7 @@ export const CARD_REVEAL_EFFECTS: Record<CardRarity, CardRevealEffect> = {
 		chargeMs: 10_500,
 		stages: ['R', 'SR', 'UR', 'AAR'],
 		stageMs: 2_000,
-		vibration: [25, 500, 35, 500, 50, 480, 70, 460, 95, 440, 130, 400, 180, 340, 250],
+		vibration: buildRevealVibration(10_500, 25, 250),
 		blackout: true,
 	},
 };
