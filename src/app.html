@@ -10,7 +10,21 @@
 
 		<!-- PWA: ホーム画面追加で standalone 起動。iOS の Web Push は standalone 必須。 -->
 		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
-		<meta id="nagi-theme-color" name="theme-color" content="#f4fafa" />
+		<!-- PWA の起動時から OS の配色に合うステータスバーを選ばせる。
+		     保存済みのアプリ内テーマがある場合は theme-init.js が両方を上書きする。 -->
+		<meta
+			id="nagi-theme-color-light"
+			name="theme-color"
+			content="#f7f9f9"
+			media="(prefers-color-scheme: light)"
+		/>
+		<meta
+			id="nagi-theme-color-dark"
+			name="theme-color"
+			content="#090d0c"
+			media="(prefers-color-scheme: dark)"
+		/>
+		<meta name="color-scheme" content="light dark" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="default" />

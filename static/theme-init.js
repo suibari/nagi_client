@@ -7,30 +7,25 @@
 		var palette = localStorage.getItem('nagi-theme-palette');
 		var palettes = ['bot-mint', 'latte-pink', 'kotomi-orange', 'morpho-blue', 'simple'];
 		var colors = {
-			'bot-mint': { light: '#f4fafa', dark: '#08110f' },
-			'latte-pink': { light: '#fbf8f9', dark: '#110f10' },
-			'kotomi-orange': { light: '#fbf9f6', dark: '#12100e' },
+			'bot-mint': { light: '#f7f9f9', dark: '#090d0c' },
+			'latte-pink': { light: '#fafafa', dark: '#101010' },
+			'kotomi-orange': { light: '#f8f8f8', dark: '#101010' },
 			'morpho-blue': { light: '#f7f9fc', dark: '#090e14' },
 			simple: { light: '#ffffff', dark: '#000000' },
 		};
 		if (palettes.indexOf(palette) === -1) palette = 'bot-mint';
 		document.documentElement.setAttribute('data-palette', palette);
-		var dark =
-			theme === 'dark' ||
-			(theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-		var themeColor = document.querySelector('meta[name="theme-color"]');
-		if (themeColor) themeColor.setAttribute('content', colors[palette][dark ? 'dark' : 'light']);
-		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (event) {
-			var currentTheme = localStorage.getItem('nagi-theme');
-			if (currentTheme !== 'light' && currentTheme !== 'dark' && themeColor) {
-				var currentPalette = localStorage.getItem('nagi-theme-palette');
-				if (palettes.indexOf(currentPalette) === -1) currentPalette = 'bot-mint';
-				themeColor.setAttribute(
-					'content',
-					colors[currentPalette][event.matches ? 'dark' : 'light'],
-				);
+		var themeColors = document.querySelectorAll('meta[name="theme-color"]');
+		var lightColor = colors[palette].light;
+		var darkColor = colors[palette].dark;
+		for (var i = 0; i < themeColors.length; i += 1) {
+			var themeColor = themeColors[i];
+			var color = theme === 'light' ? lightColor : theme === 'dark' ? darkColor : undefined;
+			if (!color) {
+				color = themeColor.media.indexOf('dark') === -1 ? lightColor : darkColor;
 			}
-		});
+			themeColor.setAttribute('content', color);
+		}
 		if (theme === 'light' || theme === 'dark') {
 			document.documentElement.setAttribute('data-theme', theme);
 			document.documentElement.style.colorScheme = theme;
