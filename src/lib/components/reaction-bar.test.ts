@@ -5,12 +5,24 @@ const read = (relativePath: string) => readFileSync(new URL(relativePath, import
 const componentsCss = read('../../routes/styles/components.css');
 const reactionBar = read('./ReactionBar.svelte');
 const reactionStamp = read('./ReactionStamp.svelte');
+const chatBubble = read('./ChatBubble.svelte');
+const newsCard = read('./NewsCard.svelte');
+const kossoriReactionBubble = read('./KossoriReactionBubble.svelte');
+const communityAffirmationPanel = read('./CommunityAffirmationPanel.svelte');
 
 function cssRule(selector: string): string {
 	return componentsCss.match(new RegExp(`\\.${selector}\\s*\\{[^}]*\\}`, 's'))?.[0] ?? '';
 }
 
 describe('reaction bar presentation', () => {
+	it('shows reactor identities only when the subject owner explicitly opts in', () => {
+		expect(reactionBar).toMatch(/showReactors\s*=\s*false/);
+		expect(chatBubble).toContain('showReactors={mine}');
+		expect(newsCard).toContain('showReactors={false}');
+		expect(communityAffirmationPanel).toContain('showReactors={false}');
+		expect(kossoriReactionBubble).toMatch(/<ReactionBar[\s\S]*?showReactors[\s\S]*?\/>/);
+	});
+
 	it('keeps reaction chips large enough for expressive emoji', () => {
 		const emoji = cssRule('reaction-emoji');
 		expect(emoji).toMatch(/min-width:\s*36px;/);

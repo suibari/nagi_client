@@ -19,7 +19,7 @@
 		pickerAnchor,
 		ontoggled,
 		onpickerclose,
-		showReactors = true,
+		showReactors = false,
 		readOnly = false,
 	}: {
 		uri: string;
@@ -29,6 +29,7 @@
 		pickerAnchor?: HTMLElement;
 		ontoggled?: (active: boolean) => void;
 		onpickerclose?: () => void;
+		/** リアクション先の本人にだけ送信者を見せる。呼び出し元で所有者確認した場合のみ有効化する。 */
 		showReactors?: boolean;
 		/** 履歴など、リアクションの表示だけを許可して追加・解除をさせない場所。 */
 		readOnly?: boolean;
