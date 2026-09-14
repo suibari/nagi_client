@@ -154,6 +154,8 @@
 		if (removingUris.has(uri)) return;
 		error = '';
 		try {
+			// AppView uses this post as the private anchor for hiding similar posts by the same author.
+			// Only remove the selected anonymous card here so relationships between cards are not exposed.
 			await putCommunityAffirmationDismissals([uri]);
 			handleItem(uri);
 		} catch (cause) {
