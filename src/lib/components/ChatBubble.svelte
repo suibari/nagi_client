@@ -724,6 +724,7 @@
 					uri={post.uri}
 					cid={post.cid}
 					reactions={post.reactions}
+					showReactors={mine}
 					bind:pickerOpen={reactionPickerOpen}
 					pickerAnchor={reactionButton}
 				/>

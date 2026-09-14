@@ -115,6 +115,7 @@
 				uri={news.uri}
 				cid={news.cid}
 				reactions={news.reactions}
+				showReactors={false}
 				bind:pickerOpen={reactionPickerOpen}
 				pickerAnchor={reactionButton}
 			/>

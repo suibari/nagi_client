@@ -39,6 +39,7 @@
 					uri=""
 					cid=""
 					reactions={[reaction]}
+					showReactors
 					readOnly={!removable}
 					ontoggled={(active) => {
 						if (!active) onremoved?.();
