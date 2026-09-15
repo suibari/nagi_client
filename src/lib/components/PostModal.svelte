@@ -8,6 +8,7 @@
 		type ComposerMode,
 	} from '$lib/post/composer-mode';
 	import Composer from './Composer.svelte';
+	import ComposerAssistant from './ComposerAssistant.svelte';
 	import PostModalShell from './PostModalShell.svelte';
 
 	/**
@@ -22,6 +23,8 @@
 	let wasOpen = $state(false);
 	let sending = $state(false);
 	let publishingPreferencesVersion = $state(0);
+	let text = $state('');
+	let assistSpace = $state(0);
 
 	// 投稿できたことを表示中のフィードへ伝えるだけ。画面をどこへ寄せるか（寄せられない
 	// ときに導線を出すか）は Composer が postFollow へ預けている。
@@ -46,10 +49,12 @@
 	bind:mode
 	open={composerHost.open}
 	{sending}
+	{assistSpace}
 	onclose={() => composerHost.hide()}
 	onmodechange={setComposerMode}
 >
 	<Composer
+		bind:text
 		{mode}
 		{publishingPreferencesVersion}
 		channel={composerHost.channel}
@@ -58,3 +63,9 @@
 		onposted={postSucceeded}
 	/>
 </PostModalShell>
+<ComposerAssistant
+	open={composerHost.open}
+	{text}
+	paused={sending}
+	bind:reservedHeight={assistSpace}
+/>

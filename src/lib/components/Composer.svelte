@@ -62,6 +62,7 @@
 		defaultScope = 'feed',
 		mode = 'simple',
 		publishingPreferencesVersion = 0,
+		text = $bindable(''),
 	}: {
 		onposted: (uri: string) => void | Promise<void>;
 		onsendingchange?: (sending: boolean) => void;
@@ -69,8 +70,9 @@
 		defaultScope?: PostScope;
 		mode?: 'simple' | 'rich';
 		publishingPreferencesVersion?: number;
+		/** ポストおたすけが書きかけを読むためだけに外へ出す。 */
+		text?: string;
 	} = $props();
-	let text = $state('');
 	let busy = $state(false);
 	let error = $state('');
 	let warning = $state('');
