@@ -48,6 +48,12 @@ describe('interaction motion contracts', () => {
 		expect(postFollow).toContain("scrollIntoView({ behavior: scrollBehavior(), block: 'start' })");
 	});
 
+	it('shows an optimistic reply even when the visible thread is not grouped', () => {
+		expect(feed).toContain('containingItem.get(reply.parent.uri)');
+		expect(feed).toContain('containingItem.get(reply.root.uri)');
+		expect(feed).toContain('target || this.#optimisticFilter(pending)');
+	});
+
 	it('animates the actual post bubble from its avatar for sending and completion', () => {
 		expect(chatBubble).toContain("class:bubble-sending={post.optimisticState === 'sending'}");
 		expect(chatBubble).toContain("class:bubble-created={post.optimisticState === 'indexing'}");
