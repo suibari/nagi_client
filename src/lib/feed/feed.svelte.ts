@@ -103,12 +103,28 @@ export class Feed {
 		const merged = new Map<string, FeedItem[]>();
 		const standalone: FeedItem[] = [];
 		const indexed = new Set(this.items.flatMap(feedUris));
-		const conversations = new Set(this.items.filter((item) => item.conversation).map(feedKey));
+		// group 形式ならスレッド内のどのバブルへの返信でも同じカードへ合流できる。
+		// group 非対応の応答も混ざり得るため、全形式について「今見えている投稿」を引ける
+		// ようにしておく。reply.root だけを見ると、通常形式のカードやネスト返信を拾えない。
+		const containingItem = new Map<string, FeedItem>();
+		for (const item of this.items) {
+			containingItem.set(feedKey(item), item);
+			for (const uri of feedUris(item)) containingItem.set(uri, item);
+		}
 		for (const pending of optimisticPosts.items) {
 			if (indexed.has(pending.uri)) continue;
-			const root = pending.reply?.root.uri;
-			if (root && conversations.has(root)) merged.set(root, [...(merged.get(root) ?? []), pending]);
-			else if (this.#optimisticFilter(pending)) standalone.push(pending);
+			const reply = pending.reply;
+			const target = reply
+				? (containingItem.get(reply.parent.uri) ?? containingItem.get(reply.root.uri))
+				: undefined;
+			if (target?.conversation) {
+				const key = feedKey(target);
+				merged.set(key, [...(merged.get(key) ?? []), pending]);
+			} else if (target || this.#optimisticFilter(pending)) {
+				// 通常形式では会話バブルへ変換できないので、返信元つきの単独カードで先頭へ出す。
+				// ホームは通常「返信を単独表示しない」が、画面内で今返信したものだけは例外。
+				standalone.push(pending);
+			}
 		}
 		return { merged, standalone };
 	}
