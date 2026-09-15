@@ -2,6 +2,7 @@
 	import { portal } from '$lib/actions/portal';
 	import { generatePostAssist } from '$lib/api/appview';
 	import { dayKey, i18n, m } from '$lib/i18n/i18n.svelte';
+	import { onDestroy } from 'svelte';
 	import Icon from './shell/Icon.svelte';
 
 	/**
@@ -34,6 +35,8 @@
 	const MIN_THINKING_MS = 400;
 	/** 生成できなかったとき、吹き出しを消すまでのフェード時間（CSS と揃える）。 */
 	const FADE_OUT_MS = 180;
+	/** なでたリアクションを見せてから、待機姿へ戻るまで。 */
+	const PET_REACTION_MS = 1400;
 	/** 繰り返さないよう AppView へ渡す、直近に言ったことの件数（lexicon の上限）。 */
 	const MAX_PREVIOUS = 5;
 
@@ -44,6 +47,9 @@
 	let dismissed = $state(false);
 	let keyboardInset = $state(0);
 	let height = $state(0);
+	let canPet = $state(false);
+	let petted = $state(false);
+	let petResetTimer: ReturnType<typeof setTimeout> | undefined;
 	let wasOpen = false;
 	let lastText: string | undefined;
 	let previous: string[] = [];
@@ -60,6 +66,35 @@
 		dismissed = false;
 		lastText = undefined;
 		previous = [];
+		petted = false;
+		if (petResetTimer) clearTimeout(petResetTimer);
+	});
+
+	// 画面幅ではなく入力機器で判定し、マウスで操作するPCにだけなでる操作を出す。
+	$effect(() => {
+		const query = window.matchMedia('(hover: hover) and (pointer: fine)');
+		const update = () => (canPet = query.matches);
+		update();
+		query.addEventListener('change', update);
+		return () => query.removeEventListener('change', update);
+	});
+
+	// 初回クリック時にもすぐ切り替わるよう、表示中のPCでリアクション画像を先読みする。
+	$effect(() => {
+		if (!visible || !canPet) return;
+		const image = new Image();
+		image.src = '/bot_assist_petted.png';
+	});
+
+	function petBot() {
+		if (!canPet) return;
+		petted = true;
+		if (petResetTimer) clearTimeout(petResetTimer);
+		petResetTimer = setTimeout(() => (petted = false), PET_REACTION_MS);
+	}
+
+	onDestroy(() => {
+		if (petResetTimer) clearTimeout(petResetTimer);
 	});
 
 	// 書き進めた・閉じた・×を押したら、待っている古い書きかけへの問い合わせは捨てる。
@@ -156,14 +191,25 @@
 		bind:offsetHeight={height}
 	>
 		<div class="composer-assist-inner">
-			<img
-				class="composer-assist-character"
-				src="/bot_assist_sitting.png"
-				alt=""
-				width="228"
-				height="320"
-				draggable="false"
-			/>
+			<button
+				type="button"
+				class="composer-assist-character-button"
+				aria-label={m.assistPet()}
+				title={m.assistPet()}
+				disabled={!canPet}
+				onmousedown={(event) => event.preventDefault()}
+				onclick={petBot}
+			>
+				<img
+					class="composer-assist-character"
+					class:petted
+					src={petted ? '/bot_assist_petted.png' : '/bot_assist_sitting.png'}
+					alt=""
+					width={petted ? 384 : 228}
+					height={petted ? 384 : 320}
+					draggable="false"
+				/>
+			</button>
 			<div class="composer-assist-bubble" role="status" aria-live="polite">
 				<div class="composer-assist-head">
 					<span>{m.assistLabel()}</span>
@@ -213,6 +259,22 @@
 		gap: 2px;
 		width: min(100%, 620px);
 	}
+	.composer-assist-character-button {
+		flex: none;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		width: 72px;
+		height: 101px;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		pointer-events: auto;
+		cursor: pointer;
+	}
+	.composer-assist-character-button:disabled {
+		pointer-events: none;
+	}
 	.composer-assist-character {
 		flex: none;
 		width: 72px;
@@ -221,6 +283,11 @@
 		transform-origin: 50% 90%;
 		animation: composer-assist-float 3.6s ease-in-out infinite;
 		user-select: none;
+	}
+	.composer-assist-character.petted {
+		width: 88px;
+		max-width: none;
+		animation: composer-assist-petted 420ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
 	}
 	.composer-assist-bubble {
 		position: relative;
@@ -322,6 +389,19 @@
 			transform: translateY(-6px) rotate(2deg);
 		}
 	}
+	@keyframes composer-assist-petted {
+		0% {
+			opacity: 0.35;
+			transform: translateY(5px) scale(0.88);
+		}
+		55% {
+			transform: translateY(-5px) scale(1.06);
+		}
+		100% {
+			opacity: 1;
+			transform: none;
+		}
+	}
 	@keyframes composer-assist-pop {
 		from {
 			opacity: 0;
@@ -337,7 +417,7 @@
 			bottom: calc(max(var(--composer-assist-keyboard, 0px), env(safe-area-inset-bottom)) + 8px);
 			padding: 0 8px;
 		}
-		.composer-assist-character,
+		.composer-assist-character-button,
 		.composer-assist-bubble::before {
 			display: none;
 		}
@@ -346,6 +426,7 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
+		.composer-assist-character-button,
 		.composer-assist-character,
 		.composer-assist-bubble,
 		.composer-assist-message,

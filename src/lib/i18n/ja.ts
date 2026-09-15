@@ -262,6 +262,7 @@ export const ja = {
 	assistLabel: 'おたすけbotたん',
 	assistThinking: 'botたんが考え中…',
 	assistClose: 'おたすけを閉じる',
+	assistPet: 'botたんをなでる',
 	markdownPalette: '文字装飾',
 	markdownPaletteAria: '文字装飾パレット',
 	markdownHeading: '見出し',
