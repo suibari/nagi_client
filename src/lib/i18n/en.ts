@@ -52,6 +52,7 @@ export const en: Messages = {
 	navNews: 'News',
 	navNotifications: 'Notifications',
 	navSettings: 'Settings',
+	navMenu: 'Menu',
 	mainNavAria: 'Main navigation',
 	feedTabsAria: 'Feed tabs',
 	newsUnreadAria: 'Unread news is available',

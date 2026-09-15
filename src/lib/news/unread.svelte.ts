@@ -1,4 +1,4 @@
-import { get } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { getLatestPositiveNews } from '$lib/api/appview';
 import { i18n } from '$lib/i18n/i18n.svelte';
 import { session } from '$lib/oauth/session.svelte';
@@ -20,6 +20,16 @@ let started = false;
 /** サインイン状態が変わるとキーごと変わるので、その都度いまのウォーターマークを引く。 */
 const current = (viewerDid: string | undefined = get(session)?.did) =>
 	sectionWatermark('news', newsStorageKey(viewerDid), viewerDid);
+
+/** ナビゲーション用。アカウントが切り替わったら、その利用者の未読状態へ購読し直す。 */
+export const unreadNewsCount = derived(
+	session,
+	($session, set) =>
+		current($session?.did).unread.subscribe((unread) => {
+			set(unread ? 1 : 0);
+		}),
+	0,
+);
 
 /** ニュース一覧を開いた時点の既読基準を凍結したビュー。マウントごとに1つ作る。 */
 export const openNewsUnreadView = (viewerDid?: string): UnreadView => current(viewerDid).openView();

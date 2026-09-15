@@ -54,6 +54,7 @@ export const ja = {
 	navNews: 'ニュース',
 	navNotifications: '通知',
 	navSettings: '設定',
+	navMenu: 'メニュー',
 	mainNavAria: 'メインナビゲーション',
 	feedTabsAria: 'フィード切り替え',
 	newsUnreadAria: '未読ニュースがあります',
