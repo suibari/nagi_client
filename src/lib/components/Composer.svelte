@@ -63,6 +63,7 @@
 		mode = 'simple',
 		publishingPreferencesVersion = 0,
 		text = $bindable(''),
+		submittable = $bindable(false),
 	}: {
 		onposted: (uri: string) => void | Promise<void>;
 		onsendingchange?: (sending: boolean) => void;
@@ -72,6 +73,8 @@
 		publishingPreferencesVersion?: number;
 		/** ポストおたすけが書きかけを読むためだけに外へ出す。 */
 		text?: string;
+		/** モーダルヘッダーなど、コンポーザ外の送信ボタンへ状態を渡す。 */
+		submittable?: boolean;
 	} = $props();
 	let busy = $state(false);
 	let error = $state('');
@@ -130,6 +133,9 @@
 	let graphemes = $derived(
 		[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length,
 	);
+	$effect(() => {
+		submittable = !busy && !empty && !articleTitleMissing && contentWarningValid;
+	});
 
 	// --- 外部への同時投稿（Bluesky / standard.site）------------------------------
 	// 権限はサインイン時にまとめて渡し、機能の有効化と「どちらに出すか」は設定ページ、
@@ -404,7 +410,7 @@
 		await restoreDraft(id);
 	}
 
-	async function submit() {
+	export async function submit() {
 		if (empty || busy || !$session || articleTitleMissing || !contentWarningValid) return;
 		const wantsExternal = scope === 'external' && externalEligible;
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。

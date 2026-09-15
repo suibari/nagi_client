@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		getComposerMode,
 		resetComposerMode,
@@ -10,6 +11,7 @@
 	import Composer from './Composer.svelte';
 	import ComposerAssistant from './ComposerAssistant.svelte';
 	import PostModalShell from './PostModalShell.svelte';
+	import Icon from './shell/Icon.svelte';
 
 	/**
 	 * ポストモーダル。
@@ -25,6 +27,8 @@
 	let publishingPreferencesVersion = $state(0);
 	let text = $state('');
 	let assistSpace = $state(0);
+	let submittable = $state(false);
+	let composer = $state<{ submit: () => Promise<void> }>();
 
 	// 投稿できたことを表示中のフィードへ伝えるだけ。画面をどこへ寄せるか（寄せられない
 	// ときに導線を出すか）は Composer が postFollow へ預けている。
@@ -45,16 +49,34 @@
 	});
 </script>
 
+{#snippet mobileSubmit()}
+	<button
+		class="submit-primary post-modal-mobile-submit"
+		type="button"
+		disabled={!submittable}
+		aria-label={sending ? m.composerSubmitting() : m.composerSubmitNagi()}
+		title={sending ? m.composerSubmitting() : m.composerSubmitNagi()}
+		onclick={() => void composer?.submit()}
+	>
+		{#if sending}<span class="submit-spinner" aria-hidden="true"></span>
+		{:else}<Icon name="send" size={18} />{/if}
+		<span>{sending ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
+	</button>
+{/snippet}
+
 <PostModalShell
 	bind:mode
 	open={composerHost.open}
 	{sending}
 	{assistSpace}
+	headerAction={mobileSubmit}
 	onclose={() => composerHost.hide()}
 	onmodechange={setComposerMode}
 >
 	<Composer
+		bind:this={composer}
 		bind:text
+		bind:submittable
 		{mode}
 		{publishingPreferencesVersion}
 		channel={composerHost.channel}

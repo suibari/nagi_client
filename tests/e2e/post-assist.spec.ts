@@ -102,6 +102,18 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	await page.setViewportSize({ width: 390, height: 844 });
 	await expect(page.locator('.composer-assist-bubble')).toBeVisible();
 	await expect(page.locator('.composer-assist-character')).toBeHidden();
+	const mobileSubmit = page.locator('.post-modal-header-action .post-modal-mobile-submit');
+	await expect(mobileSubmit).toBeVisible();
+	await expect(mobileSubmit).toBeEnabled();
+	await expect(page.locator('.composer-foot .submit-primary')).toBeHidden();
+	const submitBox = await mobileSubmit.boundingBox();
+	const closeBox = await page.locator('.post-modal-close').boundingBox();
+	const assistBox = await assist.boundingBox();
+	expect(submitBox).not.toBeNull();
+	expect(closeBox).not.toBeNull();
+	expect(assistBox).not.toBeNull();
+	expect(submitBox!.x).toBeGreaterThan(closeBox!.x);
+	expect(submitBox!.y + submitBox!.height).toBeLessThan(assistBox!.y);
 });
 
 test('生成できないときは考え中の吹き出しをそっと消す', async ({ page }) => {

@@ -66,11 +66,28 @@
 	}
 </script>
 
+{#snippet mobileSubmit()}
+	<button
+		class="submit-primary post-modal-mobile-submit"
+		class:requirements-missing={!busy && !canSubmit}
+		type="button"
+		disabled={busy || !canSubmit}
+		aria-label={busy ? m.guestPostSaving() : m.guestPostSubmit()}
+		title={busy ? m.guestPostSaving() : m.guestPostSubmit()}
+		onclick={() => void submit()}
+	>
+		{#if busy}<span class="submit-spinner" aria-hidden="true"></span>
+		{:else}<Icon name="send" size={18} />{/if}
+		<span>{busy ? m.guestPostSaving() : m.guestPostSubmit()}</span>
+	</button>
+{/snippet}
+
 <PostModalShell
 	bind:mode
 	{open}
 	sending={busy}
 	title={m.guestPostTitle()}
+	headerAction={mobileSubmit}
 	{onclose}
 	onmodechange={setComposerMode}
 >

@@ -11,6 +11,7 @@
 		title = m.postModalTitle(),
 		onclose,
 		onmodechange,
+		headerAction,
 		children,
 	}: {
 		open: boolean;
@@ -21,6 +22,7 @@
 		title?: string;
 		onclose: () => void;
 		onmodechange?: (mode: 'simple' | 'rich') => void;
+		headerAction?: Snippet;
 		children: Snippet;
 	} = $props();
 	let dialog = $state<HTMLDivElement>();
@@ -54,6 +56,7 @@
 		bind:this={dialog}
 		class="post-modal"
 		class:rich={mode === 'rich'}
+		class:has-header-action={headerAction}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="post-modal-title"
@@ -79,6 +82,9 @@
 					onclick={() => selectMode('rich')}>{m.postModeRich()}</button
 				>
 			</div>
+			{#if headerAction}
+				<div class="post-modal-header-action">{@render headerAction()}</div>
+			{/if}
 			<button
 				class="icon-action post-modal-close"
 				type="button"
@@ -147,6 +153,9 @@
 	.post-modal-close {
 		margin-inline-start: auto;
 	}
+	.post-modal-header-action {
+		display: none;
+	}
 	.post-modal-modes button {
 		min-height: 28px;
 		padding: 4px 10px;
@@ -174,6 +183,29 @@
 		}
 		.post-modal {
 			padding: 10px 12px 12px;
+		}
+		.post-modal-header-action {
+			display: block;
+			margin-inline-start: auto;
+		}
+		.post-modal.has-header-action .post-modal-close {
+			order: -1;
+			margin-inline-start: 0;
+		}
+		.post-modal-header-action :global(.post-modal-mobile-submit) {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 5px;
+			height: 38px;
+			padding: 0 12px;
+			border-radius: var(--r-md);
+			font-size: 14px;
+			font-weight: 700;
+			white-space: nowrap;
+		}
+		.post-modal.has-header-action :global(.composer-foot .submit-primary) {
+			display: none;
 		}
 		.post-modal.rich {
 			height: calc(
