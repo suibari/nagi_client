@@ -616,6 +616,20 @@ export const putPreferences = (input: PutPreferencesInput) =>
 		{ method: 'POST', body: JSON.stringify(input) },
 		'required',
 	);
+/**
+ * ポストおたすけ。書きかけの本文から botたんのひとことを生成する。
+ * 本文を URL に載せないよう procedure で送り、本人の日記を材料にするので認証必須。
+ */
+export const generatePostAssist = (
+	input: { text: string; lang: 'ja' | 'en'; today: string; previous: string[] },
+	signal?: AbortSignal,
+) =>
+	call<{ message: string }>(
+		'com.suibari.nagi.generatePostAssist',
+		'/xrpc/com.suibari.nagi.generatePostAssist',
+		{ method: 'POST', body: JSON.stringify(input), signal },
+		'required',
+	);
 /** my Nagi の「リスト動向」。本人のリストと購読状況そのものなので認証必須。 */
 export const getMyNagi = (limit = 6) =>
 	call<MyNagiView>(

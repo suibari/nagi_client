@@ -7,6 +7,7 @@
 		open,
 		mode = $bindable<'simple' | 'rich'>('simple'),
 		sending = false,
+		assistSpace = 0,
 		title = m.postModalTitle(),
 		onclose,
 		onmodechange,
@@ -15,6 +16,8 @@
 		open: boolean;
 		mode?: 'simple' | 'rich';
 		sending?: boolean;
+		/** ポストおたすけの吹き出しが下端を覆う高さ。投稿ボタンが隠れないよう余白に足す。 */
+		assistSpace?: number;
 		title?: string;
 		onclose: () => void;
 		onmodechange?: (mode: 'simple' | 'rich') => void;
@@ -44,6 +47,7 @@
 	class="post-modal-backdrop"
 	role="presentation"
 	hidden={!open}
+	style:--post-modal-assist-space={`${assistSpace}px`}
 	onclick={(event) => event.target === event.currentTarget && !sending && onclose()}
 >
 	<div
@@ -96,7 +100,7 @@
 		display: flex;
 		align-items: flex-start;
 		justify-content: center;
-		padding: 40px 16px 16px;
+		padding: 40px 16px calc(16px + var(--post-modal-assist-space, 0px));
 		overflow-y: auto;
 		background: color-mix(in srgb, var(--bg) 82%, #000);
 	}
@@ -115,7 +119,7 @@
 		box-shadow: var(--shadow-pop);
 	}
 	.post-modal.rich {
-		height: min(760px, calc(100dvh - 72px));
+		height: min(760px, calc(100dvh - 72px - var(--post-modal-assist-space, 0px)));
 		overflow: hidden;
 	}
 	.post-modal:focus {
@@ -166,13 +170,15 @@
 	}
 	@media (max-width: 767px) {
 		.post-modal-backdrop {
-			padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+			padding: 8px 8px calc(8px + env(safe-area-inset-bottom) + var(--post-modal-assist-space, 0px));
 		}
 		.post-modal {
 			padding: 10px 12px 12px;
 		}
 		.post-modal.rich {
-			height: calc(100dvh - 16px - env(safe-area-inset-bottom));
+			height: calc(
+				100dvh - 16px - env(safe-area-inset-bottom) - var(--post-modal-assist-space, 0px)
+			);
 		}
 	}
 </style>
