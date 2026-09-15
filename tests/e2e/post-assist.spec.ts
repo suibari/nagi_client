@@ -58,6 +58,14 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	await expect(thinking).toHaveCount(0);
 	await expect(assist).toContainText('最近は登山が気になってるみたいだね');
 
+	// PCではbotたんをクリックすると、しばらく喜ぶ姿に切り替わってから元に戻る。
+	const character = page.locator('.composer-assist-character');
+	await page.getByRole('button', { name: 'botたんをなでる' }).click();
+	await expect(character).toHaveAttribute('src', '/bot_assist_petted.png');
+	await expect(character).toHaveClass(/petted/);
+	await page.clock.runFor(1500);
+	await expect(character).toHaveAttribute('src', '/bot_assist_sitting.png');
+
 	// 入力途中は4秒待つ。前のセリフは考え中に置き換わる。
 	await textarea.fill('久しぶりにギターを');
 	await page.clock.runFor(3500);

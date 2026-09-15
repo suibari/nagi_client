@@ -250,6 +250,7 @@ export const en: Messages = {
 	assistLabel: 'Helper Bot-tan',
 	assistThinking: 'Bot-tan is thinking…',
 	assistClose: 'Close writing help',
+	assistPet: 'Pet Bot-tan',
 	markdownPalette: 'Formatting',
 	markdownPaletteAria: 'Text formatting palette',
 	markdownHeading: 'Heading',
