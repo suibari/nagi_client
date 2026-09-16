@@ -217,16 +217,6 @@ export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 		`/xrpc/com.suibari.nagi.getPositiveNews?${params}`,
 	);
 };
-/** 未読確認用。本文を描画しない画面では最新の1件だけを取得する。 */
-export const getLatestPositiveNews = (lang: 'ja' | 'en') => {
-	const params = new URLSearchParams({ limit: '1', lang });
-	return call<NewsPage>(
-		'com.suibari.nagi.getPositiveNews',
-		`/xrpc/com.suibari.nagi.getPositiveNews?${params}`,
-		{},
-		'none',
-	);
-};
 export const getThread = (uri: string) =>
 	call<{ thread: ThreadView }>(
 		'com.suibari.nagi.getThread',

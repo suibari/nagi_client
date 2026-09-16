@@ -60,6 +60,8 @@ export type NewsView = {
 	title: string;
 	sourceName?: string;
 	sourceUrl?: string;
+	/** OGP画像の配信元URL。画像本体はAppViewを経由せず直接読み込む。 */
+	image?: string;
 	publishedAt?: string;
 	botComment: string;
 	lang: 'ja' | 'en';

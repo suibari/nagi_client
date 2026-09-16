@@ -1,7 +1,6 @@
 import { writable, type Readable } from 'svelte/store';
 import { m } from '$lib/i18n/i18n.svelte';
 import { unreadCount } from '$lib/notifications/unread.svelte';
-import { unreadNewsCount } from '$lib/news/unread.svelte';
 
 /**
  * ナビ項目に重ねる未読表示。ドットと数値バッジで真実源が違う（既読ウォーターマーク /
@@ -30,16 +29,7 @@ const notifications: NavItem = {
 	},
 };
 const channels: NavItem = { href: '/channels', label: m.navChannels, icon: 'hash' };
-const news: NavItem = {
-	href: '/news',
-	label: m.navNews,
-	icon: 'newspaper',
-	badge: {
-		unread: unreadNewsCount,
-		style: 'dot',
-		aria: () => m.newsUnreadAria(),
-	},
-};
+const news: NavItem = { href: '/news', label: m.navNews, icon: 'newspaper' };
 const diary: NavItem = { href: '/diary', label: m.navDiary, icon: 'draft' };
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
 
@@ -55,9 +45,6 @@ export const mobilePrimaryItems: NavItem[] = [myNagi, feed, notifications];
 
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
 export const mobileMenuItems: NavItem[] = [channels, news, diary, settings];
-
-/** 閉じたメニューにも、配下のニュース未読が伝わるようにする。 */
-export const mobileMenuBadge: NavBadge = news.badge!;
 /** フィードの3タブ（ホーム/グローバル/全肯定）はどれもフィード扱いにする。 */
 const FEED_PATHS = ['/feed', '/global', '/affirmation'];
 /**
