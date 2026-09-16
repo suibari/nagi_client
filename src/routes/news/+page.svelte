@@ -6,6 +6,7 @@
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m, dayHeading, dayKey } from '$lib/i18n/i18n.svelte';
+	import { byNewestFirst } from '$lib/news/order';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
@@ -54,12 +55,13 @@
 				? await searchNewsByQuery(category.query, locale, reset ? undefined : cursor)
 				: await getPositiveNews(locale, reset ? undefined : cursor);
 			if (version !== loadVersion) return;
-			items =
+			items = byNewestFirst(
 				category.id === 'recommended'
 					? (page.recommended ?? [])
 					: reset
 						? page.items
-						: [...items, ...page.items];
+						: [...items, ...page.items],
+			);
 			botActor = page.botActor ?? botActor;
 			cursor = category.id === 'recommended' ? undefined : page.cursor;
 			hasMore = category.id === 'recommended' ? false : page.hasMore;
@@ -101,7 +103,7 @@
 		if (loadedLang && loadedLang !== lang) void load(true);
 	});
 	// 連続する同日をひとまとめにして日付見出しを出す。日付は botたんの投稿日(createdAt)。
-	// indexedAt DESC の並びは崩さないので、さらに読み込んでも見出しは重複しない。
+	// items は常に日付降順なので、さらに読み込んでも見出しは重複しない。
 	let grouped = $derived.by(() => {
 		let lastKey: string | undefined;
 		return items.map((news) => {
