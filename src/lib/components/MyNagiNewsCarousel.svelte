@@ -34,7 +34,7 @@
 	<ul class="horizontal-carousel-track">
 		{#each items as news (news.uri)}
 			<li class="horizontal-carousel-item my-nagi-news-item">
-				<NewsCard {news} {botActor} embedded unread={unreadView?.isUnread(news) ?? false} />
+				<NewsCard {news} {botActor} embedded showImage unread={unreadView?.isUnread(news) ?? false} />
 			</li>
 		{/each}
 	</ul>
