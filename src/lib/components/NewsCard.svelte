@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import { newsBotPost, safeNewsUrl } from '$lib/news/bot-post';
+	import { safeNewsImageUrl } from '$lib/news/image';
 	import { NewsQuote } from '$lib/news/quote.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -17,6 +18,7 @@
 		embedded = false,
 		clampTitle = true,
 		reasonGenre,
+		showImage = false,
 	}: {
 		news: NewsView;
 		botActor?: ActorView;
@@ -27,6 +29,8 @@
 		 * （一覧・検索・プロフィール・カルーセルは従来どおり）。
 		 */
 		reasonGenre?: string;
+		/** OGP画像を配信元から直接読み込む。ニュースページでだけ有効にする。 */
+		showImage?: boolean;
 		/** 外側のセクション内に置くときは、カード自身の枠と影を持たせない。 */
 		embedded?: boolean;
 		/** カルーセルなど高さを揃える表示では、タイトルを2行に収める。 */
@@ -40,6 +44,8 @@
 	let deleting = $state(false);
 	let deleted = $state(false);
 	let safeUrl = $derived(safeNewsUrl(news.url));
+	let safeImage = $derived(safeNewsImageUrl(news.image));
+	let imageFailed = $state(false);
 	let botPost = $derived(newsBotPost(news, botActor));
 	async function share() {
 		if (!safeUrl) return;
@@ -104,6 +110,20 @@
 		>
 			{news.title}
 		</h3>
+		{#if showImage && safeImage && safeUrl && !imageFailed}<a
+				class="news-image"
+				href={safeUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				><img
+					src={safeImage}
+					alt=""
+					loading="lazy"
+					decoding="async"
+					referrerpolicy="no-referrer"
+					onerror={() => (imageFailed = true)}
+				/></a
+			>{/if}
 		{#if news.submittedBy}<a class="news-submitter" href={`/profile/${news.submittedBy.did}`}
 				>{m.newsSubmittedBy({
 					name: news.submittedBy.displayName ?? news.submittedBy.handle,
@@ -228,6 +248,22 @@
 	}
 	.news-meta time {
 		margin-left: auto;
+	}
+	.news-image {
+		display: block;
+		inline-size: 100%;
+		aspect-ratio: 1.91 / 1;
+		margin-block: 8px 12px;
+		overflow: hidden;
+		border: 1px solid var(--line);
+		border-radius: var(--r-md);
+		background: var(--surface-soft);
+	}
+	.news-image img {
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
 	}
 	h3 {
 		margin: 0.45rem 0 0.75rem;
