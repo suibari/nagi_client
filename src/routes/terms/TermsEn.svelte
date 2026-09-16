@@ -164,10 +164,14 @@
 </div>
 <p>Posts with a Content Warning are excluded from these summaries.</p>
 <p>
-	Among the diaries Bot-tan writes,
-	<strong>a diary for a day that includes a Kossori post is readable only by you.</strong> Like Kossori
-	posts, it is never stored in a PDS. Other users see only the date and the post count (the cell in the
-	annual graph on your profile), never the text.
+	<strong>The diaries Bot-tan writes are readable only by you.</strong> Like Kossori posts, they are never
+	stored in a PDS, only on the Service's servers. Other users see none of them: not the text, the title,
+	the date, or the post count.
+</p>
+<p>
+	Diaries written before they became private to you were stored as public records in Bot-tan's PDS.
+	We have moved them to the Service's servers and deleted them from the PDS, but the operator cannot
+	remove copies that other applications fetched before the deletion.
 </p>
 
 <h2 id="t5">5. Our stance</h2>
@@ -322,8 +326,8 @@
 			>Hiding or refusing to store content on the Service does not delete the record from your PDS.</strong
 		> The Service is an AppView; your posts actually live in your PDS. To delete something completely,
 		you must delete the record from your PDS yourself. The operator also cannot stop other AppViews from
-		displaying the same public records. "Kossori" posts and the diaries that contain them are the exception:
-		they have no counterpart in any PDS, so deleting them on the Service removes them completely.
+		displaying the same public records. "Kossori" posts and diaries are the exception: they have no counterpart
+		in any PDS, so deleting them on the Service removes them completely.
 	</p>
 </div>
 
@@ -380,8 +384,8 @@
 <p>
 	Even if the Service shuts down, your posts remain in your PDS. That is a benefit of building on
 	the AT Protocol: in principle, your data is not lost when the Service ends.
-	<strong>"Kossori" posts and the diaries that contain them are the one exception</strong> - they are
-	never stored in a PDS, so they are lost when the Service ends.
+	<strong>"Kossori" posts and diaries are the one exception</strong> - they are never stored in a PDS,
+	so they are lost when the Service ends.
 </p>
 
 <h2 id="t12">12. Disclaimer</h2>

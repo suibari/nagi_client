@@ -52,6 +52,7 @@ export const en: Messages = {
 	navNews: 'News',
 	navNotifications: 'Notifications',
 	navSettings: 'Settings',
+	navDiary: 'Diary',
 	navMenu: 'Menu',
 	mainNavAria: 'Main navigation',
 	feedTabsAria: 'Feed tabs',
@@ -220,7 +221,7 @@ export const en: Messages = {
 	aboutAtprotoMoveOld: 'Not possible',
 	aboutAtprotoMoveNagi: 'Always possible',
 	aboutAtprotoNote:
-		'If it isn’t for you, walk away and take everything you wrote with you. The one exception is a Limited post, and any diary that contains one: those never touch your PDS, so they stay inside Nagi.',
+		'If it isn’t for you, walk away and take everything you wrote with you. The exceptions are Limited posts and diaries: those never touch your PDS, so they stay inside Nagi.',
 
 	aboutFinalHeading: 'Ready to start?',
 	aboutFinalBody: 'A single line is enough. Bot-tan is waiting.',
@@ -592,7 +593,6 @@ export const en: Messages = {
 	profileTabReplies: 'Replies',
 	profileTabMedia: 'Media',
 	profileTabReactions: 'Reactions',
-	profileTabDiary: 'Diary',
 	profileTabCards: 'Cards',
 	profileTabsAria: 'Profile tabs',
 	profileEdit: 'Edit profile',
@@ -620,7 +620,6 @@ export const en: Messages = {
 		]
 			.filter(Boolean)
 			.join(', '),
-	diaryPrivate: 'This day includes a Limited post, so only its author can read the diary.',
 	diaryAbout: "Bot-tan writes these entries from that day's posts.",
 
 	loginTitle: 'Join Nagi',

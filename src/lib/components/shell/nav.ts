@@ -40,12 +40,13 @@ const news: NavItem = {
 		aria: () => m.newsUnreadAria(),
 	},
 };
+const diary: NavItem = { href: '/diary', label: m.navDiary, icon: 'draft' };
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
 
 /** PC の区切りも含めた表示順。グループを足せば区切り線も自動で増える。 */
 export const desktopNavGroups: NavItem[][] = [
 	[myNagi, feed, notifications],
-	[channels, news],
+	[channels, news, diary],
 	[settings],
 ];
 
@@ -53,7 +54,7 @@ export const desktopNavGroups: NavItem[][] = [
 export const mobilePrimaryItems: NavItem[] = [myNagi, feed, notifications];
 
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
-export const mobileMenuItems: NavItem[] = [channels, news, settings];
+export const mobileMenuItems: NavItem[] = [channels, news, diary, settings];
 
 /** 閉じたメニューにも、配下のニュース未読が伝わるようにする。 */
 export const mobileMenuBadge: NavBadge = news.badge!;

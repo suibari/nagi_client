@@ -18,7 +18,6 @@
 	import { cardFromProfile } from '$lib/card/data';
 	import { browser } from '$app/environment';
 	import ActorBadges from '$lib/components/ActorBadges.svelte';
-	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
 	import CardCollection from '$lib/components/CardCollection.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
 	import ProfileDescription from '$lib/components/ProfileDescription.svelte';
@@ -40,13 +39,12 @@
 	import ProfileTagList from '$lib/components/ProfileTagList.svelte';
 	import { selectProfileTags } from '$lib/profile/tags';
 
-	// 日記・カードはポストではないので Feed には載らない。タブだけ同じ並びに足す。
-	type ProfileTab = ProfileFeedFilter | 'diary' | 'cards' | 'bookmarks';
+	// カードはポストではないので Feed には載らない。タブだけ同じ並びに足す。
+	type ProfileTab = ProfileFeedFilter | 'cards' | 'bookmarks';
 	const publicTabs: Array<{ id: ProfileTab; label: () => string }> = [
 		{ id: 'posts', label: m.profileTabPosts },
 		{ id: 'replies', label: m.profileTabReplies },
 		{ id: 'media', label: m.profileTabMedia },
-		{ id: 'diary', label: m.profileTabDiary },
 		{ id: 'cards', label: m.profileTabCards },
 	];
 	let did = $derived(page.params.did ?? '');
@@ -62,8 +60,6 @@
 			: publicTabs,
 	);
 	let tabsNav = $state<HTMLElement>();
-	// 通知から ?tab=diary&date=YYYY-MM-DD で該当日を開く。
-	const initialDiaryDate = $derived(page.url.searchParams.get('date') ?? undefined);
 	let tab = $state<ProfileTab>('posts');
 	let profile = $state<ProfileDetail>();
 	let reactionActor = $derived(profile ?? { did, handle: did });
@@ -109,7 +105,6 @@
 		reactionFeed = undefined;
 		const requested = page.url.searchParams.get('tab');
 		tab =
-			requested === 'diary' ||
 			requested === 'cards' ||
 			requested === 'media' ||
 			((requested === 'bookmarks' || requested === 'reactions') && isSelf)
@@ -124,9 +119,8 @@
 	$effect(() => {
 		const actor = did;
 		const locale = i18n.locale;
-		// 日記・カードタブでもプロフィール欄は要るので、投稿フィードは読んでおく。
-		const filter: ProfileFeedFilter =
-			tab === 'diary' || tab === 'cards' || tab === 'bookmarks' ? 'posts' : tab;
+		// カードタブでもプロフィール欄は要るので、投稿フィードは読んでおく。
+		const filter: ProfileFeedFilter = tab === 'cards' || tab === 'bookmarks' ? 'posts' : tab;
 		if (!actor) return;
 		if (filter === 'reactions') {
 			const key = `${actor}:reactions:${locale}`;
@@ -329,10 +323,6 @@
 	{#if tab === 'bookmarks' && isSelf}
 		<section class="timeline">
 			<BookmarksPanel />
-		</section>
-	{:else if tab === 'diary'}
-		<section class="timeline">
-			<DiaryCalendar {did} initialDate={initialDiaryDate} botActor={feed?.botActor} />
 		</section>
 	{:else if tab === 'cards'}
 		<section class="timeline">
