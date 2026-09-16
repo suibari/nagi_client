@@ -12,7 +12,6 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
-	import { startUnreadNewsPolling } from '$lib/news/unread.svelte';
 	import { interceptSiblingLinkClick } from '$lib/sso/links';
 	import PostFollowNotice from '$lib/components/PostFollowNotice.svelte';
 	import { postFollow } from '$lib/feed/post-follow.svelte';
@@ -204,8 +203,6 @@
 		void guestPosts.load();
 		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。
 		startUnreadPolling();
-		// 公開ニュースの新着有無を端末内の既読基準と照合する。
-		startUnreadNewsPolling();
 		// 長時間開いたPC、スリープ復帰、オフライン復帰でもPush endpointを自己修復する。
 		// capability経路ならOAuth refreshが一時的に失敗していても同じinstallationだけ更新できる。
 		const repairPush = () => {

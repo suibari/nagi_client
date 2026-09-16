@@ -1,13 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { tick } from 'svelte';
-	import {
-		mobilePrimaryItems,
-		mobileMenuItems,
-		mobileMenuBadge,
-		isActive,
-		handleNavClick,
-	} from './nav';
+	import { mobilePrimaryItems, mobileMenuItems, isActive, handleNavClick } from './nav';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './Icon.svelte';
 	import NavBadge from './NavBadge.svelte';
@@ -120,7 +114,6 @@
 	>
 		<span class="nav-icon">
 			<Icon name="moreHorizontal" size={22} />
-			<NavBadge {...mobileMenuBadge} />
 		</span><span>{m.navMenu()}</span>
 	</button>
 </nav>
