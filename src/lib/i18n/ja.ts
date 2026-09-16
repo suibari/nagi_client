@@ -54,6 +54,7 @@ export const ja = {
 	navNews: 'ニュース',
 	navNotifications: '通知',
 	navSettings: '設定',
+	navDiary: '日記',
 	navMenu: 'メニュー',
 	mainNavAria: 'メインナビゲーション',
 	feedTabsAria: 'フィード切り替え',
@@ -241,7 +242,7 @@ export const ja = {
 	aboutAtprotoMoveOld: 'できない',
 	aboutAtprotoMoveNagi: 'できる',
 	aboutAtprotoNote:
-		'合わなければ、書いたものを持ったまま出ていけます。ただし「こっそり投稿」と、それを含む日の日記だけは例外で、PDSに置かないぶんNagiの中だけに残ります。',
+		'合わなければ、書いたものを持ったまま出ていけます。ただし「こっそり投稿」と日記だけは例外で、PDSに置かないぶんNagiの中だけに残ります。',
 
 	// about page — 締めの導線
 	aboutFinalHeading: 'はじめてみませんか',
@@ -624,7 +625,6 @@ export const ja = {
 	profileTabReplies: '返信',
 	profileTabMedia: 'メディア',
 	profileTabReactions: 'リアクション',
-	profileTabDiary: '日記',
 	profileTabCards: 'カード',
 	profileTabsAria: 'プロフィールのタブ',
 	profileEdit: 'プロフィールを編集',
@@ -651,7 +651,6 @@ export const ja = {
 		]
 			.filter(Boolean)
 			.join('、'),
-	diaryPrivate: 'こっそり投稿を含む日なので、この日の日記は本人だけが読めます。',
 	diaryAbout: 'botたんが、その日の投稿をもとに書いてくれた日記です。',
 
 	// login

@@ -114,7 +114,7 @@
 	 */
 	const notificationHref = (item: NotificationView) =>
 		item.type === 'diary'
-			? `/profile/${item.diary?.subject ?? $session?.did}?tab=diary${item.diary ? `&date=${item.diary.date}` : ''}`
+			? `/diary${item.diary ? `?date=${item.diary.date}` : ''}`
 			: item.type === 'analysis'
 				? `/profile/${$session?.did}`
 				: threadHref(item.subjectUri);

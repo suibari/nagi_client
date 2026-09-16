@@ -408,8 +408,7 @@ export const getProfileWebsite = (actor: string) =>
 		'none',
 	);
 /**
- * 日記は基本的に公開コンテンツだが、こっそり投稿を含む日だけは本人にしか本文が返らない。
- * サインインしていれば自分の分を読めるよう optional で送る（未ログインでも日付と件数は返る）。
+ * 日記は本人だけが読む。日記ページから自分の DID で呼ぶ。
  * 年間グラフは from/to を1組で渡す。
  */
 export const getDiaries = (
@@ -425,7 +424,7 @@ export const getDiaries = (
 		'com.suibari.nagi.getDiaries',
 		`/xrpc/com.suibari.nagi.getDiaries?${params}`,
 		{},
-		'optional',
+		'required',
 	);
 };
 export const searchActors = (

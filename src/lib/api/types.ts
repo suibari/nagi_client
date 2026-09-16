@@ -284,15 +284,6 @@ export type DiaryView = {
 	involvedActors?: ActorView[];
 	/** 11人目以降の関わった相手がいる。 */
 	involvedActorsHasMore?: boolean;
-	/**
-	 * その日の材料にこっそり投稿が含まれる、本人限定の日記であることを示す。
-	 */
-	isPrivate?: boolean;
-	/**
-	 * 現在の閲覧者には本文を見せられないことを示す。true のとき text は空文字で、
-	 * titleJa / titleEn / involvedActors は返らない。
-	 */
-	bodyHidden?: boolean;
 	langs?: string[];
 	createdAt: string;
 	indexedAt: string;

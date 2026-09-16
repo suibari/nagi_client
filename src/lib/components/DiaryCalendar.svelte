@@ -2,12 +2,10 @@
 	import { getDiaries } from '$lib/api/appview';
 	import type { ActorView, DiaryView, PostView } from '$lib/api/types';
 	import { buildDiaryGraph, diaryActivityIntensity, diaryMonthLabels } from '$lib/diary/calendar';
-	import { isDiaryBodyHidden } from '$lib/diary/privacy';
 	import { i18n, m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick } from 'svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import ChatBubble from './ChatBubble.svelte';
-	import DiaryPrivateNotice from './DiaryPrivateNotice.svelte';
 
 	let {
 		did,
@@ -105,8 +103,7 @@
 		i18n.locale === 'ja' ? (entry.titleJa ?? entry.titleEn) : (entry.titleEn ?? entry.titleJa);
 	const actorName = (actor: ActorView) => actor.displayName ?? actor.handle;
 	const diaryPost = $derived.by((): PostView | undefined => {
-		// 本人限定属性そのものではなく、API がこの閲覧者向けに本文を伏せた場合だけ隠す。
-		if (!current || isDiaryBodyHidden(current)) return undefined;
+		if (!current) return undefined;
 		return {
 			uri: current.uri,
 			cid: current.cid,
@@ -240,11 +237,7 @@
 			<p class="diary-hint">{m.diaryEmptyYear()}</p>
 		{/if}
 
-		{#if isDiaryBodyHidden(current)}
-			<article class="diary-entry diary-private">
-				<DiaryPrivateNotice />
-			</article>
-		{:else if current && diaryPost}
+		{#if diaryPost}
 			<article class="diary-entry">
 				<ChatBubble post={diaryPost} displayOnly collapsible={false} />
 			</article>

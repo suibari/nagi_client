@@ -57,7 +57,7 @@
 		The authoritative copy of your posts lives in your own PDS; the Service keeps a copy for display
 		and search, plus data derived from it.
 	</strong>
-	"Kossori" (quiet) posts, and the diaries for days that contain one, are the exception:
+	"Kossori" (quiet) posts and diaries are the exception:
 	<strong>their only copy lives on the Service's servers</strong> (putting them in a PDS would make them
 	readable by anyone). This Policy sets out which information is stored where.
 </p>
@@ -86,12 +86,13 @@
 	</li>
 	<li><strong>Reactions, profile, channels, and custom emoji.</strong> Also copies.</li>
 	<li>
-		<strong>The text of "Kossori" posts, and of the diaries for days that contain one.</strong>
+		<strong>The text of "Kossori" posts, and of the diaries Bot-tan writes.</strong>
 		These are not copies but the <strong>only</strong> copy. They are visible to no one but you and Bot-tan.
 		Putting them in a PDS would make them readable by anyone, so we keep them only on our servers — the
 		same reasoning as for mute settings and your Home list. In exchange, they are lost if the Service
 		shuts down and cannot be taken to another app. Kossori posts made before 18 August 2026 also remain
-		in your PDS, as the design at the time required.
+		in your PDS, as the design at the time required. Diaries written before they became private to you
+		were in Bot-tan's PDS; we have moved them to our servers and deleted them from the PDS.
 	</li>
 	<li><strong>Your DID, handle, and PDS URL.</strong></li>
 	<li>
@@ -409,8 +410,8 @@
 		<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan.</strong> Their text is
 		stored on our servers rather than in your PDS, and never appears in shared timelines, search,
 		threads, or anyone else's profile. Only you and Bot-tan can reply.
-		<strong>A diary for a day that contains a Kossori post is treated the same way</strong>: other
-		users see only the date and the post count (the cell in the annual graph on your profile).
+		<strong>The diaries Bot-tan writes are also readable only by you.</strong> Other users see none of
+		them: not the text, the title, the date, or the post count.
 	</p>
 	<p>
 		However, <strong
@@ -423,6 +424,11 @@
 	<p>
 		<strong>Kossori posts made before 18 August 2026 remain in your PDS as public records.</strong> The
 		Service shows them only to you, but anyone reading your PDS directly can fetch them.
+	</p>
+	<p>
+		Diaries written before they became private to you were stored as public records in Bot-tan's
+		PDS. We have moved them to our servers and deleted them from the PDS, but the operator cannot
+		remove copies that other applications fetched before the deletion.
 	</p>
 </div>
 
@@ -439,8 +445,8 @@
 <ul>
 	<li>Copies of your posts, reactions, profile, and channels</li>
 	<li>
-		<strong>The text of "Kossori" posts and of the diaries containing them.</strong> These have no counterpart
-		in any PDS, so this removes them completely.
+		<strong>The text of "Kossori" posts and of diaries.</strong> These have no counterpart in any PDS,
+		so this removes them completely.
 	</li>
 	<li>Nagi post, reaction, and profile records in your PDS</li>
 	<li>Custom emoji in your PDS that have a marker showing they were created by Nagi</li>
