@@ -58,6 +58,8 @@
 	let {
 		onposted,
 		onsendingchange,
+		ontextinput,
+		oncompositionchange,
 		channel,
 		defaultScope = 'feed',
 		mode = 'simple',
@@ -67,6 +69,8 @@
 	}: {
 		onposted: (uri: string) => void | Promise<void>;
 		onsendingchange?: (sending: boolean) => void;
+		ontextinput?: (event: InputEvent) => void;
+		oncompositionchange?: (composing: boolean) => void;
 		channel?: { uri: string; cid: string; name?: string };
 		defaultScope?: PostScope;
 		mode?: 'simple' | 'rich';
@@ -643,6 +647,8 @@
 	{/if}
 
 	<ComposerEditor
+		{ontextinput}
+		{oncompositionchange}
 		bind:value={text}
 		bind:mentions
 		bind:channels

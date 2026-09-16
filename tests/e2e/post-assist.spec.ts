@@ -2,7 +2,13 @@ import { expect, test, type Page } from '@playwright/test';
 
 test.use({ timezoneId: 'Asia/Tokyo', locale: 'ja-JP' });
 
-type AssistRequest = { text: string; lang: string; today: string; previous: string[] };
+type AssistRequest = {
+	mode: 'affirm' | 'question';
+	text: string;
+	lang: string;
+	today: string;
+	previous: string[];
+};
 
 async function mockXrpc(page: Page) {
 	const assistRequests: AssistRequest[] = [];
@@ -16,9 +22,10 @@ async function mockXrpc(page: Page) {
 			const input = request.postDataJSON() as AssistRequest;
 			assistRequests.push(input);
 			await json({
-				message: input.text
-					? `9月1日にもギターの弦を替えてたよね！今日はどんな音だった？`
-					: '最近は登山が気になってるみたいだね。なにかあった？',
+				message:
+					input.mode === 'affirm'
+						? '「久しぶりに」って言葉から、ギターとの再会が伝わるね！素敵だよ〜'
+						: '最近は登山が気になってるみたいだね。なにかあった？',
 			});
 			return;
 		}
@@ -52,7 +59,13 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	await expect(thinking).toBeVisible();
 	await expect(assist).toContainText('おたすけbotたん');
 	await expect(page.locator('.composer-assist-character')).toBeVisible();
-	expect(assistRequests[0]).toEqual({ text: '', lang: 'ja', today: '2026-09-15', previous: [] });
+	expect(assistRequests[0]).toEqual({
+		text: '',
+		mode: 'question',
+		lang: 'ja',
+		today: '2026-09-15',
+		previous: [],
+	});
 	// 生成がすぐ返っても、考え中は最低限見せてからセリフに替える。
 	await page.clock.runFor(500);
 	await expect(thinking).toHaveCount(0);
@@ -74,9 +87,10 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	await expect(thinking).toBeVisible();
 	await expect(assist).not.toContainText('最近は登山');
 	await page.clock.runFor(500);
-	await expect(assist).toContainText('9月1日にもギターの弦を替えてたよね！');
+	await expect(assist).toContainText('ギターとの再会が伝わるね！');
 	expect(assistRequests[1]).toMatchObject({
 		text: '久しぶりにギターを',
+		mode: 'affirm',
 		previous: ['最近は登山が気になってるみたいだね。なにかあった？'],
 	});
 
@@ -142,4 +156,97 @@ test('生成できないときは考え中の吹き出しをそっと消す', as
 	await page.clock.runFor(1000);
 	await expect(page.locator('.composer-assist')).toHaveCount(0);
 	await expect(page.locator('.post-modal')).toBeVisible();
+});
+
+test('削除で問いかけ、追記で肯定へ戻り、IME変換による文字数減少では肯定を維持する', async ({
+	page,
+}) => {
+	const requests = await mockXrpc(page);
+	await page.clock.install();
+	await page.goto('/dev/e2e/post-assist');
+	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
+	const textarea = page.locator('.post-modal textarea');
+	await textarea.fill('今日は空がきれい');
+	await page.clock.runFor(4600);
+	await expect.poll(() => requests.length).toBe(1);
+	expect(requests.at(-1)?.mode).toBe('affirm');
+
+	await textarea.press('End');
+	await textarea.press('Backspace');
+	await page.clock.runFor(4600);
+	await expect.poll(() => requests.length).toBe(2);
+	expect(requests.at(-1)).toMatchObject({ text: '今日は空がきれ', mode: 'question' });
+
+	await textarea.pressSequentially('いね');
+	await page.clock.runFor(4600);
+	await expect.poll(() => requests.length).toBe(3);
+	expect(requests.at(-1)?.mode).toBe('affirm');
+
+	// OSのIME操作は自動化できないため、ブラウザに同じイベント列を送って確認する。
+	await textarea.fill('きょう');
+	await textarea.dispatchEvent('compositionstart');
+	await textarea.evaluate((element: HTMLTextAreaElement) => {
+		element.value = '今日';
+		element.dispatchEvent(
+			new InputEvent('input', {
+				bubbles: true,
+				inputType: 'insertCompositionText',
+				isComposing: true,
+				data: '今日',
+			}),
+		);
+	});
+	// 変換中に手が止まっても生成しない。
+	await page.clock.runFor(6000);
+	expect(requests).toHaveLength(3);
+	await textarea.dispatchEvent('compositionend', { data: '今日' });
+	await textarea.dispatchEvent('input', { inputType: 'insertFromComposition', isComposing: false });
+	await page.clock.runFor(4600);
+	await expect.poll(() => requests.length).toBe(4);
+	expect(requests.at(-1)).toMatchObject({ text: '今日', mode: 'affirm' });
+
+	// 変換後の実際の削除は問いかけになる。全削除の空文字も問いかけ。
+	await textarea.press('End');
+	await textarea.press('Backspace');
+	await page.clock.runFor(4600);
+	await expect.poll(() => requests.length).toBe(5);
+	expect(requests.at(-1)).toMatchObject({ text: '今', mode: 'question' });
+	await textarea.press('Backspace');
+	await page.clock.runFor(3600);
+	await expect.poll(() => requests.length).toBe(6);
+	expect(requests.at(-1)).toMatchObject({ text: '', mode: 'question' });
+});
+
+test('生成中に削除すると古い肯定を表示せず、削除後の問いかけを表示する', async ({ page }) => {
+	const requests: AssistRequest[] = [];
+	let release: (() => void) | undefined;
+	await page.route('**/xrpc/**', async (route) => {
+		if (!route.request().url().endsWith('generatePostAssist')) {
+			await route.fulfill({ json: { items: [], drafts: [] } });
+			return;
+		}
+		const input = route.request().postDataJSON() as AssistRequest;
+		requests.push(input);
+		if (input.mode === 'affirm') await new Promise<void>((resolve) => (release = resolve));
+		await route
+			.fulfill({
+				json: { message: input.mode === 'affirm' ? '古い肯定のセリフ' : 'どんな空だった？' },
+			})
+			.catch(() => {});
+	});
+	await page.clock.install();
+	await page.goto('/dev/e2e/post-assist');
+	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
+	const textarea = page.locator('.post-modal textarea');
+	await textarea.fill('空がきれい');
+	await page.clock.runFor(4100);
+	await expect.poll(() => requests.length).toBe(1);
+	await textarea.press('End');
+	await textarea.press('Backspace');
+	release?.();
+	await page.clock.runFor(4600);
+	await expect.poll(() => requests.length).toBe(2);
+	await page.clock.runFor(500);
+	await expect(page.locator('.composer-assist')).toContainText('どんな空だった？');
+	await expect(page.locator('.composer-assist')).not.toContainText('古い肯定');
 });

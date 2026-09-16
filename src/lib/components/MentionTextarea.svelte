@@ -34,6 +34,8 @@
 		disabled = false,
 		onsubmit,
 		onpaste,
+		ontextinput,
+		oncompositionchange,
 		onselectionchange,
 	}: {
 		value?: string;
@@ -48,6 +50,8 @@
 		disabled?: boolean;
 		onsubmit?: () => void;
 		onpaste?: (event: ClipboardEvent) => void;
+		ontextinput?: (event: InputEvent) => void;
+		oncompositionchange?: (composing: boolean) => void;
 		onselectionchange?: (selected: boolean) => void;
 	} = $props();
 
@@ -208,6 +212,7 @@
 		const next = (event.currentTarget as HTMLTextAreaElement).value;
 		updateSelectionRanges(value, next);
 		value = next;
+		ontextinput?.(event as InputEvent);
 		detectToken();
 	}
 
@@ -519,6 +524,8 @@
 		maxlength="30000"
 		{value}
 		oninput={handleInput}
+		oncompositionstart={() => oncompositionchange?.(true)}
+		oncompositionend={() => oncompositionchange?.(false)}
 		onclick={detectToken}
 		onselect={() => onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd)}
 		onkeyup={(event) => {

@@ -35,6 +35,8 @@
 		realtimePreviewEnabled = false,
 		onsubmit,
 		onpaste,
+		ontextinput,
+		oncompositionchange,
 		tools,
 	}: {
 		value?: string;
@@ -60,6 +62,8 @@
 		realtimePreviewEnabled?: boolean;
 		onsubmit?: () => void;
 		onpaste?: (event: ClipboardEvent) => void;
+		ontextinput?: (event: InputEvent) => void;
+		oncompositionchange?: (composing: boolean) => void;
 		tools?: Snippet;
 	} = $props();
 
@@ -154,6 +158,8 @@
 			{disabled}
 			{onsubmit}
 			{onpaste}
+			{ontextinput}
+			{oncompositionchange}
 			onselectionchange={(selected) => (hasSelection = selected)}
 		/>
 		<div class="composer-tools" class:with-leading={tools}>

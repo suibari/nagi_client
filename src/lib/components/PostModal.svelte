@@ -26,6 +26,8 @@
 	let sending = $state(false);
 	let publishingPreferencesVersion = $state(0);
 	let text = $state('');
+	let assistMode = $state<'affirm' | 'question'>('affirm');
+	let composing = $state(false);
 	let assistSpace = $state(0);
 	let submittable = $state(false);
 	let composer = $state<{ submit: () => Promise<void> }>();
@@ -43,6 +45,8 @@
 		if (composerHost.open === wasOpen) return;
 		wasOpen = composerHost.open;
 		if (composerHost.open) {
+			assistMode = 'affirm';
+			composing = false;
 			mode = getComposerMode();
 			publishingPreferencesVersion += 1;
 		}
@@ -76,6 +80,15 @@
 	<Composer
 		bind:this={composer}
 		bind:text
+		ontextinput={(event) => {
+			// 変換中の削除・置換は、実際の本文削除として扱わない。
+			if (composing || event.isComposing) return;
+			assistMode = event.inputType?.startsWith('delete') ? 'question' : 'affirm';
+		}}
+		oncompositionchange={(value) => {
+			composing = value;
+			if (!value) assistMode = 'affirm';
+		}}
 		bind:submittable
 		{mode}
 		{publishingPreferencesVersion}
@@ -88,6 +101,7 @@
 <ComposerAssistant
 	open={composerHost.open}
 	{text}
-	paused={sending}
+	mode={assistMode}
+	paused={sending || composing}
 	bind:reservedHeight={assistSpace}
 />

@@ -6,7 +6,7 @@
 	import Icon from './shell/Icon.svelte';
 
 	/**
-	 * ポストおたすけ。未入力・入力途中で手が止まったら、botたんが書きかけと本人の日記・
+	 * ポストおたすけ。書き進めているときは具体的な良さを肯定し、未入力・削除時は本人の日記・
 	 * 過去の投稿を材料に LLM でひとこと声をかける（生成は AppView の generatePostAssist）。
 	 * ×で閉じたらモーダルを閉じるまで出さない。
 	 *
@@ -16,11 +16,13 @@
 	let {
 		open,
 		text,
+		mode = 'affirm',
 		paused = false,
 		reservedHeight = $bindable(0),
 	}: {
 		open: boolean;
 		text: string;
+		mode?: 'affirm' | 'question';
 		paused?: boolean;
 		reservedHeight?: number;
 	} = $props();
@@ -52,6 +54,7 @@
 	let petResetTimer: ReturnType<typeof setTimeout> | undefined;
 	let wasOpen = false;
 	let lastText: string | undefined;
+	let lastMode: 'affirm' | 'question' | undefined;
 	let previous: string[] = [];
 
 	const visible = $derived(open && !paused && !dismissed && (thinking || Boolean(message)));
@@ -65,6 +68,7 @@
 		fading = false;
 		dismissed = false;
 		lastText = undefined;
+		lastMode = undefined;
 		previous = [];
 		petted = false;
 		if (petResetTimer) clearTimeout(petResetTimer);
@@ -100,12 +104,13 @@
 	// 書き進めた・閉じた・×を押したら、待っている古い書きかけへの問い合わせは捨てる。
 	$effect(() => {
 		const current = text;
-		if (!open || paused || dismissed || current === lastText) return;
+		const currentMode = current.trim() ? mode : 'question';
+		if (!open || paused || dismissed || (current === lastText && currentMode === lastMode)) return;
 		let request: AbortController | undefined;
 		const timer = setTimeout(
 			() => {
 				request = new AbortController();
-				void ask(current, request.signal);
+				void ask(current, currentMode, request.signal);
 			},
 			current.trim() ? IDLE_TYPING_MS : IDLE_EMPTY_MS,
 		);
@@ -122,9 +127,10 @@
 
 	const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-	async function ask(current: string, signal: AbortSignal) {
+	async function ask(current: string, currentMode: 'affirm' | 'question', signal: AbortSignal) {
 		// 失敗しても同じ書きかけでは聞き直さない。書き進めればまた声をかける。
 		lastText = current;
+		lastMode = currentMode;
 		fading = false;
 		thinking = true;
 		const startedAt = Date.now();
@@ -133,6 +139,7 @@
 			result = await generatePostAssist(
 				{
 					text: current,
+					mode: currentMode,
 					lang: i18n.locale,
 					today: dayKey(new Date().toISOString())!,
 					previous,

@@ -610,7 +610,13 @@ export const putPreferences = (input: PutPreferencesInput) =>
  * 本文を URL に載せないよう procedure で送り、本人の日記を材料にするので認証必須。
  */
 export const generatePostAssist = (
-	input: { text: string; lang: 'ja' | 'en'; today: string; previous: string[] },
+	input: {
+		text: string;
+		mode: 'affirm' | 'question';
+		lang: 'ja' | 'en';
+		today: string;
+		previous: string[];
+	},
 	signal?: AbortSignal,
 ) =>
 	call<{ message: string }>(
