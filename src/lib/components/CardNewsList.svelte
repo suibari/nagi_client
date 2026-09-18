@@ -3,6 +3,8 @@
 	import type { CardNewsFeed } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
+	import AvatarLink from './AvatarLink.svelte';
+	import CardBotReview from './CardBotReview.svelte';
 
 	/**
 	 * 全肯定カードのニュース。SR以上のドローと、ゼンカツのハイライトだけが並ぶ。
@@ -18,8 +20,7 @@
 		error = '';
 		try {
 			const result = await getCardNews(cursor ? { cursor } : {});
-			feed =
-				cursor && feed ? { ...result, items: [...feed.items, ...result.items] } : result;
+			feed = cursor && feed ? { ...result, items: [...feed.items, ...result.items] } : result;
 		} catch {
 			error = m.cardNewsFetchFailed();
 		} finally {
@@ -42,31 +43,41 @@
 	<ul class="news">
 		{#each feed.items as item (item.uri)}
 			<li class="item">
-				<p class="who">{item.author.displayName || item.author.handle}</p>
+				<div class="author">
+					<AvatarLink actor={item.author} size="small" />
+					<p class="who">{item.author.displayName || item.author.handle}</p>
+				</div>
 				{#if item.type === 'cardGet' && item.card}
-					<p class="headline">{m.cardNewsGot({ name: i18n.locale === 'ja' ? item.card.nameJa : item.card.nameEn })}</p>
+					<p class="headline">
+						{m.cardNewsGot({ name: i18n.locale === 'ja' ? item.card.nameJa : item.card.nameEn })}
+					</p>
 					<div class="one"><AffirmationCard card={item.card} /></div>
 				{:else}
-					{#if item.themeJa}<p class="theme">{i18n.locale === 'ja' ? item.themeJa : (item.themeEn ?? item.themeJa)}</p>{/if}
+					{#if item.themeJa}<p class="theme">
+							{i18n.locale === 'ja' ? item.themeJa : (item.themeEn ?? item.themeJa)}
+						</p>{/if}
 					<ul class="played">
 						{#each item.cards ?? [] as card (card.volume + ':' + card.id)}
 							<li><AffirmationCard {card} /></li>
 						{/each}
 					</ul>
 					{#if item.commentJa || item.commentEn}
-						<p class="comment">
-							{(i18n.locale === 'ja' ? item.commentJa : item.commentEn) ||
+						<CardBotReview
+							comment={(i18n.locale === 'ja' ? item.commentJa : item.commentEn) ||
 								item.commentJa ||
-								item.commentEn}
-						</p>
+								item.commentEn ||
+								''}
+						/>
 					{/if}
 				{/if}
 			</li>
 		{/each}
 	</ul>
 	{#if feed.cursor}
-		<button class="more" disabled={loadingMore} onclick={() => ((loadingMore = true), load(feed?.cursor))}
-			>{m.zenkatsuLoadMore()}</button
+		<button
+			class="more"
+			disabled={loadingMore}
+			onclick={() => ((loadingMore = true), load(feed?.cursor))}>{m.zenkatsuLoadMore()}</button
 		>
 	{/if}
 {/if}
@@ -87,7 +98,16 @@
 		padding: 0.9rem 1rem;
 		border-block-end: 1px solid var(--line);
 	}
+	.author {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin-block-end: 0.4rem;
+	}
 	.who {
+		min-width: 0;
+		margin: 0;
+		overflow-wrap: anywhere;
 		font-size: 0.85rem;
 		font-weight: 700;
 	}
@@ -111,10 +131,6 @@
 	}
 	.played li {
 		inline-size: 84px;
-	}
-	.comment {
-		font-size: 0.9rem;
-		line-height: 1.6;
 	}
 	.more {
 		display: block;

@@ -1217,7 +1217,30 @@ export const ja = {
 	cardsTabCollection: 'カードリスト',
 	cardsTabZenkatsu: 'ゼンカツ！',
 	zenkatsuThemeLabel: '今日のお題',
-	zenkatsuTailwind: (o: { attribute: string }) => `追い風: ${o.attribute}`,
+	zenkatsuThemeQuestion: 'そんなとき？',
+	zenkatsuHowToPlay: 'あそびかた',
+	zenkatsuGuidePick: (o: { max: number }) =>
+		`お題の「そんなとき？」に、全肯定カードで答えてみましょう。手持ちから1〜${o.max}枚、ちがうカードを選んでください。1枚だけでも大丈夫です。`,
+	zenkatsuGuideSubmit:
+		'「これで出す」を押すと、botたんが総評をくれます。スコアや順位はないので、好きな組み合わせで気軽に楽しんでください。',
+	zenkatsuGuideDaily:
+		'プレイは1日1回です。出したあとは変更できません。毎朝4時（日本時間）に新しい1日が始まります。',
+	zenkatsuGuideCooldownTitle: 'カードのおやすみ（クールタイム）',
+	zenkatsuGuideCooldown:
+		'出したカードはしばらくおやすみします。Nは2日、Rは3日、SRは4日、URは6日、AARは7日です。',
+	zenkatsuGuideStock:
+		'おやすみ中のカードには、あと何日で使えるかが表示されます。同じカードを複数持っていれば、おやすみしていない分は使えます。カードはなくならないので安心してください。',
+	zenkatsuRecommendedAttribute: (o: { attribute: string }) => `おすすめ属性: ${o.attribute}`,
+	zenkatsuSelectedCards: '選んだカード',
+	zenkatsuHand: '手持ちカード',
+	zenkatsuEmptySlot: 'カードを選んでね',
+	zenkatsuReadCard: (o: { name: string }) => `${o.name}を大きく見る`,
+	zenkatsuRemoveCard: (o: { name: string }) => `${o.name}を選択から外す`,
+	zenkatsuBotReview: 'botたんの総評',
+	zenkatsuFinish: 'おわる',
+	zenkatsuReviewLater:
+		'カードは出せたよ。総評はもう少し時間がかかるみたい。あとで今日の記録でも見られるよ。',
+	zenkatsuRetryReview: '総評をもう一度確認する',
 	zenkatsuPlay: 'プレイする',
 	zenkatsuPlayAgainTomorrow: '今日はもう出したよ',
 	zenkatsuSignInToPlay: 'サインインすると遊べるよ',

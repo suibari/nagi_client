@@ -1189,7 +1189,31 @@ export const en: Messages = {
 	cardsTabCollection: 'Cards',
 	cardsTabZenkatsu: 'Zenkatsu!',
 	zenkatsuThemeLabel: "Today's situation",
-	zenkatsuTailwind: (o: { attribute: string }) => `Tailwind: ${o.attribute}`,
+	zenkatsuThemeQuestion: 'At a time like this?',
+	zenkatsuHowToPlay: 'How to play',
+	zenkatsuGuidePick: (o: { max: number }) =>
+		`Answer today's situation with your all-affirming cards. Choose 1 to ${o.max} different cards from your hand. Just one is fine!`,
+	zenkatsuGuideSubmit:
+		'Press “Play these” to receive Bot-tan’s review. There are no scores or rankings, so enjoy any combination you like.',
+	zenkatsuGuideDaily:
+		'You can play once a day, and your submission is final. A new day begins at 4 AM Japan time.',
+	zenkatsuGuideCooldownTitle: 'Card rest (cooldown)',
+	zenkatsuGuideCooldown:
+		'Played cards rest for a while: N for 2 days, R for 3, SR for 4, UR for 6, and AAR for 7.',
+	zenkatsuGuideStock:
+		'Resting cards show how many days remain. If you own multiple copies, any copies that are not resting can still be used. Your cards are never consumed.',
+	zenkatsuRecommendedAttribute: (o: { attribute: string }) =>
+		`Recommended attribute: ${o.attribute}`,
+	zenkatsuSelectedCards: 'Selected cards',
+	zenkatsuHand: 'Your hand',
+	zenkatsuEmptySlot: 'Choose a card',
+	zenkatsuReadCard: (o: { name: string }) => `Read ${o.name}`,
+	zenkatsuRemoveCard: (o: { name: string }) => `Remove ${o.name}`,
+	zenkatsuBotReview: 'Bot-tan’s review',
+	zenkatsuFinish: 'Finish',
+	zenkatsuReviewLater:
+		'Your cards are submitted. The review needs a little more time. You can also read it later in today’s record.',
+	zenkatsuRetryReview: 'Check for the review again',
 	zenkatsuPlay: 'Play',
 	zenkatsuPlayAgainTomorrow: "You've already played today",
 	zenkatsuSignInToPlay: 'Sign in to play',
