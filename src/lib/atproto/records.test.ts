@@ -306,6 +306,10 @@ describe('deleteAllNagiRecords', () => {
 			'com.suibari.nagi.channel',
 			'com.suibari.nagi.news',
 			'com.suibari.nagi.appLinks',
+			// ゼンカツの提出とドローの控え。どちらも本人の repo にあるので、
+			// アカウントデータの削除で必ず消えること。
+			'com.suibari.nagi.zenkatsu',
+			'com.suibari.nagi.cardGet',
 		]);
 
 		await deleteAllNagiRecords();

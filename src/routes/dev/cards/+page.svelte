@@ -225,6 +225,8 @@
 			// 記念日は受け取り＝常に新規。NEW CARD の代わりに見出しが出る分岐を通る。
 			isNew: isAnniversary || kind.startsWith('new-'),
 			commentPending: kind === 'pending' || kind === 'anniversary-pending',
+			// 見本ページなので固定でよい（PDS への控えはここからは書かない）。
+			drawDate: '2026-09-19',
 			drawStatus,
 		};
 	}
