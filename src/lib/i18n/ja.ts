@@ -349,7 +349,7 @@ export const ja = {
 	postScopeKossori: 'こっそり',
 	postScopeKossoriShort: 'こっそり',
 	postScopeKossoriDetail:
-		'プライベートで投稿します。内容は自分とbotたんだけが読めます。（botたんが投稿を匿名化して「みんなで全肯定」で紹介することがあります）',
+		'自分とbotたんだけが読める投稿です。ここから続く返信もすべてこっそりになります。途中で選んでも、それまでの投稿は変わりません。（botたんが投稿を匿名化して「みんなで全肯定」で紹介することがあります）',
 	postScopeFeed: 'このフィード',
 	postScopeFeedShort: 'みんなに',
 	postScopeFeedDetail: 'Nagiの共有タイムラインに投稿します。',
