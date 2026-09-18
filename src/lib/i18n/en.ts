@@ -334,7 +334,7 @@ export const en: Messages = {
 	postScopeKossori: 'Limited',
 	postScopeKossoriShort: 'Limited',
 	postScopeKossoriDetail:
-		'Posts privately. Only you and bot-tan can read it. (Bot-tan may anonymize it and share it in Affirm together.)',
+		'Only you and bot-tan can read this post. All replies that follow are also limited. Choosing Limited partway through a thread does not change earlier posts. (Bot-tan may anonymize it and share it in Affirm together.)',
 	postScopeFeed: 'This feed',
 	postScopeFeedShort: 'Everyone',
 	postScopeFeedDetail: 'Posts to the shared Nagi timeline.',
