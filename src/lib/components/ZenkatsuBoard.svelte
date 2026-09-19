@@ -58,7 +58,7 @@
 	const VIEWER_SLOW_MS = 8_000;
 	const VIEWER_TIMEOUT_MS = 60_000;
 	let loadVersion = 0;
-	let viewerForDid: string | undefined;
+	let viewerForDid = $state<string | undefined>();
 
 	/**
 	 * @param next  追加読み込みのカーソル。
@@ -170,6 +170,10 @@
 		loadedFor = key;
 		untrack(() => void load(undefined, sameDay));
 	});
+	$effect(() => {
+		const did = $session?.did;
+		if (did) void cardCollections.ensure(did);
+	});
 
 	// 手札の定義は図鑑（getCards）から引く。playable は「どれを何枚出せるか」だけを持つ。
 	let collection = $derived($session ? cardCollections.view($session.did) : undefined);
@@ -190,7 +194,13 @@
 			.sort((a, b) => (b.p.available > 0 ? 1 : 0) - (a.p.available > 0 ? 1 : 0)),
 	);
 	let maxCards = $derived(feed?.viewer?.maxCards ?? 3);
-	let canPlay = $derived(!!$session && !!feed?.viewer && !feed.viewer.submitted && !date);
+	let canPlay = $derived(
+		!!$session &&
+			viewerForDid === $session.did &&
+			!!feed?.viewer &&
+			!feed.viewer.submitted &&
+			!date,
+	);
 
 	async function submit(cards: { volume: number; id: number }[]) {
 		if (!feed) throw new Error('Missing theme');
@@ -259,9 +269,25 @@
 		{:else if feed.viewer?.submitted}
 			<p class="note">{m.zenkatsuPlayAgainTomorrow()}</p>
 		{/if}
+		<div class="play-controls">
+			{#if $session && !date && !feed.viewer?.submitted && !picking}
+				<button class="play-button" disabled={!canPlay} onclick={() => (picking = true)}>
+					{#if viewerLoading && !feed.viewer}<span class="play-spinner" aria-hidden="true"
+						></span>{/if}
+					{m.zenkatsuPlay()}
+				</button>
+			{/if}
+			<button
+				class="guide-button"
+				aria-expanded={showGuide}
+				aria-haspopup="dialog"
+				aria-controls="zenkatsu-guide"
+				onclick={() => (showGuide = !showGuide)}>{m.zenkatsuHowToPlay()}</button
+			>
+		</div>
 		{#if $session && !date}
 			{#if viewerLoading && !feed.viewer}
-				<p class="note" role="status">
+				<p class="play-status" role="status">
 					{viewerSlow ? m.zenkatsuViewerSlow() : m.zenkatsuViewerLoading()}
 				</p>
 				{#if viewerSlow}
@@ -280,20 +306,6 @@
 				{/if}
 			{/if}
 		{/if}
-		<div class="play-controls">
-			{#if $session && !date && !feed.viewer?.submitted && !picking}
-				<button class="play-button" disabled={!canPlay} onclick={() => (picking = true)}
-					>{m.zenkatsuPlay()}</button
-				>
-			{/if}
-			<button
-				class="guide-button"
-				aria-expanded={showGuide}
-				aria-haspopup="dialog"
-				aria-controls="zenkatsu-guide"
-				onclick={() => (showGuide = !showGuide)}>{m.zenkatsuHowToPlay()}</button
-			>
-		</div>
 		<!-- 開発時のみ。1日1回のロックを外すのではなく、消して出し直す（本物の経路を毎回通す）。 -->
 		<ZenkatsuDevReset onReset={() => void load()} />
 	</section>
@@ -456,6 +468,10 @@
 		padding: 1.2rem 1rem;
 	}
 	.play-button {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		padding: 10px 18px;
 		border: 0;
 		border-radius: var(--r-md);
@@ -468,6 +484,33 @@
 	}
 	.play-button:disabled {
 		opacity: 0.5;
+	}
+	.play-spinner {
+		position: absolute;
+		inset-inline-start: 0.8rem;
+		inline-size: 1em;
+		block-size: 1em;
+		border: 2px solid currentColor;
+		border-inline-end-color: transparent;
+		border-radius: 50%;
+		animation: play-spin 0.8s linear infinite;
+	}
+	.play-status {
+		margin: 0;
+		color: var(--text-faint);
+		font-size: 0.75rem;
+		line-height: 1.4;
+		text-align: center;
+	}
+	@keyframes play-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.play-spinner {
+			animation: none;
+		}
 	}
 	.play-controls {
 		display: flex;
