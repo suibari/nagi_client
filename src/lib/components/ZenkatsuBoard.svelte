@@ -74,10 +74,22 @@
 		}
 	}
 
+	/**
+	 * 取得済みの条件（日付＋見ている人）。
+	 *
+	 * OAuth の復元は **盤面を出したあとに**終わる。素で load() を呼び直すと、一度出した
+	 * お題が「…」に戻り、ログインしている人だけ数秒の空白を見ることになる。お題は公開
+	 * 情報で未ログインの取得と同じものが返るので、ここは静かに差し替える。日付を変えた
+	 * ときは別の日を取りに行くので、今までどおり画面を伏せる。
+	 */
+	let loadedFor: string | undefined;
 	$effect(() => {
-		void date;
-		void $session?.did;
-		void load();
+		const day = date ?? '';
+		const key = `${day}\u0000${$session?.did ?? ''}`;
+		if (loadedFor === key) return;
+		const sameDay = loadedFor?.startsWith(`${day}\u0000`) ?? false;
+		loadedFor = key;
+		void load(undefined, sameDay);
 	});
 
 	// 手札の定義は図鑑（getCards）から引く。playable は「どれを何枚出せるか」だけを持つ。

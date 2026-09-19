@@ -16,12 +16,20 @@
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
 		{
+			"source": "/cards",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+		},
+		{
 			"source": "/channels/:path*",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
 		{
 			"source": "/dev/:path*",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+		},
+		{
+			"source": "/diary",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
 		{
 			"source": "/feed",
@@ -81,8 +89,10 @@
 			"destination": "/api/spa?did=:did"
 		},
 		{ "source": "/affirmation", "destination": "/200" },
+		{ "source": "/cards", "destination": "/200" },
 		{ "source": "/channels/:path*", "destination": "/200" },
 		{ "source": "/dev/:path*", "destination": "/200" },
+		{ "source": "/diary", "destination": "/200" },
 		{ "source": "/feed", "destination": "/200" },
 		{ "source": "/login", "destination": "/200" },
 		{ "source": "/news", "destination": "/200" },
