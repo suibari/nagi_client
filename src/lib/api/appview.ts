@@ -38,6 +38,7 @@ import type {
 	SearchActorsResult,
 	ThreadView,
 	TimelinePage,
+	ZenkatsuDeckView,
 	ZenkatsuFeed,
 } from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
@@ -669,6 +670,27 @@ export const getZenkatsu = (params: { date?: string; cursor?: string; limit?: nu
 		`/xrpc/com.suibari.nagi.getZenkatsu${suffix}`,
 	);
 };
+/**
+ * **開発専用**: 今日のゼンカツ提出を消して、もう一度出せるようにする。
+ *
+ * ゼンカツは1日1回なので、そのままでは総評や演出を1日1度しか確かめられない。
+ * AppView 側は開発モードでないとルート自体を登録しないので、本番では 404 になる。
+ */
+export const resetZenkatsu = () =>
+	call<{ deleted: number }>(
+		'com.suibari.nagi.resetZenkatsu',
+		'/xrpc/com.suibari.nagi.resetZenkatsu',
+		{ method: 'POST' },
+		'required',
+	);
+/** マイデッキ。自分が成立させたコンボと、受け取ったトロフィー。要認証。 */
+export const getZenkatsuDeck = () =>
+	call<ZenkatsuDeckView>(
+		'com.suibari.nagi.getZenkatsuDeck',
+		'/xrpc/com.suibari.nagi.getZenkatsuDeck',
+		undefined,
+		'required',
+	);
 /** 全肯定カードのニュース（SR以上のドローと、ゼンカツのハイライト）。公開情報。 */
 export const getCardNews = (params: { cursor?: string; limit?: number } = {}) => {
 	const query = new URLSearchParams();

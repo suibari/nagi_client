@@ -3,6 +3,7 @@
 	import type { CardNewsFeed } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
+	import ZenkatsuMarks from './ZenkatsuMarks.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import CardBotReview from './CardBotReview.svelte';
 
@@ -61,6 +62,7 @@
 							<li><AffirmationCard {card} /></li>
 						{/each}
 					</ul>
+					<ZenkatsuMarks tailwindCount={item.tailwindCount} combos={item.combos} />
 					{#if item.commentJa || item.commentEn}
 						<CardBotReview
 							comment={(i18n.locale === 'ja' ? item.commentJa : item.commentEn) ||

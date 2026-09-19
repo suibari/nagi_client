@@ -13,6 +13,12 @@ export type ActorView = {
 	 * UI 言語で出し分けるので両方来る。
 	 */
 	currentTitle?: { ja: string; en: string };
+	/**
+	 * 「今日のゼンカツ部長」＝ 直前に閉じた日の botたん賞の受賞者。
+	 * **毎日ひとりだけが持ち、1日で消える。** 累積は出さない。
+	 * プロフィール取得の経路でだけ入る（フィードでは入らない）。
+	 */
+	zenkatsuChief?: boolean;
 };
 /** 固定 Bluemoji Lexicon に準拠したカスタム絵文字ビュー。 */
 export type BluemojiFacetFormats = {
@@ -613,8 +619,21 @@ export type ZenkatsuSubmissionView = {
 	commentEn?: string;
 	/** true の間は総評を生成中。取り直すと入る。 */
 	commentPending: boolean;
+	/** その日の追い風に乗っていた枚数。**得点ではない**（得点は隠しで表示しない）。 */
+	tailwindCount: number;
+	/** 成立したコンボ。成立したものだけがサーバから来る（未発見のぶんは送られない）。 */
+	combos: ZenkatsuSubmissionCombo[];
 	createdAt: string;
 	indexedAt: string;
+};
+/** 記録に出す、成立したコンボの要約。 */
+export type ZenkatsuSubmissionCombo = {
+	volume: number;
+	id: number;
+	nameJa: string;
+	nameEn: string;
+	descJa: string;
+	descEn: string;
 };
 /** 今日出せる札1種。 */
 export type ZenkatsuPlayableCard = {
@@ -651,8 +670,47 @@ export type CardNewsItem = {
 	themeEn?: string;
 	commentJa?: string;
 	commentEn?: string;
+	/**
+	 * type=zenkatsu のとき。成立したコンボ。
+	 * ニュースに出すのは、**攻略がコミュニティに伝わる道**にするため。
+	 * 未成立のぶんはサーバから送られないので、これで定義が漏れることはない。
+	 */
+	combos?: ZenkatsuSubmissionCombo[];
+	/** type=zenkatsu のとき。追い風に乗っていた枚数。**得点ではない。** */
+	tailwindCount?: number;
 };
 export type CardNewsFeed = {
 	items: CardNewsItem[];
 	cursor?: string;
+};
+
+/** マイデッキに出す、成立させたことのあるコンボ1件。 */
+export type ZenkatsuComboView = {
+	volume: number;
+	id: number;
+	nameJa: string;
+	nameEn: string;
+	descJa: string;
+	descEn: string;
+	/** スロットごとの構成札。1スロットに複数あるのは「どちらでもよい」という意味。 */
+	slots: CardView[][];
+	firstPlayedDate: string;
+	/** 世界で最初に見つけた人。 */
+	pioneer?: ActorView;
+	isPioneer: boolean;
+};
+export type ZenkatsuTrophyView = {
+	kind: string;
+	themeDate: string;
+	themeJa?: string;
+	themeEn?: string;
+	submissionUri: string;
+	commentJa?: string;
+	commentEn?: string;
+};
+export type ZenkatsuDeckView = {
+	/** 存在するコンボの総数。未発見のぶんは中身を伏せる。 */
+	comboTotal: number;
+	combos: ZenkatsuComboView[];
+	trophies: ZenkatsuTrophyView[];
 };

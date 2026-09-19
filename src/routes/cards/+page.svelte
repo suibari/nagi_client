@@ -1,6 +1,6 @@
 <script lang="ts">
-	import CardCollection from '$lib/components/CardCollection.svelte';
 	import CardNewsList from '$lib/components/CardNewsList.svelte';
+	import ZenkatsuDeck from '$lib/components/ZenkatsuDeck.svelte';
 	import ZenkatsuBoard from '$lib/components/ZenkatsuBoard.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -8,7 +8,7 @@
 	/**
 	 * 全肯定カードのページ。3タブで役割を分ける。
 	 * - ニュース: 今この瞬間の出来事（レアドローと、ゼンカツの珍しい回）
-	 * - カードリスト: 自分の図鑑（プロフィールのカードタブと同じもの）
+	 * - マイデッキ: 自分の図鑑・見つけたコンボ・トロフィー
 	 * - ゼンカツ！: 今日のお題・プレイ・記録
 	 */
 	type TabId = 'news' | 'collection' | 'zenkatsu';
@@ -34,7 +34,7 @@
 	<CardNewsList />
 {:else if tab === 'collection'}
 	{#if $session}
-		<CardCollection did={$session.did} isSelf />
+		<ZenkatsuDeck did={$session.did} />
 	{:else}
 		<div class="state">{m.zenkatsuSignInToPlay()}</div>
 	{/if}

@@ -44,6 +44,8 @@
 		author: { did: 'did:plc:zenkatsu-demo', handle: 'demo.example', displayName: 'おためしさん' },
 		cards,
 		commentPending: false,
+		tailwindCount: 2,
+		combos: [],
 		commentJa:
 			'「小さな一歩」で自分の頑張りを認めて、「ひとやすみの魔法」でひと息。そして「明日のきみに」で、次の日へやさしくつなげたんだね。\n\nうまくいかない日にも、自分を置き去りにしない3枚。そんなきみの選び方、botたんはとってもすてきだと思うよ！',
 		commentEn:

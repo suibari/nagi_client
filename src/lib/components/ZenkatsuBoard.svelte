@@ -15,6 +15,8 @@
 	import CardBotReview from './CardBotReview.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import ZenkatsuPlay from './ZenkatsuPlay.svelte';
+	import ZenkatsuDevReset from './ZenkatsuDevReset.svelte';
+	import ZenkatsuMarks from './ZenkatsuMarks.svelte';
 	import ZenkatsuHelp from './ZenkatsuHelp.svelte';
 
 	/** 属性名はカード面と同じ訳語を使う（「追い風: dark」と生で出さない）。 */
@@ -150,6 +152,8 @@
 				onclick={() => (showGuide = !showGuide)}>{m.zenkatsuHowToPlay()}</button
 			>
 		</div>
+		<!-- 開発時のみ。1日1回のロックを外すのではなく、消して出し直す（本物の経路を毎回通す）。 -->
+		<ZenkatsuDevReset onReset={() => void load()} />
 	</section>
 
 	<section class="record">
@@ -169,6 +173,7 @@
 							<li><AffirmationCard {card} /></li>
 						{/each}
 					</ul>
+					<ZenkatsuMarks tailwindCount={s.tailwindCount} combos={s.combos} />
 					<CardBotReview
 						comment={commentOf(s) || m.zenkatsuCommentPending()}
 						pending={s.commentPending}

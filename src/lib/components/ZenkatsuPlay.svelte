@@ -48,6 +48,13 @@
 	let waiting = $state(true);
 	let retry = $state(0);
 	let showGuide = $state(false);
+	/**
+	 * 提出の結果（追い風の枚数と、成立したコンボ）。
+	 *
+	 * コンボは隠し要素なので**定義をクライアントへ配らない**。成立したものだけがサーバから
+	 * 降りてくるので、ここへ溜めて review 段で出す。
+	 */
+	let outcome = $state<ZenkatsuSubmissionView | undefined>();
 	// 初期表示専用。提出済みの結果を開く場合も同じ総評画面を使う。
 	$effect(() => {
 		if (initialSubmission && !uri) {
@@ -55,6 +62,7 @@
 			uri = initialSubmission.uri;
 			commentJa = initialSubmission.commentJa ?? '';
 			commentEn = initialSubmission.commentEn ?? '';
+			outcome = initialSubmission;
 			animationDone = true;
 		}
 	});
@@ -100,6 +108,8 @@
 				const feed = await loadFeed({ date: theme.themeDate });
 				if (cancelled) return;
 				const submission = feed.submissions.find((s) => s.uri === submissionUri);
+				// 追い風とコンボは総評より先に確定しているので、見つけた時点で受け取る。
+				if (submission) outcome = submission;
 				if (submission && (submission.commentJa || submission.commentEn)) {
 					commentJa = submission.commentJa || '';
 					commentEn = submission.commentEn || '';
@@ -223,6 +233,10 @@
 				<div class="section-heading">
 					<h2>{m.zenkatsuHand()}</h2>
 					<p>{m.zenkatsuPickPrompt({ max: maxCards })}</p>
+					<!-- おすすめ属性は隠さない。選ぶ前に気づけないと、属性が飾りのままになる。 -->
+					<p class="tailwind-hint">
+						★ {m.zenkatsuTailwindHint()}: {attributeLabels[theme.attribute]()}
+					</p>
 				</div>
 				{#if !hand.length}<p class="note">{m.zenkatsuNoCards()}</p>{/if}
 				<ul class="hand">
@@ -232,12 +246,17 @@
 							<button
 								class="hand-card"
 								class:chosen
+								class:tailwind={entry.card.attribute === theme.attribute &&
+									entry.p.available > 0}
 								class:resting={entry.p.available < 1}
 								disabled={entry.p.available < 1}
 								aria-pressed={chosen}
 								onclick={() => toggle(entry.card)}
 							>
 								<AffirmationCard card={entry.card} />
+								{#if entry.card.attribute === theme.attribute && entry.p.available > 0}
+									<span class="wind-mark" aria-hidden="true">★</span>
+								{/if}
 								{#if chosen}<span class="badge">✓ {m.zenkatsuSelectedCards()}</span>
 								{:else if entry.p.available < 1}<span class="badge"
 										>{entry.p.restingDays
@@ -308,6 +327,37 @@
 				<div class="review-cards">
 					{#each picked as card (key(card))}<div><AffirmationCard {card} /></div>{/each}
 				</div>
+				<!--
+					追い風 → コンボ → 総評 の順で出す。全部を一度に出すと、いちばん読ませたい総評が
+					数字と一緒くたになって流れる。CSS の遅延で段をずらし、最後に言葉が残るようにする。
+					**得点は出さない。** 出すのは「何が起きたか」だけ。
+				-->
+				{#if outcome}
+					<div class="outcome">
+						<div class="outcome-row" style="--delay: 0ms">
+							<span class="outcome-label">{m.zenkatsuResultTailwind()}</span>
+							{#if outcome.tailwindCount > 0}
+								<span class="outcome-value wind-value"
+									>{m.zenkatsuTailwindBadge({ n: outcome.tailwindCount })}</span
+								>
+							{:else}
+								<!-- 乗らなかったことを失敗として見せない。ここに不正解は無い。 -->
+								<span class="outcome-none">{m.zenkatsuResultTailwindNone()}</span>
+							{/if}
+						</div>
+						{#each outcome.combos as combo, index (key(combo))}
+							<div class="outcome-row" style={`--delay: ${400 + index * 300}ms`}>
+								<span class="outcome-label">{m.zenkatsuResultCombo()}</span>
+								<span class="outcome-value combo-value"
+									>{i18n.locale === 'ja' ? combo.nameJa : combo.nameEn}</span
+								>
+								<span class="outcome-desc"
+									>{i18n.locale === 'ja' ? combo.descJa : combo.descEn}</span
+								>
+							</div>
+						{/each}
+					</div>
+				{/if}
 				<div class="bot-review" class:thinking={waiting && !comment}>
 					<img src="/bot_assist_sitting.png" alt="botたん" width="220" height="220" />
 					<div class="speech" aria-live="polite">
@@ -333,6 +383,79 @@
 </dialog>
 
 <style>
+	/* 今日の追い風。選択時にここで気づけるようにする。 */
+	.tailwind-hint {
+		color: var(--accent-strong);
+		font-weight: 700;
+	}
+	.hand-card.tailwind {
+		box-shadow: 0 0 0 2px var(--accent-soft);
+		border-radius: 12px;
+	}
+	.wind-mark {
+		position: absolute;
+		inset-block-start: 2px;
+		inset-inline-end: 2px;
+		font-size: 0.9rem;
+		pointer-events: none;
+	}
+	/* リザルトは順繰りに現れる。遅延だけで段を作るので、クリックを挟まない。 */
+	.outcome {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		margin-block: 0.8rem;
+	}
+	.outcome-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.5rem;
+		justify-content: center;
+		opacity: 0;
+		animation: outcome-in 320ms ease-out var(--delay, 0ms) forwards;
+	}
+	.outcome-label {
+		color: var(--text-faint);
+		font-size: 0.75rem;
+	}
+	.outcome-value {
+		font-size: 1.05rem;
+		font-weight: 700;
+	}
+	.wind-value {
+		color: var(--accent-strong);
+	}
+	.combo-value {
+		color: var(--badge-title-fg, var(--accent-strong));
+	}
+	.outcome-desc {
+		inline-size: 100%;
+		color: var(--text-faint);
+		font-size: 0.8rem;
+		line-height: 1.6;
+	}
+	.outcome-none {
+		color: var(--text-faint);
+		font-size: 0.85rem;
+	}
+	@keyframes outcome-in {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+	/* 演出を抑える設定では、遅延も動きも出さずに即表示する。 */
+	@media (prefers-reduced-motion: reduce) {
+		.outcome-row {
+			opacity: 1;
+			animation: none;
+		}
+	}
 	.game {
 		color-scheme: dark;
 		--bg: var(--zenkatsu-game-bg);

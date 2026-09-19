@@ -33,3 +33,28 @@ describe('actorBadges', () => {
 		).toEqual(['bot', 'title']);
 	});
 });
+
+describe('今日のゼンカツ部長', () => {
+	it('受賞していなければ出さない', () => {
+		expect(actorBadges(actor({})).map((b) => b.id)).not.toContain('zenkatsu-chief');
+	});
+
+	it('受賞していればラベルに賞名まで出す（title はタッチ端末で読めないため）', () => {
+		const badge = actorBadges(actor({ zenkatsuChief: true })).find(
+			(b) => b.id === 'zenkatsu-chief',
+		);
+		expect(badge).toBeDefined();
+		// 絵文字だけだとスマホで意味が伝わらない。
+		expect(badge?.label).toContain('ゼンカツ部長');
+		expect(badge?.title).toBeTruthy();
+	});
+
+	it('累積を表す情報は持たない（回数やレベルを出さない）', () => {
+		// 累積表示は競争圧力になるとして超ポジティブLvが既に非表示にされている。
+		// 同じものを別名で復活させないための固定。
+		const badge = actorBadges(actor({ zenkatsuChief: true })).find(
+			(b) => b.id === 'zenkatsu-chief',
+		);
+		expect(badge?.label).not.toMatch(/\d/);
+	});
+});

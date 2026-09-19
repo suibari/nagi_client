@@ -1255,6 +1255,12 @@
 	background: var(--badge-bot-bg);
 	color: var(--badge-bot-fg);
 }
+/* 今日のゼンカツ部長：前日の botたん賞。**1日で消える**ので、ここだけ少し華やかにしてよい */
+.badge--zenkatsu {
+	background: var(--badge-zenkatsu-bg, var(--accent-soft));
+	color: var(--badge-zenkatsu-fg, var(--accent-strong));
+	font-weight: 700;
+}
 /* 称号：日記でもらう。次の日記が書かれるまで維持される */
 .badge--title {
 	background: var(--badge-title-bg);
