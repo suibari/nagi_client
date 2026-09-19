@@ -558,3 +558,45 @@ test('card news groups dates across pagination without displaying times', async 
 	await expect(page.locator('.news')).not.toContainText(/\d{1,2}:\d{2}/);
 	await expect(page.locator('.item time')).toHaveCount(0);
 });
+
+test('a stalled viewer request times out and retry can recover', async ({ page }) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.route('**/xrpc/**', (route) =>
+		route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
+	);
+	let release!: () => void;
+	const stalled = new Promise<void>((resolve) => (release = resolve));
+	let authenticatedCalls = 0;
+	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', async (route) => {
+		const headers = route.request().headers();
+		const authenticated = !!(headers['atproto-proxy'] || headers['x-viewer-did']);
+		if (authenticated && ++authenticatedCalls === 1) await stalled;
+		await route.fulfill({
+			json: {
+				theme: {
+					volume: 1,
+					id: 1,
+					themeDate: '2026-09-19',
+					attribute: 'wind',
+					tone: 'sunao',
+					textJa: '公開のお題',
+					textEn: 'Public theme',
+				},
+				submissions: [],
+				...(authenticated ? { viewer: { submitted: false, maxCards: 3, playable: [] } } : {}),
+			},
+		});
+	});
+	try {
+		await page.goto('/dev/e2e/zenkatsu?board');
+		await expect(page.locator('.theme-text')).toContainText('公開のお題');
+		await expect(page.getByText('プレイ情報を確認しています…', { exact: true })).toBeVisible();
+		await expect(
+			page.getByText('プレイ情報を取得できませんでした。もう一度お試しください。', { exact: true }),
+		).toBeVisible({ timeout: 10_000 });
+		await page.getByRole('button', { name: 'もう一度', exact: true }).click();
+		await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
+	} finally {
+		release();
+	}
+});
