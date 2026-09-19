@@ -212,7 +212,13 @@
 												<i style={`--angle: ${spark * 45}deg`}></i>
 											{/each}
 										</div>
-										<div class="selected-card"><AffirmationCard card={picked[i]} /></div>
+										<div class="selected-card">
+											<AffirmationCard
+												card={picked[i]}
+												revealUnowned
+												attributeGlow={picked[i].attribute === theme.attribute}
+											/>
+										</div>
 										<button
 											class="remove"
 											onclick={() => {
@@ -235,7 +241,7 @@
 					<p>{m.zenkatsuPickPrompt({ max: maxCards })}</p>
 					<!-- おすすめ属性は隠さない。選ぶ前に気づけないと、属性が飾りのままになる。 -->
 					<p class="tailwind-hint">
-						★ {m.zenkatsuTailwindHint()}: {attributeLabels[theme.attribute]()}
+						{m.zenkatsuTailwindHint()}: {attributeLabels[theme.attribute]()}
 					</p>
 				</div>
 				{#if !hand.length}<p class="note">{m.zenkatsuNoCards()}</p>{/if}
@@ -246,17 +252,16 @@
 							<button
 								class="hand-card"
 								class:chosen
-								class:tailwind={entry.card.attribute === theme.attribute &&
-									entry.p.available > 0}
 								class:resting={entry.p.available < 1}
 								disabled={entry.p.available < 1}
 								aria-pressed={chosen}
 								onclick={() => toggle(entry.card)}
 							>
-								<AffirmationCard card={entry.card} />
-								{#if entry.card.attribute === theme.attribute && entry.p.available > 0}
-									<span class="wind-mark" aria-hidden="true">★</span>
-								{/if}
+								<AffirmationCard
+									card={entry.card}
+									revealUnowned
+									attributeGlow={entry.card.attribute === theme.attribute && entry.p.available > 0}
+								/>
 								{#if chosen}<span class="badge">✓ {m.zenkatsuSelectedCards()}</span>
 								{:else if entry.p.available < 1}<span class="badge"
 										>{entry.p.restingDays
@@ -306,7 +311,14 @@
 									animationDone = true;
 							}}
 						>
-							<div class="cutin-card"><AffirmationCard {card} size="full" /></div>
+							<div class="cutin-card">
+								<AffirmationCard
+									{card}
+									size="full"
+									revealUnowned
+									attributeGlow={card.attribute === theme.attribute}
+								/>
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -325,7 +337,13 @@
 					</div>
 				{/if}
 				<div class="review-cards">
-					{#each picked as card (key(card))}<div><AffirmationCard {card} /></div>{/each}
+					{#each picked as card (key(card))}<div>
+							<AffirmationCard
+								{card}
+								revealUnowned
+								attributeGlow={card.attribute === theme.attribute}
+							/>
+						</div>{/each}
 				</div>
 				<!--
 					追い風 → コンボ → 総評 の順で出す。全部を一度に出すと、いちばん読ませたい総評が
@@ -387,17 +405,6 @@
 	.tailwind-hint {
 		color: var(--accent-strong);
 		font-weight: 700;
-	}
-	.hand-card.tailwind {
-		box-shadow: 0 0 0 2px var(--accent-soft);
-		border-radius: 12px;
-	}
-	.wind-mark {
-		position: absolute;
-		inset-block-start: 2px;
-		inset-inline-end: 2px;
-		font-size: 0.9rem;
-		pointer-events: none;
 	}
 	/* リザルトは順繰りに現れる。遅延だけで段を作るので、クリックを挟まない。 */
 	.outcome {

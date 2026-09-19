@@ -1226,11 +1226,11 @@ export const en: Messages = {
 		'Press “Play these” to receive Bot-tan’s review. There are no scores or rankings, so enjoy any combination you like.',
 	zenkatsuGuideDaily:
 		'You can play once a day, and your submission is final. A new day begins at 4 AM Japan time.',
-	zenkatsuGuideCooldownTitle: 'Card rest (cooldown)',
+	zenkatsuGuideCooldownTitle: 'Card cooldown',
 	zenkatsuGuideCooldown:
-		'Played cards rest for a while: N for 2 days, R for 3, SR for 4, UR for 6, and AAR for 7.',
+		'Played cards have a cooldown: N for 2 days, R for 3, SR for 4, UR for 6, and AAR for 7.',
 	zenkatsuGuideStock:
-		'Resting cards show how many days remain. If you own multiple copies, any copies that are not resting can still be used. Your cards are never consumed.',
+		'Cards on cooldown show how many days remain. If you own multiple copies, any copies that are not on cooldown can still be used. Your cards are never consumed.',
 	zenkatsuRecommendedAttribute: (o: { attribute: string }) =>
 		`Recommended attribute: ${o.attribute}`,
 	zenkatsuSelectedCards: 'Selected cards',
@@ -1255,8 +1255,8 @@ export const en: Messages = {
 	zenkatsuConfirmBody: "One play per day, and you can't change it afterwards.",
 	zenkatsuConfirmOk: 'Play',
 	zenkatsuCancel: 'Cancel',
-	zenkatsuResting: (o: { days: number }) => `Wakes up in ${o.days}d`,
-	zenkatsuRestingShort: 'Resting',
+	zenkatsuResting: (o: { days: number }) => `Cooldown: ${o.days}d left`,
+	zenkatsuRestingShort: 'On cooldown',
 	zenkatsuStock: (o: { n: number }) => `${o.n} left`,
 	zenkatsuNoCards: "You don't have any cards yet. Draw one first!",
 	zenkatsuRecordTitle: "Today's plays",

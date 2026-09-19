@@ -1254,11 +1254,11 @@ export const ja = {
 		'「これで出す」を押すと、botたんが総評をくれます。スコアや順位はないので、好きな組み合わせで気軽に楽しんでください。',
 	zenkatsuGuideDaily:
 		'プレイは1日1回です。出したあとは変更できません。毎朝4時（日本時間）に新しい1日が始まります。',
-	zenkatsuGuideCooldownTitle: 'カードのおやすみ（クールタイム）',
+	zenkatsuGuideCooldownTitle: 'カードのクールダウン',
 	zenkatsuGuideCooldown:
-		'出したカードはしばらくおやすみします。Nは2日、Rは3日、SRは4日、URは6日、AARは7日です。',
+		'出したカードにはクールダウンがあります。Nは2日、Rは3日、SRは4日、URは6日、AARは7日です。',
 	zenkatsuGuideStock:
-		'おやすみ中のカードには、あと何日で使えるかが表示されます。同じカードを複数持っていれば、おやすみしていない分は使えます。カードはなくならないので安心してください。',
+		'クールダウン中のカードには、あと何日で使えるかが表示されます。同じカードを複数持っていれば、クールダウン中ではない分は使えます。カードはなくならないので安心してください。',
 	zenkatsuRecommendedAttribute: (o: { attribute: string }) => `おすすめ属性: ${o.attribute}`,
 	zenkatsuSelectedCards: '選んだカード',
 	zenkatsuHand: '手持ちカード',
@@ -1282,9 +1282,8 @@ export const ja = {
 	zenkatsuConfirmBody: '提出は1日1回だけ。出したあとは変えられないよ。',
 	zenkatsuConfirmOk: '出す',
 	zenkatsuCancel: 'やめる',
-	// 「使用不可」ではなく「おやすみ」。休むことも肯定するのがこのゲームの作法。
-	zenkatsuResting: (o: { days: number }) => `あと${o.days}日でおきる`,
-	zenkatsuRestingShort: 'おやすみ中',
+	zenkatsuResting: (o: { days: number }) => `クールダウン：あと${o.days}日`,
+	zenkatsuRestingShort: 'クールダウン中',
 	zenkatsuStock: (o: { n: number }) => `のこり${o.n}枚`,
 	zenkatsuNoCards: 'まだカードを持っていないよ。まずは1枚引いてみよう',
 	zenkatsuRecordTitle: '今日の記録',
