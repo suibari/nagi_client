@@ -126,7 +126,7 @@
 		waiting = true;
 		async function poll() {
 			try {
-				const feed = await loadFeed({ date: theme.themeDate });
+				const feed = await loadFeed({ date: theme.themeDate }, { publicOnly: true });
 				if (cancelled) return;
 				const submission = feed.submissions.find((s) => s.uri === submissionUri);
 				// 追い風とコンボは総評より先に確定しているので、見つけた時点で受け取る。

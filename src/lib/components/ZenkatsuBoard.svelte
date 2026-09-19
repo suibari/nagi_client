@@ -48,14 +48,17 @@
 	let showGuide = $state(false);
 	let loadingMore = $state(false);
 	let viewerLoading = $state(false);
+	let viewerSlow = $state(false);
 	let viewerFailed = $state(false);
 	let needsAuthorization = $state(false);
 	let reauthBusy = $state(false);
 
 	const keyOf = (c: { volume: number; id: number }) => `${c.volume}:${c.id}`;
 
-	const VIEWER_TIMEOUT_MS = 8_000;
+	const VIEWER_SLOW_MS = 8_000;
+	const VIEWER_TIMEOUT_MS = 60_000;
 	let loadVersion = 0;
+	let viewerForDid: string | undefined;
 
 	/**
 	 * @param next  追加読み込みのカーソル。
@@ -65,8 +68,10 @@
 		const version = ++loadVersion;
 		loading = !next && !quiet;
 		error = '';
-		const signedIn = !!$session;
+		const currentDid = $session?.did;
+		const signedIn = !!currentDid;
 		viewerLoading = signedIn;
+		viewerSlow = false;
 		viewerFailed = false;
 		needsAuthorization = false;
 		const params = {
@@ -84,6 +89,9 @@
 				} else {
 					// PDS の応答が止まってもプレイ情報の表示を待ち続けない。
 					let timer: ReturnType<typeof setTimeout> | undefined;
+					const slowTimer = setTimeout(() => {
+						if (version === loadVersion && !feed?.viewer) viewerSlow = true;
+					}, VIEWER_SLOW_MS);
 					try {
 						result = await Promise.race([
 							request,
@@ -96,6 +104,7 @@
 						]);
 					} finally {
 						clearTimeout(timer);
+						clearTimeout(slowTimer);
 					}
 				}
 			} catch (cause) {
@@ -109,19 +118,29 @@
 				}
 				throw cause;
 			} finally {
-				if (!publicOnly && version === loadVersion) viewerLoading = false;
+				if (!publicOnly && version === loadVersion) {
+					viewerLoading = false;
+					viewerSlow = false;
+				}
 			}
 
 			// 日付・セッションが変わったあとの古い応答や、viewer を消す遅い公開応答は使わない。
 			if (version !== loadVersion || (publicOnly && authenticated)) return;
 			authenticated = !publicOnly;
 			if (!publicOnly && signedIn && !result.viewer) viewerFailed = true;
+			if (!publicOnly && result.viewer) viewerForDid = currentDid;
 			received = true;
 			const submissions = result.submissions ?? [];
+			const previousViewer =
+				publicOnly &&
+				viewerForDid === currentDid &&
+				feed?.theme.themeDate === result.theme.themeDate
+					? feed.viewer
+					: undefined;
 			feed =
 				next && feed
 					? { ...result, submissions: [...feed.submissions, ...submissions] }
-					: { ...result, submissions };
+					: { ...result, submissions, ...(previousViewer ? { viewer: previousViewer } : {}) };
 			loading = false;
 		}
 		// ログイン済みでページ遷移した場合も、お題は PDS/OAuth の応答を待たずに表示する。
@@ -242,7 +261,12 @@
 		{/if}
 		{#if $session && !date}
 			{#if viewerLoading && !feed.viewer}
-				<p class="note" role="status">{m.zenkatsuViewerLoading()}</p>
+				<p class="note" role="status">
+					{viewerSlow ? m.zenkatsuViewerSlow() : m.zenkatsuViewerLoading()}
+				</p>
+				{#if viewerSlow}
+					<button class="ghost" onclick={() => void load(undefined, true)}>{m.retry()}</button>
+				{/if}
 			{:else if viewerFailed}
 				<p class="note" role="status">
 					{needsAuthorization ? m.zenkatsuAuthorizationNeeded() : m.zenkatsuViewerFailed()}

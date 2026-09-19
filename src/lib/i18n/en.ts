@@ -1280,6 +1280,7 @@ export const en: Messages = {
 	zenkatsuPrevDay: 'Previous day',
 	zenkatsuNextDay: 'Next day',
 	zenkatsuLoadMore: 'Load more',
+	zenkatsuViewerSlow: 'Your play information is taking longer than expected. You can retry.',
 	zenkatsuViewerLoading: 'Loading your play information…',
 	zenkatsuViewerFailed: 'Could not load your play information. Please try again.',
 	zenkatsuAuthorizationNeeded:

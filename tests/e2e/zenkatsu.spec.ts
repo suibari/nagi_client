@@ -112,6 +112,7 @@ test('board keeps the game open while reloading after a successful submission', 
 	 * ゲーム側のポーリングが先に受け取る。閉じたあとに引き直せているかを、この時間差で見る。
 	 */
 	let submittedAt = 0;
+	let publicReviewPolls = 0;
 	const uri = 'at://did:plc:zenkatsu-preview/com.suibari.nagi.zenkatsu/2026-09-19';
 	const cid = 'bafyreidnq5e4j7qaw5l4dpa4g5vjt4y5dpjywqrnit23nkrnnjwf5f24xi';
 	await page.route('**/xrpc/**', (route) =>
@@ -157,6 +158,14 @@ test('board keeps the game open while reloading after a successful submission', 
 	});
 	await page.route('**/xrpc/com.suibari.nagi.ensureRecord', (route) => route.fulfill({ json: {} }));
 	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', async (route) => {
+		const headers = route.request().headers();
+		if (
+			submitted &&
+			new URL(route.request().url()).searchParams.has('date') &&
+			!headers['atproto-proxy'] &&
+			!headers['x-viewer-did']
+		)
+			publicReviewPolls++;
 		if (submitted && !reloading) {
 			reloading = true;
 			// Leave the board loading long enough to cover the cut-in transition.
@@ -215,6 +224,7 @@ test('board keeps the game open while reloading after a successful submission', 
 	await page.locator('.hand-card').first().click();
 	await page.getByRole('button', { name: 'これで出す' }).click();
 	await expect(page.locator('.speech')).toContainText('きみの一歩を応援しているよ！');
+	expect(publicReviewPolls).toBeGreaterThan(0);
 	await page.locator('.finale').getByRole('button', { name: 'おわる' }).click();
 	await expect(page.getByRole('dialog')).not.toBeVisible();
 	await expect(page.getByText('今日はもう出したよ', { exact: true })).toBeVisible();
@@ -559,7 +569,7 @@ test('card news groups dates across pagination without displaying times', async 
 	await expect(page.locator('.item time')).toHaveCount(0);
 });
 
-test('a stalled viewer request times out and retry can recover', async ({ page }) => {
+test('a slow viewer request offers retry and can recover', async ({ page }) => {
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.route('**/xrpc/**', (route) =>
 		route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
@@ -592,10 +602,74 @@ test('a stalled viewer request times out and retry can recover', async ({ page }
 		await expect(page.locator('.theme-text')).toContainText('公開のお題');
 		await expect(page.getByText('プレイ情報を確認しています…', { exact: true })).toBeVisible();
 		await expect(
-			page.getByText('プレイ情報を取得できませんでした。もう一度お試しください。', { exact: true }),
+			page.getByText('プレイ情報の取得に時間がかかっています。もう一度試せます。', { exact: true }),
 		).toBeVisible({ timeout: 10_000 });
 		await page.getByRole('button', { name: 'もう一度', exact: true }).click();
 		await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
+	} finally {
+		release();
+	}
+});
+
+test('card hand is available from AppView while authenticated card status waits on PDS', async ({
+	page,
+}) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.route('**/xrpc/**', (route) =>
+		route.fulfill({ json: { items: [], folders: [], uris: [], drafts: [] } }),
+	);
+	let release!: () => void;
+	const stalled = new Promise<void>((resolve) => (release = resolve));
+	await page.route('**/xrpc/com.suibari.nagi.getCards**', async (route) => {
+		const headers = route.request().headers();
+		const authenticated = !!(headers['atproto-proxy'] || headers['x-viewer-did']);
+		if (authenticated) await stalled;
+		await route.fulfill({
+			json: {
+				cards: [
+					{
+						volume: 1,
+						id: 1,
+						rarity: 'R',
+						attribute: 'wind',
+						atk: 1200,
+						def: 900,
+						owned: true,
+						nameJa: '公開の札',
+						nameEn: 'Public card',
+						raceJa: 'もふもふ族',
+						raceEn: 'Fluffy',
+						textJa: '今日もすてき',
+						textEn: 'Wonderful today',
+					},
+				],
+				ownedCount: 1,
+				totalCount: 1,
+			},
+		});
+	});
+	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', (route) =>
+		route.fulfill({
+			json: {
+				theme: {
+					volume: 1,
+					id: 1,
+					themeDate: '2026-09-19',
+					attribute: 'wind',
+					tone: 'sunao',
+					textJa: '公開のお題',
+					textEn: 'Public theme',
+				},
+				submissions: [],
+				viewer: { submitted: false, maxCards: 3, playable: [{ volume: 1, id: 1, available: 1 }] },
+			},
+		}),
+	);
+	try {
+		await page.goto('/dev/e2e/zenkatsu?board&cards-through-network');
+		await page.getByRole('button', { name: 'プレイする', exact: true }).click();
+		await expect(page.locator('.hand-card')).toHaveCount(1);
+		await expect(page.locator('.hand-card')).toContainText('公開の札');
 	} finally {
 		release();
 	}

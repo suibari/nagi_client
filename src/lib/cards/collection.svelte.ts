@@ -134,13 +134,44 @@ class CardCollections {
 	}
 
 	async #fetch(actor: string) {
+		const viewerDid = this.#selfDid;
+		const self = actor === viewerDid;
 		this.#patch(actor, { loading: true, failed: false, error: '' });
+		let publicError: unknown;
 		try {
-			const view = await getCards(actor);
-			// 直近で控えを書き損ねたぶんを拾い直す。**履歴の埋め戻しではない**ので、
-			// AppView が返すのは直近2日ぶんだけ。待たずに投げる。
-			if (actor === this.#selfDid && view.unmirroredDraws?.length)
-				void retryCardGetMirrors(view.unmirroredDraws);
+			const publicView = await getCards(actor, { publicOnly: true });
+			if (viewerDid !== this.#selfDid) return;
+			// 図鑑は本人認証の PDS を待たずに表示する。再取得中のドロー状態は保持する。
+			this.#patch(actor, {
+				view: {
+					...publicView,
+					...(self && this.view(actor)?.drawStatus
+						? { drawStatus: this.view(actor)!.drawStatus }
+						: {}),
+				},
+				loading: self,
+				failed: false,
+				error: '',
+				fetchedAt: Date.now(),
+			});
+		} catch (error) {
+			publicError = error;
+		}
+		if (!self || viewerDid !== this.#selfDid) {
+			if (publicError && viewerDid === this.#selfDid) {
+				this.#patch(actor, {
+					loading: false,
+					failed: true,
+					error: publicError instanceof Error ? publicError.message : '',
+				});
+			}
+			return;
+		}
+		try {
+			const view = await getCards(actor, { requireViewer: true });
+			if (viewerDid !== this.#selfDid) return;
+			// 直近で控えを書き損ねたぶんを拾い直す。待たずに投げる。
+			if (view.unmirroredDraws?.length) void retryCardGetMirrors(view.unmirroredDraws);
 			this.#patch(actor, {
 				view,
 				loading: false,
@@ -148,11 +179,12 @@ class CardCollections {
 				error: '',
 				fetchedAt: Date.now(),
 			});
-		} catch (e) {
+		} catch (error) {
+			if (viewerDid !== this.#selfDid) return;
 			this.#patch(actor, {
 				loading: false,
-				failed: true,
-				error: e instanceof Error ? e.message : '',
+				failed: !this.view(actor),
+				error: error instanceof Error ? error.message : '',
 			});
 		}
 	}
