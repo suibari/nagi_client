@@ -10,7 +10,7 @@
 	import CardBotReview from './CardBotReview.svelte';
 
 	/**
-	 * 全肯定カードのニュース。SR以上のドローと、ゼンカツのハイライトだけが並ぶ。
+	 * 全肯定カードのニュース。R以上のドローと、ゼンカツのハイライトだけが並ぶ。
 	 * ゼンカツを全件流すとニュースの約8割がゼンカツになり、レアドローが埋もれるため。
 	 */
 	let feed = $state<CardNewsFeed | undefined>();
