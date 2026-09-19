@@ -1296,7 +1296,6 @@ export const ja = {
 	zenkatsuRestingShort: 'クールダウン中',
 	zenkatsuStock: (o: { n: number }) => `のこり${o.n}枚`,
 	zenkatsuNoCards: 'まだカードを持っていないよ。まずは1枚引いてみよう',
-	zenkatsuCardsLoading: '手札を読み込んでいます…',
 	zenkatsuRecordTitle: '今日の記録',
 	zenkatsuRecordEmpty: 'まだ誰も出していないよ。いちばん乗りになろう',
 	zenkatsuCommentPending: 'botたんが考えているよ…',
