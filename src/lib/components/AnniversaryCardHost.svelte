@@ -47,6 +47,9 @@
 			? {
 					card: anniversaryCardReward.current,
 					source: 'anniversary',
+					// 控えの書き込みはこの経路を通らない（claim 側で済んでいる）ので、
+					// 演出のためだけに型を満たす。
+					drawDate: '',
 					alreadyDrawn: false,
 					isNew: true,
 					commentPending: !anniversaryCardReward.current.commentJa,

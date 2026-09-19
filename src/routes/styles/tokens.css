@@ -4,6 +4,20 @@
  * --------------------------------------------------------------- */
 :root,
 :root[data-theme='light'] {
+	/* ゼンカツのプレイ画面は、サイトのテーマに関わらず黒系で統一する。 */
+	--zenkatsu-game-bg: #090b10;
+	--zenkatsu-game-surface: #141820;
+	--zenkatsu-game-text: #f0f3f8;
+	--zenkatsu-game-muted: #a8b2c1;
+	--zenkatsu-game-line: #303845;
+	--zenkatsu-game-accent: #73e1d5;
+	--zenkatsu-game-action: #13776f;
+	--zenkatsu-game-danger: #ff9baf;
+	/* パネル面。surface より一段手前に出す（結果画面の枠はすべてこの面に乗る）。 */
+	--zenkatsu-game-elevated: #1b2130;
+	/* コンボは追い風と別の色で示す。追い風が定常なのに対し、コンボは見つけもの。 */
+	--zenkatsu-game-gold: #f5cf83;
+	--zenkatsu-game-gold-soft: #3a2f18;
 	color-scheme: light;
 
 	/* supplied palette */

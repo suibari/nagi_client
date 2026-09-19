@@ -54,6 +54,28 @@ const BADGE_DEFINITIONS: readonly BadgeDefinition[] = [
 		},
 	},
 	{
+		/*
+		 * 今日のゼンカツ部長（前日の botたん賞）。
+		 *
+		 * **毎日ひとりだけが持ち、1日で消える。** 下の超ポジティブLvが「競争や
+		 * 『ネガティブなことを言いづらい』という圧力につながる」として非表示にされているのと
+		 * 同じ轍を踏まないため、累積は絶対に出さない。単調増加しないことがこのバッジの肝。
+		 *
+		 * ラベルに賞名を入れているのは、title 属性がタッチ端末では読めないから。
+		 * 絵文字だけだとスマホで意味が伝わらない。
+		 */
+		enabled: true,
+		create: (actor) =>
+			actor.zenkatsuChief
+				? {
+						id: 'zenkatsu-chief',
+						label: m.zenkatsuChiefBadge(),
+						title: m.zenkatsuChiefBadgeAria(),
+						tone: 'zenkatsu',
+					}
+				: undefined,
+	},
+	{
 		// 競争や「ネガティブなことを言いづらい」という圧力につながるため現在は非表示。
 		// レベルの取得・蓄積・表示定義は残し、方針が変わったらここだけで再開できる。
 		enabled: false,

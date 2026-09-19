@@ -6,12 +6,15 @@
 		card,
 		size = 'grid',
 		revealUnowned = false,
+		attributeGlow = false,
 	}: {
 		card: CardView;
 		/** grid = コレクション一覧、full = ドロー演出や詳細で1枚だけ大きく出すとき。 */
 		size?: 'grid' | 'full';
 		/** ゲストが今引いた1枚など、所持化前でも表面を見せる表示専用フラグ。 */
 		revealUnowned?: boolean;
+		/** ゼンカツのお題と一致する属性を、カード面で示す。 */
+		attributeGlow?: boolean;
 	} = $props();
 
 	/** 属性は絵文字1つで表す（イラスト枠を持たない構成なので、ここが唯一の絵柄）。 */
@@ -90,7 +93,16 @@
 	{#if revealed}
 		<header class="card-head">
 			<h3 class="card-name">{name}</h3>
-			<span class="card-attr" title={attributeLabel} aria-label={attributeLabel}>
+			<span
+				class="card-attr"
+				class:attribute-glow={attributeGlow}
+				title={attributeGlow
+					? m.zenkatsuRecommendedAttribute({ attribute: attributeLabel })
+					: attributeLabel}
+				aria-label={attributeGlow
+					? m.zenkatsuRecommendedAttribute({ attribute: attributeLabel })
+					: attributeLabel}
+			>
 				{ATTRIBUTE_ICON[card.attribute]}
 			</span>
 		</header>
@@ -219,6 +231,36 @@
 		font-size: 9cqi;
 		line-height: 1;
 		color: var(--card-attr-light);
+	}
+	.card-attr.attribute-glow {
+		position: relative;
+		isolation: isolate;
+		filter: drop-shadow(0 0 3px currentColor);
+	}
+	.card-attr.attribute-glow::before {
+		content: '';
+		position: absolute;
+		inset: -0.28em;
+		z-index: -1;
+		border-radius: 50%;
+		background: radial-gradient(circle, currentColor, transparent 70%);
+		box-shadow: 0 0 0.6em currentColor;
+		opacity: 0.2;
+		pointer-events: none;
+		animation: attribute-pulse 2.8s ease-in-out infinite;
+	}
+	@keyframes attribute-pulse {
+		0%,
+		50%,
+		100% {
+			opacity: 0.15;
+			transform: scale(0.85);
+		}
+		25%,
+		75% {
+			opacity: 0.65;
+			transform: scale(1.12);
+		}
 	}
 	.card-meta {
 		display: flex;
@@ -437,6 +479,10 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.card-attr.attribute-glow::before {
+			animation: none;
+			opacity: 0.4;
+		}
 		.rarity-aar {
 			animation: none;
 		}

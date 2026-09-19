@@ -25,6 +25,8 @@ const POST = 'com.suibari.nagi.post',
 	PROFILE = 'com.suibari.nagi.profile',
 	CHANNEL = 'com.suibari.nagi.channel';
 const NEWS = 'com.suibari.nagi.news';
+const ZENKATSU = 'com.suibari.nagi.zenkatsu';
+const CARD_GET = 'com.suibari.nagi.cardGet';
 export const NAGI_ACCOUNT_DATA_COLLECTIONS = [
 	POST,
 	REACTION,
@@ -32,6 +34,8 @@ export const NAGI_ACCOUNT_DATA_COLLECTIONS = [
 	CHANNEL,
 	NEWS,
 	APP_LINKS,
+	ZENKATSU,
+	CARD_GET,
 ] as const;
 const current = () => {
 	const value = get(session);
@@ -911,4 +915,116 @@ export async function putProfile(displayName: string, description: string, draft
 			},
 		}),
 	);
+}
+
+/**
+ * ゼンカツ！の提出。**rkey はお題の日付そのもの。**
+ *
+ * こうすると repo 側でも「1日1本」が構造的に決まる（同じ rkey は上書きしかできない）。
+ * ただし AppView は先着のみを索引し、消して出し直しても通さないので、上書きは効かない。
+ *
+ * 所持していない札・おやすみ中の札を書いても AppView が照合して索引しない。
+ * つまりこの経路でズルはできないが、無駄弾を撃たないようクライアント側でも選択肢を絞ること。
+ */
+export async function createZenkatsu(
+	themeDate: string,
+	cards: { volume: number; id: number }[],
+) {
+	const s = current();
+	return indexed(
+		new Agent(s).com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: ZENKATSU,
+			rkey: themeDate,
+			validate: false,
+			record: {
+				$type: ZENKATSU,
+				themeDate,
+				cards,
+				createdAt: new Date().toISOString(),
+			},
+		}),
+	);
+}
+
+/**
+ * ドローの控えの rkey。
+ *
+ * **サーバ側 `cardGetRkey()`（shared-configs/src/cards.ts）と同じ綴りでなければならない。**
+ * リポジトリが分かれているので共有できない。ズレると「控えたのに索引されない」が
+ * エラーも出ないまま起きる。片方を変えるときは必ず両方直すこと。
+ */
+export function cardGetRkey(
+	drawDate: string,
+	source: 'my_nagi' | 'reaction' | 'anniversary',
+	slot?: number,
+): string {
+	return source === 'anniversary'
+		? `${drawDate}-anniv-${slot ?? 0}`
+		: `${drawDate}-${source}`;
+}
+
+/**
+ * ドローの控えを PDS に書く。**権威ではない。**
+ *
+ * 引いた結果を決めるのは AppView で、これは「引いた」という控え。AppView は card_draws と
+ * 突き合わせて一致しないものを索引しないので、ここに嘘を書いても意味は無い。
+ * 控えを置く理由は、リアクションの subject が実在の PDS レコードを要るから。
+ *
+ * 記念日カードは同じ日に複数ありうるので、card_number に入っている slot まで rkey に含める。
+ */
+export async function createCardGet(input: {
+	drawDate: string;
+	source: 'my_nagi' | 'reaction' | 'anniversary';
+	volume: number;
+	id: number;
+}) {
+	const s = current();
+	// 記念日カードの card_number は 西暦*100 + slot。slot だけを取り出す。
+	const slot = input.volume === 0 ? input.id % 100 : undefined;
+	return indexed(
+		new Agent(s).com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: CARD_GET,
+			rkey: cardGetRkey(input.drawDate, input.source, slot),
+			validate: false,
+			record: {
+				$type: CARD_GET,
+				card: { volume: input.volume, id: input.id },
+				drawDate: input.drawDate,
+				source: input.source,
+				createdAt: new Date().toISOString(),
+			},
+		}),
+	);
+}
+
+/**
+ * 控えを書き損ねたぶんを拾い直す（getCards の unmirroredDraws を渡す）。
+ *
+ * **履歴の埋め戻しではない。** AppView が返すのは直近2日ぶんだけで、それより前のドローは
+ * 控えを持たないまま終わる。ニュースは「今この瞬間の出来事」なので、何ヶ月も前のドローを
+ * 後から控えても誰も見ないし、利用者が頼んでいない書き込みを本人の repo へ大量に撃つことになる。
+ *
+ * ここが拾うのは「引いた直後の書き込みが失敗した」ぶん（オフライン、PDS 落ち、
+ * アプリを閉じた）。UR や AAR の日にこれが起きるとニュースに出ないまま終わってしまう。
+ */
+export async function retryCardGetMirrors(
+	draws: {
+		drawDate: string;
+		source: 'my_nagi' | 'reaction' | 'anniversary';
+		volume: number;
+		id: number;
+	}[],
+): Promise<number> {
+	let written = 0;
+	for (const draw of draws) {
+		try {
+			await createCardGet(draw);
+			written += 1;
+		} catch {
+			// 1件失敗しても残りは試す。窓の内側なら次回もまた出てくる。
+		}
+	}
+	return written;
 }

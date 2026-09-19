@@ -1,4 +1,5 @@
 import { getCards } from '$lib/api/appview';
+import { createCardGet, retryCardGetMirrors } from '$lib/atproto/records';
 import type { CardCollectionView, CardView, DrawCardResult } from '$lib/api/types';
 import { session } from '$lib/oauth/session.svelte';
 
@@ -136,6 +137,10 @@ class CardCollections {
 		this.#patch(actor, { loading: true, failed: false, error: '' });
 		try {
 			const view = await getCards(actor);
+			// 直近で控えを書き損ねたぶんを拾い直す。**履歴の埋め戻しではない**ので、
+			// AppView が返すのは直近2日ぶんだけ。待たずに投げる。
+			if (actor === this.#selfDid && view.unmirroredDraws?.length)
+				void retryCardGetMirrors(view.unmirroredDraws);
 			this.#patch(actor, {
 				view,
 				loading: false,
@@ -158,8 +163,31 @@ class CardCollections {
 	 */
 	applyDraw(actor: string, result: DrawCardResult) {
 		this.#patch(actor, { drawnStatus: result.drawStatus });
+		// 引いたことを本人の PDS へ控える。リアクションの subject に要るのと、ニュースに出すため。
+		// 所持そのものは AppView が権威なので、失敗しても手札は減らない。次に開いたときに拾う。
+		if (actor === this.#selfDid) void this.#mirrorDraw(actor, result);
 		if (!this.view(actor)) return;
 		this.applyCard(actor, result.card, result.drawStatus);
+	}
+
+	/**
+	 * ドローの控えを PDS へ書く。**所持の権威ではない**ので、失敗しても握り潰してよい。
+	 * 記念日は同じ日に複数ありうるので、受け取った枚数ぶん書く。
+	 */
+	async #mirrorDraw(actor: string, result: DrawCardResult) {
+		const cards = result.cards?.length ? result.cards : [result.card];
+		for (const card of cards) {
+			try {
+				await createCardGet({
+					drawDate: result.drawDate,
+					source: result.source,
+					volume: card.volume,
+					id: card.id,
+				});
+			} catch {
+				// 次に getCards したときの unmirroredDraws が拾う（直近2日だけ）。
+			}
+		}
 	}
 
 	/**

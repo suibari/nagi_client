@@ -163,7 +163,12 @@
 	}
 </script>
 
-<div class="draft-backdrop" role="presentation">
+<!-- 背景クリックで閉じる。アプリの他のモーダルと同じ扱い。 -->
+<div
+	class="draft-backdrop"
+	role="presentation"
+	onclick={(event) => event.target === event.currentTarget && onclose()}
+>
 	<div class="draft-dialog" role="dialog" aria-modal="true" aria-label={m.feedTabsAdd()}>
 		<h2>{m.feedTabsAdd()}</h2>
 
@@ -245,8 +250,10 @@
 					class:active={searchKind === 'keyword'}
 					onclick={() => (searchKind = 'keyword')}>{m.feedTabsSearchKindKeyword()}</button
 				>
-				<button type="button" class:active={searchKind === 'tag'} onclick={() => (searchKind = 'tag')}
-					>{m.feedTabsSearchKindTag()}</button
+				<button
+					type="button"
+					class:active={searchKind === 'tag'}
+					onclick={() => (searchKind = 'tag')}>{m.feedTabsSearchKindTag()}</button
 				>
 			</div>
 			<label class="field"
@@ -265,8 +272,11 @@
 		<div class="delete-actions">
 			<button type="button" class="ghost" onclick={onclose}>{m.cancel()}</button>
 			{#if step === 'search'}
-				<button type="button" class="primary" disabled={!trimmedQuery || searchDuplicate} onclick={addSearch}
-					>{m.feedTabsAdd()}</button
+				<button
+					type="button"
+					class="primary"
+					disabled={!trimmedQuery || searchDuplicate}
+					onclick={addSearch}>{m.feedTabsAdd()}</button
 				>
 			{/if}
 		</div>

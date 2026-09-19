@@ -814,7 +814,12 @@
 	/>
 {/if}
 {#if pendingRestoreId}
-	<div class="draft-backdrop" role="presentation">
+	<!-- 背景クリックは取り消し扱い。他の確認ダイアログと同じ。 -->
+	<div
+		class="draft-backdrop"
+		role="presentation"
+		onclick={(event) => event.target === event.currentTarget && (pendingRestoreId = null)}
+	>
 		<div class="draft-dialog draft-confirm" role="dialog" aria-modal="true">
 			<p>{m.draftRestoreOverwrite()}</p>
 			<div class="delete-actions">

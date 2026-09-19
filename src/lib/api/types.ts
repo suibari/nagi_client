@@ -13,6 +13,12 @@ export type ActorView = {
 	 * UI 言語で出し分けるので両方来る。
 	 */
 	currentTitle?: { ja: string; en: string };
+	/**
+	 * 「今日のゼンカツ部長」＝ 直前に閉じた日の botたん賞の受賞者。
+	 * **毎日ひとりだけが持ち、1日で消える。** 累積は出さない。
+	 * プロフィール取得の経路でだけ入る（フィードでは入らない）。
+	 */
+	zenkatsuChief?: boolean;
 };
 /** 固定 Bluemoji Lexicon に準拠したカスタム絵文字ビュー。 */
 export type BluemojiFacetFormats = {
@@ -544,6 +550,21 @@ export type CardCollectionView = {
 	anniversaryCards?: CardView[];
 	/** 本日ぶんの未受領の記念日。自分のコレクションを見ているときだけ返る。 */
 	pendingAnniversary?: PendingAnniversary[];
+	/**
+	 * まだ PDS に控えを書いていないドロー。自分のコレクションを見ているときだけ返る。
+	 *
+	 * ドローは AppView 側で先に確定するので、そのあとの createRecord が失敗すると控えだけが
+	 * 欠ける（オフライン、PDS 落ち、アプリを閉じた）。正しさではなく遅延の問題なので、
+	 * 次に開いたときにここを順に書けばよい。過去ぶんもここから埋まる。
+	 */
+	unmirroredDraws?: UnmirroredDraw[];
+};
+/** 控えがまだ無いドロー1件。 */
+export type UnmirroredDraw = {
+	drawDate: string;
+	source: CardDrawSource;
+	volume: number;
+	id: number;
 };
 export type DrawCardResult = {
 	card: CardView;
@@ -555,6 +576,11 @@ export type DrawCardResult = {
 	commentPending: boolean;
 	drawStatus: CardDrawStatus;
 	/**
+	 * この1枚を引いた日（JST 4:00 始まりの "YYYY-MM-DD"）。PDS へ控えを書くときの rkey に使う。
+	 * 日付境界の計算をクライアントに二重定義しないよう、サーバが返したものをそのまま使う。
+	 */
+	drawDate: string;
+	/**
 	 * source=anniversary のみ。同じ日に複数の記念日が重なることがあるので、今回受け取った
 	 * ぶんを全部返す。card はこの先頭と同じ。
 	 */
@@ -563,4 +589,128 @@ export type DrawCardResult = {
 export type GuestCardDrawResult = DrawCardResult & {
 	/** 通常カードと同じ JST 4:00 境界。これを越えたローカル結果は破棄する。 */
 	expiresAt: string;
+};
+
+// ゼンカツ！（1日1回、お題に手持ちのカード1〜3枚で答える遊び）
+export type ZenkatsuTone = 'neta' | 'sunao';
+/** その日のお題。初回アクセス時に確定し、以後は動かない。 */
+export type ZenkatsuThemeView = {
+	volume: number;
+	id: number;
+	themeDate: string;
+	textJa: string;
+	textEn: string;
+	/** 追い風の属性。その日「噛み合う」札を決める主軸。 */
+	attribute: CardAttribute;
+	/** 追い風の種族（任意）。持っていない人が出るので副次的な扱い。 */
+	raceJa?: string;
+	tone: ZenkatsuTone;
+};
+/**
+ * 記録に出す1件。**スコアも順位も含まない**（全肯定なので勝敗を作らない）。
+ * 出した札と botたんの総評だけ。
+ */
+export type ZenkatsuSubmissionView = {
+	uri: string;
+	cid: string;
+	author: ActorView;
+	cards: CardView[];
+	commentJa?: string;
+	commentEn?: string;
+	/** true の間は総評を生成中。取り直すと入る。 */
+	commentPending: boolean;
+	/** その日の追い風に乗っていた枚数。**得点ではない**（得点は隠しで表示しない）。 */
+	tailwindCount: number;
+	/** 成立したコンボ。成立したものだけがサーバから来る（未発見のぶんは送られない）。 */
+	combos: ZenkatsuSubmissionCombo[];
+	createdAt: string;
+	indexedAt: string;
+};
+/** 記録に出す、成立したコンボの要約。 */
+export type ZenkatsuSubmissionCombo = {
+	volume: number;
+	id: number;
+	nameJa: string;
+	nameEn: string;
+	descJa: string;
+	descEn: string;
+};
+/** 今日出せる札1種。 */
+export type ZenkatsuPlayableCard = {
+	volume: number;
+	id: number;
+	/** 在庫のうち、今日出せる枚数。0 なら全部おやすみ中。 */
+	available: number;
+	/** available が 0 のとき、いちばん早く戻る1枚があと何日でおきるか。 */
+	restingDays?: number;
+};
+export type ZenkatsuViewerState = {
+	submitted: boolean;
+	submissionUri?: string;
+	playable: ZenkatsuPlayableCard[];
+	/** 1回に出せる最大枚数。**下限は無い**（1枚でもよい）。 */
+	maxCards: number;
+};
+export type ZenkatsuFeed = {
+	theme: ZenkatsuThemeView;
+	submissions: ZenkatsuSubmissionView[];
+	cursor?: string;
+	viewer?: ZenkatsuViewerState;
+};
+/** ニュース1件。レアドローとゼンカツのハイライトが同じ列に並ぶ。 */
+export type CardNewsItem = {
+	uri: string;
+	cid: string;
+	type: 'cardGet' | 'zenkatsu';
+	author: ActorView;
+	at: string;
+	card?: CardView;
+	cards?: CardView[];
+	themeJa?: string;
+	themeEn?: string;
+	commentJa?: string;
+	commentEn?: string;
+	/**
+	 * type=zenkatsu のとき。成立したコンボ。
+	 * ニュースに出すのは、**攻略がコミュニティに伝わる道**にするため。
+	 * 未成立のぶんはサーバから送られないので、これで定義が漏れることはない。
+	 */
+	combos?: ZenkatsuSubmissionCombo[];
+	/** type=zenkatsu のとき。追い風に乗っていた枚数。**得点ではない。** */
+	tailwindCount?: number;
+};
+export type CardNewsFeed = {
+	items: CardNewsItem[];
+	cursor?: string;
+};
+
+/** マイデッキに出す、成立させたことのあるコンボ1件。 */
+export type ZenkatsuComboView = {
+	volume: number;
+	id: number;
+	nameJa: string;
+	nameEn: string;
+	descJa: string;
+	descEn: string;
+	/** スロットごとの構成札。1スロットに複数あるのは「どちらでもよい」という意味。 */
+	slots: CardView[][];
+	firstPlayedDate: string;
+	/** 世界で最初に見つけた人。 */
+	pioneer?: ActorView;
+	isPioneer: boolean;
+};
+export type ZenkatsuTrophyView = {
+	kind: string;
+	themeDate: string;
+	themeJa?: string;
+	themeEn?: string;
+	submissionUri: string;
+	commentJa?: string;
+	commentEn?: string;
+};
+export type ZenkatsuDeckView = {
+	/** 存在するコンボの総数。未発見のぶんは中身を伏せる。 */
+	comboTotal: number;
+	combos: ZenkatsuComboView[];
+	trophies: ZenkatsuTrophyView[];
 };

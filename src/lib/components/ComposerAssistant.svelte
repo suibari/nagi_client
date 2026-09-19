@@ -212,8 +212,8 @@
 					class:petted
 					src={petted ? '/bot_assist_petted.png' : '/bot_assist_sitting.png'}
 					alt=""
-					width={petted ? 384 : 228}
-					height={petted ? 384 : 320}
+					width="264"
+					height="350"
 					draggable="false"
 				/>
 			</button>
@@ -271,8 +271,8 @@
 		display: flex;
 		align-items: flex-end;
 		justify-content: center;
-		width: 72px;
-		height: 101px;
+		width: 83px;
+		height: 110px;
 		padding: 0;
 		border: 0;
 		background: transparent;
@@ -284,7 +284,7 @@
 	}
 	.composer-assist-character {
 		flex: none;
-		width: 72px;
+		width: 83px;
 		height: auto;
 		filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.18));
 		transform-origin: 50% 90%;
@@ -292,8 +292,6 @@
 		user-select: none;
 	}
 	.composer-assist-character.petted {
-		width: 88px;
-		max-width: none;
 		animation: composer-assist-petted 420ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
 	}
 	.composer-assist-bubble {

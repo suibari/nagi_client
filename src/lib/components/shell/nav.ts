@@ -31,12 +31,14 @@ const notifications: NavItem = {
 const channels: NavItem = { href: '/channels', label: m.navChannels, icon: 'hash' };
 const news: NavItem = { href: '/news', label: m.navNews, icon: 'newspaper' };
 const diary: NavItem = { href: '/diary', label: m.navDiary, icon: 'draft' };
+// 全肯定カード（ニュース / カードリスト / ゼンカツ！の3タブ）。
+const cards: NavItem = { href: '/cards', label: m.navCards, icon: 'cards' };
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
 
 /** PC の区切りも含めた表示順。グループを足せば区切り線も自動で増える。 */
 export const desktopNavGroups: NavItem[][] = [
 	[myNagi, feed, notifications],
-	[channels, news, diary],
+	[channels, news, diary, cards],
 	[settings],
 ];
 
@@ -44,7 +46,7 @@ export const desktopNavGroups: NavItem[][] = [
 export const mobilePrimaryItems: NavItem[] = [myNagi, feed, notifications];
 
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
-export const mobileMenuItems: NavItem[] = [channels, news, diary, settings];
+export const mobileMenuItems: NavItem[] = [channels, news, diary, cards, settings];
 /** フィードの3タブ（ホーム/グローバル/全肯定）はどれもフィード扱いにする。 */
 const FEED_PATHS = ['/feed', '/global', '/affirmation'];
 /**

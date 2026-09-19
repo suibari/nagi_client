@@ -5,6 +5,7 @@ import { env } from '$env/dynamic/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
 	CardCollectionView,
+	CardNewsFeed,
 	BookmarkFolderView,
 	BookmarkFoldersView,
 	BookmarkStateView,
@@ -37,6 +38,8 @@ import type {
 	SearchActorsResult,
 	ThreadView,
 	TimelinePage,
+	ZenkatsuDeckView,
+	ZenkatsuFeed,
 } from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 // AppView へのアクセスはユーザ自身の PDS 経由でプロキシする（atproto-proxy ヘッダー）。
@@ -650,6 +653,57 @@ export const getCards = (actor: string) =>
 		'com.suibari.nagi.getCards',
 		`/xrpc/com.suibari.nagi.getCards?actor=${encodeURIComponent(actor)}`,
 	);
+/**
+ * ゼンカツ！の、ある1日のお題と全回答（新着順）。
+ *
+ * 記録は公開情報なので未認証でも読めるが、認証していれば viewer（提出済みか・今日出せる札）が
+ * 付く。permission-set のキャッシュ未反映で弾かれたら公開取得へ落とす（viewer が消えるだけ）。
+ */
+export const getZenkatsu = (params: { date?: string; cursor?: string; limit?: number } = {}) => {
+	const query = new URLSearchParams();
+	if (params.date) query.set('date', params.date);
+	if (params.cursor) query.set('cursor', params.cursor);
+	if (params.limit) query.set('limit', String(params.limit));
+	const suffix = query.size ? `?${query}` : '';
+	return withPublicFallback<ZenkatsuFeed>(
+		'com.suibari.nagi.getZenkatsu',
+		`/xrpc/com.suibari.nagi.getZenkatsu${suffix}`,
+	);
+};
+/**
+ * **開発専用**: 今日のゼンカツ提出を消して、もう一度出せるようにする。
+ *
+ * ゼンカツは1日1回なので、そのままでは総評や演出を1日1度しか確かめられない。
+ * AppView 側は開発モードでないとルート自体を登録しないので、本番では 404 になる。
+ */
+export const resetZenkatsu = () =>
+	call<{ deleted: number }>(
+		'com.suibari.nagi.resetZenkatsu',
+		'/xrpc/com.suibari.nagi.resetZenkatsu',
+		{ method: 'POST' },
+		'required',
+	);
+/** マイデッキ。自分が成立させたコンボと、受け取ったトロフィー。要認証。 */
+export const getZenkatsuDeck = () =>
+	call<ZenkatsuDeckView>(
+		'com.suibari.nagi.getZenkatsuDeck',
+		'/xrpc/com.suibari.nagi.getZenkatsuDeck',
+		undefined,
+		'required',
+	);
+/** 全肯定カードのニュース（SR以上のドローと、ゼンカツのハイライト）。公開情報。 */
+export const getCardNews = (params: { cursor?: string; limit?: number } = {}) => {
+	const query = new URLSearchParams();
+	if (params.cursor) query.set('cursor', params.cursor);
+	if (params.limit) query.set('limit', String(params.limit));
+	const suffix = query.size ? `?${query}` : '';
+	return call<CardNewsFeed>(
+		'com.suibari.nagi.getCardNews',
+		`/xrpc/com.suibari.nagi.getCardNews${suffix}`,
+		undefined,
+		'none',
+	);
+};
 /** DID の無い端末に、通常枠と同じ抽選ロジックで当日の1枚を返す。 */
 export const drawGuestCard = (deviceToken: string) =>
 	call<GuestCardDrawResult>(
