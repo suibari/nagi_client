@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getCardNews } from '$lib/api/appview';
 	import type { CardNewsFeed } from '$lib/api/types';
-	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { dayHeading, dayKey, i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import ZenkatsuMarks from './ZenkatsuMarks.svelte';
 	import AvatarLink from './AvatarLink.svelte';
@@ -42,7 +42,12 @@
 	<div class="state">{m.cardNewsEmpty()}</div>
 {:else}
 	<ul class="news">
-		{#each feed.items as item (item.uri)}
+		{#each feed.items as item, index (item.uri)}
+			{#if dayKey(item.at) && (index === 0 || dayKey(item.at) !== dayKey(feed.items[index - 1].at))}
+				<li class="day-heading">
+					<h2><time datetime={dayKey(item.at)}>{dayHeading(item.at)}</time></h2>
+				</li>
+			{/if}
 			<li class="item">
 				<div class="author">
 					<AvatarLink actor={item.author} size="small" />
@@ -95,6 +100,16 @@
 		list-style: none;
 		margin: 0;
 		padding: 0;
+	}
+	.day-heading {
+		padding: 0.8rem 1rem 0.4rem;
+		background: var(--bg-raised);
+	}
+	.day-heading h2 {
+		margin: 0;
+		color: var(--text-faint);
+		font-size: 0.8rem;
+		font-weight: 600;
 	}
 	.item {
 		padding: 0.9rem 1rem;

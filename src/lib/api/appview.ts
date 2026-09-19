@@ -657,18 +657,25 @@ export const getCards = (actor: string) =>
  * ゼンカツ！の、ある1日のお題と全回答（新着順）。
  *
  * 記録は公開情報なので未認証でも読めるが、認証していれば viewer（提出済みか・今日出せる札）が
- * 付く。permission-set のキャッシュ未反映で弾かれたら公開取得へ落とす（viewer が消えるだけ）。
+ * 付く。既定は権限不足なら公開取得へ落とす。盤面は publicOnly でお題を先に出し、
+ * requireViewer で認証エラーを受け取って再認可を案内する。
  */
-export const getZenkatsu = (params: { date?: string; cursor?: string; limit?: number } = {}) => {
+export const getZenkatsu = (
+	params: { date?: string; cursor?: string; limit?: number } = {},
+	options: { publicOnly?: boolean; requireViewer?: boolean } = {},
+) => {
 	const query = new URLSearchParams();
 	if (params.date) query.set('date', params.date);
 	if (params.cursor) query.set('cursor', params.cursor);
 	if (params.limit) query.set('limit', String(params.limit));
 	const suffix = query.size ? `?${query}` : '';
-	return withPublicFallback<ZenkatsuFeed>(
-		'com.suibari.nagi.getZenkatsu',
-		`/xrpc/com.suibari.nagi.getZenkatsu${suffix}`,
-	);
+	const lxm = 'com.suibari.nagi.getZenkatsu';
+	const path = `/xrpc/${lxm}${suffix}`;
+	return options.publicOnly
+		? call<ZenkatsuFeed>(lxm, path, {}, 'none')
+		: options.requireViewer
+			? call<ZenkatsuFeed>(lxm, path, {}, 'required')
+			: withPublicFallback<ZenkatsuFeed>(lxm, path);
 };
 /**
  * **開発専用**: 今日のゼンカツ提出を消して、もう一度出せるようにする。

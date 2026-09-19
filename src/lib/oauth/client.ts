@@ -31,6 +31,9 @@ const baseScopes = [
 	'atproto',
 	'blob:image/*',
 	'include:com.suibari.nagi.appviewAccess',
+	// 新機能の権限は permission set の古いキャッシュでも再認可で取得できるよう明示する。
+	'rpc:com.suibari.nagi.getZenkatsu?aud=*',
+	'repo:com.suibari.nagi.zenkatsu',
 	BLUEMOJI_SCOPE,
 	BLUESKY_PROFILE_SCOPE,
 ];

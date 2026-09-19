@@ -406,11 +406,155 @@ test('a late OAuth restore refreshes the board without blanking the theme', asyn
 	await page.goto('/dev/e2e/zenkatsu?board&restore');
 	await expect(page.locator('.theme-text')).toContainText('今日のきみに、追い風を。');
 	// 復元に伴う取り直しは起きていて、viewer 付きの盤面に静かに入れ替わる。
-	await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
 	expect(calls).toBeGreaterThan(1);
 	// その間、一度出したお題は消えない。ここが「…」に戻ると、ログインしている人だけが
 	// 復元を待つ数秒のあいだ、空の盤面を見ることになる。
 	expect(
 		await page.evaluate(() => (window as unknown as { zenkatsuBlanked: number }).zenkatsuBlanked),
 	).toBe(0);
+});
+
+for (const first of ['public', 'authenticated'] as const) {
+	test(`signed-in board displays the ${first} response without waiting for the other`, async ({
+		page,
+	}) => {
+		await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+		await page.route('**/xrpc/**', (route) =>
+			route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
+		);
+		let release!: () => void;
+		const pending = new Promise<void>((resolve) => (release = resolve));
+		let completed = 0;
+		await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', async (route) => {
+			const headers = route.request().headers();
+			const authenticated = !!(headers['atproto-proxy'] || headers['x-viewer-did']);
+			if (authenticated !== (first === 'authenticated')) await pending;
+			await route.fulfill({
+				json: {
+					theme: {
+						volume: 1,
+						id: 1,
+						themeDate: '2026-09-19',
+						attribute: 'wind',
+						tone: 'sunao',
+						textJa: 'ページ遷移でも見えるお題',
+						textEn: 'A theme after navigation',
+					},
+					submissions: [],
+					...(authenticated ? { viewer: { submitted: false, maxCards: 3, playable: [] } } : {}),
+				},
+			});
+			completed++;
+		});
+		try {
+			// 盤面がマウントされる前にログイン済みにする（ページ遷移時と同じ順序）。
+			await page.goto('/dev/e2e/zenkatsu?board');
+			await expect(page.locator('.theme-text')).toContainText('ページ遷移でも見えるお題');
+			if (first === 'authenticated') {
+				await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
+			}
+			release();
+			await expect.poll(() => completed).toBe(2);
+			await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
+			await expect(page.locator('.theme-text')).toContainText('ページ遷移でも見えるお題');
+		} finally {
+			release();
+		}
+	});
+}
+
+for (const status of [403, 503]) {
+	test(`board explains a ${status} viewer failure and keeps the public theme`, async ({ page }) => {
+		await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+		await page.route('**/xrpc/**', (route) =>
+			route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
+		);
+		let fail = true;
+		await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', (route) => {
+			const headers = route.request().headers();
+			const authenticated = !!(headers['atproto-proxy'] || headers['x-viewer-did']);
+			if (authenticated && fail)
+				return route.fulfill({ status, json: { error: 'Denied', message: 'Request failed' } });
+			return route.fulfill({
+				json: {
+					theme: {
+						volume: 1,
+						id: 1,
+						themeDate: '2026-09-19',
+						attribute: 'wind',
+						tone: 'sunao',
+						textJa: '公開のお題',
+						textEn: 'Public theme',
+					},
+					submissions: [],
+					...(authenticated ? { viewer: { submitted: false, maxCards: 3, playable: [] } } : {}),
+				},
+			});
+		});
+		await page.goto('/dev/e2e/zenkatsu?board');
+		await expect(page.locator('.theme-text')).toContainText('公開のお題');
+		await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeDisabled();
+		if (status === 403) {
+			await expect(
+				page.getByRole('button', { name: '再ログインして権限を更新', exact: true }),
+			).toBeVisible();
+		} else {
+			await expect(
+				page.getByText('プレイ情報を取得できませんでした。もう一度お試しください。', {
+					exact: true,
+				}),
+			).toBeVisible();
+			await page.getByRole('button', { name: 'もう一度', exact: true }).click();
+			await expect(
+				page.getByText('プレイ情報を取得できませんでした。もう一度お試しください。', {
+					exact: true,
+				}),
+			).toBeVisible();
+			await expect(page.locator('.theme-text')).toContainText('公開のお題');
+			fail = false;
+			await page.getByRole('button', { name: 'もう一度', exact: true }).click();
+			await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
+		}
+	});
+}
+
+test('card news groups dates across pagination without displaying times', async ({ page }) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.route('**/xrpc/**', (route) =>
+		route.fulfill({
+			json: {
+				items: [],
+				submissions: [],
+				theme: { themeDate: '2026-09-19', attribute: 'wind', textJa: 'お題', textEn: 'Theme' },
+			},
+		}),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.getCardNews**', (route) => {
+		const more = new URL(route.request().url()).searchParams.has('cursor');
+		const dates = more
+			? ['2026-09-18T01:23:00Z', '2026-09-17T01:23:00Z']
+			: ['2026-09-18T14:23:00Z', '2026-09-18T05:23:00Z'];
+		return route.fulfill({
+			json: {
+				items: dates.map((at) => ({
+					uri: `at://did:plc:demo/com.suibari.nagi.zenkatsu/${at}`,
+					type: 'zenkatsu',
+					author: { did: 'did:plc:demo', handle: 'demo.example' },
+					at,
+					cards: [],
+				})),
+				...(!more ? { cursor: 'next' } : {}),
+			},
+		});
+	});
+	await page.goto('/cards');
+	await page.getByRole('tab', { name: 'ニュース', exact: true }).click();
+	await expect(page.locator('.day-heading time')).toHaveAttribute('datetime', '2026-09-18');
+	await page.locator('button.more').click();
+	await expect(page.locator('.news > .item')).toHaveCount(4);
+	await expect(page.locator('.day-heading')).toHaveCount(2);
+	await expect(page.locator('.day-heading time').last()).toHaveAttribute('datetime', '2026-09-17');
+	await expect(page.locator('.news')).not.toContainText(/\d{1,2}:\d{2}/);
+	await expect(page.locator('.item time')).toHaveCount(0);
 });
