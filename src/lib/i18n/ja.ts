@@ -1302,6 +1302,11 @@ export const ja = {
 	zenkatsuPrevDay: '前の日',
 	zenkatsuNextDay: '次の日',
 	zenkatsuLoadMore: 'もっと見る',
+	zenkatsuViewerLoading: 'プレイ情報を確認しています…',
+	zenkatsuViewerFailed: 'プレイ情報を取得できませんでした。もう一度お試しください。',
+	zenkatsuAuthorizationNeeded:
+		'プレイ情報へのアクセスが拒否されました。再ログインして権限を更新してください。',
+	zenkatsuReauthorize: '再ログインして権限を更新',
 	zenkatsuFetchFailed: 'ゼンカツを読み込めませんでした',
 	cardNewsEmpty: 'まだニュースはないよ',
 	cardNewsGot: (o: { name: string }) => `${o.name} をゲット！`,

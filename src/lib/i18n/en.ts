@@ -1280,6 +1280,11 @@ export const en: Messages = {
 	zenkatsuPrevDay: 'Previous day',
 	zenkatsuNextDay: 'Next day',
 	zenkatsuLoadMore: 'Load more',
+	zenkatsuViewerLoading: 'Loading your play information…',
+	zenkatsuViewerFailed: 'Could not load your play information. Please try again.',
+	zenkatsuAuthorizationNeeded:
+		'Access to your play information was denied. Sign in again to update permissions.',
+	zenkatsuReauthorize: 'Sign in again to update permissions',
 	zenkatsuFetchFailed: 'Could not load Zenkatsu',
 	cardNewsEmpty: 'No news yet',
 	cardNewsGot: (o: { name: string }) => `Got ${o.name}!`,

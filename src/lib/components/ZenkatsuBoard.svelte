@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { getZenkatsu } from '$lib/api/appview';
+	import { untrack } from 'svelte';
+	import { ApiRequestError, getZenkatsu } from '$lib/api/appview';
 	import type {
 		CardAttribute,
 		CardView,
@@ -10,7 +11,8 @@
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { createZenkatsu } from '$lib/atproto/records';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
-	import { session } from '$lib/oauth/session.svelte';
+	import { session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
+	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardBotReview from './CardBotReview.svelte';
 	import AvatarLink from './AvatarLink.svelte';
@@ -45,33 +47,71 @@
 	let picking = $state(false);
 	let showGuide = $state(false);
 	let loadingMore = $state(false);
+	let viewerLoading = $state(false);
+	let viewerFailed = $state(false);
+	let needsAuthorization = $state(false);
+	let reauthBusy = $state(false);
 
 	const keyOf = (c: { volume: number; id: number }) => `${c.volume}:${c.id}`;
+
+	let loadVersion = 0;
 
 	/**
 	 * @param next  追加読み込みのカーソル。
 	 * @param quiet 取り直している間も今の記録を出したままにする（「…」で画面を潰さない）。
 	 */
 	async function load(next?: string, quiet = false) {
+		const version = ++loadVersion;
 		loading = !next && !quiet;
 		error = '';
-		try {
-			const result = await getZenkatsu({
-				...(date ? { date } : {}),
-				...(next ? { cursor: next } : {}),
-			});
-			// 記録が欠けた応答でも盤面ごと落とさない。ここは /cards を開いて最初に出る画面。
+		const signedIn = !!$session;
+		viewerLoading = signedIn;
+		viewerFailed = false;
+		needsAuthorization = false;
+		const params = {
+			...(date ? { date } : {}),
+			...(next ? { cursor: next } : {}),
+		};
+		let received = false;
+		let authenticated = false;
+		async function fetchFeed(publicOnly: boolean) {
+			let result: ZenkatsuFeed;
+			try {
+				result = await getZenkatsu(params, { publicOnly, requireViewer: signedIn && !publicOnly });
+			} catch (cause) {
+				if (!publicOnly && signedIn && version === loadVersion) {
+					viewerFailed = true;
+					needsAuthorization =
+						cause instanceof ApiRequestError &&
+						(cause.status === 401 ||
+							cause.status === 403 ||
+							(cause.status === 400 && /scope|permission/i.test(cause.message)));
+				}
+				throw cause;
+			} finally {
+				if (!publicOnly && version === loadVersion) viewerLoading = false;
+			}
+
+			// 日付・セッションが変わったあとの古い応答や、viewer を消す遅い公開応答は使わない。
+			if (version !== loadVersion || (publicOnly && authenticated)) return;
+			authenticated = !publicOnly;
+			if (!publicOnly && signedIn && !result.viewer) viewerFailed = true;
+			received = true;
 			const submissions = result.submissions ?? [];
 			feed =
 				next && feed
 					? { ...result, submissions: [...feed.submissions, ...submissions] }
 					: { ...result, submissions };
-		} catch {
-			error = m.zenkatsuFetchFailed();
-		} finally {
 			loading = false;
-			loadingMore = false;
 		}
+		// ログイン済みでページ遷移した場合も、お題は PDS/OAuth の応答を待たずに表示する。
+		const requests = [fetchFeed(false)];
+		if (signedIn && !next && (!quiet || !feed)) requests.push(fetchFeed(true));
+		await Promise.allSettled(requests);
+		if (version !== loadVersion) return;
+		if (!received && (!quiet || !feed)) error = m.zenkatsuFetchFailed();
+		loading = false;
+		loadingMore = false;
 	}
 
 	/**
@@ -89,7 +129,7 @@
 		if (loadedFor === key) return;
 		const sameDay = loadedFor?.startsWith(`${day}\u0000`) ?? false;
 		loadedFor = key;
-		void load(undefined, sameDay);
+		untrack(() => void load(undefined, sameDay));
 	});
 
 	// 手札の定義は図鑑（getCards）から引く。playable は「どれを何枚出せるか」だけを持つ。
@@ -121,6 +161,19 @@
 		void load();
 		if ($session) void cardCollections.refresh($session.did).catch(() => {});
 		return result.data.uri;
+	}
+
+	async function reauthorize() {
+		if (!$session || reauthBusy) return;
+		reauthBusy = true;
+		setOAuthReturnTo('/cards');
+		try {
+			await signIn($session.did, { ...(await grantedOptIns()), refreshPermissions: true });
+		} catch {
+			viewerFailed = true;
+		} finally {
+			reauthBusy = false;
+		}
 	}
 
 	const commentOf = (s: ZenkatsuSubmissionView) =>
@@ -167,9 +220,27 @@
 		{:else if feed.viewer?.submitted}
 			<p class="note">{m.zenkatsuPlayAgainTomorrow()}</p>
 		{/if}
+		{#if $session && !date}
+			{#if viewerLoading && !feed.viewer}
+				<p class="note" role="status">{m.zenkatsuViewerLoading()}</p>
+			{:else if viewerFailed}
+				<p class="note" role="status">
+					{needsAuthorization ? m.zenkatsuAuthorizationNeeded() : m.zenkatsuViewerFailed()}
+				</p>
+				{#if needsAuthorization}
+					<button class="ghost" onclick={reauthorize} disabled={reauthBusy}
+						>{m.zenkatsuReauthorize()}</button
+					>
+				{:else}
+					<button class="ghost" onclick={() => void load(undefined, true)}>{m.retry()}</button>
+				{/if}
+			{/if}
+		{/if}
 		<div class="play-controls">
-			{#if canPlay && !picking}
-				<button class="play-button" onclick={() => (picking = true)}>{m.zenkatsuPlay()}</button>
+			{#if $session && !date && !feed.viewer?.submitted && !picking}
+				<button class="play-button" disabled={!canPlay} onclick={() => (picking = true)}
+					>{m.zenkatsuPlay()}</button
+				>
 			{/if}
 			<button
 				class="guide-button"
