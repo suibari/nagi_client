@@ -1286,6 +1286,7 @@ export const ja = {
 	zenkatsuPickedCount: (o: { picked: number; max: number }) => `${o.picked} / ${o.max}枚`,
 	zenkatsuSubmit: 'これで出す',
 	zenkatsuSubmitting: '出しているよ…',
+	zenkatsuSubmitReceived: '受け取ったよ！',
 	zenkatsuSubmitFailed: '出せなかったみたい。もう一度ためしてね',
 	zenkatsuConfirmTitle: 'この札で出す？',
 	zenkatsuConfirmBody: '提出は1日1回だけ。出したあとは変えられないよ。',

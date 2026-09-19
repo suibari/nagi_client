@@ -62,6 +62,8 @@ for (const width of [320, 375, 1440]) {
 		await expect(page.locator('.selected-card')).toHaveCount(3);
 		await page.getByRole('button', { name: 'これで出す' }).click();
 		await expect(page.locator('.cutin')).toHaveCount(3);
+		// カットインでは botたんが受け取り手として立つ。
+		await expect(page.locator('.cutin-bot img')).toHaveCount(1);
 		await expect(page.locator('.speech')).toContainText('今日のきみも、すてきだよ！', {
 			timeout: 15000,
 		});

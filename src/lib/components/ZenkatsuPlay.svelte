@@ -45,6 +45,9 @@
 	let error = $state('');
 	let uri = $state('');
 	let animationDone = $state(false);
+	/** 最後の1枚が botたんの手に着いた。ここから受け取りの余韻に入る。 */
+	let received = $state(false);
+	let receiveTimer: ReturnType<typeof setTimeout> | undefined;
 	let commentJa = $state('');
 	let commentEn = $state('');
 	let waiting = $state(true);
@@ -94,6 +97,7 @@
 		document.documentElement.style.overflow = 'hidden';
 		return () => {
 			document.documentElement.style.overflow = previous;
+			clearTimeout(receiveTimer);
 			try {
 				navigator.vibrate?.(0);
 			} catch {
@@ -162,6 +166,7 @@
 		busy = true;
 		error = '';
 		animationDone = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		received = animationDone;
 		stage = 'cutin';
 		dialog.scrollTop = 0;
 		vibrate([35, 65, 35, 65, 70]);
@@ -169,6 +174,8 @@
 			uri = await onsubmit(picked.map(({ volume, id }) => ({ volume, id })));
 		} catch {
 			error = m.zenkatsuSubmitFailed();
+			clearTimeout(receiveTimer);
+			received = false;
 			stage = 'select';
 		} finally {
 			busy = false;
@@ -327,23 +334,33 @@
 				{#if error}<p class="error" role="alert">{error}</p>{/if}
 			</footer>
 		{:else if stage === 'cutin'}
-			<section class="cutin-stage" aria-label={m.zenkatsuSubmitting()}>
-				<div class="speed-lines" aria-hidden="true">
-					{#each Array.from({ length: 12 }) as _, i}
-						<i style={`--i: ${i}; --y: ${8 + i * 7}%`}></i>
+			<!--
+				提出は「渡す」場面。札が下から舞い上がって扇に開き、botたんが受け取る。
+				受け取り切るまで総評へ進まないので、出した手応えが必ず1回挟まる。
+			-->
+			<section class="cutin-stage" class:received aria-label={m.zenkatsuSubmitting()}>
+				<div class="cutin-rays" aria-hidden="true">
+					{#each Array.from({ length: 14 }) as _, i}
+						<i style={`--i: ${i}`}></i>
 					{/each}
 				</div>
 				<div class="cutin-cards">
 					{#each picked as card, i (key(card))}
 						<div
 							class="cutin"
-							style={`--i: ${i}`}
+							style={`--i: ${i}; --turn: ${i - (picked.length - 1) / 2}; --lift: ${Math.abs(
+								i - (picked.length - 1) / 2,
+							)}`}
 							onanimationstart={(event) => {
-								if (event.animationName.includes('diagonal-cutin')) vibrate(25);
+								if (event.animationName.includes('card-toss')) vibrate(25);
 							}}
 							onanimationend={(event) => {
-								if (event.animationName.includes('diagonal-cutin') && i === picked.length - 1)
-									animationDone = true;
+								if (!event.animationName.includes('card-toss')) return;
+								if (i !== picked.length - 1) return;
+								// 受け取った顔を見せてから総評へ。すぐ切り替えると渡した実感が残らない。
+								received = true;
+								vibrate([20, 40, 30]);
+								receiveTimer = setTimeout(() => (animationDone = true), 750);
 							}}
 						>
 							<div class="cutin-card">
@@ -357,7 +374,17 @@
 						</div>
 					{/each}
 				</div>
-				<p role="status">{m.zenkatsuSubmitting()}</p>
+				<div class="cutin-bot">
+					<img
+						src={received ? '/bot_assist_petted.png' : '/bot_assist_sitting.png'}
+						alt="botたん"
+						width="264"
+						height="350"
+					/>
+				</div>
+				<p class="cutin-status" role="status">
+					{received ? m.zenkatsuSubmitReceived() : m.zenkatsuSubmitting()}
+				</p>
 			</section>
 		{:else}
 			<section class="finale" class:review-ready={reviewVisible}>
@@ -392,7 +419,7 @@
 					/>
 				{/if}
 				<div class="bot-review" class:thinking={!reviewVisible && waiting}>
-					<img src="/bot_assist_sitting.png" alt="botたん" width="220" height="220" />
+					<img src="/bot_assist_sitting.png" alt="botたん" width="264" height="350" />
 					<div class="speech" aria-live="polite">
 						<h2>{m.zenkatsuBotReview()}</h2>
 						<p class:comment-arrived={reviewVisible}>
@@ -778,40 +805,64 @@
 		position: relative;
 		isolation: isolate;
 		flex: 1;
-		display: grid;
-		align-content: center;
-		gap: 2rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: clamp(0.5rem, 2vw, 1rem);
 		text-align: center;
 		overflow: hidden;
 		min-height: 60dvh;
 	}
+	/* 光は中心へ集める。botたんの手もとが渡し先だと分かる位置に置く。 */
+	.cutin-stage::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+		background: radial-gradient(
+			circle at 50% 62%,
+			color-mix(in srgb, var(--accent-strong) 22%, transparent),
+			transparent 58%
+		);
+	}
 	.cutin-cards {
 		display: flex;
 		justify-content: center;
-		gap: clamp(0.5rem, 3vw, 3rem);
-		padding: 2rem 0.5rem;
+		padding-bottom: 0.5rem;
 	}
 	.cutin {
-		width: min(27vw, 260px);
+		/* 狭い画面でも札は読める大きさを保つ。渡しているものが見えないと演出が成立しない。 */
+		width: clamp(108px, 26vw, 170px);
 		position: relative;
-		animation: diagonal-cutin 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-		animation-delay: calc(var(--i) * 0.28s);
-	}
-	.cutin::before {
-		content: '';
-		position: absolute;
-		inset: -20% -35%;
-		transform: skewY(-15deg);
-		background: linear-gradient(
-			90deg,
-			transparent,
-			color-mix(in srgb, var(--accent-strong) 40%, transparent),
-			transparent
-		);
+		/* 扇に開く。--turn は中央を0とした左右の位置。 */
+		margin-inline: clamp(-18px, -1.2vw, -6px);
+		animation: card-toss 0.9s cubic-bezier(0.18, 0.9, 0.24, 1) both;
+		animation-delay: calc(var(--i) * 0.22s);
 	}
 	.cutin-card {
 		position: relative;
-		transform: rotate(-9deg);
+	}
+	.cutin-bot {
+		position: relative;
+		line-height: 0;
+	}
+	.cutin-bot img {
+		width: clamp(139px, 23.2vw, 220px);
+		height: auto;
+		animation: bot-wait 1.6s ease-in-out infinite;
+	}
+	.received .cutin-bot img {
+		animation: bot-catch 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+	}
+	.cutin-status {
+		font-size: 0.95rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		color: var(--text-faint);
+	}
+	.received .cutin-status {
+		color: var(--accent-strong);
 	}
 	/*
 	 * 結果は「出した札 → BONUS → 総評」を**同じ幅の柱**に積む。
@@ -851,7 +902,7 @@
 	}
 	/* 吹き出しは BONUS と同じ枠。botたんはその左上の縁に腰かける。 */
 	.bot-review {
-		--bot: clamp(76px, 13vw, 118px);
+		--bot: clamp(83px, 14.2vw, 129px);
 		position: relative;
 		/* 挿絵は枠の上辺に腰かける。またぐのは足元だけにして、見出しに被せない。 */
 		padding-top: calc(var(--bot) * 0.86);
@@ -927,17 +978,34 @@
 			transform: none;
 		}
 	}
-	@keyframes diagonal-cutin {
+	@keyframes card-toss {
 		from {
 			opacity: 0;
-			transform: translate(-100vw, 45vh) rotate(-18deg);
+			transform: translateY(55vh) scale(0.82) rotate(0deg);
 		}
-		65% {
+		60% {
 			opacity: 1;
-			transform: translate(0, -8px) rotate(2deg);
+			transform: translateY(calc(-14px + var(--lift) * 6px)) scale(1.03)
+				rotate(calc(var(--turn) * 9deg));
 		}
 		to {
 			opacity: 1;
+			transform: translateY(calc(var(--lift) * 12px)) rotate(calc(var(--turn) * 9deg));
+		}
+	}
+	@keyframes bot-wait {
+		50% {
+			transform: translateY(-5px);
+		}
+	}
+	@keyframes bot-catch {
+		0% {
+			transform: translateY(6px) scale(0.94);
+		}
+		55% {
+			transform: translateY(-14px) scale(1.06);
+		}
+		100% {
 			transform: none;
 		}
 	}
@@ -1030,27 +1098,35 @@
 	.slots.complete .selected-card {
 		box-shadow: 0 0 20px color-mix(in srgb, var(--accent-strong) 28%, transparent);
 	}
-	.speed-lines {
+	/* 集中線は中心から放射させる。横に流すと、画面の外へ持っていかれる向きに見える。 */
+	.cutin-rays {
 		position: absolute;
 		inset: 0;
+		display: grid;
+		place-items: center;
 		z-index: -1;
 		pointer-events: none;
+		animation: rays-turn 18s linear infinite;
 	}
-	.speed-lines i {
+	.cutin-rays i {
 		position: absolute;
-		top: var(--y);
-		left: 0;
-		width: 70%;
-		height: 2px;
-		background: linear-gradient(90deg, transparent, var(--accent-strong), transparent);
-		animation: speed-line 0.8s ease-out both;
-		animation-delay: calc(var(--i) * 55ms);
+		width: 2px;
+		height: 140vmax;
+		background: linear-gradient(
+			to top,
+			transparent 33%,
+			color-mix(in srgb, var(--accent-strong) 45%, transparent) 50%,
+			transparent 67%
+		);
+		transform: rotate(calc(var(--i) * 25.7deg));
+		animation: ray-open 0.7s ease-out both;
+		animation-delay: calc(var(--i) * 28ms);
 	}
 	.cutin-card::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		border-radius: 10px;
+		border-radius: var(--zk-r-card);
 		pointer-events: none;
 		background: linear-gradient(
 			115deg,
@@ -1060,7 +1136,7 @@
 		);
 		background-size: 300% 100%;
 		animation: card-shine 0.7s ease-out both;
-		animation-delay: calc(0.5s + var(--i) * 0.28s);
+		animation-delay: calc(0.45s + var(--i) * 0.22s);
 	}
 	.review-cards {
 		animation: review-enter 0.65s ease-out both;
@@ -1136,17 +1212,19 @@
 			transform: rotate(var(--angle)) translateX(clamp(45px, 10vw, 140px)) scale(0.2);
 		}
 	}
-	@keyframes speed-line {
+	@keyframes ray-open {
 		from {
 			opacity: 0;
-			transform: translate(-120%, 80px) rotate(-18deg);
-		}
-		25% {
-			opacity: 0.65;
+			transform: rotate(calc(var(--i) * 25.7deg)) scaleY(0.15);
 		}
 		to {
-			opacity: 0;
-			transform: translate(150%, -80px) rotate(-18deg);
+			opacity: 0.5;
+			transform: rotate(calc(var(--i) * 25.7deg)) scaleY(1);
+		}
+	}
+	@keyframes rays-turn {
+		to {
+			transform: rotate(360deg);
 		}
 	}
 	@keyframes card-shine {
@@ -1213,7 +1291,7 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.placement-fx,
-		.speed-lines,
+		.cutin-rays,
 		.review-sparks,
 		.cutin-card::after {
 			display: none;

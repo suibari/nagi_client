@@ -1264,6 +1264,7 @@ export const en: Messages = {
 	zenkatsuPickedCount: (o: { picked: number; max: number }) => `${o.picked} / ${o.max}`,
 	zenkatsuSubmit: 'Play these',
 	zenkatsuSubmitting: 'Playing...',
+	zenkatsuSubmitReceived: 'Got them!',
 	zenkatsuSubmitFailed: "That didn't go through. Give it another try",
 	zenkatsuConfirmTitle: 'Play these cards?',
 	zenkatsuConfirmBody: "One play per day, and you can't change it afterwards.",
