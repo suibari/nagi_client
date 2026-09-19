@@ -54,6 +54,7 @@
 
 	const keyOf = (c: { volume: number; id: number }) => `${c.volume}:${c.id}`;
 
+	const VIEWER_TIMEOUT_MS = 8_000;
 	let loadVersion = 0;
 
 	/**
@@ -77,7 +78,26 @@
 		async function fetchFeed(publicOnly: boolean) {
 			let result: ZenkatsuFeed;
 			try {
-				result = await getZenkatsu(params, { publicOnly, requireViewer: signedIn && !publicOnly });
+				const request = getZenkatsu(params, { publicOnly, requireViewer: signedIn && !publicOnly });
+				if (publicOnly || !signedIn) {
+					result = await request;
+				} else {
+					// PDS の応答が止まってもプレイ情報の表示を待ち続けない。
+					let timer: ReturnType<typeof setTimeout> | undefined;
+					try {
+						result = await Promise.race([
+							request,
+							new Promise<never>((_, reject) => {
+								timer = setTimeout(
+									() => reject(new Error('Viewer request timed out')),
+									VIEWER_TIMEOUT_MS,
+								);
+							}),
+						]);
+					} finally {
+						clearTimeout(timer);
+					}
+				}
 			} catch (cause) {
 				if (!publicOnly && signedIn && version === loadVersion) {
 					viewerFailed = true;
