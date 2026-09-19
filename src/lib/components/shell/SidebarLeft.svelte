@@ -30,8 +30,9 @@
 				>
 					<span class="nav-icon">
 						<Icon name={item.icon} />
-						{#if item.badge}<NavBadge {...item.badge} />{/if}
+						{#if item.badge && item.badge.style !== 'text'}<NavBadge {...item.badge} />{/if}
 					</span><span class="label">{item.label()}</span>
+					{#if item.badge?.style === 'text'}<NavBadge {...item.badge} />{/if}
 				</a>
 			{/each}
 		{/each}

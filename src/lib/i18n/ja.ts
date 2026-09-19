@@ -1243,6 +1243,7 @@ export const ja = {
 	zenkatsuDevReset: '【開発】今日のぶんを消してもう一度',
 	zenkatsuDevResetDone: '消したよ。もう一度出せる',
 	navCards: '全肯定カード',
+	zenkatsuNotPlayedBadge: '未プレイ',
 	// ゼンカツ！（1日1回、お題に手持ちのカード1〜3枚で答える遊び）
 	zenkatsuTitle: 'ゼンカツ！',
 	zenkatsuTagline: '全肯定カードゲーム',

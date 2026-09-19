@@ -5,6 +5,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './Icon.svelte';
 	import NavBadge from './NavBadge.svelte';
+	import { unplayedToday } from '$lib/zenkatsu/notice';
 
 	let menuOpen = $state(false);
 	let menuButton = $state<HTMLButtonElement>();
@@ -79,7 +80,10 @@
 					>
 						<span class="mobile-menu-item-icon nav-icon">
 							<Icon name={item.icon} size={21} />
-							{#if item.badge}<NavBadge {...item.badge} />{/if}
+							{#if item.badge}<NavBadge
+									{...item.badge}
+									style={item.badge.style === 'text' ? 'dot' : item.badge.style}
+								/>{/if}
 						</span>
 						<span>{item.label()}</span>
 						<Icon name="chevron" size={17} />
@@ -114,6 +118,7 @@
 	>
 		<span class="nav-icon">
 			<Icon name="moreHorizontal" size={22} />
+			<NavBadge unread={unplayedToday} style="dot" aria={() => m.zenkatsuNotPlayedBadge()} />
 		</span><span>{m.navMenu()}</span>
 	</button>
 </nav>

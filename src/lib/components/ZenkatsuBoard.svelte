@@ -9,6 +9,7 @@
 		ZenkatsuSubmissionView,
 	} from '$lib/api/types';
 	import { cardCollections } from '$lib/cards/collection.svelte';
+	import { markZenkatsuPlayed, updateZenkatsuNotice } from '$lib/zenkatsu/notice';
 	import { createZenkatsu } from '$lib/atproto/records';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
@@ -136,6 +137,8 @@
 			authenticated = !publicOnly;
 			if (!publicOnly && signedIn && !result.viewer) viewerFailed = true;
 			if (!publicOnly && result.viewer) viewerForDid = currentDid;
+			if (!publicOnly && result.viewer && currentDid)
+				updateZenkatsuNotice(currentDid, result.theme.themeDate, result.viewer.submitted);
 			received = true;
 			const submissions = result.submissions ?? [];
 			const previousViewer =
@@ -212,6 +215,7 @@
 	async function submit(cards: { volume: number; id: number }[]) {
 		if (!feed) throw new Error('Missing theme');
 		const result = await createZenkatsu(feed.theme.themeDate, cards);
+		markZenkatsuPlayed(feed.theme.themeDate);
 		// 提出後の再取得が失敗しても、成功した提出を再送させない。
 		if (feed.viewer) feed = { ...feed, viewer: { ...feed.viewer, submitted: true } };
 		void load();

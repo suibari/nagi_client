@@ -7,6 +7,8 @@
 {#if $unread > 0}
 	{#if style === 'dot'}
 		<span class="nav-unread-dot"><span class="visually-hidden">{aria($unread)}</span></span>
+	{:else if style === 'text'}
+		<span class="nav-text-badge">{aria($unread)}</span>
 	{:else}
 		<span class="nav-badge" aria-label={aria($unread)}>{formatUnread($unread)}</span>
 	{/if}
