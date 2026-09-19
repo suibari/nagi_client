@@ -10,20 +10,31 @@
 	let submitted = $state(0);
 	let board = $state(false);
 	onMount(() => {
-		if (!new URLSearchParams(location.search).has('board')) return;
+		const params = new URLSearchParams(location.search);
+		if (!params.has('board')) return;
 		const did = 'did:plc:zenkatsu-preview';
-		session.set({
-			did,
-			fetchHandler: (url: string | URL, init?: RequestInit) =>
-				String(url).includes('com.suibari.nagi.getCards')
-					? Promise.resolve(
-							Response.json({ cards, ownedCount: cards.length, totalCount: cards.length }),
-						)
-					: fetch(url, init),
-			getTokenInfo: async () => ({ scope: '' }),
-		} as unknown as OAuthSession);
-		void cardCollections.ensure(did);
-		board = true;
+		const signIn = () => {
+			session.set({
+				did,
+				fetchHandler: (url: string | URL, init?: RequestInit) =>
+					String(url).includes('com.suibari.nagi.getCards')
+						? Promise.resolve(
+								Response.json({ cards, ownedCount: cards.length, totalCount: cards.length }),
+							)
+						: fetch(url, init),
+				getTokenInfo: async () => ({ scope: '' }),
+			} as unknown as OAuthSession);
+			void cardCollections.ensure(did);
+		};
+		// ?restore: OAuth の復元は本番では盤面より遅れて終わる。その順序を再現して、
+		// 復元に伴う取り直しが一度出したお題を消さないことを確かめられるようにする。
+		if (params.has('restore')) {
+			board = true;
+			globalThis.setTimeout(signIn, 300);
+		} else {
+			signIn();
+			board = true;
+		}
 		return () => session.set(null);
 	});
 	const cards: CardView[] = Array.from({ length: 12 }, (_, i) => ({

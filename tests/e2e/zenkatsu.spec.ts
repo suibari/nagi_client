@@ -365,3 +365,52 @@ test('skipping bonuses settles the sequence and closing cancels pending animatio
 	await page.keyboard.press('Escape');
 	await expect(page.getByRole('dialog')).not.toBeVisible();
 });
+
+test('a late OAuth restore refreshes the board without blanking the theme', async ({ page }) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('nagi-locale', 'ja');
+		/*
+		 * お題が出たあとに「…」へ戻った回数を数える。web-first assertion は条件が揃うまで
+		 * 待つので、消えて戻る往復をまたいで通ってしまう。画面を細かく見張って捕まえる。
+		 */
+		const w = window as unknown as { zenkatsuBlanked: number };
+		w.zenkatsuBlanked = 0;
+		let themeSeen = false;
+		setInterval(() => {
+			if (document.querySelector('.theme-text')) themeSeen = true;
+			else if (themeSeen && document.querySelector('.state')) w.zenkatsuBlanked++;
+		}, 20);
+	});
+	let calls = 0;
+	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', async (route) => {
+		const nth = ++calls;
+		// 復元後の取り直しだけを遅くして、その最中の盤面を見えるようにする。本番でもこの
+		// 2回目はログイン中の経路（PDS プロキシ）を通るので、1回目より確実に遅い。
+		if (nth > 1) await new Promise((resolve) => setTimeout(resolve, 1500));
+		await route.fulfill({
+			json: {
+				theme: {
+					volume: 1,
+					id: 1,
+					themeDate: '2026-09-19',
+					attribute: 'wind',
+					tone: 'sunao',
+					textJa: '今日のきみに、追い風を。',
+					textEn: 'A tailwind for you today.',
+				},
+				...(nth > 1 ? { viewer: { submitted: false, maxCards: 3, playable: [] } } : {}),
+				submissions: [],
+			},
+		});
+	});
+	await page.goto('/dev/e2e/zenkatsu?board&restore');
+	await expect(page.locator('.theme-text')).toContainText('今日のきみに、追い風を。');
+	// 復元に伴う取り直しは起きていて、viewer 付きの盤面に静かに入れ替わる。
+	await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeVisible();
+	expect(calls).toBeGreaterThan(1);
+	// その間、一度出したお題は消えない。ここが「…」に戻ると、ログインしている人だけが
+	// 復元を待つ数秒のあいだ、空の盤面を見ることになる。
+	expect(
+		await page.evaluate(() => (window as unknown as { zenkatsuBlanked: number }).zenkatsuBlanked),
+	).toBe(0);
+});
