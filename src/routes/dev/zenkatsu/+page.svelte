@@ -44,8 +44,18 @@
 		author: { did: 'did:plc:zenkatsu-demo', handle: 'demo.example', displayName: 'おためしさん' },
 		cards,
 		commentPending: false,
-		tailwindCount: 2,
-		combos: [],
+		tailwindCount: 1,
+		combos: [
+			{
+				volume: 1,
+				id: 1,
+				nameJa: '明日への一歩',
+				nameEn: 'A step toward tomorrow',
+				descJa: 'ひと息ついたら、またきみのペースで。3枚のやさしさがつながった。',
+				descEn:
+					'A little rest, a small step, and hope for tomorrow. Three kindnesses come together.',
+			},
+		],
 		commentJa:
 			'「小さな一歩」で自分の頑張りを認めて、「ひとやすみの魔法」でひと息。そして「明日のきみに」で、次の日へやさしくつなげたんだね。\n\nうまくいかない日にも、自分を置き去りにしない3枚。そんなきみの選び方、botたんはとってもすてきだと思うよ！',
 		commentEn:
@@ -82,7 +92,9 @@
 {#if mode}
 	{#key mode}
 		<ZenkatsuPlay
-			hand={cards.map((card) => ({ card, p: { volume: card.volume, id: card.id, available: 1 } }))}
+			hand={[...cards]
+				.reverse()
+				.map((card) => ({ card, p: { volume: card.volume, id: card.id, available: 1 } }))}
 			maxCards={3}
 			theme={feed.theme}
 			initialSubmission={mode === 'result' ? submission : undefined}

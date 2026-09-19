@@ -18,6 +18,7 @@
 	import ZenkatsuDevReset from './ZenkatsuDevReset.svelte';
 	import ZenkatsuMarks from './ZenkatsuMarks.svelte';
 	import ZenkatsuHelp from './ZenkatsuHelp.svelte';
+	import ZenkatsuFlow from './ZenkatsuFlow.svelte';
 
 	/** 属性名はカード面と同じ訳語を使う（「追い風: dark」と生で出さない）。 */
 	const ATTRIBUTE_LABEL: Record<CardAttribute, () => string> = {
@@ -47,18 +48,24 @@
 
 	const keyOf = (c: { volume: number; id: number }) => `${c.volume}:${c.id}`;
 
-	async function load(next?: string) {
-		loading = !next;
+	/**
+	 * @param next  追加読み込みのカーソル。
+	 * @param quiet 取り直している間も今の記録を出したままにする（「…」で画面を潰さない）。
+	 */
+	async function load(next?: string, quiet = false) {
+		loading = !next && !quiet;
 		error = '';
 		try {
 			const result = await getZenkatsu({
 				...(date ? { date } : {}),
 				...(next ? { cursor: next } : {}),
 			});
+			// 記録が欠けた応答でも盤面ごと落とさない。ここは /cards を開いて最初に出る画面。
+			const submissions = result.submissions ?? [];
 			feed =
 				next && feed
-					? { ...result, submissions: [...feed.submissions, ...result.submissions] }
-					: result;
+					? { ...result, submissions: [...feed.submissions, ...submissions] }
+					: { ...result, submissions };
 		} catch {
 			error = m.zenkatsuFetchFailed();
 		} finally {
@@ -113,9 +120,15 @@
 	};
 </script>
 
-<!-- ロゴはページの顔なので、読み込みを待たずに出す（空白から始めない）。 -->
-<section class="play">
+<!--
+	ロゴはページの顔なので、読み込みを待たずに出す（空白から始めない）。
+	ロゴの下に何のゲームかを一言と、流れを一行で置く。初見の人がここで足を止めないように。
+-->
+<section class="intro">
 	<img class="logo" src="/zenkatsu-logo.png" alt={m.zenkatsuTitle()} width="1671" height="941" />
+	<p class="tagline">{m.zenkatsuTagline()}</p>
+	<p class="lead">{m.zenkatsuGuideSummary({ max: maxCards })}</p>
+	<ZenkatsuFlow size="sm" />
 </section>
 
 {#if loading}
@@ -124,7 +137,9 @@
 	<div class="state">{error}</div>
 {:else if feed}
 	<section class="theme">
-		<p class="theme-label">{m.zenkatsuThemeLabel()}</p>
+		<p class="theme-label">
+			{m.zenkatsuThemeLabel()}<span class="theme-date">{feed.theme.themeDate}</span>
+		</p>
 		<p class="theme-text">
 			{i18n.locale === 'ja' ? feed.theme.textJa : feed.theme.textEn}
 			<span class="theme-question">{m.zenkatsuThemeQuestion()}</span>
@@ -209,7 +224,14 @@
 		{maxCards}
 		theme={feed.theme}
 		onsubmit={submit}
-		onclose={() => (picking = false)}
+		onclose={() => {
+			picking = false;
+			/*
+			 * 提出直後の再取得は総評の生成より早い。ゲーム側はそれを待ってから閉じるので、
+			 * **閉じたときにもう一度引く**。ここを抜かすと記録欄が「考えているよ…」のまま残る。
+			 */
+			void load(undefined, true);
+		}}
 	/>
 {/if}
 
@@ -220,40 +242,91 @@
 		color: var(--text-faint);
 		text-align: center;
 	}
+	.intro {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.5rem 1rem 1.2rem;
+		text-align: center;
+	}
+	/* ロゴは原寸 1671x941。縦幅で効かせて、狭い画面でも溢れないようにする。 */
+	.logo {
+		inline-size: min(100%, 320px);
+		block-size: auto;
+	}
+	.tagline {
+		margin: 0;
+		color: var(--accent-strong);
+		font-size: 0.8rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+	}
+	.lead {
+		max-inline-size: 34em;
+		margin: 0;
+		color: var(--text-sub);
+		font-size: 0.88rem;
+		line-height: 1.8;
+	}
+	/* お題はこのページの焦点。枠で囲って、周りの説明文から切り離す。 */
 	.theme {
-		padding: 1rem;
+		inline-size: min(100%, 560px);
+		margin-inline: auto;
+		padding: 1.1rem 1.25rem;
+		border: 1px solid var(--line);
+		border-radius: 16px;
+		background: var(--bg-raised);
 		text-align: center;
 	}
 	.theme-label {
-		font-size: 0.8rem;
-		color: var(--text-faint);
-	}
-	.theme-text {
-		margin: 0.3rem 0;
-		font-size: 1.15rem;
-		font-weight: 700;
-		line-height: 1.5;
-	}
-	.theme-question {
-		display: block;
-		margin-top: 0.35rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.6rem;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.16em;
 		color: var(--accent-strong);
 	}
-	.recommended-attribute {
-		font-size: 0.85rem;
+	/* どの日を見ているかを必ず出す。前の日を開いたまま今日だと思い込めてしまう。 */
+	.theme-date {
 		color: var(--text-faint);
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.04em;
+	}
+	.theme-text {
+		margin: 0.5rem 0 0;
+		font-size: 1.2rem;
+		font-weight: 700;
+		line-height: 1.6;
+		text-wrap: balance;
+	}
+	/*
+	 * 「そんなとき？」はお題の一部。色を変えると別の情報に見えるので、
+	 * 行を変えるだけにして地続きに読ませる。
+	 */
+	.theme-question {
+		display: block;
+	}
+	.recommended-attribute {
+		display: inline-block;
+		margin-top: 0.8rem;
+		padding: 4px 12px;
+		border: 1px solid color-mix(in srgb, var(--accent-strong) 40%, transparent);
+		border-radius: 999px;
+		background: var(--accent-soft);
+		color: var(--accent-strong);
+		font-size: 0.75rem;
+		font-weight: 700;
 	}
 	.play {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 0.6rem;
-		padding: 0 1rem 1rem;
-	}
-	/* ロゴは原寸 1671x941。縦幅で効かせて、狭い画面でも溢れないようにする。 */
-	.logo {
-		inline-size: min(100%, 320px);
-		block-size: auto;
+		padding: 1.2rem 1rem;
 	}
 	.play-button {
 		padding: 10px 18px;
@@ -274,6 +347,10 @@
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: 0.75rem;
+		inline-size: min(100%, 420px);
+	}
+	.play-controls button {
+		flex: 1 1 auto;
 	}
 	.guide-button {
 		min-height: 44px;
@@ -299,12 +376,25 @@
 		padding: 0 1rem 2rem;
 	}
 	.record h2 {
-		margin-block: 1rem 0.6rem;
-		font-size: 0.95rem;
+		margin-block: 0.5rem 0.8rem;
+		font-size: 0.8rem;
+		font-weight: 800;
+		letter-spacing: 0.16em;
+		color: var(--accent-strong);
+	}
+	.entries {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
 	}
 	.entry {
-		padding-block: 0.9rem;
-		border-block-start: 1px solid var(--line);
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: var(--bg-raised);
 	}
 	.who {
 		min-width: 0;
@@ -325,7 +415,7 @@
 		margin-block: 0.5rem;
 	}
 	.played li {
-		inline-size: 84px;
+		inline-size: clamp(72px, 22vw, 96px);
 	}
 	.more {
 		display: block;
@@ -333,7 +423,10 @@
 	}
 	.days {
 		display: flex;
-		justify-content: space-between;
+		gap: 0.6rem;
 		margin-block-start: 1.2rem;
+	}
+	.days .ghost {
+		flex: 1;
 	}
 </style>

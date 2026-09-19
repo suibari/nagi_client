@@ -9,6 +9,7 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import ZenkatsuHelp from './ZenkatsuHelp.svelte';
+	import ZenkatsuBonus from './ZenkatsuBonus.svelte';
 
 	let {
 		hand,
@@ -37,6 +38,7 @@
 	};
 
 	let dialog: HTMLDialogElement;
+	let shell: HTMLDivElement;
 	let picked = $state<CardView[]>([]);
 	let stage = $state<'select' | 'cutin' | 'review'>('select');
 	let busy = $state(false);
@@ -48,6 +50,7 @@
 	let waiting = $state(true);
 	let retry = $state(0);
 	let showGuide = $state(false);
+	let bonusDone = $state(false);
 	/**
 	 * 提出の結果（追い風の枚数と、成立したコンボ）。
 	 *
@@ -69,6 +72,7 @@
 	const key = (c: { volume: number; id: number }) => `${c.volume}:${c.id}`;
 	const name = (c: CardView) => (i18n.locale === 'ja' ? c.nameJa : c.nameEn);
 	let comment = $derived((i18n.locale === 'ja' ? commentJa : commentEn) || commentJa || commentEn);
+	let reviewVisible = $derived(!!comment && (bonusDone || !!initialSubmission));
 
 	function vibrate(pattern: number | number[]) {
 		if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -81,6 +85,11 @@
 	}
 	$effect(() => {
 		dialog.showModal();
+		/*
+		 * showModal() は最初のフォーカス可能な要素（＝ヘッダーの閉じる）へ焦点を移す。
+		 * 開いた瞬間に「やめる」が光って見えるので、器そのものへ逃がして画面から始める。
+		 */
+		shell?.focus({ preventScroll: true });
 		const previous = document.documentElement.style.overflow;
 		document.documentElement.style.overflow = 'hidden';
 		return () => {
@@ -96,12 +105,20 @@
 		if (uri && animationDone) stage = 'review';
 	});
 	$effect(() => {
-		if (stage !== 'review' || !uri || commentJa || commentEn) return;
+		if (!uri || commentJa || commentEn) return;
 		void retry;
 		const submissionUri = uri;
 		let cancelled = false;
 		let timer: ReturnType<typeof setTimeout>;
 		const deadline = Date.now() + 60_000;
+		/*
+		 * 短く始めて、だんだん間隔を空ける。
+		 *
+		 * 生成は実測 3.2秒ほどで終わるので、一定 2.5秒で回すと「出来ているのに最大2.5秒
+		 * 待たされる」時間が毎回乗る。最初を短くすれば出来た直後に拾えるし、
+		 * 長引いたときは間隔が伸びるので無駄打ちも増えない。
+		 */
+		let delay = 600;
 		waiting = true;
 		async function poll() {
 			try {
@@ -125,7 +142,8 @@
 				waiting = false;
 				return;
 			}
-			timer = setTimeout(poll, 2500);
+			timer = setTimeout(poll, delay);
+			delay = Math.min(2500, Math.round(delay * 1.6));
 		}
 		void poll();
 		return () => {
@@ -170,20 +188,41 @@
 		close();
 	}}
 >
-	<div class="game-shell">
+	<div class="game-shell" class:playing={stage !== 'select'} bind:this={shell} tabindex="-1">
 		<header class="game-header">
 			<img src="/zenkatsu-logo.png" alt={m.zenkatsuTitle()} width="1671" height="941" />
 			<span>{m.zenkatsuTagline()}</span>
-			<button class="game-ghost" disabled={busy} onclick={close}
-				>{uri ? m.zenkatsuFinish() : m.zenkatsuCancel()}</button
-			>
+			<!--
+				出口はひとつに見せる。提出後はリザルト側に大きな「おわる」が出るので、
+				ヘッダーは×に退く（読み上げ名は変えない）。
+			-->
+			{#if uri}
+				<button
+					class="game-ghost icon"
+					disabled={busy}
+					aria-label={m.zenkatsuFinish()}
+					onclick={close}>×</button
+				>
+			{:else}
+				<button class="game-ghost" disabled={busy} onclick={close}>{m.zenkatsuCancel()}</button>
+			{/if}
 		</header>
+		<nav class="play-progress" aria-label={i18n.locale === 'ja' ? 'プレイの進行' : 'Play progress'}>
+			<span class:active={stage === 'select'}><b>01</b> {m.zenkatsuStepSelect()}</span>
+			<i></i><span class:active={stage === 'cutin' || (stage === 'review' && !bonusDone)}
+				><b>02</b> {m.zenkatsuStepBonus()}</span
+			>
+			<i></i><span class:active={stage === 'review' && bonusDone}
+				><b>03</b> {m.zenkatsuStepReview()}</span
+			>
+		</nav>
 		<section class="theme">
 			<p class="eyebrow">{m.zenkatsuThemeLabel()}</p>
 			<h1 id="game-title">
 				{i18n.locale === 'ja' ? theme.textJa : theme.textEn}
 				<span class="theme-question">{m.zenkatsuThemeQuestion()}</span>
 			</h1>
+			<!-- おすすめ属性はここ1箇所にまとめる。お題のすぐ下なら、選ぶ前に必ず目に入る。 -->
 			<p class="recommended-attribute">
 				{m.zenkatsuRecommendedAttribute({ attribute: attributeLabels[theme.attribute]() })}
 			</p>
@@ -239,10 +278,6 @@
 				<div class="section-heading">
 					<h2>{m.zenkatsuHand()}</h2>
 					<p>{m.zenkatsuPickPrompt({ max: maxCards })}</p>
-					<!-- おすすめ属性は隠さない。選ぶ前に気づけないと、属性が飾りのままになる。 -->
-					<p class="tailwind-hint">
-						{m.zenkatsuTailwindHint()}: {attributeLabels[theme.attribute]()}
-					</p>
 				</div>
 				{#if !hand.length}<p class="note">{m.zenkatsuNoCards()}</p>{/if}
 				<ul class="hand">
@@ -325,8 +360,8 @@
 				<p role="status">{m.zenkatsuSubmitting()}</p>
 			</section>
 		{:else}
-			<section class="finale" class:review-ready={!!comment}>
-				{#if comment}
+			<section class="finale" class:review-ready={reviewVisible}>
+				{#if reviewVisible}
 					<div class="review-sparks" aria-hidden="true">
 						{#each Array.from({ length: 18 }) as _, i}
 							<i
@@ -336,54 +371,38 @@
 						{/each}
 					</div>
 				{/if}
-				<div class="review-cards">
-					{#each picked as card (key(card))}<div>
-							<AffirmationCard
-								{card}
-								revealUnowned
-								attributeGlow={card.attribute === theme.attribute}
-							/>
-						</div>{/each}
-				</div>
-				<!--
-					追い風 → コンボ → 総評 の順で出す。全部を一度に出すと、いちばん読ませたい総評が
-					数字と一緒くたになって流れる。CSS の遅延で段をずらし、最後に言葉が残るようにする。
-					**得点は出さない。** 出すのは「何が起きたか」だけ。
-				-->
-				{#if outcome}
-					<div class="outcome">
-						<div class="outcome-row" style="--delay: 0ms">
-							<span class="outcome-label">{m.zenkatsuResultTailwind()}</span>
-							{#if outcome.tailwindCount > 0}
-								<span class="outcome-value wind-value"
-									>{m.zenkatsuTailwindBadge({ n: outcome.tailwindCount })}</span
-								>
-							{:else}
-								<!-- 乗らなかったことを失敗として見せない。ここに不正解は無い。 -->
-								<span class="outcome-none">{m.zenkatsuResultTailwindNone()}</span>
-							{/if}
-						</div>
-						{#each outcome.combos as combo, index (key(combo))}
-							<div class="outcome-row" style={`--delay: ${400 + index * 300}ms`}>
-								<span class="outcome-label">{m.zenkatsuResultCombo()}</span>
-								<span class="outcome-value combo-value"
-									>{i18n.locale === 'ja' ? combo.nameJa : combo.nameEn}</span
-								>
-								<span class="outcome-desc"
-									>{i18n.locale === 'ja' ? combo.descJa : combo.descEn}</span
-								>
-							</div>
-						{/each}
+				<!-- 出した札 → BONUS → 総評。3つとも同じ幅の柱に乗せて、縦に1本通す。 -->
+				<section class="result-block" aria-label={m.zenkatsuSelectedCards()}>
+					<p class="block-label">{m.zenkatsuSelectedCards()}</p>
+					<div class="review-cards" style={`--played: ${picked.length}`}>
+						{#each picked as card (key(card))}<div>
+								<AffirmationCard
+									{card}
+									revealUnowned
+									attributeGlow={card.attribute === theme.attribute}
+								/>
+							</div>{/each}
 					</div>
+				</section>
+				{#if outcome}
+					<ZenkatsuBonus
+						{outcome}
+						replay={!initialSubmission}
+						oncomplete={() => (bonusDone = true)}
+					/>
 				{/if}
-				<div class="bot-review" class:thinking={waiting && !comment}>
+				<div class="bot-review" class:thinking={!reviewVisible && waiting}>
 					<img src="/bot_assist_sitting.png" alt="botたん" width="220" height="220" />
 					<div class="speech" aria-live="polite">
 						<h2>{m.zenkatsuBotReview()}</h2>
-						<p class:comment-arrived={!!comment}>
-							{comment || (waiting ? m.zenkatsuCommentPending() : m.zenkatsuReviewLater())}
+						<p class:comment-arrived={reviewVisible}>
+							{reviewVisible
+								? comment
+								: waiting || !!comment
+									? m.zenkatsuCommentPending()
+									: m.zenkatsuReviewLater()}
 						</p>
-						{#if waiting && !comment}
+						{#if !reviewVisible && (waiting || !!comment)}
 							<div class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></div>
 						{/if}
 						{#if !waiting && !comment}<button class="game-ghost" onclick={() => retry++}
@@ -391,7 +410,9 @@
 							>{/if}
 					</div>
 				</div>
-				<button class="game-primary" onclick={close}>{m.zenkatsuFinish()}</button>
+				<footer class="finale-actions">
+					<button class="game-primary" onclick={close}>{m.zenkatsuFinish()}</button>
+				</footer>
 			</section>
 		{/if}
 	</div>
@@ -401,67 +422,47 @@
 </dialog>
 
 <style>
-	/* 今日の追い風。選択時にここで気づけるようにする。 */
-	.tailwind-hint {
-		color: var(--accent-strong);
-		font-weight: 700;
-	}
-	/* リザルトは順繰りに現れる。遅延だけで段を作るので、クリックを挟まない。 */
-	.outcome {
+	.play-progress {
 		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-		margin-block: 0.8rem;
+		align-items: center;
+		gap: clamp(8px, 2vw, 12px);
+		width: min(100%, 460px);
+		margin: 12px auto 0;
+		padding-inline: 4px;
+		overflow: hidden;
 	}
-	.outcome-row {
+	.play-progress span {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 0.5rem;
-		justify-content: center;
-		opacity: 0;
-		animation: outcome-in 320ms ease-out var(--delay, 0ms) forwards;
-	}
-	.outcome-label {
+		align-items: center;
+		gap: 7px;
+		min-width: 0;
 		color: var(--text-faint);
-		font-size: 0.75rem;
-	}
-	.outcome-value {
-		font-size: 1.05rem;
+		font-size: clamp(0.62rem, 2.2vw, 0.68rem);
 		font-weight: 700;
+		letter-spacing: 0.08em;
+		white-space: nowrap;
 	}
-	.wind-value {
+	.play-progress b {
+		font-size: 0.62rem;
+		opacity: 0.55;
+	}
+	.play-progress .active {
 		color: var(--accent-strong);
 	}
-	.combo-value {
-		color: var(--badge-title-fg, var(--accent-strong));
+	.play-progress i {
+		height: 1px;
+		flex: 1;
+		background: var(--line);
 	}
-	.outcome-desc {
-		inline-size: 100%;
-		color: var(--text-faint);
-		font-size: 0.8rem;
-		line-height: 1.6;
+	.playing .theme {
+		margin-block: 1rem 0.5rem;
 	}
-	.outcome-none {
-		color: var(--text-faint);
-		font-size: 0.85rem;
+	.playing h1 {
+		font-size: clamp(1rem, 2vw, 1.3rem);
 	}
-	@keyframes outcome-in {
-		from {
-			opacity: 0;
-			transform: translateY(6px);
-		}
-		to {
-			opacity: 1;
-			transform: none;
-		}
-	}
-	/* 演出を抑える設定では、遅延も動きも出さずに即表示する。 */
-	@media (prefers-reduced-motion: reduce) {
-		.outcome-row {
-			opacity: 1;
-			animation: none;
-		}
+	.playing .theme-question,
+	.playing .recommended-attribute {
+		display: none;
 	}
 	.game {
 		color-scheme: dark;
@@ -472,6 +473,14 @@
 		--line: var(--zenkatsu-game-line);
 		--accent-strong: var(--zenkatsu-game-accent);
 		--danger: var(--zenkatsu-game-danger);
+		/*
+		 * 寸法のものさし。パネル幅・角丸・縦の間は**この4つだけ**を使う。
+		 * 場当たりの 10px / 14px / 20px / 24px が混ざると、揃っていないことが先に目に入る。
+		 */
+		--zk-col: min(100%, 760px);
+		--zk-r-panel: 18px;
+		--zk-r-card: 12px;
+		--zk-gap: clamp(0.9rem, 2.5vw, 1.4rem);
 		position: fixed;
 		inset: 0;
 		width: 100vw;
@@ -507,6 +516,10 @@
 		padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
 			max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 	}
+	/* プログラムから当てる焦点。輪郭は出さない（キーボード移動は中の要素が受け持つ）。 */
+	.game-shell:focus {
+		outline: none;
+	}
 	.game-header {
 		display: flex;
 		align-items: center;
@@ -533,7 +546,7 @@
 	}
 	button:focus-visible {
 		outline: 3px solid var(--accent-strong);
-		outline-offset: 4px;
+		outline-offset: 2px;
 	}
 	.game-ghost {
 		border: 1px solid var(--line);
@@ -544,6 +557,12 @@
 		min-height: 44px;
 		font-weight: 700;
 		letter-spacing: 0.02em;
+	}
+	.game-ghost.icon {
+		width: 44px;
+		padding: 0;
+		font-size: 1.4rem;
+		line-height: 1;
 	}
 	.game-primary {
 		border: 0;
@@ -558,18 +577,25 @@
 	}
 	.theme {
 		text-align: center;
-		margin: 0.5rem auto 1.2rem;
+		margin: 1.2rem auto 1.5rem;
 		max-width: 900px;
 	}
+	/* 「そんなとき？」はお題の続き。色を変えず、行を変えるだけで地続きに読ませる。 */
 	.theme-question {
 		display: block;
 		margin-top: 0.35rem;
-		color: var(--accent-strong);
 	}
 	.recommended-attribute {
-		font-size: 0.8rem;
-		color: var(--text-faint);
-		margin-top: 0.4rem;
+		display: inline-block;
+		margin-top: 0.7rem;
+		padding: 5px 14px;
+		border: 1px solid color-mix(in srgb, var(--accent-strong) 40%, transparent);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent-strong) 10%, transparent);
+		color: var(--accent-strong);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
 	}
 	.eyebrow {
 		color: var(--accent-strong);
@@ -597,15 +623,17 @@
 		gap: 2rem;
 	}
 	.selection {
-		width: min(100%, 1000px);
+		width: min(100%, 620px);
 		min-width: 0;
 	}
 	.section-heading {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
+		align-items: baseline;
 		gap: 0.6rem;
 		margin-bottom: 0.75rem;
+	}
+	.section-heading span {
+		margin-left: auto;
 	}
 	.section-heading span,
 	.section-heading p {
@@ -621,7 +649,7 @@
 	.slot {
 		position: relative;
 		border: 1px dashed color-mix(in srgb, var(--accent-strong) 45%, var(--line));
-		border-radius: 14px;
+		border-radius: var(--zk-r-card);
 		aspect-ratio: 59 / 86;
 		display: flex;
 		flex-direction: column;
@@ -646,7 +674,7 @@
 		width: 100%;
 		border: 0;
 		padding: 0;
-		border-radius: 10px;
+		border-radius: var(--zk-r-card);
 		background: none;
 		text-align: start;
 	}
@@ -655,24 +683,28 @@
 	}
 	.remove {
 		position: absolute;
-		top: -8px;
-		right: -5px;
+		top: -9px;
+		right: -9px;
 		width: 30px;
 		height: 30px;
-		border: 1px solid var(--line);
-		border-radius: var(--r-sm);
-		background: var(--bg);
+		border: 1px solid color-mix(in srgb, var(--accent-strong) 45%, var(--line));
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--bg) 88%, transparent);
+		backdrop-filter: blur(6px);
 		color: var(--text);
+		line-height: 1;
 	}
 	.hand-area {
-		width: min(100%, 1400px);
-		margin: 1.8rem auto 1rem;
+		width: min(100%, 1120px);
+		margin: 1.8rem auto 0;
 		padding-top: 1rem;
+		/* 最終行がスティッキーなフッターの下に潜らないよう、footer のぶんを空けておく。 */
+		padding-bottom: 5.5rem;
 		border-top: 1px solid var(--line);
 	}
 	.hand {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
 		gap: 0.85rem;
 		list-style: none;
 		padding: 0;
@@ -689,8 +721,9 @@
 		transform: translateY(-4px);
 	}
 	.hand-card.chosen {
-		outline: 3px solid var(--accent-strong);
-		outline-offset: 3px;
+		box-shadow:
+			0 0 0 2px var(--accent-strong),
+			0 0 22px color-mix(in srgb, var(--accent-strong) 35%, transparent);
 	}
 	.hand-card.resting {
 		opacity: 0.5;
@@ -780,6 +813,10 @@
 		position: relative;
 		transform: rotate(-9deg);
 	}
+	/*
+	 * 結果は「出した札 → BONUS → 総評」を**同じ幅の柱**に積む。
+	 * 中央揃え（justify-content: center）は使わない。縦に伸びたとき上が切れる。
+	 */
 	.finale {
 		position: relative;
 		isolation: isolate;
@@ -787,51 +824,98 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		gap: 2rem;
-		padding: 1.5rem 0;
+		gap: var(--zk-gap);
+		padding: 0.5rem 0 0;
+	}
+	.result-block,
+	.bot-review {
+		width: var(--zk-col);
+	}
+	.result-block {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.7rem;
+	}
+	.block-label {
+		color: var(--accent-strong);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.22em;
 	}
 	.review-cards {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(var(--played), minmax(0, 180px));
 		justify-content: center;
-		gap: 1rem;
+		gap: clamp(0.6rem, 2vw, 1.2rem);
 	}
-	.review-cards > div {
-		width: min(23vw, 145px);
-	}
+	/* 吹き出しは BONUS と同じ枠。botたんはその左上の縁に腰かける。 */
 	.bot-review {
-		display: flex;
-		align-items: flex-end;
-		gap: 1.5rem;
-		width: min(100%, 800px);
+		--bot: clamp(76px, 13vw, 118px);
+		position: relative;
+		/* 挿絵は枠の上辺に腰かける。またぐのは足元だけにして、見出しに被せない。 */
+		padding-top: calc(var(--bot) * 0.86);
 	}
+	/* 高さで効かせる。上に空ける量（padding-top）と同じ物差しでないと、被りがずれる。 */
 	.bot-review img {
-		width: clamp(90px, 20vw, 220px);
-		height: auto;
+		position: absolute;
+		top: 0;
+		left: clamp(12px, 3vw, 28px);
+		width: auto;
+		height: var(--bot);
 		object-fit: contain;
+		z-index: 1;
 	}
 	.speech {
 		position: relative;
-		flex: 1;
 		min-width: 0;
 		border: 1px solid var(--line);
-		background: var(--zenkatsu-game-surface);
-		border-radius: 24px 24px 24px 3px;
-		padding: clamp(1rem, 3vw, 2rem);
-		box-shadow: 0 8px 40px rgb(0 0 0 / 0.06);
+		background: var(--zenkatsu-game-elevated);
+		border-radius: var(--zk-r-panel);
+		padding: clamp(1rem, 3vw, 1.6rem);
+		box-shadow: 0 10px 40px rgb(0 0 0 / 0.25);
+	}
+	/* 吹き出しの尻尾。挿絵の真下に向ける。 */
+	.speech::before {
+		content: '';
+		position: absolute;
+		left: clamp(30px, 5.5vw, 56px);
+		bottom: calc(100% - 1px);
+		border: 9px solid transparent;
+		border-bottom-color: var(--zenkatsu-game-elevated);
 	}
 	.speech h2 {
 		color: var(--accent-strong);
-		margin-bottom: 0.7rem;
+		margin-bottom: 0.6rem;
+		font-size: 0.8rem;
+		font-weight: 800;
+		letter-spacing: 0.16em;
 	}
 	.speech p {
-		font-size: clamp(1rem, 1.5vw, 1.2rem);
-		line-height: 1.9;
+		font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+		line-height: 1.85;
 		white-space: pre-line;
 		overflow-wrap: anywhere;
 	}
 	.speech button {
 		margin-top: 1rem;
+	}
+	/* 選択段と同じ終わり方にする。画面の下端がどちらも1本のバーで閉じる。 */
+	.finale-actions {
+		position: sticky;
+		bottom: 0;
+		width: 100%;
+		display: flex;
+		justify-content: center;
+		margin-top: auto;
+		padding: 1rem 0 max(0.5rem, env(safe-area-inset-bottom));
+		background: color-mix(in srgb, var(--bg) 94%, transparent);
+		border-top: 1px solid var(--line);
+		backdrop-filter: blur(12px);
+		z-index: 2;
+	}
+	.finale-actions .game-primary {
+		width: min(100%, 320px);
 	}
 	@keyframes select-card {
 		from {
@@ -863,7 +947,7 @@
 			gap: 1rem;
 		}
 		.selection {
-			max-width: 1000px;
+			max-width: 680px;
 		}
 	}
 	@media (max-width: 600px) {
@@ -877,11 +961,11 @@
 			margin-bottom: 1rem;
 		}
 		.slots {
-			grid-template-columns: repeat(var(--slots), minmax(230px, 72vw));
+			grid-template-columns: repeat(var(--slots), minmax(0, 1fr));
 			gap: 1rem;
 			overflow-x: auto;
 			scroll-snap-type: x proximity;
-			padding: 12px 8px 18px;
+			padding: 12px 4px 18px;
 			scroll-padding-inline: 8px;
 		}
 		.slot {
@@ -916,17 +1000,8 @@
 			flex: 1;
 			padding-inline: 1rem;
 		}
-		.bot-review {
-			gap: 0.6rem;
-		}
-		.bot-review img {
-			width: 80px;
-		}
 		.speech {
 			padding: 1rem;
-		}
-		.finale {
-			gap: 1.5rem;
 		}
 	}
 	.placement-fx {

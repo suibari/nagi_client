@@ -7,25 +7,31 @@
 
 	/**
 	 * 全肯定カードのページ。3タブで役割を分ける。
+	 * - ゼンカツ！: 今日のお題・プレイ・記録
 	 * - ニュース: 今この瞬間の出来事（レアドローと、ゼンカツの珍しい回）
 	 * - マイデッキ: 自分の図鑑・見つけたコンボ・トロフィー
-	 * - ゼンカツ！: 今日のお題・プレイ・記録
+	 *
+	 * ゼンカツを先頭に置く。**1日1回しかできない**のはこのタブだけで、
+	 * 遅れて気づくほど損をする。ニュースとデッキはいつ見ても同じものが見られる。
 	 */
 	type TabId = 'news' | 'collection' | 'zenkatsu';
 	const tabs: { id: TabId; label: () => string }[] = [
+		{ id: 'zenkatsu', label: () => m.cardsTabZenkatsu() },
 		{ id: 'news', label: () => m.cardsTabNews() },
 		{ id: 'collection', label: () => m.cardsTabCollection() },
-		{ id: 'zenkatsu', label: () => m.cardsTabZenkatsu() },
 	];
-	let tab = $state<TabId>('news');
+	let tab = $state<TabId>('zenkatsu');
 </script>
 
 <svelte:head><title>{m.cardsPageTitle()}</title></svelte:head>
 
 <div class="tabs" role="tablist">
 	{#each tabs as t (t.id)}
-		<button role="tab" aria-selected={tab === t.id} class:active={tab === t.id} onclick={() => (tab = t.id)}
-			>{t.label()}</button
+		<button
+			role="tab"
+			aria-selected={tab === t.id}
+			class:active={tab === t.id}
+			onclick={() => (tab = t.id)}>{t.label()}</button
 		>
 	{/each}
 </div>

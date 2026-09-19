@@ -105,6 +105,11 @@ test('board keeps the game open while reloading after a successful submission', 
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	let submitted = false;
 	let reloading = false;
+	/*
+	 * 総評は提出より遅れて載る。盤面が提出直後に引く1回では間に合わず、
+	 * ゲーム側のポーリングが先に受け取る。閉じたあとに引き直せているかを、この時間差で見る。
+	 */
+	let submittedAt = 0;
 	const uri = 'at://did:plc:zenkatsu-preview/com.suibari.nagi.zenkatsu/2026-09-19';
 	const cid = 'bafyreidnq5e4j7qaw5l4dpa4g5vjt4y5dpjywqrnit23nkrnnjwf5f24xi';
 	await page.route('**/xrpc/**', (route) =>
@@ -142,8 +147,10 @@ test('board keeps the game open while reloading after a successful submission', 
 			},
 		}),
 	);
+	const commentLanded = () => submittedAt > 0 && Date.now() - submittedAt > 3500;
 	await page.route('**/xrpc/com.atproto.repo.putRecord', async (route) => {
 		submitted = true;
+		submittedAt = Date.now();
 		await route.fulfill({ json: { uri, cid } });
 	});
 	await page.route('**/xrpc/com.suibari.nagi.ensureRecord', (route) => route.fulfill({ json: {} }));
@@ -175,8 +182,8 @@ test('board keeps the game open while reloading after a successful submission', 
 								uri,
 								cid: 'bafy-preview',
 								cards: [],
-								commentJa: 'きみの一歩を応援しているよ！',
-								commentPending: false,
+								commentJa: commentLanded() ? 'きみの一歩を応援しているよ！' : undefined,
+								commentPending: !commentLanded(),
 								author: { did: 'did:plc:zenkatsu-preview', handle: 'preview.example' },
 								createdAt: '2026-09-19T00:00:00Z',
 								indexedAt: '2026-09-19T00:00:00Z',
@@ -209,6 +216,9 @@ test('board keeps the game open while reloading after a successful submission', 
 	await page.locator('.finale').getByRole('button', { name: 'おわる' }).click();
 	await expect(page.getByRole('dialog')).not.toBeVisible();
 	await expect(page.getByText('今日はもう出したよ', { exact: true })).toBeVisible();
+	// 閉じたあとの記録欄に総評が載っていること（提出直後の再取得だけだと「考えているよ…」で止まる）。
+	await expect(page.locator('.record')).toContainText('きみの一歩を応援しているよ！');
+	await expect(page.locator('.record')).not.toContainText('botたんが考えているよ');
 });
 
 test('standalone mock opens a completed three-card review without registration', async ({
@@ -229,6 +239,23 @@ test('standalone mock opens a completed three-card review without registration',
 	await page.getByRole('button', { name: 'これで出す' }).click();
 	await expect(page.locator('.speech')).toContainText('自分を置き去りにしない3枚');
 	expect(writes).toEqual([]);
+});
+
+test('the how-to-play dialog closes on a backdrop click', async ({ page }) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.goto('/dev/zenkatsu');
+	await page.locator('.game-header').getByRole('button', { name: 'おわる' }).click();
+	await page.getByRole('button', { name: '選択・提出の演出を試す' }).click();
+	const help = page.getByRole('dialog', { name: 'あそびかた', exact: true });
+	await page.locator('.game-actions').getByRole('button', { name: 'あそびかた' }).click();
+	await expect(help).toBeVisible();
+	// パネルの中を押しても閉じない。
+	await help.locator('.flow').click();
+	await expect(help).toBeVisible();
+	// ::backdrop（パネルの外）は閉じる。アプリの他のモーダルと同じ挙動。
+	await page.mouse.click(8, 450);
+	await expect(help).not.toBeVisible();
+	await expect(page.getByRole('dialog', { name: /がんばったのに/ })).toBeVisible();
 });
 
 test('card news review uses the feed bot avatar and profile link', async ({ page }) => {
@@ -256,8 +283,83 @@ test('card news review uses the feed bot avatar and profile link', async ({ page
 		}),
 	);
 	await page.goto('/cards');
+	// 既定はゼンカツタブ。この検証はニュース側なので開き直す（このテストはロケールを固定しない）。
+	await page.getByRole('tab', { name: /ニュース|News/ }).click();
 	const avatar = page.locator('.card-bot-review .avatar-link');
 	await expect(avatar).toHaveAttribute('href', `/profile/${bot.did}`);
 	await expect(avatar.locator('img')).toHaveAttribute('src', bot.avatar);
 	await expect(page.locator('.card-bot-review')).toContainText('すてきな3枚です！');
+});
+
+for (const reducedMotion of [false, true]) {
+	test(`bonus reveal completes before an early review (reduced motion: ${reducedMotion})`, async ({
+		page,
+	}) => {
+		await page.emulateMedia({ reducedMotion: reducedMotion ? 'reduce' : 'no-preference' });
+		await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+		await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', (route) =>
+			route.fulfill({
+				json: {
+					submissions: [
+						{
+							uri: 'at://did:plc:preview/tan.zenkatsu/2026-09-19',
+							tailwindCount: 1,
+							combos: [1, 2].map((id) => ({
+								volume: 1,
+								id,
+								nameJa: `発見コンボ${id}`,
+								nameEn: `Combo ${id}`,
+								descJa: 'カードがつながった！',
+								descEn: 'Connected!',
+							})),
+							commentJa: 'すぐ届いた総評です。',
+						},
+					],
+				},
+			}),
+		);
+		await page.goto('/dev/e2e/zenkatsu');
+		await page.getByText('Open game', { exact: true }).click();
+		await page.locator('.hand-card').first().click();
+		await page.getByRole('button', { name: 'これで出す' }).click();
+		if (!reducedMotion) {
+			await expect(page.locator('.bonus-item.current h2')).toHaveText('おすすめ属性');
+			await expect(page.locator('.bonus-item.revealed')).toHaveCount(1);
+			await expect(page.locator('.speech')).not.toContainText('すぐ届いた総評です。');
+			await expect(page.locator('.bonus-item.current h2')).toHaveText('発見コンボ1');
+			await expect(page.locator('.speech')).not.toContainText('すぐ届いた総評です。');
+			await expect(page.locator('.bonus-item.current h2')).toHaveText('発見コンボ2');
+		}
+		await expect(page.locator('.speech')).toContainText('すぐ届いた総評です。');
+		// 演出が終わったら、成立した全項目が説明文つきで**同時に**残っていること。
+		await expect(page.locator('.bonus-item.revealed h2')).toHaveText([
+			'おすすめ属性',
+			'発見コンボ1',
+			'発見コンボ2',
+		]);
+		await expect(page.locator('.bonus-item.revealed .bonus-detail').last()).toBeVisible();
+		await expect(page.locator('.bonus-progress')).toHaveText('3 / 3');
+	});
+}
+
+test('skipping bonuses settles the sequence and closing cancels pending animation', async ({
+	page,
+}) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.goto('/dev/zenkatsu');
+	await page.locator('.game-header').getByRole('button', { name: 'おわる' }).click();
+	await page.getByRole('button', { name: '選択・提出の演出を試す' }).click();
+	await page.locator('.hand-card').first().click();
+	await page.getByRole('button', { name: 'これで出す' }).click();
+	await page.getByRole('button', { name: 'スキップ' }).click();
+	await expect(page.locator('.bonus-item.revealed h2')).toHaveText([
+		'おすすめ属性',
+		'明日への一歩',
+	]);
+	await expect(page.locator('.speech')).toContainText('自分の頑張りを認めて');
+	await expect(page.locator('.bonus-stage')).toHaveClass(/complete/);
+	await page.waitForTimeout(1300);
+	await expect(page.locator('.bonus-item.current h2')).toHaveText('明日への一歩');
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('dialog')).not.toBeVisible();
 });

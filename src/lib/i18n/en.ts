@@ -1181,7 +1181,8 @@ export const en: Messages = {
 	cardFabUndrawn: "You haven't drawn today's card yet",
 	cardViewCollection: 'View collection',
 	zenkatsuChiefBadge: "🏆 Today's Zenkatsu Chief",
-	zenkatsuChiefBadgeAria: "Won Bot-tan's pick in yesterday's Zenkatsu. It moves on to someone else tomorrow.",
+	zenkatsuChiefBadgeAria:
+		"Won Bot-tan's pick in yesterday's Zenkatsu. It moves on to someone else tomorrow.",
 	deckCombosTitle: 'Combos found',
 	deckCombosProgress: (o: { found: number; total: number }) => `${o.found} of ${o.total}`,
 	deckCombosEmpty: 'No combos yet. Try a different mix and see what happens',
@@ -1206,7 +1207,6 @@ export const en: Messages = {
 	zenkatsuResultNext: 'Next',
 	zenkatsuResultClose: 'Close',
 	zenkatsuResultSkip: 'Skip',
-	zenkatsuTailwindHint: "Today's recommended attribute",
 	zenkatsuDevReset: '[dev] Clear today and replay',
 	zenkatsuDevResetDone: 'Cleared. You can play again',
 	navCards: 'Cards',
@@ -1220,17 +1220,31 @@ export const en: Messages = {
 	zenkatsuThemeLabel: "Today's situation",
 	zenkatsuThemeQuestion: 'At a time like this?',
 	zenkatsuHowToPlay: 'How to play',
-	zenkatsuGuidePick: (o: { max: number }) =>
-		`Answer today's situation with your all-affirming cards. Choose 1 to ${o.max} different cards from your hand. Just one is fine!`,
-	zenkatsuGuideSubmit:
-		'Press “Play these” to receive Bot-tan’s review. There are no scores or rankings, so enjoy any combination you like.',
-	zenkatsuGuideDaily:
-		'You can play once a day, and your submission is final. A new day begins at 4 AM Japan time.',
+	zenkatsuStepSelect: 'SELECT',
+	zenkatsuStepBonus: 'BONUS',
+	zenkatsuStepReview: 'REVIEW',
+	zenkatsuGuideSummary: (o: { max: number }) =>
+		`Pick 1 to ${o.max} cards and play them: bonuses are scored, then Bot-tan writes you a review.`,
+	zenkatsuGuideSelectTitle: 'Select',
+	zenkatsuGuideSelect1: (o: { max: number }) =>
+		`Pick 1 to ${o.max} cards from your hand. One is fine!`,
+	zenkatsuGuideSelect2: 'The same card can only be used once per play',
+	zenkatsuGuideSubmitTitle: 'Play them',
+	zenkatsuGuideSubmit1: "One play per day, and you can't change it afterwards",
+	zenkatsuGuideSubmit2: 'A new day begins at 4 AM Japan time',
+	zenkatsuGuideBonusTitle: 'Bonus',
+	zenkatsuGuideBonus1:
+		'Each day’s situation has a recommended attribute. Matching cards give you a tailwind',
+	zenkatsuGuideBonus2:
+		'Some card combinations form a combo — which ones is a secret, so go explore',
+	zenkatsuGuideReviewTitle: "Bot-tan's review",
+	zenkatsuGuideReview1: 'No scores, no rankings. Enjoy any combination you like',
 	zenkatsuGuideCooldownTitle: 'Card cooldown',
-	zenkatsuGuideCooldown:
-		'Played cards have a cooldown: N for 2 days, R for 3, SR for 4, UR for 6, and AAR for 7.',
-	zenkatsuGuideStock:
-		'Cards on cooldown show how many days remain. If you own multiple copies, any copies that are not on cooldown can still be used. Your cards are never consumed.',
+	zenkatsuGuideCooldown1:
+		'Played cards rest for a while: N for 2 days, R for 3, SR for 4, UR for 6, and AAR for 7',
+	zenkatsuGuideCooldown2:
+		'If you own multiple copies, any copies that are not resting can still be used',
+	zenkatsuGuideCooldown3: 'Your cards are never consumed, so play freely',
 	zenkatsuRecommendedAttribute: (o: { attribute: string }) =>
 		`Recommended attribute: ${o.attribute}`,
 	zenkatsuSelectedCards: 'Selected cards',

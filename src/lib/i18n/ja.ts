@@ -1234,7 +1234,6 @@ export const ja = {
 	zenkatsuResultNext: 'つぎへ',
 	zenkatsuResultClose: 'とじる',
 	zenkatsuResultSkip: 'スキップ',
-	zenkatsuTailwindHint: '今日のおすすめ属性',
 	zenkatsuDevReset: '【開発】今日のぶんを消してもう一度',
 	zenkatsuDevResetDone: '消したよ。もう一度出せる',
 	navCards: '全肯定カード',
@@ -1248,17 +1247,27 @@ export const ja = {
 	zenkatsuThemeLabel: '今日のお題',
 	zenkatsuThemeQuestion: 'そんなとき？',
 	zenkatsuHowToPlay: 'あそびかた',
-	zenkatsuGuidePick: (o: { max: number }) =>
-		`お題の「そんなとき？」に、全肯定カードで答えてみましょう。手持ちから1〜${o.max}枚、ちがうカードを選んでください。1枚だけでも大丈夫です。`,
-	zenkatsuGuideSubmit:
-		'「これで出す」を押すと、botたんが総評をくれます。スコアや順位はないので、好きな組み合わせで気軽に楽しんでください。',
-	zenkatsuGuideDaily:
-		'プレイは1日1回です。出したあとは変更できません。毎朝4時（日本時間）に新しい1日が始まります。',
+	zenkatsuStepSelect: 'えらぶ',
+	zenkatsuStepBonus: 'BONUS',
+	zenkatsuStepReview: '総評',
+	zenkatsuGuideSummary: (o: { max: number }) =>
+		`手持ちから1〜${o.max}枚えらんで出すと、BONUSが判定されて、botたんが総評をくれます。`,
+	zenkatsuGuideSelectTitle: 'えらぶ',
+	zenkatsuGuideSelect1: (o: { max: number }) => `手持ちから1〜${o.max}枚。1枚だけでも大丈夫です`,
+	zenkatsuGuideSelect2: '同じカードは、1回のプレイに1枚まで',
+	zenkatsuGuideSubmitTitle: '出す',
+	zenkatsuGuideSubmit1: 'プレイは1日1回。出したあとは変更できません',
+	zenkatsuGuideSubmit2: '毎朝4時（日本時間）に、新しい1日が始まります',
+	zenkatsuGuideBonusTitle: 'BONUS',
+	zenkatsuGuideBonus1: 'お題には毎日「おすすめ属性」があります。合う属性を出すと追い風',
+	zenkatsuGuideBonus2: 'カードの組み合わせで、ときどきコンボが成立します（何が成立するかは秘密）',
+	zenkatsuGuideReviewTitle: 'botたんの総評',
+	zenkatsuGuideReview1: 'スコアも順位もありません。好きな組み合わせで気軽にどうぞ',
 	zenkatsuGuideCooldownTitle: 'カードのクールダウン',
-	zenkatsuGuideCooldown:
-		'出したカードにはクールダウンがあります。Nは2日、Rは3日、SRは4日、URは6日、AARは7日です。',
-	zenkatsuGuideStock:
-		'クールダウン中のカードには、あと何日で使えるかが表示されます。同じカードを複数持っていれば、クールダウン中ではない分は使えます。カードはなくならないので安心してください。',
+	zenkatsuGuideCooldown1:
+		'出したカードは少し休みます。Nは2日、Rは3日、SRは4日、URは6日、AARは7日です',
+	zenkatsuGuideCooldown2: '同じカードを複数持っていれば、休んでいない分は使えます',
+	zenkatsuGuideCooldown3: 'カードはなくならないので安心してください',
 	zenkatsuRecommendedAttribute: (o: { attribute: string }) => `おすすめ属性: ${o.attribute}`,
 	zenkatsuSelectedCards: '選んだカード',
 	zenkatsuHand: '手持ちカード',
