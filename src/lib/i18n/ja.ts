@@ -1302,6 +1302,7 @@ export const ja = {
 	zenkatsuPrevDay: '前の日',
 	zenkatsuNextDay: '次の日',
 	zenkatsuLoadMore: 'もっと見る',
+	zenkatsuViewerSlow: 'プレイ情報の取得に時間がかかっています。もう一度試せます。',
 	zenkatsuViewerLoading: 'プレイ情報を確認しています…',
 	zenkatsuViewerFailed: 'プレイ情報を取得できませんでした。もう一度お試しください。',
 	zenkatsuAuthorizationNeeded:

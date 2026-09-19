@@ -17,7 +17,7 @@
 			session.set({
 				did,
 				fetchHandler: (url: string | URL, init?: RequestInit) =>
-					String(url).includes('com.suibari.nagi.getCards')
+					!params.has('cards-through-network') && String(url).includes('com.suibari.nagi.getCards')
 						? Promise.resolve(
 								Response.json({ cards, ownedCount: cards.length, totalCount: cards.length }),
 							)

@@ -644,15 +644,20 @@ export const setChannelSubscription = (uri: string, subscribed: boolean) =>
 		{ method: 'POST', body: JSON.stringify({ uri, subscribed }) },
 		'required',
 	);
-// カードの所持状況は公開情報なので、他人のプロフィールでも見える。ただし自分のときだけ
-// drawStatus（今日引けるか）が付くので、ログイン中は認証付きで叩く必要がある。
-// permission-set のキャッシュ未反映で弾かれたら公開取得へ落とす（drawStatus が消えるだけで
-// コレクション自体は見える）。
-export const getCards = (actor: string) =>
-	withPublicFallback<CardCollectionView>(
-		'com.suibari.nagi.getCards',
-		`/xrpc/com.suibari.nagi.getCards?actor=${encodeURIComponent(actor)}`,
-	);
+// カードの所持状況は公開情報。自分の drawStatus と未反映の控えだけ認証付きで返る。
+// 図鑑は publicOnly で先に出し、本人向け情報は requireViewer であとから補う。
+export const getCards = (
+	actor: string,
+	options: { publicOnly?: boolean; requireViewer?: boolean } = {},
+) => {
+	const lxm = 'com.suibari.nagi.getCards';
+	const path = `/xrpc/${lxm}?actor=${encodeURIComponent(actor)}`;
+	return options.publicOnly
+		? call<CardCollectionView>(lxm, path, {}, 'none')
+		: options.requireViewer
+			? call<CardCollectionView>(lxm, path, {}, 'required')
+			: withPublicFallback<CardCollectionView>(lxm, path);
+};
 /**
  * ゼンカツ！の、ある1日のお題と全回答（新着順）。
  *
