@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { getCardNews } from '$lib/api/appview';
-	import type { CardNewsFeed } from '$lib/api/types';
+	import type { CardNewsFeed, CardNewsItem, CardView } from '$lib/api/types';
 	import { dayHeading, dayKey, i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
+	import CardDetailDialog from './CardDetailDialog.svelte';
+	import CardItemReactions from './CardItemReactions.svelte';
 	import ZenkatsuMarks from './ZenkatsuMarks.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import CardBotReview from './CardBotReview.svelte';
@@ -32,7 +34,30 @@
 	$effect(() => {
 		void load();
 	});
+
+	/**
+	 * 拡大表示。**他人のカードなので `draw` も `actor` も渡さない**
+	 * （ドロー演出は自分が引いた瞬間のもので、botたんコメントは持ち主にしか出ない）。
+	 */
+	let opened = $state<CardView>();
+
+	const comboHeadline = (item: CardNewsItem) => {
+		const found = item.pioneerCombos ?? [];
+		const first = found[0];
+		if (!first) return '';
+		const name = i18n.locale === 'ja' ? first.nameJa : first.nameEn;
+		return found.length > 1
+			? m.cardNewsComboFoundMany({ name, n: found.length - 1 })
+			: m.cardNewsComboFound({ name });
+	};
 </script>
+
+{#snippet playedCard(card: CardView)}
+	<button type="button" class="card-slot" onclick={() => (opened = card)}>
+		<AffirmationCard {card} />
+		<span class="visually-hidden">{m.cardOpenDetail()}</span>
+	</button>
+{/snippet}
 
 {#if loading}
 	<div class="state">…</div>
@@ -57,17 +82,25 @@
 					<p class="headline">
 						{m.cardNewsGot({ name: i18n.locale === 'ja' ? item.card.nameJa : item.card.nameEn })}
 					</p>
-					<div class="one"><AffirmationCard card={item.card} /></div>
+					<div class="one">{@render playedCard(item.card)}</div>
 				{:else}
+					<!-- comboFound はゼンカツの回そのもの。中身は同じで、見出しだけが変わる。 -->
+					{#if item.type === 'comboFound'}
+						<p class="headline pioneer">{comboHeadline(item)}</p>
+					{/if}
 					{#if item.themeJa}<p class="theme">
 							{i18n.locale === 'ja' ? item.themeJa : (item.themeEn ?? item.themeJa)}
 						</p>{/if}
 					<ul class="played">
 						{#each item.cards ?? [] as card (card.volume + ':' + card.id)}
-							<li><AffirmationCard {card} /></li>
+							<li>{@render playedCard(card)}</li>
 						{/each}
 					</ul>
-					<ZenkatsuMarks tailwindCount={item.tailwindCount} combos={item.combos} />
+					<ZenkatsuMarks
+						tailwindCount={item.tailwindCount}
+						combos={item.combos}
+						pioneerCombos={item.pioneerCombos}
+					/>
 					{#if item.commentJa || item.commentEn}
 						<CardBotReview
 							comment={(i18n.locale === 'ja' ? item.commentJa : item.commentEn) ||
@@ -77,9 +110,13 @@
 						/>
 					{/if}
 				{/if}
+				<CardItemReactions uri={item.uri} cid={item.cid} reactions={item.reactions} />
 			</li>
 		{/each}
 	</ul>
+	{#if opened}
+		<CardDetailDialog initial={opened} onclose={() => (opened = undefined)} />
+	{/if}
 	{#if feed.cursor}
 		<button
 			class="more"
@@ -131,6 +168,24 @@
 	.headline {
 		margin-block: 0.2rem;
 		font-size: 0.9rem;
+	}
+	/* 世界初の発見だけは、ニュースの中で一段強い見出しにする。 */
+	.headline.pioneer {
+		color: var(--accent-strong);
+		font-weight: 700;
+	}
+	/* 拡大表示のトリガ。カードの寸法は親の li が決めるので、ボタン側は素通しにする。 */
+	.card-slot {
+		display: block;
+		inline-size: 100%;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-s);
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
 	}
 	.theme {
 		margin-block: 0.2rem;

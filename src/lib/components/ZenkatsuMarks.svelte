@@ -12,8 +12,16 @@
 	let {
 		tailwindCount = 0,
 		combos = [],
-	}: { tailwindCount?: number; combos?: ZenkatsuSubmissionCombo[] } = $props();
+		pioneerCombos = [],
+	}: {
+		tailwindCount?: number;
+		combos?: ZenkatsuSubmissionCombo[];
+		/** combos のうち、その回が世界初だったぶん。ニュースからだけ渡る。 */
+		pioneerCombos?: ZenkatsuSubmissionCombo[];
+	} = $props();
 	const ja = $derived(i18n.locale === 'ja');
+	const keyOf = (combo: ZenkatsuSubmissionCombo) => combo.volume + ':' + combo.id;
+	const pioneerKeys = $derived(new Set(pioneerCombos.map(keyOf)));
 </script>
 
 {#if tailwindCount > 0 || combos.length}
@@ -21,9 +29,14 @@
 		{#if tailwindCount > 0}
 			<span class="zk-mark zk-wind">{m.zenkatsuTailwindBadge({ n: tailwindCount })}</span>
 		{/if}
-		{#each combos as combo (combo.volume + ':' + combo.id)}
-			<span class="zk-mark zk-combo" title={ja ? combo.descJa : combo.descEn}
-				>✦ {ja ? combo.nameJa : combo.nameEn}</span
+		{#each combos as combo (keyOf(combo))}
+			<span
+				class="zk-mark zk-combo"
+				class:zk-pioneer={pioneerKeys.has(keyOf(combo))}
+				title={ja ? combo.descJa : combo.descEn}
+				>✦ {ja ? combo.nameJa : combo.nameEn}{#if pioneerKeys.has(keyOf(combo))}<span
+						class="zk-pioneer-note">{m.deckComboPioneer()}</span
+					>{/if}</span
 			>
 		{/each}
 	</p>
@@ -58,5 +71,14 @@
 	.zk-combo {
 		background: var(--badge-title-bg, var(--accent-soft));
 		color: var(--badge-title-fg, var(--accent-strong));
+	}
+	/* 世界初はニュースの見出しでも言うので、ピル側は縁取りだけにして重ねすぎない。 */
+	.zk-pioneer {
+		box-shadow: 0 0 0 1px var(--accent-strong);
+	}
+	.zk-pioneer-note {
+		margin-inline-start: 0.3rem;
+		font-size: 0.66rem;
+		opacity: 0.85;
 	}
 </style>

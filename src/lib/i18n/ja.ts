@@ -598,6 +598,12 @@ export const ja = {
 	// 絵文字を文中に挟むため前後で分割している
 	notifReactedWithPrefix: 'さんが',
 	notifReactedWithSuffix: 'でリアクションしました',
+	// ゼンカツの提出とドローの控えは投稿ではないので、何に付いたのかを文言で言う
+	// （本文に出せるテキストを持たないため、ここが唯一の手がかりになる）。
+	notifReactedZenkatsuSuffix: 'さんがゼンカツの記録にリアクションしました',
+	notifReactedWithZenkatsuSuffix: 'でゼンカツの記録にリアクションしました',
+	notifReactedCardSuffix: 'さんが引いたカードにリアクションしました',
+	notifReactedWithCardSuffix: 'で引いたカードにリアクションしました',
 	notifMentionedSuffix: 'さんがあなたをメンションしました',
 	notifDiarySuffix: 'さんが今日の日記を書いてくれました',
 	notifAnalysisSuffix: 'さんがあなたの名刺を更新しました',
@@ -1311,6 +1317,9 @@ export const ja = {
 	zenkatsuFetchFailed: 'ゼンカツを読み込めませんでした',
 	cardNewsEmpty: 'まだニュースはないよ',
 	cardNewsGot: (o: { name: string }) => `${o.name} をゲット！`,
+	cardNewsComboFound: (o: { name: string }) => `コンボ「${o.name}」を世界で最初に見つけた！`,
+	cardNewsComboFoundMany: (o: { name: string; n: number }) =>
+		`コンボ「${o.name}」ほか${o.n}種を世界で最初に見つけた！`,
 	cardNewsFetchFailed: 'ニュースを読み込めませんでした',
 	cropperBannerTitle: 'バナーをトリミング',
 } satisfies Record<string, string | ((...args: never[]) => string)>;

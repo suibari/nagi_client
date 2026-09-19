@@ -703,18 +703,19 @@ export const getZenkatsuDeck = () =>
 		undefined,
 		'required',
 	);
-/** 全肯定カードのニュース（SR以上のドローと、ゼンカツのハイライト）。公開情報。 */
+/**
+ * 全肯定カードのニュース（SR以上のドローと、ゼンカツのハイライト）。公開情報。
+ *
+ * 認証していれば自分の押したリアクションが `reactedByMe` で返るので、既定は認証付きで取る。
+ * 権限が足りない古いセッションは公開取得へ落ちるだけで、一覧そのものは読める。
+ */
 export const getCardNews = (params: { cursor?: string; limit?: number } = {}) => {
 	const query = new URLSearchParams();
 	if (params.cursor) query.set('cursor', params.cursor);
 	if (params.limit) query.set('limit', String(params.limit));
 	const suffix = query.size ? `?${query}` : '';
-	return call<CardNewsFeed>(
-		'com.suibari.nagi.getCardNews',
-		`/xrpc/com.suibari.nagi.getCardNews${suffix}`,
-		undefined,
-		'none',
-	);
+	const lxm = 'com.suibari.nagi.getCardNews';
+	return withPublicFallback<CardNewsFeed>(lxm, `/xrpc/${lxm}${suffix}`);
 };
 /** DID の無い端末に、通常枠と同じ抽選ロジックで当日の1枚を返す。 */
 export const drawGuestCard = (deviceToken: string) =>

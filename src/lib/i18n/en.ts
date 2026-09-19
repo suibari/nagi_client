@@ -581,6 +581,10 @@ export const en: Messages = {
 	notifReactedSuffix: ' reacted to your post',
 	notifReactedWithPrefix: ' reacted with ',
 	notifReactedWithSuffix: ' to your post',
+	notifReactedZenkatsuSuffix: ' reacted to your Zenkatsu entry',
+	notifReactedWithZenkatsuSuffix: ' to your Zenkatsu entry',
+	notifReactedCardSuffix: ' reacted to the card you drew',
+	notifReactedWithCardSuffix: ' to the card you drew',
 	notifMentionedSuffix: ' mentioned you',
 	notifDiarySuffix: ' wrote your diary for today',
 	notifAnalysisSuffix: ' updated your card',
@@ -1289,6 +1293,9 @@ export const en: Messages = {
 	zenkatsuFetchFailed: 'Could not load Zenkatsu',
 	cardNewsEmpty: 'No news yet',
 	cardNewsGot: (o: { name: string }) => `Got ${o.name}!`,
+	cardNewsComboFound: (o: { name: string }) => `First in the world to find ${o.name}!`,
+	cardNewsComboFoundMany: (o: { name: string; n: number }) =>
+		`First in the world to find ${o.name} and ${o.n} more!`,
 	cardNewsFetchFailed: 'Could not load news',
 	cropperBannerTitle: 'Crop your banner',
 };

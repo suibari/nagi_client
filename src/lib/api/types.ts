@@ -305,10 +305,26 @@ export type NotificationView = {
 	diary?: DiaryView;
 	/** type が 'reaction' のときの、押された絵文字。 */
 	reaction?: { emoji: string; bluemoji?: EmojiView };
+	/**
+	 * subject がゼンカツの提出・ドローの控えのときの中身。
+	 * どちらも投稿ではないので post には入らない。これが無いと
+	 * 「リアクションされた」とだけ出て、何にされたのか分からなくなる。
+	 */
+	cardSubject?: NotificationCardSubject;
 	subjectUri: string;
 	reasonUri: string;
 	createdAt: string;
 	readAt?: string;
+};
+/** 通知が指している、全肯定カードまわりの対象。 */
+export type NotificationCardSubject = {
+	uri: string;
+	type: 'cardGet' | 'zenkatsu';
+	/** type=zenkatsu のとき。 */
+	themeJa?: string;
+	themeEn?: string;
+	/** 出した札、または引いた1枚。 */
+	cards: CardView[];
 };
 export type SearchActorsResult = { actors: ActorView[] };
 /** ユーザーが作るチャンネルのビュー。banner は AppView の blob プロキシへの相対パス。 */
@@ -623,6 +639,12 @@ export type ZenkatsuSubmissionView = {
 	tailwindCount: number;
 	/** 成立したコンボ。成立したものだけがサーバから来る（未発見のぶんは送られない）。 */
 	combos: ZenkatsuSubmissionCombo[];
+	/**
+	 * 提出レコードに付いたリアクション。
+	 * subject は本人の repo にある `com.suibari.nagi.zenkatsu` そのものなので、
+	 * 投稿・ニュースとまったく同じ経路で付く。AppView 未更新でも落ちないよう任意。
+	 */
+	reactions?: ReactionView[];
 	createdAt: string;
 	indexedAt: string;
 };
@@ -661,7 +683,13 @@ export type ZenkatsuFeed = {
 export type CardNewsItem = {
 	uri: string;
 	cid: string;
-	type: 'cardGet' | 'zenkatsu';
+	/**
+	 * `comboFound` は「そのコンボを世界で最初に成立させた回」。
+	 * ゼンカツの回であることは `zenkatsu` と同じなので中身の作りは変わらず、
+	 * **見出しだけが変わる**。サーバは同じ提出を `zenkatsu` としては返さない
+	 * （同じ uri の項目が2つ並ぶと一覧のキーが重複する）。
+	 */
+	type: 'cardGet' | 'zenkatsu' | 'comboFound';
 	author: ActorView;
 	at: string;
 	card?: CardView;
@@ -676,8 +704,16 @@ export type CardNewsItem = {
 	 * 未成立のぶんはサーバから送られないので、これで定義が漏れることはない。
 	 */
 	combos?: ZenkatsuSubmissionCombo[];
+	/**
+	 * type=comboFound のとき。`combos` のうち、**この回が世界初だったぶんだけ**。
+	 * 索引した時点のスナップショットなので、発見者が後からレコードを消しても
+	 * マイデッキ側の pioneer 判定（最古の未削除提出）とずれることがある。
+	 */
+	pioneerCombos?: ZenkatsuSubmissionCombo[];
 	/** type=zenkatsu のとき。追い風に乗っていた枚数。**得点ではない。** */
 	tailwindCount?: number;
+	/** ニュース項目に付いたリアクション。subject は uri/cid の実レコード。 */
+	reactions?: ReactionView[];
 };
 export type CardNewsFeed = {
 	items: CardNewsItem[];
