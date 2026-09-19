@@ -111,13 +111,21 @@
 	/**
 	 * 日記はスレッドが無いので、本人のプロフィールの日記タブに飛ばす。
 	 * 名刺の更新も同じくポストが無いので、名刺が置いてある自分のプロフィールへ。
+	 * ゼンカツの提出とドローの控えもスレッドを持たないので、全肯定カードのページへ。
 	 */
 	const notificationHref = (item: NotificationView) =>
 		item.type === 'diary'
 			? `/diary${item.diary ? `?date=${item.diary.date}` : ''}`
 			: item.type === 'analysis'
 				? `/profile/${$session?.did}`
-				: threadHref(item.subjectUri);
+				: item.cardSubject
+					? '/cards'
+					: threadHref(item.subjectUri);
+	/** ゼンカツはお題、ドローの控えは引いた札の名前を、投稿本文の代わりに出す。 */
+	const cardSubjectText = (subject: NonNullable<NotificationView['cardSubject']>) =>
+		subject.type === 'zenkatsu'
+			? ((i18n.locale === 'ja' ? subject.themeJa : subject.themeEn) ?? subject.themeJa ?? '')
+			: subject.cards.map((card) => (i18n.locale === 'ja' ? card.nameJa : card.nameEn)).join('、');
 	const resolveImage = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 	/**
 	 * 通知は素のテキスト表示（カード全体がリンク）なので TranslateToggle は使わず、
@@ -153,12 +161,29 @@
 {/snippet}
 
 {#snippet notificationHead(item: NotificationView)}
+	{@const cardKind = item.cardSubject?.type}
+	<!--
+		ゼンカツとドローの控えは本文を持たないので、「何に付いたのか」は文末で言い切る。
+		ここを投稿と同じ文言にすると、英語で "to your post" と嘘をつくことになる。
+	-->
+	{@const reactedWithSuffix =
+		cardKind === 'zenkatsu'
+			? m.notifReactedWithZenkatsuSuffix()
+			: cardKind === 'cardGet'
+				? m.notifReactedWithCardSuffix()
+				: m.notifReactedWithSuffix()}
+	{@const reactedSuffix =
+		cardKind === 'zenkatsu'
+			? m.notifReactedZenkatsuSuffix()
+			: cardKind === 'cardGet'
+				? m.notifReactedCardSuffix()
+				: m.notifReactedSuffix()}
 	<div class="notification-head">
 		<span class="what">
 			<strong>{item.actor.displayName ?? item.actor.handle}</strong
 			>{#if item.type === 'reaction' && item.reaction}{m.notifReactedWithPrefix()}{@render reactionEmoji(
 					item.reaction,
-				)}{m.notifReactedWithSuffix()}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{m.notifReactedSuffix()}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
+				)}{reactedWithSuffix}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{reactedSuffix}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
 		</span>
 		<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
 	</div>
@@ -169,6 +194,8 @@
 	<!-- 返信/メンションは新しい投稿、リアクションは対象投稿を AppView が post に入れる。 -->
 	{#if item.type === 'diary' && item.diary}<p class="notification-subject">
 			{stripMarkdown(item.diary.text)}
+		</p>{:else if item.cardSubject}<p class="notification-subject">
+			{cardSubjectText(item.cardSubject)}
 		</p>{:else if item.post?.contentWarning}<p class="notification-subject">
 			{m.contentWarningNotification()}
 		</p>{:else if item.post?.text}{#if translated}<p class="notification-label">

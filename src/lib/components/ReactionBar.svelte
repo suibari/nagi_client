@@ -35,6 +35,14 @@
 		readOnly?: boolean;
 	} = $props();
 	const REACTION = 'com.suibari.nagi.reaction';
+	/**
+	 * カード枠を解放できる subject。**AppView の `isEligibleReactionCardTrigger` と対。**
+	 *
+	 * ゼンカツの提出とドローの控えにもリアクションは付くが、枠は開かない
+	 * （開くとゲームが自分で供給を生み、レアリティ・インフレが速まる。docs/zenkatsu.md 8.6）。
+	 * ここで絞らないと、サーバが 400 を返すたびに報酬のエラートーストが出る。
+	 */
+	const REWARDING_SUBJECTS = ['com.suibari.nagi.post', 'com.suibari.nagi.news'];
 	// The appview only learns about reactions via jetstream (a few seconds behind),
 	// so we keep an optimistic local copy and ignore prop-driven resets for a while
 	// after a local toggle — otherwise the next feed refresh would undo the click.
@@ -181,7 +189,7 @@
 				ontoggled?.(true);
 				// リアクション自体の成功を確定してから、独立したカード報酬を請求する。
 				// 報酬側の一時失敗で、PDSに作成済みのリアクションを巻き戻してはいけない。
-				if (uri.split('/')[2] !== viewerDid) {
+				if (uri.split('/')[2] !== viewerDid && REWARDING_SUBJECTS.includes(uri.split('/')[3])) {
 					reactionCardReward.claim(viewerDid, res.data.uri);
 				}
 			}

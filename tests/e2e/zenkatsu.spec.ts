@@ -695,3 +695,125 @@ test('card hand is available from AppView while authenticated card status waits 
 		release();
 	}
 });
+
+test('card news items carry reactions, open the card, and headline a world-first combo', async ({
+	page,
+}) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	const card = {
+		volume: 1,
+		id: 7,
+		rarity: 'SR',
+		attribute: 'wind',
+		atk: 1800,
+		def: 1200,
+		owned: true,
+		nameJa: '追い風の相棒',
+		nameEn: 'Tailwind buddy',
+		raceJa: 'もふもふ族',
+		raceEn: 'Fluffy',
+		textJa: '背中を押してくれる。',
+		textEn: 'It gives you a push.',
+	};
+	await page.route('**/xrpc/**', (route) =>
+		route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.getCardNews**', (route) =>
+		route.fulfill({
+			json: {
+				items: [
+					{
+						uri: 'at://did:plc:demo/com.suibari.nagi.zenkatsu/2026-09-19',
+						cid: 'bafy-demo',
+						type: 'comboFound',
+						author: { did: 'did:plc:demo', handle: 'demo.example' },
+						at: '2026-09-19T01:23:00Z',
+						themeJa: 'お題',
+						themeEn: 'Theme',
+						cards: [card],
+						tailwindCount: 1,
+						combos: [1, 2].map((id) => ({
+							volume: 1,
+							id,
+							nameJa: `発見コンボ${id}`,
+							nameEn: `Combo ${id}`,
+							descJa: 'カードがつながった！',
+							descEn: 'Connected!',
+						})),
+						pioneerCombos: [
+							{
+								volume: 1,
+								id: 1,
+								nameJa: '発見コンボ1',
+								nameEn: 'Combo 1',
+								descJa: 'カードがつながった！',
+								descEn: 'Connected!',
+							},
+						],
+						reactions: [{ emoji: '🎉', reactors: [], hasMoreReactors: true }],
+					},
+				],
+			},
+		}),
+	);
+	await page.goto('/cards');
+	await page.getByRole('tab', { name: 'ニュース', exact: true }).click();
+	// 世界初の発見は、ゼンカツの回そのものだが見出しが変わる。
+	await expect(page.locator('.headline.pioneer')).toHaveText(
+		'コンボ「発見コンボ1」を世界で最初に見つけた！',
+	);
+	// 世界初の印は、成立した2つのうち pioneer のぶんだけに付く。
+	await expect(page.locator('.zk-pioneer-note')).toHaveCount(1);
+	await expect(page.locator('.zk-combo').first()).toContainText('世界で最初に見つけた！');
+	// 既存のリアクションが並び、絵文字を足す導線がある。
+	await expect(page.locator('.card-reactions .reaction-emoji')).toHaveText('🎉');
+	await expect(
+		page.locator('.card-reactions').getByRole('button', { name: 'リアクションする', exact: true }),
+	).toBeVisible();
+	// 札をタップすると拡大表示が開く。
+	await page.locator('.card-slot').first().click();
+	const dialog = page.getByRole('dialog');
+	await expect(dialog).toBeVisible();
+	await expect(dialog.locator('#draw-title')).toHaveText('追い風の相棒');
+	await dialog.getByRole('button', { name: '閉じる', exact: true }).click();
+	await expect(dialog).not.toBeVisible();
+});
+
+test('zenkatsu records carry a reaction row', async ({ page }) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.route('**/xrpc/**', (route) =>
+		route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', (route) =>
+		route.fulfill({
+			json: {
+				theme: {
+					volume: 1,
+					id: 1,
+					themeDate: '2026-09-19',
+					attribute: 'wind',
+					tone: 'sunao',
+					textJa: '公開のお題',
+					textEn: 'Public theme',
+				},
+				submissions: [
+					{
+						uri: 'at://did:plc:demo/com.suibari.nagi.zenkatsu/2026-09-19',
+						cid: 'bafy-demo',
+						author: { did: 'did:plc:demo', handle: 'demo.example' },
+						cards: [],
+						commentJa: 'すてきな1枚だね！',
+						commentPending: false,
+						tailwindCount: 0,
+						combos: [],
+						reactions: [{ emoji: '🌸', reactors: [], hasMoreReactors: true }],
+						createdAt: '2026-09-19T00:00:00Z',
+						indexedAt: '2026-09-19T00:00:00Z',
+					},
+				],
+			},
+		}),
+	);
+	await page.goto('/cards');
+	await expect(page.locator('.record .card-reactions .reaction-emoji')).toHaveText('🌸');
+});

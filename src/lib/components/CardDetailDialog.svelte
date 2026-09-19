@@ -221,7 +221,12 @@
 					<p class="draw-bubble">{comment}</p>
 				{:else if commentTimedOut}
 					<p class="draw-bubble muted">{m.cardCommentNotReady()}</p>
-				{:else if card.owned}
+				{:else if card.owned && actor}
+					<!--
+						「考え中」を出すのは、実際にコメントを取り直しているときだけ
+						（ポーリングの条件と同じ）。actor が無い＝他人の札を見ているので、
+						こちらへ向けた言葉は最初から存在しない。出すと永久に点が回る。
+					-->
 					<p class="draw-bubble thinking">
 						<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
 						<span class="visually-hidden">{m.cardCommentThinking()}</span>

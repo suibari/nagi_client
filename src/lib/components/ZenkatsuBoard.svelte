@@ -15,6 +15,8 @@
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardBotReview from './CardBotReview.svelte';
+	import CardDetailDialog from './CardDetailDialog.svelte';
+	import CardItemReactions from './CardItemReactions.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import ZenkatsuPlay from './ZenkatsuPlay.svelte';
 	import ZenkatsuDevReset from './ZenkatsuDevReset.svelte';
@@ -52,6 +54,11 @@
 	let viewerFailed = $state(false);
 	let needsAuthorization = $state(false);
 	let reauthBusy = $state(false);
+	/**
+	 * 記録の札をタップしたときの拡大表示。**他人の札なので `draw` も `actor` も渡さない**
+	 * （ドロー演出は自分が引いた瞬間のもので、botたんコメントは持ち主にしか出ない）。
+	 */
+	let opened = $state<CardView>();
 
 	const keyOf = (c: { volume: number; id: number }) => `${c.volume}:${c.id}`;
 
@@ -324,7 +331,12 @@
 					</div>
 					<ul class="played">
 						{#each s.cards as card (card.volume + ':' + card.id)}
-							<li><AffirmationCard {card} /></li>
+							<li>
+								<button type="button" class="card-slot" onclick={() => (opened = card)}>
+									<AffirmationCard {card} />
+									<span class="visually-hidden">{m.cardOpenDetail()}</span>
+								</button>
+							</li>
 						{/each}
 					</ul>
 					<ZenkatsuMarks tailwindCount={s.tailwindCount} combos={s.combos} />
@@ -332,6 +344,7 @@
 						comment={commentOf(s) || m.zenkatsuCommentPending()}
 						pending={s.commentPending}
 					/>
+					<CardItemReactions uri={s.uri} cid={s.cid} reactions={s.reactions} />
 				</li>
 			{/each}
 		</ul>
@@ -354,6 +367,9 @@
 {/if}
 
 <!-- 提出後の一覧再取得中も、カットインと総評の画面を維持する。 -->
+{#if opened}
+	<CardDetailDialog initial={opened} onclose={() => (opened = undefined)} />
+{/if}
 {#if showGuide}
 	<ZenkatsuHelp id="zenkatsu-guide" {maxCards} onclose={() => (showGuide = false)} />
 {/if}
@@ -586,6 +602,19 @@
 	}
 	.played li {
 		inline-size: clamp(72px, 22vw, 96px);
+	}
+	/* 拡大表示のトリガ。カードの寸法は親の li が決めるので、ボタン側は素通しにする。 */
+	.card-slot {
+		display: block;
+		inline-size: 100%;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-s);
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
 	}
 	.more {
 		display: block;

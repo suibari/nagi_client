@@ -34,6 +34,9 @@ const baseScopes = [
 	// 新機能の権限は permission set の古いキャッシュでも再認可で取得できるよう明示する。
 	'rpc:com.suibari.nagi.getZenkatsu?aud=*',
 	'repo:com.suibari.nagi.zenkatsu',
+	// カードニュースは未認証でも読めるが、自分のリアクションを見分けるのに認証が要る。
+	'rpc:com.suibari.nagi.getCardNews?aud=*',
+	'repo:com.suibari.nagi.cardGet',
 	BLUEMOJI_SCOPE,
 	BLUESKY_PROFILE_SCOPE,
 ];
