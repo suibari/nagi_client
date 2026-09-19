@@ -504,7 +504,7 @@ for (const status of [403, 503]) {
 		});
 		await page.goto('/dev/e2e/zenkatsu?board');
 		await expect(page.locator('.theme-text')).toContainText('公開のお題');
-		await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeDisabled();
+		await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
 		if (status === 403) {
 			await expect(
 				page.getByRole('button', { name: '再ログインして権限を更新', exact: true }),
@@ -569,7 +569,7 @@ test('card news groups dates across pagination without displaying times', async 
 	await expect(page.locator('.item time')).toHaveCount(0);
 });
 
-test('a slow viewer request offers retry and can recover', async ({ page }) => {
+test('a slow viewer request does not block opening the game', async ({ page }) => {
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.route('**/xrpc/**', (route) =>
 		route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
@@ -600,12 +600,13 @@ test('a slow viewer request offers retry and can recover', async ({ page }) => {
 	try {
 		await page.goto('/dev/e2e/zenkatsu?board');
 		await expect(page.locator('.theme-text')).toContainText('公開のお題');
-		await expect(page.getByText('プレイ情報を確認しています…', { exact: true })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
+		await expect(page.getByText('プレイ情報を確認しています…', { exact: true })).toHaveCount(0);
 		await expect(
 			page.getByText('プレイ情報の取得に時間がかかっています。もう一度試せます。', { exact: true }),
 		).toBeVisible({ timeout: 10_000 });
-		await page.getByRole('button', { name: 'もう一度', exact: true }).click();
-		await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
+		await page.getByRole('button', { name: 'プレイする', exact: true }).click();
+		await expect(page.getByRole('dialog')).toBeVisible();
 	} finally {
 		release();
 	}
@@ -648,8 +649,11 @@ test('card hand is available from AppView while authenticated card status waits 
 			},
 		});
 	});
-	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', (route) =>
-		route.fulfill({
+	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', async (route) => {
+		const headers = route.request().headers();
+		const authenticated = !!(headers['atproto-proxy'] || headers['x-viewer-did']);
+		if (authenticated) await stalled;
+		await route.fulfill({
 			json: {
 				theme: {
 					volume: 1,
@@ -661,10 +665,18 @@ test('card hand is available from AppView while authenticated card status waits 
 					textEn: 'Public theme',
 				},
 				submissions: [],
-				viewer: { submitted: false, maxCards: 3, playable: [{ volume: 1, id: 1, available: 1 }] },
+				...(authenticated
+					? {
+							viewer: {
+								submitted: false,
+								maxCards: 3,
+								playable: [{ volume: 1, id: 1, available: 1 }],
+							},
+						}
+					: {}),
 			},
-		}),
-	);
+		});
+	});
 	try {
 		await page.goto('/dev/e2e/zenkatsu?board&cards-through-network');
 		await page.getByRole('button', { name: 'プレイする', exact: true }).click();

@@ -13,6 +13,7 @@
 
 	let {
 		hand,
+		cardsLoading = false,
 		maxCards,
 		theme,
 		onsubmit,
@@ -21,6 +22,7 @@
 		loadFeed = getZenkatsu,
 	}: {
 		hand: { p: ZenkatsuPlayableCard; card: CardView }[];
+		cardsLoading?: boolean;
 		maxCards: number;
 		theme: ZenkatsuThemeView;
 		onsubmit: (cards: { volume: number; id: number }[]) => Promise<string>;
@@ -286,7 +288,9 @@
 					<h2>{m.zenkatsuHand()}</h2>
 					<p>{m.zenkatsuPickPrompt({ max: maxCards })}</p>
 				</div>
-				{#if !hand.length}<p class="note">{m.zenkatsuNoCards()}</p>{/if}
+				{#if !hand.length}<p class="note">
+						{cardsLoading ? m.zenkatsuCardsLoading() : m.zenkatsuNoCards()}
+					</p>{/if}
 				<ul class="hand">
 					{#each hand as entry (key(entry.p))}
 						{@const chosen = picked.some((c) => key(c) === key(entry.card))}

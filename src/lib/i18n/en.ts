@@ -1274,6 +1274,7 @@ export const en: Messages = {
 	zenkatsuRestingShort: 'On cooldown',
 	zenkatsuStock: (o: { n: number }) => `${o.n} left`,
 	zenkatsuNoCards: "You don't have any cards yet. Draw one first!",
+	zenkatsuCardsLoading: 'Loading your cards…',
 	zenkatsuRecordTitle: "Today's plays",
 	zenkatsuRecordEmpty: 'Nobody has played yet. Be the first!',
 	zenkatsuCommentPending: 'Bot-tan is thinking...',

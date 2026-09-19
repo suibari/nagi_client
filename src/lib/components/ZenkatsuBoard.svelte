@@ -170,6 +170,10 @@
 		loadedFor = key;
 		untrack(() => void load(undefined, sameDay));
 	});
+	$effect(() => {
+		const did = $session?.did;
+		if (did) void cardCollections.ensure(did);
+	});
 
 	// 手札の定義は図鑑（getCards）から引く。playable は「どれを何枚出せるか」だけを持つ。
 	let collection = $derived($session ? cardCollections.view($session.did) : undefined);
@@ -181,7 +185,14 @@
 			]),
 		),
 	);
-	let playable = $derived(feed?.viewer?.playable ?? []);
+	// プレイ情報の取得中も、公開されている所持カードで手札を先に開く。
+	// 取得後はサーバーが返す休息・在庫を優先する。
+	let playable = $derived(
+		feed?.viewer?.playable ??
+			[...(collection?.cards ?? []), ...(collection?.anniversaryCards ?? [])]
+				.filter((card) => card.owned)
+				.map((card) => ({ volume: card.volume, id: card.id, available: 1 })),
+	);
 	// 出せるものを先に、おやすみ中は後ろへ。図鑑の順は崩さない。
 	let hand = $derived(
 		playable
@@ -190,7 +201,7 @@
 			.sort((a, b) => (b.p.available > 0 ? 1 : 0) - (a.p.available > 0 ? 1 : 0)),
 	);
 	let maxCards = $derived(feed?.viewer?.maxCards ?? 3);
-	let canPlay = $derived(!!$session && !!feed?.viewer && !feed.viewer.submitted && !date);
+	let canPlay = $derived(!!$session && !!feed && !feed.viewer?.submitted && !date);
 
 	async function submit(cards: { volume: number; id: number }[]) {
 		if (!feed) throw new Error('Missing theme');
@@ -261,10 +272,8 @@
 		{/if}
 		{#if $session && !date}
 			{#if viewerLoading && !feed.viewer}
-				<p class="note" role="status">
-					{viewerSlow ? m.zenkatsuViewerSlow() : m.zenkatsuViewerLoading()}
-				</p>
 				{#if viewerSlow}
+					<p class="note" role="status">{m.zenkatsuViewerSlow()}</p>
 					<button class="ghost" onclick={() => void load(undefined, true)}>{m.retry()}</button>
 				{/if}
 			{:else if viewerFailed}
@@ -348,6 +357,7 @@
 {#if picking && feed}
 	<ZenkatsuPlay
 		{hand}
+		cardsLoading={!collection && !cardCollections.entry($session?.did ?? '')?.failed}
 		{maxCards}
 		theme={feed.theme}
 		onsubmit={submit}

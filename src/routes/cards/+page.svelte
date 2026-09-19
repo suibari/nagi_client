@@ -23,8 +23,6 @@
 	let tab = $state<TabId>('zenkatsu');
 </script>
 
-<svelte:head><title>{m.cardsPageTitle()}</title></svelte:head>
-
 <div class="tabs" role="tablist">
 	{#each tabs as t (t.id)}
 		<button
