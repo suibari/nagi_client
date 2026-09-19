@@ -1214,6 +1214,7 @@ export const en: Messages = {
 	zenkatsuDevReset: '[dev] Clear today and replay',
 	zenkatsuDevResetDone: 'Cleared. You can play again',
 	navCards: 'Cards',
+	zenkatsuNotPlayedBadge: 'Play today',
 	// Zenkatsu! (answer the day's situation with 1-3 cards from your collection)
 	zenkatsuTitle: 'Zenkatsu!',
 	zenkatsuTagline: 'The all-affirming card game',
