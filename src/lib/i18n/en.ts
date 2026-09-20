@@ -1223,6 +1223,19 @@ export const en: Messages = {
 	trophySolo: 'Single Tile Wait!',
 	trophyTailwind: 'Three Suit Straight!',
 	trophyCombo: 'Combo Discovery',
+	trophyGuideOpen: 'How to earn them',
+	trophyGuideTitle: 'How trophies are awarded',
+	trophyGuideIntro:
+		'All awards except Nagikatsu Chief are granted as soon as your play meets their conditions.',
+	trophyBotanDescription:
+		'At 4 AM Japan time the next morning, Bot-tan chooses one player from a shortlist after looking at the theme and cards played.',
+	trophyAdventureDescription: 'Awarded when you play at least one SR or rarer card.',
+	trophySoloDescription: 'Awarded when you answer with exactly one card.',
+	trophyTailwindDescription:
+		'Awarded when you play three cards and all three match the recommended attribute.',
+	trophyComboDescription:
+		'Awarded to everyone who discovers a combo for the first time in the world.',
+	trophyGuideNote: 'One play can earn more than one award.',
 	zenkatsuTailwindBadge: (o: { n: number }) => `Recommended x${o.n}`,
 	zenkatsuResultTailwind: 'Recommended attribute',
 	zenkatsuResultTailwindNone: "You skipped today's recommended attribute. That is a choice too",
