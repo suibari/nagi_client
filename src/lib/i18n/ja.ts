@@ -78,6 +78,7 @@ export const ja = {
 	newsEmpty: 'いま掲載できる明るいニュースはありません。',
 	newsRecommendedHeading: 'あなたに近いかも',
 	newsRecommendedReason: (p: { genre: string }) => `おすすめの理由：${p.genre}`,
+	newsBackToList: '← 全肯定ニュースの一覧へ',
 	newsReadArticle: '記事を読む',
 	newsQuote: '引用',
 	newsShare: '共有',

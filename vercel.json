@@ -40,10 +40,6 @@
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
 		{
-			"source": "/news",
-			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
-		},
-		{
 			"source": "/notifications",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
@@ -95,7 +91,6 @@
 		{ "source": "/diary", "destination": "/200" },
 		{ "source": "/feed", "destination": "/200" },
 		{ "source": "/login", "destination": "/200" },
-		{ "source": "/news", "destination": "/200" },
 		{ "source": "/notifications", "destination": "/200" },
 		{ "source": "/oauth/:path*", "destination": "/200" },
 		{ "source": "/onboarding", "destination": "/200" },

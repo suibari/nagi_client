@@ -28,7 +28,7 @@
 		readPositions,
 	} from '$lib/my-nagi/unread.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
-	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import { threadToConversationItem } from '$lib/thread/conversation';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
@@ -64,6 +64,9 @@
 	let channelsUnread = $state(false);
 	let listUnreadView = $state<UnreadView | undefined>(undefined);
 	let channelsUnreadView = $state<UnreadView | undefined>(undefined);
+	// プリレンダ時は $session も目印も無いのでヒーローが出る（＝クローラと初回訪問者が見る形）。
+	// 戻ってきた利用者には、OAuth 復元を待たずに最初の描画から出さない。
+	const showHero = $derived(!$session && !hadRecentSession());
 	let newsCarousel = $state<{
 		scrollPrevious: () => void;
 		scrollNext: () => void;
@@ -311,28 +314,32 @@
 	/>
 {/snippet}
 
+<!-- 見出しとヒーローは $oauthReady のゲートの外に置く。ゲートの中だとプリレンダ結果が
+     スピナーだけになり、検索エンジンにも初回訪問者にも中身の無いトップページが出る。
+     並び（見出し → ヒーロー → botたん欄）は guest-posts/privacy.test.ts が固定している。
+     CardDrawEntry は自身が $oauthReady を見ているので、ここでは何も描かない。 -->
+<div class="my-nagi-heading">
+	<h1 class="my-nagi-title">{m.navMyNagi()}</h1>
+	<CardDrawEntry variant="header" />
+</div>
+
+{#if showHero}
+	<section class="hero">
+		<p class="eyebrow">{m.heroEyebrow()}</p>
+		<h1>{m.heroTitle()}</h1>
+		<p class="hero-body">{m.heroBody()}</p>
+		<div class="hero-actions">
+			<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>
+			<a class="hero-join" href="/login">{m.joinCta()}</a>
+		</div>
+	</section>
+{/if}
+
 {#if !$oauthReady}
 	<div class="timeline-loading" role="status" aria-label={m.loading()}>
 		<span class="spinner" aria-hidden="true"></span>
 	</div>
 {:else}
-	<div class="my-nagi-heading">
-		<h1 class="my-nagi-title">{m.navMyNagi()}</h1>
-		<CardDrawEntry variant="header" />
-	</div>
-
-	{#if !$session}
-		<section class="hero">
-			<p class="eyebrow">{m.heroEyebrow()}</p>
-			<h1>{m.heroTitle()}</h1>
-			<p class="hero-body">{m.heroBody()}</p>
-			<div class="hero-actions">
-				<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>
-				<a class="hero-join" href="/login">{m.joinCta()}</a>
-			</div>
-		</section>
-	{/if}
-
 	<MyNagiSection
 		title={m.myNagiBotTitle()}
 		icon="bot"

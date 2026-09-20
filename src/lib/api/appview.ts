@@ -4,6 +4,7 @@ import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { env } from '$env/dynamic/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
+	ActorView,
 	CardCollectionView,
 	CardNewsFeed,
 	BookmarkFolderView,
@@ -26,6 +27,7 @@ import type {
 	NotificationView,
 	NewsPage,
 	NewsSubmissionItem,
+	NewsView,
 	NewsSubmissionPreview,
 	Page,
 	ProfileFeedFilter,
@@ -219,6 +221,30 @@ export const getPositiveNews = (lang: 'ja' | 'en', cursor?: string) => {
 	return withPublicFallback<NewsPage>(
 		'com.suibari.nagi.getPositiveNews',
 		`/xrpc/com.suibari.nagi.getPositiveNews?${params}`,
+	);
+};
+/**
+ * ニュース1件。`/news/<rkey>` がプリレンダ済みでないとき（公開直後）だけ使う。
+ *
+ * `auth: 'none'` にしているのは、ビルドからも匿名で叩くため。PDS プロキシを通さないので
+ * OAuth スコープの追加がいらず、24時間の認可キャッシュにも引っかからない。
+ */
+export const getNewsItem = (rkey: string, lang: 'ja' | 'en') =>
+	call<{ news: NewsView; botActor?: ActorView }>(
+		'com.suibari.nagi.getNewsItem',
+		`/xrpc/com.suibari.nagi.getNewsItem?rkey=${encodeURIComponent(rkey)}&lang=${lang}`,
+		{},
+		'none',
+	);
+/** 索引対象ニュースの列挙。ビルドが prerender の entries と sitemap を作るために叩く。 */
+export const listIndexableNews = (lang: 'ja' | 'en', cursor?: string) => {
+	const params = new URLSearchParams({ limit: '200', lang });
+	if (cursor) params.set('cursor', cursor);
+	return call<NewsPage>(
+		'com.suibari.nagi.listIndexableNews',
+		`/xrpc/com.suibari.nagi.listIndexableNews?${params}`,
+		{},
+		'none',
 	);
 };
 export const getThread = (uri: string) =>

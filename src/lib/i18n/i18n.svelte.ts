@@ -85,6 +85,67 @@ export function dateLocale(): 'ja-JP' | 'en-US' {
 	return i18n.locale === 'ja' ? 'ja-JP' : 'en-US';
 }
 
+/**
+ * ブラウザ側の初期化（レイアウトの onMount → initLocale）が済んだか。
+ *
+ * プリレンダした HTML と、ハイドレーション直後に描く内容は一致していないといけない。
+ * `dateLocale()` と `m.*` はどちらも browserReady が立つまで日本語を返すので既にその形だが、
+ * **タイムゾーンと「今日」は別** —— `toLocaleString` は実行環境のタイムゾーンを使い、
+ * ビルドは UTC、閲覧者は JST になる。`new Date()` を基準にした「今日 / 昨日」も
+ * ビルド時刻で固まってしまう。どちらも下の stable* 系で描き、ここが true になってから
+ * 閲覧者の環境へ切り替える。
+ */
+export function localeReady(): boolean {
+	return prefs.browserReady;
+}
+
+const JST = 'Asia/Tokyo';
+/** JST 固定の YYYY-MM-DD。en-CA はこの並びを返す。 */
+const JST_DAY = new Intl.DateTimeFormat('en-CA', {
+	timeZone: JST,
+	year: 'numeric',
+	month: '2-digit',
+	day: '2-digit',
+});
+
+/** dayKey の SSR 版。ビルド機のタイムゾーンで日付がずれないよう JST に固定する。 */
+export function stableDayKey(iso?: string): string | undefined {
+	if (!iso) return undefined;
+	const date = new Date(iso);
+	return Number.isNaN(date.getTime()) ? undefined : JST_DAY.format(date);
+}
+
+/**
+ * dayHeading の SSR 版。「今日 / 昨日」はビルド時刻が基準になってしまうので使わず、
+ * 年も常に出す（省略の可否が「今年かどうか」＝ビルド時刻に依存するため）。
+ */
+export function stableDayHeading(iso: string): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return '';
+	return m.dateWithWeekday({
+		date: date.toLocaleDateString('ja-JP', {
+			timeZone: JST,
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+		}),
+		weekday: date.toLocaleDateString('ja-JP', { timeZone: JST, weekday: 'short' }),
+	});
+}
+
+/** ニュースカードの掲載時刻の SSR 版。ロケールとタイムゾーンを固定する。 */
+export function stableDateTime(iso: string): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return '';
+	return date.toLocaleString('ja-JP', {
+		timeZone: JST,
+		month: 'short',
+		day: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	});
+}
+
 /** "11秒前" / "3 hours ago" のような相対時刻。チャンネルの更新日時などに使う。 */
 export function relativeTime(iso: string): string {
 	const then = new Date(iso).getTime();

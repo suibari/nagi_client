@@ -45,6 +45,25 @@ function rememberSession(value: OAuthSession): void {
 	void requestPersistentOAuthStorage();
 }
 
+/**
+ * 直近までサインインしていた形跡があるか。
+ *
+ * 真実源は IndexedDB の OAuth セッションだが、その復元は非同期で、終わるまで
+ * `$session` は null のまま。プリレンダした HTML は常に未ログイン向けの内容なので、
+ * 復元を待つと戻ってきた利用者に一瞬それが見えてしまう。この目印は同期的に読めるので、
+ * ハイドレーション最初の描画から正しい側を出せる。
+ *
+ * **判定にしか使わないこと。** サインアウトや別端末では外れるし、認可の根拠にはならない。
+ */
+export function hadRecentSession(): boolean {
+	try {
+		return Boolean(localStorage.getItem(OAUTH_DID_KEY));
+	} catch {
+		// SSR（localStorage が無い）と、ストレージを塞いだブラウザ。どちらも未ログイン扱いでよい。
+		return false;
+	}
+}
+
 export function setOAuthReturnTo(path: string): void {
 	if (typeof window === 'undefined' || !path.startsWith('/') || path.startsWith('//')) return;
 	try {
