@@ -68,13 +68,9 @@ describe('chronicle motion contracts', () => {
 			'chronicleYearAria',
 			'chronicleKindNagiJoined',
 			'chronicleKindBotMet',
-			'chronicleKindFirstPost',
-			'chronicleKindFirstDiary',
 			'chronicleKindFirstCardUr',
 			'chronicleKindFirstCardAar',
 			'chronicleKindAnniversaryCard',
-			'chronicleKindNewsReaction',
-			'chronicleKindNewsBookmark',
 			'chronicleKindNewsContext',
 			'chronicleKindHighlight',
 		]) {

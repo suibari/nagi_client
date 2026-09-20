@@ -8,7 +8,12 @@ import {
 	searchPostsByQuery,
 } from '$lib/api/appview';
 import type { FeedItem, TimelinePage } from '$lib/api/types';
-import { affirmationFeedRead, feedRead, globalFeedRead, homeFeedRead } from '$lib/feed/unread.svelte';
+import {
+	affirmationFeedRead,
+	feedRead,
+	globalFeedRead,
+	homeFeedRead,
+} from '$lib/feed/unread.svelte';
 import { m } from '$lib/i18n/i18n.svelte';
 import type { ReadWatermark } from '$lib/unread/watermark.svelte';
 import { channelLabel } from './labels.svelte';
@@ -72,10 +77,7 @@ function homeFetcher(onAuthError: (failed: boolean) => void) {
 		try {
 			return await getHomeTimeline(cursor);
 		} catch (error) {
-			if (
-				error instanceof ApiRequestError &&
-				(error.status === 401 || error.status === 403)
-			) {
+			if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
 				onAuthError(true);
 				throw new Error(m.homeFeedAuthRequired());
 			}

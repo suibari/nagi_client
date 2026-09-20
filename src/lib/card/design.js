@@ -27,14 +27,14 @@ export const TAGLINE_MAX_LINES = 5;
 export const TAGLINE_MAX_WIDTH = CARD_WIDTH - CARD_PADDING - QR_SIZE - CARD_PADDING - 32;
 /** tokens.css のライトテーマ相当。共有画像は閲覧者のテーマに左右されない。 */
 export const CARD_COLOR = {
-    bg: '#ffffff',
-    glow: '#dffbfc',
-    text: '#2f3542',
-    textStrong: '#202632',
-    textMuted: '#747d8c',
-    line: '#d5e5e7',
-    accent: '#00ced1',
-    accentStrong: '#007b7e',
-    accentSoft: '#c9f7f7',
-    decorative: '#ff9ff3',
+	bg: '#ffffff',
+	glow: '#dffbfc',
+	text: '#2f3542',
+	textStrong: '#202632',
+	textMuted: '#747d8c',
+	line: '#d5e5e7',
+	accent: '#00ced1',
+	accentStrong: '#007b7e',
+	accentSoft: '#c9f7f7',
+	decorative: '#ff9ff3',
 };

@@ -113,9 +113,15 @@ export async function listOwnCollections(): Promise<string[]> {
 }
 
 /** 自分の repo の指定 collection の最新1件を取得（設定画面のプレビュー用）。 */
-export async function fetchOwnLatestRecord(collection: string): Promise<Record<string, unknown> | null> {
+export async function fetchOwnLatestRecord(
+	collection: string,
+): Promise<Record<string, unknown> | null> {
 	const s = current();
-	const res = await new Agent(s).com.atproto.repo.listRecords({ repo: s.did, collection, limit: 1 });
+	const res = await new Agent(s).com.atproto.repo.listRecords({
+		repo: s.did,
+		collection,
+		limit: 1,
+	});
 	const rec = res.data.records[0];
 	return rec ? (rec.value as Record<string, unknown>) : null;
 }
@@ -130,7 +136,12 @@ export async function resolveOwnPdsUrl(): Promise<string> {
 const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 function isBlob(v: unknown): v is { $type?: string; ref?: unknown; mimeType?: string } {
-	return !!v && typeof v === 'object' && (('$type' in v && (v as { $type?: string }).$type === 'blob') || ('ref' in v && 'mimeType' in v));
+	return (
+		!!v &&
+		typeof v === 'object' &&
+		(('$type' in v && (v as { $type?: string }).$type === 'blob') ||
+			('ref' in v && 'mimeType' in v))
+	);
 }
 export function isImageBlob(v: unknown): boolean {
 	return isBlob(v) && typeof v.mimeType === 'string' && v.mimeType.startsWith('image/');
@@ -159,7 +170,8 @@ export function detectRole(path: string, value: unknown): AppLinkFieldRole | nul
 	if (isImageBlob(value)) return 'image';
 	if (typeof value === 'string') {
 		const key = path.split('.').pop() ?? '';
-		if (DATETIME_RE.test(value) || (/At$/.test(key) && !Number.isNaN(Date.parse(value)))) return 'datetime';
+		if (DATETIME_RE.test(value) || (/At$/.test(key) && !Number.isNaN(Date.parse(value))))
+			return 'datetime';
 		if (/^(https?|at):\/\//.test(value)) return 'url';
 		return 'value';
 	}
@@ -268,7 +280,8 @@ export function autoSelectFields(record: Record<string, unknown>): string[] {
 	if (image) selected.push(image.path);
 	const skip = new Set(['createdAt', 'updatedAt', 'indexedAt']);
 	const rep = leaves.find(
-		(l) => l.role === 'value' && typeof l.value === 'string' && !skip.has(l.path.split('.').pop() ?? ''),
+		(l) =>
+			l.role === 'value' && typeof l.value === 'string' && !skip.has(l.path.split('.').pop() ?? ''),
 	);
 	if (rep) selected.push(rep.path);
 	const dt = leaves.find((l) => l.role === 'datetime');

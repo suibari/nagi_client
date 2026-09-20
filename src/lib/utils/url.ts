@@ -9,7 +9,8 @@ export function isInternalUrl(urlStr: string | undefined | null): boolean {
 	try {
 		const base = typeof window !== 'undefined' ? window.location.href : 'https://nagi.app';
 		const url = new URL(urlStr, base);
-		const currentOrigin = typeof window !== 'undefined' ? window.location.origin : new URL(base).origin;
+		const currentOrigin =
+			typeof window !== 'undefined' ? window.location.origin : new URL(base).origin;
 		return url.origin === currentOrigin;
 	} catch {
 		return false;

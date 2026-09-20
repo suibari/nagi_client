@@ -53,7 +53,11 @@
 						size={13}
 					/>{/if}
 				{#if f.role === 'url'}
-					<a href={href} target={internal ? undefined : '_blank'} rel={internal ? undefined : 'noopener noreferrer'}>{f.value}</a>
+					<a
+						{href}
+						target={internal ? undefined : '_blank'}
+						rel={internal ? undefined : 'noopener noreferrer'}>{f.value}</a
+					>
 				{:else}
 					<span>{f.value}</span>
 				{/if}
@@ -81,7 +85,11 @@
 				{@const decoratedAppUri = decorateSiblingUrl(link.appUri)}
 				{@const internalApp = isInternalUrl(decoratedAppUri)}
 				{@const appHref = internalApp ? toInternalPath(decoratedAppUri) : decoratedAppUri}
-				<a class="name" href={appHref} target={internalApp ? undefined : '_blank'} rel={internalApp ? undefined : 'noopener noreferrer'}>{link.label}</a
+				<a
+					class="name"
+					href={appHref}
+					target={internalApp ? undefined : '_blank'}
+					rel={internalApp ? undefined : 'noopener noreferrer'}>{link.label}</a
 				>
 			{:else}
 				<span class="name">{link.label}</span>
