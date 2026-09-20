@@ -674,14 +674,11 @@ export const ja = {
 	// 超ポジティブLv）。「出会った日」と言い切ると Nagi 専用ユーザで嘘になるので、
 	// 「関わりはじめた日」にしてある。Nagi 登録より後に来ても順序として正しい。
 	chronicleKindBotMet: 'botたんと関わりはじめた日',
-	chronicleKindFirstPost: 'はじめての投稿',
 	chronicleKindFirstDiary: 'はじめての日記',
 	chronicleKindFirstCardUr: 'はじめての UR カード',
 	chronicleKindFirstCardAar: 'はじめての AAR カード',
 	chronicleKindAnniversaryCard: '記念日カードを受け取った日',
-	chronicleKindNewsReaction: 'このニュースにリアクションした',
-	chronicleKindNewsBookmark: 'このニュースをブックマークした',
-	chronicleKindNewsContext: 'そのころ世の中では',
+	chronicleKindNewsContext: 'この頃の世間の出来事',
 	chronicleKindHighlight: 'この日のこと',
 
 	// login

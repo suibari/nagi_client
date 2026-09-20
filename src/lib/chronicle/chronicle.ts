@@ -42,15 +42,12 @@ export function mergeChronicle(
 const ICONS: Record<ChronicleEventKind, string> = {
 	nagi_joined: 'home',
 	bot_met: 'heart',
-	first_post: 'edit',
 	first_diary: 'draft',
 	first_card_ur: 'cards',
 	first_card_aar: 'cards',
 	anniversary_card: 'cards',
-	news_reaction: 'heart',
-	news_bookmark: 'bookmark',
-	news_context: 'newspaper',
 	highlight: 'pin',
+	news_context: 'newspaper',
 };
 
 export const chronicleEventIcon = (kind: ChronicleEventKind): string => ICONS[kind];
@@ -83,3 +80,12 @@ export function chronicleEventDetail(
 		(ja ? (event.detailJa ?? event.detailEn) : (event.detailEn ?? event.detailJa)) || undefined
 	);
 }
+
+/**
+ * その月のニュースを、同じ月の最後の項目の**下に紐づける**ための判定。
+ *
+ * サーバは news_context を月末の日付で返すので、昇順に並べればその月のまとめの後ろに来る。
+ * 表示側はそれを独立した節目ではなく、**直前のまとめに付く一行**として描く
+ * （日付も出さない。「8/19 まとめ ＋ その下にこの頃の世間の出来事」という読ませ方）。
+ */
+export const isAttachedNews = (event: ChronicleEventView): boolean => event.kind === 'news_context';
