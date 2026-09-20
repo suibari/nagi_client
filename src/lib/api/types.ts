@@ -661,7 +661,7 @@ export type ZenkatsuSubmissionCombo = {
 export type ZenkatsuPlayableCard = {
 	volume: number;
 	id: number;
-	/** 在庫のうち、今日出せる枚数。0 なら全部おやすみ中。 */
+	/** 在庫のうち、今日出せる枚数。0 なら全部クールダウン中。 */
 	available: number;
 	/** available が 0 のとき、いちばん早く戻る1枚があと何日でおきるか。 */
 	restingDays?: number;

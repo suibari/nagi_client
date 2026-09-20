@@ -1,23 +1,26 @@
 <script lang="ts">
 	import CardNewsList from '$lib/components/CardNewsList.svelte';
 	import ZenkatsuDeck from '$lib/components/ZenkatsuDeck.svelte';
+	import ZenkatsuRecord from '$lib/components/ZenkatsuRecord.svelte';
 	import ZenkatsuBoard from '$lib/components/ZenkatsuBoard.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 
 	/**
-	 * 全肯定カードのページ。3タブで役割を分ける。
+	 * 全肯定カードのページ。4タブで役割を分ける。
 	 * - ゼンカツ！: 今日のお題・プレイ・記録
 	 * - ニュース: 今この瞬間の出来事（レアドローと、ゼンカツの珍しい回）
-	 * - マイデッキ: 自分の図鑑・見つけたコンボ・トロフィー
+	 * - レコード: 見つけたコンボ・受け取ったトロフィー
+	 * - マイデッキ: 自分のカード図鑑
 	 *
 	 * ゼンカツを先頭に置く。**1日1回しかできない**のはこのタブだけで、
 	 * 遅れて気づくほど損をする。ニュースとデッキはいつ見ても同じものが見られる。
 	 */
-	type TabId = 'news' | 'collection' | 'zenkatsu';
+	type TabId = 'news' | 'record' | 'collection' | 'zenkatsu';
 	const tabs: { id: TabId; label: () => string }[] = [
 		{ id: 'zenkatsu', label: () => m.cardsTabZenkatsu() },
 		{ id: 'news', label: () => m.cardsTabNews() },
+		{ id: 'record', label: () => m.cardsTabRecord() },
 		{ id: 'collection', label: () => m.cardsTabCollection() },
 	];
 	let tab = $state<TabId>('zenkatsu');
@@ -36,6 +39,12 @@
 
 {#if tab === 'news'}
 	<CardNewsList />
+{:else if tab === 'record'}
+	{#if $session}
+		<ZenkatsuRecord did={$session.did} />
+	{:else}
+		<div class="state">{m.zenkatsuSignInToPlay()}</div>
+	{/if}
 {:else if tab === 'collection'}
 	{#if $session}
 		<ZenkatsuDeck did={$session.did} />
@@ -52,6 +61,7 @@
 		gap: 4px;
 		padding: 0 1rem;
 		border-block-end: 1px solid var(--line);
+		overflow-x: auto;
 	}
 	.tabs button {
 		flex: 0 0 auto;
