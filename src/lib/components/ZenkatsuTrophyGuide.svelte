@@ -69,6 +69,7 @@
 		border-radius: 20px;
 		background: var(--bg-raised);
 		color: var(--text);
+		box-shadow: var(--shadow-pop);
 		overscroll-behavior: contain;
 	}
 	.trophy-guide::backdrop {
@@ -92,25 +93,30 @@
 		margin: 0;
 	}
 	h2 {
-		font-size: 1rem;
+		font-size: 1.15rem;
+		line-height: 1.4;
 	}
 	.close {
 		width: 44px;
 		height: 44px;
 		flex-shrink: 0;
-		border: 1px solid var(--line);
-		border-radius: var(--r-md);
-		background: var(--bg);
-		color: var(--text);
+		border: 0;
+		border-radius: var(--r-full);
+		background: transparent;
+		color: var(--text-faint);
 		font-size: 1.5rem;
 		cursor: pointer;
+	}
+	.close:hover {
+		background: var(--accent-softer);
+		color: var(--text);
 	}
 	.close:focus-visible {
 		outline: 3px solid var(--accent-strong);
 		outline-offset: 2px;
 	}
 	.content {
-		padding: 1.25rem;
+		padding: 0.3rem 1.25rem 1.25rem;
 		font-size: 0.9rem;
 		line-height: 1.7;
 	}
@@ -122,21 +128,41 @@
 		color: var(--text-faint);
 	}
 	ul {
-		margin: 1rem 0;
+		display: grid;
+		gap: 0.55rem;
+		margin: 1.2rem 0 1rem;
 		padding: 0;
 		list-style: none;
 	}
 	li {
-		padding: 0.75rem 0;
-		border-block-start: 1px solid var(--line);
+		padding: 0.85rem 1rem;
+		border-radius: var(--r-bubble);
+		background: color-mix(in srgb, var(--accent-strong) 5%, var(--bg-raised));
+	}
+	li:first-child {
+		background: color-mix(in srgb, var(--accent-strong) 11%, var(--bg-raised));
 	}
 	h3 {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
 		font-size: 0.95rem;
+		line-height: 1.4;
+	}
+	h3::before {
+		content: '';
+		width: 0.4rem;
+		height: 0.4rem;
+		flex: 0 0 auto;
+		border-radius: 50%;
+		background: var(--accent-strong);
 	}
 	li p {
-		margin-top: 0.2rem;
+		margin: 0.35rem 0 0 0.95rem;
+		font-size: 0.875rem;
 	}
 	.note {
-		font-size: 0.8rem;
+		padding-inline: 0.25rem;
+		font-size: 0.82rem;
 	}
 </style>
