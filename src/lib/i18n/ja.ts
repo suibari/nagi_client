@@ -403,7 +403,7 @@ export const ja = {
 		'ヘッダー画像が大きすぎたため、記事には添えられませんでした（1MB未満にしてください）。',
 	articleTeaserSuffix: (p: { url: string }) => `続きはNagiで：${p.url}`,
 	articleCrosspostTeaserNote:
-		'Blueskyには、冒頭の抜粋とNagiへのリンクだけを1件投稿します（全文は分割投稿しません）。',
+		'Blueskyクロスポスト時には、冒頭の抜粋とNagiへのリンクだけを1件投稿します（全文は分割投稿しません）。',
 
 	// drafts
 	draftSave: '下書きに保存',
@@ -949,7 +949,7 @@ export const ja = {
 	standardSiteFailed: 'ブログとしての公開に失敗しました',
 	standardSiteTitleLabel: 'タイトル',
 	standardSiteTitlePlaceholder: 'タイトルを入力…',
-	standardSiteTitleHint: '本文の先頭に「# 見出し」として入ります。',
+	standardSiteTitleHint: '本文の先頭に見出しとして入ります。',
 	// app links (任意 Atmosphere アプリ連携)
 	settingsAppLinksTitle: '使ってるアプリ',
 	appLinksLegend: '使ってるアプリ',
