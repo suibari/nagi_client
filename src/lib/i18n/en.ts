@@ -391,7 +391,7 @@ export const en: Messages = {
 		'The header image was too large to attach to the article (it must be under 1MB).',
 	articleTeaserSuffix: (p: { url: string }) => `Read the rest on Nagi: ${p.url}`,
 	articleCrosspostTeaserNote:
-		'Bluesky gets a single post with the opening excerpt and a link back to Nagi (the full text is not split into a thread).',
+		'When crossposting to Bluesky, only the opening excerpt and a link back to Nagi are posted, as a single post (the full text is not split into a thread).',
 
 	// drafts
 	draftSave: 'Save as draft',
@@ -913,7 +913,7 @@ export const en: Messages = {
 	standardSiteFailed: 'Could not publish as a blog post',
 	standardSiteTitleLabel: 'Title',
 	standardSiteTitlePlaceholder: 'Enter a title…',
-	standardSiteTitleHint: 'Goes in as “# Heading” at the top of the post.',
+	standardSiteTitleHint: 'Goes in as a heading at the top of the post.',
 
 	// app links (arbitrary Atmosphere app integration)
 	settingsAppLinksTitle: 'Apps I use',
