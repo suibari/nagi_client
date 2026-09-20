@@ -664,6 +664,8 @@ export const ja = {
 	diaryTabActivity: '年間アクティビティ',
 	diaryTabChronicle: '年表',
 	diaryTabsAria: '日記の表示',
+	// 年表は「自分のもの」として読ませたいので、見出しに本人の名前を入れる。
+	chronicleTitle: (p: { name: string }) => `${p.name}の年表`,
 	chronicleAbout: 'Nagi で過ごしてきた日々の節目と、そのころの出来事です。',
 	chronicleEmpty: '年表はこれから増えていきます。',
 	chronicleFetchFailed: '年表を取得できません',

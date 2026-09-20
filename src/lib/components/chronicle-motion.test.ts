@@ -8,6 +8,7 @@ const timeline = read('./ChronicleTimeline.svelte');
 const diaryPage = read('../../routes/diary/+page.svelte');
 const componentsCss = read('../../routes/styles/components.css');
 const baseCss = read('../../routes/styles/base.css');
+const newsQuoteCard = read('./NewsQuoteCard.svelte');
 const ja = read('../i18n/ja.ts');
 const en = read('../i18n/en.ts');
 
@@ -61,6 +62,7 @@ describe('chronicle motion contracts', () => {
 			'diaryTabActivity',
 			'diaryTabChronicle',
 			'diaryTabsAria',
+			'chronicleTitle',
 			'chronicleAbout',
 			'chronicleEmpty',
 			'chronicleFetchFailed',
@@ -77,6 +79,17 @@ describe('chronicle motion contracts', () => {
 			expect(ja, `ja.${key}`).toContain(`${key}:`);
 			expect(en, `en.${key}`).toContain(`${key}:`);
 		}
+	});
+
+	it('見出しは「〜の日記」。その人のための1冊として読ませる', () => {
+		expect(timeline).toContain('m.chronicleTitle({ name: displayName })');
+		// 名前が取れないうちも空にせず、節目だけ先に見せる。
+		expect(timeline).toContain('m.diaryTabChronicle()');
+	});
+
+	it('引用ニュースの botたんコメントも吹き出しで出す', () => {
+		// 一覧（NewsCard）は ChatBubble、引用だけ素のテキスト、という不揃いを無くす。
+		expect(newsQuoteCard).toContain('class="bubble bot-comment"');
 	});
 
 	it('固定文言の kind ラベルはサーバではなく i18n から引く', () => {

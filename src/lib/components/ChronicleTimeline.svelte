@@ -18,9 +18,12 @@
 
 	let {
 		did,
+		displayName,
 		preview,
 	}: {
 		did: string;
+		/** 見出しに出す本人の名前。取れないうちは節目だけ先に見せる。 */
+		displayName?: string;
 		/**
 		 * 開発専用（/dev/chronicle）。渡されたらAPIを叩かず、この配列を年表として描く。
 		 * 数年ぶんの年表を seed しないと演出を確認できない、という状態を避けるためだけの口。
@@ -119,7 +122,8 @@
 
 <section class="chronicle card">
 	<header class="chronicle-head">
-		<h2>{m.diaryTabChronicle()}</h2>
+		<!-- ただの「年表」ではなく「〜の年表」。その人のための1冊として読ませる。 -->
+		<h2>{displayName ? m.chronicleTitle({ name: displayName }) : m.diaryTabChronicle()}</h2>
 		<p>{m.chronicleAbout()}</p>
 	</header>
 
@@ -205,10 +209,21 @@
 		min-inline-size: 0;
 		max-inline-size: 100%;
 	}
+	/* 一覧の見出しより大きく、1冊の表紙のように見せる。 */
 	.chronicle-head h2 {
-		font-size: 15px;
+		font-size: 22px;
 		font-weight: 800;
+		letter-spacing: 0.01em;
 		color: var(--text-strong);
+	}
+	.chronicle-head::after {
+		content: '';
+		display: block;
+		inline-size: 40px;
+		block-size: 3px;
+		margin-block-start: 8px;
+		border-radius: var(--radius-pill);
+		background: var(--accent-strong);
 	}
 	.chronicle-head p {
 		margin-top: 2px;

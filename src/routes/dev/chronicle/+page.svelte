@@ -50,7 +50,7 @@
 </p>
 {#if spacer}<div class="dev-spacer" aria-hidden="true"></div>{/if}
 <section class="timeline">
-	<ChronicleTimeline {did} preview={items} />
+	<ChronicleTimeline {did} displayName="すいばり" preview={items} />
 </section>
 
 <style>

@@ -642,6 +642,7 @@ export const en: Messages = {
 	diaryTabActivity: 'Yearly activity',
 	diaryTabChronicle: 'Chronicle',
 	diaryTabsAria: 'Diary view',
+	chronicleTitle: (p: { name: string }) => `${p.name}'s chronicle`,
 	chronicleAbout: 'Milestones from your time on Nagi, and what was happening back then.',
 	chronicleEmpty: 'Your chronicle will grow from here.',
 	chronicleFetchFailed: 'Could not fetch the chronicle',
