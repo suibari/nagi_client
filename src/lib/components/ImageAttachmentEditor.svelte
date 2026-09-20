@@ -9,7 +9,9 @@
 	let {
 		attachments = $bindable(),
 		disabled = false,
-	}: { attachments: ImageAttachment[]; disabled?: boolean } = $props();
+		hideFirst = false,
+	}: { attachments: ImageAttachment[]; disabled?: boolean; hideFirst?: boolean } = $props();
+	let visibleAttachments = $derived(hideFirst ? attachments.slice(1) : attachments);
 	let tracked = new Map<string, ImageAttachment>();
 
 	$effect(() => {
@@ -41,9 +43,13 @@
 	onDestroy(() => tracked.forEach(releaseImage));
 </script>
 
-{#if attachments.length}
+{#if visibleAttachments.length}
 	<div class="attachment-editor">
-		<SortableImageList bind:items={attachments} {disabled}>
+		<SortableImageList
+			items={visibleAttachments}
+			{disabled}
+			onreorder={(next) => (attachments = hideFirst ? [attachments[0], ...next] : next)}
+		>
 			{#snippet children(attachment)}
 				<div class="attachment-preview">
 					{#if attachment.contentWarning}

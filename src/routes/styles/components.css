@@ -1483,13 +1483,19 @@
 	本文先頭の「# 見出し」を記事タイトルとして、1枚目の画像をヘッダーとして見せる。
 	先頭が見出しなだけの通常投稿は post.article を持たないので、ここには入らない。
 */
+.post-row.article .post-article-cover {
+	margin: -12px -14px 12px;
+	overflow: hidden;
+	border-radius: calc(var(--r-sm) - 1px) calc(var(--r-bubble) - 1px) 0 0;
+}
+.post-row.article.mine .post-article-cover {
+	border-radius: calc(var(--r-bubble) - 1px) calc(var(--r-sm) - 1px) 0 0;
+}
 .post-row.article .post-header-image {
 	display: block;
 	width: 100%;
 	max-height: min(320px, 40dvh);
-	margin: 0 0 12px;
 	object-fit: cover;
-	border-radius: var(--r-sm);
 	background: var(--surface-2);
 }
 /*

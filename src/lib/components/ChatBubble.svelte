@@ -141,6 +141,7 @@
 	let editError = $state('');
 	let editImageEditor = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 	let reactionPickerOpen = $state(false);
+	let contentRevealed = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
 	let postRow: HTMLDivElement;
 	let mine = $derived(localGuest || $session?.did === post.author.did);
@@ -578,6 +579,25 @@
 		class:bubble-sending={post.optimisticState === 'sending'}
 		class:bubble-created={post.optimisticState === 'indexing'}
 	>
+		{#if articleHeader}
+			<div class="post-article-cover">
+				<ContentWarningMask
+					kind="content"
+					active={moderationDisplay.warn}
+					bind:revealed={contentRevealed}
+					title={moderationWarningText}
+				>
+					<img
+						class="post-header-image"
+						src={resolveAsset(articleHeader.url)}
+						alt={articleHeader.alt}
+						style={articleHeader.aspectRatio
+							? `aspect-ratio: ${articleHeader.aspectRatio.width} / ${articleHeader.aspectRatio.height}`
+							: undefined}
+					/>
+				</ContentWarningMask>
+			</div>
+		{/if}
 		<div class="meta">
 			<div class="meta-author-line">
 				{#if localGuest}
@@ -616,18 +636,9 @@
 		<ContentWarningMask
 			kind="content"
 			active={moderationDisplay.warn}
+			bind:revealed={contentRevealed}
 			title={moderationWarningText}
 		>
-			{#if articleHeader}
-				<img
-					class="post-header-image"
-					src={resolveAsset(articleHeader.url)}
-					alt={articleHeader.alt}
-					style={articleHeader.aspectRatio
-						? `aspect-ratio: ${articleHeader.aspectRatio.width} / ${articleHeader.aspectRatio.height}`
-						: undefined}
-				/>
-			{/if}
 			{#if editing}
 				<div class="inline-edit" use:editEscape>
 					{#snippet editTools()}
