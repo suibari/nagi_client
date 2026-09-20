@@ -104,7 +104,14 @@ async function navigateWithTicket(url: URL, popup: Window | null, fallbackHref: 
 	};
 	try {
 		const { ticket } = await createSsoTicket(url.origin);
-		go(buildTicketUrl({ appOrigin: url.origin, ticket, returnTo: returnToFrom(url), ssoPath: SSO_PATH }));
+		go(
+			buildTicketUrl({
+				appOrigin: url.origin,
+				ticket,
+				returnTo: returnToFrom(url),
+				ssoPath: SSO_PATH,
+			}),
+		);
 		return;
 	} catch (error) {
 		console.warn('[sso] ticket unavailable, falling back to did hint:', error);

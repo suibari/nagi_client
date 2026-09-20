@@ -17,7 +17,9 @@ describe('url utils', () => {
 
 	it('should convert internal URLs to relative path', () => {
 		expect(toInternalPath('/profile/test')).toBe('/profile/test');
-		expect(toInternalPath('https://nagi.app/profile/test?foo=bar#hash')).toBe('/profile/test?foo=bar#hash');
+		expect(toInternalPath('https://nagi.app/profile/test?foo=bar#hash')).toBe(
+			'/profile/test?foo=bar#hash',
+		);
 		expect(toInternalPath('https://example.com/profile/test')).toBe(undefined);
 	});
 });

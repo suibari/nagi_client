@@ -19,9 +19,7 @@ const pdsCache = new Map<string, string>();
 type DidService = { id: string; type?: string; serviceEndpoint?: unknown };
 
 function pdsFromDoc(doc: { service?: DidService[] } | null): string | null {
-	const svc = doc?.service?.find(
-		(s) => s.id === '#atproto_pds' || s.id.endsWith('#atproto_pds'),
-	);
+	const svc = doc?.service?.find((s) => s.id === '#atproto_pds' || s.id.endsWith('#atproto_pds'));
 	const endpoint = svc?.serviceEndpoint;
 	return typeof endpoint === 'string' && endpoint.startsWith('https://') ? endpoint : null;
 }

@@ -649,13 +649,9 @@ export const en: Messages = {
 	chronicleYearAria: (p: { year: string }) => `Milestones in ${p.year}`,
 	chronicleKindNagiJoined: 'The day you arrived on Nagi',
 	chronicleKindBotMet: 'When you first connected with Bot-tan',
-	chronicleKindFirstPost: 'Your first post',
-	chronicleKindFirstDiary: 'Your first diary',
 	chronicleKindFirstCardUr: 'Your first UR card',
 	chronicleKindFirstCardAar: 'Your first AAR card',
 	chronicleKindAnniversaryCard: 'An anniversary card arrived',
-	chronicleKindNewsReaction: 'You reacted to this story',
-	chronicleKindNewsBookmark: 'You bookmarked this story',
 	chronicleKindNewsContext: 'Around that time, in the world',
 	chronicleKindHighlight: 'That day',
 

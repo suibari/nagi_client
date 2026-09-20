@@ -83,7 +83,9 @@ describe('parsePostText: links', () => {
 	});
 
 	it('lists each distinct URL once', () => {
-		const { urls } = parsePostText('https://example.com/a と https://example.com/a と https://example.com/b');
+		const { urls } = parsePostText(
+			'https://example.com/a と https://example.com/a と https://example.com/b',
+		);
 		expect(urls).toEqual(['https://example.com/a', 'https://example.com/b']);
 	});
 });
@@ -226,7 +228,10 @@ describe('restorePostEditState', () => {
 
 	it('ignores facets with impossible ranges', () => {
 		const restored = restorePostEditState('abc', [
-			{ index: { byteStart: 2, byteEnd: 99 }, features: [{ $type: 'app.bsky.richtext.facet#tag' }] },
+			{
+				index: { byteStart: 2, byteEnd: 99 },
+				features: [{ $type: 'app.bsky.richtext.facet#tag' }],
+			},
 		]);
 		expect(restored.text).toBe('abc');
 	});

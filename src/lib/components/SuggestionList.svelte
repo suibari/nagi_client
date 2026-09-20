@@ -39,7 +39,12 @@
 </script>
 
 {#if items.length}
-	<div bind:this={containerEl} class="mention-suggestions {listClass}" role="listbox" aria-label={ariaLabel}>
+	<div
+		bind:this={containerEl}
+		class="mention-suggestions {listClass}"
+		role="listbox"
+		aria-label={ariaLabel}
+	>
 		{#each items as item, index (keyOf(item))}
 			<button
 				type="button"

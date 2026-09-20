@@ -15,9 +15,6 @@
 	const items: ChronicleEventView[] = [
 		event({ id: 'first:bot_met', kind: 'bot_met', date: '2024-11-20' }),
 		event({ id: 'first:nagi_joined', kind: 'nagi_joined', date: '2025-05-31' }),
-		event({ id: 'first:first_post', kind: 'first_post', date: '2025-06-01' }),
-		event({ id: 'first:first_diary', kind: 'first_diary', date: '2025-06-02' }),
-		event({ id: 'news_bookmark:x', kind: 'news_bookmark', date: '2026-06-18' }),
 		event({ id: 'first:first_card_ur', kind: 'first_card_ur', date: '2026-07-02' }),
 		event({ id: 'anniversary:a', kind: 'anniversary_card', date: '2026-07-07' }),
 		event({

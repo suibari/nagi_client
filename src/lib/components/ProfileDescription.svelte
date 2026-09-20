@@ -14,9 +14,7 @@
 		// Nagi 内プロフィールへ渡して AppView 側で解決する。
 		richText.detectFacetsWithoutResolution();
 		return [...richText.segments()].map((segment) => {
-			const link = segment.link?.uri
-				? decorateSiblingUrl(httpUrl(segment.link.uri))
-				: undefined;
+			const link = segment.link?.uri ? decorateSiblingUrl(httpUrl(segment.link.uri)) : undefined;
 			if (link) {
 				const isInternal = isInternalUrl(link);
 				const href = isInternal ? toInternalPath(link) : link;
