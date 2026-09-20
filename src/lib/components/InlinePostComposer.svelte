@@ -67,9 +67,7 @@
 				? channelName
 				: m.postScopeFeedShort(),
 	);
-	const scopeIcon = $derived(
-		scope === 'kossori' ? 'hide' : channelName ? 'hash' : 'home',
-	);
+	const scopeIcon = $derived(scope === 'kossori' ? 'hide' : channelName ? 'hash' : 'home');
 </script>
 
 <div class="post-row mine composer-row">

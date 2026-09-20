@@ -306,13 +306,9 @@ export type DiaryPage = { items: DiaryView[]; cursor?: string; hasMore: boolean 
 export type ChronicleEventKind =
 	| 'nagi_joined'
 	| 'bot_met'
-	| 'first_post'
-	| 'first_diary'
 	| 'first_card_ur'
 	| 'first_card_aar'
 	| 'anniversary_card'
-	| 'news_reaction'
-	| 'news_bookmark'
 	/** 日記から抜いたその月の出来事。**年表の主役。** */
 	| 'highlight'
 	/** そのころ世の中では。月ごとに1件で全員共通。まとめの下に紐づけて出す。 */
@@ -331,7 +327,7 @@ export type ChronicleEventView = {
 	diaryDate?: string;
 	/** anniversary_card / first_card_* のとき。 */
 	card?: CardView;
-	/** news_* のとき。 */
+	/** news_context のとき。 */
 	news?: NewsView;
 };
 export type ChroniclePage = {

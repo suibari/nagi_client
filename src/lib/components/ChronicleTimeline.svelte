@@ -46,13 +46,9 @@
 	const labels = $derived<Partial<Record<ChronicleEventKind, string>>>({
 		nagi_joined: m.chronicleKindNagiJoined(),
 		bot_met: m.chronicleKindBotMet(),
-		first_post: m.chronicleKindFirstPost(),
-		first_diary: m.chronicleKindFirstDiary(),
 		first_card_ur: m.chronicleKindFirstCardUr(),
 		first_card_aar: m.chronicleKindFirstCardAar(),
 		anniversary_card: m.chronicleKindAnniversaryCard(),
-		news_reaction: m.chronicleKindNewsReaction(),
-		news_bookmark: m.chronicleKindNewsBookmark(),
 		highlight: m.chronicleKindHighlight(),
 		news_context: m.chronicleKindNewsContext(),
 	});

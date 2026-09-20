@@ -37,17 +37,17 @@ describe('groupChronicleByYear', () => {
 
 describe('mergeChronicle', () => {
 	it('id が重なる行は足さない', () => {
-		const held = [event({ id: 'first:first_diary', kind: 'first_diary', date: '2025-06-01' })];
+		const held = [event({ id: 'first:nagi_joined', kind: 'nagi_joined', date: '2025-06-01' })];
 		const merged = mergeChronicle(held, [
-			event({ id: 'first:first_diary', kind: 'first_diary', date: '2025-06-01' }),
+			event({ id: 'first:nagi_joined', kind: 'nagi_joined', date: '2025-06-01' }),
 			event({ id: 'stored:1', kind: 'highlight', date: '2025-07-01' }),
 		]);
-		expect(merged.map((e) => e.id)).toEqual(['first:first_diary', 'stored:1']);
+		expect(merged.map((e) => e.id)).toEqual(['first:nagi_joined', 'stored:1']);
 	});
 });
 
 describe('chronicleEventLabel', () => {
-	const labels = { nagi_joined: 'Nagi にやってきた日', first_diary: 'はじめての日記' };
+	const labels = { nagi_joined: 'Nagi にやってきた日' };
 
 	it('固定文言の kind はクライアントの i18n から引く（サーバに作らせない）', () => {
 		const item = event({ id: 'first:nagi_joined', kind: 'nagi_joined', date: '2025-05-31' });

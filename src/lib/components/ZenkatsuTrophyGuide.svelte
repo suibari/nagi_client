@@ -60,12 +60,12 @@
 
 <style>
 	.trophy-guide {
-		width: min(520px, calc(100vw - 24px));
+		width: min(560px, calc(100vw - 32px));
 		max-width: none;
-		max-height: calc(100dvh - 24px);
+		max-height: calc(100dvh - 32px);
 		margin: auto;
 		padding: 0;
-		border: 0;
+		border: 1px solid var(--line);
 		border-radius: 20px;
 		background: var(--bg-raised);
 		color: var(--text);
@@ -83,7 +83,8 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		padding: 1.1rem 1.25rem 0.4rem;
+		padding: 0.75rem 1.25rem;
+		border-bottom: 1px solid var(--line);
 		background: var(--bg-raised);
 	}
 	h2,
@@ -117,12 +118,13 @@
 	.content {
 		padding: 0.3rem 1.25rem 1.25rem;
 		font-size: 0.9rem;
-		line-height: 1.6;
+		line-height: 1.7;
 	}
 	.content:focus {
 		outline: none;
 	}
-	.intro {
+	.intro,
+	.note {
 		color: var(--text-faint);
 	}
 	ul {
@@ -161,7 +163,6 @@
 	}
 	.note {
 		padding-inline: 0.25rem;
-		color: var(--text-faint);
 		font-size: 0.82rem;
 	}
 </style>

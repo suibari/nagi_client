@@ -926,10 +926,7 @@ export async function putProfile(displayName: string, description: string, draft
  * 所持していない札・クールダウン中の札を書いても AppView が照合して索引しない。
  * つまりこの経路でズルはできないが、無駄弾を撃たないようクライアント側でも選択肢を絞ること。
  */
-export async function createZenkatsu(
-	themeDate: string,
-	cards: { volume: number; id: number }[],
-) {
+export async function createZenkatsu(themeDate: string, cards: { volume: number; id: number }[]) {
 	const s = current();
 	return indexed(
 		new Agent(s).com.atproto.repo.putRecord({
@@ -959,9 +956,7 @@ export function cardGetRkey(
 	source: 'my_nagi' | 'reaction' | 'anniversary',
 	slot?: number,
 ): string {
-	return source === 'anniversary'
-		? `${drawDate}-anniv-${slot ?? 0}`
-		: `${drawDate}-${source}`;
+	return source === 'anniversary' ? `${drawDate}-anniv-${slot ?? 0}` : `${drawDate}-${source}`;
 }
 
 /**

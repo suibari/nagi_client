@@ -33,7 +33,10 @@ describe('parseContentWarning', () => {
 	});
 
 	it('rejects more than one pair', () => {
-		expect(parseContentWarning('||a|| と ||b||')).toEqual({ status: 'invalid', reason: 'multiple' });
+		expect(parseContentWarning('||a|| と ||b||')).toEqual({
+			status: 'invalid',
+			reason: 'multiple',
+		});
 	});
 
 	it('rejects an empty range', () => {
