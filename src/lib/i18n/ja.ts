@@ -540,6 +540,7 @@ export const ja = {
 		'登録した絵文字はあなたのPDSにBluemoji（blue.moji.collection.item）として保存され、Nagiのみんながリアクションに使えます。',
 	emojiUploadNote:
 		'PNG・WebP・GIF・APNG・Lottie。静止画は長辺128pxに縮小します。アニメーションは規格上限内のものを登録できます。',
+	emojiSingleTitle: 'ひとつ登録',
 	emojiNameLabel: '絵文字名（半角英数字、_と-）',
 	emojiAltLabel: '説明（任意）',
 	emojiUpload: '登録する',
@@ -566,6 +567,10 @@ export const ja = {
 	emojiBatchDuplicate: '選択したファイル内で名前が重複しています',
 	emojiBatchUpload: '登録できる絵文字をまとめて登録',
 	emojiBatchUploaded: (p: { count: number }) => `${p.count}個の絵文字を登録しました`,
+	emojiBatchProgress: (p: { completed: number; total: number; succeeded: number }) =>
+		`${p.completed} / ${p.total}件を処理（登録成功 ${p.succeeded}件）`,
+	emojiBatchProgressLabel: '絵文字の登録進捗',
+	emojiViewMine: '登録した絵文字を見る',
 	emojiBatchStateReady: '登録できます',
 	emojiBatchStateProcessing: '登録中',
 	emojiBatchStateSuccess: '登録しました',
