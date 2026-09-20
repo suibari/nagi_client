@@ -13,6 +13,7 @@
 	let botActor = $state<ActorView>();
 	// 年表の見出し「〜の日記」に出す本人の名前。
 	let displayName = $state<string>();
+	let avatar = $state<string>();
 	let botActorFor = '';
 
 	/**
@@ -56,6 +57,7 @@
 			.then((response) => {
 				botActor = response.feed.botActor ?? botActor;
 				displayName = response.profile.displayName || response.profile.handle;
+				avatar = response.profile.avatar;
 			})
 			.catch(() => {});
 	});
@@ -75,7 +77,7 @@
 	</div>
 	<section class="timeline">
 		{#if tab === 'chronicle'}
-			<ChronicleTimeline did={$session.did} {displayName} />
+			<ChronicleTimeline did={$session.did} {displayName} {avatar} />
 		{:else}
 			<DiaryCalendar did={$session.did} {initialDate} {botActor} />
 		{/if}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getChronicle } from '$lib/api/appview';
+	import { APPVIEW_URL, getChronicle } from '$lib/api/appview';
 	import type { CardView, ChronicleEventKind, ChronicleEventView } from '$lib/api/types';
 	import {
 		chronicleEventDetail,
@@ -19,11 +19,14 @@
 	let {
 		did,
 		displayName,
+		avatar,
 		preview,
 	}: {
 		did: string;
 		/** 見出しに出す本人の名前。取れないうちは節目だけ先に見せる。 */
 		displayName?: string;
+		/** 年表の表紙に添える本人のプロフィール画像。 */
+		avatar?: string;
 		/**
 		 * 開発専用（/dev/chronicle）。渡されたらAPIを叩かず、この配列を年表として描く。
 		 * 数年ぶんの年表を seed しないと演出を確認できない、という状態を避けるためだけの口。
@@ -41,6 +44,7 @@
 	let loadedFor = '';
 
 	const years = $derived(groupChronicleByYear(items));
+	const avatarSrc = $derived(avatar?.startsWith('/') && !preview ? APPVIEW_URL + avatar : avatar);
 
 	/**
 	 * 固定文言の kind はここで i18n から引く。サーバは kind しか返さないので、
@@ -121,7 +125,12 @@
 </script>
 
 <section class="chronicle card">
-	<header class="chronicle-head">
+	<header class="chronicle-head" class:has-avatar={!!avatarSrc}>
+		{#if avatarSrc}
+			<div class="chronicle-portrait" aria-hidden="true">
+				<img src={avatarSrc} alt="" loading="lazy" />
+			</div>
+		{/if}
 		<!-- ただの「年表」ではなく「〜の年表」。その人のための1冊として読ませる。 -->
 		<h2>{displayName ? m.chronicleTitle({ name: displayName }) : m.diaryTabChronicle()}</h2>
 		<p>{m.chronicleAbout()}</p>
@@ -220,6 +229,43 @@
 		gap: 12px;
 		min-inline-size: 0;
 		max-inline-size: 100%;
+	}
+	.chronicle-head {
+		position: relative;
+		isolation: isolate;
+		min-inline-size: 0;
+	}
+	.chronicle-head.has-avatar {
+		min-block-size: 112px;
+		padding-block-start: 8px;
+		padding-inline-end: clamp(96px, 30%, 148px);
+	}
+	.chronicle-portrait {
+		position: absolute;
+		z-index: -1;
+		inset-block-start: -16px;
+		inset-inline-end: -16px;
+		inline-size: clamp(116px, 36%, 168px);
+		block-size: calc(100% + 16px);
+		overflow: hidden;
+		border-start-end-radius: var(--radius-m);
+		pointer-events: none;
+		-webkit-mask-image:
+			linear-gradient(to right, transparent, #000 36%),
+			linear-gradient(to bottom, #000 62%, transparent);
+		-webkit-mask-composite: source-in;
+		mask-image:
+			linear-gradient(to right, transparent, #000 36%),
+			linear-gradient(to bottom, #000 62%, transparent);
+		mask-composite: intersect;
+	}
+	.chronicle-portrait img {
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+		object-position: center 35%;
+		filter: grayscale(1) contrast(1.18);
+		opacity: 0.85;
 	}
 	/* 一覧の見出しより大きく、1冊の表紙のように見せる。 */
 	.chronicle-head h2 {
