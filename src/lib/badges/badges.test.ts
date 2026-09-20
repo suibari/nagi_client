@@ -34,7 +34,7 @@ describe('actorBadges', () => {
 	});
 });
 
-describe('今日のゼンカツ部長', () => {
+describe('今日のナギカツ部長', () => {
 	it('受賞していなければ出さない', () => {
 		expect(actorBadges(actor({})).map((b) => b.id)).not.toContain('zenkatsu-chief');
 	});
@@ -45,7 +45,7 @@ describe('今日のゼンカツ部長', () => {
 		);
 		expect(badge).toBeDefined();
 		// 絵文字だけだとスマホで意味が伝わらない。
-		expect(badge?.label).toContain('ゼンカツ部長');
+		expect(badge?.label).toBe('🏆今日のナギカツ部長');
 		expect(badge?.title).toBeTruthy();
 	});
 

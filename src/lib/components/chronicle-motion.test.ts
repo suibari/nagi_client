@@ -35,10 +35,12 @@ describe('chronicle motion contracts', () => {
 
 	it('そのころ世の中では、はまとめに付く一行として描く（独立した節目にしない）', () => {
 		// 「8/19 まとめ ＋ その下にこの頃の世間の出来事」という読ませ方。
-		// 大きなニュースカードや botたんコメントは年表には出さない。
+		// 月まとめのニュースだけは大きなニュースカードにしない。
+		const attached = /{#if isAttachedNews\(event\)}([\s\S]*?){:else}/.exec(timeline)?.[1] ?? '';
 		expect(timeline).toContain('isAttachedNews(event)');
-		expect(timeline).toContain('chronicle-aside');
-		expect(timeline).not.toContain('NewsCard');
+		expect(attached).toContain('chronicle-aside');
+		expect(attached).not.toContain('NewsCard');
+		expect(timeline).toContain('<NewsCard news={event.news} embedded />');
 	});
 
 	it('過去の1枚を見返すのに祝わせない（CardDetailDialog へ draw を渡さない）', () => {
@@ -66,10 +68,13 @@ describe('chronicle motion contracts', () => {
 			'chronicleYearAria',
 			'chronicleKindNagiJoined',
 			'chronicleKindBotMet',
+			'chronicleKindFirstPost',
 			'chronicleKindFirstDiary',
 			'chronicleKindFirstCardUr',
 			'chronicleKindFirstCardAar',
 			'chronicleKindAnniversaryCard',
+			'chronicleKindNewsReaction',
+			'chronicleKindNewsBookmark',
 			'chronicleKindNewsContext',
 			'chronicleKindHighlight',
 		]) {

@@ -42,10 +42,13 @@ export function mergeChronicle(
 const ICONS: Record<ChronicleEventKind, string> = {
 	nagi_joined: 'home',
 	bot_met: 'heart',
+	first_post: 'edit',
 	first_diary: 'draft',
 	first_card_ur: 'cards',
 	first_card_aar: 'cards',
 	anniversary_card: 'cards',
+	news_reaction: 'heart',
+	news_bookmark: 'bookmark',
 	highlight: 'pin',
 	news_context: 'newspaper',
 };

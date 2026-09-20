@@ -711,7 +711,7 @@ export const resetZenkatsu = () =>
 		{ method: 'POST' },
 		'required',
 	);
-/** マイデッキ。自分が成立させたコンボと、受け取ったトロフィー。要認証。 */
+/** レコード。自分が成立させたコンボと6種類のトロフィー。要認証。 */
 export const getZenkatsuDeck = () =>
 	call<ZenkatsuDeckView>(
 		'com.suibari.nagi.getZenkatsuDeck',

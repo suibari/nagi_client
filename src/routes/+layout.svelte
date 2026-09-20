@@ -36,6 +36,7 @@
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
 	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
 	import { cardCollections } from '$lib/cards/collection.svelte';
+	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
 
 	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
 		'/': {
@@ -191,6 +192,7 @@
 		};
 	});
 	onMount(() => {
+		const stopZenkatsuNotice = startZenkatsuNotice();
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
 		// フィードのタブ構成を localStorage から読む。プリレンダでは既定タブのままなので、
@@ -215,6 +217,7 @@
 		window.addEventListener('online', repairPush);
 		document.addEventListener('visibilitychange', onVisibility);
 		return () => {
+			stopZenkatsuNotice();
 			window.removeEventListener('online', repairPush);
 			document.removeEventListener('visibilitychange', onVisibility);
 		};

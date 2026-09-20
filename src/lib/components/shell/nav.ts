@@ -1,6 +1,7 @@
 import { writable, type Readable } from 'svelte/store';
 import { m } from '$lib/i18n/i18n.svelte';
 import { unreadCount } from '$lib/notifications/unread.svelte';
+import { unplayedToday } from '$lib/zenkatsu/notice';
 
 /**
  * ナビ項目に重ねる未読表示。ドットと数値バッジで真実源が違う（既読ウォーターマーク /
@@ -10,7 +11,7 @@ import { unreadCount } from '$lib/notifications/unread.svelte';
 export type NavBadge = {
 	/** 0 なら非表示。dot は 1 以上で点灯するだけで数は出さない。 */
 	unread: Readable<number>;
-	style: 'dot' | 'count';
+	style: 'dot' | 'count' | 'text';
 	aria: (count: number) => string;
 };
 export type NavItem = { href: string; label: () => string; icon: string; badge?: NavBadge };
@@ -32,7 +33,12 @@ const channels: NavItem = { href: '/channels', label: m.navChannels, icon: 'hash
 const news: NavItem = { href: '/news', label: m.navNews, icon: 'newspaper' };
 const diary: NavItem = { href: '/diary', label: m.navDiary, icon: 'draft' };
 // 全肯定カード（ニュース / カードリスト / ゼンカツ！の3タブ）。
-const cards: NavItem = { href: '/cards', label: m.navCards, icon: 'cards' };
+const cards: NavItem = {
+	href: '/cards',
+	label: m.navCards,
+	icon: 'cards',
+	badge: { unread: unplayedToday, style: 'text', aria: () => m.zenkatsuNotPlayedBadge() },
+};
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
 
 /** PC の区切りも含めた表示順。グループを足せば区切り線も自動で増える。 */

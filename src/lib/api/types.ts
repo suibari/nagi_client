@@ -306,10 +306,13 @@ export type DiaryPage = { items: DiaryView[]; cursor?: string; hasMore: boolean 
 export type ChronicleEventKind =
 	| 'nagi_joined'
 	| 'bot_met'
+	| 'first_post'
 	| 'first_diary'
 	| 'first_card_ur'
 	| 'first_card_aar'
 	| 'anniversary_card'
+	| 'news_reaction'
+	| 'news_bookmark'
 	/** 日記から抜いたその月の出来事。**年表の主役。** */
 	| 'highlight'
 	/** そのころ世の中では。月ごとに1件で全員共通。まとめの下に紐づけて出す。 */
@@ -703,7 +706,7 @@ export type ZenkatsuSubmissionCombo = {
 export type ZenkatsuPlayableCard = {
 	volume: number;
 	id: number;
-	/** 在庫のうち、今日出せる枚数。0 なら全部おやすみ中。 */
+	/** 在庫のうち、今日出せる枚数。0 なら全部クールダウン中。 */
 	available: number;
 	/** available が 0 のとき、いちばん早く戻る1枚があと何日でおきるか。 */
 	restingDays?: number;

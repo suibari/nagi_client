@@ -13,6 +13,7 @@
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
+	import NewsCard from './NewsCard.svelte';
 	import Icon from './shell/Icon.svelte';
 
 	let {
@@ -45,10 +46,13 @@
 	const labels = $derived<Partial<Record<ChronicleEventKind, string>>>({
 		nagi_joined: m.chronicleKindNagiJoined(),
 		bot_met: m.chronicleKindBotMet(),
+		first_post: m.chronicleKindFirstPost(),
 		first_diary: m.chronicleKindFirstDiary(),
 		first_card_ur: m.chronicleKindFirstCardUr(),
 		first_card_aar: m.chronicleKindFirstCardAar(),
 		anniversary_card: m.chronicleKindAnniversaryCard(),
+		news_reaction: m.chronicleKindNewsReaction(),
+		news_bookmark: m.chronicleKindNewsBookmark(),
 		highlight: m.chronicleKindHighlight(),
 		news_context: m.chronicleKindNewsContext(),
 	});
@@ -173,6 +177,11 @@
 										<AffirmationCard card={event.card} />
 									</button>
 								{/if}
+								{#if event.news}
+									<div class="chronicle-news">
+										<NewsCard news={event.news} embedded />
+									</div>
+								{/if}
 								{#if event.diaryDate}
 									<a class="chronicle-link" href={`/diary?date=${event.diaryDate}`}>
 										{m.chronicleOpenDiary()} →
@@ -295,6 +304,10 @@
 		font-size: 13px;
 		color: var(--text);
 		overflow-wrap: anywhere;
+	}
+	.chronicle-news {
+		margin-block-start: 4px;
+		min-inline-size: 0;
 	}
 	.chronicle-link {
 		justify-self: start;

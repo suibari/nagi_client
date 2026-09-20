@@ -923,7 +923,7 @@ export async function putProfile(displayName: string, description: string, draft
  * こうすると repo 側でも「1日1本」が構造的に決まる（同じ rkey は上書きしかできない）。
  * ただし AppView は先着のみを索引し、消して出し直しても通さないので、上書きは効かない。
  *
- * 所持していない札・おやすみ中の札を書いても AppView が照合して索引しない。
+ * 所持していない札・クールダウン中の札を書いても AppView が照合して索引しない。
  * つまりこの経路でズルはできないが、無駄弾を撃たないようクライアント側でも選択肢を絞ること。
  */
 export async function createZenkatsu(
