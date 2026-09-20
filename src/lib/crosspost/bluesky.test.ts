@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Facet } from '$lib/atproto/facets';
 import { parsePostText } from '$lib/atproto/facets';
 import type { PostAssets, PostDraft } from '$lib/atproto/records';
-import { getCrosspostSelfLabels, prepareCrosspostContent, splitForBluesky } from './bluesky';
+import {
+	buildArticleTeaser,
+	getCrosspostSelfLabels,
+	prepareCrosspostContent,
+	splitForBluesky,
+	stripLeadingHeading,
+} from './bluesky';
 
 const bytes = (value: string) => new TextEncoder().encode(value).length;
 const graphemeCount = (value: string) =>
@@ -180,3 +186,60 @@ describe('getCrosspostSelfLabels', () => {
 		).toEqual([{ val: 'sexual' }]);
 	});
 });
+
+describe('article teaser', () => {
+	const url = 'https://nagi.suibari.com/thread/did:plc:example/3abc';
+	const teaser = (text: string, facets: Facet[] = []) =>
+		buildArticleTeaser({ text, facets }, { url, teaser: `続きはNagiで：${url}` });
+
+	it('drops the leading title so it is not repeated in the excerpt', () => {
+		expect(stripLeadingHeading('# ねこの話\n\n本文です').text).toBe('本文です');
+	});
+
+	it('keeps a leading h2 — only the h1 title is the article title', () => {
+		expect(stripLeadingHeading('## まえがき\n\n本文です').text).toBe('## まえがき\n\n本文です');
+	});
+
+	it('shifts facet offsets by the removed heading', () => {
+		const heading = '# ねこの話\n\n';
+		const removed = bytes(heading);
+		const stripped = stripLeadingHeading(`${heading}https://example.com`, [
+			link(removed, removed + bytes('https://example.com'), 'https://example.com'),
+		]);
+		expect(stripped.facets[0].index).toEqual({
+			byteStart: 0,
+			byteEnd: bytes('https://example.com'),
+		});
+	});
+
+	it('keeps a short article in one post and links back to Nagi', () => {
+		const { text, facets, excerpt } = teaser('# ねこの話\n\nみじかい本文');
+
+		expect(text).toBe(`みじかい本文\n\n続きはNagiで：${url}`);
+		expect(excerpt).toBe('みじかい本文');
+		// 誘導文の URL がリンクになっている。
+		const linkFacet = facets.at(-1)!;
+		expect(linkFacet.features).toEqual([{ $type: 'app.bsky.richtext.facet#link', uri: url }]);
+		expect(text.slice(...byteRange(text, linkFacet))).toBe(url);
+	});
+
+	it('truncates a long article to fit one post, leaving room for the link', () => {
+		const { text, excerpt } = teaser(`# ながい話\n\n${'あ'.repeat(2000)}`);
+
+		expect(graphemeCount(text)).toBeLessThanOrEqual(300);
+		expect(bytes(text)).toBeLessThanOrEqual(3000);
+		expect(excerpt.endsWith('…')).toBe(true);
+		expect(text.endsWith(`続きはNagiで：${url}`)).toBe(true);
+	});
+});
+
+/** facet のバイト範囲を、文字列の slice に使える文字インデックスへ直す。 */
+function byteRange(text: string, facet: Facet): [number, number] {
+	const encoder = new TextEncoder();
+	const decoder = new TextDecoder();
+	const all = encoder.encode(text);
+	return [
+		decoder.decode(all.slice(0, facet.index.byteStart)).length,
+		decoder.decode(all.slice(0, facet.index.byteEnd)).length,
+	];
+}

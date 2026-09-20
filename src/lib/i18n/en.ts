@@ -205,7 +205,8 @@ export const en: Messages = {
 	aboutCrosspostBody: 'Post to Nagi and Bluesky at once',
 	aboutCrosspostLink: 'Set up crossposting',
 	aboutStandardSiteTitle: 'Publish as a blog',
-	aboutStandardSiteBody: 'Publish posts as blog articles that compatible apps can read',
+	aboutStandardSiteBody:
+		'Write on the composer’s Blog tab and the post is also published as an article compatible apps can read',
 	aboutProfileTitle: 'A separate profile',
 	aboutProfileBody: 'Independent from your Bluesky one',
 	aboutProfileLink: 'Edit your profile',
@@ -328,6 +329,7 @@ export const en: Messages = {
 	postModalModesAria: 'Switch composer mode',
 	postModeSimple: 'Quick',
 	postModeRich: 'Full',
+	postModeBlog: 'Blog',
 	postScopeTitle: 'Who sees this',
 	postScopeDone: 'Done',
 	postScopeOpenAria: (p: { scope: string }) => `Post scope: ${p.scope} (change)`,
@@ -343,11 +345,9 @@ export const en: Messages = {
 	postScopeBluesky: 'Also Bluesky',
 	postScopeBlueskyShort: 'Also Bluesky',
 	postScopeBlueskyDetail: 'Posts the same text to Bluesky as well as Nagi.',
-	postScopeStandardSite: 'Also blog',
-	postScopeStandardSiteShort: 'Also blog',
-	postScopeStandardSiteDetail: 'Publishes to standard.site as an article as well as Nagi.',
-	postScopeExternalUnavailable: 'Enable cross-posting in settings to use this',
+	postScopeExternalUnavailable: 'Enable Bluesky cross-posting in settings to use this',
 	postScopeExternalChannel: 'Channel posts cannot be sent outside Nagi',
+	postScopeKossoriArticle: 'A blog post cannot be limited',
 	guestPostTitle: 'Post only on this device',
 	guestPostScope: 'Private on this device',
 	guestPostScopeDetail:
@@ -368,11 +368,30 @@ export const en: Messages = {
 	guestPostSignupTitle: 'You can keep going privately',
 	guestPostSignupBody:
 		'Sign up or sign in to keep future posts across devices and have bot-tan turn each day into a diary.',
-	externalTargetLegend: 'Where to cross-post',
-	externalTargetHelp:
-		'First choose one destination for posts whose scope is set to “Also outside”.',
-	externalTargetBluesky: 'Bluesky',
-	externalTargetStandardSite: 'standard.site (blog)',
+
+	// blog (standard.site documents)
+	articleMetaLegend: 'Article settings',
+	articleHeaderImageLabel: 'Header image',
+	articleHeaderImageHint: 'Drag and drop, or click to choose',
+	articleHeaderImageReplace: 'Replace the header image',
+	articleHeaderImageRemove: 'Remove the header image',
+	articleTagsLabel: 'Tags',
+	articleTagsPlaceholder: 'Type a tag and press Enter',
+	articleTagsHint:
+		'Words that categorize the article. Hashtags in the body are saved alongside these.',
+	articleTagRemove: (p: { tag: string }) => `Remove the tag “${p.tag}”`,
+	articleTagLimit: 'A tag can be up to 128 characters',
+	articlePublishTargetLabel: 'Published to',
+	articlePublishTargetValue: 'standard.site (readable as an article in compatible apps)',
+	articleTitleRequired: 'A blog post needs a title',
+	articleChannelDisabled: 'A channel post cannot be a blog post',
+	articleContentWarningDisabled: 'A post with a content warning cannot be a blog post',
+	articleQuoteDisabled: 'A post with a quote or reply cannot be a blog post',
+	articleCoverTooLarge:
+		'The header image was too large to attach to the article (it must be under 1MB).',
+	articleTeaserSuffix: (p: { url: string }) => `Read the rest on Nagi: ${p.url}`,
+	articleCrosspostTeaserNote:
+		'Bluesky gets a single post with the opening excerpt and a link back to Nagi (the full text is not split into a thread).',
 
 	// drafts
 	draftSave: 'Save as draft',
@@ -856,7 +875,7 @@ export const en: Messages = {
 	pushRefreshPermissions: 'Refresh permissions and sign in',
 	pushReauthPending: 'Opening authorization…',
 	externalPublishingHelp:
-		'Choose where posts can be published beyond Nagi. Only settings for the selected destination are shown below.',
+		'Settings for publishing your posts outside Nagi. Each one can be enabled on its own.',
 	blueskyPublishingTitle: 'Also post to Bluesky',
 	blogPublishingTitle: 'Publish as a blog',
 	blogPublishingHelp:
@@ -876,15 +895,14 @@ export const en: Messages = {
 	crosspostSignInRequired: 'Log in to configure crossposting.',
 	crosspostFailed: 'Could not crosspost to Bluesky',
 	crosspostPermissionMissing: 'Could not confirm permission to post to Bluesky',
-	crosspostWarning: (p: { reason: string }) =>
-		`Posted to Nagi, but crossposting to Bluesky failed: ${p.reason}`,
+	postedWithWarning: (p: { reason: string }) => `Posted to Nagi. ${p.reason}`,
 
 	standardSiteHelp:
 		'Posts are saved using standard.site, a shared AT Protocol format, so compatible apps can read them as articles.',
 	standardSiteOptInNote:
-		'Not every post becomes a blog post. A button in the composer turns it on per post, and it starts off. Kossori posts and channel posts are never included.',
+		'Not every post becomes a blog post — only the ones you write on the Blog tab of the composer. Replies, quotes, channel posts and limited posts are never included.',
 	standardSiteCrosspostNote:
-		'Posts published as blog posts are not crossposted to Bluesky, so a long piece never turns into a chain of split posts there.',
+		'When a blog post is set to “Also Bluesky”, Bluesky gets a single post with the opening excerpt and a link back to Nagi. A long piece never turns into a chain of split posts there.',
 	standardSiteDeviceNote: 'This setting applies to this device only.',
 	standardSiteEnableLabel: 'Allow publishing as blog posts',
 	standardSiteReauthNote:
@@ -893,9 +911,9 @@ export const en: Messages = {
 	standardSiteReauthPending: 'Redirecting…',
 	standardSiteSignInRequired: 'Log in to set up blog publishing.',
 	standardSiteFailed: 'Could not publish as a blog post',
-	standardSiteTitleLabel: 'Blog post title',
-	standardSiteTitlePlaceholder: 'Enter a title',
-	standardSiteTitleHint: 'Start your post with “# Heading” and the title is taken from there.',
+	standardSiteTitleLabel: 'Title',
+	standardSiteTitlePlaceholder: 'Enter a title…',
+	standardSiteTitleHint: 'Goes in as “# Heading” at the top of the post.',
 
 	// app links (arbitrary Atmosphere app integration)
 	settingsAppLinksTitle: 'Apps I use',

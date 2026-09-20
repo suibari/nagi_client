@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	COMPOSER_MODE_STORAGE_KEY,
 	getComposerMode,
+	isWideComposer,
 	resetComposerMode,
 	setComposerMode,
 } from './composer-mode';
@@ -37,5 +38,19 @@ describe('composer mode preference', () => {
 	it('falls back to simple mode for missing or invalid stored values', () => {
 		vi.stubGlobal('window', { localStorage: storageWith('unknown') });
 		expect(getComposerMode()).toBe('simple');
+	});
+
+	it('remembers the blog mode and still resets it after a post', () => {
+		vi.stubGlobal('window', { localStorage: storageWith() });
+
+		setComposerMode('blog');
+		expect(getComposerMode()).toBe('blog');
+		expect(resetComposerMode()).toBe('simple');
+	});
+
+	it('treats both rich and blog as the wide editor', () => {
+		expect(isWideComposer('simple')).toBe(false);
+		expect(isWideComposer('rich')).toBe(true);
+		expect(isWideComposer('blog')).toBe(true);
 	});
 });

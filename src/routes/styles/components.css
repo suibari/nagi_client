@@ -163,10 +163,121 @@
 .composer-embeds .attachment-editor {
 	margin: 0;
 }
+
 .composer-embeds .link-card-editor,
 .composer-embeds .composer-quote {
 	margin: 8px 0 0;
 }
+/*
+	「ブログ」は「しっかり」に記事メタ欄を足したモード。.composer.rich も同時に付くので、
+	本文まわりの縦積みと高さ固定はそちらの規則がそのまま効く。ここでは本文と
+	メタ欄の並べ方だけを決める。
+
+	.composer-body / .composer-main は、ブログ以外では display:contents で畳み、
+	従来どおり .composer 直下の縦積みに見せる（既存レイアウトに触らないため）。
+*/
+.composer-body,
+.composer-main {
+	display: contents;
+}
+.composer.blog .composer-body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: 12px;
+	min-width: 0;
+	min-height: 0;
+	/*
+		縦積みのときは本文とメタ欄を一緒にスクロールさせる。ここで flex に高さを
+		取り合わせると、背の高いメタ欄が本文の領域へ食い込んでしまう。
+	*/
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.composer.blog .composer-main {
+	display: flex;
+	flex-direction: column;
+	/* 本文は余った高さを引き取るが、メタ欄を押し潰さない範囲で伸びる。 */
+	flex: 1 1 auto;
+	gap: 8px;
+	min-width: 0;
+}
+/* メタ欄は自分の内容ぶんの高さを保つ（縮めると本文の上に溢れて重なる）。 */
+.composer.blog .article-meta {
+	flex: 0 0 auto;
+	min-width: 0;
+}
+.composer.blog .composer-article-title input {
+	width: 100%;
+	min-width: 0;
+	padding: 8px 10px;
+	border: 1px solid transparent;
+	border-radius: var(--r-sm);
+	background: transparent;
+	color: var(--text);
+	font-size: 18px;
+	font-weight: 700;
+}
+.composer.blog .composer-article-title input:focus-visible {
+	border-color: var(--line-strong);
+	background: var(--surface-2);
+	outline: none;
+}
+.composer.blog .composer-article-title input[readonly] {
+	color: var(--text-sub);
+	cursor: default;
+}
+.composer.blog .composer-article-note {
+	margin: 0 0 2px;
+	padding-inline: 10px;
+	color: var(--text-muted);
+	font-size: 11px;
+}
+/* 送信を止めている理由は、ただのヒントと見分けが付くようにする。 */
+.composer.blog .composer-article-note.blocked {
+	color: var(--danger);
+	font-weight: 700;
+}
+.composer.blog .composer-article-permission {
+	display: grid;
+	gap: 6px;
+	justify-items: start;
+	margin-bottom: 4px;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--r-sm);
+	background: var(--surface-2);
+}
+.composer.blog .composer-article-permission p {
+	margin: 0;
+	color: var(--text-sub);
+	font-size: 11px;
+	line-height: 1.5;
+}
+@media (min-width: 1024px) {
+	/* 広い画面では本文の右に記事メタ欄を置く。2ペインプレビューは blog では出ない。 */
+	.composer.blog .composer-body {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+		align-items: stretch;
+		gap: 16px;
+		/* 列ごとに独立してスクロールさせるので、外側のスクロールは戻す。 */
+		overflow: visible;
+	}
+	.composer.blog .composer-main {
+		flex: 1;
+		min-height: 0;
+	}
+	/* メタ欄は本文の高さを奪わず、はみ出すぶんだけ自分の中でスクロールする。 */
+	.composer.blog .article-meta {
+		max-height: 100%;
+		overflow-y: auto;
+	}
+	.composer.blog .composer-article-title input {
+		font-size: 22px;
+	}
+}
+
 .welcome {
 	display: flex;
 	justify-content: space-between;
@@ -1365,6 +1476,30 @@
 }
 .post-text h5 {
 	font-size: 16px;
+}
+
+/*
+	ブログとして書かれた投稿（レコードの article: true）。
+	本文先頭の「# 見出し」を記事タイトルとして、1枚目の画像をヘッダーとして見せる。
+	先頭が見出しなだけの通常投稿は post.article を持たないので、ここには入らない。
+*/
+.post-row.article .post-header-image {
+	display: block;
+	width: 100%;
+	max-height: min(320px, 40dvh);
+	margin: 0 0 12px;
+	object-fit: cover;
+	border-radius: var(--r-sm);
+	background: var(--surface-2);
+}
+/*
+	h1 由来の見出しだけを大きくする（### 由来の h5 などは通常のまま）。
+	折りたたみ時もタイトルは本文の先頭行なので、6行クランプの中に必ず収まる。
+*/
+.post-row.article .post-text > [data-block='h1']:first-child {
+	margin-bottom: 0.5em;
+	font-size: 22px;
+	line-height: 1.4;
 }
 .post-text ul,
 .post-text ol {

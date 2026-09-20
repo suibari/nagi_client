@@ -1,10 +1,27 @@
-export type ComposerMode = 'simple' | 'rich';
+/**
+ * 投稿モーダルの書き方タブ。
+ *
+ * - simple（あっさり）: 本文・画像・CW だけの短文向け
+ * - rich（しっかり）:   文字装飾とプレビューが付く長文向け
+ * - blog（ブログ）:     rich に記事メタ（タイトル・ヘッダー画像・タグ）を足し、
+ *                       standard.site へ記事としても公開するモード
+ */
+export type ComposerMode = 'simple' | 'rich' | 'blog';
 
 export const COMPOSER_MODE_STORAGE_KEY = 'nagi:composer-mode:v1';
 
+export const COMPOSER_MODES: ComposerMode[] = ['simple', 'rich', 'blog'];
+
 export function isComposerMode(value: unknown): value is ComposerMode {
-	return value === 'simple' || value === 'rich';
+	return value === 'simple' || value === 'rich' || value === 'blog';
 }
+
+/**
+ * 広いエディタ（文字装飾・プレビュー・下書き自動保存）を使うモードか。
+ * 「しっかり」と「ブログ」の共通部分はここで1本にまとめ、
+ * blog 固有の分岐だけを mode === 'blog' で書く。
+ */
+export const isWideComposer = (mode: ComposerMode) => mode !== 'simple';
 
 export function getComposerMode(): ComposerMode {
 	if (typeof window === 'undefined') return 'simple';

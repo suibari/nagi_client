@@ -32,7 +32,10 @@
 		if (open === wasOpen) return;
 		wasOpen = open;
 		if (!open) return;
-		mode = getComposerMode();
+		// ゲストは PDS に書けないのでブログタブを出さない。
+		// サインイン中にブログを選んだ端末でも、どのタブも選ばれていない状態にしない。
+		const stored = getComposerMode();
+		mode = stored === 'blog' ? 'rich' : stored;
 		try {
 			agreed = localStorage.getItem('nagi.guest-ai-consent.v1') === '1';
 		} catch {
@@ -84,6 +87,7 @@
 
 <PostModalShell
 	bind:mode
+	modes={['simple', 'rich']}
 	{open}
 	sending={busy}
 	title={m.guestPostTitle()}
@@ -91,7 +95,7 @@
 	{onclose}
 	onmodechange={setComposerMode}
 >
-	<section class="composer guest-composer" class:rich={mode === 'rich'}>
+	<section class="composer guest-composer" class:rich={mode !== 'simple'}>
 		<ComposerEditor
 			bind:value={text}
 			bind:mentions

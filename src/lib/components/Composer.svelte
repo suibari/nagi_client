@@ -5,7 +5,7 @@
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import { untrack } from 'svelte';
 	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
-	import { crosspostToBluesky } from '$lib/crosspost/bluesky';
+	import { crosspostArticleToBluesky, crosspostToBluesky } from '$lib/crosspost/bluesky';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import type { ImageAttachment } from '$lib/images';
@@ -37,20 +37,27 @@
 	} from '$lib/drafts/drafts.svelte';
 	import DraftListDialog from './DraftListDialog.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
-	import { getStandardSiteEnabled, hasStandardSiteScope } from '$lib/standardsite/preferences';
+	import {
+		getStandardSiteEnabled,
+		hasStandardSiteScope,
+		markStandardSitePending,
+	} from '$lib/standardsite/preferences';
+	import { grantedOptIns } from '$lib/optin/scope-optin';
+	import { signIn } from '$lib/oauth/session.svelte';
+	import { NAGI_PUBLIC_ORIGIN } from '$lib/standardsite/types';
 	import {
 		publishStandardSiteDocument,
 		tagsFromFacets,
 		usableAsCoverImage,
 	} from '$lib/standardsite/document';
+	import ComposerArticleMeta from './ComposerArticleMeta.svelte';
+	import { isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
 	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
-		getExternalTarget,
 		restorePostScope,
 		scopeAfterExternalEligibility,
 		setLastPostScope,
-		type ExternalTarget,
 		type PostScope,
 	} from '$lib/post/scope';
 	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は投稿範囲の
@@ -73,7 +80,7 @@
 		oncompositionchange?: (composing: boolean) => void;
 		channel?: { uri: string; cid: string; name?: string };
 		defaultScope?: PostScope;
-		mode?: 'simple' | 'rich';
+		mode?: ComposerMode;
 		publishingPreferencesVersion?: number;
 		/** ポストおたすけが書きかけを読むためだけに外へ出す。 */
 		text?: string;
@@ -134,21 +141,27 @@
 			quotePick.error,
 		),
 	);
-	let graphemes = $derived(
-		[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(text)].length,
-	);
 	$effect(() => {
-		submittable = !busy && !empty && !articleTitleMissing && contentWarningValid;
+		submittable =
+			!busy &&
+			!empty &&
+			!articleTitleMissing &&
+			contentWarningValid &&
+			articleReady &&
+			!articleBlockedReason;
 	});
 
-	// --- 外部への同時投稿（Bluesky / standard.site）------------------------------
-	// 権限はサインイン時にまとめて渡し、機能の有効化と「どちらに出すか」は設定ページ、
-	// 投稿ごとの ON/OFF は投稿範囲ゲージの3段階目で行う。既定は常に OFF。
+	// --- 外部への同時投稿 ---------------------------------------------------------
+	// Bluesky クロスポストは投稿範囲ゲージの3段階目（既定は OFF）。
+	// standard.site への記事公開は「どこまで届けるか」ではなく「何を書くか」なので、
+	// ゲージではなく投稿モーダルの書き方タブ（ブログ）が担う。
 	let standardSiteReady = $state(false);
 	let publishingReadinessLoaded = $state(false);
-	let externalTarget = $state<ExternalTarget>('bluesky');
 	let articleTitle = $state('');
+	let articleTags = $state<string[]>([]);
+	let reauthorizingArticle = $state(false);
 	const kossori = $derived(scope === 'kossori');
+	const blog = $derived(mode === 'blog');
 	// こっそりは画像とリンクカードを持てない。blob は参照レコードのある PDS でしか
 	// 保持されず、こっそり投稿にはその参照レコードが無いので、いずれ壊れた画像になる。
 	// 切り替えた時点で添付を落とす（そのまま投稿できてしまうと黙って消える）。
@@ -172,18 +185,15 @@
 		hasContentWarning(text) || attachments.some((image) => image.contentWarning),
 	);
 	const contentWarningValid = $derived(validContentWarningSyntax(text));
-	const externalReady = $derived(externalTarget === 'bluesky' ? crosspostReady : standardSiteReady);
 	/**
-	 * 外部にも出せる条件。Bluesky（クロスポスト）と standard.site（記事化）で
-	 * 元々別々に書かれていたが、条件は「チャンネル投稿でない・CW が無い」で一致するため
-	 * 1本にまとめている。こっそりとの排他はゲージの構造そのものが担保する。
+	 * Bluesky にも出せる条件。
 	 *
-	 * 引用付きも外部へは出せない。Bluesky の embed には Nagi のレコードを載せられず
-	 * （crosspost/bluesky.ts の buildEmbed は images / external のみ）、記事化しても
-	 * 引用は本文に現れないため、どちらも参照が黙って消える。
+	 * 引用付きは外部へ出せない。Bluesky の embed には Nagi のレコードを載せられず
+	 * （crosspost/bluesky.ts の buildEmbed は images / external のみ）、参照が黙って消える。
+	 * 記事化にも同じ条件が要る（引用は記事本文に現れない）ので、判定は1本のまま使う。
 	 */
 	const externalEligible = $derived(
-		externalReady &&
+		crosspostReady &&
 			!effectiveChannel &&
 			!hasContentWarningSetting &&
 			!quotePick.active &&
@@ -191,7 +201,7 @@
 			!composerHost.quoteTarget,
 	);
 	const externalDisabledReason = $derived(
-		!externalReady
+		!crosspostReady
 			? m.postScopeExternalUnavailable()
 			: effectiveChannel
 				? m.postScopeExternalChannel()
@@ -201,11 +211,52 @@
 						? m.quoteExternalDisabled()
 						: '',
 	);
-	const standardSite = $derived(scope === 'external' && externalTarget === 'standardSite');
-	// 本文先頭の見出しをタイトルに使う。無いときだけ入力欄を出す。
-	const headingTitle = $derived(standardSite ? extractTitle(text.trim()) : undefined);
-	const needsArticleTitle = $derived(standardSite && externalEligible && !headingTitle);
-	const articleTitleMissing = $derived(needsArticleTitle && !articleTitle.trim());
+	/**
+	 * 本文先頭の「# 見出し」はタイトルそのもの。タイトルの真実源は常に本文側に置き、
+	 * 入力欄は「まだ本文に見出しが無いときの書き口」として使う。
+	 * すでに見出しがある本文では、その文字列を読み取り専用で映すだけにする
+	 * （2箇所で別々に編集できると、どちらが記事のタイトルか決まらなくなる）。
+	 */
+	const headingTitle = $derived(blog ? extractTitle(text.trim()) : undefined);
+	const articleTitleMissing = $derived(blog && !(headingTitle ?? articleTitle).trim());
+	/** 送信時に本文の先頭へ差し込む見出し行。本文が既に見出しで始まるなら不要。 */
+	const articleHeading = $derived(
+		blog && !headingTitle && articleTitle.trim() ? `# ${articleTitle.trim()}\n\n` : '',
+	);
+	/** ブログとして出す準備が整っているか。権限が無い間は投稿させない。 */
+	const articleReady = $derived(!blog || standardSiteReady);
+	/**
+	 * ブログにできない投稿をブログタブのまま出そうとしている理由。
+	 *
+	 * document は公開レコードとして外から読まれるので、Nagi の共有TLに出さない投稿
+	 * （こっそり・チャンネル）、外部コピーを作らない投稿（CW）、本文に現れない参照を
+	 * 持つ投稿（引用）は記事にできない（standardsite/preferences.ts の
+	 * isArticleCandidate と同じ線引き）。
+	 *
+	 * 以前はこれらを黙って「記事にしない」で済ませていたが、ブログタブを選んだままでも
+	 * 投稿が通ってしまい、記事が作られないことがユーザーから見えなかった。理由を出して
+	 * 送信を止める。
+	 */
+	const articleBlockedReason = $derived(
+		!blog
+			? ''
+			: effectiveChannel
+				? m.articleChannelDisabled()
+				: kossori
+					? m.postScopeKossoriArticle()
+					: hasContentWarningSetting
+						? m.articleContentWarningDisabled()
+						: quotePick.active || composerHost.quoteTarget || composerHost.replyTarget
+							? m.articleQuoteDisabled()
+							: '',
+	);
+	/** ブログとして standard.site に出す投稿か。記事フラグと公開の判定はこれ1本。 */
+	const publishesArticle = $derived(blog && !articleBlockedReason);
+	// 差し込む見出しも 3000 グラフェムの上限に数える（投稿してから弾かれないように）。
+	let graphemes = $derived(
+		[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(articleHeading + text)]
+			.length,
+	);
 	/**
 	 * こっそりスレッドへの返信か。
 	 *
@@ -223,6 +274,11 @@
 	});
 	$effect(() => {
 		if (kossoriThread && scope !== 'kossori') scope = 'kossori';
+	});
+	// ブログは公開レコードとして外から読まれるので、こっそりにはできない
+	// （standardsite/preferences.ts の isArticleCandidate と同じ線引き）。
+	$effect(() => {
+		if (blog && scope === 'kossori') scope = 'feed';
 	});
 	// 外部に出せない状態に変わったら黙って1段階狭める（意図せぬ公開を作らない）。
 	// OAuth scope の再確認中は前回値を保持し、利用不能だと確定してからだけ狭める。
@@ -244,7 +300,7 @@
 	$effect(() => {
 		const key = draftKey;
 		const did = $session?.did;
-		if (mode !== 'rich' || !did || !text.trim() || key === lastSavedDraftKey) {
+		if (!isWideComposer(mode) || !did || !text.trim() || key === lastSavedDraftKey) {
 			if (draftSaveStatus !== 'saving')
 				draftSaveStatus = key === lastSavedDraftKey && Boolean(key) ? 'saved' : 'idle';
 			return;
@@ -261,7 +317,6 @@
 		crosspostReady = false;
 		standardSiteReady = false;
 		publishingReadinessLoaded = false;
-		externalTarget = getExternalTarget();
 		void Promise.all([
 			did && getCrosspostEnabled() ? hasCrosspostScope().catch(() => false) : false,
 			did && getStandardSiteEnabled() ? hasStandardSiteScope().catch(() => false) : false,
@@ -290,6 +345,7 @@
 		composerHost.clearAllTargets();
 		scope = restorePostScope(defaultScope);
 		articleTitle = '';
+		articleTags = [];
 		botSilent = false;
 		silentReply = false;
 		selfLabels = [];
@@ -342,7 +398,7 @@
 			draftSaveInFlight = false;
 			if (pendingAutoSave) {
 				pendingAutoSave = false;
-				if (mode === 'rich' && text.trim() && draftKey !== lastSavedDraftKey)
+				if (isWideComposer(mode) && text.trim() && draftKey !== lastSavedDraftKey)
 					void startDraftSave(draftKey, draftSnapshot());
 			}
 		}
@@ -415,13 +471,33 @@
 	}
 
 	export async function submit() {
-		if (empty || busy || !$session || articleTitleMissing || !contentWarningValid) return;
-		const wantsExternal = scope === 'external' && externalEligible;
+		if (
+			empty ||
+			busy ||
+			!$session ||
+			articleTitleMissing ||
+			!contentWarningValid ||
+			!articleReady ||
+			articleBlockedReason
+		)
+			return;
+		const wantsCrosspost = scope === 'external' && externalEligible;
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
-		const article =
-			wantsExternal && externalTarget === 'standardSite' && !hasContentWarningSetting
-				? { title: (headingTitle ?? articleTitle).trim() }
-				: undefined;
+		const article = publishesArticle ? { title: (headingTitle ?? articleTitle).trim() } : undefined;
+		// ブログのタイトルは本文の先頭見出しとして保存する。こうしておくと Nagi の
+		// タイムラインでも記事のタイトルが見出しとして読めるし、編集で本文を直せば
+		// 記事側のタイトルも extractTitle でそのまま追従する。
+		const body = `${articleHeading}${text}`;
+		// メンション・チャンネル・絵文字の選択は text 上の文字オフセットなので、
+		// 先頭へ見出しを差し込んだぶんだけずらしてから facet 化させる。
+		const shift = <T extends { start: number; end: number }>(list: T[]) =>
+			articleHeading
+				? list.map((item) => ({
+						...item,
+						start: item.start + articleHeading.length,
+						end: item.end + articleHeading.length,
+					}))
+				: list;
 		const reply = composerHost.replyTarget
 			? { root: composerHost.replyTarget.root, parent: composerHost.replyTarget.parent }
 			: undefined;
@@ -431,20 +507,22 @@
 			? { uri: composerHost.quoteTarget.uri, cid: composerHost.quoteTarget.cid }
 			: quotePick.ref;
 		const draft = preparePostDraft(
-			text,
+			body,
 			reply,
 			quoteRef,
 			attachments,
 			linkCards,
-			mentions,
-			channels,
-			emojis,
+			shift(mentions),
+			shift(channels),
+			shift(emojis),
 			kossori,
 			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
 			reply ? false : botSilent,
 			reply ? silentReply : false,
 			selfLabels,
 		);
+		// preparePostDraft の引数はすでに多いので、記事フラグは組み立て後に足す。
+		if (article) draft.article = true;
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(replyPost && { replyParent: replyPost }),
 			...(quotedPost && { quote: quotedPost }),
@@ -468,42 +546,55 @@
 			postFollow.settle(created.uri, postHref(created.uri));
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
 			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
+			const rkey = created.uri.slice(created.uri.lastIndexOf('/') + 1);
+			// 記事の canonical URL。standard.site の document.path と同じ組み立て方。
+			const articleUrl = `${NAGI_PUBLIC_ORIGIN}/thread/${$session.did}/${rkey}`;
 			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
 			// エラーではなく警告として伝える。
-			// ブログとして出す投稿はクロスポストしない。クロスポストは 300 グラフェムごとの
-			// 分割スレッドなので、長文記事だと Bluesky 側が連投で埋まってしまう。
 			// 引用はNagi内のレコードを参照するため、Blueskyへはクロスポストしない
 			// （返信・引用の既存方針と同じ）。scope 側でも外部を選べなくしてある。
+			let bskyPostRef: { uri: string; cid: string } | undefined;
 			if (
-				wantsExternal &&
-				externalTarget === 'bluesky' &&
+				wantsCrosspost &&
 				!draft.kossori &&
 				!draft.channel &&
 				!draft.cwRestricted &&
-				!draft.quote &&
-				!article
+				!draft.quote
 			) {
 				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
 					warning = m.crosspostPermissionMissing();
 				else
 					try {
-						await crosspostToBluesky(draft, assets);
+						// 記事は分割連投にせず、抜粋と Nagi への誘導リンクだけを1件出す。
+						bskyPostRef = article
+							? await crosspostArticleToBluesky(draft, assets, {
+									url: articleUrl,
+									title: article.title,
+									teaser: m.articleTeaserSuffix({ url: articleUrl }),
+								})
+							: await crosspostToBluesky(draft, assets);
 					} catch (e) {
 						warning = e instanceof Error ? e.message : m.crosspostFailed();
 					}
 			}
 			// standard.site も同じ扱い。document の rkey は Nagi 投稿の rkey を使い回す。
-			if (article && !draft.cwRestricted && !draft.quote) {
+			// クロスポストのあとに回すのは、bskyPostRef に実際の Bluesky 投稿を入れるため。
+			if (article) {
 				try {
-					const uri = created.uri;
 					const cover = assets.images[0]?.image;
+					// ヘッダー画像は記事メタ欄から入れれば 1MB 未満に圧縮されるが、通常の
+					// 画像ピッカー（2MB まで）から入れた1枚目が先頭に来ることもある。
+					// その場合カバーを付けられないので、黙って落とさず理由を出す。
+					if (cover && !usableAsCoverImage(cover)) warning = m.articleCoverTooLarge();
 					await publishStandardSiteDocument({
-						rkey: uri.slice(uri.lastIndexOf('/') + 1),
+						rkey,
 						title: article.title,
 						markdown: draft.text,
 						publishedAt: draft.createdAt,
-						tags: tagsFromFacets(draft.facets),
+						// 本文のハッシュタグと、記事メタ欄で足したタグを合わせて保存する。
+						tags: [...new Set([...tagsFromFacets(draft.facets), ...articleTags])],
 						...(usableAsCoverImage(cover) ? { coverImage: cover } : {}),
+						...(bskyPostRef ? { bskyPostRef } : {}),
 					});
 				} catch (e) {
 					warning = e instanceof Error ? e.message : m.standardSiteFailed();
@@ -530,9 +621,7 @@
 		scope === 'kossori'
 			? m.postScopeKossoriShort()
 			: scope === 'external'
-				? externalTarget === 'bluesky'
-					? m.postScopeBlueskyShort()
-					: m.postScopeStandardSiteShort()
+				? m.postScopeBlueskyShort()
 				: effectiveChannel
 					? (effectiveChannel.name ?? m.postScopeChannelShort())
 					: m.postScopeFeedShort(),
@@ -541,20 +630,30 @@
 		scope === 'kossori'
 			? 'hide'
 			: scope === 'external'
-				? externalTarget === 'bluesky'
-					? 'bluesky'
-					: 'newspaper'
+				? 'bluesky'
 				: effectiveChannel
 					? 'hash'
 					: 'home',
 	);
+
+	/** 記事の書き込み権限が無いときに、その場で追加の認可を取りに行く。 */
+	async function authorizeArticle() {
+		if (!$session || reauthorizingArticle) return;
+		reauthorizingArticle = true;
+		markStandardSitePending();
+		try {
+			await signIn($session.did, { ...(await grantedOptIns()), standardSite: true });
+		} finally {
+			reauthorizingArticle = false;
+		}
+	}
 </script>
 
 <!--
 	モーダル専用なので、以前タイムラインとの一体感のために付けていた吹き出し
 	（.post-row.mine / .bubble のアクセント枠としっぽ）とアバターは持たない。
 -->
-<section class="composer" class:rich={mode === 'rich'}>
+<section class="composer" class:rich={isWideComposer(mode)} class:blog>
 	{#snippet editorTools()}
 		<!-- こっそりは画像を持てない。セルフラベルも統合CWメニュー側で無効にする。 -->
 		{#if !kossori}
@@ -646,61 +745,89 @@
 		</div>
 	{/if}
 
-	<ComposerEditor
-		{ontextinput}
-		{oncompositionchange}
-		bind:value={text}
-		bind:mentions
-		bind:channels
-		bind:emojis
-		channelSuggestionsEnabled={!channel}
-		placeholder={m.composerPlaceholder()}
-		ariaLabel={m.composerAria()}
-		disabled={busy}
-		contentWarningLabelsEnabled={!kossori}
-		bind:selfLabels
-		{mode}
-		realtimePreviewEnabled
-		onsubmit={() => submit()}
-		onpaste={(event) => {
-			// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
-			// それ以外は素通しするので、画像ペーストは従来どおり動く。
-			quotePick.handlePaste(event, $session?.did);
-			imagePicker?.handlePaste(event);
-		}}
-		tools={editorTools}
-	/>
-	<!-- URL取得や Object URL の管理を途切れさせないため、空の間も子はマウントしておく。 -->
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex (スクロール領域をキーボードでも操作可能にする) -->
-	<div
-		class="composer-embeds"
-		role="region"
-		tabindex={hasEmbeds ? 0 : undefined}
-		aria-label={m.composerEmbedsAria()}
-		hidden={!hasEmbeds}
-	>
-		{#if !kossori}
-			<ImageAttachmentEditor bind:attachments disabled={busy} />
-			<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
-		{/if}
-		<ComposerQuoteEditor quote={quotePick} disabled={busy} />
-	</div>
-	{#if needsArticleTitle}
-		<!-- 本文の先頭が見出しでないときだけ。standard.site の document.title は必須。 -->
-		<div class="composer-article">
-			<label class="composer-article-title">
-				<span>{m.standardSiteTitleLabel()}</span>
-				<input
-					type="text"
-					bind:value={articleTitle}
-					maxlength="200"
-					disabled={busy}
-					placeholder={m.standardSiteTitlePlaceholder()}
-				/>
-			</label>
-			<p class="composer-article-note">{m.standardSiteTitleHint()}</p>
+	<div class="composer-body">
+		<div class="composer-main">
+			{#if blog}
+				<!-- タイトルは送信時に本文先頭の「# 見出し」になる（submit の articleHeading）。 -->
+				<label class="composer-article-title">
+					<span class="visually-hidden">{m.standardSiteTitleLabel()}</span>
+					<input
+						type="text"
+						value={headingTitle ?? articleTitle}
+						oninput={(event) => (articleTitle = event.currentTarget.value)}
+						maxlength="200"
+						disabled={busy}
+						readonly={Boolean(headingTitle)}
+						placeholder={m.standardSiteTitlePlaceholder()}
+					/>
+				</label>
+				<p class="composer-article-note" class:blocked={Boolean(articleBlockedReason)}>
+					<!-- 何か書き始めるまでは急かさない。空のまま投稿しようとした時点で理由を出す。 -->
+					{articleBlockedReason ||
+						(articleTitleMissing && !empty ? m.articleTitleRequired() : m.standardSiteTitleHint())}
+				</p>
+				{#if publishingReadinessLoaded && !standardSiteReady}
+					<!--
+						記事メタ欄の中に置くと、狭い画面では畳まれていて見えない。
+						送信ボタンが押せない理由になるので、本文の隣に常に出す。
+					-->
+					<div class="composer-article-permission">
+						<p>{m.standardSiteReauthNote()}</p>
+						<button
+							type="button"
+							class="ghost"
+							disabled={reauthorizingArticle}
+							onclick={authorizeArticle}
+						>
+							{reauthorizingArticle ? m.standardSiteReauthPending() : m.standardSiteReauthSubmit()}
+						</button>
+					</div>
+				{/if}
+			{/if}
+			<ComposerEditor
+				{ontextinput}
+				{oncompositionchange}
+				bind:value={text}
+				bind:mentions
+				bind:channels
+				bind:emojis
+				channelSuggestionsEnabled={!channel}
+				placeholder={m.composerPlaceholder()}
+				ariaLabel={m.composerAria()}
+				disabled={busy}
+				contentWarningLabelsEnabled={!kossori}
+				bind:selfLabels
+				{mode}
+				realtimePreviewEnabled
+				onsubmit={() => submit()}
+				onpaste={(event) => {
+					// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
+					// それ以外は素通しするので、画像ペーストは従来どおり動く。
+					quotePick.handlePaste(event, $session?.did);
+					imagePicker?.handlePaste(event);
+				}}
+				tools={editorTools}
+			/>
+			<!-- URL取得や Object URL の管理を途切れさせないため、空の間も子はマウントしておく。 -->
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex (スクロール領域をキーボードでも操作可能にする) -->
+			<div
+				class="composer-embeds"
+				role="region"
+				tabindex={hasEmbeds ? 0 : undefined}
+				aria-label={m.composerEmbedsAria()}
+				hidden={!hasEmbeds}
+			>
+				{#if !kossori}
+					<ImageAttachmentEditor bind:attachments disabled={busy} />
+					<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+				{/if}
+				<ComposerQuoteEditor quote={quotePick} disabled={busy} />
+			</div>
 		</div>
-	{/if}
+		{#if blog}
+			<ComposerArticleMeta bind:attachments bind:tags={articleTags} disabled={busy} />
+		{/if}
+	</div>
 	<div class="composer-foot">
 		<button
 			class="scope-button"
@@ -732,7 +859,7 @@
 						>{drafts.count}</span
 					>{/if}</button
 			>
-			{#if mode === 'rich' && draftSaveStatus !== 'idle'}
+			{#if isWideComposer(mode) && draftSaveStatus !== 'idle'}
 				<span class="draft-save-status" aria-live="polite">
 					{draftSaveStatus === 'saving' ? m.draftSaving() : m.draftSaved()}
 				</span>
@@ -769,7 +896,12 @@
 			<button
 				class="submit-primary"
 				type="button"
-				disabled={busy || empty || articleTitleMissing || !contentWarningValid}
+				disabled={busy ||
+					empty ||
+					articleTitleMissing ||
+					!contentWarningValid ||
+					!articleReady ||
+					Boolean(articleBlockedReason)}
 				aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
 				title={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
 				onclick={() => submit()}
@@ -786,15 +918,16 @@
 	{#if error}<p class="error" role="alert">{error}</p>{/if}{#if draftError}<p class="error">
 			{draftError}
 		</p>{/if}{#if warning}<p class="error">
-			{m.crosspostWarning({ reason: warning })}
+			{m.postedWithWarning({ reason: warning })}
 		</p>{/if}
 </section>
 {#if scopeDialogOpen}
 	<PostScopeDialog
 		{scope}
-		{externalTarget}
 		{externalEligible}
 		{externalDisabledReason}
+		kossoriDisabled={blog}
+		kossoriDisabledReason={blog ? m.postScopeKossoriArticle() : ''}
 		channelName={effectiveChannel?.name}
 		onselect={(next) => {
 			scope = next;

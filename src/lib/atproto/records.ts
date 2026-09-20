@@ -188,6 +188,12 @@ export type PostDraft = {
 	silentReply?: boolean;
 	/** セルフラベル (com.atproto.label.defs#selfLabels) */
 	labels?: { $type: string; values: Array<{ val: string }> };
+	/**
+	 * ブログとして書いた投稿。タイトル（本文先頭の見出し）とヘッダー画像
+	 * （1枚目の添付）を持つ記事として描画してよい、という印。
+	 * 内容そのものは本文と添付に入っているので、レコードにはこの真偽値だけ載せる。
+	 */
+	article?: boolean;
 };
 
 export function preparePostDraft(
@@ -427,6 +433,7 @@ export async function createPost(
 				...(cards.length && { linkCards: cards }),
 				...(embed && { embed }),
 				...(draft.labels && { labels: draft.labels }),
+				...(draft.article && { article: true }),
 			},
 		});
 		return { uri: data.uri, cid: data.cid };

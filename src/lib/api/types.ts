@@ -124,6 +124,12 @@ export type PostView = {
 	threadKossori?: boolean;
 	/** 所属チャンネル（あれば）。バッジ表示・返信時の継承元に使う。 */
 	channel?: { uri: string; cid: string; name?: string };
+	/**
+	 * ブログとして書かれた投稿。本文先頭の見出しをタイトル、1枚目の画像を
+	 * ヘッダーとして記事の体裁で描画する。先頭が見出しなだけの通常投稿と
+	 * 区別するために、推測ではなくレコードの値をそのまま使う。
+	 */
+	article?: boolean;
 	/** 投稿後に編集された（AppView が cid 変化を観測した）か。UI の「編集済み」バッジ用。 */
 	edited?: boolean;
 	deleted?: boolean;

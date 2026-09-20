@@ -3,6 +3,7 @@
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
+		COMPOSER_MODES,
 		getComposerMode,
 		resetComposerMode,
 		setComposerMode,
@@ -31,6 +32,22 @@
 	let assistSpace = $state(0);
 	let submittable = $state(false);
 	let composer = $state<{ submit: () => Promise<void> }>();
+
+	/**
+	 * ブログにできない文脈ではタブごと出さない。返信・引用は記事本文に文脈が現れず、
+	 * チャンネル投稿はその文脈を外へ出さない、という Composer 側の判定と同じ理由。
+	 */
+	const articleAllowed = $derived(
+		!composerHost.replyTarget && !composerHost.quoteTarget && !composerHost.channel,
+	);
+	const modes = $derived(
+		articleAllowed ? COMPOSER_MODES : COMPOSER_MODES.filter((value) => value !== 'blog'),
+	);
+	// 書きかけの途中で返信先が付いたときに、選べないタブへ取り残されないようにする。
+	// 端末の設定は書き換えない。返信のたびに「ブログ」の選択が失われてしまうため。
+	$effect(() => {
+		if (!articleAllowed && mode === 'blog') mode = 'rich';
+	});
 
 	// 投稿できたことを表示中のフィードへ伝えるだけ。画面をどこへ寄せるか（寄せられない
 	// ときに導線を出すか）は Composer が postFollow へ預けている。
@@ -70,6 +87,7 @@
 
 <PostModalShell
 	bind:mode
+	{modes}
 	open={composerHost.open}
 	{sending}
 	{assistSpace}
