@@ -5,6 +5,7 @@
 		chronicleEventDetail,
 		chronicleEventIcon,
 		chronicleEventLabel,
+		isAttachedNews,
 		groupChronicleByYear,
 		mergeChronicle,
 	} from '$lib/chronicle/chronicle';
@@ -52,8 +53,8 @@
 		anniversary_card: m.chronicleKindAnniversaryCard(),
 		news_reaction: m.chronicleKindNewsReaction(),
 		news_bookmark: m.chronicleKindNewsBookmark(),
-		news_context: m.chronicleKindNewsContext(),
 		highlight: m.chronicleKindHighlight(),
+		news_context: m.chronicleKindNewsContext(),
 	});
 
 	const longDate = (date: string) =>
@@ -135,38 +136,60 @@
 			<h3 class="chronicle-year">{group.year}</h3>
 			<ol class="chronicle-list" aria-label={m.chronicleYearAria({ year: group.year })}>
 				{#each group.events as event (event.id)}
-					<li
-						class="chronicle-item"
-						class:chronicle-revealed={revealed.has(event.id)}
-						data-event-id={event.id}
-					>
-						<span class="chronicle-rail" aria-hidden="true">
-							<Icon name={chronicleEventIcon(event.kind)} size={14} />
-						</span>
-						<div class="chronicle-body">
-							<time datetime={event.date}>{longDate(event.date)}</time>
-							<p class="chronicle-title">{chronicleEventLabel(event, i18n.locale, labels)}</p>
-							{#if chronicleEventDetail(event, i18n.locale)}
-								<p class="chronicle-detail">{chronicleEventDetail(event, i18n.locale)}</p>
-							{/if}
-							{#if event.card}
-								<!-- draw は渡さない。過去の1枚を見返すのに、毎回フリップと紙吹雪で祝わせない。 -->
-								<button class="chronicle-card" type="button" onclick={() => (opened = event.card)}>
-									<AffirmationCard card={event.card} />
-								</button>
-							{/if}
-							{#if event.news}
-								<div class="chronicle-news">
-									<NewsCard news={event.news} embedded />
-								</div>
-							{/if}
-							{#if event.diaryDate}
-								<a class="chronicle-link" href={`/diary?date=${event.diaryDate}`}>
-									{m.chronicleOpenDiary()} →
-								</a>
-							{/if}
-						</div>
-					</li>
+					{#if isAttachedNews(event)}
+						<!--
+							そのころ世の中では。独立した節目ではなく、直前のまとめに**付く一行**として描く。
+							日付も出さない（月末に寄せてあるだけで、その日の出来事ではない）。
+						-->
+						<li class="chronicle-aside" data-event-id={event.id}>
+							<span class="chronicle-aside-label">{m.chronicleKindNewsContext()}</span>
+							<a
+								class="chronicle-aside-text"
+								href={event.news?.url}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								「{chronicleEventLabel(event, i18n.locale, labels)}」
+							</a>
+						</li>
+					{:else}
+						<li
+							class="chronicle-item"
+							class:chronicle-revealed={revealed.has(event.id)}
+							data-event-id={event.id}
+						>
+							<span class="chronicle-rail" aria-hidden="true">
+								<Icon name={chronicleEventIcon(event.kind)} size={14} />
+							</span>
+							<div class="chronicle-body">
+								<time datetime={event.date}>{longDate(event.date)}</time>
+								<p class="chronicle-title">{chronicleEventLabel(event, i18n.locale, labels)}</p>
+								{#if chronicleEventDetail(event, i18n.locale)}
+									<p class="chronicle-detail">{chronicleEventDetail(event, i18n.locale)}</p>
+								{/if}
+								{#if event.card}
+									<!-- draw は渡さない。過去の1枚を見返すのに、毎回フリップと紙吹雪で祝わせない。 -->
+									<button
+										class="chronicle-card"
+										type="button"
+										onclick={() => (opened = event.card)}
+									>
+										<AffirmationCard card={event.card} />
+									</button>
+								{/if}
+								{#if event.news}
+									<div class="chronicle-news">
+										<NewsCard news={event.news} embedded />
+									</div>
+								{/if}
+								{#if event.diaryDate}
+									<a class="chronicle-link" href={`/diary?date=${event.diaryDate}`}>
+										{m.chronicleOpenDiary()} →
+									</a>
+								{/if}
+							</div>
+						</li>
+					{/if}
 				{/each}
 			</ol>
 		{/each}
@@ -262,6 +285,25 @@
 		border: 0;
 		background: none;
 		inline-size: min(100%, 150px);
+	}
+	/* まとめに付く一行。軸の右側に、控えめに寄せる。 */
+	.chronicle-aside {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
+		margin-inline-start: 38px;
+		margin-block-start: -4px;
+		padding-block-end: 8px;
+		min-inline-size: 0;
+	}
+	.chronicle-aside-label {
+		font-size: 11px;
+		color: var(--text-faint);
+	}
+	.chronicle-aside-text {
+		font-size: 13px;
+		color: var(--text);
+		overflow-wrap: anywhere;
 	}
 	.chronicle-news {
 		margin-block-start: 4px;

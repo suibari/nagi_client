@@ -30,6 +30,15 @@
 			detailEn: 'The long way home, for the first time in a while.',
 			diaryDate: '2026-08-14',
 		}),
+		// そのころ世の中では。まとめの下に紐づく一行として描かれる（日付は出ない）。
+		event({
+			id: 'news_context:2026-08',
+			kind: 'news_context',
+			date: '2026-08-31',
+			titleJa: 'キングダムハーツ初のオリジナルアニメ化が決定した',
+			titleEn: 'Kingdom Hearts gets its first original anime',
+			news: { url: 'https://example.com/story' } as ChronicleEventView['news'],
+		}),
 	];
 
 	// スクロールさせないと演出が見えないので、上に余白を積む。

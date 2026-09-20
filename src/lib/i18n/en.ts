@@ -656,7 +656,7 @@ export const en: Messages = {
 	chronicleKindAnniversaryCard: 'An anniversary card arrived',
 	chronicleKindNewsReaction: 'You reacted to this story',
 	chronicleKindNewsBookmark: 'You bookmarked this story',
-	chronicleKindNewsContext: 'Meanwhile, in the world',
+	chronicleKindNewsContext: 'Around that time, in the world',
 	chronicleKindHighlight: 'That day',
 
 	loginTitle: 'Join Nagi',
@@ -1206,8 +1206,7 @@ export const en: Messages = {
 	cardFabUndrawn: "You haven't drawn today's card yet",
 	cardViewCollection: 'View collection',
 	zenkatsuChiefBadge: "🏆 Today's Nagikatsu Chief",
-	zenkatsuChiefBadgeAria:
-		"Chosen in yesterday's Nagikatsu. It moves on to someone else tomorrow.",
+	zenkatsuChiefBadgeAria: "Chosen in yesterday's Nagikatsu. It moves on to someone else tomorrow.",
 	deckCombosTitle: 'Combos found',
 	deckCombosProgress: (o: { found: number; total: number }) => `${o.found} of ${o.total}`,
 	deckCombosEmpty: 'No combos yet. Try a different mix and see what happens',

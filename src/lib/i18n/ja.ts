@@ -681,7 +681,7 @@ export const ja = {
 	chronicleKindAnniversaryCard: '記念日カードを受け取った日',
 	chronicleKindNewsReaction: 'このニュースにリアクションした',
 	chronicleKindNewsBookmark: 'このニュースをブックマークした',
-	chronicleKindNewsContext: 'そのころ世の中では',
+	chronicleKindNewsContext: 'この頃の世間の出来事',
 	chronicleKindHighlight: 'この日のこと',
 
 	// login

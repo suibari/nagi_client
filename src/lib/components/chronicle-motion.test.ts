@@ -33,6 +33,16 @@ describe('chronicle motion contracts', () => {
 		expect(timeline).toContain("from './InfiniteScroll.svelte'");
 	});
 
+	it('そのころ世の中では、はまとめに付く一行として描く（独立した節目にしない）', () => {
+		// 「8/19 まとめ ＋ その下にこの頃の世間の出来事」という読ませ方。
+		// 月まとめのニュースだけは大きなニュースカードにしない。
+		const attached = /{#if isAttachedNews\(event\)}([\s\S]*?){:else}/.exec(timeline)?.[1] ?? '';
+		expect(timeline).toContain('isAttachedNews(event)');
+		expect(attached).toContain('chronicle-aside');
+		expect(attached).not.toContain('NewsCard');
+		expect(timeline).toContain('<NewsCard news={event.news} embedded />');
+	});
+
 	it('過去の1枚を見返すのに祝わせない（CardDetailDialog へ draw を渡さない）', () => {
 		const dialog = /<CardDetailDialog[^/]*\/>/.exec(timeline)?.[0] ?? '';
 		expect(dialog).toContain('initial={opened}');
