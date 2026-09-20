@@ -77,6 +77,7 @@ class OptimisticPosts {
 				channel: context.channel ?? draft.channel,
 			}),
 			...((context.threadKossori ?? draft.kossori) && { threadKossori: true }),
+			...(draft.article && { article: true }),
 			reactions: [],
 			isBot: false,
 			isAffirmation: false,

@@ -1,22 +1,25 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { POST_SCOPES, type ExternalTarget, type PostScope } from '$lib/post/scope';
+	import { POST_SCOPES, type PostScope } from '$lib/post/scope';
 	import Icon from './shell/Icon.svelte';
 
 	let {
 		scope,
-		externalTarget,
 		externalEligible,
 		externalDisabledReason,
+		kossoriDisabled = false,
+		kossoriDisabledReason = '',
 		channelName,
 		onselect,
 		onclose,
 	}: {
 		scope: PostScope;
-		externalTarget: ExternalTarget;
 		externalEligible: boolean;
 		externalDisabledReason: string;
+		/** ブログは公開レコードなので、こっそりを選ばせない。 */
+		kossoriDisabled?: boolean;
+		kossoriDisabledReason?: string;
 		channelName?: string;
 		onselect: (scope: PostScope) => void;
 		onclose: () => void;
@@ -24,16 +27,18 @@
 
 	let dialog = $state<HTMLDivElement>();
 
-	const disabledFor = (value: PostScope) => value === 'external' && !externalEligible;
+	const disabledFor = (value: PostScope) =>
+		(value === 'external' && !externalEligible) || (value === 'kossori' && kossoriDisabled);
+
+	const reasonFor = (value: PostScope) =>
+		value === 'kossori' ? kossoriDisabledReason : externalDisabledReason;
 
 	const labelFor = (value: PostScope) =>
 		value === 'kossori'
 			? m.postScopeKossori()
 			: value === 'feed'
 				? (channelName ?? m.postScopeFeed())
-				: externalTarget === 'bluesky'
-					? m.postScopeBluesky()
-					: m.postScopeStandardSite();
+				: m.postScopeBluesky();
 
 	const detailFor = (value: PostScope) =>
 		value === 'kossori'
@@ -42,20 +47,10 @@
 				? channelName
 					? m.postScopeChannelDetail({ channel: channelName })
 					: m.postScopeFeedDetail()
-				: externalTarget === 'bluesky'
-					? m.postScopeBlueskyDetail()
-					: m.postScopeStandardSiteDetail();
+				: m.postScopeBlueskyDetail();
 
 	const iconFor = (value: PostScope) =>
-		value === 'kossori'
-			? 'hide'
-			: value === 'feed'
-				? channelName
-					? 'hash'
-					: 'home'
-				: externalTarget === 'bluesky'
-					? 'bluesky'
-					: 'newspaper';
+		value === 'kossori' ? 'hide' : value === 'feed' ? (channelName ? 'hash' : 'home') : 'bluesky';
 
 	function select(value: PostScope) {
 		if (disabledFor(value)) return;
@@ -120,7 +115,7 @@
 					role="radio"
 					aria-checked={scope === value}
 					disabled={disabledFor(value)}
-					title={disabledFor(value) ? externalDisabledReason : labelFor(value)}
+					title={disabledFor(value) ? reasonFor(value) : labelFor(value)}
 					onclick={() => select(value)}
 				>
 					<span class="gauge-dot"><Icon name={iconFor(value)} size={15} /></span>
@@ -130,6 +125,9 @@
 		</div>
 
 		<p class="scope-detail">{detailFor(scope)}</p>
+		{#if kossoriDisabled && kossoriDisabledReason}
+			<p class="scope-note">{kossoriDisabledReason}</p>
+		{/if}
 		{#if !externalEligible && externalDisabledReason}
 			<p class="scope-note">{externalDisabledReason}</p>
 		{/if}

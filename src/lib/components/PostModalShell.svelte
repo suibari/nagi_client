@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { COMPOSER_MODES, type ComposerMode } from '$lib/post/composer-mode';
 	import Icon from './shell/Icon.svelte';
 
 	let {
 		open,
-		mode = $bindable<'simple' | 'rich'>('simple'),
+		mode = $bindable<ComposerMode>('simple'),
+		modes = COMPOSER_MODES,
 		sending = false,
 		assistSpace = 0,
 		title = m.postModalTitle(),
@@ -15,17 +17,28 @@
 		children,
 	}: {
 		open: boolean;
-		mode?: 'simple' | 'rich';
+		mode?: ComposerMode;
+		/**
+		 * 出すタブ。ゲスト投稿や返信のようにブログにできない文脈では絞る。
+		 * 選択中のモードがここから外れたら、呼び出し元が mode を戻す。
+		 */
+		modes?: ComposerMode[];
 		sending?: boolean;
 		/** ポストおたすけの吹き出しが下端を覆う高さ。投稿ボタンが隠れないよう余白に足す。 */
 		assistSpace?: number;
 		title?: string;
 		onclose: () => void;
-		onmodechange?: (mode: 'simple' | 'rich') => void;
+		onmodechange?: (mode: ComposerMode) => void;
 		headerAction?: Snippet;
 		children: Snippet;
 	} = $props();
 	let dialog = $state<HTMLDivElement>();
+	const modeLabel = (value: ComposerMode) =>
+		value === 'simple'
+			? m.postModeSimple()
+			: value === 'rich'
+				? m.postModeRich()
+				: m.postModeBlog();
 
 	$effect(() => {
 		if (open) requestAnimationFrame(() => dialog?.focus());
@@ -38,7 +51,7 @@
 		}
 	}
 
-	function selectMode(nextMode: 'simple' | 'rich') {
+	function selectMode(nextMode: ComposerMode) {
 		mode = nextMode;
 		onmodechange?.(nextMode);
 	}
@@ -55,7 +68,8 @@
 	<div
 		bind:this={dialog}
 		class="post-modal"
-		class:rich={mode === 'rich'}
+		class:rich={mode !== 'simple'}
+		class:blog={mode === 'blog'}
 		class:has-header-action={headerAction}
 		role="dialog"
 		aria-modal="true"
@@ -65,22 +79,16 @@
 		<header>
 			<h2 id="post-modal-title" class="visually-hidden">{title}</h2>
 			<div class="post-modal-modes" role="tablist" aria-label={m.postModalModesAria()}>
-				<button
-					type="button"
-					role="tab"
-					aria-selected={mode === 'simple'}
-					class:active={mode === 'simple'}
-					disabled={sending}
-					onclick={() => selectMode('simple')}>{m.postModeSimple()}</button
-				>
-				<button
-					type="button"
-					role="tab"
-					aria-selected={mode === 'rich'}
-					class:active={mode === 'rich'}
-					disabled={sending}
-					onclick={() => selectMode('rich')}>{m.postModeRich()}</button
-				>
+				{#each modes as value (value)}
+					<button
+						type="button"
+						role="tab"
+						aria-selected={mode === value}
+						class:active={mode === value}
+						disabled={sending}
+						onclick={() => selectMode(value)}>{modeLabel(value)}</button
+					>
+				{/each}
 			</div>
 			{#if headerAction}
 				<div class="post-modal-header-action">{@render headerAction()}</div>
@@ -149,6 +157,9 @@
 	.post-modal-modes {
 		display: flex;
 		gap: 4px;
+		/* タブが3つになったので、狭い画面では閉じる/送信より先に縮む側にする。 */
+		min-width: 0;
+		flex-shrink: 1;
 	}
 	.post-modal-close {
 		margin-inline-start: auto;
@@ -159,6 +170,7 @@
 	.post-modal-modes button {
 		min-height: 28px;
 		padding: 4px 10px;
+		white-space: nowrap;
 		border: 1px solid transparent;
 		border-radius: var(--r-sm);
 		background: transparent;
@@ -175,6 +187,10 @@
 	@media (min-width: 1024px) {
 		.post-modal.rich {
 			width: min(calc(100vw - 32px), 1040px);
+		}
+		/* ブログは本文の右に記事メタ欄が並ぶぶんだけ広い。.rich の後に置いて上書きする。 */
+		.post-modal.blog {
+			width: min(calc(100vw - 32px), 1120px);
 		}
 	}
 	@media (max-width: 767px) {
@@ -211,6 +227,9 @@
 			height: calc(
 				100dvh - 16px - env(safe-area-inset-bottom) - var(--post-modal-assist-space, 0px)
 			);
+		}
+		.post-modal-modes button {
+			padding: 4px 8px;
 		}
 	}
 </style>

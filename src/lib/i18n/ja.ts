@@ -213,7 +213,8 @@ export const ja = {
 	aboutCrosspostBody: 'Blueskyにも同時に投稿できます',
 	aboutCrosspostLink: 'クロスポストを設定する',
 	aboutStandardSiteTitle: 'ブログとして公開',
-	aboutStandardSiteBody: '投稿を、対応アプリで読めるブログ記事としても公開できます',
+	aboutStandardSiteBody:
+		'投稿モーダルの「ブログ」タブで書くと、対応アプリで読める記事としても公開されます',
 	aboutProfileTitle: '別のプロフィール',
 	aboutProfileBody: 'Blueskyとは独立した姿でいられます',
 	aboutProfileLink: 'プロフィールを編集する',
@@ -343,6 +344,7 @@ export const ja = {
 	postModalModesAria: '投稿の書き方を切り替え',
 	postModeSimple: 'あっさり',
 	postModeRich: 'しっかり',
+	postModeBlog: 'ブログ',
 	postScopeTitle: '投稿範囲',
 	postScopeDone: '決定',
 	postScopeOpenAria: (p: { scope: string }) => `投稿範囲：${p.scope}（変更する）`,
@@ -358,11 +360,9 @@ export const ja = {
 	postScopeBluesky: 'Blueskyにも',
 	postScopeBlueskyShort: 'Blueskyにも',
 	postScopeBlueskyDetail: 'Nagiに加えて、Blueskyにも同じ内容を投稿します。',
-	postScopeStandardSite: 'ブログにも',
-	postScopeStandardSiteShort: 'ブログにも',
-	postScopeStandardSiteDetail: 'Nagiに加えて、standard.siteに記事として公開します。',
-	postScopeExternalUnavailable: '外部への同時投稿は設定から有効にできます',
+	postScopeExternalUnavailable: 'Blueskyへの同時投稿は設定から有効にできます',
 	postScopeExternalChannel: 'チャンネルへの投稿は外部には出せません',
+	postScopeKossoriArticle: 'ブログはこっそりにはできません',
 	guestPostTitle: 'この端末だけに投稿',
 	guestPostScope: 'この端末のこっそり',
 	guestPostScopeDetail: '投稿はこの端末に保存され、タイムラインや「みんなで全肯定」には出ません',
@@ -381,10 +381,29 @@ export const ja = {
 	guestPostSignupTitle: 'このまま、こっそり続けられます',
 	guestPostSignupBody:
 		'サインアップまたはサインインすると、これからの投稿が端末を越えて残り、botたんが1日分の日記にまとめます。',
-	externalTargetLegend: '外部への投稿先',
-	externalTargetHelp: '投稿範囲を「外部にも」にしたときの送り先を、最初に1つ選んでください。',
-	externalTargetBluesky: 'Bluesky',
-	externalTargetStandardSite: 'standard.site（ブログ）',
+
+	// ブログ（standard.site の記事）
+	articleMetaLegend: '記事の設定',
+	articleHeaderImageLabel: 'ヘッダー画像',
+	articleHeaderImageHint: 'ドラッグ＆ドロップ、またはクリックして選択',
+	articleHeaderImageReplace: 'ヘッダー画像を差し替える',
+	articleHeaderImageRemove: 'ヘッダー画像を外す',
+	articleTagsLabel: 'タグ',
+	articleTagsPlaceholder: 'タグを入力してEnter',
+	articleTagsHint: '記事を分類するための言葉です。本文中のハッシュタグも一緒に保存されます。',
+	articleTagRemove: (p: { tag: string }) => `タグ「${p.tag}」を外す`,
+	articleTagLimit: 'タグは1つ128文字までです',
+	articlePublishTargetLabel: '公開先',
+	articlePublishTargetValue: 'standard.site（対応アプリから記事として読めます）',
+	articleTitleRequired: 'ブログにはタイトルが必要です',
+	articleChannelDisabled: 'チャンネルへの投稿はブログにできません',
+	articleContentWarningDisabled: 'コンテンツ警告のある投稿はブログにできません',
+	articleQuoteDisabled: '引用や返信のある投稿はブログにできません',
+	articleCoverTooLarge:
+		'ヘッダー画像が大きすぎたため、記事には添えられませんでした（1MB未満にしてください）。',
+	articleTeaserSuffix: (p: { url: string }) => `続きはNagiで：${p.url}`,
+	articleCrosspostTeaserNote:
+		'Blueskyには、冒頭の抜粋とNagiへのリンクだけを1件投稿します（全文は分割投稿しません）。',
 
 	// drafts
 	draftSave: '下書きに保存',
@@ -889,7 +908,7 @@ export const ja = {
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
 	externalPublishingHelp:
-		'投稿をNagi以外にも公開するときの送り先を選びます。選んだ公開先の設定だけが下に表示されます。',
+		'投稿をNagi以外にも公開するための設定です。それぞれ個別に有効にできます。',
 	blueskyPublishingTitle: 'Blueskyにも投稿',
 	blogPublishingTitle: 'ブログとして公開',
 	blogPublishingHelp: '選んだ投稿を、対応するAT Protocolアプリでも読める長文記事として公開します。',
@@ -908,18 +927,18 @@ export const ja = {
 	crosspostSignInRequired: 'クロスポストを設定するにはログインしてください。',
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
 	crosspostPermissionMissing: 'Blueskyへの投稿権限を確認できませんでした',
-	crosspostWarning: (p: { reason: string }) =>
-		`Nagiには投稿しましたが、Blueskyへのクロスポストに失敗しました: ${p.reason}`,
+	// 投稿そのものは成立しているときの補足。理由側が何に失敗したかを述べる。
+	postedWithWarning: (p: { reason: string }) => `Nagiには投稿できました。${p.reason}`,
 	// standard.site（AT Protocol 共通の長文記事 lexicon）へのオプトイン公開。
 	// standard.site という名前の知名度が低いので、UI 上は「ブログ」と呼ぶ。
 	standardSiteHelp:
 		'standard.siteというAT Protocol上の共通フォーマットで保存します。対応アプリから記事を読めるようになります。',
 	standardSiteOptInNote:
-		'すべての投稿がブログになるわけではありません。投稿欄のボタンで、投稿ごとにオン/オフを選べます（既定はオフ）。こっそり投稿とチャンネル投稿は対象外です。',
-	// クロスポストは300文字ごとの分割スレッドなので、長文記事と併用すると Bluesky が連投で埋まる。
-	// どちらの設定画面からも同じ文言で説明する。
+		'すべての投稿がブログになるわけではありません。投稿モーダルで「ブログ」タブを選んだときだけ記事になります。返信・引用・チャンネル投稿とこっそり投稿は対象外です。',
+	// 記事を300文字ごとの分割スレッドで流すと Bluesky が1本の記事で埋まるので、
+	// ブログでは抜粋＋リンクのティーザーを1件だけ出す。設定画面でもそう説明する。
 	standardSiteCrosspostNote:
-		'ブログとして出した投稿は、Blueskyへのクロスポストを行いません。長文が分割されて連投になるのを避けるためです。',
+		'ブログを「Blueskyにも」で出した場合、Blueskyには冒頭の抜粋とNagiへのリンクだけを1件投稿します。全文を分割して連投することはありません。',
 	standardSiteDeviceNote: 'この設定は、この端末でのみ有効です。',
 	standardSiteEnableLabel: 'ブログとして出せるようにする',
 	standardSiteReauthNote:
@@ -928,9 +947,9 @@ export const ja = {
 	standardSiteReauthPending: '移動しています…',
 	standardSiteSignInRequired: 'ブログ公開を設定するにはログインしてください。',
 	standardSiteFailed: 'ブログとしての公開に失敗しました',
-	standardSiteTitleLabel: 'ブログのタイトル',
-	standardSiteTitlePlaceholder: 'タイトルを入力',
-	standardSiteTitleHint: '本文の先頭を「# 見出し」にすると、そこから自動で決まります。',
+	standardSiteTitleLabel: 'タイトル',
+	standardSiteTitlePlaceholder: 'タイトルを入力…',
+	standardSiteTitleHint: '本文の先頭に「# 見出し」として入ります。',
 	// app links (任意 Atmosphere アプリ連携)
 	settingsAppLinksTitle: '使ってるアプリ',
 	appLinksLegend: '使ってるアプリ',

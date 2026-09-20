@@ -35,6 +35,8 @@ export type StandardSiteDocument = {
 	content?: unknown;
 	coverImage?: unknown;
 	tags?: string[];
+	/** コメントを追える Bluesky 投稿。Nagi ではティーザー投稿を指す。 */
+	bskyPostRef?: { uri: string; cid: string };
 };
 
 /** 投稿1件を standard.site の記事として書き出すための入力。 */
@@ -45,7 +47,13 @@ export type ArticleInput = {
 	/** 生の markdown（Nagi 投稿の text そのもの）。 */
 	markdown: string;
 	publishedAt: string;
-	tags: string[];
+	/**
+	 * 記事のタグ。省略すると、既存レコードのタグをそのまま残す
+	 * （本文編集での追従がタグを消してしまわないようにするため）。
+	 */
+	tags?: string[];
 	/** 1枚目の画像の BlobRef。1MB 以下のときだけ渡す。 */
 	coverImage?: unknown;
+	/** Bluesky へティーザーを出したときだけ、その投稿への強参照。 */
+	bskyPostRef?: { uri: string; cid: string };
 };

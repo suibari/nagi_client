@@ -12,6 +12,7 @@
 	import RichText from './RichText.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { parseContentWarning } from '$lib/atproto/contentWarning';
+	import { isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
 	import type { EmojiView } from '$lib/api/types';
 	import QuickEmojiPalette from './QuickEmojiPalette.svelte';
 	import ContentWarningPicker from './ContentWarningPicker.svelte';
@@ -55,9 +56,10 @@
 		selfLabels?: string[];
 		/**
 		 * simple（あっさり）はプレビュータブと文字装飾を畳み、本文・画像・CW だけにする。
+		 * rich（しっかり）と blog（ブログ）はどちらも文字装飾とプレビューを出す。
 		 * 返信や引用の InlinePostComposer は従来どおり rich のまま。
 		 */
-		mode?: 'simple' | 'rich';
+		mode?: ComposerMode;
 		/** ポストモーダルの広幅時だけ、入力とプレビューを常時並べる。 */
 		realtimePreviewEnabled?: boolean;
 		onsubmit?: () => void;
@@ -83,6 +85,7 @@
 	$effect(() => {
 		if (mode === 'simple' && preview) preview = false;
 	});
+	// ブログは入力の右に記事メタ欄が並ぶので、広い画面でも2ペインプレビューにはしない。
 	$effect(() => {
 		if (!realtimePreviewEnabled || mode !== 'rich') {
 			realtimePreview = false;
@@ -111,7 +114,7 @@
 	);
 </script>
 
-{#if mode === 'rich' && !realtimePreview}
+{#if isWideComposer(mode) && !realtimePreview}
 	<div class="composer-tabs" role="tablist" aria-label={m.composerTabsAria()}>
 		<button
 			type="button"
@@ -201,7 +204,7 @@
 							else editor?.applyContentWarning();
 						}}><Icon name="warning" size={17} /></button
 					>{/if}
-				{#if mode === 'rich'}
+				{#if isWideComposer(mode)}
 					<MarkdownPalette {disabled} onformat={(format) => editor?.applyMarkdown(format)} />
 				{/if}
 			</div>

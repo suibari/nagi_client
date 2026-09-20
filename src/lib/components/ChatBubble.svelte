@@ -18,7 +18,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCard from './LinkCard.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
-	import { ensureRecord } from '$lib/api/appview';
+	import { APPVIEW_URL, ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
@@ -43,7 +43,6 @@
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import {
 		deleteStandardSiteDocument,
-		tagsFromFacets,
 		updateStandardSiteDocument,
 	} from '$lib/standardsite/document';
 	import {
@@ -145,18 +144,25 @@
 	let reactionButton = $state<HTMLButtonElement>();
 	let postRow: HTMLDivElement;
 	let mine = $derived(localGuest || $session?.did === post.author.did);
+	/**
+	 * ブログとして書かれた投稿は、1枚目の画像を本文の上のヘッダーとして出す。
+	 * standard.site の coverImage が「1枚目の画像」なので、記事側の見た目と揃う。
+	 * 先頭が見出しなだけの通常投稿と取り違えないよう、判定は post.article だけを見る。
+	 */
+	let articleHeader = $derived(post.article && !editing ? post.images?.[0] : undefined);
+	// ヘッダーに出した1枚は本文下のギャラリーから外す（同じ画像を二度出さない）。
+	let bodyImages = $derived(articleHeader ? post.images?.slice(1) : post.images);
+	const resolveAsset = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 	let hasTallImage = $derived(
 		Boolean(
-			post.images?.some(
-				(img) => !img.aspectRatio || img.aspectRatio.height > img.aspectRatio.width,
-			),
+			bodyImages?.some((img) => !img.aspectRatio || img.aspectRatio.height > img.aspectRatio.width),
 		),
 	);
 	let visibleImages = $derived(
-		maxImages && !showAllImages ? post.images?.slice(0, maxImages) : post.images,
+		maxImages && !showAllImages ? bodyImages?.slice(0, maxImages) : bodyImages,
 	);
 	let imageToggleable = $derived(
-		Boolean(maxImages && post.images && (post.images.length > maxImages || hasTallImage)),
+		Boolean(maxImages && bodyImages && (bodyImages.length > maxImages || hasTallImage)),
 	);
 	let clampTallImages = $derived(Boolean(maxImages && !showAllImages && hasTallImage));
 	let visibleLinkCards = $derived(
@@ -323,11 +329,7 @@
 	 * 投稿の編集・削除に standard.site の記事を追従させる。
 	 * 権限が無い／記事化していない場合は黙って何もしない（Nagi 側の操作は成立している）。
 	 */
-	async function syncStandardSiteDocument(
-		rkey: string,
-		text?: string,
-		facets?: PostView['facets'],
-	) {
+	async function syncStandardSiteDocument(rkey: string, text?: string) {
 		try {
 			if (!(await hasStandardSiteScope())) return;
 			if (post.cwRestricted) {
@@ -339,10 +341,11 @@
 				return;
 			}
 			// タイトルは本文先頭の見出しから引き直す。無ければ既存のタイトルを残す。
+			// タグは渡さない。記事のタグは投稿モーダルの記事メタ欄で決まるもので、
+			// 本文の facet からは復元できないため、本文編集では触らずに残す。
 			await updateStandardSiteDocument(rkey, {
 				...(extractTitle(text) ? { title: extractTitle(text) } : {}),
 				markdown: text,
-				tags: tagsFromFacets(facets ?? []),
 			});
 		} catch {
 			// 記事側の同期失敗で Nagi の編集・削除を巻き戻すことはしない。
@@ -423,7 +426,7 @@
 			editImageProcessing = false;
 			// standard.site の記事にしてある投稿なら本文を追従させる。記事化していない
 			// 投稿では何も起きない（編集をきっかけに勝手に公開はしない）。
-			void syncStandardSiteDocument(match[2], draft.text, draft.facets);
+			void syncStandardSiteDocument(match[2], draft.text);
 		} catch (error) {
 			editError = error instanceof Error ? error.message : m.editPostFailed();
 		} finally {
@@ -551,6 +554,7 @@
 <!-- data-post-uri は投稿後の追従スクロールの目印。カード単位ではなく発言単位で寄せる。 -->
 <div
 	class="post-row"
+	class:article={post.article}
 	class:mine
 	class:bot={post.isBot}
 	class:moderation-hidden={moderationDisplay.hidden}
@@ -614,6 +618,16 @@
 			active={moderationDisplay.warn}
 			title={moderationWarningText}
 		>
+			{#if articleHeader}
+				<img
+					class="post-header-image"
+					src={resolveAsset(articleHeader.url)}
+					alt={articleHeader.alt}
+					style={articleHeader.aspectRatio
+						? `aspect-ratio: ${articleHeader.aspectRatio.width} / ${articleHeader.aspectRatio.height}`
+						: undefined}
+				/>
+			{/if}
 			{#if editing}
 				<div class="inline-edit" use:editEscape>
 					{#snippet editTools()}

@@ -15,7 +15,6 @@
 		markStandardSitePending,
 		setStandardSiteEnabled,
 	} from '$lib/standardsite/preferences';
-	import { getExternalTarget, setExternalTarget, type ExternalTarget } from '$lib/post/scope';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 
@@ -25,7 +24,6 @@
 	let blogGranted = $state(false);
 	let blueskyBusy = $state(false);
 	let blogBusy = $state(false);
-	let target = $state<ExternalTarget>('bluesky');
 
 	onMount(async () => {
 		blueskyEnabled = getCrosspostEnabled();
@@ -34,13 +32,7 @@
 			hasCrosspostScope(),
 			hasStandardSiteScope(),
 		]);
-		target = getExternalTarget();
 	});
-
-	function chooseTarget(next: ExternalTarget) {
-		target = next;
-		setExternalTarget(next);
-	}
 
 	function toggleBluesky(next: boolean) {
 		blueskyEnabled = next;
@@ -80,79 +72,61 @@
 	<h1>{m.settingsExternalPublishingTitle()}</h1>
 	<p class="page-intro">{m.externalPublishingHelp()}</p>
 
+	<!--
+		Bluesky とブログはそれぞれ独立したオプトイン。以前はどちらか1つを
+		「外部への投稿先」として選ばせていたが、ブログは投稿モーダルのタブに
+		移したので、選択という概念自体が要らなくなった。
+	-->
 	<fieldset class="theme-settings publishing-service">
-		<legend>{m.externalTargetLegend()}</legend>
-		<p>{m.externalTargetHelp()}</p>
-		<div class="target-choice" role="radiogroup" aria-label={m.externalTargetLegend()}>
-			<button
-				type="button"
-				role="radio"
-				aria-checked={target === 'bluesky'}
-				class:active={target === 'bluesky'}
-				onclick={() => chooseTarget('bluesky')}>{m.externalTargetBluesky()}</button
-			>
-			<button
-				type="button"
-				role="radio"
-				aria-checked={target === 'standardSite'}
-				class:active={target === 'standardSite'}
-				onclick={() => chooseTarget('standardSite')}>{m.externalTargetStandardSite()}</button
-			>
-		</div>
+		<legend>{m.blueskyPublishingTitle()}</legend>
+		<p>{m.crosspostHelp()}</p>
+		{#if !$session && $oauthReady}
+			<SignedOutNotice message={m.crosspostSignInRequired()} />
+		{:else if $session && blueskyGranted}
+			<ToggleSwitch
+				checked={blueskyEnabled}
+				label={m.crosspostEnableLabel()}
+				onchange={toggleBluesky}
+			/>
+		{:else if $session}
+			<p>{m.crosspostReauthNote()}</p>
+			<button type="button" disabled={blueskyBusy} onclick={reauthorizeBluesky}>
+				{blueskyBusy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}
+			</button>
+		{/if}
+		<details>
+			<summary>{m.externalPublishingDetails()}</summary>
+			<p>{m.crosspostSplitNote()}</p>
+			<p>{m.crosspostBotNote()}</p>
+			<p>{m.crosspostDeviceNote()}</p>
+		</details>
 	</fieldset>
 
-	{#if target === 'bluesky'}
-		<fieldset class="theme-settings publishing-service">
-			<legend>{m.blueskyPublishingTitle()}</legend>
-			<p>{m.crosspostHelp()}</p>
-			{#if !$session && $oauthReady}
-				<SignedOutNotice message={m.crosspostSignInRequired()} />
-			{:else if $session && blueskyGranted}
-				<ToggleSwitch
-					checked={blueskyEnabled}
-					label={m.crosspostEnableLabel()}
-					onchange={toggleBluesky}
-				/>
-			{:else if $session}
-				<p>{m.crosspostReauthNote()}</p>
-				<button type="button" disabled={blueskyBusy} onclick={reauthorizeBluesky}>
-					{blueskyBusy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}
-				</button>
-			{/if}
-			<details>
-				<summary>{m.externalPublishingDetails()}</summary>
-				<p>{m.crosspostSplitNote()}</p>
-				<p>{m.crosspostBotNote()}</p>
-				<p>{m.crosspostDeviceNote()}</p>
-			</details>
-		</fieldset>
-	{:else}
-		<fieldset class="theme-settings publishing-service">
-			<legend>{m.blogPublishingTitle()}</legend>
-			<p>{m.blogPublishingHelp()}</p>
-			{#if !$session && $oauthReady}
-				<SignedOutNotice message={m.standardSiteSignInRequired()} />
-			{:else if $session && blogGranted}
-				<ToggleSwitch
-					checked={blogEnabled}
-					label={m.standardSiteEnableLabel()}
-					onchange={toggleBlog}
-				/>
-			{:else if $session}
-				<p>{m.standardSiteReauthNote()}</p>
-				<button type="button" disabled={blogBusy} onclick={reauthorizeBlog}>
-					{blogBusy ? m.standardSiteReauthPending() : m.standardSiteReauthSubmit()}
-				</button>
-			{/if}
-			<details>
-				<summary>{m.externalPublishingDetails()}</summary>
-				<p>{m.standardSiteHelp()}</p>
-				<p>{m.standardSiteOptInNote()}</p>
-				<p>{m.standardSiteCrosspostNote()}</p>
-				<p>{m.standardSiteDeviceNote()}</p>
-			</details>
-		</fieldset>
-	{/if}
+	<fieldset class="theme-settings publishing-service">
+		<legend>{m.blogPublishingTitle()}</legend>
+		<p>{m.blogPublishingHelp()}</p>
+		{#if !$session && $oauthReady}
+			<SignedOutNotice message={m.standardSiteSignInRequired()} />
+		{:else if $session && blogGranted}
+			<ToggleSwitch
+				checked={blogEnabled}
+				label={m.standardSiteEnableLabel()}
+				onchange={toggleBlog}
+			/>
+		{:else if $session}
+			<p>{m.standardSiteReauthNote()}</p>
+			<button type="button" disabled={blogBusy} onclick={reauthorizeBlog}>
+				{blogBusy ? m.standardSiteReauthPending() : m.standardSiteReauthSubmit()}
+			</button>
+		{/if}
+		<details>
+			<summary>{m.externalPublishingDetails()}</summary>
+			<p>{m.standardSiteHelp()}</p>
+			<p>{m.standardSiteOptInNote()}</p>
+			<p>{m.standardSiteCrosspostNote()}</p>
+			<p>{m.standardSiteDeviceNote()}</p>
+		</details>
+	</fieldset>
 </section>
 
 <style>
@@ -178,25 +152,5 @@
 	}
 	details[open] summary {
 		margin-bottom: 0.6rem;
-	}
-	.target-choice {
-		display: flex;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-	.target-choice button {
-		padding: 8px 16px;
-		border: 1px solid var(--line-strong);
-		border-radius: var(--r-sm);
-		background: var(--surface-1);
-		color: var(--text-muted);
-		font-size: 0.85rem;
-		font-weight: 700;
-		cursor: pointer;
-	}
-	.target-choice button.active {
-		border-color: var(--accent);
-		background: var(--accent-soft);
-		color: var(--accent-strong);
 	}
 </style>

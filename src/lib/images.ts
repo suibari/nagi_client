@@ -3,6 +3,11 @@ import { compressGif, type GifCompressionProgress } from './gif-compression';
 export const MAX_IMAGE_COUNT = 4;
 export const MAX_IMAGE_INPUT_SIZE = 25_000_000;
 export const MAX_IMAGE_BLOB_SIZE = 2_000_000;
+/**
+ * ブログのヘッダー画像の上限。site.standard.document#coverImage は
+ * lexicon で 1MB 未満と決まっているので、通常の添付より強く圧縮する。
+ */
+export const MAX_COVER_IMAGE_BLOB_SIZE = 900_000;
 
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -49,6 +54,7 @@ const canvasBlob = (canvas: HTMLCanvasElement, quality: number) =>
 export async function processImage(
 	file: File,
 	onGifCompressionProgress?: (progress: GifCompressionProgress) => void,
+	maxBytes: number = MAX_IMAGE_BLOB_SIZE,
 ): Promise<ImageAttachment> {
 	if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
 		throw new ImageProcessingError('Unsupported image type', 'type');
@@ -58,14 +64,14 @@ export async function processImage(
 	}
 	if (file.type === 'image/gif') {
 		let blob: Blob = file;
-		if (file.size > MAX_IMAGE_BLOB_SIZE) {
+		if (file.size > maxBytes) {
 			try {
-				blob = (await compressGif(file, MAX_IMAGE_BLOB_SIZE, onGifCompressionProgress)) ?? file;
+				blob = (await compressGif(file, maxBytes, onGifCompressionProgress)) ?? file;
 			} catch {
 				throw new ImageProcessingError('Could not compress GIF', 'gif-size');
 			}
 		}
-		if (blob.size > MAX_IMAGE_BLOB_SIZE) {
+		if (blob.size > maxBytes) {
 			throw new ImageProcessingError('GIF is too large', 'gif-size');
 		}
 		return {
@@ -87,19 +93,19 @@ export async function processImage(
 	}
 
 	let output: Blob | null = null;
-	while (scale >= 0.1 && (!output || output.size > MAX_IMAGE_BLOB_SIZE)) {
+	while (scale >= 0.1 && (!output || output.size > maxBytes)) {
 		canvas.width = Math.max(1, Math.round(bitmap.width * scale));
 		canvas.height = Math.max(1, Math.round(bitmap.height * scale));
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
 		for (const quality of [0.9, 0.8, 0.7, 0.6, 0.5]) {
 			output = await canvasBlob(canvas, quality);
-			if (output && output.size <= MAX_IMAGE_BLOB_SIZE) break;
+			if (output && output.size <= maxBytes) break;
 		}
-		if (!output || output.size > MAX_IMAGE_BLOB_SIZE) scale *= 0.8;
+		if (!output || output.size > maxBytes) scale *= 0.8;
 	}
 	bitmap.close();
-	if (!output || output.size > MAX_IMAGE_BLOB_SIZE) {
+	if (!output || output.size > maxBytes) {
 		throw new ImageProcessingError('Could not compress image', 'compress');
 	}
 	return {

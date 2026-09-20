@@ -14,14 +14,14 @@ const styles = read('../../routes/styles/components.css');
 describe('rich composer improvements', () => {
 	it('uses the agreed desktop breakpoint and keeps the narrow tab layout', () => {
 		expect(editor).toContain("window.matchMedia('(min-width: 1024px)')");
-		expect(editor).toContain("mode === 'rich' && !realtimePreview");
+		expect(editor).toContain('isWideComposer(mode) && !realtimePreview');
 		expect(modal).toMatch(/@media \(min-width: 1024px\)[\s\S]*?\.post-modal\.rich[\s\S]*?1040px/);
 		expect(styles).toContain('.composer-editor-panes.realtime-preview');
 	});
 
 	it('renders one draft control in both modes and debounces rich autosave', () => {
 		expect(composer.match(/class="icon-action draft-open"/g)).toHaveLength(1);
-		expect(composer).toContain("mode !== 'rich'");
+		expect(composer).toContain('!isWideComposer(mode)');
 		expect(composer).toContain('setTimeout(() => void startDraftSave(key, draftSnapshot()), 1500)');
 		expect(composer).toContain('attachments: []');
 		expect(composer).toContain("draftSaveStatus === 'saving'");
@@ -32,7 +32,9 @@ describe('rich composer improvements', () => {
 		expect(modal).toContain('onmodechange?.(nextMode)');
 		expect(signedInModal).toContain('mode = getComposerMode()');
 		expect(signedInModal).toContain('mode = resetComposerMode()');
-		expect(guestModal).toContain('mode = getComposerMode()');
+		// ゲストはブログにできないので、保存済みの blog は rich へ読み替えて復元する。
+		expect(guestModal).toContain('const stored = getComposerMode()');
+		expect(guestModal).toContain("mode = stored === 'blog' ? 'rich' : stored");
 		expect(guestModal).toContain('mode = resetComposerMode()');
 	});
 

@@ -77,8 +77,9 @@ function buildRecord(input: ArticleInput, site: string, did: string) {
 			flavor: 'commonmark',
 			text: { $type: MARKDOWN_TEXT, markdown: input.markdown },
 		},
-		...(input.tags.length ? { tags: input.tags } : {}),
+		...(input.tags?.length ? { tags: input.tags } : {}),
 		...(input.coverImage !== undefined ? { coverImage: input.coverImage } : {}),
+		...(input.bskyPostRef ? { bskyPostRef: input.bskyPostRef } : {}),
 	};
 }
 
@@ -137,8 +138,11 @@ export async function updateStandardSiteDocument(
 		...next,
 		updatedAt: new Date().toISOString(),
 	};
-	// 画像や本文が消えた場合に古い値が残らないよう、次のレコードに無いものは落とす。
-	for (const key of ['description', 'textContent', 'tags', 'coverImage'] as const) {
+	// description と textContent は markdown から作り直せるので、本文が消えたら落とす。
+	// tags / coverImage / bskyPostRef は本文からは導けず、記事の公開時に一度だけ決まる。
+	// 本文編集の追従（ChatBubble の syncStandardSiteDocument）はこれらを渡さないので、
+	// ここで消すと編集のたびにヘッダー画像とタグが黙って失われる。
+	for (const key of ['description', 'textContent'] as const) {
 		if (!(key in next)) delete record[key];
 	}
 	await agent.com.atproto.repo.putRecord({

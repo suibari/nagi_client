@@ -3,11 +3,14 @@ import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
 import type { Facet } from '$lib/atproto/facets';
 import type { PostAssets, PostDraft } from '$lib/atproto/records';
+import type { StrongRef } from '$lib/api/types';
 
 const BSKY_POST = 'app.bsky.feed.post';
 /** Bluesky の投稿上限。app.bsky.feed.post#text の maxGraphemes / maxLength。 */
 const MAX_GRAPHEMES = 300;
 const MAX_BYTES = 3000;
+/** app.bsky.embed.external#thumb の maxSize。超える blob を載せるとレコードごと弾かれる。 */
+const MAX_THUMB_BYTES = 1_000_000;
 /** クロスポストであることの目印。Bluesky 側botたんはこれを見て反応をスキップする。 */
 export const VIA = 'Nagi';
 
@@ -39,8 +42,17 @@ function graphemes(text: string): Segment[] {
  * 300 グラフェム / 3000 バイトに収まるようテキストを分割する。
  * 改行 > 空白 > グラフェム境界の順で区切り、URL やメンションの facet を
  * またぐ位置では切らない（切れる場所が無いときだけ facet を諦めて強制分割）。
+ *
+ * `reserved` は、呼び出し元があとから末尾に足す文字列のぶんの席取り。
+ * 記事のティーザー（1件だけ投稿し、末尾に「続きはNagiで」を置く）で使う。
  */
-export function splitForBluesky(text: string, facets: Facet[] = []): CrosspostChunk[] {
+export function splitForBluesky(
+	text: string,
+	facets: Facet[] = [],
+	reserved: { graphemes?: number; bytes?: number } = {},
+): CrosspostChunk[] {
+	const maxGraphemes = Math.max(1, MAX_GRAPHEMES - (reserved.graphemes ?? 0));
+	const maxBytes = Math.max(1, MAX_BYTES - (reserved.bytes ?? 0));
 	const segments = graphemes(text);
 	const inFacet = (byte: number) =>
 		facets.some((facet) => facet.index.byteStart < byte && byte < facet.index.byteEnd);
@@ -52,8 +64,8 @@ export function splitForBluesky(text: string, facets: Facet[] = []): CrosspostCh
 		let limit = index;
 		while (
 			limit < segments.length &&
-			limit - index < MAX_GRAPHEMES &&
-			segments[limit].end - startByte <= MAX_BYTES
+			limit - index < maxGraphemes &&
+			segments[limit].end - startByte <= maxBytes
 		)
 			limit++;
 
@@ -149,7 +161,10 @@ export function prepareCrosspostContent(draft: PostDraft, assets: PostAssets) {
  * 300 文字を超える場合は分割し、2件目以降は直前の投稿へのリプライで芋づるに繋ぐ。
  * blob は Nagi 投稿でアップロード済みのものを使い回す（同一リポジトリ・同一サイズ上限）。
  */
-export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
+export async function crosspostToBluesky(
+	draft: PostDraft,
+	assets: PostAssets,
+): Promise<StrongRef | undefined> {
 	// こっそり投稿、およびチャンネル投稿は Bluesky にクロスポストしない。
 	// チャンネルは通常/こっそり問わず常に無効（チャンネルのコンテキストを外部に漏らさないため）。
 	if (draft.kossori || draft.channel || draft.cwRestricted) return;
@@ -190,4 +205,122 @@ export async function crosspostToBluesky(draft: PostDraft, assets: PostAssets) {
 		root ??= ref;
 		parent = ref;
 	}
+	// スレッドの先頭。記事の bskyPostRef にはこれを使う。
+	return root;
+}
+
+/**
+ * 記事の抜粋を作るために、本文先頭のタイトル行（h1）を落とす。
+ * タイトルは誘導リンクのカード側に出るので、抜粋に重ねて入れない。
+ * h2 以下は本文の一部なので残す。facet のオフセットは落としたぶん前へ詰める。
+ */
+export function stripLeadingHeading(text: string, facets: Facet[] = []) {
+	const match = /^#[ \t]+\S.*(\r?\n)*/.exec(text);
+	if (!match) return { text, facets };
+	const removed = encoder.encode(match[0]).length;
+	return {
+		text: text.slice(match[0].length),
+		facets: facets
+			.filter((facet) => facet.index.byteStart >= removed)
+			.map((facet) => ({
+				...facet,
+				index: {
+					byteStart: facet.index.byteStart - removed,
+					byteEnd: facet.index.byteEnd - removed,
+				},
+			})),
+	};
+}
+
+/**
+ * ティーザー本文（抜粋＋誘導文）と、その facet を組み立てる。
+ * 誘導文は呼び出し元が翻訳済みの1行で渡す（URL を含む）ので、
+ * このモジュールは i18n を知らないままでいられる。
+ */
+export function buildArticleTeaser(
+	draft: Pick<PostDraft, 'text' | 'facets'>,
+	article: { url: string; teaser: string },
+): CrosspostChunk & { excerpt: string } {
+	const body = stripLeadingHeading(draft.text, draft.facets as Facet[]);
+	const suffix = `\n\n${article.teaser}`;
+	// 抜粋を切り詰めたときに足す「…」のぶんも先に席を取っておく。
+	const reserved = {
+		graphemes:
+			[...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(suffix)].length + 1,
+		bytes: encoder.encode(suffix).length + encoder.encode('…').length,
+	};
+	const [head] = splitForBluesky(body.text, body.facets, reserved);
+	const excerpt = head?.text ?? '';
+	const truncated = excerpt.length < body.text.trim().length;
+	const text = `${excerpt}${truncated ? '…' : ''}${suffix}`;
+	// 誘導文の URL をリンクにする。URL は末尾にあるので最後の出現位置を見る。
+	const urlOffset = text.lastIndexOf(article.url);
+	const byteStart = encoder.encode(text.slice(0, urlOffset)).length;
+	return {
+		text,
+		excerpt: `${excerpt}${truncated ? '…' : ''}`,
+		facets: [
+			...(head?.facets ?? []),
+			{
+				index: { byteStart, byteEnd: byteStart + encoder.encode(article.url).length },
+				features: [{ $type: 'app.bsky.richtext.facet#link' as const, uri: article.url }],
+			},
+		],
+	};
+}
+
+/**
+ * ブログとして書いた投稿を Bluesky に1件だけ出す。
+ *
+ * 記事を crosspostToBluesky に流すと 300 グラフェムごとの分割連投になり、
+ * Bluesky のタイムラインが1本の記事で埋まってしまう。代わりに冒頭の抜粋と
+ * Nagi への誘導リンクだけを載せた「ティーザー」を1件投稿する。
+ * 本文全体は Nagi と standard.site の document が持つ。
+ */
+export async function crosspostArticleToBluesky(
+	draft: PostDraft,
+	assets: PostAssets,
+	article: { url: string; title: string; teaser: string },
+): Promise<StrongRef | undefined> {
+	if (draft.kossori || draft.channel || draft.cwRestricted) return;
+	const current = get(session);
+	if (!current) throw new Error('Authentication required');
+
+	const { text, facets, excerpt } = buildArticleTeaser(draft, article);
+	const selfLabels = getCrosspostSelfLabels(draft);
+	// 画像は本文添付にせず、誘導リンクのカードのサムネイルとして使う。
+	// 「読みに行く先がある」ことを見た目でも示したいため。
+	// ヘッダー画像は 1MB 未満に圧縮しているが、通常の画像ピッカー（2MB まで）から
+	// 入れた1枚目が先頭に来ることもあるので、上限を超える blob はサムネを諦める
+	// （付けたまま投稿するとレコードごと弾かれ、ティーザー自体が出ない）。
+	const first = assets.images[0]?.image as { size?: unknown } | undefined;
+	const thumb =
+		typeof first?.size === 'number' && first.size > 0 && first.size < MAX_THUMB_BYTES
+			? first
+			: undefined;
+	const response = await new Agent(current).com.atproto.repo.createRecord({
+		repo: current.did,
+		collection: BSKY_POST,
+		record: {
+			$type: BSKY_POST,
+			text,
+			facets,
+			langs: draft.langs,
+			...(selfLabels?.length
+				? { labels: { $type: 'com.atproto.label.defs#selfLabels', values: selfLabels } }
+				: {}),
+			createdAt: draft.createdAt,
+			via: VIA,
+			embed: {
+				$type: 'app.bsky.embed.external',
+				external: {
+					uri: article.url,
+					title: article.title,
+					description: excerpt,
+					...(thumb ? { thumb } : {}),
+				},
+			},
+		},
+	});
+	return { uri: response.data.uri, cid: response.data.cid };
 }
