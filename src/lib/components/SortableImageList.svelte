@@ -7,16 +7,18 @@
 	let {
 		items = $bindable(),
 		disabled = false,
+		onreorder,
 		children,
 	}: {
 		items: T[];
 		disabled?: boolean;
+		onreorder?: (items: T[]) => void;
 		children: Snippet<[item: T]>;
 	} = $props();
 
 	const sortable = createSortable<T>({
 		items: () => items,
-		commit: (next) => (items = next),
+		commit: (next) => (onreorder ? onreorder(next) : (items = next)),
 		ghostClass: 'attachment-drag-ghost',
 		handleSelector: '.attachment-drag-handle',
 		announce: (position) => m.postImageMoved({ position }),

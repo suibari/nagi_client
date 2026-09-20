@@ -52,6 +52,15 @@
 	});
 
 	const header = $derived(attachments[0]);
+	function setHeaderAlt(alt: string) {
+		const limited = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(alt)]
+			.slice(0, 1000)
+			.map((segment) => segment.segment)
+			.join('');
+		attachments = attachments.map((item, index) =>
+			index === 0 ? { ...item, alt: limited } : item,
+		);
+	}
 
 	async function useAsHeader(file: File) {
 		if (processing || disabled) return;
@@ -151,6 +160,17 @@
 				{#if processing}<span class="article-cover-spinner" aria-hidden="true"></span>{/if}
 			</button>
 			{#if header}
+				<label class="article-cover-alt">
+					<span>{m.postImageAltLabel()}</span>
+					<input
+						type="text"
+						value={header.alt}
+						maxlength="10000"
+						{disabled}
+						oninput={(event) => setHeaderAlt(event.currentTarget.value)}
+						placeholder={m.postImageAltPlaceholder()}
+					/>
+				</label>
 				<button type="button" class="ghost article-cover-remove" {disabled} onclick={removeHeader}>
 					<Icon name="close" size={14} />
 					<span>{m.articleHeaderImageRemove()}</span>
@@ -286,6 +306,16 @@
 		position: absolute;
 		inset: 0;
 		background: color-mix(in srgb, var(--bg) 60%, transparent);
+	}
+	.article-cover-alt {
+		display: grid;
+		gap: 4px;
+		color: var(--text-sub);
+		font-size: 11px;
+	}
+	.article-cover-alt input {
+		min-width: 0;
+		width: 100%;
 	}
 	.article-cover-remove {
 		display: inline-flex;

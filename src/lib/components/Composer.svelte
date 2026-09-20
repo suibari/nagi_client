@@ -134,7 +134,7 @@
 	);
 	let hasEmbeds = $derived(
 		Boolean(
-			attachments.length ||
+			attachments.length - (mode === 'blog' && attachments.length ? 1 : 0) ||
 			linkCards.length ||
 			quotePick.pending ||
 			quotePick.post ||
@@ -818,7 +818,7 @@
 				hidden={!hasEmbeds}
 			>
 				{#if !kossori}
-					<ImageAttachmentEditor bind:attachments disabled={busy} />
+					<ImageAttachmentEditor bind:attachments disabled={busy} hideFirst={blog} />
 					<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
 				{/if}
 				<ComposerQuoteEditor quote={quotePick} disabled={busy} />
