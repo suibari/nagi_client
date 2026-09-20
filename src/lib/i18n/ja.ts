@@ -416,7 +416,7 @@ export const ja = {
 	botBadge: 'Botたん',
 	superPositiveBadge: (p: { level: number }) => `超ポジティブ Lv.${p.level}`,
 	superPositiveBadgeAria: (p: { level: number }) => `超ポジティブ レベル${p.level}`,
-	titleBadge: (p: { title: string }) => `称号: ${p.title}`,
+	titleBadge: (p: { title: string }) => p.title,
 	titleBadgeAria: (p: { title: string }) => `日記でもらった称号「${p.title}」`,
 	postDeleted: 'この投稿は削除されました',
 	postModerationRejected: 'Nagiのモデレーションにより表示対象外になりました',
