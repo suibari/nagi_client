@@ -38,35 +38,8 @@
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
 
-	const PUBLIC_SEO: Record<string, { title: string; description: string; canonical: string }> = {
-		'/': {
-			title: 'Nagi（ナギ）— やさしい言葉が凪ぐ全肯定SNS',
-			description:
-				'Nagi（ナギ）は、全肯定botたんが言葉を受け止める、AT Protocol上の全肯定SNSです。いいねやフォローを気にせず、自由に気持ちを投稿できます。',
-			canonical: 'https://nagi.suibari.com/',
-		},
-		'/about': {
-			title: 'Nagiについて — 全肯定SNS Nagi（ナギ）',
-			description:
-				'全肯定SNS Nagi（ナギ）が選ばれる理由と、はじめかた。全肯定botたんが必ず返信し、いいねもフォローもなく、3000文字のMarkdownで長く書けます。投稿はAT Protocolであなた自身のPDSに残ります。',
-			canonical: 'https://nagi.suibari.com/about',
-		},
-		'/terms': {
-			title: 'Nagi 利用規約',
-			description:
-				'全肯定SNS Nagi（ナギ）の利用規約とコミュニティガイドライン。利用資格、禁止事項、保護される表現、違反への対応、AI機能の取り扱いについて記載しています。',
-			canonical: 'https://nagi.suibari.com/terms',
-		},
-		'/privacy': {
-			title: 'Nagi プライバシーポリシー',
-			description:
-				'全肯定SNS Nagi（ナギ）のプライバシーポリシー。どの情報をあなたのPDSとNagiのサーバのどちらに保存するか、AI機能でGoogleに何を送信するか、削除の方法を記載しています。',
-			canonical: 'https://nagi.suibari.com/privacy',
-		},
-	};
-
 	let { children } = $props();
-	const publicSeo = $derived(PUBLIC_SEO[page.url.pathname]);
+	const seo = $derived(page.data.seo);
 	// サインインの動線そのものを塞がないページでは投稿ボタンを出さない。
 	const NO_FAB = ['/login', '/onboarding', '/oauth'];
 	const showPostFab = $derived(
@@ -239,18 +212,18 @@
 </script>
 
 <svelte:head>
-	<title>{publicSeo?.title ?? m.appTitle()}</title>
-	<meta name="description" content={publicSeo?.description ?? m.appDescription()} />
-	<meta name="robots" content={publicSeo ? 'index,follow' : 'noindex,follow'} />
-	<meta property="og:title" content={publicSeo?.title ?? m.appTitle()} />
-	<meta property="og:description" content={publicSeo?.description ?? m.appDescription()} />
+	<title>{seo?.title ?? m.appTitle()}</title>
+	<meta name="description" content={seo?.description ?? m.appDescription()} />
+	<meta name="robots" content={seo ? (seo.robots ?? 'index,follow') : 'noindex,follow'} />
+	<meta property="og:title" content={seo?.title ?? m.appTitle()} />
+	<meta property="og:description" content={seo?.description ?? m.appDescription()} />
 	<meta
 		property="og:url"
-		content={publicSeo?.canonical ?? `https://nagi.suibari.com${page.url.pathname}`}
+		content={seo?.canonical ?? `https://nagi.suibari.com${page.url.pathname}`}
 	/>
-	<meta name="twitter:title" content={publicSeo?.title ?? m.appTitle()} />
-	<meta name="twitter:description" content={publicSeo?.description ?? m.appDescription()} />
-	{#if publicSeo}<link rel="canonical" href={publicSeo.canonical} />{/if}
+	<meta name="twitter:title" content={seo?.title ?? m.appTitle()} />
+	<meta name="twitter:description" content={seo?.description ?? m.appDescription()} />
+	{#if seo}<link rel="canonical" href={seo.canonical} />{/if}
 </svelte:head>
 
 <!-- 姉妹アプリ（botたんのお部屋）宛のリンクは、クリック時に SSO チケットを取って

@@ -76,6 +76,7 @@ export const en: Messages = {
 	newsEmpty: 'There are no bright news stories to show right now.',
 	newsRecommendedHeading: 'Close to you',
 	newsRecommendedReason: (p: { genre: string }) => `Why: ${p.genre}`,
+	newsBackToList: '← Back to Positive News',
 	newsReadArticle: 'Read article',
 	newsQuote: 'Quote',
 	newsShare: 'Share',

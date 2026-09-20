@@ -6,7 +6,10 @@ declare global {
 	namespace App {
 		// interface Error {}
 		// interface Locals {}
-		// interface PageData {}
+		interface PageData {
+			/** ルートが返した検索向けメタデータ。無い＝索引させない。 */
+			seo?: import('$lib/seo/seo').PageSeo;
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}

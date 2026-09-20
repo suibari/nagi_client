@@ -3,7 +3,7 @@
 	import { newsBotPost, safeNewsUrl } from '$lib/news/bot-post';
 	import { safeNewsImageUrl } from '$lib/news/image';
 	import { NewsQuote } from '$lib/news/quote.svelte';
-	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import { m, dateLocale, localeReady, stableDateTime } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { deleteOwnNews } from '$lib/atproto/records';
 	import Icon from './shell/Icon.svelte';
@@ -19,6 +19,7 @@
 		clampTitle = true,
 		reasonGenre,
 		showImage = false,
+		permalink,
 	}: {
 		news: NewsView;
 		botActor?: ActorView;
@@ -35,6 +36,12 @@
 		embedded?: boolean;
 		/** カルーセルなど高さを揃える表示では、タイトルを2行に収める。 */
 		clampTitle?: boolean;
+		/**
+		 * この記事の Nagi 内ページ（`/news/<rkey>`）。渡すと見出しがそのリンクになる。
+		 * 一覧からパーマリンクへ内部リンクが張られ、検索エンジンが sitemap 以外の
+		 * 経路でも記事ページへ辿り着ける。
+		 */
+		permalink?: string;
 	} = $props();
 	const quote = new NewsQuote();
 	let shared = $state(false);
@@ -47,6 +54,21 @@
 	let safeImage = $derived(safeNewsImageUrl(news.image));
 	let imageFailed = $state(false);
 	let botPost = $derived(newsBotPost(news, botActor));
+	// プリレンダとハイドレーション直後は JST・日本語で固定し、マウント後に閲覧者の
+	// ロケールとタイムゾーンへ切り替える。固定しないとビルド(UTC)と閲覧者(JST)で
+	// 時刻表示が9時間ずれ、全カードが静かに描き変わる。
+	let publishedLabel = $derived(
+		news.publishedAt
+			? localeReady()
+				? new Date(news.publishedAt).toLocaleString(dateLocale(), {
+						month: 'short',
+						day: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit',
+					})
+				: stableDateTime(news.publishedAt)
+			: '',
+	);
 	async function share() {
 		if (!safeUrl) return;
 		try {
@@ -95,12 +117,7 @@
 			</p>{/if}
 		<div class="news-meta">
 			<span>{news.sourceName ?? m.newsSourceUnknown()}</span>{#if news.publishedAt}<time
-					>{new Date(news.publishedAt).toLocaleString(dateLocale(), {
-						month: 'short',
-						day: 'numeric',
-						hour: '2-digit',
-						minute: '2-digit',
-					})}</time
+					datetime={news.publishedAt}>{publishedLabel}</time
 				>{/if}
 		</div>
 		<h3
@@ -108,7 +125,8 @@
 			class:has-submitter={Boolean(news.submittedBy)}
 			title={news.title}
 		>
-			{news.title}
+			{#if permalink}<a class="news-permalink-link" href={permalink}>{news.title}</a
+				>{:else}{news.title}{/if}
 		</h3>
 		{#if showImage && safeImage && safeUrl && !imageFailed}<a
 				class="news-image"
@@ -270,6 +288,14 @@
 		font-size: 1.08rem;
 		line-height: 1.55;
 		overflow-wrap: anywhere;
+	}
+	.news-card h3 :global(a.news-permalink-link) {
+		color: inherit;
+		text-decoration: none;
+	}
+	.news-card h3 :global(a.news-permalink-link):hover,
+	.news-card h3 :global(a.news-permalink-link):focus-visible {
+		text-decoration: underline;
 	}
 	h3.clamped {
 		display: -webkit-box;

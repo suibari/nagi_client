@@ -5,12 +5,26 @@
 	import NewsSubmissionDialog from '$lib/components/NewsSubmissionDialog.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { i18n, m, dayHeading, dayKey } from '$lib/i18n/i18n.svelte';
+	import {
+		i18n,
+		m,
+		dayHeading,
+		dayKey,
+		localeReady,
+		stableDayHeading,
+		stableDayKey,
+	} from '$lib/i18n/i18n.svelte';
 	import { byNewestFirst } from '$lib/news/order';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
+	import { newsRkey } from '$lib/news/indexable';
+
+	// プリレンダで焼いた1ページ目。クローラと初回表示はこれを読む。
+	// ハイドレーション後は下の $effect が getPositiveNews で取り直す
+	// （リアクション・ミュート・未読はビューアごとに違うため）。
+	let { data } = $props();
 	type NewsCategory =
 		| 'all'
 		| 'recommended'
@@ -31,8 +45,12 @@
 		{ id: 'technology', query: 'テクノロジー', label: () => m.newsCategoryTechnology() },
 	];
 	let activeCategory = $state<NewsCategory>('all');
-	let items = $state<Array<NewsView | RecommendedNewsView>>([]),
-		botActor = $state<ActorView>(),
+	// data.seed は「初期値としてだけ」取り込む。以降はカテゴリ切り替えと
+	// ハイドレーション後の再取得が items を置き換えるので、派生にはしない。
+	// svelte-ignore state_referenced_locally
+	let items = $state<Array<NewsView | RecommendedNewsView>>(data.seed),
+		// svelte-ignore state_referenced_locally
+		botActor = $state<ActorView | undefined>(data.seedBotActor),
 		cursor = $state<string>(),
 		hasMore = $state(false),
 		loading = $state(false),
@@ -105,13 +123,16 @@
 	// 連続する同日をひとまとめにして日付見出しを出す。日付は botたんの投稿日(createdAt)。
 	// items は常に日付降順なので、さらに読み込んでも見出しは重複しない。
 	let grouped = $derived.by(() => {
+		// マウント前は JST 固定・絶対日付で描く。閲覧者のタイムゾーンで日付を切ると
+		// ビルド(UTC)と結果が変わり、「今日 / 昨日」はビルド日で固まってしまう。
+		const ready = localeReady();
 		let lastKey: string | undefined;
 		return items.map((news) => {
 			const iso = news.createdAt || news.indexedAt;
-			const key = dayKey(iso);
+			const key = ready ? dayKey(iso) : stableDayKey(iso);
 			if (!key || key === lastKey) return { news, heading: undefined };
 			lastKey = key;
-			return { news, heading: dayHeading(iso) };
+			return { news, heading: ready ? dayHeading(iso) : stableDayHeading(iso) };
 		});
 	});
 	function openSubmission() {
@@ -169,6 +190,7 @@
 				showImage
 				unread={unreadView?.isUnread(news) ?? false}
 				clampTitle={false}
+				permalink={`/news/${newsRkey(news.uri)}`}
 			/>{/each}<InfiniteScroll {hasMore} {loading} {error} onload={() => load()} />{/if}
 </section>
 {#if submissionOpen}<NewsSubmissionDialog

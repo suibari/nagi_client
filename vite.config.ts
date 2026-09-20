@@ -51,6 +51,26 @@ export default defineConfig(({ command, mode }) => {
 				// アプリ専用ルートだけ vercel.json から 200.html へ流し、未知のURLは404にする。
 				adapter: adapter({ fallback: '200.html' }),
 
+				prerender: {
+					/**
+					 * ニュースのパーマリンクは、AppView から取った一覧で entries() を組み立てる。
+					 * AppView が落ちている（あるいはまだこのエンドポイントを持っていない）ビルドでは
+					 * 0件になり、SvelteKit は「プリレンダ対象なのに一度も到達しなかったルート」として
+					 * ビルドを落とす。ニュースの一時的な不調でサイト全体のデプロイを止めたくないので、
+					 * **このルートだけ**警告に落とす。
+					 *
+					 * 他のルートが未到達なら従来どおり失敗させる —— それはリンク漏れか設定ミスで、
+					 * 黙って通すとそのURLが 404 のまま公開される。
+					 */
+					handleUnseenRoutes: ({ routes, message }) => {
+						const unexpected = routes.filter((route) => route !== '/news/[rkey]');
+						if (unexpected.length) throw new Error(message);
+						console.warn(
+							'[seo] 索引対象のニュースが0件でした。記事ページは生成されません（一覧は noindex になります）。',
+						);
+					},
+				},
+
 				// Content-Security-Policy を <meta> タグとして出力する。hash モードにより
 				// SvelteKit が自身のインラインbootstrap scriptをビルド毎にハッシュ化するため、
 				// 古いハッシュを手書きせずとも script-src を 'self' に保てる。atproto は任意の
