@@ -32,9 +32,11 @@
 			id: 'news_context:2026-08',
 			kind: 'news_context',
 			date: '2026-08-31',
-			titleJa: 'キングダムハーツ初のオリジナルアニメ化が決定した',
-			titleEn: 'Kingdom Hearts gets its first original anime',
-			news: { url: 'https://example.com/story' } as ChronicleEventView['news'],
+			// 年表に出るのは記事の原題（news.title）。titleJa は使わない。
+			news: {
+				url: 'https://example.com/story',
+				title: '「キングダム ハーツ」初のオリジナルアニメ化決定! 野村哲也氏ら制作チーム参加',
+			} as ChronicleEventView['news'],
 		}),
 	];
 

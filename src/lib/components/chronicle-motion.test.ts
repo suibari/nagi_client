@@ -87,6 +87,15 @@ describe('chronicle motion contracts', () => {
 		expect(timeline).toContain('m.diaryTabChronicle()');
 	});
 
+	it('年表のひとことは botたんの言葉なので吹き出しで出す', () => {
+		expect(timeline).toContain('class="bubble chronicle-detail"');
+	});
+
+	it('年表のニュースは記事の原題をそのまま出す（botたんの言い換えを使わない）', () => {
+		// 言い換えを焼き付けると、記事の編集とずれるうえ字数超過や揺れも抱え込む。
+		expect(timeline).toContain('「{event.news?.title}」');
+	});
+
 	it('引用ニュースの botたんコメントも吹き出しで出す', () => {
 		// 一覧（NewsCard）は ChatBubble、引用だけ素のテキスト、という不揃いを無くす。
 		expect(newsQuoteCard).toContain('class="bubble bot-comment"');
