@@ -295,6 +295,49 @@ export type DiaryView = {
 	indexedAt: string;
 };
 export type DiaryPage = { items: DiaryView[]; cursor?: string; hasMore: boolean };
+
+/**
+ * 自分年表の1件。
+ *
+ * **固定文言の kind（nagi_joined など）は、サーバが ja/en を作らない。** ラベルは
+ * $lib/chronicle/chronicle.ts が i18n から引くので、いま選んでいる言語に追従する。
+ * titleJa/titleEn が入るのは LLM が書いた highlight と news_context だけ。
+ */
+export type ChronicleEventKind =
+	| 'nagi_joined'
+	| 'bot_met'
+	| 'first_post'
+	| 'first_diary'
+	| 'first_card_ur'
+	| 'first_card_aar'
+	| 'anniversary_card'
+	| 'news_reaction'
+	| 'news_bookmark'
+	| 'news_context'
+	| 'highlight';
+export type ChronicleEventView = {
+	/** 決定論的に導出した安定キー。keyed each と、ページをまたいだ重複排除に使う。 */
+	id: string;
+	kind: ChronicleEventKind;
+	/** "YYYY-MM-DD"。JST 4:00 始まりで丸めてある。 */
+	date: string;
+	titleJa?: string;
+	titleEn?: string;
+	detailJa?: string;
+	detailEn?: string;
+	/** highlight の由来。/diary?date= へ飛ばす。 */
+	diaryDate?: string;
+	/** anniversary_card / first_card_* のとき。 */
+	card?: CardView;
+	/** news_* のとき。 */
+	news?: NewsView;
+};
+export type ChroniclePage = {
+	items: ChronicleEventView[];
+	/** 次に返す年（"2025"）。これ以上さかのぼれないときは省略する。 */
+	cursor?: string;
+	hasMore: boolean;
+};
 export type NotificationView = {
 	id: string;
 	/** 'analysis' は名刺（自動分析）の更新。actor は常に botたん、post も diary も付かない。 */

@@ -40,6 +40,7 @@ import type {
 	TimelinePage,
 	ZenkatsuDeckView,
 	ZenkatsuFeed,
+	ChroniclePage,
 } from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 // AppView へのアクセスはユーザ自身の PDS 経由でプロキシする（atproto-proxy ヘッダー）。
@@ -426,6 +427,21 @@ export const getDiaries = (
 	return call<DiaryPage>(
 		'com.suibari.nagi.getDiaries',
 		`/xrpc/com.suibari.nagi.getDiaries?${params}`,
+		{},
+		'required',
+	);
+};
+/**
+ * 自分年表。1ページ＝1年ぶんで、cursor は次に返す年（"2025"）。
+ * 日記と同じく本人専用なので auth は 'required'（他人の DID を渡すとサーバが 403 を返す）。
+ */
+export const getChronicle = (actor: string, opts: { cursor?: string; lang?: string } = {}) => {
+	const params = new URLSearchParams({ actor });
+	if (opts.cursor) params.set('cursor', opts.cursor);
+	if (opts.lang) params.set('lang', opts.lang);
+	return call<ChroniclePage>(
+		'com.suibari.nagi.getChronicle',
+		`/xrpc/com.suibari.nagi.getChronicle?${params}`,
 		{},
 		'required',
 	);

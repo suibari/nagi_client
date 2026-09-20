@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { getProfile } from '$lib/api/appview';
 	import type { ActorView } from '$lib/api/types';
+	import ChronicleTimeline from '$lib/components/ChronicleTimeline.svelte';
 	import DiaryCalendar from '$lib/components/DiaryCalendar.svelte';
 	import { m, i18n } from '$lib/i18n/i18n.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
@@ -10,6 +12,31 @@
 	const initialDate = $derived(page.url.searchParams.get('date') ?? undefined);
 	let botActor = $state<ActorView>();
 	let botActorFor = '';
+
+	/**
+	 * 表示するタブ。?tab= で共有・再読込に耐える。
+	 * **?date= が来ているときは必ず年間アクティビティ。** 通知からの日付ディープリンクは
+	 * 草グラフの該当日を開く導線なので、年表を初期表示にすると行き先が変わってしまう。
+	 */
+	type TabId = 'activity' | 'chronicle';
+	const tabs: { id: TabId; label: () => string }[] = [
+		{ id: 'activity', label: () => m.diaryTabActivity() },
+		{ id: 'chronicle', label: () => m.diaryTabChronicle() },
+	];
+	let tab = $state<TabId>(
+		!page.url.searchParams.get('date') && page.url.searchParams.get('tab') === 'chronicle'
+			? 'chronicle'
+			: 'activity',
+	);
+
+	function select(next: TabId) {
+		if (tab === next) return;
+		tab = next;
+		const url = new URL(page.url);
+		if (next === 'activity') url.searchParams.delete('tab');
+		else url.searchParams.set('tab', next);
+		replaceState(url, page.state);
+	}
 
 	// OAuth 復元は非同期なので oauthReady を待ってから、未ログインならログインへ回す。
 	$effect(() => {
@@ -31,7 +58,44 @@
 
 <section class="page-title"><h1>{m.navDiary()}</h1></section>
 {#if $session}
+	<div class="tabs" role="tablist" aria-label={m.diaryTabsAria()}>
+		{#each tabs as t (t.id)}
+			<button
+				role="tab"
+				aria-selected={tab === t.id}
+				class:active={tab === t.id}
+				onclick={() => select(t.id)}>{t.label()}</button
+			>
+		{/each}
+	</div>
 	<section class="timeline">
-		<DiaryCalendar did={$session.did} {initialDate} {botActor} />
+		{#if tab === 'chronicle'}
+			<ChronicleTimeline did={$session.did} />
+		{:else}
+			<DiaryCalendar did={$session.did} {initialDate} {botActor} />
+		{/if}
 	</section>
 {/if}
+
+<style>
+	.tabs {
+		display: flex;
+		gap: 4px;
+		padding: 0 1rem;
+		border-block-end: 1px solid var(--line);
+	}
+	.tabs button {
+		flex: 0 0 auto;
+		padding: 0.6rem 0.9rem;
+		border: 0;
+		border-block-end: 2px solid transparent;
+		background: none;
+		color: var(--text-faint);
+		font-size: 0.9rem;
+		font-weight: 700;
+	}
+	.tabs button.active {
+		color: var(--text);
+		border-block-end-color: var(--accent-strong);
+	}
+</style>

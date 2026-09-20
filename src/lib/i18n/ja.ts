@@ -659,6 +659,31 @@ export const ja = {
 			.join('、'),
 	diaryAbout: 'botたんが、その日の投稿をもとに書いてくれた日記です。',
 
+	// chronicle（自分年表）
+	// 「連続」「今年は少ない」の類は**書かない**。数えた瞬間に義務になる（docs/chronicle.md）。
+	diaryTabActivity: '年間アクティビティ',
+	diaryTabChronicle: '年表',
+	diaryTabsAria: '日記の表示',
+	chronicleAbout: 'Nagi で過ごしてきた日々の節目と、そのころの出来事です。',
+	chronicleEmpty: '年表はこれから増えていきます。',
+	chronicleFetchFailed: '年表を取得できません',
+	chronicleOpenDiary: 'この日の日記を見る',
+	chronicleYearAria: (p: { year: string }) => `${p.year}年の節目`,
+	chronicleKindNagiJoined: 'Nagi にやってきた日',
+	// followers.created_at は Bluesky のフォロー以外でも作られる（Nagi の会話・日記の称号・
+	// 超ポジティブLv）。「出会った日」と言い切ると Nagi 専用ユーザで嘘になるので、
+	// 「関わりはじめた日」にしてある。Nagi 登録より後に来ても順序として正しい。
+	chronicleKindBotMet: 'botたんと関わりはじめた日',
+	chronicleKindFirstPost: 'はじめての投稿',
+	chronicleKindFirstDiary: 'はじめての日記',
+	chronicleKindFirstCardUr: 'はじめての UR カード',
+	chronicleKindFirstCardAar: 'はじめての AAR カード',
+	chronicleKindAnniversaryCard: '記念日カードを受け取った日',
+	chronicleKindNewsReaction: 'このニュースにリアクションした',
+	chronicleKindNewsBookmark: 'このニュースをブックマークした',
+	chronicleKindNewsContext: 'そのころ世の中では',
+	chronicleKindHighlight: 'この日のこと',
+
 	// login
 	loginTitle: 'Nagiに参加する',
 	loginBody:
