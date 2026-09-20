@@ -327,7 +327,7 @@ export type ChronicleEventView = {
 	diaryDate?: string;
 	/** anniversary_card / first_card_* のとき。 */
 	card?: CardView;
-	/** news_* のとき。 */
+	/** news_context のとき。 */
 	news?: NewsView;
 };
 export type ChroniclePage = {

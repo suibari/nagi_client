@@ -3,12 +3,14 @@
 	import type { ZenkatsuDeckView } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
+	import ZenkatsuTrophyGuide from './ZenkatsuTrophyGuide.svelte';
 
 	/** 未発見のコンボはサーバーから中身が返らない。 */
 	let { did }: { did: string } = $props();
 	let record = $state<ZenkatsuDeckView>();
 	let loading = $state(true);
 	let error = $state(false);
+	let showTrophyGuide = $state(false);
 
 	$effect(() => {
 		void did;
@@ -35,7 +37,7 @@
 	const TROPHY_LABEL: Record<string, () => string> = {
 		botan: () => m.trophyBotan(),
 		adventure: () => m.trophyAdventure(),
-		debut: () => m.trophyDebut(),
+		debut: () => m.trophyDebut(), // 廃止前に受け取った履歴の表示用
 		solo: () => m.trophySolo(),
 		tailwind: () => m.trophyTailwind(),
 		combo: () => m.trophyCombo(),
@@ -96,7 +98,12 @@
 	</section>
 
 	<section class="block">
-		<h2>{m.deckTrophiesTitle()}</h2>
+		<h2 class="trophies-heading">
+			{m.deckTrophiesTitle()}
+			<button type="button" class="trophy-guide-trigger" onclick={() => (showTrophyGuide = true)}>
+				{m.trophyGuideOpen()}
+			</button>
+		</h2>
 		{#if !record.trophies.length}
 			<p class="note">{m.deckTrophiesEmpty()}</p>
 		{/if}
@@ -117,6 +124,10 @@
 	</section>
 {/if}
 
+{#if showTrophyGuide}
+	<ZenkatsuTrophyGuide onclose={() => (showTrophyGuide = false)} />
+{/if}
+
 <style>
 	.block {
 		padding-block-end: 1.5rem;
@@ -132,6 +143,24 @@
 		color: var(--text-faint);
 		font-size: 0.8rem;
 		font-weight: 400;
+	}
+	.trophies-heading {
+		align-items: center;
+	}
+	.trophy-guide-trigger {
+		min-height: 36px;
+		padding: 0.3rem 0.7rem;
+		border: 1px solid var(--line);
+		border-radius: var(--r-md);
+		background: var(--surface-1);
+		color: var(--accent-strong);
+		font: inherit;
+		font-size: 0.8rem;
+		cursor: pointer;
+	}
+	.trophy-guide-trigger:focus-visible {
+		outline: 3px solid var(--accent-strong);
+		outline-offset: 2px;
 	}
 	.note,
 	.state {
