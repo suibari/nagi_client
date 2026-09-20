@@ -143,13 +143,17 @@
 						-->
 						<li class="chronicle-aside" data-event-id={event.id}>
 							<span class="chronicle-aside-label">{m.chronicleKindNewsContext()}</span>
+							<!--
+								見出しは**記事の原題**をそのまま出す（botたんの言い換えは使わない）。
+								news.title はサーバが表示言語に合わせて選んだ値。
+							-->
 							<a
 								class="chronicle-aside-text"
 								href={event.news?.url}
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								「{chronicleEventLabel(event, i18n.locale, labels)}」
+								「{event.news?.title}」
 							</a>
 						</li>
 					{:else}
@@ -165,7 +169,15 @@
 								<time datetime={event.date}>{longDate(event.date)}</time>
 								<p class="chronicle-title">{chronicleEventLabel(event, i18n.locale, labels)}</p>
 								{#if chronicleEventDetail(event, i18n.locale)}
-									<p class="chronicle-detail">{chronicleEventDetail(event, i18n.locale)}</p>
+									<!--
+										ひとことは botたんの言葉なので吹き出しで出す。
+										アプリの他の場所（リプライ・日記・ニュース）と同じ .bubble を借りる。
+										ここは ChatBubble の中ではないが、話し手はレールのアイコンで分かるので
+										名前とアバターは重ねない。
+									-->
+									<p class="bubble chronicle-detail">
+										{chronicleEventDetail(event, i18n.locale)}
+									</p>
 								{/if}
 								{#if event.card}
 									<!-- draw は渡さない。過去の1枚を見返すのに、毎回フリップと紙吹雪で祝わせない。 -->
@@ -285,9 +297,13 @@
 		overflow-wrap: anywhere;
 	}
 	.chronicle-detail {
+		/* .bubble のしっぽ（::before が left: -8px）が切れないよう左に逃がす。 */
+		margin-inline-start: 8px;
+		margin-block-start: 2px;
 		font-size: 13px;
 		color: var(--text);
 		overflow-wrap: anywhere;
+		white-space: pre-wrap;
 	}
 	.chronicle-card {
 		justify-self: start;
