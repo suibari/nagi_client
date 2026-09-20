@@ -528,6 +528,7 @@ export const en: Messages = {
 		'Your emoji are stored in your own PDS as Bluemoji (blue.moji.collection.item), and everyone on Nagi can react with them.',
 	emojiUploadNote:
 		'PNG, WebP, GIF, APNG, or Lottie. Still images are resized to 128px; animations must fit the Bluemoji limits.',
+	emojiSingleTitle: 'Add one emoji',
 	emojiNameLabel: 'Emoji name (letters, numbers, _ and -)',
 	emojiAltLabel: 'Description (optional)',
 	emojiUpload: 'Add emoji',
@@ -554,6 +555,10 @@ export const en: Messages = {
 	emojiBatchDuplicate: 'This name is duplicated in the selected files',
 	emojiBatchUpload: 'Add all available emoji',
 	emojiBatchUploaded: (p: { count: number }) => `Added ${p.count} emoji`,
+	emojiBatchProgress: (p: { completed: number; total: number; succeeded: number }) =>
+		`${p.completed} / ${p.total} processed (${p.succeeded} added)`,
+	emojiBatchProgressLabel: 'Emoji upload progress',
+	emojiViewMine: 'View your emoji',
 	emojiBatchStateReady: 'Ready',
 	emojiBatchStateProcessing: 'Adding',
 	emojiBatchStateSuccess: 'Added',

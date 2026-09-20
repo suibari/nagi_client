@@ -2103,6 +2103,33 @@ button.reaction-emoji:active {
 }
 
 /* --- custom emoji settings --- */
+.emoji-settings-tabs {
+	display: flex;
+	gap: 4px;
+	margin: 18px 0 12px;
+	border-bottom: 1px solid var(--line);
+	overflow-x: auto;
+}
+.emoji-settings-tabs button {
+	flex: 0 0 auto;
+	padding: 10px 12px;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
+	background: transparent;
+	color: var(--text-muted);
+}
+.emoji-settings-tabs button.active {
+	border-bottom-color: var(--accent-strong);
+	color: var(--accent-strong);
+}
+.emoji-batch-progress {
+	margin-bottom: 4px;
+}
+.emoji-batch-progress + progress {
+	width: 100%;
+	accent-color: var(--accent-strong);
+}
 .emoji-upload {
 	display: flex;
 	align-items: center;
@@ -2121,6 +2148,12 @@ button.reaction-emoji:active {
 	margin-left: 8px;
 	color: var(--accent-strong);
 	font-weight: 700;
+}
+button.emoji-return {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	text-decoration: underline;
 }
 .emoji-list {
 	display: grid;
