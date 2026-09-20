@@ -860,6 +860,26 @@
 .message-entering:not(.feed-entering) {
 	animation: reply-slide-up 0.58s cubic-bezier(0.16, 0.82, 0.24, 1);
 }
+/*
+ * 年表の節目が、スクロールで1件ずつ姿を現す。
+ *
+ * **opacity: 0 は from の中にしか書かない。** base.css の prefers-reduced-motion は
+ * 全要素へ `animation: none !important` を当てるので、要素の基底状態を透明にすると
+ * 演出を切っている人には永久に見えないままになる（.feed-entering と同じ約束）。
+ */
+.chronicle-revealed {
+	animation: chronicle-rise 0.32s cubic-bezier(0.18, 0.78, 0.24, 1);
+}
+@keyframes chronicle-rise {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
 @keyframes feed-slide-in {
 	from {
 		opacity: 0;

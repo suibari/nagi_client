@@ -638,6 +638,27 @@ export const en: Messages = {
 			.join(', '),
 	diaryAbout: "Bot-tan writes these entries from that day's posts.",
 
+	// chronicle
+	diaryTabActivity: 'Yearly activity',
+	diaryTabChronicle: 'Chronicle',
+	diaryTabsAria: 'Diary view',
+	chronicleAbout: 'Milestones from your time on Nagi, and what was happening back then.',
+	chronicleEmpty: 'Your chronicle will grow from here.',
+	chronicleFetchFailed: 'Could not fetch the chronicle',
+	chronicleOpenDiary: 'Read that day',
+	chronicleYearAria: (p: { year: string }) => `Milestones in ${p.year}`,
+	chronicleKindNagiJoined: 'The day you arrived on Nagi',
+	chronicleKindBotMet: 'When you first connected with Bot-tan',
+	chronicleKindFirstPost: 'Your first post',
+	chronicleKindFirstDiary: 'Your first diary',
+	chronicleKindFirstCardUr: 'Your first UR card',
+	chronicleKindFirstCardAar: 'Your first AAR card',
+	chronicleKindAnniversaryCard: 'An anniversary card arrived',
+	chronicleKindNewsReaction: 'You reacted to this story',
+	chronicleKindNewsBookmark: 'You bookmarked this story',
+	chronicleKindNewsContext: 'Meanwhile, in the world',
+	chronicleKindHighlight: 'That day',
+
 	loginTitle: 'Join Nagi',
 	loginBody:
 		'If you already use Bluesky, log in with that account. Other AT Protocol accounts are supported too.',
