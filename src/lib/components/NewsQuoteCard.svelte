@@ -21,7 +21,13 @@
 		profileHref={botActor ? `/profile/${botActor.did}` : undefined}
 		datetime={news.createdAt}
 	>
-		{#if news.botComment}<p class="bot-comment">{news.botComment}</p>{/if}
+		<!--
+			botたんのコメントは吹き出しで出す。ニュース一覧（NewsCard）は ChatBubble を使って
+			いるのに、引用のときだけ素のテキストで出ていて見え方が揃っていなかった。
+			ここは既に ChatBubble の中なので、入れ子にせず共通の .bubble だけを借りる。
+			話し手と時刻は QuoteFrame のヘッダーが出しているので重複させない。
+		-->
+		{#if news.botComment}<p class="bubble bot-comment">{news.botComment}</p>{/if}
 		<a class="news-quote" href={safeUrl} target="_blank" rel="noopener noreferrer">
 			<small>{news.sourceName ?? m.newsSourceUnknown()}</small><strong>{news.title}</strong>
 		</a>
@@ -30,7 +36,8 @@
 
 <style>
 	.bot-comment {
-		margin: 0 0 0.5rem;
+		/* .bubble のしっぽ（::before が left: -8px）が切れないよう左に逃がす。 */
+		margin: 0 0 0.5rem 8px;
 		overflow-wrap: anywhere;
 		white-space: pre-wrap;
 	}

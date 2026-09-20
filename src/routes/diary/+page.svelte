@@ -11,6 +11,8 @@
 	// 日記は本人だけのページ。通知から ?date=YYYY-MM-DD で該当日を開く。
 	const initialDate = $derived(page.url.searchParams.get('date') ?? undefined);
 	let botActor = $state<ActorView>();
+	// 年表の見出し「〜の日記」に出す本人の名前。
+	let displayName = $state<string>();
 	let botActorFor = '';
 
 	/**
@@ -51,7 +53,10 @@
 		if (!did || botActorFor === did) return;
 		botActorFor = did;
 		getProfile(did, { limit: 1, lang: i18n.locale })
-			.then((response) => (botActor = response.feed.botActor ?? botActor))
+			.then((response) => {
+				botActor = response.feed.botActor ?? botActor;
+				displayName = response.profile.displayName || response.profile.handle;
+			})
 			.catch(() => {});
 	});
 </script>
@@ -70,7 +75,7 @@
 	</div>
 	<section class="timeline">
 		{#if tab === 'chronicle'}
-			<ChronicleTimeline did={$session.did} />
+			<ChronicleTimeline did={$session.did} {displayName} />
 		{:else}
 			<DiaryCalendar did={$session.did} {initialDate} {botActor} />
 		{/if}
