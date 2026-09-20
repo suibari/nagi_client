@@ -196,7 +196,7 @@
 		),
 	);
 	let playable = $derived(feed?.viewer?.playable ?? []);
-	// 出せるものを先に、おやすみ中は後ろへ。図鑑の順は崩さない。
+	// 出せるものを先に、クールダウン中は後ろへ。図鑑の順は崩さない。
 	let hand = $derived(
 		playable
 			.map((p) => ({ p, card: cardByKey.get(keyOf(p)) }))
