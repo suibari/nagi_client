@@ -406,7 +406,7 @@ export const en: Messages = {
 	botBadge: 'Bot-tan',
 	superPositiveBadge: (p: { level: number }) => `Super-Positive Lv.${p.level}`,
 	superPositiveBadgeAria: (p: { level: number }) => `Super-Positive level ${p.level}`,
-	titleBadge: (p: { title: string }) => `Title: ${p.title}`,
+	titleBadge: (p: { title: string }) => p.title,
 	titleBadgeAria: (p: { title: string }) => `Title "${p.title}" earned from a diary`,
 	postDeleted: 'This post has been deleted',
 	postModerationRejected: 'This post is not displayed on Nagi following moderation',
