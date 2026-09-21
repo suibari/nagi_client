@@ -340,12 +340,14 @@ export const en: Messages = {
 		'Only you and bot-tan can read this post. All replies that follow are also limited. Choosing Limited partway through a thread does not change earlier posts. (Bot-tan may anonymize it and share it in Affirm together.)',
 	postScopeFeed: 'This feed',
 	postScopeFeedShort: 'Everyone',
-	postScopeFeedDetail: 'Posts to the shared Nagi timeline.',
+	postScopeFeedDetail:
+		'Posts to the shared Nagi timeline. Posts written on the Blog tab can also appear in search engines.',
 	postScopeChannelShort: 'Channel',
 	postScopeChannelDetail: (p: { channel: string }) => `Posts to the “${p.channel}” channel.`,
 	postScopeBluesky: 'Also Bluesky',
 	postScopeBlueskyShort: 'Also Bluesky',
-	postScopeBlueskyDetail: 'Posts the same text to Bluesky as well as Nagi.',
+	postScopeBlueskyDetail:
+		'Posts to Bluesky as well as Nagi. Posts written on the Blog tab can also appear in search engines.',
 	postScopeExternalUnavailable: 'Enable Bluesky cross-posting in settings to use this',
 	postScopeExternalChannel: 'Channel posts cannot be sent outside Nagi',
 	postScopeKossoriArticle: 'A blog post cannot be limited',
@@ -901,7 +903,7 @@ export const en: Messages = {
 	standardSiteHelp:
 		'Posts are saved using standard.site, a shared AT Protocol format, so compatible apps can read them as articles.',
 	standardSiteOptInNote:
-		'Not every post becomes a blog post — only the ones you write on the Blog tab of the composer. Replies, quotes, channel posts and limited posts are never included.',
+		'Only posts written on the Blog tab become articles and appear on Nagi pages for search engines and in its sitemap. Replies, quotes, channel posts and limited posts are never included.',
 	standardSiteCrosspostNote:
 		'When a blog post is set to “Also Bluesky”, Bluesky gets a single post with the opening excerpt and a link back to Nagi. A long piece never turns into a chain of split posts there.',
 	standardSiteDeviceNote: 'This setting applies to this device only.',

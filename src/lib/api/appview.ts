@@ -43,6 +43,7 @@ import type {
 	ZenkatsuDeckView,
 	ZenkatsuFeed,
 	ChroniclePage,
+	IndexableBlog,
 } from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 // AppView へのアクセスはユーザ自身の PDS 経由でプロキシする（atproto-proxy ヘッダー）。
@@ -243,6 +244,17 @@ export const listIndexableNews = (lang: 'ja' | 'en', cursor?: string) => {
 	return call<NewsPage>(
 		'com.suibari.nagi.listIndexableNews',
 		`/xrpc/com.suibari.nagi.listIndexableNews?${params}`,
+		{},
+		'none',
+	);
+};
+/** ブログタブで公開を選んだ投稿。静的記事ページと sitemap の生成に使う。 */
+export const listIndexableBlogs = (cursor?: string) => {
+	const params = new URLSearchParams({ limit: '200' });
+	if (cursor) params.set('cursor', cursor);
+	return call<{ items: IndexableBlog[]; cursor?: string; hasMore: boolean }>(
+		'com.suibari.nagi.listIndexableBlogs',
+		`/xrpc/com.suibari.nagi.listIndexableBlogs?${params}`,
 		{},
 		'none',
 	);

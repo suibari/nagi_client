@@ -355,12 +355,14 @@ export const ja = {
 		'自分とbotたんだけが読める投稿です。ここから続く返信もすべてこっそりになります。途中で選んでも、それまでの投稿は変わりません。（botたんが投稿を匿名化して「みんなで全肯定」で紹介することがあります）',
 	postScopeFeed: 'このフィード',
 	postScopeFeedShort: 'みんなに',
-	postScopeFeedDetail: 'Nagiの共有タイムラインに投稿します。',
+	postScopeFeedDetail:
+		'Nagiの共有タイムラインに投稿します。ブログタブで書いた投稿は検索エンジンにも公開されます。',
 	postScopeChannelShort: 'チャンネル',
 	postScopeChannelDetail: (p: { channel: string }) => `チャンネル「${p.channel}」に投稿します。`,
 	postScopeBluesky: 'Blueskyにも',
 	postScopeBlueskyShort: 'Blueskyにも',
-	postScopeBlueskyDetail: 'Nagiに加えて、Blueskyにも同じ内容を投稿します。',
+	postScopeBlueskyDetail:
+		'Nagiに加えて、Blueskyにも投稿します。ブログタブで書いた投稿は検索エンジンにも公開されます。',
 	postScopeExternalUnavailable: 'Blueskyへの同時投稿は設定から有効にできます',
 	postScopeExternalChannel: 'チャンネルへの投稿は外部には出せません',
 	postScopeKossoriArticle: 'ブログはこっそりにはできません',
@@ -935,7 +937,7 @@ export const ja = {
 	standardSiteHelp:
 		'standard.siteというAT Protocol上の共通フォーマットで保存します。対応アプリから記事を読めるようになります。',
 	standardSiteOptInNote:
-		'すべての投稿がブログになるわけではありません。投稿モーダルで「ブログ」タブを選んだときだけ記事になります。返信・引用・チャンネル投稿とこっそり投稿は対象外です。',
+		'すべての投稿がブログになるわけではありません。投稿モーダルで「ブログ」タブを選んだときだけ記事になり、Nagiの検索エンジン向けページとサイトマップにも掲載されます。返信・引用・チャンネル投稿とこっそり投稿は対象外です。',
 	// 記事を300文字ごとの分割スレッドで流すと Bluesky が1本の記事で埋まるので、
 	// ブログでは抜粋＋リンクのティーザーを1件だけ出す。設定画面でもそう説明する。
 	standardSiteCrosspostNote:
