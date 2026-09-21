@@ -15,7 +15,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
-	import { postFollow, postHref } from '$lib/feed/post-follow.svelte';
+	import { postFollow, postPageHref } from '$lib/feed/post-follow.svelte';
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
@@ -543,12 +543,12 @@
 			const assets = await uploadPostAssets(draft);
 			const created = await createPost(draft, assets);
 			optimisticPosts.markCreated(optimisticId, created);
-			postFollow.settle(created.uri, postHref(created.uri));
+			postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
 			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
 			const rkey = created.uri.slice(created.uri.lastIndexOf('/') + 1);
 			// 記事の canonical URL。standard.site の document.path と同じ組み立て方。
-			const articleUrl = `${NAGI_PUBLIC_ORIGIN}/thread/${$session.did}/${rkey}`;
+			const articleUrl = `${NAGI_PUBLIC_ORIGIN}/blog/${$session.did}/${rkey}`;
 			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
 			// エラーではなく警告として伝える。
 			// 引用はNagi内のレコードを参照するため、Blueskyへはクロスポストしない

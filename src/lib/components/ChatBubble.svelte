@@ -36,7 +36,7 @@
 	} from '$lib/i18n/languagePreferences.svelte';
 	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
 	import { tick } from 'svelte';
-	import { postFollow, postHref, scrollToElement } from '$lib/feed/post-follow.svelte';
+	import { postFollow, postHref, postPageHref, scrollToElement } from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
@@ -74,6 +74,7 @@
 		bookmarkSubject,
 		localGuest = false,
 		translatedText,
+		permalinkHref,
 	}: {
 		post: PostView;
 		/** ニュース引用ブロックの botたんヘッダーに使う実データ。 */
@@ -103,6 +104,8 @@
 		localGuest?: boolean;
 		/** AppViewを使わない開発プレビュー向けの訳文。 */
 		translatedText?: string;
+		/** 記事内コメントなど、投稿時刻のリンク先を現在のページに保つ。 */
+		permalinkHref?: string;
 	} = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
@@ -198,7 +201,7 @@
 	let optimistic = $derived(Boolean(post.optimisticState));
 	// リンクは URI から組む。こっそり投稿の URI は著者ではなく AppView の DID 配下なので、
 	// author.did から組むとスレッドを開けない。
-	let threadHref = $derived(postHref(post.uri));
+	let threadHref = $derived(permalinkHref ?? postPageHref(post));
 	// 外国語の投稿にだけ「選択したプロバイダーで翻訳」ボタンを出す。
 	let translateSourceLang = $derived(normalizeSupportedLanguage(post.langs?.[0]));
 	let canTranslateExternally = $derived(

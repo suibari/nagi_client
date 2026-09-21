@@ -2,7 +2,7 @@
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import type { Feed } from '$lib/feed/feed.svelte';
 	import { mediaTileKey, mediaTiles } from '$lib/feed/media-tiles';
-	import { postHref } from '$lib/feed/post-follow.svelte';
+	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
@@ -39,7 +39,7 @@
 		{#each tiles as tile (mediaTileKey(tile))}
 			<a
 				class="media-tile"
-				href={postHref(tile.post.uri)}
+				href={postPageHref(tile.post)}
 				use:trackPostSeen={{
 					uri: tile.post.uri,
 					viewerDid: $session?.did,

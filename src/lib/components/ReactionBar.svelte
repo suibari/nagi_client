@@ -18,6 +18,7 @@
 		pickerOpen = $bindable(false),
 		pickerAnchor,
 		ontoggled,
+		onchange,
 		onpickerclose,
 		showReactors = false,
 		readOnly = false,
@@ -28,6 +29,8 @@
 		pickerOpen?: boolean;
 		pickerAnchor?: HTMLElement;
 		ontoggled?: (active: boolean) => void;
+		/** 同じ投稿を複数箇所に表示するとき、楽観的な反応状態を共有する。 */
+		onchange?: (reactions: ReactionView[]) => void;
 		onpickerclose?: () => void;
 		/** リアクション先の本人にだけ送信者を見せる。呼び出し元で所有者確認した場合のみ有効化する。 */
 		showReactors?: boolean;
@@ -150,6 +153,7 @@
 							: r,
 					)
 					.filter((r) => r.reactors.length > 0 || r.hasMoreReactors);
+				onchange?.(local);
 				await deleteRecord(REACTION, rkey);
 				ontoggled?.(local.some(reactedByViewer));
 			} else {
@@ -177,7 +181,8 @@
 								reactors: viewer ? [viewer] : [],
 								reactedByMe: true,
 							},
-						];
+					];
+				onchange?.(local);
 				// 新規追加では楽観描画されたリアクションボタンを待ち、その中央へ着地させる。
 				// 既存ボタンの押下時も同じ基準を使い、パレットの「＋」位置へは出さない。
 				await tick();
@@ -195,6 +200,7 @@
 			}
 		} catch {
 			local = snapshot;
+			onchange?.(local);
 		}
 	}
 </script>
