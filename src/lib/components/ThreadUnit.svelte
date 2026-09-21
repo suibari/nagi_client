@@ -6,7 +6,7 @@
 	import ThreadFlags from './ThreadFlags.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { replyIndent } from '$lib/thread/replyIndent';
-	import { postHref } from '$lib/feed/post-follow.svelte';
+	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	let {
 		item,
 		botActor,
@@ -58,7 +58,7 @@
 		Boolean(conv && (showConvRoot || visibleConvBubbles.length > 0 || botState)),
 	);
 	// こっそり投稿の URI は著者ではなく AppView の DID 配下なので、リンクは URI から組む。
-	let fullThreadHref = $derived(conv ? postHref(conv.root.uri) : '');
+	let fullThreadHref = $derived(conv ? postPageHref(conv.root) : '');
 	let convChannel = $derived(
 		conv?.root.channel ?? conv?.bubbles.find((b) => b.post.channel)?.post.channel,
 	);

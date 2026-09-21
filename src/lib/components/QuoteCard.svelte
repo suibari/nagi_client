@@ -6,11 +6,11 @@
 	import LinkCard from './LinkCard.svelte';
 	import QuoteFrame from './QuoteFrame.svelte';
 	import PostUnavailableNotice from './PostUnavailableNotice.svelte';
-	import { postHref } from '$lib/feed/post-follow.svelte';
+	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	let { post }: { post: PostView } = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
-	let threadHref = $derived(postHref(post.uri));
+	let threadHref = $derived(postPageHref(post));
 </script>
 
 <QuoteFrame

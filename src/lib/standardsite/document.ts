@@ -67,7 +67,7 @@ function buildRecord(input: ArticleInput, site: string, did: string) {
 		site,
 		title: input.title,
 		// publication.url（Nagi 本体）と連結して canonical URL になる。
-		path: `/thread/${did}/${input.rkey}`,
+		path: `/blog/${did}/${input.rkey}`,
 		publishedAt: input.publishedAt,
 		...(plain ? { description: excerpt(plain), textContent: plain } : {}),
 		content: {
