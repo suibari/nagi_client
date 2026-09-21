@@ -86,4 +86,15 @@ describe.skipIf(!built)('prerendered output', () => {
 			expect(existsSync(new URL(file, buildDir)), `${loc} has no built HTML`).toBe(true);
 		}
 	});
+
+	it('serves every sitemap blog as an indexable article with its own canonical', () => {
+		const locs = [...read('sitemap.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+		for (const loc of locs.filter((url) => new URL(url).pathname.startsWith('/blog/'))) {
+			const path = new URL(loc).pathname;
+			const html = read(`${path.slice(1)}.html`);
+			expect(robotsOf(html)).toBe('index,follow');
+			expect(html).toContain(`rel="canonical" href="${loc}"`);
+			expect(html).toMatch(/class="blog-body(?:\s|")/);
+		}
+	});
 });

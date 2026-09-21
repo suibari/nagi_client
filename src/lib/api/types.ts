@@ -77,6 +77,14 @@ export type NewsView = {
 	submittedBy?: ActorView;
 	unavailable?: boolean;
 };
+/** 検索公開を選んだブログ投稿の、ビルド時に使う公開スナップショット。 */
+export type IndexableBlog = {
+	uri: string;
+	text: string;
+	createdAt: string;
+	indexedAt: string;
+	author: Pick<ActorView, 'did' | 'handle' | 'displayName'>;
+};
 export type NewsSubmissionPreview = {
 	articleId: string;
 	url: string;

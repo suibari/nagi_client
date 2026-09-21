@@ -63,7 +63,9 @@ export default defineConfig(({ command, mode }) => {
 					 * 黙って通すとそのURLが 404 のまま公開される。
 					 */
 					handleUnseenRoutes: ({ routes, message }) => {
-						const unexpected = routes.filter((route) => route !== '/news/[rkey]');
+						const unexpected = routes.filter(
+							(route) => route !== '/news/[rkey]' && route !== '/blog/[did]/[rkey]',
+						);
 						if (unexpected.length) throw new Error(message);
 						console.warn(
 							'[seo] 索引対象のニュースが0件でした。記事ページは生成されません（一覧は noindex になります）。',

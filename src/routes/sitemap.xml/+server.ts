@@ -1,5 +1,6 @@
 import { LEGAL_LAST_UPDATED } from '$lib/legal/meta';
 import { fetchIndexableNews, newsRkey } from '$lib/news/indexable';
+import { blogPath, fetchIndexableBlogs } from '$lib/blog/indexable';
 import { SITEMAP_ROUTES } from '$lib/seo/sitemap';
 import { absolute } from '$lib/seo/seo';
 
@@ -28,6 +29,7 @@ const staticLastmod = (path: string) =>
 
 export async function GET(): Promise<Response> {
 	const { items } = await fetchIndexableNews();
+	const blogs = await fetchIndexableBlogs();
 	const newest = items[0]?.indexedAt?.slice(0, 10);
 	const urls = [
 		...SITEMAP_ROUTES.map((path) =>
@@ -36,6 +38,7 @@ export async function GET(): Promise<Response> {
 		...items.map((news) =>
 			entry(absolute(`/news/${newsRkey(news.uri)}`), news.indexedAt.slice(0, 10)),
 		),
+		...blogs.map((post) => entry(absolute(blogPath(post.uri)), post.indexedAt.slice(0, 10))),
 	];
 	return new Response(
 		`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`,
