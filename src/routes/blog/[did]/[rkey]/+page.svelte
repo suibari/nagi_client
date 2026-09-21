@@ -22,9 +22,7 @@
 	// svelte-ignore state_referenced_locally -- prerender snapshot; onMount refreshes viewer-specific state
 	let thread = $state<ThreadView | undefined>(data.thread);
 	let error = $state('');
-	let topPickerOpen = $state(false);
 	let bottomPickerOpen = $state(false);
-	let topReactionButton = $state<HTMLButtonElement>();
 	let bottomReactionButton = $state<HTMLButtonElement>();
 	let reactionHoldUntil = 0;
 	let labels = $derived(i18n.locale === 'ja'
@@ -121,21 +119,6 @@
 			</div>
 		{/if}
 	</header>
-
-	{#if post}
-		<div class="blog-interactions" aria-label={labels.reactions}>
-			<ReactionBar uri={post.uri} cid={post.cid} {reactions} onchange={shareReactions}
-				showReactors={$session?.did === post.author.did}
-				bind:pickerOpen={topPickerOpen} pickerAnchor={topReactionButton} />
-			<div class="blog-action-buttons">
-				<button type="button" bind:this={topReactionButton} aria-label={m.addReactionAria()}
-					aria-expanded={topPickerOpen} onclick={() => topPickerOpen = !topPickerOpen}>
-					<Icon name="emojiPlus" size={19} /> <span>{labels.reactions}</span>
-				</button>
-				<button type="button" onclick={reply}><Icon name="reply" size={18} /> <span>{labels.comment}</span></button>
-			</div>
-		</div>
-	{/if}
 
 	<div class="blog-body"><RichText text={body} facets={bodyFacets} /></div>
 	{#if bodyImages.length}<div class="blog-media"><ImageGallery images={bodyImages} /></div>{/if}
