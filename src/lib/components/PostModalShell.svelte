@@ -133,7 +133,7 @@
 		box-shadow: var(--shadow-pop);
 	}
 	.post-modal.rich {
-		height: min(760px, calc(100dvh - 72px - var(--post-modal-assist-space, 0px)));
+		height: min(760px, calc(100dvh - 72px));
 		overflow: hidden;
 	}
 	.post-modal:focus {
@@ -146,6 +146,11 @@
 	}
 	.post-modal.rich .post-modal-body {
 		flex: 1;
+		/*
+		 * おたすけは viewport に固定している。モーダル自体を縮めると、おたすけの
+		 * 表示・非表示で外枠が跳ねるため、本文の利用可能領域だけを空ける。
+		 */
+		padding-bottom: var(--post-modal-assist-space, 0px);
 	}
 	header {
 		display: flex;
@@ -224,9 +229,7 @@
 			display: none;
 		}
 		.post-modal.rich {
-			height: calc(
-				100dvh - 16px - env(safe-area-inset-bottom) - var(--post-modal-assist-space, 0px)
-			);
+			height: calc(100dvh - 16px - env(safe-area-inset-bottom));
 		}
 		.post-modal-modes button {
 			padding: 4px 8px;

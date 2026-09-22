@@ -53,12 +53,18 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 
 	// 未入力のまま3秒で、吹き出しを先に出して考え中を見せる。
 	await openModal.click();
+	await page.getByRole('tab', { name: 'しっかり' }).click();
+	const modalBeforeAssist = await page.locator('.post-modal').boundingBox();
+	expect(modalBeforeAssist).not.toBeNull();
 	await page.clock.runFor(2500);
 	await expect(assist).toHaveCount(0);
 	await page.clock.runFor(600);
 	await expect(thinking).toBeVisible();
 	await expect(assist).toContainText('おたすけbotたん');
 	await expect(page.locator('.composer-assist-character')).toBeVisible();
+	const modalWithAssist = await page.locator('.post-modal').boundingBox();
+	expect(modalWithAssist).not.toBeNull();
+	expect(modalWithAssist!.height).toBe(modalBeforeAssist!.height);
 	expect(assistRequests[0]).toEqual({
 		text: '',
 		mode: 'question',
