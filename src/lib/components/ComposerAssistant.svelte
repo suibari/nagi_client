@@ -57,7 +57,9 @@
 	let lastMode: 'affirm' | 'question' | undefined;
 	let previous: string[] = [];
 
-	const visible = $derived(open && !paused && !dismissed && (thinking || Boolean(message)));
+	// IME の変換中（スマホでは予測変換の候補を選んでいる間も含む）は新しい生成だけを
+	// 止める。すでに出ている bot たんまで隠すと、入力するたびに表示が跳ねてしまう。
+	const visible = $derived(open && !dismissed && (thinking || Boolean(message)));
 
 	// 閉じたら×も含めて忘れ、次に開いたときにまた手伝えるようにする。
 	$effect(() => {
