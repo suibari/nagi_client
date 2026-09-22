@@ -158,6 +158,20 @@ test('生成できないときは考え中の吹き出しをそっと消す', as
 	await expect(page.locator('.post-modal')).toBeVisible();
 });
 
+test('考え中に入力を始めてもbotたんを表示し続ける', async ({ page }) => {
+	await mockXrpc(page);
+	await page.clock.install({ time: new Date('2026-09-15T10:00:00+09:00') });
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.goto('/dev/e2e/post-assist');
+	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
+	await page.clock.runFor(3100);
+	await expect(page.locator('.composer-assist-thinking')).toBeVisible();
+
+	await page.locator('.post-modal textarea').fill('今日は空がきれい');
+	await expect(page.locator('.composer-assist')).toBeVisible();
+	await expect(page.locator('.composer-assist-thinking')).toBeVisible();
+});
+
 test('削除で問いかけ、追記で肯定へ戻り、IME変換による文字数減少では肯定を維持する', async ({
 	page,
 }) => {
