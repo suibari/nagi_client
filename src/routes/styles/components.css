@@ -885,7 +885,7 @@
 .link-card:hover {
 	border-color: var(--accent);
 }
-.link-card img {
+.link-card > img {
 	width: 168px;
 	min-height: 108px;
 	object-fit: cover;
@@ -986,7 +986,7 @@
 	display: grid;
 }
 @media (max-width: 520px) {
-	.link-card img {
+	.link-card > img {
 		width: 112px;
 	}
 	.link-card-copy {
