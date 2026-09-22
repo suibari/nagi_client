@@ -9,25 +9,18 @@
 		setCrosspostEnabled,
 	} from '$lib/crosspost/preferences';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
-	import {
-		getStandardSiteEnabled,
-		hasStandardSiteScope,
-		markStandardSitePending,
-		setStandardSiteEnabled,
-	} from '$lib/standardsite/preferences';
+	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 
 	let blueskyEnabled = $state(false);
 	let blueskyGranted = $state(false);
-	let blogEnabled = $state(false);
 	let blogGranted = $state(false);
 	let blueskyBusy = $state(false);
 	let blogBusy = $state(false);
 
 	onMount(async () => {
 		blueskyEnabled = getCrosspostEnabled();
-		blogEnabled = getStandardSiteEnabled();
 		[blueskyGranted, blogGranted] = await Promise.all([
 			hasCrosspostScope(),
 			hasStandardSiteScope(),
@@ -37,11 +30,6 @@
 	function toggleBluesky(next: boolean) {
 		blueskyEnabled = next;
 		setCrosspostEnabled(next);
-	}
-
-	function toggleBlog(next: boolean) {
-		blogEnabled = next;
-		setStandardSiteEnabled(next);
 	}
 
 	async function reauthorizeBluesky() {
@@ -58,9 +46,8 @@
 	async function reauthorizeBlog() {
 		if (!$session || blogBusy) return;
 		blogBusy = true;
-		markStandardSitePending();
 		try {
-			await signIn($session.did, { ...(await grantedOptIns()), standardSite: true });
+			await signIn($session.did, { ...(await grantedOptIns()), refreshPermissions: true });
 		} finally {
 			blogBusy = false;
 		}
@@ -72,11 +59,7 @@
 	<h1>{m.settingsExternalPublishingTitle()}</h1>
 	<p class="page-intro">{m.externalPublishingHelp()}</p>
 
-	<!--
-		Bluesky とブログはそれぞれ独立したオプトイン。以前はどちらか1つを
-		「外部への投稿先」として選ばせていたが、ブログは投稿モーダルのタブに
-		移したので、選択という概念自体が要らなくなった。
-	-->
+	<!-- Bluesky クロスポストだけが任意。ブログ権限は通常のサインインに含まれる。 -->
 	<fieldset class="theme-settings publishing-service">
 		<legend>{m.blueskyPublishingTitle()}</legend>
 		<p>{m.crosspostHelp()}</p>
@@ -107,13 +90,7 @@
 		<p>{m.blogPublishingHelp()}</p>
 		{#if !$session && $oauthReady}
 			<SignedOutNotice message={m.standardSiteSignInRequired()} />
-		{:else if $session && blogGranted}
-			<ToggleSwitch
-				checked={blogEnabled}
-				label={m.standardSiteEnableLabel()}
-				onchange={toggleBlog}
-			/>
-		{:else if $session}
+		{:else if $session && !blogGranted}
 			<p>{m.standardSiteReauthNote()}</p>
 			<button type="button" disabled={blogBusy} onclick={reauthorizeBlog}>
 				{blogBusy ? m.standardSiteReauthPending() : m.standardSiteReauthSubmit()}
@@ -124,7 +101,6 @@
 			<p>{m.standardSiteHelp()}</p>
 			<p>{m.standardSiteOptInNote()}</p>
 			<p>{m.standardSiteCrosspostNote()}</p>
-			<p>{m.standardSiteDeviceNote()}</p>
 		</details>
 	</fieldset>
 </section>

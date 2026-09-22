@@ -173,14 +173,14 @@ export const ja = {
 	aboutNoLikesTitle: '数に追われない',
 	aboutNoLikesBody: 'いいねもフォローもありません。「伸びなかった」が起きない場所です。',
 	aboutLongPostTitle: '長く書ける',
-	aboutLongPostBody: '3000文字まで、Markdownで。あとから書き直すこともできます。',
+	aboutLongPostBody: 'ブログなら文字数を気にせずMarkdownで。あとから書き直すこともできます。',
 
 	// about page — 使い方のイメージ（3ステップ）。各1文。
 	aboutStepsHeading: 'はじめかた',
 	aboutStep1Title: 'サインイン',
 	aboutStep1Body: 'BlueskyかAT Protocolのハンドルを入れるだけ。パスワードは渡しません。',
 	aboutStep2Title: '書く',
-	aboutStep2Body: '3000文字まで、Markdownで。画像も添えられます。',
+	aboutStep2Body: '短い投稿も長いブログもMarkdownで。画像も添えられます。',
 	aboutStep3Title: '受け止められる',
 	aboutStep3Body: 'botたんが返信し、ホームなら自分のペースで言葉を残せます。',
 
@@ -725,9 +725,9 @@ export const ja = {
 	loginBrowse: 'ログインせずに見る',
 	// クロスポストとブログ公開の権限は入口でまとめて渡し、どちらを実際に使うかは
 	// 設定画面で切り替える。入口でスイッチを2つ並べない。
-	loginFederateLabel: 'ほかのAT Protocolサービスにも投稿する',
+	loginFederateLabel: 'Blueskyにも投稿する',
 	loginFederateNote:
-		'ONにすると、Blueskyへのクロスポストと、ブログ（standard.site）としての公開ができるようになります。あなたのPDSへ書き込む権限を認可します。あとから設定で変更できます。',
+		'ONにするとBlueskyへの投稿権限も認可します。ブログの公開権限は通常のログインに含まれます。Blueskyへの同時投稿はあとから設定で変更できます。',
 	// 未成年の保護者同意は入口で告知する。押す前に目に入る位置に置く。
 	loginAgeNotice: '18歳未満の方は保護者の同意を得てご利用ください。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
@@ -911,10 +911,10 @@ export const ja = {
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
 	externalPublishingHelp:
-		'投稿をNagi以外にも公開するための設定です。それぞれ個別に有効にできます。',
+		'Blueskyへの同時投稿の設定と、ブログ公開についての案内です。',
 	blueskyPublishingTitle: 'Blueskyにも投稿',
 	blogPublishingTitle: 'ブログとして公開',
-	blogPublishingHelp: '選んだ投稿を、対応するAT Protocolアプリでも読める長文記事として公開します。',
+	blogPublishingHelp: 'ブログはNagiの基本機能です。ログインすると、ブログタブから長文記事を公開できます。',
 	externalPublishingDetails: '仕組みと注意点',
 	crosspostHelp:
 		'投稿欄に「Blueskyにも」ボタンを表示し、選んだ投稿だけをBlueskyへ同時投稿できます。スレッドへの返信は対象外です。',
@@ -932,7 +932,7 @@ export const ja = {
 	crosspostPermissionMissing: 'Blueskyへの投稿権限を確認できませんでした',
 	// 投稿そのものは成立しているときの補足。理由側が何に失敗したかを述べる。
 	postedWithWarning: (p: { reason: string }) => `Nagiには投稿できました。${p.reason}`,
-	// standard.site（AT Protocol 共通の長文記事 lexicon）へのオプトイン公開。
+	// standard.site（AT Protocol 共通の長文記事 lexicon）へのブログ公開。
 	// standard.site という名前の知名度が低いので、UI 上は「ブログ」と呼ぶ。
 	standardSiteHelp:
 		'standard.siteというAT Protocol上の共通フォーマットで保存します。対応アプリから記事を読めるようになります。',
@@ -945,8 +945,8 @@ export const ja = {
 	standardSiteDeviceNote: 'この設定は、この端末でのみ有効です。',
 	standardSiteEnableLabel: 'ブログとして出せるようにする',
 	standardSiteReauthNote:
-		'ブログとして出すには、あなたのPDSにstandard.siteのレコードを書く権限が必要です。下のボタンから追加の権限を付与してください。',
-	standardSiteReauthSubmit: '追加の権限を付与する',
+		'以前のログインにはブログの公開権限が含まれていません。再ログインして権限を更新してください。',
+	standardSiteReauthSubmit: '再ログインして権限を更新',
 	standardSiteReauthPending: '移動しています…',
 	standardSiteSignInRequired: 'ブログ公開を設定するにはログインしてください。',
 	standardSiteFailed: 'ブログとしての公開に失敗しました',

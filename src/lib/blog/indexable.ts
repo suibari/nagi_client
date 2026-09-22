@@ -2,7 +2,7 @@ import { listIndexableBlogs } from '$lib/api/appview';
 import type { IndexableBlog } from '$lib/api/types';
 
 export function blogPath(uri: string): string {
-	const match = /^at:\/\/(did:[^/]+)\/com\.suibari\.nagi\.post\/([^/]+)$/.exec(uri);
+	const match = /^at:\/\/(did:[^/]+)\/(?:com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(uri);
 	if (!match) throw new Error(`Invalid blog URI: ${uri}`);
 	return `/blog/${match[1]}/${match[2]}`;
 }

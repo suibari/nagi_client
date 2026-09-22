@@ -2,7 +2,6 @@
 	import { signIn, signUp, oauthError } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { getCrosspostEnabled, markCrosspostPending } from '$lib/crosspost/preferences';
-	import { getStandardSiteEnabled, markStandardSitePending } from '$lib/standardsite/preferences';
 	import HandleInput from '$lib/components/HandleInput.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
@@ -11,26 +10,23 @@
 
 	let handle = $state('');
 	let busy = $state<AuthAction | null>(null);
-	// 他サービス連携（Blueskyクロスポスト / standard.site）はまとめて1つのスイッチで扱う。
-	// 権限は初回にまとめて渡し、どちらを実際に使うかは設定画面で切り替える方針。
+	// standard.site は常に認可し、このスイッチは任意の Bluesky クロスポストだけを扱う。
 	let federateOptIn = $state(false);
 	onMount(() => {
-		// 前回どちらかを有効にしていたら、スイッチの初期値も ON にして復元する。
+		// 前回クロスポストを有効にしていたら、スイッチの初期値も ON にして復元する。
 		// enabled フラグはログアウトをまたいで残るので、うっかりログアウトや再ログインでも
 		// 1 回のサインインで元の状態に戻せる。
-		federateOptIn = getCrosspostEnabled() || getStandardSiteEnabled();
+		federateOptIn = getCrosspostEnabled();
 	});
 	async function submit(action: AuthAction) {
 		if (busy || (action === 'login' && !handle.trim())) return;
 		busy = action;
 		oauthError.set(null);
 		try {
-			const options = federateOptIn ? { crosspost: true, standardSite: true } : {};
+			const options = federateOptIn ? { crosspost: true } : {};
 			if (federateOptIn) {
-				// 連携ありで進むときは、最初から両方の書き込み権限を含むスコープで
-				// 認可し、復帰後に有効化を確定させるため保留フラグを立てておく。
+				// 復帰後にクロスポストの有効化を確定させるため保留フラグを立てておく。
 				markCrosspostPending();
-				markStandardSitePending();
 			}
 			if (action === 'signup') await signUp(options);
 			else await signIn(handle, options);

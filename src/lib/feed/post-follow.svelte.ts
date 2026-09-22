@@ -33,7 +33,7 @@ export function postHref(uri: string): string {
 
 /** 記事として公開されたルート投稿は、本文と会話を一緒に読めるブログページへ。 */
 export function postPageHref(post: { uri: string; article?: boolean; reply?: unknown }): string {
-	if (!post.article || post.reply) return postHref(post.uri);
+	if ((!post.article && !post.uri.includes('/site.standard.document/')) || post.reply) return postHref(post.uri);
 	const [did, , rkey] = post.uri.slice('at://'.length).split('/');
 	return `/blog/${did}/${rkey}`;
 }

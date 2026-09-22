@@ -1,20 +1,19 @@
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
+import { TID } from '@atproto/common-web';
+import { ensureRecord } from '$lib/api/appview';
 import { session } from '$lib/oauth/session.svelte';
-import { stripMarkdown } from '$lib/atproto/markdown';
 import { ensurePublication } from './publication';
-import { DOCUMENT, MARKDOWN, MARKDOWN_TEXT, type ArticleInput } from './types';
+import { buildRecord, usableAsCoverImage } from './record';
+import { DOCUMENT, type ArticleInput } from './types';
+
+export { buildRecord, usableAsCoverImage } from './record';
 
 const current = () => {
 	const value = get(session);
 	if (!value) throw new Error('Authentication required');
 	return value;
 };
-
-/** document.description の上限。lexicon は 3000 graphemes だが、抜粋なので短く切る。 */
-const DESCRIPTION_GRAPHEMES = 200;
-/** coverImage は 1MB 未満という lexicon の制約があるので、超える画像は付けない。 */
-const COVER_IMAGE_MAX_BYTES = 1_000_000;
 
 const isRecordNotFound = (error: unknown) =>
 	typeof error === 'object' &&
@@ -23,15 +22,6 @@ const isRecordNotFound = (error: unknown) =>
 		('message' in error &&
 			typeof (error as { message?: unknown }).message === 'string' &&
 			(error as { message: string }).message.includes('RecordNotFound')));
-
-function excerpt(plain: string): string {
-	const segments = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(plain)];
-	if (segments.length <= DESCRIPTION_GRAPHEMES) return plain;
-	return `${segments
-		.slice(0, DESCRIPTION_GRAPHEMES)
-		.map((s) => s.segment)
-		.join('')}…`;
-}
 
 /**
  * 投稿の tag facet を document.tags へ。lexicon が「先頭に # を付けるな」と明記している。
@@ -53,52 +43,24 @@ export function tagsFromFacets(facets: readonly { features?: unknown }[] = []): 
 	return [...tags];
 }
 
-/** BlobRef が coverImage として使えるサイズか。 */
-export function usableAsCoverImage(blob: unknown): boolean {
-	if (!blob || typeof blob !== 'object') return false;
-	const size = (blob as { size?: unknown }).size;
-	return typeof size === 'number' && size > 0 && size < COVER_IMAGE_MAX_BYTES;
-}
-
-function buildRecord(input: ArticleInput, site: string, did: string) {
-	const plain = stripMarkdown(input.markdown);
-	return {
-		$type: DOCUMENT,
-		site,
-		title: input.title,
-		// publication.url（Nagi 本体）と連結して canonical URL になる。
-		path: `/blog/${did}/${input.rkey}`,
-		publishedAt: input.publishedAt,
-		...(plain ? { description: excerpt(plain), textContent: plain } : {}),
-		content: {
-			$type: MARKDOWN,
-			// Nagi の描画は独自の縮小 markdown パーサなので、既知のレンダラ名は書かない
-			// （lexicon も「分からないなら renderingRules は省け」としている）。
-			flavor: 'commonmark',
-			text: { $type: MARKDOWN_TEXT, markdown: input.markdown },
-		},
-		...(input.tags?.length ? { tags: input.tags } : {}),
-		...(input.coverImage !== undefined ? { coverImage: input.coverImage } : {}),
-		...(input.bskyPostRef ? { bskyPostRef: input.bskyPostRef } : {}),
-	};
-}
-
 /**
  * 投稿を standard.site の記事として公開する。
  * document の rkey には元の Nagi 投稿の rkey をそのまま使う（どちらも key: tid）。
  * これで対応表を持たずに編集・削除を追従できる。
  */
-export async function publishStandardSiteDocument(input: ArticleInput): Promise<string> {
+export async function publishStandardSiteDocument(input: Omit<ArticleInput, 'rkey'> & { rkey?: string }): Promise<{ uri: string; cid: string }> {
 	const s = current();
 	const site = await ensurePublication();
+	const rkey = input.rkey ?? TID.nextStr();
 	const response = await new Agent(s).com.atproto.repo.putRecord({
 		repo: s.did,
 		collection: DOCUMENT,
-		rkey: input.rkey,
+		rkey,
 		validate: false,
-		record: buildRecord(input, site, s.did),
+		record: buildRecord({ ...input, rkey }, site, s.did),
 	});
-	return response.data.uri;
+	await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
+	return response.data;
 }
 
 /**

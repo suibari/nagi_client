@@ -167,13 +167,13 @@ export const en: Messages = {
 	aboutNoLikesTitle: 'No numbers to chase',
 	aboutNoLikesBody: 'No likes, no follows. “It didn’t do well” can’t happen here.',
 	aboutLongPostTitle: 'Room to write',
-	aboutLongPostBody: 'Up to 3,000 characters in Markdown — and you can rewrite it later.',
+	aboutLongPostBody: 'Write blogs of any length in Markdown — and revise them later.',
 
 	aboutStepsHeading: 'How to start',
 	aboutStep1Title: 'Sign in',
 	aboutStep1Body: 'Just your Bluesky or AT Protocol handle. Your password stays yours.',
 	aboutStep2Title: 'Write',
-	aboutStep2Body: 'Up to 3,000 characters, in Markdown, with images.',
+	aboutStep2Body: 'Write a short post or a long blog in Markdown, with images.',
 	aboutStep3Title: 'Be received',
 	aboutStep3Body: 'Bot-tan replies, while Home lets you leave words at your own pace.',
 
@@ -695,9 +695,9 @@ export const en: Messages = {
 	loginOrStart: 'Sign in / Start using Nagi',
 	loginSignupRedirecting: 'Opening registration…',
 	loginStartFailed: 'Could not open the next screen. Please try again.',
-	loginFederateLabel: 'Also post to other AT Protocol services',
+	loginFederateLabel: 'Also post to Bluesky',
 	loginFederateNote:
-		'When on, Nagi can crosspost to Bluesky and publish blog posts (standard.site). It authorizes writing those records to your PDS. You can change this later in settings.',
+		'When on, you also grant permission to post to Bluesky. Blog publishing is included in every sign-in. You can change Bluesky crossposting later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
 	loginAgeNotice: "If you are under 18, use Nagi with your parent or guardian's permission.",
@@ -878,11 +878,11 @@ export const en: Messages = {
 	pushRefreshPermissions: 'Refresh permissions and sign in',
 	pushReauthPending: 'Opening authorization…',
 	externalPublishingHelp:
-		'Settings for publishing your posts outside Nagi. Each one can be enabled on its own.',
+		'Settings for Bluesky crossposting and information about blog publishing.',
 	blueskyPublishingTitle: 'Also post to Bluesky',
 	blogPublishingTitle: 'Publish as a blog',
 	blogPublishingHelp:
-		'Publish selected posts as long-form articles that compatible AT Protocol apps can read.',
+		'Blog publishing is included in Nagi. Sign in and use the Blog tab to publish long-form articles.',
 	externalPublishingDetails: 'How it works and things to know',
 	crosspostHelp:
 		'Adds an “Also Bluesky” button to the composer, so only posts you choose are sent to Bluesky too. Replies are not crossposted.',
@@ -909,8 +909,8 @@ export const en: Messages = {
 	standardSiteDeviceNote: 'This setting applies to this device only.',
 	standardSiteEnableLabel: 'Allow publishing as blog posts',
 	standardSiteReauthNote:
-		'Publishing blog posts needs permission to write standard.site records to your PDS. Grant the extra permission with the button below.',
-	standardSiteReauthSubmit: 'Grant the extra permission',
+		'Your earlier sign-in does not include blog publishing permission. Sign in again to update your permissions.',
+	standardSiteReauthSubmit: 'Sign in to update permissions',
 	standardSiteReauthPending: 'Redirecting…',
 	standardSiteSignInRequired: 'Log in to set up blog publishing.',
 	standardSiteFailed: 'Could not publish as a blog post',

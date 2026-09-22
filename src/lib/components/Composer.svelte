@@ -37,16 +37,13 @@
 	} from '$lib/drafts/drafts.svelte';
 	import DraftListDialog from './DraftListDialog.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
-	import {
-		getStandardSiteEnabled,
-		hasStandardSiteScope,
-		markStandardSitePending,
-	} from '$lib/standardsite/preferences';
+	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { signIn } from '$lib/oauth/session.svelte';
 	import { NAGI_PUBLIC_ORIGIN } from '$lib/standardsite/types';
 	import {
 		publishStandardSiteDocument,
+		updateStandardSiteDocument,
 		tagsFromFacets,
 		usableAsCoverImage,
 	} from '$lib/standardsite/document';
@@ -145,6 +142,7 @@
 		submittable =
 			!busy &&
 			!empty &&
+			(blog || graphemes <= 3000) &&
 			!articleTitleMissing &&
 			contentWarningValid &&
 			articleReady &&
@@ -252,7 +250,7 @@
 	);
 	/** ブログとして standard.site に出す投稿か。記事フラグと公開の判定はこれ1本。 */
 	const publishesArticle = $derived(blog && !articleBlockedReason);
-	// 差し込む見出しも 3000 グラフェムの上限に数える（投稿してから弾かれないように）。
+	// 通常投稿の上限判定と、ブログの現在文字数表示に使う。
 	let graphemes = $derived(
 		[...new Intl.Segmenter('ja', { granularity: 'grapheme' }).segment(articleHeading + text)]
 			.length,
@@ -319,7 +317,7 @@
 		publishingReadinessLoaded = false;
 		void Promise.all([
 			did && getCrosspostEnabled() ? hasCrosspostScope().catch(() => false) : false,
-			did && getStandardSiteEnabled() ? hasStandardSiteScope().catch(() => false) : false,
+			did ? hasStandardSiteScope().catch(() => false) : false,
 		]).then(([crosspostGranted, standardSiteGranted]) => {
 			if (
 				$session?.did !== did ||
@@ -473,6 +471,7 @@
 	export async function submit() {
 		if (
 			empty ||
+			(!blog && graphemes > 3000) ||
 			busy ||
 			!$session ||
 			articleTitleMissing ||
@@ -541,7 +540,22 @@
 		draftError = '';
 		try {
 			const assets = await uploadPostAssets(draft);
-			const created = await createPost(draft, assets);
+			const cover = assets.images[0]?.image;
+			if (article && cover && !usableAsCoverImage(cover)) throw new Error(m.articleCoverTooLarge());
+			const created = article
+				? await publishStandardSiteDocument({
+					title: article.title, markdown: draft.text, publishedAt: draft.createdAt,
+					tags: [...new Set([...tagsFromFacets(draft.facets), ...articleTags])],
+					...(cover ? { coverImage: cover } : {}),
+					nagi: {
+						facets: draft.facets, langs: draft.langs,
+						...(assets.images.length ? { embed: { $type: 'com.suibari.nagi.post#images', images: assets.images } } : {}),
+						linkCards: assets.cards,
+						...(draft.botSilent ? { botSilent: true } : {}),
+					},
+					...(draft.labels ? { labels: draft.labels } : {}),
+				})
+				: await createPost(draft, assets);
 			optimisticPosts.markCreated(optimisticId, created);
 			postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
@@ -577,28 +591,9 @@
 						warning = e instanceof Error ? e.message : m.crosspostFailed();
 					}
 			}
-			// standard.site も同じ扱い。document の rkey は Nagi 投稿の rkey を使い回す。
-			// クロスポストのあとに回すのは、bskyPostRef に実際の Bluesky 投稿を入れるため。
-			if (article) {
-				try {
-					const cover = assets.images[0]?.image;
-					// ヘッダー画像は記事メタ欄から入れれば 1MB 未満に圧縮されるが、通常の
-					// 画像ピッカー（2MB まで）から入れた1枚目が先頭に来ることもある。
-					// その場合カバーを付けられないので、黙って落とさず理由を出す。
-					if (cover && !usableAsCoverImage(cover)) warning = m.articleCoverTooLarge();
-					await publishStandardSiteDocument({
-						rkey,
-						title: article.title,
-						markdown: draft.text,
-						publishedAt: draft.createdAt,
-						// 本文のハッシュタグと、記事メタ欄で足したタグを合わせて保存する。
-						tags: [...new Set([...tagsFromFacets(draft.facets), ...articleTags])],
-						...(usableAsCoverImage(cover) ? { coverImage: cover } : {}),
-						...(bskyPostRef ? { bskyPostRef } : {}),
-					});
-				} catch (e) {
-					warning = e instanceof Error ? e.message : m.standardSiteFailed();
-				}
+			if (article && bskyPostRef) {
+				await updateStandardSiteDocument(rkey, { markdown: draft.text, bskyPostRef })
+					.catch((cause) => { warning = cause instanceof Error ? cause.message : m.standardSiteFailed(); });
 			}
 			setLastPostScope(scope);
 			// 投稿開始前から進行中だった自動保存を待ち、その保存分も確実に片付ける。
@@ -640,9 +635,8 @@
 	async function authorizeArticle() {
 		if (!$session || reauthorizingArticle) return;
 		reauthorizingArticle = true;
-		markStandardSitePending();
 		try {
-			await signIn($session.did, { ...(await grantedOptIns()), standardSite: true });
+			await signIn($session.did, { ...(await grantedOptIns()), refreshPermissions: true });
 		} finally {
 			reauthorizingArticle = false;
 		}
@@ -845,7 +839,7 @@
 			<span>{scopeLabel}</span>
 		</button>
 		<div class="composer-status">
-			<span>{graphemes} / 3000</span>
+			<span>{graphemes}{blog ? '' : ' / 3000'}</span>
 		</div>
 		<div class="draft-control">
 			<button
@@ -898,6 +892,7 @@
 				type="button"
 				disabled={busy ||
 					empty ||
+					(!blog && graphemes > 3000) ||
 					articleTitleMissing ||
 					!contentWarningValid ||
 					!articleReady ||

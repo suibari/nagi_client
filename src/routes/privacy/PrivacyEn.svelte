@@ -353,10 +353,11 @@
 	above, is the only analytics service we use. This does not apply where disclosure is required by law.
 </p>
 <p>
-	Features you opt into also <strong>create additional records in your own PDS.</strong> Bluesky
-	crossposting creates <code>app.bsky.feed.post</code>; publishing to standard.site creates
+	Posting features <strong>create additional records in your own PDS.</strong> Optional Bluesky
+	crossposting creates <code>app.bsky.feed.post</code>; Nagi blog posts create
 	<code>site.standard.publication</code> and <code>site.standard.document</code>. All of these are
-	public records, and you are asked to authorize them when you turn the feature on. Editing or
+	public records. Permission for standard.site is required when you sign in; Bluesky posting
+	permission is requested only when you enable crossposting. Editing or
 	deleting a post on Nagi updates or removes the matching record, and deleting all of your data from
 	Settings removes them as well.
 </p>

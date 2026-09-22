@@ -28,11 +28,27 @@ export const load = async ({
 	seo: PageSeo;
 }> => {
 	const path = `/blog/${params.did}/${params.rkey}`;
-	const post = (await fetchIndexableBlogs()).find((item) => blogPath(item.uri) === path);
+	const documentUri = `at://${params.did}/site.standard.document/${params.rkey}`;
+	const legacyUri = `at://${params.did}/com.suibari.nagi.post/${params.rkey}`;
+	const [indexedPost, thread] = await Promise.all([
+		fetchIndexableBlogs().then((items) => items.find((item) => blogPath(item.uri) === path)),
+		getThread(documentUri)
+			.then((result) => result.thread)
+			.catch(() => getThread(legacyUri).then((result) => result.thread).catch(() => undefined)),
+	]);
+	if (thread && (thread.post.deleted || !thread.post.article)) error(404, 'Blog post not found');
+	const post: IndexableBlog | undefined = thread
+		? {
+				uri: thread.post.uri,
+				text: thread.post.text,
+				author: thread.post.author,
+				createdAt: thread.post.createdAt,
+				indexedAt: thread.post.indexedAt,
+			}
+		: indexedPost;
 	if (!post) error(404, 'Blog post not found');
 	// 記事本体は prerender で残し、画像や著者情報も取得できれば HTML に含める。
 	// AppView が一時的に読めなくても記事本文の公開は続ける。
-	const thread = await getThread(post.uri).then((result) => result.thread).catch(() => undefined);
 	const text = thread?.post.text ?? post.text;
 	const title = extractTitle(text) ?? text.slice(0, 80);
 	let tags: string[] = [];

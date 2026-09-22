@@ -521,7 +521,6 @@
 		{placeholder}
 		{disabled}
 		aria-label={ariaLabel}
-		maxlength="30000"
 		{value}
 		oninput={handleInput}
 		oncompositionstart={() => oncompositionchange?.(true)}

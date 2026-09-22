@@ -24,7 +24,7 @@ async function publicationFieldsFromProfile(fallbackName: string) {
 }
 
 /**
- * publication を用意して at-URI を返す。無ければ作る（初回オプトイン投稿時の遅延作成）。
+ * publication を用意して at-URI を返す。無ければ作る（初回ブログ投稿時の遅延作成）。
  * 表示情報は Nagi プロフィールから取り、アバターの BlobRef は同一リポジトリなので再利用する。
  *
  * 探索は必ず findNagiPublication を通す。repo には blento.app など他アプリの

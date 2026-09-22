@@ -39,6 +39,7 @@
 	},
 	"dependencies": {
 		"@atproto/api": "^0.18.21",
+		"@atproto/common-web": "^0.4.21",
 		"@atproto/oauth-client-browser": "^0.5.3",
 		"@lottiefiles/dotlottie-web": "0.78.2",
 		"@paulmillr/qr": "^0.3.0",

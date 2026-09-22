@@ -41,6 +41,15 @@ export type StandardSiteDocument = {
 
 /** 投稿1件を standard.site の記事として書き出すための入力。 */
 export type ArticleInput = {
+	/** Nagi のリッチテキスト・添付。正本の文書内に保存する。 */
+	nagi?: {
+		facets?: unknown;
+		langs?: string[];
+		embed?: unknown;
+		linkCards?: unknown;
+		botSilent?: boolean;
+	};
+	labels?: unknown;
 	/** Nagi 投稿の rkey。document の rkey にもそのまま使う。 */
 	rkey: string;
 	title: string;

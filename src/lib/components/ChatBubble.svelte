@@ -334,6 +334,7 @@
 	 * 権限が無い／記事化していない場合は黙って何もしない（Nagi 側の操作は成立している）。
 	 */
 	async function syncStandardSiteDocument(rkey: string, text?: string) {
+		if (post.uri.includes('/site.standard.document/')) return;
 		try {
 			if (!(await hasStandardSiteScope())) return;
 			if (post.cwRestricted) {
@@ -357,7 +358,7 @@
 	}
 
 	async function submitEdit() {
-		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
+		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(post.uri);
 		if (!editHasContent || !editContentWarningValid || editImageProcessing || editBusy || !$session)
 			return;
 		if (!match) {
@@ -396,7 +397,7 @@
 		try {
 			// applyChannel: 返信では常に nextChannel が undefined になるため、旧クライアントが
 			// 複製した channel が残っていればこの編集で落ちる（ルート所有への正規化）。
-			const result = await updatePost(match[2], draft, editImages, { applyChannel: true });
+			const result = await updatePost(match[2], draft, editImages, { applyChannel: true, collection: match[1] });
 			// 楽観反映: このカードの本文/facets/画像を差し替え「編集済み」を立てる。AppView が
 			// putRecord を取り込むと同じ内容へ収束するため、即時 refresh は呼ばない
 			// （取り込み前は旧本文が返り楽観反映を打ち消してしまうため）。

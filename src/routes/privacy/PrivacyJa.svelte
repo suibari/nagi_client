@@ -306,11 +306,11 @@
 	Analyticsだけを利用します。ただし、法令に基づく開示の求めがある場合はこの限りではありません。
 </p>
 <p>
-	また、オプトインで有効にした機能は、<strong>あなた自身のPDSに追加のレコードを作成します。</strong
-	>Blueskyクロスポストは<code>app.bsky.feed.post</code>を、standard.siteへの記事公開は<code
+	また、投稿機能は、<strong>あなた自身のPDSに追加のレコードを作成します。</strong
+	>任意で有効にしたBlueskyクロスポストは<code>app.bsky.feed.post</code>を、Nagiのブログ投稿は<code
 		>site.standard.publication</code
 	>と<code>site.standard.document</code
-	>を作成します。いずれも公開レコードで、有効化のときに認可を求めます。Nagi上で投稿を編集・削除すると対応するレコードも追従し、設定の全データ削除でも消去されます。
+	>を作成します。いずれも公開レコードです。standard.siteの権限はログイン時に必須で求め、Blueskyへの投稿権限はクロスポストを有効にするときだけ追加で求めます。Nagi上で投稿を編集・削除すると対応するレコードも追従し、設定の全データ削除でも消去されます。
 </p>
 
 <h2 id="p7">7. 端末に保存する情報</h2>

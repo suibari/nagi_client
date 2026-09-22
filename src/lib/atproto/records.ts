@@ -20,6 +20,9 @@ import { BLUESKY_PROFILE_COLLECTION_SCOPE } from '$lib/oauth/client';
 import { PostSubmissionError } from '$lib/post/submission-error';
 import { createKossoriPost, deleteKossoriPost, ensureRecord } from '$lib/api/appview';
 import { isAppviewOwnedUri } from '$lib/post/appview-uri';
+import { buildRecord as buildArticleRecord, usableAsCoverImage } from '$lib/standardsite/record';
+import { DOCUMENT } from '$lib/standardsite/types';
+import { extractTitle } from './markdown';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
@@ -450,7 +453,7 @@ export async function createPost(
  */
 export async function deletePost(uri: string, cid?: string) {
 	if (isAppviewOwnedUri(uri)) return deleteKossoriPost(uri);
-	const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(uri);
+	const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(uri);
 	if (!match) throw new Error('Invalid post URI');
 	return deleteRecord(match[1], match[2], cid);
 }
@@ -493,17 +496,19 @@ export async function updatePost(
 	rkey: string,
 	draft: PostDraft,
 	images?: PostEditImage[],
-	opts: { applyChannel?: boolean } = {},
+	opts: { applyChannel?: boolean; collection?: string } = {},
 ) {
 	const s = current();
 	const agent = new Agent(s);
+	const collection = opts.collection === DOCUMENT ? DOCUMENT : POST;
 	const { data } = await agent.com.atproto.repo.getRecord({
 		repo: s.did,
-		collection: POST,
+		collection,
 		rkey,
 	});
+	const original = data.value as Record<string, unknown>;
 	const record: Record<string, unknown> = {
-		...(data.value as Record<string, unknown>),
+		...(collection === DOCUMENT ? (original.nagi as Record<string, unknown> ?? {}) : original),
 		$type: POST,
 		text: draft.text,
 		facets: draft.facets,
@@ -670,14 +675,41 @@ export async function updatePost(
 	});
 	if (orderedLinkCards.length) record.linkCards = orderedLinkCards;
 	else delete record.linkCards;
+	let savedRecord = record;
+	if (collection === DOCUMENT) {
+		const cover = (record.embed as { images?: StoredPostImage[] } | undefined)?.images?.[0]?.image;
+		if (cover && !usableAsCoverImage(cover)) throw new Error('Blog cover images must be smaller than 1 MB');
+		const originalTitle = typeof original.title === 'string' ? original.title : '';
+		const publishedAt = typeof original.publishedAt === 'string' ? original.publishedAt : '';
+		const site = typeof original.site === 'string' ? original.site : '';
+		if (!originalTitle || !publishedAt || !site) throw new Error('Invalid blog document');
+		savedRecord = {
+			...original,
+			...buildArticleRecord({
+				rkey, title: extractTitle(draft.text) ?? originalTitle, markdown: draft.text,
+				publishedAt,
+				nagi: {
+					facets: draft.facets,
+					langs: draft.langs,
+					embed: record.embed,
+					linkCards: record.linkCards,
+					...(record.botSilent === true ? { botSilent: true } : {}),
+				},
+				...(original.labels ? { labels: original.labels } : {}),
+				...(cover ? { coverImage: cover } : {}),
+			}, site, s.did),
+			updatedAt: new Date().toISOString(),
+		};
+		if (!cover) delete savedRecord.coverImage;
+	}
 
 	const response = await indexed(
 		agent.com.atproto.repo.putRecord({
 			repo: s.did,
-			collection: POST,
+			collection,
 			rkey,
 			validate: false,
-			record,
+			record: savedRecord,
 		}),
 	);
 	return { response, imageViews, linkCardViews };

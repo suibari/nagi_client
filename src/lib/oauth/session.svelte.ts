@@ -123,9 +123,7 @@ export async function signIn(
 	handle: string,
 	options: ScopeOptIns & { refreshPermissions?: boolean } = {},
 ) {
-	// クロスポストと standard.site はオプトインなので、有効化するときだけ
-	// 対応する書き込み権限を含むスコープで認可し直す。片方を有効化するときに
-	// もう片方を落とさないよう、呼び出し側が現在の付与状況を含めて渡す。
+	// standard.site は常に要求し、Bluesky クロスポストだけを有効化時に追加する。
 	// 先頭 @ や大文字・前後空白を落として handle 解決の失敗を防ぐ。
 	await getOAuthClient().signIn(normalizeHandle(handle), {
 		scope: buildScope(options),

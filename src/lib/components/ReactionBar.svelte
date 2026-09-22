@@ -45,7 +45,11 @@
 	 * （開くとゲームが自分で供給を生み、レアリティ・インフレが速まる。docs/zenkatsu.md 8.6）。
 	 * ここで絞らないと、サーバが 400 を返すたびに報酬のエラートーストが出る。
 	 */
-	const REWARDING_SUBJECTS = ['com.suibari.nagi.post', 'com.suibari.nagi.news'];
+	const REWARDING_SUBJECTS = [
+		'com.suibari.nagi.post',
+		'site.standard.document',
+		'com.suibari.nagi.news',
+	];
 	// The appview only learns about reactions via jetstream (a few seconds behind),
 	// so we keep an optimistic local copy and ignore prop-driven resets for a while
 	// after a local toggle — otherwise the next feed refresh would undo the click.

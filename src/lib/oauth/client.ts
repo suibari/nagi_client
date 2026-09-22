@@ -13,7 +13,7 @@ export const BLUESKY_PROFILE_SCOPE = `${BLUESKY_PROFILE_COLLECTION_SCOPE}?action
 // action 未指定は create/update/delete 全許可になるため、明示的に create のみへ絞る。
 export const CROSSPOST_SCOPE = `${CROSSPOST_COLLECTION_SCOPE}?action=create`;
 export const BLUEMOJI_SCOPE = 'repo:blue.moji.collection.item';
-// standard.site（長文記事の共通 lexicon）へのオプトイン公開に使うコレクション。
+// standard.site（長文記事の共通 lexicon）へブログの正本を保存するコレクション。
 // 記事は作成だけでなく編集(putRecord)・削除も Nagi の投稿に追従させるため、
 // crosspost と違って action は絞らない。
 // site.standard.authFull という permission set も公開されているが、
@@ -39,8 +39,9 @@ const baseScopes = [
 	'repo:com.suibari.nagi.cardGet',
 	BLUEMOJI_SCOPE,
 	BLUESKY_PROFILE_SCOPE,
+	...STANDARD_SITE_COLLECTION_SCOPES,
 ];
-/** サインイン時に追加で要求するオプトイン権限。どちらも既定は要求しない。 */
+/** standardSite は旧呼び出し元との互換用。standard.site 権限は常に base に含む。 */
 export type ScopeOptIns = { crosspost?: boolean; standardSite?: boolean };
 
 /**
@@ -51,12 +52,10 @@ export type ScopeOptIns = { crosspost?: boolean; standardSite?: boolean };
 export function buildScope(optIns: ScopeOptIns = {}): string {
 	const scopes = [...baseScopes];
 	if (optIns.crosspost) scopes.push(CROSSPOST_SCOPE);
-	if (optIns.standardSite) scopes.push(...STANDARD_SITE_COLLECTION_SCOPES);
 	return scopes.join(' ');
 }
 
-// クロスポストと standard.site はオプトインのため、通常のサインインでは base のみを要求する。
-// クライアントメタデータには宣言可能な最大集合として両方を含める。
+// standard.site は必須、Bluesky クロスポストだけがオプトイン。
 export const BASE_SCOPE = buildScope();
 export const FULL_SCOPE = buildScope({ crosspost: true, standardSite: true });
 const scope = FULL_SCOPE;
