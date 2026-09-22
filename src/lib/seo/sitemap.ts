@@ -5,4 +5,4 @@
  * 「sitemap に書いたパスが本当にプリレンダされているか」をテストで突き合わせられるようにするため。
  * 実体の無いURLを sitemap に載せると、クローラは404を踏み、以後クロール頻度が落ちる。
  */
-export const SITEMAP_ROUTES = ['/', '/about', '/terms', '/privacy', '/news'] as const;
+export const SITEMAP_ROUTES = ['/', '/about', '/terms', '/privacy', '/news', '/blog'] as const;

@@ -1089,7 +1089,14 @@ export const en: Messages = {
 
 	// channels
 	navChannels: 'Channels',
+	navBlog: 'Blog',
 	channelsTitle: 'Channels',
+	blogTitle: 'Blog',
+	blogIntro: 'Read blogs published on Nagi. Choose a tag to filter the articles.',
+	blogTags: 'Blog tags',
+	blogAll: 'All',
+	blogEmpty: 'No blogs have been published yet.',
+	blogTagEmpty: (p: { tag: string }) => `No blogs with #${p.tag} yet.`,
 	channelsIntro:
 		'A channel is a place where people who share a topic gather. Anyone can create one, and anyone can post. Take a look around!',
 	channelsEmpty: 'No channels yet. Want to create the first one?',
@@ -1146,7 +1153,9 @@ export const en: Messages = {
 	searchTabPosts: 'Posts',
 	searchTabUsers: 'Users',
 	searchTabChannels: 'Channels',
+	searchTabBlogs: 'Blogs',
 	searchTabNews: 'News',
+	searchBlogsEmpty: 'No matching blogs.',
 	searchTabBookmarks: 'Bookmarks',
 	searchBookmarksEmpty: 'No matching bookmarks.',
 	searchSectionFuzzy: "bot-tan's whim",
