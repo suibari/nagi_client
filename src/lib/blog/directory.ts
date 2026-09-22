@@ -7,9 +7,19 @@ export type BlogDirectoryItem = IndexableBlog & {
 	title: string;
 	description: string;
 	tags: string[];
+	headerImage?: string;
 };
 
 const normalize = (value: string) => value.trim().toLocaleLowerCase();
+
+function blobCid(value: unknown): string | undefined {
+	if (!value || typeof value !== 'object') return undefined;
+	const ref = (value as { ref?: unknown }).ref;
+	if (typeof ref === 'string') return ref;
+	if (!ref || typeof ref !== 'object') return undefined;
+	const link = (ref as { $link?: unknown }).$link;
+	return typeof link === 'string' ? link : undefined;
+}
 
 export function blogDocumentLocation(uri: string): { did: string; rkey: string } | undefined {
 	const match =
@@ -37,11 +47,17 @@ export function buildBlogDirectoryItem(
 				),
 			]
 		: [];
+	const coverCid = blobCid(record?.coverImage);
 	return {
 		...post,
 		title: recordTitle || extractTitle(post.text) || plain.slice(0, 80),
 		description: recordDescription || plain.slice(0, 200),
 		tags,
+		...(coverCid
+			? {
+					headerImage: `/api/blob/${encodeURIComponent(post.author.did)}/${encodeURIComponent(coverCid)}`,
+				}
+			: {}),
 	};
 }
 

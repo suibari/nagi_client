@@ -4657,11 +4657,25 @@ a.about-feature:focus-visible {
 	gap: 10px;
 }
 .blog-card {
-	padding: 14px 15px;
+	overflow: hidden;
 	border: 1px solid var(--line);
 	border-radius: var(--radius-m);
 	background: var(--bg-raised);
 	box-shadow: var(--shadow-card);
+}
+.blog-card-cover {
+	display: block;
+	aspect-ratio: 2 / 1;
+	background: var(--bg-inset);
+}
+.blog-card-cover img {
+	display: block;
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+.blog-card-content {
+	padding: 14px 15px;
 }
 .blog-card-main {
 	display: block;
