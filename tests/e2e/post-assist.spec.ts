@@ -53,7 +53,8 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 
 	// 未入力のまま3秒で、吹き出しを先に出して考え中を見せる。
 	await openModal.click();
-	await page.getByRole('tab', { name: 'しっかり' }).click();
+	await page.getByRole('tab', { name: 'ブログ' }).click();
+	await page.getByPlaceholder('タイトルを入力…').fill('今日のこと');
 	const modalBeforeAssist = await page.locator('.post-modal').boundingBox();
 	expect(modalBeforeAssist).not.toBeNull();
 	await page.clock.runFor(2500);
@@ -63,8 +64,11 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	await expect(assist).toContainText('おたすけbotたん');
 	await expect(page.locator('.composer-assist-character')).toBeVisible();
 	const modalWithAssist = await page.locator('.post-modal').boundingBox();
+	const assistWithModal = await assist.boundingBox();
 	expect(modalWithAssist).not.toBeNull();
-	expect(modalWithAssist!.height).toBe(modalBeforeAssist!.height);
+	expect(assistWithModal).not.toBeNull();
+	expect(modalWithAssist!.height).toBeLessThan(modalBeforeAssist!.height);
+	expect(modalWithAssist!.y + modalWithAssist!.height).toBeLessThanOrEqual(assistWithModal!.y);
 	expect(assistRequests[0]).toEqual({
 		text: '',
 		mode: 'question',
@@ -114,6 +118,7 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	// モーダルを閉じて開き直すと、また手伝ってくれる。
 	await page.locator('.post-modal-close').click();
 	await openModal.click();
+	await page.getByRole('tab', { name: 'しっかり' }).click();
 	await page.clock.runFor(4500);
 	await expect(assist).toBeVisible();
 	expect(assistRequests[2].previous).toEqual([]);
@@ -134,6 +139,9 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	expect(assistBox).not.toBeNull();
 	expect(submitBox!.x).toBeGreaterThan(closeBox!.x);
 	expect(submitBox!.y + submitBox!.height).toBeLessThan(assistBox!.y);
+	const mobileModalBox = await page.locator('.post-modal').boundingBox();
+	expect(mobileModalBox).not.toBeNull();
+	expect(mobileModalBox!.y + mobileModalBox!.height).toBeLessThanOrEqual(assistBox!.y);
 });
 
 test('生成できないときは考え中の吹き出しをそっと消す', async ({ page }) => {
@@ -176,6 +184,30 @@ test('考え中に入力を始めてもbotたんを表示し続ける', async ({
 	await page.locator('.post-modal textarea').fill('今日は空がきれい');
 	await expect(page.locator('.composer-assist')).toBeVisible();
 	await expect(page.locator('.composer-assist-thinking')).toBeVisible();
+});
+
+test('PCとスマホのIME変換中も表示中のbotたんを保つ', async ({ page }) => {
+	await mockXrpc(page);
+	await page.clock.install();
+	await page.goto('/dev/e2e/post-assist');
+	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
+	await page.clock.runFor(3100);
+	await expect(page.locator('.composer-assist-thinking')).toBeVisible();
+	await page.clock.runFor(500);
+
+	const textarea = page.locator('.post-modal textarea');
+	const assist = page.locator('.composer-assist');
+	await textarea.dispatchEvent('compositionstart');
+	await expect(assist).toBeVisible();
+	await expect(assist).toContainText('最近は登山が気になってるみたいだね');
+
+	// スマホの予測変換も composition が続いたままになる。同じ状態で狭い画面へ変えても、
+	// 吹き出しをキーボード上に出し続ける。
+	await page.setViewportSize({ width: 390, height: 844 });
+	await expect(assist).toBeVisible();
+	await expect(page.locator('.composer-assist-bubble')).toBeVisible();
+	await expect(page.locator('.composer-assist-character')).toBeHidden();
+	await textarea.dispatchEvent('compositionend', { data: '今日' });
 });
 
 test('削除で問いかけ、追記で肯定へ戻り、IME変換による文字数減少では肯定を維持する', async ({
