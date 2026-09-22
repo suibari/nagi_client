@@ -116,10 +116,9 @@
 		);
 		return () => {
 			clearTimeout(timer);
-			// 考え中のまま捨てたら、前のセリフ（無ければ吹き出しごと）に戻す。
+			// 次の書きかけへの生成待機中も、考え中の吹き出しは出したままにする。
 			if (request && !request.signal.aborted) {
 				request.abort();
-				thinking = false;
 				fading = false;
 			}
 		};
