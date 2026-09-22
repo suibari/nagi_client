@@ -1123,7 +1123,14 @@ export const ja = {
 
 	// channels
 	navChannels: 'チャンネル',
+	navBlog: 'ブログ',
 	channelsTitle: 'チャンネル',
+	blogTitle: 'ブログ',
+	blogIntro: 'Nagiで公開されたブログを読めます。タグを選ぶと記事を絞り込めます。',
+	blogTags: 'ブログのタグ',
+	blogAll: 'すべて',
+	blogEmpty: '公開されているブログはまだありません。',
+	blogTagEmpty: (p: { tag: string }) => `#${p.tag} のブログはまだありません。`,
 	channelsIntro:
 		'チャンネルは、特定の話題を話す人が集まる場所です。誰でも自由に作れて、自由にポストできます。まずは覗いてみましょう！',
 	channelsEmpty: 'まだチャンネルがありません。最初のひとつを作ってみませんか？',
@@ -1181,7 +1188,9 @@ export const ja = {
 	searchTabPosts: 'ポスト',
 	searchTabUsers: 'ユーザー',
 	searchTabChannels: 'チャンネル',
+	searchTabBlogs: 'ブログ',
 	searchTabNews: 'ニュース',
+	searchBlogsEmpty: '一致するブログはありませんでした。',
 	searchTabBookmarks: 'ブックマーク',
 	searchBookmarksEmpty: '一致するブックマークはありませんでした。',
 	searchSectionFuzzy: 'botたんの気まぐれ',

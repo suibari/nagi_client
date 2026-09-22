@@ -25,6 +25,8 @@
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import BookmarkSearchSections from '$lib/components/BookmarkSearchSections.svelte';
+	import BlogCard from '$lib/components/BlogCard.svelte';
+	import { blogMatches, fetchBlogDirectory, type BlogDirectoryItem } from '$lib/blog/directory';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { startVisiblePolling } from '$lib/polling';
 	import { session } from '$lib/oauth/session.svelte';
@@ -39,13 +41,14 @@
 	);
 	let hasQuery = $derived(Boolean(q || tag));
 
-	// 自由文モードは対象ごとにタブを分ける。各タブの中は「一致」→「botたんの気まぐれ」の順に
-	// 縦に並べ、一致側には見出しを付けない（タブ名から自明なため）。
-	type TabId = 'posts' | 'users' | 'channels' | 'news' | 'bookmarks';
+	// 自由文モードは対象ごとにタブを分ける。意味検索のある対象は「一致」→
+	// 「botたんの気まぐれ」の順に縦に並べ、一致側には見出しを付けない。
+	type TabId = 'posts' | 'users' | 'channels' | 'blogs' | 'news' | 'bookmarks';
 	const publicTabs: { id: TabId; label: () => string }[] = [
 		{ id: 'posts', label: () => m.searchTabPosts() },
 		{ id: 'users', label: () => m.searchTabUsers() },
 		{ id: 'channels', label: () => m.searchTabChannels() },
+		{ id: 'blogs', label: () => m.searchTabBlogs() },
 		{ id: 'news', label: () => m.searchTabNews() },
 	];
 	let tabs = $derived(
@@ -66,6 +69,7 @@
 	let usersFuzzy = $state<ActorView[]>([]);
 	let channelsExact = $state<ChannelView[]>([]);
 	let channelsFuzzy = $state<ChannelView[]>([]);
+	let blogsExact = $state<BlogDirectoryItem[]>([]);
 	let newsExact = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
 	let newsFuzzy = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
 	let bookmarkItems = $state<BookmarkItemView[]>([]);
@@ -81,6 +85,7 @@
 		posts: false,
 		users: false,
 		channels: false,
+		blogs: false,
 		news: false,
 		bookmarks: false,
 	});
@@ -88,6 +93,7 @@
 		posts: false,
 		users: false,
 		channels: false,
+		blogs: true,
 		news: false,
 		bookmarks: true,
 	});
@@ -107,6 +113,7 @@
 		usersFuzzy = [];
 		channelsExact = [];
 		channelsFuzzy = [];
+		blogsExact = [];
 		newsExact = { items: [] };
 		newsFuzzy = { items: [] };
 		bookmarkItems = [];
@@ -115,14 +122,28 @@
 		bookmarkCursor = undefined;
 		bookmarkHasMore = false;
 		bookmarkError = '';
-		readyExact = { posts: false, users: false, channels: false, news: false, bookmarks: false };
-		readyFuzzy = { posts: false, users: false, channels: false, news: false, bookmarks: true };
+		readyExact = {
+			posts: false,
+			users: false,
+			channels: false,
+			blogs: false,
+			news: false,
+			bookmarks: false,
+		};
+		readyFuzzy = {
+			posts: false,
+			users: false,
+			channels: false,
+			blogs: true,
+			news: false,
+			bookmarks: true,
+		};
 		tabPicked = false;
 		loadedFuzzy = {};
 	}
 
 	/**
-	 * 一致は4タブぶん先に読む。埋め込みを使わない（＝Ollama を叩かない）ので安く、
+	 * 一致は公開タブぶん先に読む。埋め込みを使わない（＝Ollama を叩かない）ので安く、
 	 * タブに件数を出して「別のタブに当たりがある」と分かるようにするために必要。
 	 * これが無いと、既定のポストタブが0件なだけで「ヒットしない」に見えてしまう。
 	 */
@@ -141,6 +162,10 @@
 			.then((r) => fresh() && (channelsExact = r.channels))
 			.catch(() => {})
 			.finally(() => fresh() && (readyExact.channels = true));
+		void fetchBlogDirectory()
+			.then((items) => fresh() && (blogsExact = items.filter((item) => blogMatches(item, q))))
+			.catch(() => {})
+			.finally(() => fresh() && (readyExact.blogs = true));
 		void searchNewsByQuery(q, locale, undefined, 'exact')
 			.then((r) => fresh() && (newsExact = { items: r.items, botActor: r.botActor }))
 			.catch(() => {})
@@ -249,6 +274,7 @@
 		posts: postsExact?.visibleItems.length ?? 0,
 		users: usersExact.length,
 		channels: channelsExact.length,
+		blogs: blogsExact.length,
 		news: newsExact.items.length,
 		bookmarks: bookmarkItems.length,
 	});
@@ -256,6 +282,7 @@
 		readyExact.posts &&
 			readyExact.users &&
 			readyExact.channels &&
+			readyExact.blogs &&
 			readyExact.news &&
 			readyExact.bookmarks,
 	);
@@ -450,6 +477,20 @@
 				</div>
 			{/if}
 		</section>
+	{:else if tab === 'blogs'}
+		<section class="search-section blog-search-results">
+			{#if !readyExact.blogs}
+				{@render spinner()}
+			{:else if !blogsExact.length}
+				<div class="state">{m.searchBlogsEmpty()}</div>
+			{:else}
+				<div class="blog-list">
+					{#each blogsExact as item (item.uri)}
+						<BlogCard {item} />
+					{/each}
+				</div>
+			{/if}
+		</section>
 	{:else if tab === 'news'}
 		<section class="search-section">
 			{#if !readyExact.news}
@@ -581,6 +622,9 @@
 	}
 	.search-section {
 		padding: 0.5rem 0;
+	}
+	.blog-search-results {
+		padding-inline: 1rem;
 	}
 	.search-section > h2 {
 		display: flex;
