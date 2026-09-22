@@ -323,6 +323,7 @@ export const en: Messages = {
 	contentWarningNotification: 'Post with a content warning',
 	linkCardLoading: 'Loading link details…',
 	linkCardRemove: 'Remove link card',
+	youtubePlay: (p: { title: string }) => `Play ${p.title}`,
 
 	// post modal / post scope
 	postFabLabel: 'New post',
