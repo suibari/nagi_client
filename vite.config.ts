@@ -96,6 +96,7 @@ export default defineConfig(({ command, mode }) => {
 						'base-uri': ['self'],
 						'form-action': ['self'],
 						'object-src': ['none'],
+						'frame-src': ['self', 'https://www.youtube-nocookie.com'],
 					},
 				},
 			}),

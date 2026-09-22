@@ -338,6 +338,7 @@ export const ja = {
 	contentWarningNotification: 'Content Warning付き投稿',
 	linkCardLoading: 'リンク情報を取得中…',
 	linkCardRemove: 'リンクカードを削除',
+	youtubePlay: (p: { title: string }) => `${p.title}を再生`,
 
 	// post modal / 投稿範囲
 	postFabLabel: '投稿する',
