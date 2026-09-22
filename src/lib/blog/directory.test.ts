@@ -23,10 +23,12 @@ describe('blog directory', () => {
 			title: '海の一日',
 			description: '短い紹介',
 			tags: ['#日記', ' 海 ', '#日記', 1],
+			coverImage: { ref: { $link: 'bafy-cover' } },
 		});
 		expect(item.title).toBe('海の一日');
 		expect(item.description).toBe('短い紹介');
 		expect(item.tags).toEqual(['日記', '海']);
+		expect(item.headerImage).toBe('/api/blob/did%3Aplc%3Aalice/bafy-cover');
 	});
 
 	it('matches title, body, author and tags case-insensitively', () => {
