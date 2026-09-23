@@ -310,6 +310,18 @@ export type DiaryView = {
 };
 export type DiaryPage = { items: DiaryView[]; cursor?: string; hasMore: boolean };
 
+/** 本人専用の「botたんラジオ」。現在の放送枠だけ取得できる。 */
+export type RadioTrack = {
+	slotKey: string;
+	title: string;
+	artist: string;
+	comment: string;
+	videoId: string;
+	publishedAt: string;
+	sourceUrl?: string;
+};
+export type RadioTrackResponse = { track?: RadioTrack };
+
 /**
  * 自分年表の1件。
  *

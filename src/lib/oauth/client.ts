@@ -36,6 +36,7 @@ const baseScopes = [
 	'repo:com.suibari.nagi.zenkatsu',
 	// カードニュースは未認証でも読めるが、自分のリアクションを見分けるのに認証が要る。
 	'rpc:com.suibari.nagi.getCardNews?aud=*',
+	'rpc:com.suibari.nagi.getRadioTrack?aud=*',
 	'repo:com.suibari.nagi.cardGet',
 	BLUEMOJI_SCOPE,
 	BLUESKY_PROFILE_SCOPE,

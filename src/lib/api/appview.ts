@@ -33,6 +33,7 @@ import type {
 	ProfileFeedFilter,
 	ProfilePage,
 	ProfileReactionPage,
+	RadioTrackResponse,
 	MyNagiView,
 	PreferencesView,
 	PrivateListView,
@@ -469,6 +470,13 @@ export const getDiaries = (
 		'required',
 	);
 };
+export const getRadioTrack = () =>
+	call<RadioTrackResponse>(
+		'com.suibari.nagi.getRadioTrack',
+		'/xrpc/com.suibari.nagi.getRadioTrack',
+		{},
+		'required',
+	);
 /**
  * 自分年表。1ページ＝1年ぶんで、cursor は次に返す年（"2025"）。
  * 日記と同じく本人専用なので auth は 'required'（他人の DID を渡すとサーバが 403 を返す）。

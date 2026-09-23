@@ -339,6 +339,10 @@ export const ja = {
 	linkCardLoading: 'リンク情報を取得中…',
 	linkCardRemove: 'リンクカードを削除',
 	youtubePlay: (p: { title: string }) => `${p.title}を再生`,
+	radioTitle: 'botたんラジオ',
+	radioOpen: '新しいbotたんラジオを開く',
+	radioOpenYoutube: 'YouTubeで開く',
+	radioSource: '曲の情報源',
 
 	// post modal / 投稿範囲
 	postFabLabel: '投稿する',
@@ -911,11 +915,11 @@ export const ja = {
 	pushRetry: 'もう一度試す',
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
-	externalPublishingHelp:
-		'Blueskyへの同時投稿の設定と、ブログ公開についての案内です。',
+	externalPublishingHelp: 'Blueskyへの同時投稿の設定と、ブログ公開についての案内です。',
 	blueskyPublishingTitle: 'Blueskyにも投稿',
 	blogPublishingTitle: 'ブログとして公開',
-	blogPublishingHelp: 'ブログはNagiの基本機能です。ログインすると、ブログタブから長文記事を公開できます。',
+	blogPublishingHelp:
+		'ブログはNagiの基本機能です。ログインすると、ブログタブから長文記事を公開できます。',
 	externalPublishingDetails: '仕組みと注意点',
 	crosspostHelp:
 		'投稿欄に「Blueskyにも」ボタンを表示し、選んだ投稿だけをBlueskyへ同時投稿できます。スレッドへの返信は対象外です。',

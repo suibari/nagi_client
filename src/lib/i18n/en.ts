@@ -324,6 +324,10 @@ export const en: Messages = {
 	linkCardLoading: 'Loading link details…',
 	linkCardRemove: 'Remove link card',
 	youtubePlay: (p: { title: string }) => `Play ${p.title}`,
+	radioTitle: 'Bot-tan Radio',
+	radioOpen: 'Open a new Bot-tan Radio track',
+	radioOpenYoutube: 'Open on YouTube',
+	radioSource: 'Song source',
 
 	// post modal / post scope
 	postFabLabel: 'New post',
