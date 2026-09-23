@@ -34,6 +34,7 @@ import type {
 	ProfilePage,
 	ProfileReactionPage,
 	RadioTrackResponse,
+	RadioHistoryResponse,
 	MyNagiView,
 	PreferencesView,
 	PrivateListView,
@@ -475,6 +476,23 @@ export const getRadioTrack = () =>
 		'com.suibari.nagi.getRadioTrack',
 		'/xrpc/com.suibari.nagi.getRadioTrack',
 		{},
+		'required',
+	);
+export const getRadioHistory = (cursor?: string) => {
+	const params = new URLSearchParams();
+	if (cursor) params.set('cursor', cursor);
+	return call<RadioHistoryResponse>(
+		'com.suibari.nagi.getRadioHistory',
+		`/xrpc/com.suibari.nagi.getRadioHistory${params.size ? `?${params}` : ''}`,
+		{},
+		'required',
+	);
+};
+export const markRadioSeen = (slotKey: string) =>
+	call<{ lastSeenSlotKey: string }>(
+		'com.suibari.nagi.markRadioSeen',
+		'/xrpc/com.suibari.nagi.markRadioSeen',
+		{ method: 'POST', body: JSON.stringify({ slotKey }) },
 		'required',
 	);
 /**

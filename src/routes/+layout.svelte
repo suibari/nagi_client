@@ -37,7 +37,6 @@
 	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
-	import RadioMobile from '$lib/radio/RadioMobile.svelte';
 	import { radio } from '$lib/radio/radio.svelte';
 
 	let { children } = $props();
@@ -253,7 +252,6 @@
 	<SidebarRight />
 </div>
 <MobileNav />
-<RadioMobile />
 <PostFollowNotice />
 <!-- 投稿はページごとではなくアプリ全体の1つの入口に統一する。Composer は
      PostModal の中で常時マウントしたままにする（添付画像を失わないため）。 -->

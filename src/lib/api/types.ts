@@ -320,7 +320,8 @@ export type RadioTrack = {
 	publishedAt: string;
 	sourceUrl?: string;
 };
-export type RadioTrackResponse = { track?: RadioTrack };
+export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean };
+export type RadioHistoryResponse = { tracks: RadioTrack[]; cursor?: string };
 
 /**
  * 自分年表の1件。

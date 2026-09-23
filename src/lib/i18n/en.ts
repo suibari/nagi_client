@@ -53,6 +53,7 @@ export const en: Messages = {
 	navNotifications: 'Notifications',
 	navSettings: 'Settings',
 	navDiary: 'Diary',
+	navRadio: 'Radio',
 	navMenu: 'Menu',
 	mainNavAria: 'Main navigation',
 	feedTabsAria: 'Feed tabs',
@@ -328,6 +329,10 @@ export const en: Messages = {
 	radioOpen: 'Open a new Bot-tan Radio track',
 	radioOpenYoutube: 'Open on YouTube',
 	radioSource: 'Song source',
+	radioUnreadBadgeAria: 'New Bot-tan Radio episode available',
+	radioHistoryEmpty: 'No radio episodes yet.',
+	radioHistoryMore: 'Load older episodes',
+	radioHistoryError: 'Could not load radio episodes. Please try again.',
 
 	// post modal / post scope
 	postFabLabel: 'New post',
@@ -1284,7 +1289,7 @@ export const en: Messages = {
 	zenkatsuResultSkip: 'Skip',
 	zenkatsuDevReset: '[dev] Clear today and replay',
 	zenkatsuDevResetDone: 'Cleared. You can play again',
-	navCards: 'Cards',
+	navCards: 'Card Game',
 	zenkatsuNotPlayedBadge: 'Play today',
 	// Zenkatsu! (answer the day's situation with 1-3 cards from your collection)
 	zenkatsuTitle: 'Zenkatsu!',

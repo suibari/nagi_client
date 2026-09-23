@@ -201,6 +201,11 @@
 	and artist names. Showing a thumbnail and playing a video send access information from your device
 	to YouTube.
 </p>
+<p>
+	Radio tracks, DJ comments, and read state are stored only in the Service's AppView, not as PDS
+	records. Past episodes remain until you delete your data or leave the Service and are visible only
+	to you.
+</p>
 <h3>Information sent or fetched for external research</h3>
 <ul>
 	<li>

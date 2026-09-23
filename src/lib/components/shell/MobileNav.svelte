@@ -1,11 +1,17 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { tick } from 'svelte';
-	import { mobilePrimaryItems, mobileMenuItems, isActive, handleNavClick } from './nav';
+	import {
+		mobilePrimaryItems,
+		mobileMenuItems,
+		mobileMenuGroups,
+		mobileMenuNotice,
+		isActive,
+		handleNavClick,
+	} from './nav';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './Icon.svelte';
 	import NavBadge from './NavBadge.svelte';
-	import { unplayedToday } from '$lib/zenkatsu/notice';
 
 	let menuOpen = $state(false);
 	let menuButton = $state<HTMLButtonElement>();
@@ -68,7 +74,9 @@
 				>
 			</header>
 			<nav class="mobile-menu-list" aria-label={m.navMenu()}>
-				{#each mobileMenuItems as item (item.href)}
+				{#each mobileMenuGroups as group, groupIndex}
+					{#if groupIndex > 0}<div class="mobile-menu-divider" role="separator"></div>{/if}
+					{#each group as item (item.href)}
 					<a
 						href={item.href}
 						class:active={isActive(page.url.pathname, item.href)}
@@ -88,6 +96,7 @@
 						<span>{item.label()}</span>
 						<Icon name="chevron" size={17} />
 					</a>
+					{/each}
 				{/each}
 			</nav>
 		</div>
@@ -118,7 +127,7 @@
 	>
 		<span class="nav-icon">
 			<Icon name="moreHorizontal" size={22} />
-			<NavBadge unread={unplayedToday} style="dot" aria={() => m.zenkatsuNotPlayedBadge()} />
+			<NavBadge unread={mobileMenuNotice} style="dot" aria={() => m.navMenu()} />
 		</span><span>{m.navMenu()}</span>
 	</button>
 </nav>
@@ -198,6 +207,11 @@
 			overflow-y: auto;
 			overscroll-behavior: contain;
 			padding-block: 8px;
+		}
+		.mobile-menu-divider {
+			block-size: 1px;
+			margin: 8px 8px;
+			background: var(--line);
 		}
 
 		.mobile-menu-list a {

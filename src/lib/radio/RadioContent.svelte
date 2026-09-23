@@ -2,13 +2,7 @@
 	import type { RadioTrack } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import LinkCard from '$lib/components/LinkCard.svelte';
-	let {
-		track,
-		bubble = false,
-	}: {
-		track: RadioTrack;
-		bubble?: boolean;
-	} = $props();
+	let { track }: { track: RadioTrack } = $props();
 	const videoCard = $derived({
 		uri: `https://www.youtube.com/watch?v=${track.videoId}`,
 		title: `${track.artist} - ${track.title}`,
@@ -19,7 +13,7 @@
 	);
 </script>
 
-<div class="radio-content" class:radio-bubble-content={bubble}>
+<div class="radio-content">
 	<div class="radio-heading">
 		<img src="/bot_dj_laugh.webp" alt="" width="48" height="48" /><strong
 			>{m.radioTitle()}</strong
@@ -42,10 +36,6 @@
 		border-radius: 16px;
 		padding: 14px;
 		min-width: 0;
-	}
-	.radio-bubble-content {
-		border: 0;
-		padding: 0;
 	}
 	.radio-heading {
 		display: flex;

@@ -1,7 +1,8 @@
-import { writable, type Readable } from 'svelte/store';
+import { derived, writable, type Readable } from 'svelte/store';
 import { m } from '$lib/i18n/i18n.svelte';
 import { unreadCount } from '$lib/notifications/unread.svelte';
 import { unplayedToday } from '$lib/zenkatsu/notice';
+import { radioUnread } from '$lib/radio/radio.svelte';
 
 /**
  * ナビ項目に重ねる未読表示。ドットと数値バッジで真実源が違う（既読ウォーターマーク /
@@ -40,12 +41,19 @@ const cards: NavItem = {
 	icon: 'cards',
 	badge: { unread: unplayedToday, style: 'text', aria: () => m.zenkatsuNotPlayedBadge() },
 };
+const radio: NavItem = {
+	href: '/radio',
+	label: m.navRadio,
+	icon: 'music',
+	badge: { unread: radioUnread, style: 'dot', aria: () => m.radioUnreadBadgeAria() },
+};
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
 
 /** PC の区切りも含めた表示順。グループを足せば区切り線も自動で増える。 */
 export const desktopNavGroups: NavItem[][] = [
 	[myNagi, feed, notifications],
-	[channels, blog, news, diary, cards],
+	[channels, blog, news],
+	[diary, cards, radio],
 	[settings],
 ];
 
@@ -53,7 +61,17 @@ export const desktopNavGroups: NavItem[][] = [
 export const mobilePrimaryItems: NavItem[] = [myNagi, feed, notifications];
 
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
-export const mobileMenuItems: NavItem[] = [channels, blog, news, diary, cards, settings];
+export const mobileMenuGroups: NavItem[][] = [
+	[channels, blog, news],
+	[diary, cards, radio],
+	[settings],
+];
+export const mobileMenuItems: NavItem[] = mobileMenuGroups.flat();
+/** カード未プレイかラジオ未読のどちらかで、スマホのメニューに1つの点を出す。 */
+export const mobileMenuNotice = derived(
+	[unplayedToday, radioUnread],
+	([$cards, $radio]) => ($cards > 0 || $radio > 0 ? 1 : 0),
+);
 /** フィードの3タブ（ホーム/グローバル/全肯定）はどれもフィード扱いにする。 */
 const FEED_PATHS = ['/feed', '/global', '/affirmation'];
 /**

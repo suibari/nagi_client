@@ -55,6 +55,7 @@ export const ja = {
 	navNotifications: '通知',
 	navSettings: '設定',
 	navDiary: '日記',
+	navRadio: 'ラジオ',
 	navMenu: 'メニュー',
 	mainNavAria: 'メインナビゲーション',
 	feedTabsAria: 'フィード切り替え',
@@ -343,6 +344,10 @@ export const ja = {
 	radioOpen: '新しいbotたんラジオを開く',
 	radioOpenYoutube: 'YouTubeで開く',
 	radioSource: '曲の情報源',
+	radioUnreadBadgeAria: '未読のbotたんラジオがあります',
+	radioHistoryEmpty: 'まだ届いたラジオはありません。',
+	radioHistoryMore: '過去のラジオをもっと見る',
+	radioHistoryError: 'ラジオを読み込めませんでした。もう一度お試しください。',
 
 	// post modal / 投稿範囲
 	postFabLabel: '投稿する',
@@ -1317,7 +1322,7 @@ export const ja = {
 	zenkatsuResultSkip: 'スキップ',
 	zenkatsuDevReset: '【開発】今日のぶんを消してもう一度',
 	zenkatsuDevResetDone: '消したよ。もう一度出せる',
-	navCards: '全肯定カード',
+	navCards: 'カードゲーム',
 	zenkatsuNotPlayedBadge: '未プレイ',
 	// ゼンカツ！（1日1回、お題に手持ちのカード1〜3枚で答える遊び）
 	zenkatsuTitle: 'ゼンカツ！',
