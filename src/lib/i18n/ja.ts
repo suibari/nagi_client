@@ -341,6 +341,7 @@ export const ja = {
 	linkCardRemove: 'リンクカードを削除',
 	youtubePlay: (p: { title: string }) => `${p.title}を再生`,
 	radioTitle: 'botたんラジオ',
+	radioDescription: '前回のラジオ以降の投稿から、botたんがあなたに合う一曲を選びます。新しい投稿がないときは、過去の話を思い出して選びます。過去のラジオもここで見れます。ラジオの内容は本人にだけ表示され、こっそり投稿の内容を公開することはありません。',
 	radioOpen: '新しいbotたんラジオを開く',
 	radioOpenYoutube: 'YouTubeで開く',
 	radioSource: '曲の情報源',

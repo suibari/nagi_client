@@ -66,6 +66,7 @@
 <section class="page-title"><h1>{m.radioTitle()}</h1></section>
 {#if $session}
 	<div class="radio-history">
+		<p class="radio-description">{m.radioDescription()}</p>
 		{#each tracks as track (track.slotKey)}
 			<article class="radio-entry">
 				<time datetime={track.publishedAt}>{publishedDate(track.publishedAt)}</time>
@@ -95,6 +96,12 @@
 		display: grid;
 		gap: 7px;
 		min-width: 0;
+	}
+	.radio-description {
+		margin: 0;
+		color: var(--text-muted);
+		font-size: 14px;
+		line-height: 1.65;
 	}
 	time {
 		color: var(--text-muted);
