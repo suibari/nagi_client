@@ -185,10 +185,7 @@
 		color: var(--text);
 	}
 	@media (min-width: 1024px) {
-		.post-modal.rich {
-			width: min(calc(100vw - 32px), 1040px);
-		}
-		/* ブログは本文の右に記事メタ欄が並ぶぶんだけ広い。.rich の後に置いて上書きする。 */
+		/* ブログは本文の右に記事メタ欄が並ぶぶんだけ広い。しっかりは本文 1 列なので通常幅のまま。 */
 		.post-modal.blog {
 			width: min(calc(100vw - 32px), 1120px);
 		}

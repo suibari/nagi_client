@@ -15,7 +15,11 @@
 		replaceEmojiSuggestion,
 		type ComposerSuggestionToken,
 	} from '$lib/post/composer-suggestion';
-	import { textareaCaretRect } from './textarea-caret';
+	import { onMount } from 'svelte';
+	import { Annotation, Compartment, EditorState, type Transaction } from '@codemirror/state';
+	import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view';
+	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+	import { composerDecorations, refreshDecorations } from './composer-decorations';
 	import {
 		applyContentWarning as wrapContentWarning,
 		remapContentWarningSelection,
@@ -55,7 +59,13 @@
 		onselectionchange?: (selected: boolean) => void;
 	} = $props();
 
-	let textarea: HTMLTextAreaElement;
+	let host: HTMLDivElement;
+	let view: EditorView | undefined;
+	/** 選択範囲をこのコンポーネントが自分で付け替える変更。差分からの付け替えを二重にしない。 */
+	const managed = Annotation.define<boolean>();
+	const editable = new Compartment();
+	const attributes = new Compartment();
+	const placeholderText = new Compartment();
 	// Composer は最初の1文字を即時検索し、連続入力だけ短くまとめる。
 	const suggest = createTypeaheadSearch<ActorView>(
 		(query, signal) => searchActors(query, 10, undefined, signal).then((result) => result.actors),
@@ -94,6 +104,185 @@
 	let activeSuggest = $derived(
 		token?.kind === 'channel' ? channelSuggest : token?.kind === 'emoji' ? emojiSuggest : suggest,
 	);
+
+	const selectionStart = () => view?.state.selection.main.from ?? value.length;
+	const selectionEnd = () => view?.state.selection.main.to ?? value.length;
+	const focusEditor = () => requestAnimationFrame(() => view?.focus());
+
+	/**
+	 * 本文を next に置き換え、選択範囲を [anchor, head] にする。変わった区間だけを差し替えるので、
+	 * 取り消し（Undo）の単位とキャレット位置が自然に保たれる。
+	 */
+	function setText(next: string, anchor?: number, head = anchor) {
+		if (!view) return;
+		const previous = view.state.doc.toString();
+		let prefix = 0;
+		while (prefix < previous.length && prefix < next.length && previous[prefix] === next[prefix])
+			prefix++;
+		let suffix = 0;
+		while (
+			suffix < previous.length - prefix &&
+			suffix < next.length - prefix &&
+			previous[previous.length - 1 - suffix] === next[next.length - 1 - suffix]
+		)
+			suffix++;
+		view.dispatch({
+			changes:
+				previous === next
+					? undefined
+					: {
+							from: prefix,
+							to: previous.length - suffix,
+							insert: next.slice(prefix, next.length - suffix),
+						},
+			selection:
+				anchor === undefined
+					? undefined
+					: { anchor: Math.min(anchor, next.length), head: Math.min(head!, next.length) },
+			annotations: managed.of(true),
+		});
+	}
+
+	/** 利用者の入力を、呼び出し側が見ている InputEvent の形へ直す（下書きアシストの判定用）。 */
+	function inputEventFor(transactions: readonly Transaction[], composing: boolean) {
+		const typed = transactions.filter((transaction) => transaction.docChanged);
+		if (!typed.length || typed.every((transaction) => transaction.annotation(managed))) return;
+		const deleting = typed.some((transaction) => transaction.isUserEvent('delete'));
+		const composed = typed.some((transaction) => transaction.isUserEvent('input.type.compose'));
+		return new InputEvent('input', {
+			inputType: deleting
+				? 'deleteContentBackward'
+				: composed
+					? 'insertCompositionText'
+					: 'insertText',
+			isComposing: composing,
+		});
+	}
+
+	onMount(() => {
+		view = new EditorView({
+			parent: host,
+			state: EditorState.create({
+				doc: value,
+				extensions: [
+					history(),
+					// CodeMirror は更新のたびに外枠の class を組み直すので、属性として渡す
+					EditorView.editorAttributes.of({ class: 'composer-input' }),
+					EditorView.lineWrapping,
+					composerDecorations(() => ({ mentions, channels, emojis })),
+					placeholderText.of(placeholder ? placeholderExtension(placeholder) : []),
+					editable.of([EditorView.editable.of(!disabled), EditorState.readOnly.of(disabled)]),
+					attributes.of(EditorView.contentAttributes.of(contentAttributes())),
+					keymap.of([
+						{ key: 'ArrowDown', run: () => moveSuggestion(1) },
+						{ key: 'ArrowUp', run: () => moveSuggestion(-1) },
+						{ key: 'Enter', run: (target) => chooseActive() || continueList(target) },
+						{ key: 'Tab', run: chooseActive },
+						{ key: 'Escape', run: closeSuggestions },
+						// Ctrl/Cmd+Enter は投稿送信。候補の Enter 確定より後に判定する。
+						{
+							key: 'Mod-Enter',
+							run: () => {
+								onsubmit?.();
+								return true;
+							},
+						},
+						{ key: 'Mod-b', run: () => runFormat('bold') },
+						{ key: 'Mod-i', run: () => runFormat('italic') },
+						{ key: 'Mod-Shift-s', run: () => runFormat('strike') },
+						...historyKeymap,
+						...defaultKeymap,
+					]),
+					EditorView.domEventHandlers({
+						paste: (event) => {
+							onpaste?.(event);
+							// 引用や画像として引き取られた貼り付けは本文へ入れない
+							return event.defaultPrevented;
+						},
+						compositionstart: () => oncompositionchange?.(true),
+						compositionend: () => oncompositionchange?.(false),
+						blur: () => {
+							setTimeout(close, 150);
+						},
+					}),
+					EditorView.updateListener.of((update) => {
+						if (update.docChanged) {
+							const previous = update.startState.doc.toString();
+							const next = update.state.doc.toString();
+							if (!update.transactions.some((transaction) => transaction.annotation(managed)))
+								updateSelectionRanges(previous, next);
+							value = next;
+							const event = inputEventFor(update.transactions, update.view.composing);
+							if (event) ontextinput?.(event);
+						}
+						if (update.docChanged || update.selectionSet) {
+							// 候補の確定や装飾ボタンによる変更では、候補を開き直さない
+							if (update.transactions.some((transaction) => transaction.annotation(managed)))
+								onselectionchange?.(!update.state.selection.main.empty);
+							else detectToken();
+						}
+					}),
+				],
+			}),
+		});
+		return () => {
+			view?.destroy();
+			view = undefined;
+		};
+	});
+
+	function contentAttributes() {
+		return {
+			...(id ? { id } : {}),
+			...(ariaLabel ? { 'aria-label': ariaLabel } : {}),
+			// 投稿の本文と同じく、日本語の文節で折り返す（word-break: auto-phrase）
+			lang: document.documentElement.lang || 'ja',
+		};
+	}
+
+	// 外から本文が差し替わったとき（投稿後のクリア、下書きの読み込みなど）に取り込む。
+	$effect(() => {
+		const next = value;
+		if (view && next !== view.state.doc.toString()) setText(next, next.length);
+	});
+
+	// メンション等の選択範囲が変わったら、リンク色の装飾を付け直す。
+	$effect(() => {
+		void [mentions, channels, emojis];
+		view?.dispatch({ effects: refreshDecorations.of(null) });
+	});
+
+	$effect(() => {
+		const locked = disabled;
+		view?.dispatch({
+			effects: editable.reconfigure([
+				EditorView.editable.of(!locked),
+				EditorState.readOnly.of(locked),
+			]),
+		});
+	});
+
+	$effect(() => {
+		const text = placeholder;
+		view?.dispatch({
+			effects: placeholderText.reconfigure(text ? placeholderExtension(text) : []),
+		});
+	});
+
+	$effect(() => {
+		void [id, ariaLabel];
+		view?.dispatch({
+			effects: attributes.reconfigure(EditorView.contentAttributes.of(contentAttributes())),
+		});
+	});
+
+	/** キャレットの画面座標。レイアウト前などで測れないときは入力欄の左上を使う。 */
+	function caretRect() {
+		const coords = view?.coordsAtPos(view.state.selection.main.head);
+		if (coords) return { left: coords.left, top: coords.top, bottom: coords.bottom };
+		const rect = (view?.dom ?? host).getBoundingClientRect();
+		return { left: rect.left, top: rect.top, bottom: rect.top + 27 };
+	}
 
 	function shiftedSelections<T extends { start: number; end: number }>(
 		selections: T[],
@@ -142,8 +331,8 @@
 		let frame: number | undefined;
 		const updatePosition = () => {
 			frame = undefined;
-			const rect = textarea.getBoundingClientRect();
-			const caret = textareaCaretRect(textarea);
+			const rect = (view?.dom ?? host).getBoundingClientRect();
+			const caret = caretRect();
 			const margin = 12;
 			const gap = 4;
 			const width = Math.min(360, rect.width, Math.max(0, window.innerWidth - margin * 2));
@@ -178,9 +367,9 @@
 	});
 
 	function detectToken() {
-		onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd);
-		const caret = textarea.selectionStart;
-		const next = detectComposerSuggestionToken(value, caret, {
+		onselectionchange?.(selectionStart() !== selectionEnd());
+		const caret = view?.state.selection.main.head ?? value.length;
+		const next = detectComposerSuggestionToken(view?.state.doc.toString() ?? value, caret, {
 			mentions: mentionSuggestionsEnabled,
 			channels: channelSuggestionsEnabled,
 		});
@@ -252,17 +441,14 @@
 		mentions = shiftForInsertions(mentions);
 		channels = shiftForInsertions(channels);
 		emojis = shiftForInsertions(emojis);
-		value = next;
+		setText(next, selectionStart, selectionEnd);
 		close();
-		requestAnimationFrame(() => {
-			textarea.focus();
-			textarea.setSelectionRange(selectionStart, selectionEnd);
-		});
+		focusEditor();
 	}
 
 	function applyInlineFormat(prefix: string, suffix: string, placeholder: string) {
-		const start = textarea.selectionStart;
-		const end = textarea.selectionEnd;
+		const start = selectionStart();
+		const end = selectionEnd();
 		if (start === end) {
 			insertText(
 				[{ at: start, text: `${prefix}${placeholder}${suffix}` }],
@@ -282,8 +468,8 @@
 	}
 
 	function applyLineFormat(format: MarkdownFormat) {
-		const start = textarea.selectionStart;
-		const end = textarea.selectionEnd;
+		const start = selectionStart();
+		const end = selectionEnd();
 		const firstLineStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
 		const coveredEnd = end > start && value[end - 1] === '\n' ? end - 1 : end;
 		const lineStarts = [firstLineStart];
@@ -323,8 +509,8 @@
 	 */
 	export function insertAtCaret(text: string) {
 		if (disabled || !text) return;
-		const start = textarea.selectionStart;
-		const end = textarea.selectionEnd;
+		const start = selectionStart();
+		const end = selectionEnd();
 		// 選択範囲があるときは insertText では消せないので、先に本文から取り除く。
 		if (start !== end) {
 			value = `${value.slice(0, start)}${value.slice(end)}`;
@@ -353,7 +539,7 @@
 			insertAtCaret(emoji.normalize('NFC'));
 			return;
 		}
-		const start = textarea.selectionStart;
+		const start = selectionStart();
 		insertAtCaret(emoji.name);
 		emojis = [...emojis, { start, end: start + emoji.name.length, emoji }].sort(
 			(a, b) => a.start - b.start,
@@ -371,7 +557,7 @@
 	export function applyContentWarning() {
 		if (disabled) return;
 		const previous = value;
-		const result = wrapContentWarning(previous, textarea.selectionStart, textarea.selectionEnd);
+		const result = wrapContentWarning(previous, selectionStart(), selectionEnd());
 		if (result.text === previous) return;
 		const remap = <T extends { start: number; end: number }>(items: T[]) =>
 			items.map((item) => ({
@@ -381,13 +567,10 @@
 		mentions = remap(mentions);
 		channels = remap(channels);
 		emojis = remap(emojis);
-		value = result.text;
+		setText(result.text, result.selectionStart, result.selectionEnd);
 		close();
-		requestAnimationFrame(() => {
-			textarea.focus();
-			textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
-			onselectionchange?.(result.selectionStart !== result.selectionEnd);
-		});
+		focusEditor();
+		onselectionchange?.(result.selectionStart !== result.selectionEnd);
 	}
 
 	function choose(actor: ActorView) {
@@ -410,11 +593,9 @@
 		channels = shiftedSelections(channels, token.start, token.end, delta);
 		emojis = shiftedSelections(emojis, token.start, token.end, delta);
 		const caret = token.start + label.length + trailingSpace.length;
+		setText(value, caret);
 		close();
-		requestAnimationFrame(() => {
-			textarea.focus();
-			textarea.setSelectionRange(caret, caret);
-		});
+		focusEditor();
 	}
 
 	function chooseChannel(channel: ChannelView) {
@@ -440,11 +621,9 @@
 			},
 		].sort((a, b) => a.start - b.start);
 		const caret = token.start + label.length + trailingSpace.length;
+		setText(value, caret);
 		close();
-		requestAnimationFrame(() => {
-			textarea.focus();
-			textarea.setSelectionRange(caret, caret);
-		});
+		focusEditor();
 	}
 
 	function chooseEmoji(emoji: EmojiView) {
@@ -458,82 +637,68 @@
 			{ start: replacement.start, end: replacement.end, emoji },
 		].sort((a, b) => a.start - b.start);
 		const caret = replacement.end;
+		setText(value, caret);
 		close();
-		requestAnimationFrame(() => {
-			textarea.focus();
-			textarea.setSelectionRange(caret, caret);
-		});
+		focusEditor();
 	}
 
-	function handleKeydown(event: KeyboardEvent) {
-		// Ctrl/Cmd+Enter は投稿送信。メンション候補の Enter 確定より優先させる。
-		// IME 変換確定中（isComposing）は誤爆を避けるため無視する。
-		if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !event.isComposing) {
-			event.preventDefault();
-			onsubmit?.();
-			return;
-		}
-		if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.isComposing) {
-			const key = event.key.toLowerCase();
-			const format =
-				key === 'b' && !event.shiftKey
-					? 'bold'
-					: key === 'i' && !event.shiftKey
-						? 'italic'
-						: key === 's' && event.shiftKey
-							? 'strike'
-							: undefined;
-			if (format) {
-				event.preventDefault();
-				applyMarkdown(format);
-				return;
-			}
-		}
-		const suggestionCount = activeSuggest.items.length;
-		if (!suggestionCount || !token) {
-			if (event.key === 'Escape') close();
-			return;
-		}
-		if (event.isComposing || event.keyCode === 229) return;
+	function runFormat(format: MarkdownFormat) {
+		applyMarkdown(format);
+		return true;
+	}
 
+	// 候補が出ている間だけ、矢印・Enter・Tab・Esc を候補の操作に使う。
+	// 変換中（IME）のキー入力は CodeMirror がここへ渡さない。
+	function suggestionsOpen() {
+		if (!token || !activeSuggest.items.length) return false;
 		// 応答待ちの絞り込みで候補が減ると activeIndex が末尾を追い越すことがある。
-		activeIndex = Math.min(activeIndex, suggestionCount - 1);
-		if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-			event.preventDefault();
-			const direction = event.key === 'ArrowDown' ? 1 : -1;
-			activeIndex = (activeIndex + direction + suggestionCount) % suggestionCount;
-		} else if (event.key === 'Enter' || event.key === 'Tab') {
-			event.preventDefault();
-			if (token.kind === 'channel') chooseChannel(channelSuggest.items[activeIndex]);
-			else if (token.kind === 'emoji') chooseEmoji(emojiSuggest.items[activeIndex]);
-			else choose(suggest.items[activeIndex]);
-		} else if (event.key === 'Escape') {
-			event.preventDefault();
-			close();
+		activeIndex = Math.min(activeIndex, activeSuggest.items.length - 1);
+		return true;
+	}
+
+	function moveSuggestion(direction: 1 | -1) {
+		if (!suggestionsOpen()) return false;
+		const count = activeSuggest.items.length;
+		activeIndex = (activeIndex + direction + count) % count;
+		return true;
+	}
+
+	function chooseActive() {
+		if (!suggestionsOpen() || !token) return false;
+		if (token.kind === 'channel') chooseChannel(channelSuggest.items[activeIndex]);
+		else if (token.kind === 'emoji') chooseEmoji(emojiSuggest.items[activeIndex]);
+		else choose(suggest.items[activeIndex]);
+		return true;
+	}
+
+	const LIST_ITEM = /^(?:([-*])|(\d{1,9})([.)]))[ \t]+/;
+
+	/** 箇条書きの行末で Enter を押すと次の項目を始め、空の項目で押すと箇条書きを終える。 */
+	function continueList(target: EditorView) {
+		const { state } = target;
+		const range = state.selection.main;
+		const line = state.doc.lineAt(range.head);
+		if (!range.empty || range.head !== line.to) return false;
+		const item = LIST_ITEM.exec(line.text);
+		if (!item) return false;
+		if (item[0].length === line.text.length) {
+			target.dispatch({ changes: { from: line.from, to: line.to }, userEvent: 'delete' });
+			return true;
 		}
+		const marker = item[1] ? `${item[1]} ` : `${Number(item[2]) + 1}${item[3]} `;
+		target.dispatch(state.replaceSelection(`\n${marker}`), { userEvent: 'input' });
+		return true;
+	}
+
+	function closeSuggestions() {
+		if (!token) return false;
+		close();
+		return true;
 	}
 </script>
 
 <div class="mention-textarea">
-	<textarea
-		bind:this={textarea}
-		{id}
-		{placeholder}
-		{disabled}
-		aria-label={ariaLabel}
-		{value}
-		oninput={handleInput}
-		oncompositionstart={() => oncompositionchange?.(true)}
-		oncompositionend={() => oncompositionchange?.(false)}
-		onclick={detectToken}
-		onselect={() => onselectionchange?.(textarea.selectionStart !== textarea.selectionEnd)}
-		onkeyup={(event) => {
-			if (!['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(event.key)) detectToken();
-		}}
-		onkeydown={handleKeydown}
-		{onpaste}
-		onblur={() => setTimeout(close, 150)}
-	></textarea>
+	<div bind:this={host} class="composer-input-host"></div>
 	{#if token}
 		<div
 			bind:this={suggestionLayer}

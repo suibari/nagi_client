@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractTitle, parseRichText, stripMarkdown } from './markdown';
+import { annotateMarkdownSource, extractTitle, parseRichText, stripMarkdown } from './markdown';
 import { parsePostText } from './facets';
 
 const flatten = (runs: Array<{ text: string }>) => runs.map((run) => run.text).join('');
@@ -117,5 +117,47 @@ describe('parseRichText', () => {
 				.map((run) => run.text)
 				.join(''),
 		).toBe('隠す');
+	});
+
+	it('turns blank lines between blocks into a gap instead of paragraph text', () => {
+		const blocks = parseRichText('やること\n- 洗濯\n- 買い物\n\n終わったら散歩\n\n\n# 次');
+		expect(blocks.map((block) => [block.type, block.gap])).toEqual([
+			['p', undefined],
+			['ul', undefined],
+			['p', 1],
+			['h1', 2],
+		]);
+		const paragraph = blocks[2];
+		expect('runs' in paragraph && flatten(paragraph.runs)).toBe('終わったら散歩');
+	});
+
+	it('keeps blank lines inside a paragraph as text', () => {
+		const [block] = parseRichText('一行目\n\n三行目');
+		expect(block.gap).toBeUndefined();
+		expect('runs' in block && flatten(block.runs)).toBe('一行目\n\n三行目');
+	});
+
+	it('does not add a gap before the first block', () => {
+		expect(parseRichText('\n\n- a')[0].gap).toBeUndefined();
+	});
+});
+
+describe('annotateMarkdownSource', () => {
+	it('keeps syntax characters in place and marks the rest', () => {
+		const source = '## 見出し\n**太字**と~~消し~~\n- 項目';
+		const { lines, marks } = annotateMarkdownSource(source);
+		expect(lines).toEqual(['h2', 'p', 'ul']);
+		const at = (text: string) => marks[source.indexOf(text)];
+		expect(at('## ')).toBeNull();
+		expect(at('見出し')).toEqual([]);
+		expect(at('**')).toBeNull();
+		expect(at('太字')).toEqual(['bold']);
+		expect(at('消し')).toEqual(['strike']);
+		expect(at('- ')).toBeNull();
+		expect(at('項目')).toEqual([]);
+	});
+
+	it('leaves blank lines between blocks without a block kind', () => {
+		expect(annotateMarkdownSource('a\n\n- b').lines).toEqual(['p', undefined, 'ul']);
 	});
 });

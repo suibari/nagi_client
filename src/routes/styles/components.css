@@ -17,8 +17,9 @@
 	gap: 8px;
 	min-width: 0;
 }
-.composer:not(.rich) .mention-textarea textarea {
+.composer:not(.rich) .mention-textarea .composer-input {
 	min-height: 100px;
+	max-height: min(420px, 50dvh);
 }
 /* 返信・引用ターゲット表示 (他人のコンテンツ) */
 .composer-target-box {
@@ -95,27 +96,7 @@
 	flex: 1;
 	min-height: 0;
 }
-.composer.rich .composer-editor-panes {
-	display: flex;
-	flex-direction: column;
-	flex: 1;
-	min-height: 0;
-}
-.composer.rich .composer-editor-panes.realtime-preview {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-	gap: 12px;
-}
-.composer.rich .composer-editor-panes.realtime-preview .composer-write {
-	order: 0;
-	min-width: 0;
-}
-.composer.rich .composer-editor-panes.realtime-preview .composer-preview {
-	order: 1;
-	min-width: 0;
-}
-/* hidden（プレビュー中）の入力欄まで display で復活させないこと。 */
-.composer.rich .composer-write:not([hidden]) {
+.composer.rich .composer-write {
 	display: flex;
 	flex-direction: column;
 	flex: 1;
@@ -127,16 +108,10 @@
 	flex: 1;
 	min-height: 140px;
 }
-.composer.rich .mention-textarea textarea {
+.composer.rich .mention-textarea .composer-input {
+	/* 高さはパネルが決め、本文は入力欄の中でスクロールする。 */
 	flex: 1;
 	min-height: 140px;
-	/* 高さはパネルが決めるので、つまんで伸ばす操作は無効にする。 */
-	resize: none;
-}
-.composer.rich .composer-preview {
-	flex: 1;
-	min-height: 0;
-	overflow-y: auto;
 }
 .composer-embeds {
 	min-width: 0;
@@ -311,20 +286,133 @@
 .welcome-about:hover {
 	text-decoration: underline;
 }
-.composer textarea {
+.composer .mention-textarea .composer-input {
 	border: 1px solid var(--line);
 	border-radius: var(--r-md);
-	resize: vertical;
 	width: 100%;
 	min-height: 168px;
-	padding: 12px 14px;
-	outline: none;
-	font-size: 16px;
 	background: var(--surface-2);
 	color: var(--text);
 }
 .mention-textarea {
 	position: relative;
+}
+/*
+	入力欄（ComposerInput の CodeMirror）。投稿の本文（.post-text）と同じ文字の大きさ・
+	行の高さ・字詰めで組み、見出しの大きさや箇条書きの「•」、引用の罫線まで投稿後の
+	見た目に揃える。記法の文字（`**` や `## `）は薄く残す。
+	CodeMirror が実行時に差し込む既定のスタイルに勝つよう、.mention-textarea から指定する。
+*/
+.composer-input-host {
+	display: contents;
+}
+.mention-textarea .composer-input {
+	color: var(--text);
+}
+.mention-textarea .composer-input.cm-focused {
+	outline: none;
+}
+.mention-textarea .composer-input .cm-scroller {
+	font-family: inherit;
+	line-height: 1.8;
+	overscroll-behavior: contain;
+}
+.mention-textarea .composer-input .cm-content {
+	padding: 12px 14px;
+	font-size: 15px;
+	line-height: 1.8;
+	caret-color: var(--text);
+}
+.mention-textarea .composer-input .cm-content.cm-lineWrapping {
+	word-break: auto-phrase;
+	overflow-wrap: anywhere;
+}
+/* iOS Safari は 16px 未満の入力欄にフォーカスすると画面を拡大してしまう。 */
+@supports (-webkit-touch-callout: none) {
+	.mention-textarea .composer-input .cm-content {
+		font-size: 16px;
+	}
+}
+/*
+	ポストモーダルの入力欄は、タイムラインの吹き出し（.bubble: 最大 34em、左右の padding 14px
+	と枠 1px）と同じ幅で折り返す。欄そのものは広いまま、本文の列だけ幅を合わせる。
+*/
+.composer .mention-textarea .composer-input .cm-content {
+	max-width: calc(34rem - 2px);
+}
+.mention-textarea .composer-input .cm-line {
+	padding: 0;
+}
+.mention-textarea .composer-input .cm-placeholder {
+	color: var(--text-faint);
+}
+.mention-textarea .composer-input .cm-line[data-block^='h'] {
+	font-weight: 700;
+	line-height: 1.5;
+}
+.mention-textarea .composer-input .cm-line[data-block='h1'] {
+	font-size: 20px;
+}
+.mention-textarea .composer-input .cm-line[data-block='h2'] {
+	font-size: 18px;
+}
+.mention-textarea .composer-input .cm-line[data-block='h3'] {
+	font-size: 16px;
+}
+.mention-textarea .composer-input .cm-line[data-block='quote'] {
+	padding-left: 0.7em;
+	border-left: 2px solid var(--line-strong);
+	color: var(--text-sub);
+}
+/* 投稿の ul/ol と同じ字下げ。マーカーは左の余白へぶら下げる。 */
+.mention-textarea .composer-input .cm-line[data-block='ul'],
+.mention-textarea .composer-input .cm-line[data-block='ol'] {
+	padding-left: 1.35em;
+	text-indent: -1.35em;
+}
+.mention-textarea .composer-input .md-bullet,
+.mention-textarea .composer-input .md-list-marker {
+	display: inline-block;
+	min-width: 1.35em;
+	text-indent: 0;
+	color: var(--text-mute);
+}
+.mention-textarea .composer-input .md-bullet {
+	padding-left: 0.35em;
+}
+.mention-textarea .composer-input .md-syntax {
+	color: var(--text-faint);
+	font-weight: 400;
+}
+.mention-textarea .composer-input .md-bold {
+	font-weight: 700;
+}
+.mention-textarea .composer-input .md-italic {
+	font-style: italic;
+}
+.mention-textarea .composer-input .md-strike {
+	text-decoration: line-through;
+}
+.mention-textarea .composer-input .md-code {
+	padding: 1px 4px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.9em;
+}
+.mention-textarea .composer-input .md-link {
+	color: var(--accent-strong);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.mention-textarea .composer-input .md-emoji {
+	border-radius: 4px;
+	background: var(--accent-softer);
+	color: var(--accent-strong);
+}
+.mention-textarea .composer-input .md-cw {
+	border-radius: 2px;
+	background: color-mix(in srgb, var(--text-muted) 22%, transparent);
 }
 .mention-suggestions {
 	position: absolute;
@@ -1309,17 +1397,19 @@
 	font-weight: 700;
 	color: var(--text-muted);
 }
-.post-composer textarea,
-.inline-edit textarea {
-	display: block;
+.post-composer .mention-textarea .composer-input,
+.inline-edit .mention-textarea .composer-input {
 	width: 100%;
 	min-height: 82px;
-	resize: vertical;
-	padding: 10px;
+	max-height: min(420px, 50dvh);
 	color: var(--text);
 	background: var(--bg-raised);
 	border: 1px solid var(--line);
 	border-radius: var(--radius-m);
+}
+.post-composer .mention-textarea .composer-input .cm-content,
+.inline-edit .mention-textarea .composer-input .cm-content {
+	padding: 10px;
 }
 .post-composer-foot {
 	display: flex;
@@ -1518,8 +1608,13 @@
 .post-text p {
 	margin: 0;
 }
-.post-text > * + * {
-	margin-top: 1.1em;
+/*
+	ブロックの間には余白を足さず、入力した空行をそのまま 1 行ぶんの余白として見せる
+	（RichText の .post-gap）。入力欄の見た目と投稿後の行の並びを揃えるため。
+*/
+.post-text .post-gap {
+	height: calc(var(--gap, 1) * 1.8em);
+	height: calc(var(--gap, 1) * 1lh);
 }
 .post-text > :first-child {
 	margin-top: 0;
@@ -1588,14 +1683,11 @@
 .post-text li {
 	margin: 0;
 }
-.post-text li + li {
-	margin-top: 0.4em;
-}
 .post-text li::marker {
 	color: var(--text-mute);
 }
 .post-text blockquote {
-	margin: 8px 0;
+	margin: 0;
 	padding-left: 0.7em;
 	border-left: 2px solid var(--line-strong);
 	color: var(--text-sub);

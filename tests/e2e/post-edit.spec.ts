@@ -81,7 +81,7 @@ test('投稿編集でリンクカードを張り替えて保存できる', async
 	const editor = fixture.locator('.inline-edit');
 	await expect(editor.getByText('変更前のリンクカード')).toBeVisible();
 	await editor.getByRole('button', { name: 'リンクカードを削除' }).click();
-	await editor.locator('textarea').fill(`変更後 ${newUrl}`);
+	await editor.locator('.cm-content').fill(`変更後 ${newUrl}`);
 	await expect(editor.getByText('変更後のリンクカード')).toBeVisible();
 
 	await editor.getByRole('button', { name: '投稿する' }).click();

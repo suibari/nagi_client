@@ -19,8 +19,10 @@
 	data-block は元の markdown のブロック種別。見出しは投稿内では h3〜h5 に落として
 	いる（ページ見出しとの階層衝突を避けるため）ので、これが無いと「# 見出し」由来か
 	「### 見出し」由来かを CSS から区別できない。記事タイトルの装飾で使う。
+	.post-gap は入力にあったブロック間の空行ぶんの余白（.post-text がその行数だけ空ける）。
 -->
 {#each blocks as block}
+	{#if block.gap}<div class="post-gap" style:--gap={block.gap} aria-hidden="true"></div>{/if}
 	{#if block.type === 'h1'}
 		<h3 data-block="h1"><InlineRuns runs={block.runs} {warningState} /></h3>
 	{:else if block.type === 'h2'}

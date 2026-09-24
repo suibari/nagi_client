@@ -13,10 +13,12 @@ export type InlineRun = {
 	contentWarningStart?: boolean;
 	bluemoji?: EmojiView;
 };
-export type Block =
+/** gap は直前のブロックとの間にあった空行の数（無ければ省略）。 */
+export type Block = { gap?: number } & (
 	| { type: 'p' | 'h1' | 'h2' | 'h3' | 'quote'; runs: InlineRun[] }
 	| { type: 'ul'; items: InlineRun[][] }
-	| { type: 'ol'; items: InlineRun[][]; start: number };
+	| { type: 'ol'; items: InlineRun[][]; start: number }
+);
 
 type FacetRange = {
 	start: number;
@@ -188,26 +190,21 @@ function findClosing(text: string, from: number, to: number, delim: string) {
 	return -1;
 }
 
-function scanInline(
-	piece: Piece,
-	from: number,
-	to: number,
-	marks: Set<Mark>,
-	ranges: FacetRange[],
-	out: InlineRun[],
-	contentWarning?: { start: number; end: number },
-) {
+/** 表示される文字の範囲（piece 上の位置）と、その範囲に掛かる装飾を受け取る。 */
+type EmitRange = (from: number, to: number, marks: Set<Mark>) => void;
+
+function scanInline(piece: Piece, from: number, to: number, marks: Set<Mark>, emit: EmitRange) {
 	const { text } = piece;
 	let plain = from;
 	const flush = (end: number) => {
-		if (end > plain) pushRuns(out, piece, plain, end, marks, ranges, contentWarning);
+		if (end > plain) emit(plain, end, marks);
 	};
 	let i = from;
 	while (i < to) {
 		const char = text[i];
 		if (char === '\\' && i + 1 < to && ESCAPABLE.has(text[i + 1])) {
 			flush(i);
-			pushRuns(out, piece, i + 1, i + 2, marks, ranges, contentWarning);
+			emit(i + 1, i + 2, marks);
 			i += 2;
 			plain = i;
 			continue;
@@ -217,15 +214,7 @@ function scanInline(
 			if (close !== -1) {
 				flush(i);
 				// コード内では他の記法を解釈しない
-				pushRuns(
-					out,
-					piece,
-					i + 1,
-					close,
-					new Set<Mark>([...marks, 'code']),
-					ranges,
-					contentWarning,
-				);
+				emit(i + 1, close, new Set<Mark>([...marks, 'code']));
 				i = close + 1;
 				plain = i;
 				continue;
@@ -249,15 +238,7 @@ function scanInline(
 				const close = findClosing(text, i + delim[0].length, to, delim[0]);
 				if (close !== -1) {
 					flush(i);
-					scanInline(
-						piece,
-						i + delim[0].length,
-						close,
-						new Set<Mark>([...marks, delim[1]]),
-						ranges,
-						out,
-						contentWarning,
-					);
+					scanInline(piece, i + delim[0].length, close, new Set<Mark>([...marks, delim[1]]), emit);
 					i = close + delim[0].length;
 					plain = i;
 					continue;
@@ -275,7 +256,9 @@ function inlineRuns(
 	contentWarning?: { start: number; end: number },
 ): InlineRun[] {
 	const out: InlineRun[] = [];
-	scanInline(piece, 0, piece.text.length, new Set(), ranges, out, contentWarning);
+	scanInline(piece, 0, piece.text.length, new Set(), (from, to, marks) =>
+		pushRuns(out, piece, from, to, marks, ranges, contentWarning),
+	);
 	// エスケープ等で分断された、装飾もリンクも同じ run を最後にまとめる
 	return out.reduce<InlineRun[]>((merged, run) => {
 		const last = merged[merged.length - 1];
@@ -316,14 +299,21 @@ const QUOTE = /^>[ \t]?/;
 const BULLET = /^[-*][ \t]+(?=\S)/;
 const ORDERED = /^(\d{1,9})[.)][ \t]+(?=\S)/;
 
-export function parseRichText(
-	source: string,
-	facets: Facet[] = [],
-	contentWarning?: { start: number; end: number },
-): Block[] {
-	const ranges = facetRanges(source, facets);
-	const blocks: Block[] = [];
-	const lines: Array<{ start: number; end: number }> = [];
+type LineRange = { start: number; end: number };
+/**
+ * 行単位で切り出したブロック。body / items は記法マーカーを除いた本文の範囲。
+ * gap は直前のブロックとの間にあった空行の数で、表示ではその行数ぶんの余白にする。
+ */
+type SourceBlock = { gap: number } & (
+	| { type: 'p' | 'h1' | 'h2' | 'h3' | 'quote'; body: LineRange[] }
+	| { type: 'ul'; items: LineRange[] }
+	| { type: 'ol'; items: LineRange[]; start: number }
+);
+
+const isBlank = (line: string) => !line.trim();
+
+function splitBlocks(source: string): SourceBlock[] {
+	const lines: LineRange[] = [];
 	for (let offset = 0; offset <= source.length;) {
 		const next = source.indexOf('\n', offset);
 		const end = next === -1 ? source.length : next;
@@ -332,25 +322,35 @@ export function parseRichText(
 		offset = next + 1;
 	}
 
-	const runs = (list: Array<{ start: number; end: number }>) =>
-		inlineRuns(toPiece(source, list), ranges, contentWarning);
-
+	const blocks: SourceBlock[] = [];
+	// ブロックの境目にある空行は段落へ含めず、次のブロックの gap として数える。
+	// 段落に含めると pre-wrap の空行とブロック間の余白が二重になり、
+	// 箇条書きの直後だけ間が大きく空いてしまう。
+	let gap = 0;
 	for (let index = 0; index < lines.length;) {
 		const line = lines[index];
 		const raw = source.slice(line.start, line.end);
+
+		if (isBlank(raw)) {
+			gap++;
+			index++;
+			continue;
+		}
 
 		const heading = HEADING.exec(raw);
 		if (heading) {
 			blocks.push({
 				type: `h${heading[1].length}` as 'h1' | 'h2' | 'h3',
-				runs: runs([{ start: line.start + heading[0].length, end: line.end }]),
+				body: [{ start: line.start + heading[0].length, end: line.end }],
+				gap,
 			});
+			gap = 0;
 			index++;
 			continue;
 		}
 
 		if (QUOTE.test(raw)) {
-			const body: Array<{ start: number; end: number }> = [];
+			const body: LineRange[] = [];
 			while (index < lines.length) {
 				const current = lines[index];
 				const marker = QUOTE.exec(source.slice(current.start, current.end));
@@ -358,29 +358,31 @@ export function parseRichText(
 				body.push({ start: current.start + marker[0].length, end: current.end });
 				index++;
 			}
-			blocks.push({ type: 'quote', runs: runs(body) });
+			blocks.push({ type: 'quote', body, gap });
+			gap = 0;
 			continue;
 		}
 
 		const bullet = BULLET.exec(raw);
 		const ordered = ORDERED.exec(raw);
 		if (bullet || ordered) {
-			const items: InlineRun[][] = [];
+			const items: LineRange[] = [];
 			const pattern = bullet ? BULLET : ORDERED;
 			while (index < lines.length) {
 				const current = lines[index];
 				const marker = pattern.exec(source.slice(current.start, current.end));
 				if (!marker) break;
-				items.push(runs([{ start: current.start + marker[0].length, end: current.end }]));
+				items.push({ start: current.start + marker[0].length, end: current.end });
 				index++;
 			}
-			if (ordered) blocks.push({ type: 'ol', items, start: Number(ordered[1]) });
-			else blocks.push({ type: 'ul', items });
+			if (ordered) blocks.push({ type: 'ol', items, start: Number(ordered[1]), gap });
+			else blocks.push({ type: 'ul', items, gap });
+			gap = 0;
 			continue;
 		}
 
 		// それ以外はブロック記法が現れるまでを 1 段落にまとめ、改行は pre-wrap に任せる
-		const body: Array<{ start: number; end: number }> = [];
+		const body: LineRange[] = [];
 		while (index < lines.length) {
 			const current = lines[index];
 			const text = source.slice(current.start, current.end);
@@ -392,14 +394,49 @@ export function parseRichText(
 			body.push(current);
 			index++;
 		}
-		blocks.push({ type: 'p', runs: runs(body) });
+		// 段落末尾の空行は次のブロックとの間の余白として扱う
+		let trailing = 0;
+		while (body.length > 1 && isBlank(source.slice(body.at(-1)!.start, body.at(-1)!.end))) {
+			body.pop();
+			trailing++;
+		}
+		blocks.push({ type: 'p', body, gap });
+		gap = trailing;
+	}
+	return blocks;
+}
+
+export function parseRichText(
+	source: string,
+	facets: Facet[] = [],
+	contentWarning?: { start: number; end: number },
+): Block[] {
+	const ranges = facetRanges(source, facets);
+	const runs = (list: LineRange[]) => inlineRuns(toPiece(source, list), ranges, contentWarning);
+
+	const blocks: Block[] = [];
+	// 表示されないブロック（中身が空の段落など）の余白は、次に表示するブロックへ持ち越す
+	let carried = 0;
+	for (const block of splitBlocks(source)) {
+		const gap = carried + block.gap;
+		const parsed: Block =
+			block.type === 'ul'
+				? { type: 'ul', items: block.items.map((item) => runs([item])) }
+				: block.type === 'ol'
+					? { type: 'ol', items: block.items.map((item) => runs([item])), start: block.start }
+					: { type: block.type, runs: runs(block.body) };
+		if ('runs' in parsed ? !parsed.runs.length : !parsed.items.length) {
+			carried = gap;
+			continue;
+		}
+		carried = 0;
+		// 先頭のブロックの前の空行は余白にしない
+		if (gap && blocks.length) parsed.gap = gap;
+		blocks.push(parsed);
 	}
 
-	const visibleBlocks = blocks.filter((block) =>
-		'runs' in block ? block.runs.length : block.items.length,
-	);
 	let foundWarning = false;
-	for (const block of visibleBlocks) {
+	for (const block of blocks) {
 		const lists = 'runs' in block ? [block.runs] : block.items;
 		for (const list of lists) {
 			for (const run of list) {
@@ -409,7 +446,41 @@ export function parseRichText(
 			}
 		}
 	}
-	return visibleBlocks;
+	return blocks;
+}
+
+/**
+ * 入力欄をその場で装飾するための注釈。parseRichText と同じ規則で解析し、記法の文字を
+ * 消さずに位置を残す。
+ * - lines: 各行のブロック種別（ブロックの境目の空行は undefined）
+ * - marks: 各文字に掛かる装飾。null は表示で消える記法の文字（`**` や `## ` など）
+ */
+export type MarkdownSourceAnnotation = {
+	lines: Array<Block['type'] | undefined>;
+	marks: Array<Mark[] | null>;
+};
+
+export function annotateMarkdownSource(source: string): MarkdownSourceAnnotation {
+	const marks: Array<Mark[] | null> = new Array(source.length).fill(null);
+	const lineOf: number[] = [];
+	let lineCount = 1;
+	for (let i = 0; i < source.length; i++) {
+		lineOf.push(lineCount - 1);
+		if (source[i] === '\n') lineCount++;
+	}
+	const lines: Array<Block['type'] | undefined> = new Array(lineCount).fill(undefined);
+	for (const block of splitBlocks(source)) {
+		const groups = 'body' in block ? [block.body] : block.items.map((item) => [item]);
+		for (const group of groups) {
+			for (const range of group) lines[lineOf[range.start] ?? lineCount - 1] = block.type;
+			const piece = toPiece(source, group);
+			scanInline(piece, 0, piece.text.length, new Set(), (from, to, active) => {
+				const list = [...active];
+				for (let i = from; i < to; i++) if (piece.map[i] >= 0) marks[piece.map[i]] = list;
+			});
+		}
+	}
+	return { lines, marks };
 }
 
 /**

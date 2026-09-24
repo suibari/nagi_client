@@ -792,7 +792,6 @@
 				contentWarningLabelsEnabled={!kossori}
 				bind:selfLabels
 				{mode}
-				realtimePreviewEnabled
 				onsubmit={() => submit()}
 				onpaste={(event) => {
 					// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
