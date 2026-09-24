@@ -56,6 +56,10 @@
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
 		{
+			"source": "/radio",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+		},
+		{
 			"source": "/search",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
@@ -99,6 +103,7 @@
 		{ "source": "/oauth/:path*", "destination": "/200" },
 		{ "source": "/onboarding", "destination": "/200" },
 		{ "source": "/profile/:path*", "destination": "/200" },
+		{ "source": "/radio", "destination": "/200" },
 		{ "source": "/search", "destination": "/200" },
 		{ "source": "/settings/:path*", "destination": "/200" },
 		{ "source": "/thread/:path*", "destination": "/200" }

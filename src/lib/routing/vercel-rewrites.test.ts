@@ -14,7 +14,7 @@ import { SITEMAP_ROUTES } from '$lib/seo/sitemap';
  *
  * - `'all'`  … 実体のHTMLが必ず出る（`/about` など）。rewrite は不要
  * - `'entries'` … `entries()` が列挙した分だけHTMLが出る（`/news/[rkey]`）。
- *                 **rewrite もヘッダも付けてはいけない** —— 詳細は下のテスト参照
+ *                 原則 rewrite 不要。未生成ブログだけ noindex を返す API へフォールバックする
  * - `false`  … 常に 200.html の殻。rewrite と noindex ヘッダの両方が要る
  */
 
@@ -100,20 +100,21 @@ describe('vercel SPA rewrites', () => {
 		expect(indexable).toEqual([]);
 	});
 
-	it('never sends an entries() route to the shell or marks it noindex', () => {
-		// ここが逆向きのアサート。entries() ルートに…
-		// - rewrite を足すと、まだビルドされていないURLが「中身の無い殻」として配られる。
-		//   殻の <head> には robots メタも <title> も無い（ssr:false で生成されるため）ので、
-		//   それは索引可能な空ページになる
-		// - noindex ヘッダを足すと、ヘッダはファイルシステムより先に評価されるので、
-		//   プリレンダ済みの記事ページまで巻き込んで索引が全滅する
-		// どちらも壊れ方が静かなので、両方をテストで塞ぐ。
+	it('keeps prerendered entries indexable and only permits the noindex blog fallback', () => {
+		// Vercel は既存 HTML を rewrites より優先する。未生成ブログは直リンクを
+		// 維持するため /api/spa へ送り、API の応答だけ noindex にする（api/spa.test.ts）。
+		// /200 への直接転送は索引可能な空ページになるため許可しない。
+		// パス全体への noindex ヘッダも、生成済み記事を巻き込むので許可しない。
 		for (const { path } of entryRoutes) {
 			const url = concrete(path);
 			expect(
-				rewriteMatchers.filter((m) => m.test(url)),
-				`${path} must not be rewritten to the SPA shell`,
-			).toEqual([]);
+				vercel.rewrites.filter((r) => matcher(r.source).test(url)),
+				`${path} must only use an explicitly supported noindex fallback`,
+			).toEqual(
+				path === '/blog/[did]/[rkey]'
+					? [{ source: '/blog/:did/:rkey', destination: '/api/spa?did=:did' }]
+					: [],
+			);
 			expect(
 				noindexMatchers.filter((m) => m.test(url)),
 				`${path} must not carry an X-Robots-Tag`,
