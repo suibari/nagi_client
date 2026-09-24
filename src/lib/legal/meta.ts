@@ -1,9 +1,9 @@
 /**
  * 利用規約・プライバシーポリシーの最終更新日。
  * 4ファイル（Terms/Privacy の ja/en）に同じ日付を散らすと必ずずれるので1箇所に置く。
- * 本文を実質的に変更したときだけ更新すること。static/sitemap.xml の lastmod も合わせる。
+ * 本文を実質的に変更したときだけ更新すること。動的サイトマップもこの値を使う。
  */
-export const LEGAL_LAST_UPDATED = '2026-09-16';
+export const LEGAL_LAST_UPDATED = '2026-09-23';
 
 const [year, month, day] = LEGAL_LAST_UPDATED.split('-').map(Number);
 

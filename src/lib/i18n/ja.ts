@@ -55,6 +55,7 @@ export const ja = {
 	navNotifications: '通知',
 	navSettings: '設定',
 	navDiary: '日記',
+	navRadio: 'ラジオ',
 	navMenu: 'メニュー',
 	mainNavAria: 'メインナビゲーション',
 	feedTabsAria: 'フィード切り替え',
@@ -339,6 +340,15 @@ export const ja = {
 	linkCardLoading: 'リンク情報を取得中…',
 	linkCardRemove: 'リンクカードを削除',
 	youtubePlay: (p: { title: string }) => `${p.title}を再生`,
+	radioTitle: 'botたんラジオ',
+	radioDescription: '前回のラジオ以降の投稿から、botたんがあなたに合う一曲を選びます。新しい投稿がないときは、過去の話を思い出して選びます。過去のラジオもここで見れます。ラジオの内容は本人にだけ表示され、こっそり投稿の内容を公開することはありません。',
+	radioOpen: '新しいbotたんラジオを開く',
+	radioOpenYoutube: 'YouTubeで開く',
+	radioSource: '曲の情報源',
+	radioUnreadBadgeAria: '未読のbotたんラジオがあります',
+	radioHistoryEmpty: 'まだ届いたラジオはありません。',
+	radioHistoryMore: '過去のラジオをもっと見る',
+	radioHistoryError: 'ラジオを読み込めませんでした。もう一度お試しください。',
 
 	// post modal / 投稿範囲
 	postFabLabel: '投稿する',
@@ -911,11 +921,11 @@ export const ja = {
 	pushRetry: 'もう一度試す',
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
-	externalPublishingHelp:
-		'Blueskyへの同時投稿の設定と、ブログ公開についての案内です。',
+	externalPublishingHelp: 'Blueskyへの同時投稿の設定と、ブログ公開についての案内です。',
 	blueskyPublishingTitle: 'Blueskyにも投稿',
 	blogPublishingTitle: 'ブログとして公開',
-	blogPublishingHelp: 'ブログはNagiの基本機能です。ログインすると、ブログタブから長文記事を公開できます。',
+	blogPublishingHelp:
+		'ブログはNagiの基本機能です。ログインすると、ブログタブから長文記事を公開できます。',
 	externalPublishingDetails: '仕組みと注意点',
 	crosspostHelp:
 		'投稿欄に「Blueskyにも」ボタンを表示し、選んだ投稿だけをBlueskyへ同時投稿できます。スレッドへの返信は対象外です。',
@@ -1313,7 +1323,7 @@ export const ja = {
 	zenkatsuResultSkip: 'スキップ',
 	zenkatsuDevReset: '【開発】今日のぶんを消してもう一度',
 	zenkatsuDevResetDone: '消したよ。もう一度出せる',
-	navCards: '全肯定カード',
+	navCards: 'カードゲーム',
 	zenkatsuNotPlayedBadge: '未プレイ',
 	// ゼンカツ！（1日1回、お題に手持ちのカード1〜3枚で答える遊び）
 	zenkatsuTitle: 'ゼンカツ！',

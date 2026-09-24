@@ -37,6 +37,7 @@
 	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
+	import { radio } from '$lib/radio/radio.svelte';
 
 	let { children } = $props();
 	const seo = $derived(page.data.seo);
@@ -56,6 +57,14 @@
 	let pushSyncedDid: string | undefined;
 	let preferencesDid: string | undefined;
 	let guestCardClaimKey: string | undefined;
+	let radioDid: string | undefined;
+	$effect(() => {
+		const did = $oauthReady ? $session?.did : undefined;
+		if (radioDid === did) return;
+		radioDid = did;
+		if (did) void radio.refresh(did);
+		else radio.clear();
+	});
 	beforeNavigate(() => {
 		postTranslations.cancelPending();
 		// 画面を移ったら投稿の追従は打ち切る。移った先で急に画面が動くほうが戸惑う。
@@ -165,6 +174,9 @@
 		};
 	});
 	onMount(() => {
+		const radioTimer = window.setInterval(() => {
+			if ($session?.did && document.visibilityState === 'visible') void radio.refresh($session.did);
+		}, 2 * 60_000);
 		const stopZenkatsuNotice = startZenkatsuNotice();
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
@@ -190,6 +202,7 @@
 		window.addEventListener('online', repairPush);
 		document.addEventListener('visibilitychange', onVisibility);
 		return () => {
+			window.clearInterval(radioTimer);
 			stopZenkatsuNotice();
 			window.removeEventListener('online', repairPush);
 			document.removeEventListener('visibilitychange', onVisibility);
