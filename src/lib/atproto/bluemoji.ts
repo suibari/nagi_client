@@ -17,13 +17,27 @@ export const MAX_EMOJI_ORIGINAL_SIZE = 1_000_000;
 export const MAX_EMOJI_INPUT_SIZE = 5_000_000;
 export const EMOJI_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,32}$/;
 
+// 入力形式は Bluemoji の保存形式とは独立させる。
 export const SUPPORTED_EMOJI_TYPES = [
+	'image/jpeg',
+	'image/heic',
+	'image/heif',
 	'image/png',
 	'image/webp',
 	'image/gif',
 	'image/apng',
 	'application/lottie+zip',
 ] as const;
+export const EMOJI_FILE_ACCEPT = [
+	...SUPPORTED_EMOJI_TYPES,
+	'.jpg',
+	'.jpeg',
+	'.heic',
+	'.heif',
+	'.apng',
+	'.lottie',
+].join(',');
+
 /** blob の mimeType と formats_v0 のフィールド名の対応。 */
 const FORMAT_KEY: Record<string, string> = {
 	'image/png': 'png_128',
@@ -75,15 +89,61 @@ export const emojiFileType = (file: File): (typeof SUPPORTED_EMOJI_TYPES)[number
 	if (file.name.toLowerCase().endsWith('.apng')) return 'image/apng';
 	if (SUPPORTED_EMOJI_TYPES.includes(file.type as (typeof SUPPORTED_EMOJI_TYPES)[number]))
 		return file.type as (typeof SUPPORTED_EMOJI_TYPES)[number];
+	// Files 経由など MIME が空／汎用になる場合だけ拡張子で補う。
+	if (!file.type || file.type === 'application/octet-stream') {
+		const extension = file.name.split('.').pop()?.toLowerCase();
+		if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+		if (extension === 'heic') return 'image/heic';
+		if (extension === 'heif') return 'image/heif';
+	}
 	return undefined;
 };
+
+export const emojiNeedsPngConversion = (file: File) =>
+	['image/jpeg', 'image/heic', 'image/heif'].includes(emojiFileType(file) ?? '');
+
+const processedPhotos = new WeakMap<File, Promise<Blob>>();
+let photoQueue: Promise<unknown> = Promise.resolve();
+
+// プレビューと登録で同じ変換結果を使い、HEICを二重にデコードしない。
+export function processEmojiImage(file: File): Promise<Blob> {
+	if (!emojiNeedsPngConversion(file)) return processImage(file);
+	const cached = processedPhotos.get(file);
+	if (cached) return cached;
+	// まとめて選択した高解像度写真を同時展開しない。
+	const promise = photoQueue
+		.then(() => processImage(file))
+		.catch((error) => {
+			processedPhotos.delete(file);
+			throw error;
+		});
+	photoQueue = promise.catch(() => undefined);
+	processedPhotos.set(file, promise);
+	return promise;
+}
+
+async function decodeEmojiImage(file: File, type: string): Promise<ImageBitmap> {
+	try {
+		return await createImageBitmap(file);
+	} catch {
+		if (type === 'image/heic' || type === 'image/heif') {
+			try {
+				const { heicTo } = await import('heic-to/csp');
+				return await heicTo({ blob: file, type: 'bitmap' });
+			} catch {
+				throw new EmojiProcessingError('Could not decode image', 'compress');
+			}
+		}
+		throw new EmojiProcessingError('Could not decode image', 'compress');
+	}
+}
 
 /**
  * 絵文字用に画像を整える。アルファチャンネルは canvas も WebP も保持するので、
  * 透過PNGは透過のまま扱える。アニメーション（GIF/APNG）は canvas を通すと 1 コマ目に
  * 潰れてしまうので再エンコードせず、サイズ超過なら拒否する。
  */
-export async function processEmojiImage(file: File): Promise<Blob> {
+async function processImage(file: File): Promise<Blob> {
 	const type = emojiFileType(file);
 	if (!type) throw new EmojiProcessingError('Unsupported image type', 'type');
 	if (file.size > MAX_EMOJI_INPUT_SIZE)
@@ -99,11 +159,12 @@ export async function processEmojiImage(file: File): Promise<Blob> {
 		return file;
 	}
 
-	const bitmap = await createImageBitmap(file);
+	const bitmap = await decodeEmojiImage(file, type);
+	const convertToPng = emojiNeedsPngConversion(file);
 	const scale = Math.min(1, EMOJI_SIZE / Math.max(bitmap.width, bitmap.height));
 	// すでに 128px 以下で軽いなら再エンコードしない。非可逆WebPは透過の輪郭に
 	// にじみが出ることがあるので、元のPNG/WebPをそのまま使えるならその方がきれい。
-	if (scale === 1 && file.size <= MAX_EMOJI_BLOB_SIZE) {
+	if (!convertToPng && scale === 1 && file.size <= MAX_EMOJI_BLOB_SIZE) {
 		bitmap.close();
 		return file;
 	}
@@ -115,8 +176,17 @@ export async function processEmojiImage(file: File): Promise<Blob> {
 	}
 	canvas.width = Math.max(1, Math.round(bitmap.width * scale));
 	canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-	context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-	bitmap.close();
+	try {
+		context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+	} finally {
+		bitmap.close();
+	}
+	if (convertToPng) {
+		const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+		if (!png || png.type !== 'image/png' || png.size > MAX_EMOJI_BLOB_SIZE)
+			throw new EmojiProcessingError('Could not convert image', 'compress');
+		return png;
+	}
 	let output: Blob | null = null;
 	for (const quality of [0.9, 0.8, 0.7, 0.6, 0.5]) {
 		output = await canvasBlob(canvas, quality);

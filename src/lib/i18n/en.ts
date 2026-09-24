@@ -558,7 +558,7 @@ export const en: Messages = {
 	emojiSettingsNote:
 		'Your emoji are stored in your own PDS as Bluemoji (blue.moji.collection.item), and everyone on Nagi can react with them.',
 	emojiUploadNote:
-		'PNG, WebP, GIF, APNG, or Lottie. Still images are resized to 128px; animations must fit the Bluemoji limits.',
+		'JPEG, HEIC/HEIF, PNG, WebP, GIF, APNG, or Lottie (up to 5MB input). Still images are resized to 128px; JPEG and HEIC/HEIF are converted to PNG; animations must fit the Bluemoji limits.',
 	emojiSingleTitle: 'Add one emoji',
 	emojiNameLabel: 'Emoji name (letters, numbers, _ and -)',
 	emojiAltLabel: 'Description (optional)',
@@ -569,7 +569,7 @@ export const en: Messages = {
 	emojiMineEmpty: "You haven't added any emoji yet.",
 	emojiNameInvalid: 'Use 1–32 letters, numbers, underscores, or hyphens',
 	emojiNameTaken: 'You already have an emoji with this name',
-	emojiTypeError: 'Please choose a PNG, WebP, GIF, or APNG image',
+	emojiTypeError: 'Please choose a JPEG, HEIC/HEIF, PNG, WebP, GIF, APNG, or Lottie file',
 	emojiInputSizeError: 'That image is too large',
 	emojiAnimatedSizeError: 'That animation exceeds the Bluemoji format limit',
 	emojiCompressError: 'Could not convert the image',

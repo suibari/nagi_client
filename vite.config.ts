@@ -83,6 +83,8 @@ export default defineConfig(({ command, mode }) => {
 					directives: {
 						'default-src': ['self'],
 						'script-src': ['self'],
+						// heic-to/csp は eval 不要のデコーダーを blob Worker で実行する。
+						'worker-src': ['self', 'blob:'],
 						'style-src': ['self', 'unsafe-inline'],
 						// OAuth ループバックは localhost を拒否するため dev はページを 127.0.0.1 で開く。
 						// appview も 127.0.0.1 で開くケースに備え、localhost と 127.0.0.1 の両方を許可する。

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
@@ -9,6 +8,7 @@
 		deleteBluemoji,
 		displayEmojiName,
 		EMOJI_NAME_PATTERN,
+		EMOJI_FILE_ACCEPT,
 		emojiFileType,
 		EmojiProcessingError,
 		listMyBluemoji,
@@ -21,14 +21,12 @@
 	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import type { EmojiView } from '$lib/api/types';
+	import EmojiInputPreview from '$lib/components/EmojiInputPreview.svelte';
 
 	type BatchItem = {
 		id: string;
 		file: File;
 		name: string;
-		preview: string;
-		mediaType: EmojiView['mediaType'];
 		state: 'ready' | 'processing' | 'success' | 'failed';
 		error?: string;
 	};
@@ -40,7 +38,6 @@
 	let name = $state('');
 	let alt = $state('');
 	let file = $state<File>();
-	let preview = $state<string>();
 	let busy = $state(false);
 	let status = $state('');
 	let error = $state('');
@@ -113,27 +110,12 @@
 		return '';
 	};
 	const singleFileProblem = $derived(file ? fileProblem(file) : '');
-	const singlePreviewEmoji = $derived(
-		preview && file && emojiFileType(file)
-			? ({
-					uri: 'preview',
-					cid: 'preview',
-					did: '',
-					name: `:${name || 'preview'}:`,
-					url: preview,
-					mediaType: emojiFileType(file)!,
-				} satisfies EmojiView)
-			: undefined,
-	);
 
 	const loadEmojis = async () => {
 		emojis = await listMyBluemoji();
 		visibleEmojiCount = 60;
 	};
-	onDestroy(() => {
-		if (preview) URL.revokeObjectURL(preview);
-		for (const item of batch) URL.revokeObjectURL(item.preview);
-	});
+
 	$effect(() => {
 		if (!$session?.did || loaded) return;
 		loadEmojis()
@@ -161,9 +143,7 @@
 		const selected = input.files?.[0];
 		input.value = '';
 		if (!selected) return;
-		if (preview) URL.revokeObjectURL(preview);
 		file = selected;
-		preview = URL.createObjectURL(selected);
 		error = '';
 		status = '';
 		if (!name) {
@@ -184,8 +164,6 @@
 		try {
 			await createBluemojiItem(name, await processEmojiImage(file), alt.trim());
 			await loadEmojis();
-			if (preview) URL.revokeObjectURL(preview);
-			preview = undefined;
 			file = undefined;
 			name = '';
 			alt = '';
@@ -204,7 +182,6 @@
 	function selectBatch(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		if (busy) return;
-		for (const item of batch) URL.revokeObjectURL(item.preview);
 		const files = [...(input.files ?? [])];
 		input.value = '';
 		const supported = files.flatMap((selected, index) => {
@@ -215,8 +192,6 @@
 					id: `${selected.webkitRelativePath || selected.name}:${selected.lastModified}:${index}`,
 					file: selected,
 					name: selected.name.replace(/\.[^.]+$/, '').slice(0, 32),
-					preview: URL.createObjectURL(selected),
-					mediaType,
 					state: 'ready' as const,
 				},
 			];
@@ -242,14 +217,6 @@
 				(item.state === 'ready' || item.state === 'failed') && batchProblem(item).length === 0,
 		),
 	);
-	const batchPreview = (item: BatchItem): EmojiView => ({
-		uri: item.id,
-		cid: item.id,
-		did: '',
-		name: `:${item.name}:`,
-		url: item.preview,
-		mediaType: item.mediaType,
-	});
 	const batchStateText = (state: BatchItem['state']) =>
 		state === 'processing'
 			? m.emojiBatchStateProcessing()
@@ -349,14 +316,15 @@
 		{#if activeTab === 'single'}
 			<div id="emoji-panel-single" role="tabpanel" aria-labelledby="emoji-tab-single">
 				<div class="emoji-upload">
-					{#if singlePreviewEmoji}<BluemojiMedia
+					{#if file && !singleFileProblem}<EmojiInputPreview
 							class="emoji-upload-preview"
-							emoji={singlePreviewEmoji}
+							{file}
+							{name}
 						/>{/if}
 					<input
 						bind:this={singleFileInput}
 						type="file"
-						accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
+						accept={EMOJI_FILE_ACCEPT}
 						class="visually-hidden"
 						onchange={selectFile}
 					/>
@@ -394,7 +362,7 @@
 					<input
 						bind:this={folderInput}
 						type="file"
-						accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
+						accept={EMOJI_FILE_ACCEPT}
 						use:directoryPicker
 						class="visually-hidden"
 						onchange={selectBatch}
@@ -409,7 +377,7 @@
 						bind:this={batchFileInput}
 						type="file"
 						multiple
-						accept="image/png,image/webp,image/gif,image/apng,.apng,.lottie,application/lottie+zip"
+						accept={EMOJI_FILE_ACCEPT}
 						class="visually-hidden"
 						onchange={selectBatch}
 					/>
@@ -442,7 +410,7 @@
 								class:failed={Boolean(batchProblem(item) || item.state === 'failed')}
 								class="emoji-batch-item"
 							>
-								<BluemojiMedia emoji={batchPreview(item)} />
+								<EmojiInputPreview file={item.file} name={item.name} />
 								<input
 									bind:value={item.name}
 									maxlength="32"

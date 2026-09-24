@@ -570,7 +570,7 @@ export const ja = {
 	emojiSettingsNote:
 		'登録した絵文字はあなたのPDSにBluemoji（blue.moji.collection.item）として保存され、Nagiのみんながリアクションに使えます。',
 	emojiUploadNote:
-		'PNG・WebP・GIF・APNG・Lottie。静止画は長辺128pxに縮小します。アニメーションは規格上限内のものを登録できます。',
+		'JPEG・HEIC／HEIF・PNG・WebP・GIF・APNG・Lottie（入力5MBまで）。静止画は長辺128pxに縮小し、JPEG・HEIC／HEIFはPNGに変換します。アニメーションは規格上限内のものを登録できます。',
 	emojiSingleTitle: 'ひとつ登録',
 	emojiNameLabel: '絵文字名（半角英数字、_と-）',
 	emojiAltLabel: '説明（任意）',
@@ -581,7 +581,7 @@ export const ja = {
 	emojiMineEmpty: 'まだ絵文字を登録していません。',
 	emojiNameInvalid: '半角英数字・アンダースコア・ハイフンで1〜32文字にしてください',
 	emojiNameTaken: 'この名前の絵文字はすでに登録されています',
-	emojiTypeError: 'PNG、WebP、GIF、APNGの画像を選択してください',
+	emojiTypeError: 'JPEG、HEIC／HEIF、PNG、WebP、GIF、APNG、Lottieを選択してください',
 	emojiInputSizeError: '画像のサイズが大きすぎます',
 	emojiAnimatedSizeError: 'アニメーション画像がBluemoji規格の上限を超えています',
 	emojiCompressError: '画像を変換できませんでした',
