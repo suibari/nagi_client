@@ -4,14 +4,18 @@
 	import LinkCard from '$lib/components/LinkCard.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { radioSongCard } from './song-card';
-	let { track, unread = false }: { track: RadioTrack; unread?: boolean } = $props();
+	let { track, unread = false, variant = 'sidebar' }: {
+		track: RadioTrack;
+		unread?: boolean;
+		variant?: 'sidebar' | 'page';
+	} = $props();
 	const songCard = $derived(radioSongCard(track));
 	const dateLabel = $derived(new Intl.DateTimeFormat(i18n.locale === 'ja' ? 'ja-JP' : 'en-US', {
 		timeZone: 'Asia/Tokyo', dateStyle: 'long', timeStyle: 'short',
 	}).format(new Date(track.publishedAt)));
 </script>
 
-<div class="radio-content" class:is-unread={unread}>
+<div class="radio-content" class:radio-page={variant === 'page'} class:is-unread={unread}>
 	<div class="radio-heading">
 		<div class="radio-station"><Icon name="music" size={14} /><span>{m.radioTitle()}</span></div>
 		<time datetime={track.publishedAt}>{dateLabel}</time>
@@ -92,5 +96,21 @@
 	}
 	.radio-song-card :global(.link-card-copy small) {
 		font-size: 11px;
+	}
+	.radio-page,
+	.radio-page .radio-comment,
+	.radio-page .radio-song-card :global(.link-card-copy strong) {
+		font-size: 15px;
+	}
+	.radio-page .radio-title strong {
+		font-size: 16px;
+	}
+	.radio-page .radio-title span {
+		font-size: 14px;
+	}
+	.radio-page .radio-station,
+	.radio-page time,
+	.radio-page .radio-song-card :global(.link-card-copy small) {
+		font-size: 12px;
 	}
 </style>

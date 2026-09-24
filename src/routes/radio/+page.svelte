@@ -64,7 +64,7 @@
 		<p class="radio-description">{m.radioDescription()}</p>
 		{#each tracks as track (track.slotKey)}
 			<article class="radio-entry">
-				<RadioContent {track} unread={track.slotKey === unreadSlotKey} />
+				<RadioContent {track} unread={track.slotKey === unreadSlotKey} variant="page" />
 			</article>
 		{/each}
 		{#if !loading && !error && tracks.length === 0}
