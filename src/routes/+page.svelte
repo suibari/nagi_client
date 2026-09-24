@@ -28,6 +28,7 @@
 		readPositions,
 	} from '$lib/my-nagi/unread.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
+	import { selectMyNagiNews } from '$lib/news/selection';
 	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import { threadToConversationItem } from '$lib/thread/conversation';
@@ -98,7 +99,7 @@
 		try {
 			const page = await getPositiveNews(i18n.locale);
 			if (loadedFor !== key) return;
-			news = page.items.slice(0, NEWS_COUNT);
+			news = selectMyNagiNews(page, activeUnreadView, NEWS_COUNT);
 			newsLoaded = true;
 			newsUnread = readLatest(
 				activeUnreadView,

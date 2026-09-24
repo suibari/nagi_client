@@ -178,6 +178,7 @@
 				{news}
 				{botActor}
 				showImage
+				unread={unreadView?.isUnread(news) ?? false}
 				reasonGenre={'reason' in news ? (news.reason?.genre ?? news.reason?.keyword) : undefined}
 				clampTitle={false}
 			/>
