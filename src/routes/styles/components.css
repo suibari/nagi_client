@@ -333,13 +333,6 @@
 		font-size: 16px;
 	}
 }
-/*
-	ポストモーダルの入力欄は、タイムラインの吹き出し（.bubble: 最大 34em、左右の padding 14px
-	と枠 1px）と同じ幅で折り返す。欄そのものは広いまま、本文の列だけ幅を合わせる。
-*/
-.composer .mention-textarea .composer-input .cm-content {
-	max-width: calc(34rem - 2px);
-}
 .mention-textarea .composer-input .cm-line {
 	padding: 0;
 }
