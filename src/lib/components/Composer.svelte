@@ -2,6 +2,7 @@
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import Avatar from './Avatar.svelte';
 	import QuoteCard from './QuoteCard.svelte';
+	import PostModerationGuard from './PostModerationGuard.svelte';
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import { untrack } from 'svelte';
 	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
@@ -686,7 +687,9 @@
 										composerHost.replyTarget.post.author.handle}</span
 								>
 							</div>
-							<p class="composer-target-text">{composerHost.replyTarget.post.text}</p>
+							<PostModerationGuard post={composerHost.replyTarget.post}>
+								<p class="composer-target-text">{composerHost.replyTarget.post.text}</p>
+							</PostModerationGuard>
 						</div>
 					</div>
 				</div>
@@ -723,7 +726,9 @@
 											composerHost.quoteTarget.post.author.handle}</span
 									>
 								</div>
-								<p class="composer-target-text">{composerHost.quoteTarget.post.text}</p>
+								<PostModerationGuard post={composerHost.quoteTarget.post}>
+									<p class="composer-target-text">{composerHost.quoteTarget.post.text}</p>
+								</PostModerationGuard>
 							</div>
 						{:else if composerHost.quoteTarget.news}
 							<div class="composer-target-content">
