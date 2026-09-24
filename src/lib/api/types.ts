@@ -316,6 +316,8 @@ export type RadioTrack = {
 	title: string;
 	artist: string;
 	comment: string;
+	commentJa?: string;
+	commentEn?: string;
 	videoId: string;
 	publishedAt: string;
 	sourceUrl?: string;
