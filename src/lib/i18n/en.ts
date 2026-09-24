@@ -326,10 +326,12 @@ export const en: Messages = {
 	linkCardRemove: 'Remove link card',
 	youtubePlay: (p: { title: string }) => `Play ${p.title}`,
 	radioTitle: 'Bot-tan Radio',
-	radioDescription: 'Bot-tan picks a song from posts since your last radio. If you have not posted since then, Bot-tan chooses from something you shared before. You can find your past radio entries here too. Your radio content is visible only to you, and private posts are never shown to others.',
+	radioDescription:
+		'Bot-tan picks a song from posts since your last radio. If you have not posted since then, Bot-tan chooses from something you shared before. You can find your past radio entries here too. Your radio content is visible only to you, and private posts are never shown to others.',
 	radioOpen: 'Open a new Bot-tan Radio track',
 	radioOpenYoutube: 'Open on YouTube',
 	radioSource: 'Song source',
+	chronicleUnreadBadgeAria: 'Your chronicle has been updated',
 	radioUnreadBadgeAria: 'New Bot-tan Radio episode available',
 	radioHistoryEmpty: 'No radio episodes yet.',
 	radioHistoryMore: 'Load older episodes',

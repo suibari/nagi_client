@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { markChronicleSeen } from '$lib/chronicle/notice';
+	import { onDestroy } from 'svelte';
 	import { APPVIEW_URL, getChronicle } from '$lib/api/appview';
 	import type { CardView, ChronicleEventKind, ChronicleEventView } from '$lib/api/types';
 	import {
@@ -42,6 +44,10 @@
 	let opened = $state<CardView | undefined>();
 	let revealed = $state(new Set<string>());
 	let loadedFor = '';
+	let disposed = false;
+	onDestroy(() => {
+		disposed = true;
+	});
 
 	const years = $derived(groupChronicleByYear(items));
 	const avatarSrc = $derived(avatar?.startsWith('/') && !preview ? APPVIEW_URL + avatar : avatar);
@@ -71,10 +77,13 @@
 		loading = true;
 		error = '';
 		try {
-			const page = await getChronicle(did, { cursor: next, lang: i18n.locale });
+			const actor = did;
+			const page = await getChronicle(actor, { cursor: next, lang: i18n.locale });
+			if (disposed || actor !== did) return;
 			items = next ? mergeChronicle(items, page.items) : page.items;
 			cursor = page.cursor;
 			hasMore = page.hasMore;
+			markChronicleSeen(actor, page.items);
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : m.chronicleFetchFailed();
 		} finally {

@@ -2,6 +2,7 @@ import { derived, writable, type Readable } from 'svelte/store';
 import { m } from '$lib/i18n/i18n.svelte';
 import { unreadCount } from '$lib/notifications/unread.svelte';
 import { unplayedToday } from '$lib/zenkatsu/notice';
+import { chronicleUnread } from '$lib/chronicle/notice';
 import { radioUnread } from '$lib/radio/radio.svelte';
 
 /**
@@ -33,7 +34,12 @@ const notifications: NavItem = {
 const channels: NavItem = { href: '/channels', label: m.navChannels, icon: 'hash' };
 const blog: NavItem = { href: '/blog', label: m.navBlog, icon: 'blog' };
 const news: NavItem = { href: '/news', label: m.navNews, icon: 'newspaper' };
-const diary: NavItem = { href: '/diary', label: m.navDiary, icon: 'draft' };
+const diary: NavItem = {
+	href: '/diary',
+	label: m.navDiary,
+	icon: 'draft',
+	badge: { unread: chronicleUnread, style: 'dot', aria: () => m.chronicleUnreadBadgeAria() },
+};
 // 全肯定カード（ニュース / カードリスト / ゼンカツ！の3タブ）。
 const cards: NavItem = {
 	href: '/cards',
@@ -67,10 +73,10 @@ export const mobileMenuGroups: NavItem[][] = [
 	[settings],
 ];
 export const mobileMenuItems: NavItem[] = mobileMenuGroups.flat();
-/** カード未プレイかラジオ未読のどちらかで、スマホのメニューに1つの点を出す。 */
+/** カード未プレイ・ラジオ未読・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
 export const mobileMenuNotice = derived(
-	[unplayedToday, radioUnread],
-	([$cards, $radio]) => ($cards > 0 || $radio > 0 ? 1 : 0),
+	[unplayedToday, radioUnread, chronicleUnread],
+	([$cards, $radio, $chronicle]) => ($cards > 0 || $radio > 0 || $chronicle > 0 ? 1 : 0),
 );
 /** フィードの3タブ（ホーム/グローバル/全肯定）はどれもフィード扱いにする。 */
 const FEED_PATHS = ['/feed', '/global', '/affirmation'];
