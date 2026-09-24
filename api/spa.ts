@@ -29,6 +29,10 @@ function shellUrl() {
 }
 
 export default async function handler(request: FunctionRequest, response: FunctionResponse) {
+	// 本文のない SPA shell だけを検索から除外する。ブログの生成済み HTML は
+	// Vercel のファイル配信が優先され、この関数を通らないため索引可能なまま。
+	// vercel.json の /blog/* ヘッダでは生成済み記事まで noindex になる。
+	response.setHeader('X-Robots-Tag', 'noindex, follow');
 	if (request.method !== 'GET' && request.method !== 'HEAD') return response.status(405).end();
 	const did = first(request.query.did);
 	if (!isSafeDid(did)) return response.status(404).end();
