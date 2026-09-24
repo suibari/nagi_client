@@ -2,19 +2,24 @@
 	import type { RadioTrack } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import LinkCard from '$lib/components/LinkCard.svelte';
+	import Icon from '$lib/components/shell/Icon.svelte';
 	import { radioSongCard } from './song-card';
-	let { track }: { track: RadioTrack } = $props();
+	let { track, unread = false }: { track: RadioTrack; unread?: boolean } = $props();
 	const songCard = $derived(radioSongCard(track));
+	const dateLabel = $derived(new Intl.DateTimeFormat(i18n.locale === 'ja' ? 'ja-JP' : 'en-US', {
+		timeZone: 'Asia/Tokyo', dateStyle: 'long', timeStyle: 'short',
+	}).format(new Date(track.publishedAt)));
 </script>
 
-<div class="radio-content">
+<div class="radio-content" class:is-unread={unread}>
 	<div class="radio-heading">
-		<strong>{m.radioTitle()}</strong>
+		<div class="radio-station"><Icon name="music" size={18} /><span>{m.radioTitle()}</span></div>
+		<div class="radio-title"><strong>{track.title}</strong><span>{track.artist}</span></div>
+		<time datetime={track.publishedAt}>{dateLabel}</time>
 	</div>
 	<p class="radio-comment">
 		{(i18n.locale === 'en' ? track.commentEn : track.commentJa) || track.comment}
 	</p>
-	<div class="radio-song"><strong>{track.title}</strong><span>{track.artist}</span></div>
 	{#if songCard}
 		<div class="radio-song-card"><LinkCard card={songCard} /></div>
 	{/if}
@@ -36,12 +41,40 @@
 		padding: 14px;
 		min-width: 0;
 	}
+	.radio-content.is-unread {
+		box-shadow: inset 3px 0 0 var(--accent), var(--shadow-card);
+	}
 	.radio-heading {
-		display: flex;
-		align-items: center;
-		gap: 8px;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: start;
+		gap: 8px 12px;
 		color: var(--text);
+	}
+	.radio-station {
+		display: none;
+		align-items: center;
+		gap: 6px;
+		color: var(--text-muted);
+		font-size: 12px;
+	}
+	.radio-title {
+		display: grid;
+		gap: 2px;
+		min-width: 0;
+	}
+	.radio-title strong {
+		overflow-wrap: anywhere;
 		font-size: 16px;
+	}
+	.radio-title span {
+		color: var(--text-muted);
+		font-size: 13px;
+	}
+	time {
+		color: var(--text-muted);
+		font-size: 12px;
+		text-align: right;
 	}
 	.radio-comment {
 		white-space: pre-wrap;
@@ -49,16 +82,13 @@
 		line-height: 1.65;
 		margin: 12px 0;
 	}
-	.radio-song {
-		display: grid;
-		gap: 2px;
-		margin: 0 0 10px;
-	}
-	.radio-song strong {
-		overflow-wrap: anywhere;
-	}
-	.radio-song span {
-		color: var(--text-muted);
-		font-size: 13px;
+	@media (min-width: 900px) {
+		.radio-heading {
+			grid-template-columns: auto minmax(0, 1fr) auto;
+			align-items: center;
+		}
+		.radio-station {
+			display: flex;
+		}
 	}
 </style>

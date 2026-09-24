@@ -10,7 +10,13 @@ test('Last.fm radio shows a square jacket and link, while old YouTube cards stil
 		}),
 	);
 	await page.goto('/dev/e2e/radio');
+	await page.setViewportSize({ width: 375, height: 812 });
 	const radio = page.getByTestId('lastfm-radio');
+	await expect(radio.locator('.radio-content')).toHaveClass(/is-unread/);
+	await expect(radio.getByText('チェリー', { exact: true })).toBeVisible();
+	await expect(radio.getByText('スピッツ', { exact: true })).toBeVisible();
+	await expect(radio.locator('time')).toContainText('2026');
+	await expect(radio.locator('.radio-station')).toBeHidden();
 	await expect(radio.getByRole('link')).toHaveAttribute(
 		'href',
 		'https://www.last.fm/music/Spitz/_/Cherry',
@@ -23,7 +29,8 @@ test('Last.fm radio shows a square jacket and link, while old YouTube cards stil
 	expect(bounds?.width).toBe(bounds?.height);
 	await expect(radio.locator('iframe')).toHaveCount(0);
 	await expect(page.getByTestId('legacy-radio').getByRole('button')).toBeVisible();
-	await page.setViewportSize({ width: 375, height: 812 });
+	await page.setViewportSize({ width: 1280, height: 900 });
+	await expect(radio.locator('.radio-station')).toBeVisible();
 	await expect(radio.getByRole('link')).toBeVisible();
 	expect(await radio.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
 });

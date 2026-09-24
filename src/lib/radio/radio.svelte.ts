@@ -22,7 +22,7 @@ export const radio = {
 			const result = await getRadioTrack();
 			if (id !== requestId || state.did !== did) return;
 			state.track = result.track;
-			radioUnread.set(result.hasUnread ? 1 : 0);
+			radioUnread.set(result.unreadSlotKey || result.hasUnread ? 1 : 0);
 		} catch (error) {
 			console.error('Failed to fetch bot-tan radio:', error);
 		}

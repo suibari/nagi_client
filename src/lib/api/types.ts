@@ -325,8 +325,8 @@ export type RadioTrack = {
 	publishedAt: string;
 	sourceUrl?: string;
 };
-export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean };
-export type RadioHistoryResponse = { tracks: RadioTrack[]; cursor?: string };
+export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean; unreadSlotKey?: string };
+export type RadioHistoryResponse = { tracks: RadioTrack[]; cursor?: string; unreadSlotKey?: string };
 
 /**
  * 自分年表の1件。

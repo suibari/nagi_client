@@ -16,7 +16,7 @@
 	};
 </script>
 
-<div class="preview" data-testid="lastfm-radio"><RadioContent {track} /></div>
+<div class="preview" data-testid="lastfm-radio"><RadioContent {track} unread /></div>
 <div class="preview" data-testid="legacy-radio">
 	<RadioContent
 		track={{ ...track, songUrl: undefined, thumbnailUrl: undefined, videoId: 'dQw4w9WgXcQ' }}

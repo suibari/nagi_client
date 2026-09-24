@@ -8,6 +8,7 @@
 
 	let tracks = $state<RadioTrack[]>([]);
 	let cursor = $state<string>();
+	let unreadSlotKey = $state<string>();
 	let loading = $state(false);
 	let error = $state(false);
 	let loadedFor = '';
@@ -24,6 +25,7 @@
 			if (id !== requestId || $session?.did !== did) return;
 			tracks = reset ? page.tracks : [...tracks, ...page.tracks];
 			cursor = page.cursor;
+			if (reset) unreadSlotKey = page.unreadSlotKey;
 			if (reset && page.tracks[0]) {
 				void radio.markSeen(page.tracks[0].slotKey).catch((cause) =>
 					console.error('Failed to mark radio as seen:', cause),
@@ -54,13 +56,6 @@
 		cursor = undefined;
 		void load(true);
 	});
-	function publishedDate(value: string) {
-		return new Intl.DateTimeFormat(i18n.locale === 'ja' ? 'ja-JP' : 'en-US', {
-			timeZone: 'Asia/Tokyo',
-			dateStyle: 'long',
-			timeStyle: 'short',
-		}).format(new Date(value));
-	}
 </script>
 
 <section class="page-title"><h1>{m.radioTitle()}</h1></section>
@@ -69,8 +64,7 @@
 		<p class="radio-description">{m.radioDescription()}</p>
 		{#each tracks as track (track.slotKey)}
 			<article class="radio-entry">
-				<time datetime={track.publishedAt}>{publishedDate(track.publishedAt)}</time>
-				<RadioContent {track} />
+				<RadioContent {track} unread={track.slotKey === unreadSlotKey} />
 			</article>
 		{/each}
 		{#if !loading && !error && tracks.length === 0}
@@ -102,10 +96,6 @@
 		color: var(--text-muted);
 		font-size: 14px;
 		line-height: 1.65;
-	}
-	time {
-		color: var(--text-muted);
-		font-size: 12px;
 	}
 	.state {
 		padding: 24px 0;
