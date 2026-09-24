@@ -318,12 +318,15 @@ export type RadioTrack = {
 	comment: string;
 	commentJa?: string;
 	commentEn?: string;
-	videoId: string;
+	/** 新APIの曲ページとジャケット。旧APIとの併用期間は省略可能。 */
+	songUrl?: string;
+	thumbnailUrl?: string;
+	videoId?: string;
 	publishedAt: string;
 	sourceUrl?: string;
 };
-export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean };
-export type RadioHistoryResponse = { tracks: RadioTrack[]; cursor?: string };
+export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean; unreadSlotKey?: string };
+export type RadioHistoryResponse = { tracks: RadioTrack[]; cursor?: string; unreadSlotKey?: string };
 
 /**
  * 自分年表の1件。
