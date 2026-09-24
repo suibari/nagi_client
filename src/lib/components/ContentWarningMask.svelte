@@ -27,12 +27,9 @@
 	function toggle(event: MouseEvent | KeyboardEvent) {
 		if (!actionable) return;
 		if (event instanceof KeyboardEvent && event.key !== 'Enter' && event.key !== ' ') return;
-		if (
-			Boolean(revealed) &&
-			event.target instanceof Element &&
-			event.target.closest('a, button') !== event.currentTarget
-		)
-			return;
+		const nestedControl =
+			event.target instanceof Element ? event.target.closest('a, button') : null;
+		if (Boolean(revealed) && nestedControl && nestedControl !== event.currentTarget) return;
 		event.preventDefault();
 		event.stopPropagation();
 		revealed = !revealed;
