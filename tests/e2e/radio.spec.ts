@@ -16,7 +16,7 @@ test('Last.fm radio shows a square jacket and link, while old YouTube cards stil
 	await expect(radio.getByText('チェリー', { exact: true })).toBeVisible();
 	await expect(radio.getByText('スピッツ', { exact: true })).toBeVisible();
 	await expect(radio.locator('time')).toContainText('2026');
-	await expect(radio.locator('.radio-station')).toBeHidden();
+	await expect(radio.locator('.radio-station')).toBeVisible();
 	await expect(radio.getByRole('link')).toHaveAttribute(
 		'href',
 		'https://www.last.fm/music/Spitz/_/Cherry',

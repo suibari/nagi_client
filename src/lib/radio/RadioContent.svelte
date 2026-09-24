@@ -13,10 +13,10 @@
 
 <div class="radio-content" class:is-unread={unread}>
 	<div class="radio-heading">
-		<div class="radio-station"><Icon name="music" size={18} /><span>{m.radioTitle()}</span></div>
-		<div class="radio-title"><strong>{track.title}</strong><span>{track.artist}</span></div>
+		<div class="radio-station"><Icon name="music" size={14} /><span>{m.radioTitle()}</span></div>
 		<time datetime={track.publishedAt}>{dateLabel}</time>
 	</div>
+	<div class="radio-title"><strong>{track.title}</strong><span>{track.artist}</span></div>
 	<p class="radio-comment">
 		{(i18n.locale === 'en' ? track.commentEn : track.commentJa) || track.comment}
 	</p>
@@ -39,24 +39,27 @@
 		border: 1px solid var(--line);
 		border-radius: 16px;
 		padding: 14px;
+		font-size: 13px;
 		min-width: 0;
 	}
 	.radio-content.is-unread {
 		box-shadow: inset 3px 0 0 var(--accent), var(--shadow-card);
 	}
 	.radio-heading {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: start;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 10px;
 		gap: 8px 12px;
 		color: var(--text);
 	}
 	.radio-station {
-		display: none;
+		display: flex;
 		align-items: center;
 		gap: 6px;
 		color: var(--text-muted);
-		font-size: 12px;
+		font-size: 11px;
 	}
 	.radio-title {
 		display: grid;
@@ -65,30 +68,29 @@
 	}
 	.radio-title strong {
 		overflow-wrap: anywhere;
-		font-size: 16px;
+		font-size: 14px;
 	}
 	.radio-title span {
 		color: var(--text-muted);
-		font-size: 13px;
+		font-size: 12px;
 	}
 	time {
 		color: var(--text-muted);
-		font-size: 12px;
+		font-size: 11px;
 		text-align: right;
+		margin-left: auto;
 	}
 	.radio-comment {
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 		line-height: 1.65;
-		margin: 12px 0;
+		margin: 10px 0;
+		font-size: 13px;
 	}
-	@media (min-width: 900px) {
-		.radio-heading {
-			grid-template-columns: auto minmax(0, 1fr) auto;
-			align-items: center;
-		}
-		.radio-station {
-			display: flex;
-		}
+	.radio-song-card :global(.link-card-copy strong) {
+		font-size: 13px;
+	}
+	.radio-song-card :global(.link-card-copy small) {
+		font-size: 11px;
 	}
 </style>
