@@ -19,7 +19,7 @@
 	 *
 	 * Composer は開いていない間も破棄しない。{#if} で作り直すと ImageAttachmentEditor が
 	 * アンマウント時に Object URL を解放してしまい、閉じて開き直しただけで添付画像の
-	 * プレビューと書きかけが失われる（ComposerEditor のプレビュー切替が hidden なのも同じ理由）。
+	 * プレビューと書きかけが失われる。
 	 * 開閉は表示の切り替えだけで行う。
 	 */
 	let mode = $state<ComposerMode>('simple');

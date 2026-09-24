@@ -12,11 +12,24 @@ const caret = read('./textarea-caret.ts');
 const styles = read('../../routes/styles/components.css');
 
 describe('rich composer improvements', () => {
-	it('uses the agreed desktop breakpoint and keeps the narrow tab layout', () => {
-		expect(editor).toContain("window.matchMedia('(min-width: 1024px)')");
-		expect(editor).toContain('isWideComposer(mode) && !realtimePreview');
-		expect(modal).toMatch(/@media \(min-width: 1024px\)[\s\S]*?\.post-modal\.rich[\s\S]*?1040px/);
-		expect(styles).toContain('.composer-editor-panes.realtime-preview');
+	it('decorates the input in place instead of showing a separate preview', () => {
+		expect(editor).not.toContain('RichText');
+		expect(editor).not.toContain('role="tablist"');
+		expect(textarea).toContain('highlightComposerText(value, mentions, channels, emojis)');
+		expect(textarea).toContain('class="composer-highlight"');
+		// しっかりは本文 1 列になったので、広い画面でもモーダルを広げない
+		expect(modal).not.toContain('1040px');
+	});
+
+	it('hides only the formatting buttons in simple mode', () => {
+		expect(editor).toMatch(/\{#if isWideComposer\(mode\)\}\s*<MarkdownPalette/);
+	});
+
+	it('sets the input in the same type as the posted text', () => {
+		expect(styles).toMatch(
+			/\.mention-textarea \.composer-input \{\s*font-size: 15px;\s*line-height: 1\.8;/,
+		);
+		expect(styles).toMatch(/\.post-text \{[\s\S]*?font-size: 15px;\s*line-height: 1\.8;/);
 	});
 
 	it('renders one draft control in both modes and debounces rich autosave', () => {
@@ -46,6 +59,9 @@ describe('rich composer improvements', () => {
 
 	it('keeps markdown lists flush with the surrounding text', () => {
 		expect(styles).toMatch(/\.post-text ul,\s*\.post-text ol\s*\{\s*margin: 0;/);
+		// 項目の間やブロックの間に、入力には無い余白を足さない
+		expect(styles).not.toContain('.post-text li + li');
+		expect(styles).not.toContain('.post-text > * + *');
 	});
 
 	it('routes emoji choices through the shared suggestion keyboard handling', () => {

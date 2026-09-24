@@ -37,7 +37,13 @@ export type ChannelSelection = {
 	description?: string;
 };
 export type EmojiSelection = { start: number; end: number; emoji: EmojiView };
-export type ParsedPostText = { text: string; facets: Facet[]; urls: string[] };
+/** sourceIndex[i] は text[i] が入力のどの位置から来たか。入力欄の装飾で記法の文字を見分けるのに使う。 */
+export type ParsedPostText = {
+	text: string;
+	facets: Facet[];
+	urls: string[];
+	sourceIndex: number[];
+};
 type StoredFacet = {
 	index: { byteStart: number; byteEnd: number };
 	features: readonly unknown[];
@@ -243,9 +249,15 @@ export function parsePostText(
 	let text = '';
 	const facets: Facet[] = [];
 	const urls: string[] = [];
-	const add = (label: string, uri: string) => {
+	const sourceIndex: number[] = [];
+	/** 入力の from 以降の連続した文字列をそのまま本文へ写す。 */
+	const append = (value: string, from: number) => {
+		text += value;
+		for (let offset = 0; offset < value.length; offset++) sourceIndex.push(from + offset);
+	};
+	const add = (label: string, uri: string, from: number) => {
 		const byteStart = byteLength(text);
-		text += label;
+		append(label, from);
 		facets.push({
 			index: { byteStart, byteEnd: byteStart + byteLength(label) },
 			features: [{ $type: 'app.bsky.richtext.facet#link', uri }],
@@ -303,7 +315,7 @@ export function parsePostText(
 					mediaType: emoji.mediaType,
 				},
 			];
-			text += label;
+			append(label, emojiSelection.start);
 			facets.push({
 				index: { byteStart, byteEnd: byteStart + byteLength(label) },
 				features,
@@ -316,7 +328,7 @@ export function parsePostText(
 		if (channel?.start === index) {
 			const label = source.slice(channel.start, channel.end);
 			const byteStart = byteLength(text);
-			text += label;
+			append(label, channel.start);
 			facets.push({
 				index: { byteStart, byteEnd: byteStart + byteLength(label) },
 				features: [{ $type: 'app.bsky.richtext.facet#tag', tag: channel.name }],
@@ -329,7 +341,7 @@ export function parsePostText(
 		if (mention?.start === index) {
 			const label = source.slice(mention.start, mention.end);
 			const byteStart = byteLength(text);
-			text += label;
+			append(label, mention.start);
 			facets.push({
 				index: { byteStart, byteEnd: byteStart + byteLength(label) },
 				features: [{ $type: 'app.bsky.richtext.facet#mention', did: mention.did }],
@@ -350,7 +362,7 @@ export function parsePostText(
 				if (tag && byteLength(tag) <= 640) {
 					const marker = source[index];
 					const byteStart = byteLength(text);
-					text += marker + body;
+					append(marker + body, index);
 					facets.push({
 						index: { byteStart, byteEnd: byteStart + byteLength(marker + tag) },
 						features: [{ $type: 'app.bsky.richtext.facet#tag', tag }],
@@ -372,7 +384,7 @@ export function parsePostText(
 				if (depth === 0) {
 					const uri = httpUrl(source.slice(labelEnd + 2, end));
 					if (uri) {
-						add(source.slice(index + 1, labelEnd), uri);
+						add(source.slice(index + 1, labelEnd), uri, index + 1);
 						index = end + 1;
 						continue;
 					}
@@ -384,14 +396,15 @@ export function parsePostText(
 			const label = trimRawUrl(raw[0]);
 			const uri = httpUrl(label);
 			if (uri) {
-				add(label, uri);
+				add(label, uri, index);
 				index += label.length;
 				continue;
 			}
 		}
-		text += source[index++];
+		append(source[index], index);
+		index++;
 	}
-	return { text, facets, urls };
+	return { text, facets, urls, sourceIndex };
 }
 
 export const linkFacets = (text: string) => parsePostText(text).facets;

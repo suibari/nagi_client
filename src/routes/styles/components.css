@@ -95,27 +95,7 @@
 	flex: 1;
 	min-height: 0;
 }
-.composer.rich .composer-editor-panes {
-	display: flex;
-	flex-direction: column;
-	flex: 1;
-	min-height: 0;
-}
-.composer.rich .composer-editor-panes.realtime-preview {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-	gap: 12px;
-}
-.composer.rich .composer-editor-panes.realtime-preview .composer-write {
-	order: 0;
-	min-width: 0;
-}
-.composer.rich .composer-editor-panes.realtime-preview .composer-preview {
-	order: 1;
-	min-width: 0;
-}
-/* hidden（プレビュー中）の入力欄まで display で復活させないこと。 */
-.composer.rich .composer-write:not([hidden]) {
+.composer.rich .composer-write {
 	display: flex;
 	flex-direction: column;
 	flex: 1;
@@ -132,11 +112,6 @@
 	min-height: 140px;
 	/* 高さはパネルが決めるので、つまんで伸ばす操作は無効にする。 */
 	resize: none;
-}
-.composer.rich .composer-preview {
-	flex: 1;
-	min-height: 0;
-	overflow-y: auto;
 }
 .composer-embeds {
 	min-width: 0;
@@ -325,6 +300,98 @@
 }
 .mention-textarea {
 	position: relative;
+}
+/*
+	入力欄は投稿の本文（.post-text）と同じ文字の大きさ・行の高さ・字詰めで組み、
+	textarea の文字は透明にして、上に重ねた .composer-highlight に装飾付きで描く。
+	文字の位置とキャレットを一致させるため、装飾層では文字幅の変わる指定
+	（font-weight・font-size・余白）を使わない。
+*/
+.mention-textarea .composer-input {
+	font-size: 15px;
+	line-height: 1.8;
+	letter-spacing: 0.01em;
+	font-feature-settings: 'palt' 1;
+	word-break: auto-phrase;
+	overflow-wrap: anywhere;
+	color: transparent;
+	caret-color: var(--text);
+	/* スクロールバーの有無で折り返し幅が装飾層とずれないよう、常に幅を確保する。 */
+	scrollbar-gutter: stable;
+}
+/* iOS Safari は 16px 未満の入力欄にフォーカスすると画面を拡大してしまう。 */
+@supports (-webkit-touch-callout: none) {
+	.mention-textarea .composer-input {
+		font-size: 16px;
+	}
+}
+/*
+	ポストモーダルの入力欄は、タイムラインの吹き出し（.bubble: 最大 34em、左右の padding 14px
+	と枠 1px）と同じ幅で折り返す。欄そのものは広いまま、右側の余白で本文の幅を合わせる。
+	--composer-scrollbar は MentionTextarea が測ったスクロールバーの幅。
+*/
+.composer .mention-textarea .composer-input {
+	padding-inline-end: max(
+		14px,
+		calc(100% - 16px - (34rem - 30px) - var(--composer-scrollbar, 0px))
+	);
+}
+.mention-textarea .composer-input::placeholder {
+	color: var(--text-faint);
+}
+.mention-textarea .composer-input::selection {
+	color: transparent;
+}
+.composer-highlight {
+	position: absolute;
+	overflow: hidden;
+	margin: 0;
+	border-style: solid;
+	border-color: transparent;
+	background: transparent;
+	color: var(--text);
+	white-space: pre-wrap;
+	pointer-events: none;
+}
+/* 太字・見出しは字幅が変わらない縁取りで太らせる */
+.composer-highlight .md-bold,
+.composer-highlight [data-block^='h'] {
+	-webkit-text-stroke: 0.04em currentColor;
+}
+.composer-highlight [data-block^='h'] {
+	color: var(--text-strong);
+}
+.composer-highlight .md-syntax {
+	color: var(--text-faint);
+	-webkit-text-stroke: 0;
+}
+.composer-highlight .md-italic {
+	text-decoration: underline dotted var(--text-faint);
+	text-underline-offset: 3px;
+}
+.composer-highlight .md-strike {
+	text-decoration: line-through;
+}
+.composer-highlight .md-code {
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+}
+.composer-highlight .md-link {
+	color: var(--accent-strong);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.composer-highlight .md-emoji {
+	border-radius: 4px;
+	background: var(--accent-softer);
+	color: var(--accent-strong);
+}
+.composer-highlight .md-cw {
+	border-radius: 2px;
+	background: color-mix(in srgb, var(--text-muted) 22%, transparent);
+}
+.composer-highlight [data-block='quote'] {
+	color: var(--text-sub);
 }
 .mention-suggestions {
 	position: absolute;
@@ -1518,8 +1585,13 @@
 .post-text p {
 	margin: 0;
 }
-.post-text > * + * {
-	margin-top: 1.1em;
+/*
+	ブロックの間には余白を足さず、入力した空行をそのまま 1 行ぶんの余白として見せる
+	（RichText の .post-gap）。入力欄の見た目と投稿後の行の並びを揃えるため。
+*/
+.post-text .post-gap {
+	height: calc(var(--gap, 1) * 1.8em);
+	height: calc(var(--gap, 1) * 1lh);
 }
 .post-text > :first-child {
 	margin-top: 0;
@@ -1588,14 +1660,11 @@
 .post-text li {
 	margin: 0;
 }
-.post-text li + li {
-	margin-top: 0.4em;
-}
 .post-text li::marker {
 	color: var(--text-mute);
 }
 .post-text blockquote {
-	margin: 8px 0;
+	margin: 0;
 	padding-left: 0.7em;
 	border-left: 2px solid var(--line-strong);
 	color: var(--text-sub);

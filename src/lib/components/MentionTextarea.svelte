@@ -16,6 +16,7 @@
 		type ComposerSuggestionToken,
 	} from '$lib/post/composer-suggestion';
 	import { textareaCaretRect } from './textarea-caret';
+	import { highlightComposerText } from '$lib/post/composer-highlight';
 	import {
 		applyContentWarning as wrapContentWarning,
 		remapContentWarningSelection,
@@ -56,6 +57,7 @@
 	} = $props();
 
 	let textarea: HTMLTextAreaElement;
+	let highlight = $state<HTMLDivElement>();
 	// Composer は最初の1文字を即時検索し、連続入力だけ短くまとめる。
 	const suggest = createTypeaheadSearch<ActorView>(
 		(query, signal) => searchActors(query, 10, undefined, signal).then((result) => result.actors),
@@ -94,6 +96,91 @@
 	let activeSuggest = $derived(
 		token?.kind === 'channel' ? channelSuggest : token?.kind === 'emoji' ? emojiSuggest : suggest,
 	);
+
+	const escapeHtml = (text: string) =>
+		text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	/**
+	 * textarea の上に重ねる装飾層の中身。投稿時と同じ規則で装飾を判定し、記法の文字も
+	 * そのまま残すので、文字の位置は textarea と一致する。pre-wrap の中で空白を増やさない
+	 * よう、テンプレートではなく文字列で組み立てる（本文はすべてエスケープ済み）。
+	 * 末尾のゼロ幅文字は、最後の改行ぶんの行を textarea と同じく確保するため。
+	 */
+	let highlightHtml = $derived(
+		highlightComposerText(value, mentions, channels, emojis)
+			.map(
+				(line) =>
+					`<span class="md-line"${line.kind ? ` data-block="${line.kind}"` : ''}>${line.segments
+						.map((segment) =>
+							segment.className
+								? `<span class="${segment.className}">${escapeHtml(segment.text)}</span>`
+								: escapeHtml(segment.text),
+						)
+						.join('')}</span>`,
+			)
+			.join('\n') + '\u200b',
+	);
+
+	// 折り返し幅と文字組みに関わる指定を textarea から写し、装飾層を同じ位置に重ねる。
+	const MIRRORED_PROPERTIES = [
+		'box-sizing',
+		'padding-top',
+		'padding-right',
+		'padding-bottom',
+		'padding-left',
+		'border-top-width',
+		'border-right-width',
+		'border-bottom-width',
+		'border-left-width',
+		'font-family',
+		'font-size',
+		'font-weight',
+		'font-feature-settings',
+		'font-kerning',
+		'line-height',
+		'letter-spacing',
+		'word-spacing',
+		'word-break',
+		'overflow-wrap',
+		'line-break',
+		'text-indent',
+		'text-align',
+		'tab-size',
+		'scrollbar-gutter',
+	];
+
+	function syncHighlight() {
+		if (!highlight) return;
+		// 折り返し幅を投稿の吹き出しに合わせる CSS が、スクロールバーの幅を差し引けるようにする
+		const borders = textarea.offsetWidth - textarea.clientWidth;
+		const style = getComputedStyle(textarea);
+		const scrollbar =
+			borders -
+			Number.parseFloat(style.borderLeftWidth) -
+			Number.parseFloat(style.borderRightWidth);
+		textarea.style.setProperty('--composer-scrollbar', `${Math.max(0, scrollbar)}px`);
+		const computed = getComputedStyle(textarea);
+		for (const property of MIRRORED_PROPERTIES)
+			highlight.style.setProperty(property, computed.getPropertyValue(property));
+		highlight.style.left = `${textarea.offsetLeft}px`;
+		highlight.style.top = `${textarea.offsetTop}px`;
+		highlight.style.width = `${textarea.offsetWidth}px`;
+		highlight.style.height = `${textarea.offsetHeight}px`;
+		highlight.scrollTop = textarea.scrollTop;
+	}
+
+	$effect(() => {
+		if (!highlight) return;
+		const observer = new ResizeObserver(syncHighlight);
+		observer.observe(textarea);
+		syncHighlight();
+		return () => observer.disconnect();
+	});
+
+	// 本文が変わって装飾層が描き直されたあと、textarea のスクロール位置へ合わせ直す。
+	$effect(() => {
+		void highlightHtml;
+		if (highlight) highlight.scrollTop = textarea.scrollTop;
+	});
 
 	function shiftedSelections<T extends { start: number; end: number }>(
 		selections: T[],
@@ -517,6 +604,7 @@
 <div class="mention-textarea">
 	<textarea
 		bind:this={textarea}
+		class="composer-input"
 		{id}
 		{placeholder}
 		{disabled}
@@ -533,7 +621,13 @@
 		onkeydown={handleKeydown}
 		{onpaste}
 		onblur={() => setTimeout(close, 150)}
+		onscroll={() => {
+			if (highlight) highlight.scrollTop = textarea.scrollTop;
+		}}
 	></textarea>
+	<div bind:this={highlight} class="composer-highlight" aria-hidden="true">
+		{@html highlightHtml}
+	</div>
 	{#if token}
 		<div
 			bind:this={suggestionLayer}
