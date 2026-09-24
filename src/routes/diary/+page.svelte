@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { chronicleUnread } from '$lib/chronicle/notice';
+	import NavBadge from '$lib/components/shell/NavBadge.svelte';
 	import { replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { getProfile } from '$lib/api/appview';
@@ -71,7 +73,14 @@
 				role="tab"
 				aria-selected={tab === t.id}
 				class:active={tab === t.id}
-				onclick={() => select(t.id)}>{t.label()}</button
+				onclick={() => select(t.id)}
+				>{t.label()}{#if t.id === 'chronicle'}<span class="tab-notice"
+						><NavBadge
+							unread={chronicleUnread}
+							style="dot"
+							aria={() => m.chronicleUnreadBadgeAria()}
+						/></span
+					>{/if}</button
 			>
 		{/each}
 	</div>
@@ -85,6 +94,11 @@
 {/if}
 
 <style>
+	.tab-notice {
+		position: relative;
+		display: inline-block;
+		margin-inline-start: 8px;
+	}
 	.tabs {
 		display: flex;
 		gap: 4px;

@@ -36,6 +36,7 @@
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
 	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
 	import { cardCollections } from '$lib/cards/collection.svelte';
+	import { startChronicleNotice } from '$lib/chronicle/notice';
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
 	import { radio } from '$lib/radio/radio.svelte';
 
@@ -178,6 +179,7 @@
 			if ($session?.did && document.visibilityState === 'visible') void radio.refresh($session.did);
 		}, 2 * 60_000);
 		const stopZenkatsuNotice = startZenkatsuNotice();
+		const stopChronicleNotice = startChronicleNotice();
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
 		// フィードのタブ構成を localStorage から読む。プリレンダでは既定タブのままなので、
@@ -204,6 +206,7 @@
 		return () => {
 			window.clearInterval(radioTimer);
 			stopZenkatsuNotice();
+			stopChronicleNotice();
 			window.removeEventListener('online', repairPush);
 			document.removeEventListener('visibilitychange', onVisibility);
 		};
