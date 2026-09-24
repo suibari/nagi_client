@@ -3,7 +3,7 @@
 	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import MarkdownPalette, { type MarkdownFormat } from './MarkdownPalette.svelte';
-	import MentionTextarea from './MentionTextarea.svelte';
+	import ComposerInput from './ComposerInput.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { parseContentWarning } from '$lib/atproto/contentWarning';
 	import { isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
@@ -84,7 +84,7 @@
 </script>
 
 <div class="composer-write">
-	<MentionTextarea
+	<ComposerInput
 		bind:this={editor}
 		bind:value
 		bind:mentions

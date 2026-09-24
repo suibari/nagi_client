@@ -89,6 +89,7 @@
 			bind:emojis
 			{channelSuggestionsEnabled}
 			{placeholder}
+			ariaLabel={label}
 			disabled={busy}
 			mode="simple"
 			{onsubmit}

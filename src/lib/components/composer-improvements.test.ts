@@ -7,16 +7,17 @@ const editor = read('./ComposerEditor.svelte');
 const modal = read('./PostModalShell.svelte');
 const signedInModal = read('./PostModal.svelte');
 const guestModal = read('./GuestPostModal.svelte');
-const textarea = read('./MentionTextarea.svelte');
-const caret = read('./textarea-caret.ts');
+const input = read('./ComposerInput.svelte');
+const decorations = read('./composer-decorations.ts');
 const styles = read('../../routes/styles/components.css');
 
 describe('rich composer improvements', () => {
 	it('decorates the input in place instead of showing a separate preview', () => {
 		expect(editor).not.toContain('RichText');
 		expect(editor).not.toContain('role="tablist"');
-		expect(textarea).toContain('highlightComposerText(value, mentions, channels, emojis)');
-		expect(textarea).toContain('class="composer-highlight"');
+		expect(input).toContain('new EditorView(');
+		expect(input).toContain('composerDecorations(() => ({ mentions, channels, emojis }))');
+		expect(decorations).toContain('highlightComposerText(');
 		// しっかりは本文 1 列になったので、広い画面でもモーダルを広げない
 		expect(modal).not.toContain('1040px');
 	});
@@ -27,9 +28,15 @@ describe('rich composer improvements', () => {
 
 	it('sets the input in the same type as the posted text', () => {
 		expect(styles).toMatch(
-			/\.mention-textarea \.composer-input \{\s*font-size: 15px;\s*line-height: 1\.8;/,
+			/\.mention-textarea \.composer-input \.cm-content \{[^}]*font-size: 15px;\s*line-height: 1\.8;/,
 		);
 		expect(styles).toMatch(/\.post-text \{[\s\S]*?font-size: 15px;\s*line-height: 1\.8;/);
+		// 見出しは投稿の h3〜h5 と同じ大きさ
+		expect(styles).toMatch(/\.composer-input \.cm-line\[data-block='h1'\] \{\s*font-size: 20px;/);
+		expect(styles).toMatch(/\.composer-input \.cm-line\[data-block='h2'\] \{\s*font-size: 18px;/);
+		expect(styles).toMatch(/\.composer-input \.cm-line\[data-block='h3'\] \{\s*font-size: 16px;/);
+		// 箇条書きの `- ` は「•」で見せる
+		expect(decorations).toContain("bullet.textContent = '•'");
 	});
 
 	it('renders one draft control in both modes and debounces rich autosave', () => {
@@ -65,15 +72,15 @@ describe('rich composer improvements', () => {
 	});
 
 	it('routes emoji choices through the shared suggestion keyboard handling', () => {
-		expect(textarea).toContain("token.kind === 'emoji'");
-		expect(textarea).toContain("event.key === 'Enter' || event.key === 'Tab'");
-		expect(textarea).toContain('<EmojiSuggestionList');
+		expect(input).toContain("token.kind === 'emoji'");
+		expect(input).toContain('chooseActive() || continueList(target)');
+		expect(input).toContain("{ key: 'Tab', run: chooseActive }");
+		expect(input).toContain('<EmojiSuggestionList');
 	});
 
-	it('anchors suggestions to the textarea caret and clamps them to the viewport', () => {
-		expect(textarea).toContain('const caret = textareaCaretRect(textarea)');
-		expect(textarea).toContain('Math.max(margin, caret.left)');
-		expect(caret).toContain("whiteSpace: 'pre-wrap'");
-		expect(caret).toContain('textarea.scrollTop');
+	it('anchors suggestions to the caret and clamps them to the viewport', () => {
+		expect(input).toContain('const caret = caretRect()');
+		expect(input).toContain('view?.coordsAtPos(view.state.selection.main.head)');
+		expect(input).toContain('Math.max(margin, caret.left)');
 	});
 });

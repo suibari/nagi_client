@@ -47,7 +47,7 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	await page.goto('/dev/e2e/post-assist');
 
 	const openModal = page.getByRole('button', { name: 'ポストモーダルを開く' });
-	const textarea = page.locator('.post-modal textarea');
+	const editor = page.locator('.post-modal .cm-content');
 	const assist = page.locator('.composer-assist');
 	const thinking = page.locator('.composer-assist-thinking');
 
@@ -90,7 +90,7 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 	await expect(character).toHaveAttribute('src', '/bot_assist_sitting.png');
 
 	// 入力途中は4秒待つ。前のセリフは考え中に置き換わる。
-	await textarea.fill('久しぶりにギターを');
+	await editor.fill('久しぶりにギターを');
 	await page.clock.runFor(3500);
 	expect(assistRequests).toHaveLength(1);
 	await page.clock.runFor(600);
@@ -110,7 +110,7 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 
 	await page.getByRole('button', { name: 'おたすけを閉じる' }).click();
 	await expect(assist).toHaveCount(0);
-	await textarea.fill('久しぶりにギターを弾いた');
+	await editor.fill('久しぶりにギターを弾いた');
 	await page.clock.runFor(6000);
 	await expect(assist).toHaveCount(0);
 	expect(assistRequests).toHaveLength(2);
@@ -181,7 +181,7 @@ test('考え中に入力を始めてもbotたんを表示し続ける', async ({
 	await page.clock.runFor(3100);
 	await expect(page.locator('.composer-assist-thinking')).toBeVisible();
 
-	await page.locator('.post-modal textarea').fill('今日は空がきれい');
+	await page.locator('.post-modal .cm-content').fill('今日は空がきれい');
 	await expect(page.locator('.composer-assist')).toBeVisible();
 	await expect(page.locator('.composer-assist-thinking')).toBeVisible();
 });
@@ -195,9 +195,9 @@ test('PCとスマホのIME変換中も表示中のbotたんを保つ', async ({ 
 	await expect(page.locator('.composer-assist-thinking')).toBeVisible();
 	await page.clock.runFor(500);
 
-	const textarea = page.locator('.post-modal textarea');
+	const editor = page.locator('.post-modal .cm-content');
 	const assist = page.locator('.composer-assist');
-	await textarea.dispatchEvent('compositionstart');
+	await editor.dispatchEvent('compositionstart');
 	await expect(assist).toBeVisible();
 	await expect(assist).toContainText('最近は登山が気になってるみたいだね');
 
@@ -207,7 +207,7 @@ test('PCとスマホのIME変換中も表示中のbotたんを保つ', async ({ 
 	await expect(assist).toBeVisible();
 	await expect(page.locator('.composer-assist-bubble')).toBeVisible();
 	await expect(page.locator('.composer-assist-character')).toBeHidden();
-	await textarea.dispatchEvent('compositionend', { data: '今日' });
+	await editor.dispatchEvent('compositionend', { data: '今日' });
 });
 
 test('削除で問いかけ、追記で肯定へ戻り、IME変換による文字数減少では肯定を維持する', async ({
@@ -217,28 +217,29 @@ test('削除で問いかけ、追記で肯定へ戻り、IME変換による文�
 	await page.clock.install();
 	await page.goto('/dev/e2e/post-assist');
 	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
-	const textarea = page.locator('.post-modal textarea');
-	await textarea.fill('今日は空がきれい');
+	const editor = page.locator('.post-modal .cm-content');
+	await editor.fill('今日は空がきれい');
 	await page.clock.runFor(4600);
 	await expect.poll(() => requests.length).toBe(1);
 	expect(requests.at(-1)?.mode).toBe('affirm');
 
-	await textarea.press('End');
-	await textarea.press('Backspace');
+	await editor.press('End');
+	await editor.press('Backspace');
 	await page.clock.runFor(4600);
 	await expect.poll(() => requests.length).toBe(2);
 	expect(requests.at(-1)).toMatchObject({ text: '今日は空がきれ', mode: 'question' });
 
-	await textarea.pressSequentially('いね');
+	await editor.pressSequentially('いね');
 	await page.clock.runFor(4600);
 	await expect.poll(() => requests.length).toBe(3);
 	expect(requests.at(-1)?.mode).toBe('affirm');
 
 	// OSのIME操作は自動化できないため、ブラウザに同じイベント列を送って確認する。
-	await textarea.fill('きょう');
-	await textarea.dispatchEvent('compositionstart');
-	await textarea.evaluate((element: HTMLTextAreaElement) => {
-		element.value = '今日';
+	await editor.fill('きょう');
+	await editor.dispatchEvent('compositionstart');
+	await editor.evaluate((element: HTMLElement) => {
+		// CodeMirror は本文の DOM の書き換えを読み取って入力として扱う
+		element.querySelector('.cm-line')!.textContent = '今日';
 		element.dispatchEvent(
 			new InputEvent('input', {
 				bubbles: true,
@@ -251,19 +252,19 @@ test('削除で問いかけ、追記で肯定へ戻り、IME変換による文�
 	// 変換中に手が止まっても生成しない。
 	await page.clock.runFor(6000);
 	expect(requests).toHaveLength(3);
-	await textarea.dispatchEvent('compositionend', { data: '今日' });
-	await textarea.dispatchEvent('input', { inputType: 'insertFromComposition', isComposing: false });
+	await editor.dispatchEvent('compositionend', { data: '今日' });
+	await editor.dispatchEvent('input', { inputType: 'insertFromComposition', isComposing: false });
 	await page.clock.runFor(4600);
 	await expect.poll(() => requests.length).toBe(4);
 	expect(requests.at(-1)).toMatchObject({ text: '今日', mode: 'affirm' });
 
 	// 変換後の実際の削除は問いかけになる。全削除の空文字も問いかけ。
-	await textarea.press('End');
-	await textarea.press('Backspace');
+	await editor.press('End');
+	await editor.press('Backspace');
 	await page.clock.runFor(4600);
 	await expect.poll(() => requests.length).toBe(5);
 	expect(requests.at(-1)).toMatchObject({ text: '今', mode: 'question' });
-	await textarea.press('Backspace');
+	await editor.press('Backspace');
 	await page.clock.runFor(3600);
 	await expect.poll(() => requests.length).toBe(6);
 	expect(requests.at(-1)).toMatchObject({ text: '', mode: 'question' });
@@ -289,12 +290,12 @@ test('生成中に削除すると古い肯定を表示せず、削除後の問�
 	await page.clock.install();
 	await page.goto('/dev/e2e/post-assist');
 	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
-	const textarea = page.locator('.post-modal textarea');
-	await textarea.fill('空がきれい');
+	const editor = page.locator('.post-modal .cm-content');
+	await editor.fill('空がきれい');
 	await page.clock.runFor(4100);
 	await expect.poll(() => requests.length).toBe(1);
-	await textarea.press('End');
-	await textarea.press('Backspace');
+	await editor.press('End');
+	await editor.press('Backspace');
 	release?.();
 	await page.clock.runFor(4600);
 	await expect.poll(() => requests.length).toBe(2);
