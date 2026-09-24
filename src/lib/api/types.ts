@@ -318,7 +318,10 @@ export type RadioTrack = {
 	comment: string;
 	commentJa?: string;
 	commentEn?: string;
-	videoId: string;
+	/** 新APIの曲ページとジャケット。旧APIとの併用期間は省略可能。 */
+	songUrl?: string;
+	thumbnailUrl?: string;
+	videoId?: string;
 	publishedAt: string;
 	sourceUrl?: string;
 };

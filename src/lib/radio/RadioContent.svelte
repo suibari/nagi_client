@@ -2,12 +2,9 @@
 	import type { RadioTrack } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import LinkCard from '$lib/components/LinkCard.svelte';
+	import { radioSongCard } from './song-card';
 	let { track }: { track: RadioTrack } = $props();
-	const videoCard = $derived({
-		uri: `https://www.youtube.com/watch?v=${track.videoId}`,
-		title: `${track.artist} - ${track.title}`,
-		thumb: `https://i.ytimg.com/vi/${track.videoId}/hqdefault.jpg`,
-	});
+	const songCard = $derived(radioSongCard(track));
 </script>
 
 <div class="radio-content">
@@ -18,12 +15,20 @@
 		{(i18n.locale === 'en' ? track.commentEn : track.commentJa) || track.comment}
 	</p>
 	<div class="radio-song"><strong>{track.title}</strong><span>{track.artist}</span></div>
-	{#if /^[A-Za-z0-9_-]{11}$/.test(track.videoId)}
-		<LinkCard card={videoCard} />
+	{#if songCard}
+		<div class="radio-song-card"><LinkCard card={songCard} /></div>
 	{/if}
 </div>
 
 <style>
+	/* 正方形のジャケットを切り抜かず、画像全体を見せる。 */
+	.radio-song-card :global(.link-card > img) {
+		width: 108px;
+		height: 108px;
+		object-fit: contain;
+		align-self: center;
+	}
+
 	.radio-content {
 		background: var(--bg);
 		border: 1px solid var(--line);
