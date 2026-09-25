@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { NewsPage, NewsView } from '$lib/api/types';
-import { selectMyNagiNews } from './selection';
+import { recommendedReason, selectMyNagiNews } from './selection';
 
 const news = (id: string, day: number) =>
 	({
@@ -59,5 +59,19 @@ describe('my Nagi news', () => {
 				),
 			).toEqual(['newer', 'older']);
 		}
+	});
+	it('labels only unread recommendations', () => {
+		const labeled = { ...news('r', 20), reason: { genre: '動物' } };
+		const readLabeled = { ...news('read', 21), reason: { genre: '料理' } };
+		const selected = selectMyNagiNews(
+			page([news('read', 21), news('new', 24)], [labeled, readLabeled]),
+			view,
+			5,
+		);
+		expect(ids(selected)).toEqual(['r', 'new', 'read']);
+		expect(selected.map(recommendedReason)).toEqual(['動物', undefined, undefined]);
+	});
+	it('reads the legacy keyword reason', () => {
+		expect(recommendedReason({ ...news('l', 1), reason: { keyword: '料理' } })).toBe('料理');
 	});
 });

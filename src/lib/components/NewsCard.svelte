@@ -113,7 +113,8 @@
 
 {#if !deleted}<article class="news-card" class:unread class:embedded>
 		{#if reasonGenre}<p class="news-reason">
-				{m.newsRecommendedReason({ genre: reasonGenre })}
+				<Icon name="heart" size={13} /><span>{m.newsRecommendedReason({ genre: reasonGenre })}</span
+				>
 			</p>{/if}
 		<div class="news-meta">
 			<span>{news.sourceName ?? m.newsSourceUnknown()}</span>{#if news.publishedAt}<time
@@ -217,12 +218,31 @@
 		background: transparent;
 		box-shadow: none;
 	}
-	/* 外枠を復活させず、未読だけ左のアクセントバーで示す。 */
+	/* おすすめの理由は、通常カードと見分けられるようアクセント色のピルで出す。 */
 	.news-reason {
-		margin: 0 0 2px;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		align-self: flex-start;
+		max-inline-size: 100%;
+		margin: 0 0 6px;
+		padding: 2px 10px 2px 8px;
+		border: 1px solid var(--accent-border);
+		border-radius: 999px;
+		background: var(--accent-soft);
+		color: var(--accent-strong);
 		font-size: 12px;
-		color: var(--text-muted);
+		font-weight: 700;
+		line-height: 1.5;
 	}
+	.news-reason span {
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
+	}
+	.news-reason :global(svg) {
+		flex: none;
+	}
+	/* 外枠を復活させず、未読だけ左のアクセントバーで示す。 */
 	.news-card.unread {
 		padding-inline-start: 12px;
 		background: transparent;

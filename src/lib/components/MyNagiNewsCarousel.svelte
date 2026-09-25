@@ -1,7 +1,8 @@
 <script lang="ts">
-	import type { ActorView, NewsView } from '$lib/api/types';
+	import type { ActorView, NewsView, RecommendedNewsView } from '$lib/api/types';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { recommendedReason } from '$lib/news/selection';
 	import HorizontalCarousel from './HorizontalCarousel.svelte';
 	import NewsCard from './NewsCard.svelte';
 
@@ -13,7 +14,7 @@
 		botActor,
 		onscrollstatechange,
 	}: {
-		items: NewsView[];
+		items: Array<NewsView | RecommendedNewsView>;
 		unreadView?: UnreadView;
 		botActor?: ActorView;
 		onscrollstatechange?: (nextState: ScrollState) => void;
@@ -40,6 +41,7 @@
 					embedded
 					showImage
 					unread={unreadView?.isUnread(news) ?? false}
+					reasonGenre={recommendedReason(news)}
 				/>
 			</li>
 		{/each}
