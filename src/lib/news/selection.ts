@@ -8,16 +8,19 @@ export const recommendedReason = (news: NewsView | RecommendedNewsView) =>
 
 /**
  * 未読のおすすめを新しい順に先頭（カルーセルの左側）へ置き、残りを新着で埋める。
- * 既読のおすすめは出さない。同じカードは一度だけ出す。
+ * 既読のおすすめは先頭に寄せないが、新着に含まれていればラベル付きで出す。同じカードは一度だけ出す。
  */
 export function selectMyNagiNews(
 	page: NewsPage,
 	view: UnreadView | undefined,
 	limit: number,
 ): Array<NewsView | RecommendedNewsView> {
-	const recommended = byNewestFirst(page.recommended ?? []).filter((news) => view?.isUnread(news));
+	const recommended = byNewestFirst(page.recommended ?? []);
+	// 新着側に紛れた既読おすすめにも理由ラベルを出すため、おすすめ側の記事に差し替える。
+	const byUri = new Map(recommended.map((news) => [news.uri, news]));
+	const newest = byNewestFirst(page.items).map((news) => byUri.get(news.uri) ?? news);
 	const seen = new Set<string>();
-	return [...recommended, ...byNewestFirst(page.items)]
+	return [...recommended.filter((news) => view?.isUnread(news)), ...newest]
 		.filter((news) => {
 			if (seen.has(news.uri)) return false;
 			seen.add(news.uri);

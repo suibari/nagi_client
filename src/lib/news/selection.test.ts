@@ -60,7 +60,7 @@ describe('my Nagi news', () => {
 			).toEqual(['newer', 'older']);
 		}
 	});
-	it('labels only unread recommendations', () => {
+	it('labels recommendations, including read ones shown among newest news', () => {
 		const labeled = { ...news('r', 20), reason: { genre: '動物' } };
 		const readLabeled = { ...news('read', 21), reason: { genre: '料理' } };
 		const selected = selectMyNagiNews(
@@ -69,7 +69,7 @@ describe('my Nagi news', () => {
 			5,
 		);
 		expect(ids(selected)).toEqual(['r', 'new', 'read']);
-		expect(selected.map(recommendedReason)).toEqual(['動物', undefined, undefined]);
+		expect(selected.map(recommendedReason)).toEqual(['動物', undefined, '料理']);
 	});
 	it('reads the legacy keyword reason', () => {
 		expect(recommendedReason({ ...news('l', 1), reason: { keyword: '料理' } })).toBe('料理');
