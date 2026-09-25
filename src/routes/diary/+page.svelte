@@ -28,7 +28,7 @@
 		{ id: 'activity', label: () => m.diaryTabActivity() },
 		{ id: 'chronicle', label: () => m.diaryTabChronicle() },
 	];
-	let tab = $state<TabId>(
+	const tab = $derived<TabId>(
 		!page.url.searchParams.get('date') && page.url.searchParams.get('tab') === 'chronicle'
 			? 'chronicle'
 			: 'activity',
@@ -36,10 +36,12 @@
 
 	function select(next: TabId) {
 		if (tab === next) return;
-		tab = next;
 		const url = new URL(page.url);
 		if (next === 'activity') url.searchParams.delete('tab');
-		else url.searchParams.set('tab', next);
+		else {
+			url.searchParams.set('tab', next);
+			url.searchParams.delete('date');
+		}
 		replaceState(url, page.state);
 	}
 
