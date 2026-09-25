@@ -131,7 +131,7 @@
 		{#if tab === 'chronicle'}
 			<ChronicleTimeline did={$session.did} {displayName} {avatar} />
 		{:else if tab === 'mood'}
-			<DiaryMoodChart did={$session.did} {anchorDate} bind:selected={selectedDate} {botActor} />
+			<DiaryMoodChart did={$session.did} {anchorDate} bind:selected={selectedDate} />
 		{:else}
 			<DiaryCalendar did={$session.did} {anchorDate} bind:selected={selectedDate} {botActor} />
 		{/if}
