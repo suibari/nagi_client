@@ -23,10 +23,16 @@
 		did,
 		anchorDate,
 		selected = $bindable(),
+		preview,
 	}: {
 		did: string;
 		anchorDate?: string;
 		selected?: string;
+		/**
+		 * サインイン前の /about で見せるサンプル。渡されたらAPIを叩かず、これをグラフにする。
+		 * 投稿の行はリンクにせず、日記への導線も出さない（どちらも実在しない）。
+		 */
+		preview?: { moods: DiaryMoodView[]; entries?: DiaryView[] };
 	} = $props();
 
 	const uid = $props.id();
@@ -119,6 +125,13 @@
 			entries = value.entries;
 			pending = value.pending;
 		};
+		if (preview) {
+			apply({ moods: preview.moods, entries: preview.entries ?? [], pending: 0 });
+			loading = false;
+			error = '';
+			void scrollToInitial(key);
+			return;
+		}
 		const cached = cache.get(key);
 		if (cached) {
 			apply(cached);
@@ -410,12 +423,19 @@
 									<span class={`mood-chip mood-chip--${tone(point.valence)}`}
 										>{formatValence(point.valence)}</span
 									>
-									<a href={postHref(point.uri)}>
-										<time datetime={point.createdAt}>{timeLabel(point.createdAt)}</time>
-										<PostModerationGuard post={point}>
+									{#if preview}
+										<span class="mood-post">
+											<time datetime={point.createdAt}>{timeLabel(point.createdAt)}</time>
 											<span class="mood-text">{point.text}</span>
-										</PostModerationGuard>
-									</a>
+										</span>
+									{:else}
+										<a class="mood-post" href={postHref(point.uri)}>
+											<time datetime={point.createdAt}>{timeLabel(point.createdAt)}</time>
+											<PostModerationGuard post={point}>
+												<span class="mood-text">{point.text}</span>
+											</PostModerationGuard>
+										</a>
+									{/if}
 								</li>
 							{/each}
 						</ol>
@@ -423,7 +443,7 @@
 						<p class="mood-hint">{m.moodDayNoPosts()}</p>
 					{/if}
 				</section>
-				{#if selectedDiary}
+				{#if selectedDiary && !preview}
 					<a class="mood-diary-link" href={`/diary?date=${selectedDiary.date}`}>
 						{m.chronicleOpenDiary()} →
 					</a>
@@ -592,14 +612,14 @@
 	.mood-day li:first-child {
 		border-top: 0;
 	}
-	.mood-day a {
+	.mood-post {
 		display: grid;
 		gap: 2px;
 		min-inline-size: 0;
 		color: inherit;
 		text-decoration: none;
 	}
-	.mood-day a:hover .mood-text {
+	a.mood-post:hover .mood-text {
 		text-decoration: underline;
 	}
 	.mood-day time {

@@ -178,14 +178,32 @@ export const en: Messages = {
 	aboutStep3Title: 'Be received',
 	aboutStep3Body: 'Bot-tan replies, while Home lets you leave words at your own pace.',
 
+	// about page — showcase (sample previews of sign-in-only features)
+	aboutShowcaseHeading: 'Your days, given shape',
+	aboutShowcaseLead:
+		'As you keep writing, bot-tan reads your days and turns them into things you can look back on.',
+	aboutSampleBadge: 'Sample',
+	aboutSampleNote: 'An example from a fictional user',
+	aboutShowcaseSeeYours: 'See yours',
+	aboutShowcaseMoodEyebrow: 'Diary & mood graph',
+	aboutShowcaseMoodTitle: 'A year of moods, day by day',
+	aboutShowcaseMoodBody:
+		'Every night bot-tan reads your posts, writes you a diary, and reads the mood of each post. Tap a day on the graph to revisit what you wrote. Only you can see it.',
+	aboutShowcaseChronicleEyebrow: 'Your chronicle',
+	aboutShowcaseChronicleTitle: 'Your time on Nagi, as a chronicle',
+	aboutShowcaseChronicleBody:
+		'The day you arrived, your first UR card, the days that stayed with you — your milestones line up beside what was happening in the world.',
+	aboutShowcaseNameCardEyebrow: 'Name card',
+	aboutShowcaseNameCardTitle: 'A name card, written by bot-tan',
+	aboutShowcaseNameCardBody:
+		'Bot-tan reads what makes you you and turns it into a card with an intro and tags. It shows on your profile, and you can save or share it as an image.',
+
 	aboutFeaturesHeading: 'And a few more things',
 	aboutFeaturesLead: 'Features that make Nagi a little different from Bluesky.',
 	aboutCategoryConnect: 'Connect, gently',
 	aboutCategoryKeep: 'Write and keep',
 	aboutCategoryOwn: 'At your own pace',
 	aboutCategoryReach: 'Reach further',
-	aboutDiaryTitle: 'Diaries',
-	aboutDiaryBody: 'Bot-tan reads the day’s posts every night and writes you a diary',
 	aboutKossoriTitle: 'Limited posts',
 	aboutKossoriBody: 'Pick the reach per post — including one only you and bot-tan can read',
 	aboutChannelsTitle: 'Channels',
@@ -193,6 +211,8 @@ export const en: Messages = {
 	aboutChannelsLink: 'Browse channels',
 	aboutReactionTitle: 'Emoji reactions',
 	aboutReactionBody: 'React with any emoji you like',
+	aboutNewsTitle: 'Bright news',
+	aboutNewsBody: 'Uplifting news picked by bot-tan — and you can bring your own finds',
 	aboutCustomEmojiTitle: 'Custom emoji',
 	aboutCustomEmojiBody: 'Register emoji of your own',
 	aboutCustomEmojiLink: 'Register custom emoji',

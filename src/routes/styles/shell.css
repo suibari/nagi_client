@@ -15,6 +15,12 @@
 	padding: 16px 0 90px;
 }
 
+/* 紹介ページ（/about）だけは右レールを外し、そのぶん本文を広げる。
+   シェル全体の幅と左ナビの位置は他のページと同じなので、遷移しても左側は動かない。 */
+.shell.shell-wide {
+	grid-template-columns: 240px minmax(0, 1fr);
+}
+
 /* --- sidebars --- */
 .sidebar {
 	position: sticky;
@@ -526,6 +532,9 @@
 	.shell {
 		grid-template-columns: 64px minmax(0, 640px);
 		gap: 16px;
+	}
+	.shell.shell-wide {
+		grid-template-columns: 64px minmax(0, 1fr);
 	}
 	.sidebar-left .brand span:last-child,
 	.side-nav a .label {

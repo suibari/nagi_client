@@ -185,6 +185,26 @@ export const ja = {
 	aboutStep3Title: '受け止められる',
 	aboutStep3Body: 'botたんが返信し、ホームなら自分のペースで言葉を残せます。',
 
+	// about page — 書いた日々が、かたちになる（サインインしないと見られない機能をサンプルで見せる）
+	aboutShowcaseHeading: '書いた日々が、かたちになる',
+	aboutShowcaseLead:
+		'書きつづけるうちに、botたんがあなたの日々を読みとって、ふりかえれる形にしてくれます。',
+	aboutSampleBadge: 'サンプル',
+	aboutSampleNote: '架空のユーザーの例です',
+	aboutShowcaseSeeYours: 'あなたのものを見る',
+	aboutShowcaseMoodEyebrow: '日記・感情グラフ',
+	aboutShowcaseMoodTitle: '毎日の気分が、1年のグラフに',
+	aboutShowcaseMoodBody:
+		'botたんが毎晩その日の投稿を読んで日記を書き、投稿ごとの気分も読み取ります。グラフの日付を押すと、その日の投稿をたどれます。見られるのはあなただけです。',
+	aboutShowcaseChronicleEyebrow: '自分年表',
+	aboutShowcaseChronicleTitle: 'Nagiで過ごした日々が、年表に',
+	aboutShowcaseChronicleBody:
+		'Nagiに来た日、はじめてのURカード、心に残った日。あなたの節目が、そのころの世間の出来事と一緒に並んでいきます。',
+	aboutShowcaseNameCardEyebrow: '名刺',
+	aboutShowcaseNameCardTitle: 'botたんが書く、あなたの名刺',
+	aboutShowcaseNameCardBody:
+		'投稿からあなたらしさを読み取って、紹介文とタグの名刺にします。プロフィールに表示され、画像にして保存・共有もできます。',
+
 	// about page — Nagi ならではの機能一覧。カード化するので本文は1行に抑える。
 	aboutFeaturesHeading: 'ほかにもできること',
 	aboutFeaturesLead: 'Blueskyとは少し違う、Nagiならではの機能です。',
@@ -192,8 +212,6 @@ export const ja = {
 	aboutCategoryKeep: '書いて、のこす',
 	aboutCategoryOwn: '自分のペースで',
 	aboutCategoryReach: '外にもひろげる',
-	aboutDiaryTitle: '日記',
-	aboutDiaryBody: 'botたんが毎日その日の投稿を読んで、日記を書いてくれます',
 	aboutKossoriTitle: 'こっそり投稿',
 	aboutKossoriBody: '公開範囲は投稿ごとに選べます。自分とbotたんだけ、にもできます',
 	aboutChannelsTitle: 'チャンネル',
@@ -201,6 +219,8 @@ export const ja = {
 	aboutChannelsLink: 'チャンネルを見る',
 	aboutReactionTitle: '絵文字リアクション',
 	aboutReactionBody: '好きな絵文字で反応できます',
+	aboutNewsTitle: '全肯定ニュース',
+	aboutNewsBody: 'botたんが選んだ明るいニュース。見つけた記事を持ち寄ることも',
 	aboutCustomEmojiTitle: 'カスタム絵文字',
 	aboutCustomEmojiBody: '自分だけの絵文字を登録できます',
 	aboutCustomEmojiLink: 'カスタム絵文字を登録する',
