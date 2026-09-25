@@ -2,7 +2,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 
 	let {
-		label = m.loading(),
+		label,
 		size = 'md',
 		inline = false,
 		decorative = false,
@@ -12,13 +12,16 @@
 		inline?: boolean;
 		decorative?: boolean;
 	} = $props();
+
+	// 既定値を props に置くと初期化時の言語で固定されるため、描画時に解決して言語切替へ追従させる。
+	const ariaLabel = $derived(label ?? m.loading());
 </script>
 
 <span
 	class="loading-indicator"
 	class:inline
 	role={decorative ? undefined : 'status'}
-	aria-label={decorative ? undefined : label}
+	aria-label={decorative ? undefined : ariaLabel}
 	aria-hidden={decorative ? 'true' : undefined}
 >
 	<span class="ring" class:small={size === 'sm'} aria-hidden="true"></span>
