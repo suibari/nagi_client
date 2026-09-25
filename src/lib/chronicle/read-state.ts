@@ -1,13 +1,21 @@
 import { getPreferences, putPreferences } from '$lib/api/appview';
+import type { ChronicleEventView, ChroniclePage, ChronicleReadYear } from '$lib/api/types';
 
 export const chronicleStorageKey = (did: string) => `nagi-chronicle-seen:${did}`;
 export const chronicleRevisionsKey = (did: string) => `nagi-chronicle-read-revisions:${did}`;
+export const chronicleYearsKey = (did: string) => `nagi-chronicle-read-years:${did}`;
 
-/** 項目IDと表示内容の組を既読にする。別端末が古い版を読んでも、新しい版の既読を消さない。 */
-export async function chronicleReadToken(id: string, revision: string): Promise<string> {
-	const bytes = new TextEncoder().encode(JSON.stringify([id, revision]));
-	const hash = await crypto.subtle.digest('SHA-256', bytes);
-	return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+/** 従来の端末内既読の移行用。新しい既読のハッシュはサーバーが発行する。 */
+export function legacyChronicleRevision(event: ChronicleEventView): string {
+	return JSON.stringify([
+		event.kind,
+		event.date,
+		event.titleJa,
+		event.titleEn,
+		event.detailJa,
+		event.detailEn,
+		event.diaryDate,
+	]);
 }
 
 export function createChronicleReadState(
@@ -15,96 +23,141 @@ export function createChronicleReadState(
 	isCurrent: () => boolean,
 	onChange: () => void,
 ) {
-	const tokens = new Set<string>();
+	const years = new Map<number, string>();
+	const pending = new Map<number, string>();
 	let disposed = false;
 	let syncing: Promise<void> | undefined;
 	let resync = false;
 	const active = () => !disposed && isCurrent();
+	const loadEntries = (value: unknown, target: Map<number, string>) => {
+		if (!Array.isArray(value)) return;
+		const thisYear = new Date(Date.now() + 5 * 60 * 60_000).getUTCFullYear();
+		for (const entry of value)
+			if (
+				Array.isArray(entry) &&
+				entry.length === 2 &&
+				Number.isInteger(entry[0]) &&
+				entry[0] >= 2020 &&
+				entry[0] <= thisYear &&
+				typeof entry[1] === 'string' &&
+				/^[0-9a-f]{64}$/.test(entry[1])
+			)
+				target.set(entry[0], entry[1]);
+	};
+	const load = () => {
+		try {
+			const saved = JSON.parse(localStorage.getItem(chronicleYearsKey(did)) ?? '{}');
+			years.clear();
+			loadEntries(saved.years, years);
+			loadEntries(saved.pending, pending);
+			for (const [year, revision] of pending) years.set(year, revision);
+		} catch {
+			/* 保存不可でもサーバーから回復する。 */
+		}
+	};
+	load();
+
 	const persist = () => {
 		if (!active()) return;
 		try {
-			localStorage.setItem(chronicleRevisionsKey(did), JSON.stringify([...tokens]));
+			localStorage.setItem(
+				chronicleYearsKey(did),
+				JSON.stringify({ years: [...years], pending: [...pending] }),
+			);
 		} catch {
-			// 保存不可でも、この画面の既読は保持する。
+			/* 通信・ストレージが使えなくてもメモリの既読は保持する。 */
 		}
 		onChange();
 	};
-	const ready = (async () => {
-		try {
-			const stored: unknown = JSON.parse(localStorage.getItem(chronicleRevisionsKey(did)) ?? '[]');
-			if (Array.isArray(stored))
-				for (const token of stored)
-					if (typeof token === 'string' && /^[0-9a-f]{64}$/.test(token)) tokens.add(token);
-			// 従来の端末内の既読も移行する。未表示の項目や更新された版は既読にしない。
-			const legacy: unknown = JSON.parse(localStorage.getItem(chronicleStorageKey(did)) ?? '[]');
-			if (Array.isArray(legacy)) {
-				const migrated = await Promise.all(
-					legacy
-						.filter(
-							(entry): entry is [string, string] =>
-								Array.isArray(entry) &&
-								entry.length === 2 &&
-								entry.every((v) => typeof v === 'string'),
-						)
-						.map(([id, revision]) => chronicleReadToken(id, revision)),
-				);
-				if (!active()) return;
-				for (const token of migrated) tokens.add(token);
-			}
-		} catch {
-			// 壊れたローカル保存はサーバーから回復できる。
-		}
-	})();
-
+	const adopt = (remote: ChronicleReadYear[]) => {
+		years.clear();
+		for (const read of remote) years.set(read.year, read.revision);
+		for (const [year, revision] of pending) years.set(year, revision);
+		persist();
+	};
 	async function syncOnce() {
-		await ready;
 		if (!active()) return;
 		try {
-			let view = await getPreferences();
-			if (!active() || !view.chronicleReadRevisions) return;
-			const remote = new Set(view.chronicleReadRevisions);
-			for (const token of remote) tokens.add(token);
-			persist();
-			const missing = [...tokens].filter((token) => !remote.has(token));
-			// 既読は集合の追加のみ。端末A/Bの同時更新でも互いの既読を上書きしない。
-			for (let index = 0; index < missing.length; index += 200) {
+			const view = await getPreferences();
+			if (!active() || !view.chronicleReadYears) return;
+			adopt(view.chronicleReadYears);
+			const sent = [...pending].map(([year, revision]) => ({ year, revision }));
+			for (let index = 0; index < sent.length; index += 100) {
 				if (!active()) return;
-				view = await putPreferences({ chronicleReadRevisions: missing.slice(index, index + 200) });
-				if (!active()) return;
-				for (const token of view.chronicleReadRevisions ?? []) tokens.add(token);
-				persist();
+				const batch = sent.slice(index, index + 100);
+				const merged = await putPreferences({ chronicleReadYears: batch });
+				if (!active() || !merged.chronicleReadYears) return;
+				for (const read of batch)
+					if (pending.get(read.year) === read.revision) pending.delete(read.year);
+				// 古い版はサーバーが保存しない。再送し続けず、返された確定値を採用する。
+				adopt(merged.chronicleReadYears);
 			}
 		} catch {
-			// 未送信の既読はキャッシュに残す。次の閲覧・画面復帰で再送する。
+			/* 未送信の年は次の閲覧・画面復帰で再送する。 */
 		}
 	}
-
+	const sync = (): Promise<void> => {
+		resync = true;
+		if (!syncing)
+			syncing = (async () => {
+				while (resync && active()) {
+					resync = false;
+					await syncOnce();
+				}
+			})().finally(() => {
+				syncing = undefined;
+			});
+		return syncing;
+	};
+	const mark = (read: ChronicleReadYear): Promise<void> => {
+		if (!active()) return Promise.resolve();
+		years.set(read.year, read.revision);
+		pending.set(read.year, read.revision);
+		persist();
+		return sync();
+	};
 	return {
-		tokens,
-		ready,
-		async mark(entries: [string, string][]) {
-			await ready;
-			const added = await Promise.all(
-				entries.map(([id, revision]) => chronicleReadToken(id, revision)),
-			);
-			if (!active()) return;
-			for (const token of added) tokens.add(token);
-			persist();
-			await this.sync();
-		},
-		sync(): Promise<void> {
-			resync = true;
-			if (!syncing) {
-				syncing = (async () => {
-					while (resync && active()) {
-						resync = false;
-						await syncOnce();
-					}
-				})().finally(() => {
-					syncing = undefined;
-				});
+		years,
+		sync,
+		mark,
+		/** 元の端末でその年の全項目を読んでいた場合だけ年単位へ移行する。 */
+		async migrate(page: ChroniclePage) {
+			if (page.year === undefined || !page.revision || !page.items.length || years.has(page.year))
+				return;
+			try {
+				const legacy = new Map<string, string>(
+					JSON.parse(localStorage.getItem(chronicleStorageKey(did)) ?? '[]'),
+				);
+				const tokens = new Set<string>(
+					JSON.parse(localStorage.getItem(chronicleRevisionsKey(did)) ?? '[]'),
+				);
+				const read = await Promise.all(
+					page.items.map(async (item) => {
+						const revision = legacyChronicleRevision(item);
+						if (legacy.get(item.id) === revision) return true;
+						if (!tokens.size) return false;
+						const hash = await crypto.subtle.digest(
+							'SHA-256',
+							new TextEncoder().encode(JSON.stringify([item.id, revision])),
+						);
+						return tokens.has(
+							Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join(
+								'',
+							),
+						);
+					}),
+				);
+				if (active() && !years.has(page.year) && read.every(Boolean))
+					await mark({ year: page.year, revision: page.revision });
+			} catch {
+				/* 壊れた従来の保存は既読扱いにしない。 */
 			}
-			return syncing;
+		},
+		/** 他のタブが保存した既読を取り込む。自分の未送信分は残す。 */
+		reload() {
+			if (!active()) return;
+			load();
+			onChange();
 		},
 		dispose() {
 			disposed = true;

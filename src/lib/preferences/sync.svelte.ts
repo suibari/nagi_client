@@ -1,5 +1,9 @@
 import { clearChronicleReadState } from '$lib/chronicle/notice';
-import { chronicleStorageKey, chronicleRevisionsKey } from '$lib/chronicle/read-state';
+import {
+	chronicleStorageKey,
+	chronicleRevisionsKey,
+	chronicleYearsKey,
+} from '$lib/chronicle/read-state';
 import { get } from 'svelte/store';
 import { applyAgeAssurance, clearAgeAssurance } from '$lib/moderation/age.svelte';
 import {
@@ -231,6 +235,7 @@ export function clearLocalPreferenceCache(did: string) {
 	const keys = [
 		chronicleStorageKey(did),
 		chronicleRevisionsKey(did),
+		chronicleYearsKey(did),
 		favoritesStorageKey(),
 		favoritesStorageKey(did),
 		firstSyncKey(did),

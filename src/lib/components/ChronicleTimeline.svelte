@@ -83,7 +83,7 @@
 			items = next ? mergeChronicle(items, page.items) : page.items;
 			cursor = page.cursor;
 			hasMore = page.hasMore;
-			void markChronicleSeen(actor, page.items);
+			void markChronicleSeen(actor, page);
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : m.chronicleFetchFailed();
 		} finally {
