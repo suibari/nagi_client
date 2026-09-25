@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { chronicleUnread } from '$lib/chronicle/notice';
 	import NavBadge from '$lib/components/shell/NavBadge.svelte';
-	import { replaceState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { getProfile } from '$lib/api/appview';
 	import type { ActorView } from '$lib/api/types';
@@ -42,7 +42,7 @@
 			url.searchParams.set('tab', next);
 			url.searchParams.delete('date');
 		}
-		replaceState(url, page.state);
+		void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
 	}
 
 	// OAuth 復元は非同期なので oauthReady を待ってから、未ログインならログインへ回す。
