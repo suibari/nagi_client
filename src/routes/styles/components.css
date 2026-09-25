@@ -17,7 +17,32 @@
 	gap: 8px;
 	min-width: 0;
 }
+/*
+	「あっさり」は本文の量に合わせて伸びるが、キーボードが出てモーダルの高さが足りなく
+	なったら本文だけが縮み、入力欄の中でスクロールする（ツール列と送信まわりは残す）。
+*/
+.composer:not(.rich) {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+.composer:not(.rich) .composer-write {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+.composer:not(.rich) .composer-write > *,
+.composer:not(.rich) > * {
+	flex-shrink: 0;
+}
+.composer:not(.rich) .composer-write > .mention-textarea {
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 1;
+	min-height: 0;
+}
 .composer:not(.rich) .mention-textarea .composer-input {
+	flex: 0 1 auto;
 	min-height: 100px;
 	max-height: min(420px, 50dvh);
 }
