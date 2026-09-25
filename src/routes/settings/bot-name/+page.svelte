@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { getPreferences, putPreferences } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -64,7 +65,7 @@
 		<SignedOutNotice message={m.botNameLoginRequired()} />
 	{:else if $session}
 		{#if loading}
-			<p>{m.loading()}</p>
+			<Spinner />
 		{:else}
 			<p class="bot-name-current">
 				{current ? m.botNameCurrent({ name: current }) : m.botNameUnset()}
@@ -81,7 +82,10 @@
 			>
 			{#if tooLong}<p class="error" role="alert">{m.botNameTooLong({ max: MAX_LENGTH })}</p>{/if}
 			<div class="bot-name-actions">
-				<button disabled={!dirty || tooLong || !trimmed || saving} onclick={() => void save(trimmed)}>
+				<button
+					disabled={!dirty || tooLong || !trimmed || saving}
+					onclick={() => void save(trimmed)}
+				>
 					{saving ? m.botNameSaving() : m.save()}
 				</button>
 				{#if current}

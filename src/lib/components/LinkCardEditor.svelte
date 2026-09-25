@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onDestroy } from 'svelte';
 	import { parsePostText } from '$lib/atproto/facets';
 	import type { LinkCardDraft } from '$lib/atproto/records';
@@ -179,7 +180,13 @@
 					<span>
 						<strong>{card.title}</strong>
 						{#if card.description}<span>{card.description}</span>{/if}
-						<small>{loading.includes(card.uri) ? m.linkCardLoading() : card.uri}</small>
+						<small
+							>{#if loading.includes(card.uri)}<Spinner
+									inline
+									size="sm"
+									label={m.linkCardLoading()}
+								/>{:else}{card.uri}{/if}</small
+						>
 					</span>
 					<button
 						type="button"

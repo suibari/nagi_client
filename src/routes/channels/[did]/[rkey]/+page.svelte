@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -495,9 +496,7 @@
 	<section class="timeline" aria-busy={feed?.loading}>
 		{#if feed}
 			{#if feed.loading && !feed.visibleItems.length}
-				<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
-					<span class="spinner" aria-hidden="true"></span>
-				</div>
+				<Spinner label={m.feedWaiting()} />
 			{:else if feed.error && !feed.visibleItems.length}
 				<div class="state error">
 					{feed.error}<button

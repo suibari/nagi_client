@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
 	import BlogCard from '$lib/components/BlogCard.svelte';
@@ -58,9 +59,7 @@
 	{/if}
 
 	{#if loading}
-		<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
-			<span class="spinner" aria-hidden="true"></span>
-		</div>
+		<Spinner label={m.feedWaiting()} />
 	{:else if error}
 		<div class="state error">
 			{error}<button class="icon-action" aria-label={m.retry()} title={m.retry()} onclick={load}

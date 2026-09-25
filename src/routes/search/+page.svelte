@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import {
@@ -325,9 +326,7 @@
 
 {#snippet feedState(feed: Feed)}
 	{#if feed.loading && !feed.visibleItems.length}
-		<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
-			<span class="spinner" aria-hidden="true"></span>
-		</div>
+		<Spinner label={m.feedWaiting()} />
 	{:else if feed.error && !feed.visibleItems.length}
 		<div class="state error">
 			{feed.error}<button
@@ -339,12 +338,6 @@
 			>
 		</div>
 	{/if}
-{/snippet}
-
-{#snippet spinner()}
-	<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
-		<span class="spinner" aria-hidden="true"></span>
-	</div>
 {/snippet}
 
 {#snippet actorRows(actors: ActorView[])}
@@ -436,7 +429,7 @@
 	{:else if tab === 'users'}
 		<section class="search-section">
 			{#if !readyExact.users}
-				{@render spinner()}
+				<Spinner label={m.feedWaiting()} />
 			{:else if !usersExact.length}
 				<div class="state">{m.searchExactEmpty()}</div>
 			{:else}
@@ -454,7 +447,7 @@
 	{:else if tab === 'channels'}
 		<section class="search-section">
 			{#if !readyExact.channels}
-				{@render spinner()}
+				<Spinner label={m.feedWaiting()} />
 			{:else if !channelsExact.length}
 				<div class="state">{m.searchExactEmpty()}</div>
 			{:else}
@@ -480,7 +473,7 @@
 	{:else if tab === 'blogs'}
 		<section class="search-section blog-search-results">
 			{#if !readyExact.blogs}
-				{@render spinner()}
+				<Spinner label={m.feedWaiting()} />
 			{:else if !blogsExact.length}
 				<div class="state">{m.searchBlogsEmpty()}</div>
 			{:else}
@@ -494,7 +487,7 @@
 	{:else if tab === 'news'}
 		<section class="search-section">
 			{#if !readyExact.news}
-				{@render spinner()}
+				<Spinner label={m.feedWaiting()} />
 			{:else if !newsExact.items.length}
 				<div class="state">{m.searchExactEmpty()}</div>
 			{:else}
@@ -516,7 +509,7 @@
 	{:else if tab === 'bookmarks'}
 		<section class="search-section bookmark-search-section" aria-busy={!readyExact.bookmarks}>
 			{#if !readyExact.bookmarks}
-				{@render spinner()}
+				<Spinner label={m.feedWaiting()} />
 			{:else if bookmarkError && !bookmarkItems.length}
 				<div class="state error">
 					{bookmarkError}<button class="search-more" onclick={() => location.reload()}
@@ -547,9 +540,7 @@
 	<section class="timeline" aria-busy={tagFeed?.loading}>
 		{#if tagFeed}
 			{#if tagFeed.loading && !tagFeed.visibleItems.length}
-				<div class="timeline-loading" role="status" aria-label={m.feedWaiting()}>
-					<span class="spinner" aria-hidden="true"></span>
-				</div>
+				<Spinner label={m.feedWaiting()} />
 			{:else if tagFeed.error && !tagFeed.visibleItems.length}
 				<div class="state error">
 					{tagFeed.error}<button

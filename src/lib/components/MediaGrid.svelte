@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import type { Feed } from '$lib/feed/feed.svelte';
 	import { mediaTileKey, mediaTiles } from '$lib/feed/media-tiles';
@@ -21,7 +22,7 @@
 </script>
 
 {#if !feed || (feed.loading && !tiles.length)}
-	<div class="state">{m.loading()}</div>
+	<Spinner />
 {:else if feed.error && !tiles.length}
 	<div class="state error">
 		{feed.error}<button

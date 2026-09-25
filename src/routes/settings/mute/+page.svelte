@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
@@ -66,7 +67,7 @@
 		<fieldset class="theme-settings">
 			<legend>{m.muteUsersLegend()}</legend>
 			{#if loading && !mutes.loaded}
-				<p>{m.loading()}</p>
+				<Spinner />
 			{:else if !mutes.actors.length}
 				<p class="muted">{m.muteUsersEmpty()}</p>
 			{:else}
@@ -97,7 +98,7 @@
 		<fieldset class="theme-settings">
 			<legend>{m.muteChannelsLegend()}</legend>
 			{#if loading && !mutes.loaded}
-				<p>{m.loading()}</p>
+				<Spinner />
 			{:else if !mutes.channels.length}
 				<p class="muted">{m.muteChannelsEmpty()}</p>
 			{:else}

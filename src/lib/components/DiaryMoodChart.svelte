@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getDiaries } from '$lib/api/appview';
 	import type { DiaryMoodView, DiaryView } from '$lib/api/types';
 	import { buildDiaryGraphForDate } from '$lib/diary/calendar';
@@ -382,7 +383,7 @@
 
 		<p class="mood-status" aria-live="polite">
 			{#if loading}
-				{m.loading()}
+				<Spinner inline size="sm" />
 			{:else if focusDay}
 				<strong>{longDate(focusDay)}</strong>
 				{#if focusSummary}

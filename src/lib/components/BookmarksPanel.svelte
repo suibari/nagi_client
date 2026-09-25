@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getBookmarks } from '$lib/api/appview';
 	import type {
 		ActorView,
@@ -199,7 +200,7 @@
 	</header>
 
 	<div class="bookmarks-list" aria-busy={loading}>
-		{#if loading && !items.length}<div class="state">{m.loading()}</div>
+		{#if loading && !items.length}<Spinner />
 		{:else if error && !items.length}<div class="state error">
 				{bookmarks.unauthorized ? m.bookmarkPermissionRequired() : error}
 				<button

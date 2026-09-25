@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getCardNews } from '$lib/api/appview';
 	import type { CardNewsFeed, CardNewsItem, CardView } from '$lib/api/types';
 	import { dayHeading, dayKey, i18n, m } from '$lib/i18n/i18n.svelte';
@@ -60,7 +61,7 @@
 {/snippet}
 
 {#if loading}
-	<div class="state">…</div>
+	<Spinner />
 {:else if error}
 	<div class="state">{error}</div>
 {:else if !feed?.items.length}

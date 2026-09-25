@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import CardBack from './CardBack.svelte';
 
@@ -46,7 +47,9 @@
 	>
 		<span class="card-fab-card">
 			<CardBack />
-			{#if drawing}<span class="card-fab-spinner" aria-hidden="true"></span>{/if}
+			{#if drawing}<span class="card-fab-spinner" aria-hidden="true"
+					><Spinner inline size="sm" decorative /></span
+				>{/if}
 		</span>
 		<span class="card-fab-label">{drawing ? m.cardDrawing() : (label ?? m.cardFabLabel())}</span>
 		<span id={hintId} class="visually-hidden">{hint ?? m.cardFabUndrawn()}</span>
@@ -147,17 +150,9 @@
 		inset: 0;
 		margin: auto;
 		z-index: 1;
-		width: 20px;
-		height: 20px;
-		border: 3px solid color-mix(in srgb, var(--text-on-accent) 35%, transparent);
-		border-top-color: var(--text-on-accent);
-		border-radius: 50%;
-		animation: card-fab-spin 0.8s linear infinite;
-	}
-	@keyframes card-fab-spin {
-		to {
-			transform: rotate(360deg);
-		}
+		display: grid;
+		place-items: center;
+		color: var(--text-on-accent);
 	}
 
 	.card-fab-error {

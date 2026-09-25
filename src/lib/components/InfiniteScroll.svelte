@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -56,14 +57,8 @@
 			>
 		</div>
 	{:else if observerSupported}
-		<div
-			class="infinite-scroll"
-			class:loading
-			bind:this={sentinel}
-			role={loading ? 'status' : undefined}
-			aria-label={loading ? m.loading() : undefined}
-		>
-			{#if loading}<span class="spinner" aria-hidden="true"></span>{/if}
+		<div class="infinite-scroll" class:loading bind:this={sentinel}>
+			{#if loading}<Spinner inline />{/if}
 		</div>
 	{:else}
 		<button

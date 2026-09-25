@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import ToggleSwitch from './ToggleSwitch.svelte';
@@ -70,7 +71,7 @@
 	<div class="age-assurance">
 		{#if !hideHeading}<h2>{m.ageSectionTitle()}</h2>{/if}
 		{#if ageAssurance.loading}
-			<p class="note">…</p>
+			<Spinner />
 		{:else if ageAssurance.declared}
 			<p class="note">{ageAssurance.isAdult ? m.ageDeclaredAdult() : m.ageDeclaredMinor()}</p>
 			{#if ageAssurance.birthDate}

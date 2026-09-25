@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { getThread } from '$lib/api/appview';
@@ -100,7 +101,7 @@
 </section>
 <section class="timeline">
 	{#if error}<div class="state error">{error}</div>
-	{:else if !thread}<div class="state">{m.loading()}</div>
+	{:else if !thread}<Spinner />
 	{:else}
 		<article class="thread-unit">
 			<ThreadFlags

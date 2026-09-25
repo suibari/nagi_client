@@ -1,4 +1,5 @@
 <script lang="ts" generics="T">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { Snippet } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
@@ -60,7 +61,7 @@
 	</div>
 {:else if pending}
 	<div class="mention-suggestions {listClass}" aria-label={ariaLabel} aria-busy="true">
-		<p class="suggestion-status">{m.suggestionsLoading()}</p>
+		<Spinner label={m.suggestionsLoading()} />
 		{#each { length: skeletonRows } as _, index (index)}
 			<div class="suggestion-skeleton" aria-hidden="true">
 				<span class="suggestion-skeleton-figure"></span>

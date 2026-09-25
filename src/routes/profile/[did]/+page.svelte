@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { getProfile } from '$lib/api/appview';
@@ -331,7 +332,7 @@
 	{:else if tab === 'reactions'}
 		<section class="timeline" aria-busy={reactionFeed?.loading}>
 			{#if !reactionFeed || (reactionFeed.loading && !reactionFeed.items.length)}
-				<div class="state">{m.loading()}</div>
+				<Spinner />
 			{:else if reactionFeed.error && !reactionFeed.items.length}
 				<div class="state error">
 					{reactionFeed.error}<button
@@ -373,9 +374,7 @@
 		</section>
 	{:else}
 		<section class="timeline" aria-busy={feed?.loading}>
-			{#if !feed || (feed.loading && !feed.visibleItems.length)}<div class="state">
-					{m.loading()}
-				</div>
+			{#if !feed || (feed.loading && !feed.visibleItems.length)}<Spinner />
 			{:else if feed.error && !feed.visibleItems.length}<div class="state error">
 					{feed.error}<button
 						class="icon-action"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	// 昔からの全肯定フィードの URL。いまは `/feed?tab=affirmation`（kind: custom）と同じ中身で、
 	// ブックマークや外部リンクのために残してある。
 	import FeedShell from '$lib/components/FeedShell.svelte';
@@ -16,9 +17,7 @@
 </script>
 
 {#if !$oauthReady}
-	<div class="timeline-loading" role="status" aria-label={m.loading()}>
-		<span class="spinner" aria-hidden="true"></span>
-	</div>
+	<Spinner />
 {:else}
 	<FeedTabs activeId="affirmation" />
 	<FeedShell {spec} />

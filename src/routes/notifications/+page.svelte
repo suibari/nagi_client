@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { getNotifications, getProfile, APPVIEW_URL } from '$lib/api/appview';
 	import type { ActorView, NotificationView } from '$lib/api/types';
@@ -220,7 +221,7 @@
 <section class="page-title"><h1>{m.navNotifications()}</h1></section>
 <section class="timeline">
 	{#if error}<div class="state error">{error}</div>
-	{:else if loading}<div class="state">{m.loading()}</div>
+	{:else if loading}<Spinner />
 	{:else if !items.length}<div class="state">{m.notifEmpty()}</div>
 	{:else}
 		{#each items as item (item.id)}

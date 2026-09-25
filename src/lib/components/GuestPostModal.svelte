@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
@@ -79,7 +80,7 @@
 		title={busy ? m.guestPostSaving() : m.guestPostSubmit()}
 		onclick={() => void submit()}
 	>
-		{#if busy}<span class="submit-spinner" aria-hidden="true"></span>
+		{#if busy}<Spinner inline size="sm" decorative />
 		{:else}<Icon name="send" size={18} />{/if}
 		<span>{busy ? m.guestPostSaving() : m.guestPostSubmit()}</span>
 	</button>
@@ -143,7 +144,7 @@
 					title={busy ? m.guestPostSaving() : m.guestPostSubmit()}
 					onclick={() => void submit()}
 				>
-					{#if busy}<span class="submit-spinner" aria-hidden="true"></span>
+					{#if busy}<Spinner inline size="sm" decorative />
 					{:else}<Icon name="send" size={18} />{/if}
 					<span>{busy ? m.guestPostSaving() : m.guestPostSubmit()}</span>
 				</button>
