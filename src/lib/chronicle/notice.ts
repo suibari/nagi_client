@@ -2,13 +2,13 @@ import { get, writable } from 'svelte/store';
 import { getChronicle } from '$lib/api/appview';
 import type { ChronicleEventView } from '$lib/api/types';
 import { session } from '$lib/oauth/session.svelte';
+import { chronicleReadToken, createChronicleReadState } from './read-state';
 
 export const chronicleUnread = writable(0);
-const seenByDid = new Map<string, Map<string, string>>();
-let latest = new Map<string, string>();
+const states = new Map<string, ReturnType<typeof createChronicleReadState>>();
+let latest = new Set<string>();
 let viewer: string | undefined;
 let generation = 0;
-const storageKey = (did: string) => `nagi-chronicle-seen:${did}`;
 
 // 表示言語で変わるカード・ニュースの展開情報は比較しない。
 export function chronicleRevision(event: ChronicleEventView): string {
@@ -23,46 +23,33 @@ export function chronicleRevision(event: ChronicleEventView): string {
 	]);
 }
 
-function seen(did: string): Map<string, string> {
-	let value = seenByDid.get(did);
-	if (!value) {
-		value = new Map();
-		try {
-			const stored: unknown = JSON.parse(localStorage.getItem(storageKey(did)) ?? '[]');
-			if (Array.isArray(stored))
-				for (const entry of stored)
-					if (
-						Array.isArray(entry) &&
-						entry.length === 2 &&
-						entry.every((v) => typeof v === 'string')
-					)
-						value.set(entry[0], entry[1]);
-		} catch {
-			/* 保存不可でもメモリ上の既読は使う。 */
-		}
-		seenByDid.set(did, value);
+function readState(did: string) {
+	let state = states.get(did);
+	if (!state) {
+		state = createChronicleReadState(did, () => get(session)?.did === did, update);
+		states.set(did, state);
 	}
-	return value;
+	return state;
 }
 
 function update() {
-	const read = viewer ? seen(viewer) : new Map<string, string>();
-	chronicleUnread.set(
-		viewer && [...latest].some(([id, revision]) => read.get(id) !== revision) ? 1 : 0,
-	);
+	const read = viewer ? readState(viewer).tokens : new Set<string>();
+	chronicleUnread.set(viewer && [...latest].some((token) => !read.has(token)) ? 1 : 0);
 }
 
-/** 実際に読み込めたページだけ既読にする。古い年の未読は残す。 */
-export function markChronicleSeen(did: string, items: ChronicleEventView[]) {
+/** 実際に読み込めたページだけ既読にする。未表示の年は残す。 */
+export async function markChronicleSeen(did: string, items: ChronicleEventView[]) {
 	if (get(session)?.did !== did) return;
-	const read = seen(did);
-	for (const item of items) read.set(item.id, chronicleRevision(item));
-	try {
-		localStorage.setItem(storageKey(did), JSON.stringify([...read]));
-	} catch {
-		/* メモリに保持。 */
+	await readState(did).mark(items.map((item) => [item.id, chronicleRevision(item)]));
+}
+
+export function clearChronicleReadState(did: string) {
+	states.get(did)?.dispose();
+	states.delete(did);
+	if (viewer === did) {
+		latest.clear();
+		chronicleUnread.set(0);
 	}
-	update();
 }
 
 export function startChronicleNotice(): () => void {
@@ -73,13 +60,19 @@ export function startChronicleNotice(): () => void {
 		pending = true;
 		const version = generation;
 		try {
-			const revisions = new Map<string, string>();
+			const revisions = new Set<string>();
+			await readState(did).sync();
+			if (generation !== version) return;
 			let cursor: string | undefined;
 			const cursors = new Set<string>();
 			do {
 				const page = await getChronicle(did, { cursor });
 				if (generation !== version) return;
-				for (const item of page.items) revisions.set(item.id, chronicleRevision(item));
+				const tokens = await Promise.all(
+					page.items.map((item) => chronicleReadToken(item.id, chronicleRevision(item))),
+				);
+				if (generation !== version) return;
+				for (const token of tokens) revisions.add(token);
 				cursor = page.hasMore ? page.cursor : undefined;
 				if (cursor && cursors.has(cursor)) return;
 				if (cursor) cursors.add(cursor);
@@ -96,29 +89,19 @@ export function startChronicleNotice(): () => void {
 		viewer = value?.did;
 		generation++;
 		pending = false;
-		latest = new Map();
+		latest = new Set();
 		chronicleUnread.set(0);
 		void refresh();
 	});
 	const onVisible = () => {
 		if (!document.hidden) void refresh();
 	};
-	const onStorage = (event: StorageEvent) => {
-		if (viewer && (event.key === null || event.key === storageKey(viewer))) {
-			seenByDid.delete(viewer);
-			update();
-		}
-	};
-	const timer = setInterval(onVisible, 2 * 60_000);
 	document.addEventListener('visibilitychange', onVisible);
-	window.addEventListener('storage', onStorage);
 	return () => {
 		unsubscribe();
 		generation++;
 		viewer = undefined;
 		chronicleUnread.set(0);
-		clearInterval(timer);
 		document.removeEventListener('visibilitychange', onVisible);
-		window.removeEventListener('storage', onStorage);
 	};
 }

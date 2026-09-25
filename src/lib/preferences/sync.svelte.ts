@@ -1,3 +1,5 @@
+import { clearChronicleReadState } from '$lib/chronicle/notice';
+import { chronicleStorageKey, chronicleRevisionsKey } from '$lib/chronicle/read-state';
 import { get } from 'svelte/store';
 import { applyAgeAssurance, clearAgeAssurance } from '$lib/moderation/age.svelte';
 import {
@@ -225,7 +227,10 @@ const PRE_SCOPE_KEYS = ['nagi.news-read-state.v1', 'nagi.my-nagi-read-state.v1.b
  * サインアウト前のスコープ（DID）と、旧キー・guest スコープの両方を対象にする。
  */
 export function clearLocalPreferenceCache(did: string) {
+	clearChronicleReadState(did);
 	const keys = [
+		chronicleStorageKey(did),
+		chronicleRevisionsKey(did),
 		favoritesStorageKey(),
 		favoritesStorageKey(did),
 		firstSyncKey(did),

@@ -326,7 +326,11 @@ export type RadioTrack = {
 	sourceUrl?: string;
 };
 export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean; unreadSlotKey?: string };
-export type RadioHistoryResponse = { tracks: RadioTrack[]; cursor?: string; unreadSlotKey?: string };
+export type RadioHistoryResponse = {
+	tracks: RadioTrack[];
+	cursor?: string;
+	unreadSlotKey?: string;
+};
 
 /**
  * 自分年表の1件。
@@ -469,6 +473,8 @@ export type FeedTab = {
 	label?: string;
 };
 export type PreferencesView = {
+	/** 年表の項目ID・内容のSHA-256。既読集合は追加のみで同期する。 */
+	chronicleReadRevisions?: string[];
 	readPositions: RemoteReadPosition[];
 	emojiFavorites: EmojiFavorite[];
 	/** 省略＝このアカウントのお気に入りがまだ一度も同期されていない（初回同期の合図）。 */
@@ -509,6 +515,8 @@ export type SyncedModerationPreferences = {
 	selfNsfw: 'warn' | 'hide' | 'ignore';
 };
 export type PutPreferencesInput = {
+	/** 既読へ追加する年表のリビジョン（1回最大200件）。 */
+	chronicleReadRevisions?: string[];
 	readPositions?: RemoteReadPosition[];
 	emojiFavorites?: EmojiFavorite[];
 	/** emojiFavorites を送るときは必須。保存済みより古ければサーバは書き込まない。 */
