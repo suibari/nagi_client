@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	// フィードの唯一の画面。どのタブを出すかは `?tab=<id>` だけで決まる。
 	// タブ構成はユーザー設定（$lib/feed-tabs）で、/settings/feed-tabs から編集する。
 	// `/global` と `/affirmation` は昔の URL の互換として残してあり、中身はここと同じ。
@@ -50,9 +51,7 @@
 </script>
 
 {#if !$oauthReady}
-	<div class="timeline-loading" role="status" aria-label={m.loading()}>
-		<span class="spinner" aria-hidden="true"></span>
-	</div>
+	<Spinner />
 {:else}
 	<FeedTabs activeId={tab.id} />
 	{#if spec.channelUri}

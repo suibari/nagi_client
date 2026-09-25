@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	// 昔からの公開グローバルTLの URL。クローラ向けにプリレンダを維持したいので
 	// `/feed?tab=global` へ寄せず独立したルートのまま、中身だけ FeedShell に揃える。
 	import FeedShell from '$lib/components/FeedShell.svelte';
@@ -11,9 +12,7 @@
 </script>
 
 {#if !$oauthReady}
-	<div class="timeline-loading" role="status" aria-label={m.loading()}>
-		<span class="spinner" aria-hidden="true"></span>
-	</div>
+	<Spinner />
 {:else}
 	<FeedTabs activeId="global" />
 	<FeedShell {spec} />

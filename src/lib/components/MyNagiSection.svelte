@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { Snippet } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -61,7 +62,7 @@
 	</header>
 	<div class="my-nagi-section-body">
 		{#if loading}
-			<p class="my-nagi-state" role="status">{m.loading()}</p>
+			<Spinner />
 		{:else if error}
 			<p class="my-nagi-state my-nagi-state-error">
 				<span>{error}</span>

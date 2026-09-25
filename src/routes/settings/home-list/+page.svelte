@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
@@ -55,7 +56,7 @@
 
 		{#if error}<p class="mute-error" role="alert">{error}</p>{/if}
 		{#if loading && !privateList.loaded}
-			<p>{m.loading()}</p>
+			<Spinner />
 		{:else if !privateList.members.length}
 			<p class="muted">{m.homeListEmpty()}</p>
 		{:else}

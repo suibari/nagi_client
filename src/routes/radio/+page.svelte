@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getRadioHistory } from '$lib/api/appview';
 	import type { RadioTrack } from '$lib/api/types';
 	import RadioContent from '$lib/radio/RadioContent.svelte';
@@ -27,9 +28,9 @@
 			cursor = page.cursor;
 			if (reset) unreadSlotKey = page.unreadSlotKey;
 			if (reset && page.tracks[0]) {
-				void radio.markSeen(page.tracks[0].slotKey).catch((cause) =>
-					console.error('Failed to mark radio as seen:', cause),
-				);
+				void radio
+					.markSeen(page.tracks[0].slotKey)
+					.catch((cause) => console.error('Failed to mark radio as seen:', cause));
 			}
 		} catch (cause) {
 			if (id === requestId) {
@@ -70,7 +71,7 @@
 		{#if !loading && !error && tracks.length === 0}
 			<p class="state">{m.radioHistoryEmpty()}</p>
 		{/if}
-		{#if loading && tracks.length === 0}<p class="state">{m.loading()}</p>{/if}
+		{#if loading && tracks.length === 0}<Spinner />{/if}
 		{#if error}
 			<p class="state">{m.radioHistoryError()}</p>
 			<button class="more" onclick={() => load(tracks.length === 0)}>{m.retry()}</button>

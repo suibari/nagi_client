@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, tick } from 'svelte';
 	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -29,7 +30,13 @@
 		type ArrayCandidate,
 	} from '$lib/atproto/appLinks';
 
-	type FieldChoice = { id: string; path: string; sample: string; role: AppLinkFieldRole; shown: boolean };
+	type FieldChoice = {
+		id: string;
+		path: string;
+		sample: string;
+		role: AppLinkFieldRole;
+		shown: boolean;
+	};
 	type LinkEditor = {
 		id: string;
 		collection: string;
@@ -358,7 +365,7 @@
 		{#if !$session && $oauthReady}
 			<SignedOutNotice message={m.appLinksSignInRequired()} />
 		{:else if $session && !loaded}
-			<p>{m.loading()}</p>
+			<Spinner />
 		{:else if $session}
 			{#if appGroups.length}
 				<div class="discover">
@@ -436,7 +443,7 @@
 								</label>
 
 								{#if editor.loading}
-									<p class="muted">{m.appLinksLoadingSample()}</p>
+									<Spinner label={m.appLinksLoadingSample()} />
 								{:else if !editor.record}
 									<p class="muted">{m.appLinksNoSample()}</p>
 								{:else}
@@ -521,7 +528,9 @@
 	}
 	.link {
 		min-inline-size: 0;
-		transition: opacity 120ms ease, border-color 120ms ease;
+		transition:
+			opacity 120ms ease,
+			border-color 120ms ease;
 	}
 	.link.dragging {
 		opacity: 0.3;

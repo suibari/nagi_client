@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -79,7 +80,7 @@
 		title={sending ? m.composerSubmitting() : m.composerSubmitNagi()}
 		onclick={() => void composer?.submit()}
 	>
-		{#if sending}<span class="submit-spinner" aria-hidden="true"></span>
+		{#if sending}<Spinner inline size="sm" decorative />
 		{:else}<Icon name="send" size={18} />{/if}
 		<span>{sending ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
 	</button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { untrack } from 'svelte';
 	import { ApiRequestError, getZenkatsu } from '$lib/api/appview';
 	import type {
@@ -257,7 +258,7 @@
 </section>
 
 {#if loading}
-	<div class="state">…</div>
+	<Spinner />
 {:else if error}
 	<div class="state">{error}</div>
 {:else if feed}
@@ -284,7 +285,8 @@
 			{#if $session && !date && !feed.viewer?.submitted && !picking}
 				<button class="play-button" disabled={!canPlay} onclick={() => (picking = true)}>
 					{#if viewerLoading && !feed.viewer}<span class="play-spinner" aria-hidden="true"
-						></span>{/if}
+							><Spinner inline size="sm" decorative /></span
+						>{/if}
 					{m.zenkatsuPlay()}
 				</button>
 			{/if}
@@ -508,12 +510,6 @@
 	.play-spinner {
 		position: absolute;
 		inset-inline-start: 0.8rem;
-		inline-size: 1em;
-		block-size: 1em;
-		border: 2px solid currentColor;
-		border-inline-end-color: transparent;
-		border-radius: 50%;
-		animation: play-spin 0.8s linear infinite;
 	}
 	.play-status {
 		margin: 0;
@@ -521,16 +517,6 @@
 		font-size: 0.75rem;
 		line-height: 1.4;
 		text-align: center;
-	}
-	@keyframes play-spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.play-spinner {
-			animation: none;
-		}
 	}
 	.play-controls {
 		display: flex;

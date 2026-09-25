@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { getPreferences, putPreferences } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -59,7 +60,7 @@
 		<SignedOutNotice message={m.botReplyFreqLoginRequired()} />
 	{:else if $session}
 		{#if loading}
-			<p>{m.loading()}</p>
+			<Spinner />
 		{:else}
 			<div class="bot-reply-freq-container">
 				<p class="bot-reply-freq-current">

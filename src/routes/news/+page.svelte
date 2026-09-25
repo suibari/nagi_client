@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getPositiveNews, searchNewsByQuery } from '$lib/api/appview';
 	import type { ActorView, NewsView, RecommendedNewsView } from '$lib/api/types';
 	import NewsCard from '$lib/components/NewsCard.svelte';
@@ -162,9 +163,7 @@
 	{/each}
 </div>
 <section class="news-feed" aria-busy={loading}>
-	{#if loading && !items.length}<div class="timeline-loading" role="status">
-			<span class="spinner"></span>
-		</div>
+	{#if loading && !items.length}<Spinner />
 	{:else if error && !items.length}<div class="state error">
 			{error}<button class="icon-action" onclick={() => load(true)} aria-label={m.retry()}
 				><Icon name="refresh" size={18} /></button

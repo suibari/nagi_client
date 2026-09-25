@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import { feedTabLabel, resolveFeedTab } from '$lib/feed-tabs/resolve';
@@ -56,9 +57,7 @@
 	</nav>
 	<div class="feed-tab-preview-body">
 		{#if !feed || (feed.loading && !feed.items.length)}
-			<div class="timeline-loading" role="status" aria-label={m.loading()}>
-				<span class="spinner" aria-hidden="true"></span>
-			</div>
+			<Spinner />
 		{:else if feed.error && !feed.items.length}
 			<p class="state error">{feed.error}</p>
 		{:else if !feed.items.length}

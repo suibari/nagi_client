@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getZenkatsuDeck } from '$lib/api/appview';
 	import type { ZenkatsuDeckView } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
@@ -53,7 +54,7 @@
 </script>
 
 {#if loading}
-	<p class="state">…</p>
+	<Spinner />
 {:else if error || !record}
 	<p class="state">{m.recordFetchFailed()}</p>
 {:else}

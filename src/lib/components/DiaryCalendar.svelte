@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getDiaries } from '$lib/api/appview';
 	import type { ActorView, DiaryView } from '$lib/api/types';
 	import {
@@ -184,7 +185,7 @@
 		</div>
 
 		{#if loading}
-			<div class="state">{m.loading()}</div>
+			<Spinner />
 		{:else if detail}
 			<DiaryDayDetail summary={detail} />
 		{:else if entries.length}

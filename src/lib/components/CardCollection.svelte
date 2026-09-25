@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { drawCard } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
 	import {
@@ -144,7 +145,7 @@
 	{/if}
 
 	{#if loading}
-		<p class="cards-note">{m.loading()}</p>
+		<Spinner />
 	{:else if error}
 		<p class="cards-error" role="alert">{error}</p>
 	{:else if collection}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import BluemojiMedia from './BluemojiMedia.svelte';
 	import { emojiFileType, emojiNeedsPngConversion, processEmojiImage } from '$lib/atproto/bluemoji';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -44,5 +45,5 @@
 {:else if failed}
 	<small class="error">{m.emojiCompressError()}</small>
 {:else}
-	<small role="status">{m.loading()}</small>
+	<Spinner inline size="sm" />
 {/if}

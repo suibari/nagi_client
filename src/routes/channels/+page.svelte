@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { getChannels, searchChannelsByQuery, type ChannelDirectoryView } from '$lib/api/appview';
@@ -279,18 +280,14 @@
 	{#if active === 'search' && !searchedQuery}
 		<div class="state">{m.channelSearchPrompt()}</div>
 	{:else if active !== 'trend' && active !== 'search' && !$oauthReady}
-		<div class="timeline-loading" role="status" aria-label={m.loading()}>
-			<span class="spinner" aria-hidden="true"></span>
-		</div>
+		<Spinner />
 	{:else if active !== 'trend' && active !== 'search' && !$session}
 		<div class="state channel-sign-in">
 			<p>{m.channelsSignInRequired()}</p>
 			<a href="/login">{m.login()}</a>
 		</div>
 	{:else if current.loading && !current.channels.length}
-		<div class="timeline-loading" role="status" aria-label={m.loading()}>
-			<span class="spinner" aria-hidden="true"></span>
-		</div>
+		<Spinner />
 	{:else if current.error && !current.channels.length}
 		<div class="state error">
 			{current.error}<button

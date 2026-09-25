@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import {
 		ApiRequestError,
 		getCommunityAffirmations,
@@ -295,7 +296,7 @@
 			</div>
 		</HorizontalCarousel>
 	{:else if loading}
-		<p class="community-affirmation-state" role="status">{m.communityAffirmationLoading()}</p>
+		<Spinner label={m.communityAffirmationLoading()} />
 	{:else if error}
 		<div class="community-affirmation-state community-affirmation-error">
 			<span>{m.communityAffirmationError()}</span>

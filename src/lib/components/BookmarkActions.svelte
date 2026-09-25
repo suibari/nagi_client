@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { signIn } from '$lib/oauth/session.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
@@ -125,7 +126,7 @@
 					>{m.bookmarkRefreshPermissions()}</button
 				>
 			{:else}
-				<p>{m.loading()}</p>
+				<Spinner />
 			{/if}
 			{#if error}<p class="error" role="alert">{error}</p>{/if}
 		{/snippet}

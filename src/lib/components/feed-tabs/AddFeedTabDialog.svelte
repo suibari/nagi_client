@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { getChannels, searchChannelsByQuery } from '$lib/api/appview';
 	import type { ChannelView } from '$lib/api/types';
 	import { rememberChannelLabel } from '$lib/feed-tabs/labels.svelte';
@@ -204,9 +205,7 @@
 				/>
 			</label>
 			{#if channelsLoading || searching}
-				<div class="timeline-loading" role="status" aria-label={m.loading()}>
-					<span class="spinner" aria-hidden="true"></span>
-				</div>
+				<Spinner />
 			{:else if channelsError}
 				<p class="error">{channelsError}</p>
 			{:else}

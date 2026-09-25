@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { page } from '$app/state';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
@@ -430,7 +431,7 @@
 			<div id="emoji-panel-mine" role="tabpanel" aria-labelledby="emoji-tab-mine">
 				<h2>{m.emojiMineTitle()}</h2>
 				{#if !loaded}
-					<p>{m.loading()}</p>
+					<Spinner />
 				{:else if !emojis.length}
 					<p>{m.emojiMineEmpty()}</p>
 				{:else}

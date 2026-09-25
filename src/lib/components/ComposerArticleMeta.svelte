@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		ImageProcessingError,
@@ -157,7 +158,9 @@
 						<span>{m.articleHeaderImageHint()}</span>
 					</span>
 				{/if}
-				{#if processing}<span class="article-cover-spinner" aria-hidden="true"></span>{/if}
+				{#if processing}<span class="article-cover-spinner" aria-hidden="true"
+						><Spinner inline size="sm" decorative /></span
+					>{/if}
 			</button>
 			{#if header}
 				<label class="article-cover-alt">
@@ -303,6 +306,8 @@
 		overflow-wrap: anywhere;
 	}
 	.article-cover-spinner {
+		display: grid;
+		place-items: center;
 		position: absolute;
 		inset: 0;
 		background: color-mix(in srgb, var(--bg) 60%, transparent);

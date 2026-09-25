@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import jaI18n from 'emoji-picker-element/i18n/ja';
@@ -337,7 +338,7 @@
 				{#if unicodeError}
 					<p class="emoji-custom-empty">{m.emojiSearchFailed()}</p>
 				{:else if unicodeLoading && !unicodeIndex.length}
-					<p class="emoji-custom-empty">{m.loading()}</p>
+					<Spinner />
 				{:else if !unicodeResults.length}
 					<p class="emoji-custom-empty">{m.emojiUnicodeEmpty()}</p>
 				{:else}
@@ -369,7 +370,7 @@
 			{#if customError}
 				<p class="emoji-custom-empty">{m.emojiSearchFailed()}</p>
 			{:else if customLoading && !customEmojis.length}
-				<p class="emoji-custom-empty">{m.loading()}</p>
+				<Spinner />
 			{:else if !customEmojis.length}
 				<p class="emoji-custom-empty">{m.emojiCustomEmpty()}</p>
 			{:else}

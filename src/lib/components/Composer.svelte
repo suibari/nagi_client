@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import Avatar from './Avatar.svelte';
 	import QuoteCard from './QuoteCard.svelte';
@@ -545,17 +546,22 @@
 			if (article && cover && !usableAsCoverImage(cover)) throw new Error(m.articleCoverTooLarge());
 			const created = article
 				? await publishStandardSiteDocument({
-					title: article.title, markdown: draft.text, publishedAt: draft.createdAt,
-					tags: [...new Set([...tagsFromFacets(draft.facets), ...articleTags])],
-					...(cover ? { coverImage: cover } : {}),
-					nagi: {
-						facets: draft.facets, langs: draft.langs,
-						...(assets.images.length ? { embed: { $type: 'com.suibari.nagi.post#images', images: assets.images } } : {}),
-						linkCards: assets.cards,
-						...(draft.botSilent ? { botSilent: true } : {}),
-					},
-					...(draft.labels ? { labels: draft.labels } : {}),
-				})
+						title: article.title,
+						markdown: draft.text,
+						publishedAt: draft.createdAt,
+						tags: [...new Set([...tagsFromFacets(draft.facets), ...articleTags])],
+						...(cover ? { coverImage: cover } : {}),
+						nagi: {
+							facets: draft.facets,
+							langs: draft.langs,
+							...(assets.images.length
+								? { embed: { $type: 'com.suibari.nagi.post#images', images: assets.images } }
+								: {}),
+							linkCards: assets.cards,
+							...(draft.botSilent ? { botSilent: true } : {}),
+						},
+						...(draft.labels ? { labels: draft.labels } : {}),
+					})
 				: await createPost(draft, assets);
 			optimisticPosts.markCreated(optimisticId, created);
 			postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
@@ -593,8 +599,11 @@
 					}
 			}
 			if (article && bskyPostRef) {
-				await updateStandardSiteDocument(rkey, { markdown: draft.text, bskyPostRef })
-					.catch((cause) => { warning = cause instanceof Error ? cause.message : m.standardSiteFailed(); });
+				await updateStandardSiteDocument(rkey, { markdown: draft.text, bskyPostRef }).catch(
+					(cause) => {
+						warning = cause instanceof Error ? cause.message : m.standardSiteFailed();
+					},
+				);
 			}
 			setLastPostScope(scope);
 			// 投稿開始前から進行中だった自動保存を待ち、その保存分も確実に片付ける。
@@ -905,7 +914,7 @@
 				title={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
 				onclick={() => submit()}
 			>
-				{#if busy}<span class="submit-spinner" aria-hidden="true"></span>
+				{#if busy}<Spinner inline size="sm" decorative />
 				{:else}<Icon name="send" size={18} />{/if}
 				<span>{busy ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
 			</button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	/**
 	 * my Nagi — Nagi の起点。公開部分はサインイン前にも見せる。
 	 *
@@ -337,9 +338,7 @@
 {/if}
 
 {#if !$oauthReady}
-	<div class="timeline-loading" role="status" aria-label={m.loading()}>
-		<span class="spinner" aria-hidden="true"></span>
-	</div>
+	<Spinner />
 {:else}
 	<MyNagiSection
 		title={m.myNagiBotTitle()}

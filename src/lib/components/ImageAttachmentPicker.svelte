@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		ImageProcessingError,
@@ -98,7 +99,7 @@
 		onclick={() => input.click()}
 	>
 		{#if processing}
-			<span class="attachment-processing-spinner" aria-hidden="true"></span>
+			<Spinner inline size="sm" decorative />
 			<span>{processingLabel}</span>
 		{:else}
 			<Icon name="image" size={18} />
