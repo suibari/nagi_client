@@ -52,7 +52,7 @@ export const en: Messages = {
 	navNews: 'News',
 	navNotifications: 'Notifications',
 	navSettings: 'Settings',
-	navDiary: 'Diary',
+	navActivity: 'Activity',
 	navRadio: 'Radio',
 	navMenu: 'Menu',
 	mainNavAria: 'Main navigation',
@@ -674,8 +674,30 @@ export const en: Messages = {
 			.join(', '),
 	diaryAbout: "Bot-tan writes these entries from that day's posts.",
 
+	// mood
+	diaryTabMood: 'Mood',
+	moodTitle: 'Mood graph',
+	moodGraphAria: 'Daily mood range over the past year',
+	moodZoomIn: 'Zoom in',
+	moodZoomOut: 'Zoom out',
+	moodZoomHint: 'You can also zoom with Ctrl (⌘) + scroll',
+	moodLegendBand: 'Middle 50%',
+	moodLegendMedian: 'Median',
+	moodDayAria: (p: { date: string; count: number; median: string }) =>
+		`${p.date}, ${p.count} ${p.count === 1 ? 'post' : 'posts'} with a readable mood, median ${p.median}`,
+	moodMedian: (p: { value: string }) => `Median ${p.value}`,
+	moodDayPosts: (p: { count: number }) =>
+		`${p.count} ${p.count === 1 ? 'post' : 'posts'} with a readable mood`,
+	moodDayNoPosts: 'No posts with a readable mood on this day.',
+	moodSelectHint: "Tap a day on the graph to see that day's post moods and diary.",
+	moodPending: (p: { count: number }) =>
+		`${p.count} ${p.count === 1 ? 'post has' : 'posts have'} not been read yet. They will appear over time.`,
+	moodEmpty: 'No posts with a readable mood in the past year yet.',
+	moodAbout:
+		'Bot-tan reads the mood of each post, from brighter (+5) to lower (-5), and shows the daily range. Announcements and plain updates without a readable mood are left out. Only you can see this.',
+
 	// chronicle
-	diaryTabActivity: 'Yearly activity',
+	diaryTabActivity: 'Diary',
 	diaryTabChronicle: 'Chronicle',
 	diaryTabsAria: 'Diary view',
 	chronicleTitle: (p: { name: string }) => `${p.name}'s chronicle`,

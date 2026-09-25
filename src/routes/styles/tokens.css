@@ -94,6 +94,17 @@
 	--danger: #b4233c;
 	--danger-soft: #fde8ec;
 
+	/* 日記の感情グラフ。明るい気分は暖色、落ち込みは寒色、帯と中央値は無彩色。 */
+	--mood-positive: #d9622b;
+	--mood-negative: #2a78d6;
+	--mood-median: #2f3542;
+	/* 帯のグラデーション。沈んだ（-5）→ 明るい（+5）。参考: 気分記録アプリの5段階の色。 */
+	--mood-scale-1: #8e4fb0;
+	--mood-scale-2: #1f8fd0;
+	--mood-scale-3: #22a45d;
+	--mood-scale-4: #e0a100;
+	--mood-scale-5: #f0652f;
+
 	/* about の機能カードのカテゴリ色。羅列に見えないよう4系統に色分けする。
 	   Nagi の落ち着いた調子を壊さないよう彩度は低めに揃える。fg はページ背景と
 	   チップ背景の両方に載るので、どちらでもコントラストが立つ値にしている。 */
@@ -242,6 +253,16 @@
 	--danger: #ff9baa;
 	--danger-soft: #4a2931;
 
+	/* 日記の感情グラフ。明るい気分は暖色、落ち込みは寒色、帯と中央値は無彩色。 */
+	--mood-positive: #d95926;
+	--mood-negative: #3987e5;
+	--mood-median: #e8f4f3;
+	--mood-scale-1: #a66bd3;
+	--mood-scale-2: #2fa8e6;
+	--mood-scale-3: #34c276;
+	--mood-scale-4: #f2b705;
+	--mood-scale-5: #ff7a45;
+
 	--about-cat-connect-fg: #6fd8dd;
 	--about-cat-connect-bg: #123437;
 	--about-cat-keep-fg: #84d3a4;
@@ -355,6 +376,16 @@
 		--warning-soft: #493a20;
 		--danger: #ff9baa;
 		--danger-soft: #4a2931;
+
+		/* 日記の感情グラフ。明るい気分は暖色、落ち込みは寒色、帯と中央値は無彩色。 */
+		--mood-positive: #d95926;
+		--mood-negative: #3987e5;
+		--mood-median: #e8f4f3;
+		--mood-scale-1: #a66bd3;
+		--mood-scale-2: #2fa8e6;
+		--mood-scale-3: #34c276;
+		--mood-scale-4: #f2b705;
+		--mood-scale-5: #ff7a45;
 
 		--about-cat-connect-fg: #6fd8dd;
 		--about-cat-connect-bg: #123437;

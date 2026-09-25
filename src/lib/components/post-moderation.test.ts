@@ -56,4 +56,19 @@ describe('embedded post moderation', () => {
 		expect(body).toContain('concealed');
 		expect(body).toContain('aria-hidden="true"');
 	});
+
+	it('guards label-only content such as mood post excerpts', () => {
+		const excerpt = {
+			uri: post.uri,
+			moderationLabels: ['harassment'],
+		};
+		const children = createRawSnippet(() => ({ render: () => '<span>Mood excerpt</span>' }));
+		expect(render(PostModerationGuard, { props: { post: excerpt, children } }).body).toContain(
+			'concealed',
+		);
+		setModerationPreference('automatic', 'hide');
+		expect(render(PostModerationGuard, { props: { post: excerpt, children } }).body).not.toContain(
+			'Mood excerpt',
+		);
+	});
 });

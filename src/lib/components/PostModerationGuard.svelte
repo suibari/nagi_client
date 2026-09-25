@@ -5,7 +5,13 @@
 	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
 
-	let { post, children }: { post: PostView; children: Snippet } = $props();
+	let {
+		post,
+		children,
+	}: {
+		post: Pick<PostView, 'uri' | 'selfLabels' | 'moderationLabels'>;
+		children: Snippet;
+	} = $props();
 	let display = $derived(contentModerationDisplay(post));
 	let title = $derived(
 		display.reason === 'automatic'

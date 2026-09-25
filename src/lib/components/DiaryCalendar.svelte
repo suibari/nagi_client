@@ -1,29 +1,34 @@
 <script lang="ts">
 	import { getDiaries } from '$lib/api/appview';
-	import type { ActorView, DiaryView, PostView } from '$lib/api/types';
+	import type { ActorView, DiaryView } from '$lib/api/types';
 	import {
 		buildDiaryGraphForDate,
 		diaryActivityIntensity,
 		diaryMonthLabels,
 	} from '$lib/diary/calendar';
 	import { i18n, m, dateLocale } from '$lib/i18n/i18n.svelte';
-	import { tick } from 'svelte';
-	import AvatarLink from './AvatarLink.svelte';
-	import ChatBubble from './ChatBubble.svelte';
+	import { tick, untrack } from 'svelte';
+	import DiaryDayDetail from './DiaryDayDetail.svelte';
 
+	/**
+	 * selected は日記ページが持ち、URL の ?date= と感情グラフのタブで共有する。
+	 * anchorDate はページを開いたときの日付で、表示する1年の範囲だけを決める
+	 * （選択を外しても範囲が今年へ飛ばないように、選択とは分けてある）。
+	 */
 	let {
 		did,
-		initialDate,
+		anchorDate,
+		selected = $bindable(),
 		botActor,
 	}: {
 		did: string;
-		initialDate?: string;
+		anchorDate?: string;
+		selected?: string;
 		botActor?: ActorView;
 	} = $props();
 
-	const graph = $derived(buildDiaryGraphForDate(initialDate));
+	const graph = $derived(buildDiaryGraphForDate(anchorDate));
 	const monthLabels = $derived(diaryMonthLabels(graph.weeks));
-	let selected = $state<string | undefined>();
 	let hovered = $state<string | undefined>();
 	let entries = $state<DiaryView[]>([]);
 	let loading = $state(true);
@@ -34,11 +39,6 @@
 	const cache = new Map<string, DiaryView[]>();
 
 	$effect(() => {
-		if (!initialDate || initialDate < graph.from || initialDate > graph.to) return;
-		selected = initialDate;
-	});
-
-	$effect(() => {
 		const actor = did;
 		if (!actor) return;
 		const key = `${actor}:${graph.from}:${graph.to}`;
@@ -47,9 +47,10 @@
 			await tick();
 			if (!graphScroll || scrolledKey === key) return;
 			scrolledKey = key;
-			if (initialDate && initialDate >= graph.from && initialDate <= graph.to) {
+			const target = untrack(() => selected);
+			if (target && target >= graph.from && target <= graph.to) {
 				graphScroll
-					.querySelector<HTMLElement>(`[data-date="${initialDate}"]`)
+					.querySelector<HTMLElement>(`[data-date="${target}"]`)
 					?.scrollIntoView({ block: 'nearest', inline: 'center' });
 			} else {
 				graphScroll.scrollLeft = graphScroll.scrollWidth;
@@ -105,29 +106,6 @@
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { month: 'short' });
 	const entryTitle = (entry: DiaryView) =>
 		i18n.locale === 'ja' ? (entry.titleJa ?? entry.titleEn) : (entry.titleEn ?? entry.titleJa);
-	const actorName = (actor: ActorView) => actor.displayName ?? actor.handle;
-	const diaryPost = $derived.by((): PostView | undefined => {
-		if (!current) return undefined;
-		return {
-			uri: current.uri,
-			cid: current.cid,
-			author:
-				botActor ??
-				({
-					did: 'did:unknown:bot-tan',
-					handle: 'bot-tan',
-					displayName: m.botBadge(),
-					isBot: true,
-				} satisfies ActorView),
-			text: current.text,
-			langs: current.langs,
-			createdAt: current.createdAt,
-			indexedAt: current.indexedAt,
-			reactions: [],
-			isBot: true,
-			isAffirmation: false,
-		};
-	});
 </script>
 
 <section class="diary card">
@@ -208,43 +186,15 @@
 		{#if loading}
 			<div class="state">{m.loading()}</div>
 		{:else if detail}
-			<article class="diary-day-detail" aria-live="polite">
-				<div>
-					<h3>{longDate(detail.date)}</h3>
-					{#if entryTitle(detail)}
-						<p class="diary-title">{m.diaryTitleLabel({ title: entryTitle(detail)! })}</p>
-					{/if}
-				</div>
-				{#if detail.involvedActors?.length}
-					<div class="diary-connections">
-						<span>{m.diaryInvolvedPeople()}</span>
-						<div class="reaction-actors" role="group" aria-label={m.diaryInvolvedPeople()}>
-							{#each detail.involvedActors as actor (actor.did)}
-								<AvatarLink
-									{actor}
-									size="small"
-									className="reaction-avatar"
-									ariaLabel={m.viewProfileOfAria({ name: actorName(actor) })}
-									title={actorName(actor)}
-								/>
-							{/each}
-							{#if detail.involvedActorsHasMore}
-								<span class="reaction-more" aria-label={m.diaryMoreConnectionsAria()}>…</span>
-							{/if}
-						</div>
-					</div>
-				{/if}
-			</article>
+			<DiaryDayDetail summary={detail} />
 		{:else if entries.length}
 			<p class="diary-hint">{m.diaryHoverHint()}</p>
 		{:else}
 			<p class="diary-hint">{m.diaryEmptyYear()}</p>
 		{/if}
 
-		{#if diaryPost}
-			<article class="diary-entry">
-				<ChatBubble post={diaryPost} displayOnly collapsible={false} />
-			</article>
+		{#if !loading && current}
+			<DiaryDayDetail entry={current} {botActor} />
 		{/if}
 		<p class="diary-about">{m.diaryAbout()}</p>
 	{/if}
@@ -375,53 +325,9 @@
 			0 0 0 1px var(--surface),
 			0 0 0 3px var(--focus-ring);
 	}
-	.diary-day-detail {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 18px;
-		padding: 12px;
-		border-radius: var(--radius-m);
-		background: var(--surface-soft);
-		min-block-size: 62px;
-	}
-	.diary-day-detail h3 {
-		font-size: 12px;
-		font-weight: 800;
-		color: var(--text-strong);
-	}
-	.diary-title {
-		display: inline-block;
-		max-inline-size: 100%;
-		margin-top: 6px;
-		border-radius: var(--radius-pill);
-		background: var(--badge-title-bg);
-		color: var(--badge-title-fg);
-		padding: 3px 10px;
-		font-size: 11px;
-		font-weight: 800;
-		overflow-wrap: anywhere;
-	}
-	.diary-connections {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		white-space: nowrap;
-		font-size: 11px;
-		font-weight: 700;
-		color: var(--text-muted);
-	}
-	.diary-entry {
-		min-inline-size: 0;
-	}
 	.diary-hint,
 	.diary-about {
 		font-size: 12px;
 		color: var(--text-faint);
-	}
-	@media (max-width: 560px) {
-		.diary-day-detail {
-			flex-direction: column;
-		}
 	}
 </style>

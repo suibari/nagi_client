@@ -34,9 +34,10 @@ const notifications: NavItem = {
 const channels: NavItem = { href: '/channels', label: m.navChannels, icon: 'hash' };
 const blog: NavItem = { href: '/blog', label: m.navBlog, icon: 'blog' };
 const news: NavItem = { href: '/news', label: m.navNews, icon: 'newspaper' };
+// アクティビティ（日記 / 感情グラフ / 年表の3タブ）。URL は通知の ?date= と互換のため /diary のまま。
 const diary: NavItem = {
 	href: '/diary',
-	label: m.navDiary,
+	label: m.navActivity,
 	icon: 'draft',
 	badge: { unread: chronicleUnread, style: 'dot', aria: () => m.chronicleUnreadBadgeAria() },
 };
