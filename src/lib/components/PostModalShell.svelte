@@ -40,8 +40,37 @@
 				? m.postModeRich()
 				: m.postModeBlog();
 
+	let viewportTop = $state(0);
+	let viewportBottom = $state(0);
+
 	$effect(() => {
 		if (open) requestAnimationFrame(() => dialog?.focus());
+	});
+
+	/*
+		モバイルのソフトウェアキーボードは画面に重なるだけで、100dvh も fixed の inset:0 も
+		縮まない（Android Chrome の既定）。そのままだとモーダルの下半分がキーボードの裏に入り、
+		ブラウザがカーソルを見せようと画面ごと持ち上げてタブまで上へ逃げる。
+		実際に見えている領域（visualViewport）に背景を合わせ、モーダルをその中へ収める。
+	*/
+	$effect(() => {
+		const viewport = window.visualViewport;
+		if (!open || !viewport) {
+			viewportTop = 0;
+			viewportBottom = 0;
+			return;
+		}
+		const update = () => {
+			viewportTop = Math.max(0, viewport.offsetTop);
+			viewportBottom = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+		};
+		update();
+		viewport.addEventListener('resize', update);
+		viewport.addEventListener('scroll', update);
+		return () => {
+			viewport.removeEventListener('resize', update);
+			viewport.removeEventListener('scroll', update);
+		};
 	});
 
 	function keydown(event: KeyboardEvent) {
@@ -63,6 +92,8 @@
 	role="presentation"
 	hidden={!open}
 	style:--post-modal-assist-space={`${assistSpace}px`}
+	style:top={`${viewportTop}px`}
+	style:bottom={`${viewportBottom}px`}
 	onclick={(event) => event.target === event.currentTarget && !sending && onclose()}
 >
 	<div
@@ -109,6 +140,7 @@
 <style>
 	.post-modal-backdrop {
 		position: fixed;
+		/* top と bottom は見えている領域に合わせて差し込む。 */
 		inset: 0;
 		z-index: 110;
 		display: flex;
@@ -126,6 +158,8 @@
 		flex-direction: column;
 		gap: 12px;
 		width: min(100%, 620px);
+		/* 背景の内側（見えている領域から余白とおたすけ欄を除いた分）に収め、本文を内側でスクロールさせる。 */
+		max-height: 100%;
 		padding: 12px 16px 16px;
 		border: 1px solid var(--line-strong);
 		border-radius: var(--r-md);
@@ -133,11 +167,14 @@
 		box-shadow: var(--shadow-pop);
 	}
 	.post-modal.rich {
-		height: min(760px, calc(100dvh - 72px - var(--post-modal-assist-space, 0px)));
+		height: min(760px, 100%);
 		overflow: hidden;
 	}
 	.post-modal:focus {
 		outline: none;
+	}
+	header {
+		flex-shrink: 0;
 	}
 	.post-modal-body {
 		display: flex;
@@ -221,9 +258,7 @@
 			display: none;
 		}
 		.post-modal.rich {
-			height: calc(
-				100dvh - 16px - env(safe-area-inset-bottom) - var(--post-modal-assist-space, 0px)
-			);
+			height: 100%;
 		}
 		.post-modal-modes button {
 			padding: 4px 8px;
