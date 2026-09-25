@@ -312,6 +312,7 @@
 		list-style: none;
 	}
 	.chronicle-item {
+		position: relative;
 		display: grid;
 		grid-template-columns: 28px minmax(0, 1fr);
 		gap: 10px;
@@ -328,13 +329,24 @@
 		background: color-mix(in srgb, var(--accent-strong), transparent 86%);
 		color: var(--accent-strong);
 	}
-	.chronicle-item:not(:last-child) .chronicle-rail::after {
+	.chronicle-item:has(~ .chronicle-item)::before,
+	.chronicle-aside:has(~ .chronicle-item)::before {
 		content: '';
 		position: absolute;
-		inset-block-start: 100%;
+		inset-inline-start: 13px;
+		/* 次の項目のアイコンまで、項目間の gap と上 padding もつなぐ。 */
+		inset-block-start: 36px;
+		inset-block-end: -12px;
 		inline-size: 2px;
-		block-size: calc(100% + 8px);
 		background: color-mix(in srgb, var(--line), transparent 20%);
+		pointer-events: none;
+	}
+	.chronicle-aside:has(~ .chronicle-item)::before {
+		inset-block-start: 0;
+	}
+	.chronicle-item:has(+ .chronicle-aside)::before,
+	.chronicle-aside:has(+ .chronicle-aside)::before {
+		inset-block-end: 0;
 	}
 	.chronicle-body {
 		min-inline-size: 0;
@@ -370,10 +382,11 @@
 	}
 	/* まとめに付く一行。軸の右側に、控えめに寄せる。 */
 	.chronicle-aside {
+		position: relative;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 2px;
-		margin-inline-start: 38px;
+		padding-inline-start: 38px;
 		margin-block-start: -4px;
 		padding-block-end: 8px;
 		min-inline-size: 0;
