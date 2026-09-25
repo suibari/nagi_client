@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getDiaries } from '$lib/api/appview';
-	import type { ActorView, DiaryMoodView, DiaryView } from '$lib/api/types';
+	import type { DiaryMoodView, DiaryView } from '$lib/api/types';
 	import { buildDiaryGraphForDate } from '$lib/diary/calendar';
 	import {
 		clampMoodZoom,
@@ -12,24 +12,21 @@
 	import { postHref } from '$lib/feed/post-follow.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
-	import DiaryDayDetail from './DiaryDayDetail.svelte';
 	import PostModerationGuard from './PostModerationGuard.svelte';
 
 	/**
 	 * 日記ページの「感情グラフ」タブ。投稿ごとの気分（-5〜+5）を、日ごとの中央50%の帯と
-	 * 中央値の線で見せる。日付を押すと、その日の点（投稿）と日記を開く。
+	 * 中央値の線で見せる。日付を押すと、その日の点（投稿）と日記へのリンクを表示する。
 	 * selected と anchorDate の役割は DiaryCalendar と同じ（選択はタブ間で共有する）。
 	 */
 	let {
 		did,
 		anchorDate,
 		selected = $bindable(),
-		botActor,
 	}: {
 		did: string;
 		anchorDate?: string;
 		selected?: string;
-		botActor?: ActorView;
 	} = $props();
 
 	const uid = $props.id();
@@ -196,7 +193,7 @@
 	});
 
 	/**
-	 * グラフの外を押したら選択を外す。開いている投稿一覧と日記の中（本文を選んだり
+	 * グラフの外を押したら選択を外す。開いている投稿一覧と日記リンクの中（本文を選んだり
 	 * リンクを押したりする場所）、ズーム、タブは除く。タブを除かないと、日記タブへ
 	 * 切り替えた瞬間に選択が消えて日付を引き継げない。Esc でも外せる。
 	 */
@@ -426,7 +423,11 @@
 						<p class="mood-hint">{m.moodDayNoPosts()}</p>
 					{/if}
 				</section>
-				<DiaryDayDetail summary={selectedDiary} entry={selectedDiary} {botActor} />
+				{#if selectedDiary}
+					<a class="mood-diary-link" href={`/diary?date=${selectedDiary.date}`}>
+						{m.chronicleOpenDiary()} →
+					</a>
+				{/if}
 			</div>
 		{/if}
 		<p class="mood-about">{m.moodAbout()}</p>
@@ -434,6 +435,12 @@
 </section>
 
 <style>
+	.mood-diary-link {
+		justify-self: start;
+		font-size: 12px;
+		color: var(--accent-strong);
+	}
+
 	.mood {
 		padding: 16px;
 		display: grid;
