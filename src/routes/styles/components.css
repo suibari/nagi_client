@@ -3971,62 +3971,102 @@ button.settings-category {
 	margin-bottom: 0;
 }
 
-/* --- about page (ランディング構成: ヒーロー → 理由 → 使い方 → 機能 → AT Protocol → CTA) --- */
-/* 設定配下の .auth-card(450px) ではなく、共通のメインカラムをそのまま使う。
-   文章は各ブロック1〜2行に抑え、情報量ではなく図で伝える。 */
+/* --- about page --- */
+/* 構成: ヒーロー → 理由 → 見本（サンプル） → 機能一覧 → はじめかた → AT Protocol → 締め。
+   右レールを畳んだ広い本文（.shell-wide）で使う。まとまりは罫線で囲まず、余白と見出しで作る。
+   色は面ではなく、アイコン・小見出し・数字にだけ置く。
+   幅の切り替えは画面幅ではなく本文幅で決める（左ナビの有無で本文幅が大きく変わるため）。 */
 .about-page {
+	container: about / inline-size;
 	display: grid;
-	gap: 36px;
+	gap: 88px;
 	margin: 8px 0 48px;
 	min-inline-size: 0;
 }
+.about-page > .settings-back {
+	margin-block-end: -72px;
+}
 .about-section {
 	display: grid;
-	gap: 18px;
+	gap: 36px;
 	min-inline-size: 0;
 }
-.about-heading {
+.about-section-head {
+	display: grid;
+	gap: 8px;
+	justify-items: center;
+	text-align: center;
+}
+.about-section-head h2 {
 	margin: 0;
-	font-size: 1.2rem;
+	font-size: clamp(1.3rem, 3.2cqi, 1.65rem);
+	letter-spacing: 0.02em;
 	color: var(--text-strong);
 	overflow-wrap: anywhere;
 }
-/* 見出し直後のリードは見出しにぶら下げる。about-section の gap を打ち消す。 */
-.about-heading + .about-lead {
-	margin-top: -14px;
-}
-.about-lead {
+.about-section-head p {
 	margin: 0;
-	font-size: 0.9rem;
+	text-wrap: balance;
+	max-inline-size: 36em;
+	font-size: 0.92rem;
+	line-height: 1.8;
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
 }
+/* アイコン + 小見出し。ヒーローと見本の見出しの上に置く。 */
+.about-eyebrow {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: var(--accent-strong);
+}
+.about-text-link {
+	justify-self: start;
+	font-size: 0.88rem;
+	font-weight: 700;
+	color: var(--accent-strong);
+}
+.about-text-link:hover {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
 
 /* --- hero --- */
+/* 枠は付けず、やわらかいグラデーションの地だけで区切る。 */
 .about-hero {
 	position: relative;
 	isolation: isolate;
 	overflow: hidden;
 	display: grid;
-	grid-template-columns: minmax(0, 270px) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr);
+	justify-items: center;
 	align-items: center;
-	gap: 10px 30px;
-	padding: 30px 36px;
-	background: var(--surface-1);
-	border: 1px solid var(--line);
-	border-radius: var(--r-md);
-	box-shadow: none;
+	gap: 8px 40px;
+	padding: 40px 20px 32px;
+	text-align: center;
+	background:
+		radial-gradient(60% 70% at 15% 20%, var(--accent-softer), transparent 70%),
+		radial-gradient(55% 60% at 90% 85%, var(--decorative-accent-soft), transparent 70%),
+		radial-gradient(50% 50% at 80% 10%, var(--secondary-soft), transparent 70%);
+	border-radius: 28px;
 	min-inline-size: 0;
 }
 /* 「凪」らしいやわらかさを出す泡。装飾のみで、内容には一切かからない。 */
 .about-bubbles {
-	display: none;
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
 }
 .about-bubble {
 	position: absolute;
 	border-radius: 50%;
 	background: var(--accent-soft);
-	opacity: 0.75;
+	opacity: 0.5;
 	animation: about-float 11s ease-in-out infinite;
 }
 .about-bubble.b1 {
@@ -4054,8 +4094,8 @@ button.settings-category {
 .about-bubble.b4 {
 	inline-size: 40px;
 	block-size: 40px;
-	inset-inline-end: 22%;
-	inset-block-end: 12%;
+	inset-inline-end: 42%;
+	inset-block-end: 10%;
 	animation-delay: -1.5s;
 }
 .about-bubble.b5 {
@@ -4069,7 +4109,7 @@ button.settings-category {
 .about-bubble.b6 {
 	inline-size: 30px;
 	block-size: 30px;
-	inset-inline-start: 15%;
+	inset-inline-start: 8%;
 	inset-block-end: 22%;
 	background: var(--secondary-soft);
 	animation-delay: -4s;
@@ -4092,9 +4132,32 @@ button.settings-category {
 		transform: translateY(-10px);
 	}
 }
+.about-hero-copy {
+	display: grid;
+	gap: 16px;
+	justify-items: center;
+	min-inline-size: 0;
+}
+.about-hero h1 {
+	margin: 0;
+	text-wrap: balance;
+	font-size: clamp(28px, 6cqi, 46px);
+	line-height: 1.22;
+	letter-spacing: 0.03em;
+	color: var(--text-strong);
+	overflow-wrap: anywhere;
+}
+.about-hero-body {
+	margin: 0;
+	max-width: 30em;
+	font-size: 1rem;
+	line-height: 1.9;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
 .about-hero-figure {
-	justify-self: center;
-	inline-size: min(270px, 100%);
+	grid-row: 1;
+	inline-size: min(200px, 56%);
 }
 /* イラストの背景（白〜水色）が焼き込まれているため、そのまま置くとダークテーマで
    白い箱として浮く。四辺をマスクでフェードさせ、地の色に溶かす。楕円1枚だと
@@ -4114,41 +4177,17 @@ button.settings-category {
 	mask-composite: intersect;
 	animation: about-bob 7s ease-in-out infinite;
 }
-.about-hero-copy {
-	display: grid;
-	gap: 12px;
-	justify-items: start;
-	min-inline-size: 0;
-}
-.about-hero-copy .eyebrow {
-	margin: 0;
-}
-.about-hero h1 {
-	margin: 0;
-	font-size: clamp(26px, 3.6vw, 40px);
-	line-height: 1.24;
-	letter-spacing: 0.03em;
-	color: var(--text-strong);
-	overflow-wrap: anywhere;
-}
-.about-hero-body {
-	margin: 0;
-	max-width: 34em;
-	font-size: 1rem;
-	line-height: 1.9;
-	color: var(--text-muted);
-	overflow-wrap: anywhere;
-}
 .about-cta {
 	display: grid;
-	justify-items: start;
+	justify-items: center;
 	gap: 10px;
 	margin-top: 6px;
 }
 .about-cta a.primary {
 	display: inline-block;
-	padding: 14px 38px;
+	padding: 14px 40px;
 	font-size: 1rem;
+	border-radius: var(--r-full);
 	box-shadow: none;
 	transition: transform 0.15s ease;
 }
@@ -4161,20 +4200,30 @@ button.settings-category {
 	color: var(--text-faint);
 	overflow-wrap: anywhere;
 }
-.about-browse {
-	font-size: 0.86rem;
-	color: var(--accent-strong);
-}
-.about-browse:hover {
-	text-decoration: underline;
-	text-underline-offset: 3px;
+@container about (min-width: 680px) {
+	.about-hero {
+		grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+		justify-items: start;
+		padding: 48px 56px;
+		text-align: start;
+	}
+	.about-hero-copy,
+	.about-cta {
+		justify-items: start;
+	}
+	.about-hero-figure {
+		grid-row: auto;
+		justify-self: center;
+		inline-size: min(280px, 100%);
+	}
 }
 
 /* --- 選ばれる理由 --- */
+/* 枠なしで3列。アイコンを淡い円に載せ、それだけを色の置き場にする。 */
 .about-reasons {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-	gap: 14px;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 32px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -4182,107 +4231,161 @@ button.settings-category {
 .about-reason {
 	display: grid;
 	justify-items: center;
-	gap: 8px;
-	padding: 24px 20px;
+	align-content: start;
+	gap: 10px;
 	text-align: center;
-	background: var(--surface-1);
-	border: 1px solid var(--line);
-	border-radius: var(--r-md);
-	box-shadow: none;
 	min-inline-size: 0;
 }
 .about-reason-icon {
 	display: grid;
 	place-items: center;
-	inline-size: 56px;
-	block-size: 56px;
-	margin-bottom: 2px;
-	color: var(--text-mute);
-	background: var(--surface-2);
-	border-radius: var(--r-md);
+	inline-size: 60px;
+	block-size: 60px;
+	margin-block-end: 4px;
+	color: var(--accent-strong);
+	background: var(--accent-softer);
+	border-radius: 50%;
 }
 .about-reason h3 {
 	margin: 0;
-	font-size: 1.02rem;
+	font-size: 1.05rem;
 	color: var(--text-strong);
-	overflow-wrap: anywhere;
 }
 .about-reason p {
 	margin: 0;
-	font-size: 0.86rem;
+	max-inline-size: 22em;
+	font-size: 0.88rem;
 	line-height: 1.75;
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
 }
-
-/* --- 使い方(3ステップ) --- */
-.about-steps {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-	gap: 14px;
-	margin: 0;
-	padding: 0;
-	list-style: none;
+@container about (min-width: 560px) {
+	.about-reasons {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 24px;
+	}
 }
-.about-step {
+
+/* --- 見本（サンプル付き） --- */
+/* サインインしないと見られない機能は、説明だけでは伝わらない。実物のコンポーネントを
+   架空ユーザーのデータで描く。広い本文では文と見本を左右に置き、1行ごとに左右を入れ替える。 */
+.about-showcases {
 	display: grid;
-	justify-items: center;
-	gap: 8px;
-	padding: 22px 20px;
-	text-align: center;
-	background: var(--surface-1);
-	border: 1px solid var(--line);
-	border-radius: var(--r-md);
-	box-shadow: none;
+	gap: 72px;
 	min-inline-size: 0;
 }
-.about-step-num {
+.about-showcase {
 	display: grid;
-	place-items: center;
-	inline-size: 44px;
-	block-size: 44px;
-	border-radius: var(--r-md);
-	background: var(--accent);
-	color: var(--text-on-accent);
-	font-weight: 800;
-	font-size: 1.15rem;
+	gap: 20px;
+	align-items: center;
+	min-inline-size: 0;
 }
-.about-step h3 {
+.about-showcase-copy {
+	display: grid;
+	gap: 10px;
+	align-content: center;
+	min-inline-size: 0;
+}
+.about-showcase .about-eyebrow {
+	color: var(--about-showcase-fg);
+}
+.about-showcase-copy h3 {
 	margin: 0;
-	font-size: 1rem;
+	font-size: clamp(1.15rem, 2.8cqi, 1.4rem);
+	line-height: 1.45;
 	color: var(--text-strong);
 	overflow-wrap: anywhere;
 }
-.about-step p {
+.about-showcase-body {
 	margin: 0;
-	font-size: 0.86rem;
-	line-height: 1.75;
+	font-size: 0.9rem;
+	line-height: 1.85;
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
 }
-
-/* --- 機能一覧 --- */
-/* 縦に長い箇条書きだと圧倒されるので、1枚 = アイコン + 見出し + 1行のカードに畳む。
-   さらに、12枚を平らに並べると「羅列」に見えて全部が同じ重みの設定項目に読めるため、
-   意味のまとまりごとに見出しと色を付ける。色は補助で、意味を運ぶのは見出しの側。 */
-.about-feature-group {
+/* 見本は「画面の一部」なので、ここだけは面を立てる。罫線ではなく影で浮かせる。 */
+.about-sample {
 	display: grid;
 	gap: 10px;
+	margin: 0;
+	min-inline-size: 0;
 }
-.about-feature-group + .about-feature-group {
-	margin-block-start: 22px;
+.about-sample > .card,
+.about-sample > .business-card {
+	background: var(--surface-1);
+	border-radius: 16px;
+	box-shadow:
+		0 1px 2px rgb(0 0 0 / 0.04),
+		0 18px 40px -18px rgb(0 40 50 / 0.22);
+}
+.about-sample[data-sample='nameCard'] > .business-card {
+	justify-self: center;
+}
+.about-sample figcaption {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	font-size: 0.75rem;
+	color: var(--text-faint);
+}
+.about-sample-badge {
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: var(--about-showcase-fg);
+}
+.about-sample-placeholder {
+	block-size: 340px;
+}
+@container about (min-width: 680px) {
+	.about-showcase {
+		grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+		gap: 48px;
+	}
+	/* 見本が文より広い列を取るよう、入れ替える行は列幅も入れ替える。 */
+	.about-showcase:nth-child(even) {
+		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+	}
+	.about-showcase:nth-child(even) .about-showcase-copy {
+		order: 2;
+	}
+	/* 見本（年表など）は文よりずっと縦に長い。中央揃えだと文が宙に浮くので、
+	   上に揃えて、見本を読み進めるあいだ文を追従させる。 */
+	.about-showcase {
+		align-items: start;
+	}
+	.about-showcase-copy {
+		position: sticky;
+		inset-block-start: 32px;
+		padding-block-start: 24px;
+	}
+}
+
+/* --- 機能一覧 --- */
+/* 十数個を平らに並べると「羅列」に見えるので、カテゴリごとの列に分ける。
+   各項目はアイコン + 見出し + 1行で、罫線では囲まない。カテゴリ色はアイコンと列見出しにだけ使う。 */
+.about-feature-groups {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 32px 28px;
+	min-inline-size: 0;
+}
+.about-feature-group {
+	display: grid;
+	align-content: start;
+	gap: 6px;
+	min-inline-size: 0;
 }
 .about-feature-group-label {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin: 0;
+	margin: 0 0 4px;
 	font-size: 0.8rem;
 	font-weight: 700;
 	letter-spacing: 0.04em;
 	color: var(--about-cat-fg);
 }
-/* 見出しの左に、そのカテゴリ色の短い罫。文字色だけだと弱くて群の切れ目が読めない。 */
 .about-feature-group-label::before {
 	content: '';
 	inline-size: 18px;
@@ -4306,37 +4409,31 @@ button.settings-category {
 	--about-cat-fg: var(--about-cat-reach-fg);
 	--about-cat-bg: var(--about-cat-reach-bg);
 }
-/* 群ごとに枚数が違うので auto-fit だと 2 枚の群だけカードが横に伸びて不揃いになる。
-   auto-fill で空トラックを残し、どの群でもカード幅を揃える。 */
 .about-features {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-	gap: 12px;
+	gap: 2px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 .about-features > li {
-	min-inline-size: 0;
 	display: grid;
+	min-inline-size: 0;
 }
 .about-feature {
 	display: grid;
-	gap: 7px;
-	padding: 16px 18px;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: start;
+	gap: 12px;
+	margin-inline: -8px;
+	padding: 8px;
 	color: var(--text);
-	background: var(--surface-1);
-	border: 1px solid var(--line);
 	border-radius: var(--r-md);
-	box-shadow: none;
 	min-inline-size: 0;
-	transition:
-		background 0.15s ease,
-		transform 0.15s ease;
+	transition: background 0.15s ease;
 }
 a.about-feature:hover {
-	background: var(--bg-hover);
-	transform: translateY(-2px);
+	background: var(--bg-inset);
 }
 a.about-feature:focus-visible {
 	outline: 2px solid var(--focus-ring);
@@ -4345,127 +4442,195 @@ a.about-feature:focus-visible {
 .about-feature-icon {
 	display: grid;
 	place-items: center;
-	inline-size: 38px;
-	block-size: 38px;
-	color: var(--about-cat-fg, var(--text-mute));
-	background: var(--about-cat-bg, var(--surface-2));
-	border-radius: var(--r-md);
+	inline-size: 34px;
+	block-size: 34px;
+	color: var(--about-cat-fg);
+	background: var(--about-cat-bg);
+	border-radius: 50%;
 }
-.about-feature h4 {
-	margin: 0;
-	font-size: 0.95rem;
+.about-feature-text {
+	display: grid;
+	gap: 2px;
+	min-inline-size: 0;
+}
+.about-feature-text strong {
+	font-size: 0.92rem;
 	color: var(--text-strong);
 	overflow-wrap: anywhere;
 }
-.about-feature p {
-	margin: 0;
-	font-size: 0.82rem;
+.about-feature-text span {
+	font-size: 0.8rem;
 	line-height: 1.6;
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
+}
+@container about (min-width: 520px) {
+	.about-feature-groups {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+/* --- はじめかた --- */
+/* ページ内で唯一、地の色を変えた帯にする。番号どうしを点線でつなぎ、順番を図で見せる。 */
+.about-band {
+	padding: 48px 24px;
+	background: var(--bg-inset);
+	border-radius: 28px;
+}
+.about-steps {
+	display: grid;
+	gap: 28px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.about-step {
+	position: relative;
+	display: grid;
+	justify-items: center;
+	align-content: start;
+	gap: 8px;
+	text-align: center;
+	min-inline-size: 0;
+}
+.about-step-num {
+	display: grid;
+	place-items: center;
+	inline-size: 40px;
+	block-size: 40px;
+	margin-block-end: 6px;
+	font-weight: 800;
+	color: var(--text-on-accent);
+	background: var(--accent);
+	border-radius: 50%;
+}
+.about-step h3 {
+	margin: 0;
+	font-size: 1rem;
+	color: var(--text-strong);
+}
+.about-step p {
+	margin: 0;
+	max-inline-size: 20em;
+	font-size: 0.86rem;
+	line-height: 1.75;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+@container about (min-width: 560px) {
+	.about-steps {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 24px;
+	}
+	/* 番号の中心どうしを結ぶ点線。次の項目の番号の手前で止める。 */
+	.about-step:not(:last-child)::after {
+		content: '';
+		position: absolute;
+		inset-block-start: 20px;
+		inset-inline-start: calc(50% + 32px);
+		inline-size: calc(100% - 64px + 24px);
+		border-block-start: 2px dashed var(--line-strong);
+	}
 }
 
 /* --- AT Protocol 比較 --- */
-/* テーブル要素を使わずグリッドで組む。狭幅ではラベル1行 + 値2列に畳んで
-   横スクロールを出さない。 */
+/* 表にせず「従来」と「Nagi」を2列のリストで対比する。Nagi 側だけ色の縦線を添える。 */
 .about-compare {
 	display: grid;
-	gap: 8px;
+	gap: 28px;
 	min-inline-size: 0;
 }
-.about-compare-head,
-.about-compare-row {
+.about-compare-col {
 	display: grid;
-	grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
-	gap: 10px;
-	align-items: start;
+	align-content: start;
+	gap: 14px;
+	padding-inline-start: 18px;
+	border-inline-start: 3px solid var(--line);
 	min-inline-size: 0;
 }
-.about-compare-head {
-	padding: 0 18px;
-	font-size: 0.74rem;
-	font-weight: 800;
-	letter-spacing: 0.06em;
+.about-compare-col.is-nagi {
+	border-inline-start-color: var(--accent);
+}
+.about-compare-col h3 {
+	margin: 0;
+	font-size: 0.95rem;
 	color: var(--text-faint);
 }
-.about-compare-head .is-nagi {
+.about-compare-col.is-nagi h3 {
 	color: var(--accent-strong);
 }
-.about-compare-row {
-	padding: 14px 18px;
-	background: var(--surface-1);
-	border: 1px solid var(--line);
-	border-radius: var(--r-md);
-	box-shadow: none;
-	font-size: 0.86rem;
-	line-height: 1.6;
-	overflow-wrap: anywhere;
-}
-.about-compare-label {
-	font-weight: 700;
-	color: var(--text-strong);
-}
-.about-compare-old {
-	color: var(--text-faint);
-}
-.about-compare-nagi {
-	color: var(--text);
-	font-weight: 600;
-}
-/* 各セルの見出し。広い画面ではヘッダ行が担うので隠す。 */
-.about-compare-caption {
-	display: none;
-	font-size: 0.7rem;
-	font-weight: 800;
-	letter-spacing: 0.06em;
-	color: var(--text-faint);
-}
-.about-note {
-	margin: 0;
-	padding: 16px 18px;
-	background: var(--accent-softer);
-	border-radius: var(--radius-m);
-	font-size: 0.88rem;
-	line-height: 1.8;
-	color: var(--text);
-	overflow-wrap: anywhere;
-}
-
-/* --- 締めのCTA --- */
-.about-final {
-	position: relative;
-	isolation: isolate;
-	overflow: hidden;
+.about-compare-col dl {
 	display: grid;
-	justify-items: center;
-	gap: 10px;
-	text-align: center;
-	padding: 34px 24px 36px;
-	background: var(--surface-1);
-	border: 1px solid var(--line);
-	border-radius: var(--r-md);
-	box-shadow: none;
-	min-inline-size: 0;
-}
-.about-final h2 {
+	gap: 12px;
 	margin: 0;
-	font-size: 1.35rem;
-	color: var(--text-strong);
-	overflow-wrap: anywhere;
 }
-.about-final p {
+.about-compare-col dl > div {
+	display: grid;
+	gap: 2px;
+}
+.about-compare-col dt {
+	font-size: 0.75rem;
+	color: var(--text-faint);
+}
+.about-compare-col dd {
 	margin: 0;
-	font-size: 0.9rem;
+	font-size: 0.92rem;
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
 }
-.about-final .about-cta {
+.about-compare-col.is-nagi dd {
+	font-weight: 700;
+	color: var(--text-strong);
+}
+.about-note {
+	margin: 0;
+	font-size: 0.8rem;
+	line-height: 1.7;
+	color: var(--text-faint);
+	text-align: center;
+	overflow-wrap: anywhere;
+}
+@container about (min-width: 560px) {
+	.about-compare {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 40px;
+		max-inline-size: 720px;
+		inline-size: 100%;
+		justify-self: center;
+	}
+}
+
+/* --- 締め --- */
+.about-final {
+	display: grid;
 	justify-items: center;
+	gap: 12px;
+	padding: 24px 16px;
+	text-align: center;
+	background: radial-gradient(50% 80% at 50% 50%, var(--accent-softer), transparent 75%);
+}
+.about-final h2 {
+	margin: 0;
+	font-size: clamp(1.3rem, 3.2cqi, 1.65rem);
+	color: var(--text-strong);
+}
+.about-final p {
+	margin: 0;
+	font-size: 0.92rem;
+	color: var(--text-muted);
+}
+
+/* --- フッター --- */
+/* 右レールを畳んでいるので、suibari.com のロゴと規約リンクはここで常に出す。 */
+.about-footer {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
+	margin-block-start: -40px;
 }
 .about-suibari-brand {
-	justify-self: center;
 	display: block;
-	inline-size: min(200px, 60%);
+	inline-size: min(180px, 60%);
 	padding: 4px;
 	border-radius: var(--radius-s);
 	transition: opacity 0.18s ease;
@@ -4482,160 +4647,17 @@ a.about-feature:focus-visible {
 	inline-size: 100%;
 	block-size: auto;
 }
-.about-page > .legal-links {
-	margin-top: -22px;
-}
-
-/* デスクトップでは同じロゴが右サイドバーにある。右レールが消える幅だけ本文内を使う。 */
-@media (min-width: 1180px) {
-	.about-suibari-brand {
-		display: none;
-	}
-}
-
-/* --- about page: 狭幅 --- */
-/* この節は about の基本ルールより後に置くこと。詳細度が同じなので、
-   ファイル冒頭側のメディアクエリに書くと後続の基本ルールに打ち消される。 */
-@media (max-width: 900px) {
-	/* ヒーローの2カラムは、イラスト270px + 本文 では本文側が潰れる。縦積みに切り替える。 */
-	.about-hero {
-		grid-template-columns: minmax(0, 1fr);
-		justify-items: center;
-		text-align: center;
-		gap: 14px;
-		padding: 24px 22px 28px;
-		border-radius: 26px;
-	}
-	.about-hero-figure {
-		inline-size: min(220px, 62%);
-	}
-	.about-hero-copy {
-		justify-items: center;
-	}
-	.about-cta {
-		justify-items: center;
-	}
-	/* 比較表: 3列だと1列あたりが狭すぎて2列目以降が読めなくなる。
-	   ラベルを1行に出し、値を2列に畳む。ヘッダ行が消えるぶん各セルに小見出しを出す。 */
-	.about-compare-head {
-		display: none;
-	}
-	.about-compare-row {
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 6px 12px;
-	}
-	.about-compare-label {
-		grid-column: 1 / -1;
-	}
-	.about-compare-caption {
-		display: block;
-		margin-bottom: 2px;
-	}
-	.about-compare-old,
-	.about-compare-nagi {
-		display: grid;
-		align-content: start;
-	}
-}
 
 @media (max-width: 767px) {
 	.about-page {
-		gap: 26px;
+		gap: 64px;
 	}
-	.about-hero {
-		padding: 20px 16px 24px;
+	.about-page > .settings-back {
+		margin-block-end: -48px;
+	}
+	.about-band {
+		padding: 36px 16px;
 		border-radius: 22px;
-	}
-	.about-hero-figure {
-		inline-size: min(180px, 56%);
-	}
-	/* 理由・ステップは1枚あたりを低くして、縦の間延びを抑える。 */
-	.about-reasons,
-	.about-steps {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 10px;
-	}
-	.about-reason,
-	.about-step {
-		padding: 16px 12px;
-		gap: 6px;
-		border-radius: var(--r-md);
-	}
-	.about-reason-icon {
-		inline-size: 44px;
-		block-size: 44px;
-	}
-	.about-step-num {
-		inline-size: 36px;
-		block-size: 36px;
-		font-size: 1rem;
-	}
-	.about-reason h3,
-	.about-step h3 {
-		font-size: 0.92rem;
-	}
-	.about-reason p,
-	.about-step p {
-		font-size: 0.8rem;
-		line-height: 1.65;
-	}
-	/* 機能カードは1列だと9枚で縦に間延びする。2列に詰めてアイコンも小さくする。 */
-	.about-features {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 8px;
-	}
-	.about-feature {
-		gap: 5px;
-		padding: 12px 12px 14px;
-		border-radius: var(--radius-m);
-	}
-	.about-feature-icon {
-		inline-size: 32px;
-		block-size: 32px;
-		border-radius: 10px;
-	}
-	.about-feature h4 {
-		font-size: 0.88rem;
-	}
-	.about-feature-group + .about-feature-group {
-		margin-block-start: 18px;
-	}
-	.about-feature p {
-		font-size: 0.78rem;
-		line-height: 1.5;
-	}
-	.about-compare-row {
-		padding: 12px 14px;
-		font-size: 0.82rem;
-	}
-	.about-final {
-		padding: 26px 16px 28px;
-		border-radius: 22px;
-	}
-}
-
-/* 3枚並びの理由・ステップは、2列にすると最後の1枚が半端に残る。全幅に伸ばす。 */
-@media (max-width: 767px) {
-	.about-reasons > :last-child:nth-child(odd),
-	.about-steps > :last-child:nth-child(odd) {
-		grid-column: 1 / -1;
-	}
-}
-
-@media (max-width: 380px) {
-	/* 2列にすると1枚あたりが狭すぎるので、ここだけ1列に戻す。 */
-	.about-reasons,
-	.about-steps,
-	.about-features {
-		grid-template-columns: minmax(0, 1fr);
-	}
-	.about-feature {
-		grid-template-columns: auto minmax(0, 1fr);
-		align-items: center;
-		column-gap: 12px;
-	}
-	.about-feature-icon {
-		grid-row: span 2;
 	}
 }
 

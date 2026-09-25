@@ -51,6 +51,9 @@
 			!NO_FAB.some((path) => page.url.pathname.startsWith(path)),
 	);
 	const defaultScope = $derived(defaultScopeForPath(page.url.pathname));
+	// 紹介ページは、機能の見本を横に並べて見せたいので右レールを畳んで本文を広げる。
+	// 左のナビは残す（ログイン後に設定から来た人の帰り道になる）。
+	const wideMain = $derived(page.url.pathname === '/about');
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let privateListDid: string | undefined;
@@ -238,11 +241,12 @@
 <svelte:document onclick={interceptSiblingLinkClick} />
 
 <MobileHeader />
-<!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。 -->
-<div class="shell">
+<!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。
+     例外は紹介ページだけで、左ナビの位置はそのまま右レールのぶん本文を広げる。 -->
+<div class="shell" class:shell-wide={wideMain}>
 	<SidebarLeft />
 	<main>{@render children()}</main>
-	<SidebarRight />
+	{#if !wideMain}<SidebarRight />{/if}
 </div>
 <MobileNav />
 <PostFollowNotice />
