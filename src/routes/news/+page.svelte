@@ -15,6 +15,7 @@
 		stableDayKey,
 	} from '$lib/i18n/i18n.svelte';
 	import { byNewestFirst } from '$lib/news/order';
+	import { recommendedReason } from '$lib/news/selection';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
@@ -179,7 +180,7 @@
 				{botActor}
 				showImage
 				unread={unreadView?.isUnread(news) ?? false}
-				reasonGenre={'reason' in news ? (news.reason?.genre ?? news.reason?.keyword) : undefined}
+				reasonGenre={recommendedReason(news)}
 				clampTitle={false}
 			/>
 		{/each}
