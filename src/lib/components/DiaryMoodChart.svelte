@@ -13,6 +13,7 @@
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
 	import DiaryDayDetail from './DiaryDayDetail.svelte';
+	import PostModerationGuard from './PostModerationGuard.svelte';
 
 	/**
 	 * 日記ページの「感情グラフ」タブ。投稿ごとの気分（-5〜+5）を、日ごとの中央50%の帯と
@@ -33,6 +34,7 @@
 
 	const uid = $props.id();
 	const gradientId = `mood-scale-${uid}`;
+	const legendId = `mood-legend-${uid}`;
 	const HEIGHT = 200;
 	const PAD_TOP = 10;
 	const PAD_BOTTOM = 22;
@@ -278,6 +280,7 @@
 					height={HEIGHT}
 					role="group"
 					aria-label={m.moodGraphAria()}
+					aria-describedby={legendId}
 					onmouseleave={() => (hovered = undefined)}
 				>
 					<defs>
@@ -375,9 +378,9 @@
 			</div>
 		</div>
 
-		<div class="mood-legend" aria-hidden="true">
-			<span><i class="swatch swatch--band"></i>{m.moodLegendBand()}</span>
-			<span><i class="swatch swatch--median"></i>{m.moodLegendMedian()}</span>
+		<div class="mood-legend" id={legendId}>
+			<span><i class="swatch swatch--band" aria-hidden="true"></i>{m.moodLegendBand()}</span>
+			<span><i class="swatch swatch--median" aria-hidden="true"></i>{m.moodLegendMedian()}</span>
 		</div>
 
 		<p class="mood-status" aria-live="polite">
@@ -412,7 +415,9 @@
 									>
 									<a href={postHref(point.uri)}>
 										<time datetime={point.createdAt}>{timeLabel(point.createdAt)}</time>
-										<span class="mood-text">{point.text}</span>
+										<PostModerationGuard post={point}>
+											<span class="mood-text">{point.text}</span>
+										</PostModerationGuard>
 									</a>
 								</li>
 							{/each}
