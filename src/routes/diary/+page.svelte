@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { chronicleUnread } from '$lib/chronicle/notice';
 	import NavBadge from '$lib/components/shell/NavBadge.svelte';
-	import { replaceState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { getProfile } from '$lib/api/appview';
 	import type { ActorView } from '$lib/api/types';
@@ -28,7 +28,7 @@
 		{ id: 'activity', label: () => m.diaryTabActivity() },
 		{ id: 'chronicle', label: () => m.diaryTabChronicle() },
 	];
-	let tab = $state<TabId>(
+	const tab = $derived<TabId>(
 		!page.url.searchParams.get('date') && page.url.searchParams.get('tab') === 'chronicle'
 			? 'chronicle'
 			: 'activity',
@@ -36,11 +36,13 @@
 
 	function select(next: TabId) {
 		if (tab === next) return;
-		tab = next;
 		const url = new URL(page.url);
 		if (next === 'activity') url.searchParams.delete('tab');
-		else url.searchParams.set('tab', next);
-		replaceState(url, page.state);
+		else {
+			url.searchParams.set('tab', next);
+			url.searchParams.delete('date');
+		}
+		void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
 	}
 
 	// OAuth 復元は非同期なので oauthReady を待ってから、未ログインならログインへ回す。

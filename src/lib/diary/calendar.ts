@@ -28,6 +28,15 @@ export function buildDiaryGraph(today = new Date()): DiaryGraph {
 	return { weeks, from: weeks[0][0].date, to: todayKey };
 }
 
+/** 古い日記へのリンクでは、その日までの1年を表示する。 */
+export function buildDiaryGraphForDate(date?: string, today = new Date()): DiaryGraph {
+	const graph = buildDiaryGraph(today);
+	if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date >= graph.from) return graph;
+	const target = new Date(`${date}T12:00:00`);
+	if (Number.isNaN(target.getTime()) || dateKey(target) !== date) return graph;
+	return buildDiaryGraph(target);
+}
+
 /** 月初を含む週へラベルを置く。左端が月途中なら、その月も左端に表示する。 */
 export function diaryMonthLabels(weeks: DiaryGraphDay[][]): Array<{ week: number; date: string }> {
 	const labels: Array<{ week: number; date: string }> = [];

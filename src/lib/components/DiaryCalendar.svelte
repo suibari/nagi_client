@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { getDiaries } from '$lib/api/appview';
 	import type { ActorView, DiaryView, PostView } from '$lib/api/types';
-	import { buildDiaryGraph, diaryActivityIntensity, diaryMonthLabels } from '$lib/diary/calendar';
+	import {
+		buildDiaryGraphForDate,
+		diaryActivityIntensity,
+		diaryMonthLabels,
+	} from '$lib/diary/calendar';
 	import { i18n, m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick } from 'svelte';
 	import AvatarLink from './AvatarLink.svelte';
@@ -17,8 +21,8 @@
 		botActor?: ActorView;
 	} = $props();
 
-	const graph = buildDiaryGraph();
-	const monthLabels = diaryMonthLabels(graph.weeks);
+	const graph = $derived(buildDiaryGraphForDate(initialDate));
+	const monthLabels = $derived(diaryMonthLabels(graph.weeks));
 	let selected = $state<string | undefined>();
 	let hovered = $state<string | undefined>();
 	let entries = $state<DiaryView[]>([]);

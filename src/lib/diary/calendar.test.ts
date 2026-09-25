@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildDiaryGraph, diaryActivityIntensity, diaryMonthLabels } from './calendar';
+import {
+	buildDiaryGraph,
+	buildDiaryGraphForDate,
+	diaryActivityIntensity,
+	diaryMonthLabels,
+} from './calendar';
 
 describe('buildDiaryGraph', () => {
 	it('keeps the current week at the right edge across a year boundary', () => {
@@ -24,4 +29,18 @@ it('keeps linear post-count intensity', () => {
 	expect(diaryActivityIntensity(7, 18)).toBeCloseTo(7 / 18);
 	expect(diaryActivityIntensity(18, 18)).toBe(1);
 	expect(diaryActivityIntensity(undefined, 18)).toBeUndefined();
+});
+
+describe('buildDiaryGraphForDate', () => {
+	const today = new Date(2026, 8, 25, 12);
+	it('includes an old diary linked from the chronicle', () => {
+		const graph = buildDiaryGraphForDate('2020-02-29', today);
+		expect(graph.to).toBe('2020-02-29');
+		expect(graph.weeks.flat()).toContainEqual({ date: '2020-02-29', future: false });
+	});
+	it('keeps the current range for recent, missing, invalid, or future dates', () => {
+		for (const date of [undefined, '2026-09-01', 'invalid', '2020-02-30', '2030-01-01']) {
+			expect(buildDiaryGraphForDate(date, today)).toEqual(buildDiaryGraph(today));
+		}
+	});
 });
