@@ -308,7 +308,29 @@ export type DiaryView = {
 	createdAt: string;
 	indexedAt: string;
 };
-export type DiaryPage = { items: DiaryView[]; cursor?: string; hasMore: boolean };
+/**
+ * 感情グラフの点1つ（投稿1件）。getDiaries の期間指定に moods を付けたときだけ返る。
+ * 気分が読み取れた投稿だけで、中立（告知・事実共有など）は含まない。
+ */
+export type DiaryMoodView = {
+	uri: string;
+	/** その投稿が入る日記の日付。前日22時の直後〜当日22時で区切る（日記と同じ）。 */
+	date: string;
+	createdAt: string;
+	/** -5（深く落ち込んでいる）〜 +5（最高に嬉しい）。0 は含まない。 */
+	valence: number;
+	/** 本文の冒頭（最大200字）。 */
+	text: string;
+};
+export type DiaryPage = {
+	items: DiaryView[];
+	cursor?: string;
+	hasMore: boolean;
+	/** moods を要求したときだけ。 */
+	moods?: DiaryMoodView[];
+	/** 期間内でまだ採点されていない投稿の数（導入直後のバックフィル中）。 */
+	moodPending?: number;
+};
 
 /** 本人専用の「botたんラジオ」。現在の放送枠だけ取得できる。 */
 export type RadioTrack = {

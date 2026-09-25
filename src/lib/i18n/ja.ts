@@ -54,7 +54,7 @@ export const ja = {
 	navNews: 'ニュース',
 	navNotifications: '通知',
 	navSettings: '設定',
-	navDiary: '日記',
+	navActivity: 'アクティビティ',
 	navRadio: 'ラジオ',
 	navMenu: 'メニュー',
 	mainNavAria: 'メインナビゲーション',
@@ -695,9 +695,30 @@ export const ja = {
 			.join('、'),
 	diaryAbout: 'botたんが、その日の投稿をもとに書いてくれた日記です。',
 
+	// mood（感情グラフ）。数値の評価語（「よい」「悪い」）は避け、明るい／沈んだで言う。
+	diaryTabMood: '感情グラフ',
+	moodTitle: '感情グラフ',
+	moodGraphAria: '過去1年間の、日ごとの気分の幅',
+	moodZoomIn: '拡大',
+	moodZoomOut: '縮小',
+	moodZoomHint: 'Ctrl（⌘）を押しながらスクロールでも拡大・縮小できます',
+	moodLegendBand: '中央50%の幅',
+	moodLegendMedian: '中央値',
+	moodDayAria: (p: { date: string; count: number; median: string }) =>
+		`${p.date}、気分が読み取れた投稿${p.count}件、中央値${p.median}`,
+	moodMedian: (p: { value: string }) => `中央値 ${p.value}`,
+	moodDayPosts: (p: { count: number }) => `気分が読み取れた投稿 ${p.count}件`,
+	moodDayNoPosts: 'この日は、気分が読み取れる投稿がありませんでした。',
+	moodSelectHint: 'グラフの日付を押すと、その日の投稿の気分と日記が表示されます。',
+	moodPending: (p: { count: number }) =>
+		`まだ気分を読み取っていない投稿が${p.count}件あります。順番に反映されます。`,
+	moodEmpty: '過去1年間に、気分が読み取れる投稿はまだありません。',
+	moodAbout:
+		'botたんが投稿ごとに、明るい（+5）〜沈んだ（-5）気分を読み取って、日ごとの幅で表示しています。告知や事実の共有など、気分が読み取れない投稿は含めていません。あなただけが見られます。',
+
 	// chronicle（自分年表）
 	// 「連続」「今年は少ない」の類は**書かない**。数えた瞬間に義務になる（docs/chronicle.md）。
-	diaryTabActivity: '年間アクティビティ',
+	diaryTabActivity: '日記',
 	diaryTabChronicle: '年表',
 	diaryTabsAria: '日記の表示',
 	// 年表は「自分のもの」として読ませたいので、見出しに本人の名前を入れる。

@@ -453,16 +453,17 @@ export const getProfileWebsite = (actor: string) =>
 	);
 /**
  * 日記は本人だけが読む。日記ページから自分の DID で呼ぶ。
- * 年間グラフは from/to を1組で渡す。
+ * 年間グラフは from/to を1組で渡す。moods を付けると感情グラフの点も返る。
  */
 export const getDiaries = (
 	actor: string,
-	opts: { month?: string; from?: string; to?: string; cursor?: string } = {},
+	opts: { month?: string; from?: string; to?: string; cursor?: string; moods?: boolean } = {},
 ) => {
 	const params = new URLSearchParams({ actor });
 	if (opts.month) params.set('month', opts.month);
 	if (opts.from) params.set('from', opts.from);
 	if (opts.to) params.set('to', opts.to);
+	if (opts.moods) params.set('moods', 'true');
 	if (opts.cursor) params.set('cursor', opts.cursor);
 	return call<DiaryPage>(
 		'com.suibari.nagi.getDiaries',

@@ -52,15 +52,17 @@ describe('chronicle motion contracts', () => {
 		expect(timeline).not.toContain('Confetti');
 	});
 
-	it('?date= のディープリンクは必ず年間アクティビティを開く', () => {
-		// 通知からの /diary?date=YYYY-MM-DD は草グラフの該当日を開く導線。
-		expect(diaryPage).toMatch(/!page\.url\.searchParams\.get\('date'\)[\s\S]*'chronicle'/);
+	it('?date= のディープリンクは年表を開かない', () => {
+		// 通知からの /diary?date=YYYY-MM-DD はその日の日記を開く導線。
+		// 日付を持てる年間アクティビティと感情グラフだけが ?date= と両立する。
+		expect(diaryPage).toMatch(/requested === 'chronicle' && !urlDate/);
 	});
 
 	it('新しい文言は ja と en の両方にある', () => {
 		for (const key of [
 			'diaryTabActivity',
 			'diaryTabChronicle',
+			'diaryTabMood',
 			'diaryTabsAria',
 			'chronicleTitle',
 			'chronicleAbout',
