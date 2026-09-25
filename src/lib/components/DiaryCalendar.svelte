@@ -111,7 +111,7 @@
 <section class="diary card">
 	<header class="diary-head">
 		<div>
-			<h2>{m.diaryAnnualActivity()}</h2>
+			<h2>{m.diaryTabActivity()}</h2>
 			<p>{longDate(graph.from)} – {longDate(graph.to)}</p>
 		</div>
 	</header>
