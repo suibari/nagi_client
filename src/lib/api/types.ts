@@ -326,7 +326,11 @@ export type RadioTrack = {
 	sourceUrl?: string;
 };
 export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean; unreadSlotKey?: string };
-export type RadioHistoryResponse = { tracks: RadioTrack[]; cursor?: string; unreadSlotKey?: string };
+export type RadioHistoryResponse = {
+	tracks: RadioTrack[];
+	cursor?: string;
+	unreadSlotKey?: string;
+};
 
 /**
  * 自分年表の1件。
@@ -362,7 +366,12 @@ export type ChronicleEventView = {
 	/** news_context のとき。 */
 	news?: NewsView;
 };
+export type ChronicleReadYear = { year: number; revision: string };
+
 export type ChroniclePage = {
+	/** 古いAppViewとの移行互換性のため省略可能。 */
+	year?: number;
+	revision?: string;
 	items: ChronicleEventView[];
 	/** 次に返す年（"2025"）。これ以上さかのぼれないときは省略する。 */
 	cursor?: string;
@@ -469,6 +478,8 @@ export type FeedTab = {
 	label?: string;
 };
 export type PreferencesView = {
+	/** 年ごとの既読内容ハッシュ。 */
+	chronicleReadYears?: ChronicleReadYear[];
 	readPositions: RemoteReadPosition[];
 	emojiFavorites: EmojiFavorite[];
 	/** 省略＝このアカウントのお気に入りがまだ一度も同期されていない（初回同期の合図）。 */
@@ -509,6 +520,8 @@ export type SyncedModerationPreferences = {
 	selfNsfw: 'warn' | 'hide' | 'ignore';
 };
 export type PutPreferencesInput = {
+	/** 表示した年のハッシュ。現在の内容と一致する版だけ保存される。 */
+	chronicleReadYears?: ChronicleReadYear[];
 	readPositions?: RemoteReadPosition[];
 	emojiFavorites?: EmojiFavorite[];
 	/** emojiFavorites を送るときは必須。保存済みより古ければサーバは書き込まない。 */

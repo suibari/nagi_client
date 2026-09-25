@@ -35,6 +35,11 @@ export function startZenkatsuNotice(): () => void {
 		const currentDid = did;
 		const currentDay = playDay();
 		if (!currentDid) return;
+		if (day !== currentDay) {
+			day = currentDay;
+			locallyPlayedDay = '';
+			unplayedToday.set(0);
+		}
 		const version = ++request;
 		try {
 			const feed = await getZenkatsu({}, { requireViewer: true });
@@ -54,21 +59,14 @@ export function startZenkatsuNotice(): () => void {
 		unplayedToday.set(0);
 		void refresh();
 	});
-	const timer = setInterval(() => {
-		const today = playDay();
-		if (day === today) return;
-		day = today;
-		locallyPlayedDay = '';
-		unplayedToday.set(0);
-		void refresh();
-	}, 15_000);
 	const onVisible = () => {
 		if (!document.hidden) void refresh();
 	};
 	document.addEventListener('visibilitychange', onVisible);
 	return () => {
 		unsubscribe();
-		clearInterval(timer);
+		did = undefined;
+		unplayedToday.set(0);
 		document.removeEventListener('visibilitychange', onVisible);
 		request++;
 	};

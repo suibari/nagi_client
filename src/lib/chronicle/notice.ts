@@ -1,68 +1,52 @@
 import { get, writable } from 'svelte/store';
 import { getChronicle } from '$lib/api/appview';
-import type { ChronicleEventView } from '$lib/api/types';
+import type { ChroniclePage } from '$lib/api/types';
 import { session } from '$lib/oauth/session.svelte';
+import { chronicleYearsKey, createChronicleReadState } from './read-state';
 
 export const chronicleUnread = writable(0);
-const seenByDid = new Map<string, Map<string, string>>();
-let latest = new Map<string, string>();
+const states = new Map<string, ReturnType<typeof createChronicleReadState>>();
+let latest = new Map<number, { revision: string; hasItems: boolean }>();
 let viewer: string | undefined;
 let generation = 0;
-const storageKey = (did: string) => `nagi-chronicle-seen:${did}`;
+let lastRead = 0;
 
-// 表示言語で変わるカード・ニュースの展開情報は比較しない。
-export function chronicleRevision(event: ChronicleEventView): string {
-	return JSON.stringify([
-		event.kind,
-		event.date,
-		event.titleJa,
-		event.titleEn,
-		event.detailJa,
-		event.detailEn,
-		event.diaryDate,
-	]);
-}
-
-function seen(did: string): Map<string, string> {
-	let value = seenByDid.get(did);
-	if (!value) {
-		value = new Map();
-		try {
-			const stored: unknown = JSON.parse(localStorage.getItem(storageKey(did)) ?? '[]');
-			if (Array.isArray(stored))
-				for (const entry of stored)
-					if (
-						Array.isArray(entry) &&
-						entry.length === 2 &&
-						entry.every((v) => typeof v === 'string')
-					)
-						value.set(entry[0], entry[1]);
-		} catch {
-			/* 保存不可でもメモリ上の既読は使う。 */
-		}
-		seenByDid.set(did, value);
+function readState(did: string) {
+	let state = states.get(did);
+	if (!state) {
+		state = createChronicleReadState(did, () => get(session)?.did === did, update);
+		states.set(did, state);
 	}
-	return value;
+	return state;
 }
 
 function update() {
-	const read = viewer ? seen(viewer) : new Map<string, string>();
+	const read = viewer ? readState(viewer).years : new Map<number, string>();
 	chronicleUnread.set(
-		viewer && [...latest].some(([id, revision]) => read.get(id) !== revision) ? 1 : 0,
+		viewer &&
+			[...latest].some(
+				([year, page]) => (page.hasItems || read.has(year)) && read.get(year) !== page.revision,
+			)
+			? 1
+			: 0,
 	);
 }
 
-/** 実際に読み込めたページだけ既読にする。古い年の未読は残す。 */
-export function markChronicleSeen(did: string, items: ChronicleEventView[]) {
-	if (get(session)?.did !== did) return;
-	const read = seen(did);
-	for (const item of items) read.set(item.id, chronicleRevision(item));
-	try {
-		localStorage.setItem(storageKey(did), JSON.stringify([...read]));
-	} catch {
-		/* メモリに保持。 */
+/** 年全体を読み込めたページだけ既読にする。未表示の年は残す。 */
+export async function markChronicleSeen(did: string, page: ChroniclePage) {
+	if (get(session)?.did !== did || page.year === undefined || !page.revision) return;
+	lastRead++;
+	latest.set(page.year, { revision: page.revision, hasItems: page.items.length > 0 });
+	await readState(did).mark({ year: page.year, revision: page.revision });
+}
+
+export function clearChronicleReadState(did: string) {
+	states.get(did)?.dispose();
+	states.delete(did);
+	if (viewer === did) {
+		latest.clear();
+		chronicleUnread.set(0);
 	}
-	update();
 }
 
 export function startChronicleNotice(): () => void {
@@ -72,14 +56,21 @@ export function startChronicleNotice(): () => void {
 		if (!did || pending) return;
 		pending = true;
 		const version = generation;
+		const readVersion = lastRead;
 		try {
-			const revisions = new Map<string, string>();
+			const revisions = new Map<number, { revision: string; hasItems: boolean }>();
+			await readState(did).sync();
+			if (generation !== version || lastRead !== readVersion) return;
 			let cursor: string | undefined;
 			const cursors = new Set<string>();
 			do {
 				const page = await getChronicle(did, { cursor });
-				if (generation !== version) return;
-				for (const item of page.items) revisions.set(item.id, chronicleRevision(item));
+				if (generation !== version || lastRead !== readVersion) return;
+				if (page.year !== undefined && page.revision) {
+					await readState(did).migrate(page);
+					if (generation !== version || lastRead !== readVersion) return;
+					revisions.set(page.year, { revision: page.revision, hasItems: page.items.length > 0 });
+				}
 				cursor = page.hasMore ? page.cursor : undefined;
 				if (cursor && cursors.has(cursor)) return;
 				if (cursor) cursors.add(cursor);
@@ -89,7 +80,11 @@ export function startChronicleNotice(): () => void {
 		} catch {
 			/* 通信失敗では未読状態を変えない。 */
 		} finally {
-			if (generation === version) pending = false;
+			if (generation === version) {
+				pending = false;
+				// 取得中に新しい年ページを読んだ場合、古い取得結果では上書きしない。
+				if (lastRead !== readVersion) void refresh();
+			}
 		}
 	}
 	const unsubscribe = session.subscribe((value) => {
@@ -103,13 +98,10 @@ export function startChronicleNotice(): () => void {
 	const onVisible = () => {
 		if (!document.hidden) void refresh();
 	};
+	// 同じアカウントの別タブで既読にした内容を反映する。
 	const onStorage = (event: StorageEvent) => {
-		if (viewer && (event.key === null || event.key === storageKey(viewer))) {
-			seenByDid.delete(viewer);
-			update();
-		}
+		if (viewer && event.key === chronicleYearsKey(viewer)) states.get(viewer)?.reload();
 	};
-	const timer = setInterval(onVisible, 2 * 60_000);
 	document.addEventListener('visibilitychange', onVisible);
 	window.addEventListener('storage', onStorage);
 	return () => {
@@ -117,7 +109,6 @@ export function startChronicleNotice(): () => void {
 		generation++;
 		viewer = undefined;
 		chronicleUnread.set(0);
-		clearInterval(timer);
 		document.removeEventListener('visibilitychange', onVisible);
 		window.removeEventListener('storage', onStorage);
 	};
