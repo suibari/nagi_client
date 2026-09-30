@@ -260,8 +260,22 @@
 		.post-modal.rich {
 			height: 100%;
 		}
+		/*
+			閉じる・タブ3つ・投稿ボタンを1行に並べると、360px 幅の端末でブログのタブが投稿ボタンの
+			裏へ潜る。タブの余白を詰め、それでも収まらない幅ではタブの列を横スクロールにする。
+		*/
+		.post-modal-modes {
+			overflow-x: auto;
+			scrollbar-width: none;
+		}
 		.post-modal-modes button {
-			padding: 4px 8px;
+			padding: 4px 6px;
+		}
+	}
+	@media (max-width: 380px) {
+		/* さらに狭い端末では、投稿ボタンのアイコンを外して文言だけにする。 */
+		.post-modal-header-action :global(.post-modal-mobile-submit > :not(span)) {
+			display: none;
 		}
 	}
 </style>
