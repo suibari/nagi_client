@@ -352,6 +352,22 @@
 	word-break: auto-phrase;
 	overflow-wrap: anywhere;
 }
+/* Android で CodeMirror の代わりに使う素の textarea。文字組みは .cm-content に揃える。 */
+.mention-textarea .composer-textarea {
+	display: block;
+	box-sizing: border-box;
+	padding: 12px 14px;
+	font: inherit;
+	font-size: 15px;
+	line-height: 1.8;
+	overflow-wrap: anywhere;
+	resize: none;
+	outline: none;
+	overscroll-behavior: contain;
+}
+.mention-textarea .composer-textarea::placeholder {
+	color: var(--text-faint);
+}
 /* iOS Safari は 16px 未満の入力欄にフォーカスすると画面を拡大してしまう。 */
 @supports (-webkit-touch-callout: none) {
 	.mention-textarea .composer-input .cm-content {
@@ -1400,7 +1416,9 @@
 	border-radius: var(--radius-m);
 }
 .post-composer .mention-textarea .composer-input .cm-content,
-.inline-edit .mention-textarea .composer-input .cm-content {
+.inline-edit .mention-textarea .composer-input .cm-content,
+.post-composer .mention-textarea .composer-textarea,
+.inline-edit .mention-textarea .composer-textarea {
 	padding: 10px;
 }
 .post-composer-foot {

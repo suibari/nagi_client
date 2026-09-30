@@ -22,6 +22,12 @@ describe('rich composer improvements', () => {
 		expect(modal).not.toContain('1040px');
 	});
 
+	it('falls back to a plain textarea on Android, where CodeMirror cannot take input', () => {
+		expect(input).toContain('const plainTextarea = /Android/i.test(navigator.userAgent);');
+		expect(input).toMatch(/\{#if plainTextarea\}\s*<textarea/);
+		expect(input).toContain('onkeydown={handleKeydown}');
+	});
+
 	it('hides only the formatting buttons in simple mode', () => {
 		expect(editor).toMatch(/\{#if isWideComposer\(mode\)\}\s*<MarkdownPalette/);
 	});

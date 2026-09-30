@@ -20,6 +20,7 @@
 	import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view';
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { composerDecorations, refreshDecorations } from './composer-decorations';
+	import { textareaCaretRect } from './textarea-caret';
 	import {
 		applyContentWarning as wrapContentWarning,
 		remapContentWarningSelection,
@@ -59,7 +60,16 @@
 		onselectionchange?: (selected: boolean) => void;
 	} = $props();
 
-	let host: HTMLDivElement;
+	/**
+	 * Android では素の textarea で入力させる。Galaxy（Samsung キーボード）では CodeMirror
+	 * （contenteditable）にキーボードが出ない・入力するとタブごと落ちることがあり、
+	 * codemirror.net 本体でも再現する。機種は UA から判別できないので Android 全体を対象にする。
+	 * 記法のその場装飾はなくなるが、候補・装飾ボタン・CW などの操作は同じ関数を通す。
+	 */
+	const plainTextarea = /Android/i.test(navigator.userAgent);
+
+	let host = $state<HTMLDivElement>();
+	let textarea = $state<HTMLTextAreaElement>();
 	let view: EditorView | undefined;
 	/** 選択範囲をこのコンポーネントが自分で付け替える変更。差分からの付け替えを二重にしない。 */
 	const managed = Annotation.define<boolean>();
@@ -105,15 +115,29 @@
 		token?.kind === 'channel' ? channelSuggest : token?.kind === 'emoji' ? emojiSuggest : suggest,
 	);
 
-	const selectionStart = () => view?.state.selection.main.from ?? value.length;
-	const selectionEnd = () => view?.state.selection.main.to ?? value.length;
-	const focusEditor = () => requestAnimationFrame(() => view?.focus());
+	const selectionStart = () =>
+		view?.state.selection.main.from ?? textarea?.selectionStart ?? value.length;
+	const selectionEnd = () =>
+		view?.state.selection.main.to ?? textarea?.selectionEnd ?? value.length;
+	const focusEditor = () => requestAnimationFrame(() => (view ?? textarea)?.focus());
 
 	/**
 	 * 本文を next に置き換え、選択範囲を [anchor, head] にする。変わった区間だけを差し替えるので、
 	 * 取り消し（Undo）の単位とキャレット位置が自然に保たれる。
 	 */
 	function setText(next: string, anchor?: number, head = anchor) {
+		if (textarea) {
+			value = next;
+			// 選択位置を付け直すため、描画の反映を待たずに中身を差し替える。
+			textarea.value = next;
+			if (anchor !== undefined)
+				textarea.setSelectionRange(
+					Math.min(anchor, head!, next.length),
+					Math.min(Math.max(anchor, head!), next.length),
+					head! < anchor ? 'backward' : 'forward',
+				);
+			return;
+		}
 		if (!view) return;
 		const previous = view.state.doc.toString();
 		let prefix = 0;
@@ -160,6 +184,7 @@
 	}
 
 	onMount(() => {
+		if (!host) return;
 		view = new EditorView({
 			parent: host,
 			state: EditorState.create({
@@ -280,7 +305,8 @@
 	function caretRect() {
 		const coords = view?.coordsAtPos(view.state.selection.main.head);
 		if (coords) return { left: coords.left, top: coords.top, bottom: coords.bottom };
-		const rect = (view?.dom ?? host).getBoundingClientRect();
+		if (textarea) return textareaCaretRect(textarea, textarea.selectionEnd);
+		const rect = (view?.dom ?? host)!.getBoundingClientRect();
 		return { left: rect.left, top: rect.top, bottom: rect.top + 27 };
 	}
 
@@ -331,7 +357,7 @@
 		let frame: number | undefined;
 		const updatePosition = () => {
 			frame = undefined;
-			const rect = (view?.dom ?? host).getBoundingClientRect();
+			const rect = (view?.dom ?? textarea ?? host)!.getBoundingClientRect();
 			const caret = caretRect();
 			const margin = 12;
 			const gap = 4;
@@ -368,7 +394,7 @@
 
 	function detectToken() {
 		onselectionchange?.(selectionStart() !== selectionEnd());
-		const caret = view?.state.selection.main.head ?? value.length;
+		const caret = view?.state.selection.main.head ?? selectionEnd();
 		const next = detectComposerSuggestionToken(view?.state.doc.toString() ?? value, caret, {
 			mentions: mentionSuggestionsEnabled,
 			channels: channelSuggestionsEnabled,
@@ -695,10 +721,61 @@
 		close();
 		return true;
 	}
+
+	/** textarea のときのキー操作。CodeMirror の keymap と同じ関数へ振り分ける。 */
+	function handleKeydown(event: KeyboardEvent) {
+		// 変換中（IME）のキー入力は候補の操作にも送信にも使わない。
+		if (event.isComposing || event.keyCode === 229) return;
+		const mod = (event.ctrlKey || event.metaKey) && !event.altKey;
+		const key = event.key.toLowerCase();
+		const handled =
+			mod && event.key === 'Enter'
+				? (onsubmit?.(), true)
+				: mod && key === 'b' && !event.shiftKey
+					? runFormat('bold')
+					: mod && key === 'i' && !event.shiftKey
+						? runFormat('italic')
+						: mod && key === 's' && event.shiftKey
+							? runFormat('strike')
+							: event.key === 'ArrowDown'
+								? moveSuggestion(1)
+								: event.key === 'ArrowUp'
+									? moveSuggestion(-1)
+									: event.key === 'Enter' || event.key === 'Tab'
+										? chooseActive()
+										: event.key === 'Escape'
+											? closeSuggestions()
+											: false;
+		if (handled) event.preventDefault();
+	}
 </script>
 
 <div class="mention-textarea">
-	<div bind:this={host} class="composer-input-host"></div>
+	{#if plainTextarea}
+		<textarea
+			bind:this={textarea}
+			class="composer-input composer-textarea"
+			{id}
+			{placeholder}
+			{disabled}
+			aria-label={ariaLabel}
+			lang={document.documentElement.lang || 'ja'}
+			{value}
+			oninput={handleInput}
+			oncompositionstart={() => oncompositionchange?.(true)}
+			oncompositionend={() => oncompositionchange?.(false)}
+			onclick={detectToken}
+			onselect={() => onselectionchange?.(selectionStart() !== selectionEnd())}
+			onkeyup={(event) => {
+				if (!['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(event.key)) detectToken();
+			}}
+			onkeydown={handleKeydown}
+			{onpaste}
+			onblur={() => setTimeout(close, 150)}
+		></textarea>
+	{:else}
+		<div bind:this={host} class="composer-input-host"></div>
+	{/if}
 	{#if token}
 		<div
 			bind:this={suggestionLayer}

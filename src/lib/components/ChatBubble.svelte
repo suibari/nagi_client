@@ -223,7 +223,10 @@
 		closeMenu(focusAfter === 'trigger');
 		action();
 		void tick().then(() => {
-			if (focusAfter === 'editor') postRow?.querySelector<HTMLElement>('.composer-input .cm-content')?.focus();
+			if (focusAfter === 'editor')
+				postRow
+					?.querySelector<HTMLElement>('.composer-input .cm-content, textarea.composer-input')
+					?.focus();
 		});
 	}
 	function openExternalTranslation() {
