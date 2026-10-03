@@ -10,7 +10,7 @@
 		MOOD_ZOOM_LEVELS,
 		summarizeMoodDays,
 	} from '$lib/diary/mood';
-	import { postHref } from '$lib/feed/post-follow.svelte';
+	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
 	import PostModerationGuard from './PostModerationGuard.svelte';
@@ -430,7 +430,7 @@
 											<span class="mood-text">{point.text}</span>
 										</span>
 									{:else}
-										<a class="mood-post" href={postHref(point.uri)}>
+										<a class="mood-post" href={postPageHref(point)}>
 											<time datetime={point.createdAt}>{timeLabel(point.createdAt)}</time>
 											<PostModerationGuard post={point}>
 												<span class="mood-text">{point.text}</span>
