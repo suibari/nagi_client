@@ -338,6 +338,14 @@
 		font-size: 1.03rem;
 		overflow-wrap: anywhere;
 	}
+	.blog-body :global(p),
+	.blog-body :global(li),
+	.blog-body :global(blockquote) {
+		white-space: pre-wrap;
+	}
+	.blog-body :global(.post-gap) {
+		height: calc(var(--gap) * 1lh);
+	}
 	.blog-body :global(p) {
 		margin: 0 0 1.25em;
 	}
