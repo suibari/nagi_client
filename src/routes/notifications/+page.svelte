@@ -11,7 +11,7 @@
 	import { markAllSeen } from '$lib/notifications/unread.svelte';
 	import { pageRefresh } from '$lib/components/shell/nav';
 	import { startVisiblePolling } from '$lib/polling';
-	import { postHref } from '$lib/feed/post-follow.svelte';
+	import { notificationHref } from '$lib/notifications/href';
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
@@ -108,20 +108,6 @@
 		refreshHandled = requested;
 		untrack(() => void reload());
 	});
-	const threadHref = (uri: string) => postHref(uri);
-	/**
-	 * 日記はスレッドが無いので、本人のプロフィールの日記タブに飛ばす。
-	 * 名刺の更新も同じくポストが無いので、名刺が置いてある自分のプロフィールへ。
-	 * ゼンカツの提出とドローの控えもスレッドを持たないので、全肯定カードのページへ。
-	 */
-	const notificationHref = (item: NotificationView) =>
-		item.type === 'diary'
-			? `/diary${item.diary ? `?date=${item.diary.date}` : ''}`
-			: item.type === 'analysis'
-				? `/profile/${$session?.did}`
-				: item.cardSubject
-					? '/cards'
-					: threadHref(item.subjectUri);
 	/** ゼンカツはお題、ドローの控えは引いた札の名前を、投稿本文の代わりに出す。 */
 	const cardSubjectText = (subject: NonNullable<NotificationView['cardSubject']>) =>
 		subject.type === 'zenkatsu'
@@ -242,7 +228,7 @@
 			{:else}
 				<div class="notification card" class:unread={item.readAt == null}>
 					<AvatarLink actor={item.actor} size="small" />
-					<a class="notification-main" href={notificationHref(item)}>
+					<a class="notification-main" href={notificationHref(item, $session?.did)}>
 						{@render notificationHead(item)}
 						{@render notificationContent(item)}
 					</a>
