@@ -1,4 +1,9 @@
-import { isSafeDid, withProfileCardMeta } from '../src/lib/og/html.js';
+import {
+	isSafeDid,
+	isSafeRkey,
+	withPostCardMeta,
+	withProfileCardMeta,
+} from '../src/lib/og/html.js';
 
 type FunctionRequest = {
 	method?: string;
@@ -36,6 +41,9 @@ export default async function handler(request: FunctionRequest, response: Functi
 	if (request.method !== 'GET' && request.method !== 'HEAD') return response.status(405).end();
 	const did = first(request.query.did);
 	if (!isSafeDid(did)) return response.status(404).end();
+	const kind = first(request.query.kind);
+	const rkey = first(request.query.rkey);
+	const postKind = kind === 'post' || kind === 'blog' ? kind : undefined;
 
 	try {
 		const shell = await fetch(shellUrl(), {
@@ -43,7 +51,10 @@ export default async function handler(request: FunctionRequest, response: Functi
 			signal: AbortSignal.timeout(5_000),
 		});
 		if (!shell.ok) throw new Error(`SPA shell returned ${shell.status}`);
-		const html = withProfileCardMeta(await shell.text(), did);
+		const html =
+			postKind && isSafeRkey(rkey)
+				? withPostCardMeta(await shell.text(), did, rkey, postKind)
+				: withProfileCardMeta(await shell.text(), did);
 		response.setHeader('Content-Type', 'text/html; charset=utf-8');
 		response.setHeader(
 			'Cache-Control',
