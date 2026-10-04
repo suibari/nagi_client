@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import type { FeedItem } from '$lib/api/types';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import { parsePostText } from '$lib/atproto/facets';
@@ -9,6 +10,8 @@
 	const originalUrl = 'https://old.example/article';
 	const parsed = parsePostText(`変更前 ${originalUrl}`);
 	let ready = $state(false);
+	let deleted = $state(false);
+	let managementOnly = $derived(page.url.searchParams.has('blog'));
 	let editablePost = $state<FeedItem>({
 		uri: `at://${did}/com.suibari.nagi.post/playwright`,
 		cid: 'bafy-original',
@@ -43,7 +46,13 @@
 
 <section class="e2e-fixture" data-testid="post-edit-fixture">
 	<h1>投稿編集 E2E</h1>
-	{#if ready}<ChatBubble bind:post={editablePost} />{/if}
+	{#if managementOnly}<p data-testid="article-body">{editablePost.text}</p>{/if}
+	{#if deleted}<p role="status">削除済み</p>
+	{:else if ready}<ChatBubble
+			bind:post={editablePost}
+			{managementOnly}
+			ondeleted={() => (deleted = true)}
+		/>{/if}
 </section>
 
 <style>

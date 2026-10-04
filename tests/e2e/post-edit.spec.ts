@@ -93,3 +93,33 @@ test('投稿編集でリンクカードを張り替えて保存できる', async
 		linkCards: [{ uri: newUrl, title: '変更後のリンクカード', description: 'E2E metadata' }],
 	});
 });
+
+test('ブログの管理操作から編集結果を本文に反映し、確認後に削除できる', async ({ page }) => {
+	const savedRecord = await mockXrpc(page);
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.goto('/dev/e2e/post-edit?blog');
+	const fixture = page.getByTestId('post-edit-fixture');
+	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
+	await fixture.getByRole('menuitem', { name: '編集', exact: true }).click();
+	await fixture.locator('.cm-content').fill('変更後のブログ本文');
+	await fixture.getByRole('button', { name: '投稿する', exact: true }).click();
+	await expect(fixture.locator('.inline-edit')).toHaveCount(0);
+	await expect(fixture.getByTestId('article-body')).toHaveText('変更後のブログ本文');
+	await expect.poll(savedRecord).toMatchObject({ text: '変更後のブログ本文' });
+	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
+	await fixture.getByRole('menuitem', { name: '削除', exact: true }).click();
+	await page.getByRole('button', { name: 'キャンセル', exact: true }).click();
+	await expect(fixture.getByRole('status')).toHaveCount(0);
+	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
+	await fixture.getByRole('menuitem', { name: '削除', exact: true }).click();
+	const deletion = page.waitForRequest((request) =>
+		request.url().includes('com.atproto.repo.deleteRecord'),
+	);
+	await page.getByRole('button', { name: '削除する', exact: true }).click();
+	expect((await deletion).postDataJSON()).toMatchObject({
+		repo: did,
+		collection: 'com.suibari.nagi.post',
+		rkey: 'playwright',
+	});
+	await expect(fixture.getByRole('status')).toHaveText('削除済み');
+});
