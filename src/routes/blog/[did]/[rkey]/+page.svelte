@@ -26,6 +26,7 @@
 	let bottomPickerOpen = $state(false);
 	let bottomReactionButton = $state<HTMLButtonElement>();
 	let reactionHoldUntil = 0;
+	let refreshVersion = 0;
 	let labels = $derived(
 		i18n.locale === 'ja'
 			? {
@@ -82,7 +83,10 @@
 	followPostedScroll(() => replies);
 
 	async function refresh() {
+		const version = ++refreshVersion;
+		const viewer = $session?.did;
 		const next = (await getThread(data.post.uri)).thread;
+		if (version !== refreshVersion || viewer !== $session?.did) return;
 		optimisticPosts.reconcile([next.post, ...next.replies]);
 		if (Date.now() < reactionHoldUntil && post) next.post.reactions = post.reactions;
 		thread = next;
@@ -105,9 +109,12 @@
 		if (thread) thread = { ...thread, replies: thread.replies.filter((item) => item.uri !== uri) };
 	}
 	onMount(() => {
-		void refresh().catch(
-			(cause) => (error = cause instanceof Error ? cause.message : String(cause)),
-		);
+		const unsubscribe = session.subscribe(() => {
+			reactionHoldUntil = 0;
+			void refresh().catch(
+				(cause) => (error = cause instanceof Error ? cause.message : String(cause)),
+			);
+		});
 		const timer = setInterval(() => {
 			if (
 				document.visibilityState === 'visible' &&
@@ -115,7 +122,11 @@
 			)
 				void refresh().catch(() => undefined);
 		}, 3_000);
-		return () => clearInterval(timer);
+		return () => {
+			unsubscribe();
+			refreshVersion++;
+			clearInterval(timer);
+		};
 	});
 </script>
 
