@@ -9,22 +9,16 @@
 		setCrosspostEnabled,
 	} from '$lib/crosspost/preferences';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
-	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 
 	let blueskyEnabled = $state(false);
 	let blueskyGranted = $state(false);
-	let blogGranted = $state(false);
 	let blueskyBusy = $state(false);
-	let blogBusy = $state(false);
 
 	onMount(async () => {
 		blueskyEnabled = getCrosspostEnabled();
-		[blueskyGranted, blogGranted] = await Promise.all([
-			hasCrosspostScope(),
-			hasStandardSiteScope(),
-		]);
+		blueskyGranted = await hasCrosspostScope();
 	});
 
 	function toggleBluesky(next: boolean) {
@@ -42,16 +36,6 @@
 			blueskyBusy = false;
 		}
 	}
-
-	async function reauthorizeBlog() {
-		if (!$session || blogBusy) return;
-		blogBusy = true;
-		try {
-			await signIn($session.did, { ...(await grantedOptIns()), refreshPermissions: true });
-		} finally {
-			blogBusy = false;
-		}
-	}
 </script>
 
 <section class="auth-card settings-detail external-publishing-settings">
@@ -59,7 +43,6 @@
 	<h1>{m.settingsExternalPublishingTitle()}</h1>
 	<p class="page-intro">{m.externalPublishingHelp()}</p>
 
-	<!-- Bluesky クロスポストだけが任意。ブログ権限は通常のサインインに含まれる。 -->
 	<fieldset class="theme-settings publishing-service">
 		<legend>{m.blueskyPublishingTitle()}</legend>
 		<p>{m.crosspostHelp()}</p>
@@ -82,25 +65,6 @@
 			<p>{m.crosspostSplitNote()}</p>
 			<p>{m.crosspostBotNote()}</p>
 			<p>{m.crosspostDeviceNote()}</p>
-		</details>
-	</fieldset>
-
-	<fieldset class="theme-settings publishing-service">
-		<legend>{m.blogPublishingTitle()}</legend>
-		<p>{m.blogPublishingHelp()}</p>
-		{#if !$session && $oauthReady}
-			<SignedOutNotice message={m.standardSiteSignInRequired()} />
-		{:else if $session && !blogGranted}
-			<p>{m.standardSiteReauthNote()}</p>
-			<button type="button" disabled={blogBusy} onclick={reauthorizeBlog}>
-				{blogBusy ? m.standardSiteReauthPending() : m.standardSiteReauthSubmit()}
-			</button>
-		{/if}
-		<details>
-			<summary>{m.externalPublishingDetails()}</summary>
-			<p>{m.standardSiteHelp()}</p>
-			<p>{m.standardSiteOptInNote()}</p>
-			<p>{m.standardSiteCrosspostNote()}</p>
 		</details>
 	</fieldset>
 </section>

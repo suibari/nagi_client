@@ -748,7 +748,7 @@ export const en: Messages = {
 	loginStartFailed: 'Could not open the next screen. Please try again.',
 	loginFederateLabel: 'Also post to Bluesky',
 	loginFederateNote:
-		'When on, you also grant permission to post to Bluesky. Blog publishing is included in every sign-in. You can change Bluesky crossposting later in settings.',
+		'When on, you grant permission to post to Bluesky. You can change Bluesky crossposting later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
 	loginAgeNotice: "If you are under 18, use Nagi with your parent or guardian's permission.",
@@ -776,7 +776,7 @@ export const en: Messages = {
 	settingsGroupNagi: 'Nagi',
 	settingsGroupAccountActions: 'Account actions',
 	settingsExternalPublishingTitle: 'External publishing',
-	settingsExternalPublishingDescription: 'Choose how to publish to Bluesky or as a blog',
+	settingsExternalPublishingDescription: 'Manage crossposting to Bluesky',
 	settingsAppearanceTitle: 'Appearance',
 	settingsAppearanceDescription: 'Theme and color scheme',
 	settingsLanguageTitle: 'Language',
@@ -928,12 +928,8 @@ export const en: Messages = {
 	pushRetry: 'Try again',
 	pushRefreshPermissions: 'Refresh permissions and sign in',
 	pushReauthPending: 'Opening authorization…',
-	externalPublishingHelp:
-		'Settings for Bluesky crossposting and information about blog publishing.',
+	externalPublishingHelp: 'Manage crossposting to Bluesky.',
 	blueskyPublishingTitle: 'Also post to Bluesky',
-	blogPublishingTitle: 'Publish as a blog',
-	blogPublishingHelp:
-		'Blog publishing is included in Nagi. Sign in and use the Blog tab to publish long-form articles.',
 	externalPublishingDetails: 'How it works and things to know',
 	crosspostHelp:
 		'Adds an “Also Bluesky” button to the composer, so only posts you choose are sent to Bluesky too. Replies are not crossposted.',

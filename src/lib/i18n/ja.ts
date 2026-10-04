@@ -777,7 +777,7 @@ export const ja = {
 	// 設定画面で切り替える。入口でスイッチを2つ並べない。
 	loginFederateLabel: 'Blueskyにも投稿する',
 	loginFederateNote:
-		'ONにするとBlueskyへの投稿権限も認可します。ブログの公開権限は通常のログインに含まれます。Blueskyへの同時投稿はあとから設定で変更できます。',
+		'ONにするとBlueskyへの投稿権限を認可します。Blueskyへの同時投稿はあとから設定で変更できます。',
 	// 未成年の保護者同意は入口で告知する。押す前に目に入る位置に置く。
 	loginAgeNotice: '18歳未満の方は保護者の同意を得てご利用ください。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
@@ -808,7 +808,7 @@ export const ja = {
 	settingsGroupNagi: 'Nagi',
 	settingsGroupAccountActions: 'アカウント操作',
 	settingsExternalPublishingTitle: '外部公開',
-	settingsExternalPublishingDescription: 'Blueskyやブログへの公開方法を選ぶ',
+	settingsExternalPublishingDescription: 'Blueskyへの同時投稿を設定する',
 	settingsAppearanceTitle: '外観',
 	settingsAppearanceDescription: '表示テーマと配色',
 	settingsLanguageTitle: '言語',
@@ -960,11 +960,8 @@ export const ja = {
 	pushRetry: 'もう一度試す',
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
-	externalPublishingHelp: 'Blueskyへの同時投稿の設定と、ブログ公開についての案内です。',
+	externalPublishingHelp: 'Blueskyへの同時投稿を設定できます。',
 	blueskyPublishingTitle: 'Blueskyにも投稿',
-	blogPublishingTitle: 'ブログとして公開',
-	blogPublishingHelp:
-		'ブログはNagiの基本機能です。ログインすると、ブログタブから長文記事を公開できます。',
 	externalPublishingDetails: '仕組みと注意点',
 	crosspostHelp:
 		'投稿欄に「Blueskyにも」ボタンを表示し、選んだ投稿だけをBlueskyへ同時投稿できます。スレッドへの返信は対象外です。',
