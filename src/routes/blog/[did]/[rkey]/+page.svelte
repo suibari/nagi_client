@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ArticleTitleInput from '$lib/components/ArticleTitleInput.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -23,6 +24,9 @@
 	// svelte-ignore state_referenced_locally -- prerender snapshot; onMount refreshes viewer-specific state
 	let thread = $state<ThreadView | undefined>(data.thread);
 	let error = $state('');
+	let editing = $state(false);
+	let editTitle = $state('');
+	let editBusy = $state(false);
 	let bottomPickerOpen = $state(false);
 	let bottomReactionButton = $state<HTMLButtonElement>();
 	let reactionHoldUntil = 0;
@@ -138,7 +142,11 @@
 	{/if}
 	<header class="blog-header">
 		<p class="blog-label"><Icon name="newspaper" size={17} /> {labels.blog}</p>
-		<h1>{title}</h1>
+		{#if editing}
+			<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
+		{:else}
+			<h1>{title}</h1>
+		{/if}
 		<div class="blog-byline">
 			<AvatarLink actor={author} size="small" />
 			<div class="blog-author">
@@ -163,7 +171,15 @@
 	</header>
 
 	{#if thread && post && !post.deleted && $session?.did === post.author.did}
-		<ChatBubble bind:post={thread.post} managementOnly ondeleted={() => void goto('/blog')} />
+		<ChatBubble
+			bind:post={thread.post}
+			bind:editing
+			bind:editTitle
+			bind:editBusy
+			externalTitleEditor
+			managementOnly
+			ondeleted={() => void goto('/blog')}
+		/>
 	{/if}
 
 	<div class="blog-body"><RichText text={body} facets={bodyFacets} /></div>

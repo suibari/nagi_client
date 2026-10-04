@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ArticleTitleInput from './ArticleTitleInput.svelte';
 	import type { ActorView, PostView } from '$lib/api/types';
 	import type { BookmarkSubjectType } from '$lib/api/types';
 	import ReactionBar from './ReactionBar.svelte';
@@ -68,6 +69,10 @@
 		onposted,
 		displayOnly = false,
 		managementOnly = false,
+		editing = $bindable(false),
+		editTitle = $bindable(''),
+		editBusy = $bindable(false),
+		externalTitleEditor = false,
 		hideTimestamp = false,
 		canPin = false,
 		pinned = false,
@@ -91,6 +96,11 @@
 		displayOnly?: boolean;
 		/** ブログ本文を別に表示するページ向けの編集・削除 UI。 */
 		managementOnly?: boolean;
+		editing?: boolean;
+		editTitle?: string;
+		editBusy?: boolean;
+		/** ブログの見出し位置でタイトルを編集する場合に指定。 */
+		externalTitleEditor?: boolean;
 		/** APIのローリング更新などで信頼できる日時が無い読み取り専用表示に使う。 */
 		hideTimestamp?: boolean;
 		/** チャンネル作成者向け。投稿者に関係なく、この投稿をピン操作できる。 */
@@ -135,9 +145,7 @@
 	let channels = $state<ChannelSelection[]>([]);
 	let emojis = $state<EmojiSelection[]>([]);
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
-	let editing = $state(false);
 	let editText = $state('');
-	let editTitle = $state('');
 	let editingArticle = $derived(
 		Boolean(post.article || post.uri.includes('/site.standard.document/')),
 	);
@@ -152,7 +160,6 @@
 	let editLinkCards = $state<LinkCardDraft[]>([]);
 	let editDismissedUrls = $state<string[]>([]);
 	let editImageProcessing = $state(false);
-	let editBusy = $state(false);
 	let editError = $state('');
 	let editImageEditor = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 	let reactionPickerOpen = $state(false);
@@ -703,17 +710,8 @@
 							contentWarningEnabled={Boolean(post.cwRestricted)}
 						/>
 					{/snippet}
-					{#if editingArticle}
-						<label class="article-edit-title">
-							<span>{m.standardSiteTitleLabel()}</span>
-							<input
-								type="text"
-								bind:value={editTitle}
-								disabled={editBusy}
-								required
-								placeholder={m.standardSiteTitlePlaceholder()}
-							/>
-						</label>
+					{#if editingArticle && !externalTitleEditor}
+						<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
 					{/if}
 					<ComposerEditor
 						id={`edit-${post.cid}`}
@@ -1041,15 +1039,6 @@
 	.edited-badge {
 		color: var(--text-mute);
 		font-size: 11px;
-	}
-	.article-edit-title {
-		display: grid;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-	}
-	.article-edit-title input {
-		font: inherit;
-		width: 100%;
 	}
 	.inline-edit {
 		margin-top: 0.35rem;

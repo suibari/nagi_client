@@ -101,7 +101,9 @@ test('ブログの管理操作から編集結果を本文に反映し、確認�
 	const fixture = page.getByTestId('post-edit-fixture');
 	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
 	await fixture.getByRole('menuitem', { name: '編集', exact: true }).click();
-	const titleInput = fixture.locator('.article-edit-title input');
+	const titleInput = fixture.locator('header .article-edit-title input');
+	await expect(fixture.locator('h1')).toHaveCount(0);
+	await expect(fixture.locator('.inline-edit .article-edit-title')).toHaveCount(0);
 	await expect(titleInput).not.toHaveValue('');
 	await expect(fixture.locator('.cm-content')).not.toContainText('# ');
 	await titleInput.fill('   ');
@@ -113,6 +115,7 @@ test('ブログの管理操作から編集結果を本文に反映し、確認�
 	await fixture.locator('.cm-content').fill('変更後のブログ本文');
 	await fixture.getByRole('button', { name: '投稿する', exact: true }).click();
 	await expect(fixture.locator('.inline-edit')).toHaveCount(0);
+	await expect(fixture.getByRole('heading', { name: '変更後のタイトル' })).toBeVisible();
 	await expect(fixture.getByTestId('article-body')).toHaveText(updatedText);
 	await expect.poll(savedRecord).toMatchObject({ text: updatedText });
 	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
