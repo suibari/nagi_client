@@ -398,6 +398,13 @@
 			nextChannel ? { uri: nextChannel.uri, cid: nextChannel.cid } : undefined,
 		);
 		if (
+			(post.article || post.uri.includes('/site.standard.document/')) &&
+			!extractTitle(draft.text)
+		) {
+			editError = m.articleTitleRequired();
+			return;
+		}
+		if (
 			!post.cwRestricted &&
 			(hasContentWarning(draft.text) || editImages.some((image) => image.contentWarning))
 		) {

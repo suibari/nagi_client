@@ -37,6 +37,11 @@
 			getTokenInfo: async () => ({ scope: '' }),
 		} as unknown as OAuthSession;
 		session.set(mockSession);
+		if (managementOnly) {
+			editablePost.article = true;
+			editablePost.text = '# 変更前のタイトル\n\n変更前のブログ本文';
+			editablePost.facets = [];
+		}
 		ready = true;
 		return () => session.set(null);
 	});
