@@ -151,6 +151,10 @@
 		{/if}
 	</header>
 
+	{#if thread && post && !post.deleted && $session?.did === post.author.did}
+		<ChatBubble bind:post={thread.post} managementOnly ondeleted={() => void goto('/blog')} />
+	{/if}
+
 	<div class="blog-body"><RichText text={body} facets={bodyFacets} /></div>
 	{#if bodyImages.length}<div class="blog-media"><ImageGallery images={bodyImages} /></div>{/if}
 	{#if post?.linkCards?.length}<div class="blog-links">

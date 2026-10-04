@@ -36,7 +36,12 @@
 	} from '$lib/i18n/languagePreferences.svelte';
 	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
 	import { tick } from 'svelte';
-	import { postFollow, postHref, postPageHref, scrollToElement } from '$lib/feed/post-follow.svelte';
+	import {
+		postFollow,
+		postHref,
+		postPageHref,
+		scrollToElement,
+	} from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
@@ -62,6 +67,7 @@
 		ondeleted,
 		onposted,
 		displayOnly = false,
+		managementOnly = false,
 		hideTimestamp = false,
 		canPin = false,
 		pinned = false,
@@ -83,6 +89,8 @@
 		onposted?: () => void | Promise<void>;
 		/** ニュースコメント等、投稿と同じ見た目だけを使う読み取り専用表示。 */
 		displayOnly?: boolean;
+		/** ブログ本文を別に表示するページ向けの編集・削除 UI。 */
+		managementOnly?: boolean;
 		/** APIのローリング更新などで信頼できる日時が無い読み取り専用表示に使う。 */
 		hideTimestamp?: boolean;
 		/** チャンネル作成者向け。投稿者に関係なく、この投稿をピン操作できる。 */
@@ -361,7 +369,8 @@
 	}
 
 	async function submitEdit() {
-		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(post.uri);
+		const match =
+			/^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(post.uri);
 		if (!editHasContent || !editContentWarningValid || editImageProcessing || editBusy || !$session)
 			return;
 		if (!match) {
@@ -400,7 +409,10 @@
 		try {
 			// applyChannel: 返信では常に nextChannel が undefined になるため、旧クライアントが
 			// 複製した channel が残っていればこの編集で落ちる（ルート所有への正規化）。
-			const result = await updatePost(match[2], draft, editImages, { applyChannel: true, collection: match[1] });
+			const result = await updatePost(match[2], draft, editImages, {
+				applyChannel: true,
+				collection: match[1],
+			});
 			// 楽観反映: このカードの本文/facets/画像を差し替え「編集済み」を立てる。AppView が
 			// putRecord を取り込むと同じ内容へ収束するため、即時 refresh は呼ばない
 			// （取り込み前は旧本文が返り楽観反映を打ち消してしまうため）。
@@ -562,6 +574,7 @@
 <!-- data-post-uri は投稿後の追従スクロールの目印。カード単位ではなく発言単位で寄せる。 -->
 <div
 	class="post-row"
+	class:management-only={managementOnly}
 	class:article={post.article}
 	class:mine
 	class:bot={post.isBot}
@@ -574,11 +587,13 @@
 		disabled: optimistic || localGuest,
 	}}
 >
-	{#if localGuest}
-		<span class="guest-avatar" aria-hidden="true"><Icon name="hide" size={22} /></span>
-	{:else}
-		<!-- ホバーで名刺、クリックで従来どおりプロフィールへ。 -->
-		<AvatarLink actor={post.author} />
+	{#if !managementOnly}
+		{#if localGuest}
+			<span class="guest-avatar" aria-hidden="true"><Icon name="hide" size={22} /></span>
+		{:else}
+			<!-- ホバーで名刺、クリックで従来どおりプロフィールへ。 -->
+			<AvatarLink actor={post.author} />
+		{/if}
 	{/if}
 	<div
 		class="bubble"
@@ -586,60 +601,63 @@
 		class:bubble-sending={post.optimisticState === 'sending'}
 		class:bubble-created={post.optimisticState === 'indexing'}
 	>
-		{#if articleHeader}
-			<div class="post-article-cover">
-				<ContentWarningMask
-					kind="content"
-					active={moderationDisplay.warn}
-					bind:revealed={contentRevealed}
-					title={moderationWarningText}
-				>
-					<img
-						class="post-header-image"
-						src={resolveAsset(articleHeader.url)}
-						alt={articleHeader.alt}
-						style={articleHeader.aspectRatio
-							? `aspect-ratio: ${articleHeader.aspectRatio.width} / ${articleHeader.aspectRatio.height}`
-							: undefined}
-					/>
-				</ContentWarningMask>
-			</div>
-		{/if}
-		<div class="meta">
-			<div class="meta-author-line">
-				{#if localGuest}
-					<span>{m.guestPostAuthor()}</span>
-				{:else}
-					<a href={`/profile/${post.author.did}`}>{post.author.displayName ?? post.author.handle}</a
+		{#if !managementOnly}
+			{#if articleHeader}
+				<div class="post-article-cover">
+					<ContentWarningMask
+						kind="content"
+						active={moderationDisplay.warn}
+						bind:revealed={contentRevealed}
+						title={moderationWarningText}
 					>
-					<div class="meta-badges"><ActorBadges actor={post.author} /></div>
-				{/if}
-			</div>
-			{#if !hideTimestamp || post.edited}
-				<div class="meta-time">
-					{#if !hideTimestamp}
-						<time>
-							{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
-									month: 'short',
-									day: 'numeric',
-									hour: '2-digit',
-									minute: '2-digit',
-								})}{:else}<a href={threadHref}
-									>{new Date(post.createdAt).toLocaleString(dateLocale(), {
+						<img
+							class="post-header-image"
+							src={resolveAsset(articleHeader.url)}
+							alt={articleHeader.alt}
+							style={articleHeader.aspectRatio
+								? `aspect-ratio: ${articleHeader.aspectRatio.width} / ${articleHeader.aspectRatio.height}`
+								: undefined}
+						/>
+					</ContentWarningMask>
+				</div>
+			{/if}
+			<div class="meta">
+				<div class="meta-author-line">
+					{#if localGuest}
+						<span>{m.guestPostAuthor()}</span>
+					{:else}
+						<a href={`/profile/${post.author.did}`}
+							>{post.author.displayName ?? post.author.handle}</a
+						>
+						<div class="meta-badges"><ActorBadges actor={post.author} /></div>
+					{/if}
+				</div>
+				{#if !hideTimestamp || post.edited}
+					<div class="meta-time">
+						{#if !hideTimestamp}
+							<time>
+								{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
 										month: 'short',
 										day: 'numeric',
 										hour: '2-digit',
 										minute: '2-digit',
-									})}</a
-								>{/if}</time
-						>
-					{/if}
-					{#if post.edited}<span class="edited-badge" aria-label={m.editedBadgeAria()}
-							>{m.editedBadge()}</span
-						>{/if}
-				</div>
-			{/if}
-		</div>
+									})}{:else}<a href={threadHref}
+										>{new Date(post.createdAt).toLocaleString(dateLocale(), {
+											month: 'short',
+											day: 'numeric',
+											hour: '2-digit',
+											minute: '2-digit',
+										})}</a
+									>{/if}</time
+							>
+						{/if}
+						{#if post.edited}<span class="edited-badge" aria-label={m.editedBadgeAria()}
+								>{m.editedBadge()}</span
+							>{/if}
+					</div>
+				{/if}
+			</div>
+		{/if}
 		<ContentWarningMask
 			kind="content"
 			active={moderationDisplay.warn}
@@ -704,9 +722,9 @@
 							{m.contentWarningRestricted()}
 						</p>{/if}
 				</div>
-			{:else if post.deleted}
+			{:else if !managementOnly && post.deleted}
 				<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
-			{:else}
+			{:else if !managementOnly}
 				{#snippet collapseToggle()}
 					{#if collapsible && (overflowing || expanded)}<button
 							class="read"
@@ -727,21 +745,26 @@
 					{collapseToggle}
 					{translatedText}
 				/>
-			{/if}{#if !editing && visibleImages?.length}
+			{/if}{#if !managementOnly && !editing && visibleImages?.length}
 				<ImageGallery images={visibleImages} clampTall={clampTallImages} />
 				{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
 						>{showAllImages ? m.readLess() : m.showAllMedia()}</button
-					>{/if}{/if}{#if visibleLinkCards?.length}<div class="link-cards">
+					>{/if}{/if}{#if !managementOnly && visibleLinkCards?.length}<div class="link-cards">
 					{#each visibleLinkCards as card}<LinkCard {card} />{/each}
 				</div>
 				{#if linkCardToggleable}<button
 						class="read"
 						onclick={() => (showAllLinkCards = !showAllLinkCards)}
 						>{showAllLinkCards ? m.readLess() : m.showAllMedia()}</button
-					>{/if}{/if}{#if post.quote?.kind === 'post'}<QuoteCard post={post.quote.post} />
-			{:else if post.quote?.kind === 'news'}<NewsQuoteCard news={post.quote.news} {botActor} />{/if}
+					>{/if}{/if}{#if !managementOnly && post.quote?.kind === 'post'}<QuoteCard
+					post={post.quote.post}
+				/>
+			{:else if !managementOnly && post.quote?.kind === 'news'}<NewsQuoteCard
+					news={post.quote.news}
+					{botActor}
+				/>{/if}
 		</ContentWarningMask>
-		{#if !displayOnly}{#if post.optimisticState === 'sending'}
+		{#if !managementOnly && !displayOnly}{#if post.optimisticState === 'sending'}
 				<div class="post-sending" role="status" aria-live="polite">
 					<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
 					<span>{m.postSending()}</span>
@@ -763,35 +786,37 @@
 			{/if}{/if}
 		{#if !displayOnly && !post.deleted && !optimistic}
 			<div class="post-actions">
-				<button
-					class="ghost timeline-action"
-					class:active={composerHost.open && composerHost.replyTarget?.post.cid === post.cid}
-					type="button"
-					aria-label={m.replyPost()}
-					title={m.replyPost()}
-					onclick={() => openComposer('reply')}><Icon name="reply" size={17} /></button
-				>
-				{#if post.isBot || mine}<button
+				{#if !managementOnly}
+					<button
 						class="ghost timeline-action"
-						class:active={composerHost.open && composerHost.quoteTarget?.post?.cid === post.cid}
+						class:active={composerHost.open && composerHost.replyTarget?.post.cid === post.cid}
 						type="button"
-						aria-label={m.quotePost()}
-						title={m.quotePost()}
-						onclick={() => openComposer('quote')}><Icon name="quote" size={17} /></button
-					>{/if}
-				<button
-					bind:this={reactionButton}
-					class="ghost timeline-action"
-					class:active={reactionPickerOpen}
-					type="button"
-					aria-label={m.addReactionAria()}
-					title={m.addReactionAria()}
-					aria-expanded={reactionPickerOpen}
-					onclick={toggleReactionPicker}
-				>
-					<Icon name="emojiPlus" size={18} />
-				</button>
-				<BookmarkActions subject={{ kind: 'post', uri: post.uri }} />
+						aria-label={m.replyPost()}
+						title={m.replyPost()}
+						onclick={() => openComposer('reply')}><Icon name="reply" size={17} /></button
+					>
+					{#if post.isBot || mine}<button
+							class="ghost timeline-action"
+							class:active={composerHost.open && composerHost.quoteTarget?.post?.cid === post.cid}
+							type="button"
+							aria-label={m.quotePost()}
+							title={m.quotePost()}
+							onclick={() => openComposer('quote')}><Icon name="quote" size={17} /></button
+						>{/if}
+					<button
+						bind:this={reactionButton}
+						class="ghost timeline-action"
+						class:active={reactionPickerOpen}
+						type="button"
+						aria-label={m.addReactionAria()}
+						title={m.addReactionAria()}
+						aria-expanded={reactionPickerOpen}
+						onclick={toggleReactionPicker}
+					>
+						<Icon name="emojiPlus" size={18} />
+					</button>
+					<BookmarkActions subject={{ kind: 'post', uri: post.uri }} />
+				{/if}
 				{#if hasSecondaryActions}
 					<ActionMenu
 						label={m.morePostActions()}
@@ -799,7 +824,7 @@
 						align={mine ? 'start' : 'end'}
 					>
 						{#snippet menu(closeMenu)}
-							{#if canTranslateExternally}
+							{#if !managementOnly && canTranslateExternally}
 								<button
 									role="menuitem"
 									onclick={() => runSecondaryAction(closeMenu, openExternalTranslation)}
@@ -876,6 +901,22 @@
 {/if}
 
 <style>
+	.post-row.management-only {
+		display: block;
+		margin: 16px 0;
+	}
+	.management-only > .bubble {
+		width: 100%;
+		max-width: none;
+		padding: 0;
+		border: 0;
+		background: transparent;
+	}
+
+	.management-only > .bubble::before,
+	.management-only > .bubble::after {
+		display: none;
+	}
 	.guest-avatar {
 		display: grid;
 		place-items: center;
