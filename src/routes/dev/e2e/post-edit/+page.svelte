@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import type { FeedItem } from '$lib/api/types';
+	import ArticleTitleInput from '$lib/components/ArticleTitleInput.svelte';
+	import { extractTitle } from '$lib/atproto/markdown';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import { parsePostText } from '$lib/atproto/facets';
 	import { session, type OAuthSession } from '$lib/oauth/session.svelte';
@@ -10,6 +12,9 @@
 	const originalUrl = 'https://old.example/article';
 	const parsed = parsePostText(`変更前 ${originalUrl}`);
 	let ready = $state(false);
+	let editing = $state(false);
+	let editTitle = $state('');
+	let editBusy = $state(false);
 	let deleted = $state(false);
 	let managementOnly = $derived(page.url.searchParams.has('blog'));
 	let editablePost = $state<FeedItem>({
@@ -50,12 +55,22 @@
 <svelte:head><title>投稿編集 E2E</title></svelte:head>
 
 <section class="e2e-fixture" data-testid="post-edit-fixture">
-	<h1>投稿編集 E2E</h1>
+	<header>
+		{#if managementOnly && editing}
+			<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
+		{:else}
+			<h1>{managementOnly ? extractTitle(editablePost.text) : '投稿編集 E2E'}</h1>
+		{/if}
+	</header>
 	{#if managementOnly}<p data-testid="article-body">{editablePost.text}</p>{/if}
 	{#if deleted}<p role="status">削除済み</p>
 	{:else if ready}<ChatBubble
 			bind:post={editablePost}
 			{managementOnly}
+			bind:editing
+			bind:editTitle
+			bind:editBusy
+			externalTitleEditor={managementOnly}
 			ondeleted={() => (deleted = true)}
 		/>{/if}
 </section>
