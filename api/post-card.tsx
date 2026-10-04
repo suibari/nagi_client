@@ -133,6 +133,7 @@ export default async function handler(request: FunctionRequest, response: ImageF
 
 	try {
 		const post = await getPost(did, rkey, kind);
+		if (kind === 'blog' && (post.deleted || !post.article)) return fallback(response);
 		// こっそり投稿は誰が書いたかも外へ出さず、サイト共通の画像に倒す。
 		if (post.kossori || post.threadKossori) return fallback(response);
 		const profile = await getProfile(post.author.did).catch(() => post.author as OgpProfile);
