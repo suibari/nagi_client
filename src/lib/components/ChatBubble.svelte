@@ -137,6 +137,10 @@
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
 	let editing = $state(false);
 	let editText = $state('');
+	let editTitle = $state('');
+	let editingArticle = $derived(
+		Boolean(post.article || post.uri.includes('/site.standard.document/')),
+	);
 	let editMentions = $state<MentionSelection[]>([]);
 	let editChannels = $state<ChannelSelection[]>([]);
 	// 編集開始時点の所属。タグ由来（本文の #CH名 から復元できた）かどうかで、
@@ -286,7 +290,20 @@
 			!post.reply && post.channel?.cid
 				? { uri: post.channel.uri, cid: post.channel.cid, name: post.channel.name }
 				: undefined;
-		const restored = restorePostEditState(post.text, post.facets, editOriginalChannel);
+		editTitle = editingArticle ? (extractTitle(post.text) ?? '') : '';
+		const prefix = editingArticle ? (post.text.match(/^# [^\n]+\n*/)?.[0] ?? '') : '';
+		const offset = new TextEncoder().encode(prefix).length;
+		const facets = post.facets
+			?.filter((facet) => facet.index.byteStart >= offset)
+			.map((facet) => ({
+				...facet,
+				index: { byteStart: facet.index.byteStart - offset, byteEnd: facet.index.byteEnd - offset },
+			}));
+		const restored = restorePostEditState(
+			post.text.slice(prefix.length),
+			facets,
+			editOriginalChannel,
+		);
 		editText = restored.text;
 		editMentions = restored.mentions;
 		editChannels = restored.channels;
@@ -385,22 +402,26 @@
 			: editChannelWasTagged
 				? undefined
 				: editOriginalChannel;
+		const heading = editingArticle ? `# ${editTitle.trim()}\n\n` : '';
+		const shift = <T extends { start: number; end: number }>(items: T[]) =>
+			items.map((item) => ({
+				...item,
+				start: item.start + heading.length,
+				end: item.end + heading.length,
+			}));
 		const draft = preparePostDraft(
-			editText,
+			heading + editText,
 			undefined,
 			undefined,
 			[],
 			editLinkCards,
-			editMentions,
-			editChannels,
-			editEmojis,
+			shift(editMentions),
+			shift(editChannels),
+			shift(editEmojis),
 			false,
 			nextChannel ? { uri: nextChannel.uri, cid: nextChannel.cid } : undefined,
 		);
-		if (
-			(post.article || post.uri.includes('/site.standard.document/')) &&
-			!extractTitle(draft.text)
-		) {
+		if (editingArticle && !editTitle.trim()) {
 			editError = m.articleTitleRequired();
 			return;
 		}
@@ -682,6 +703,18 @@
 							contentWarningEnabled={Boolean(post.cwRestricted)}
 						/>
 					{/snippet}
+					{#if editingArticle}
+						<label class="article-edit-title">
+							<span>{m.standardSiteTitleLabel()}</span>
+							<input
+								type="text"
+								bind:value={editTitle}
+								disabled={editBusy}
+								required
+								placeholder={m.standardSiteTitlePlaceholder()}
+							/>
+						</label>
+					{/if}
 					<ComposerEditor
 						id={`edit-${post.cid}`}
 						bind:value={editText}
@@ -1008,6 +1041,15 @@
 	.edited-badge {
 		color: var(--text-mute);
 		font-size: 11px;
+	}
+	.article-edit-title {
+		display: grid;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+	.article-edit-title input {
+		font: inherit;
+		width: 100%;
 	}
 	.inline-edit {
 		margin-top: 0.35rem;

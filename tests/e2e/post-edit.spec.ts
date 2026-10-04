@@ -101,14 +101,16 @@ test('ブログの管理操作から編集結果を本文に反映し、確認�
 	const fixture = page.getByTestId('post-edit-fixture');
 	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
 	await fixture.getByRole('menuitem', { name: '編集', exact: true }).click();
-	for (const invalidText of ['変更後のブログ本文', '#   \n\n本文', '本文\n\n# 後ろの見出し']) {
-		await fixture.locator('.cm-content').fill(invalidText);
-		await fixture.getByRole('button', { name: '投稿する', exact: true }).click();
-		await expect(fixture.getByRole('alert')).toHaveText('ブログにはタイトルが必要です');
-		expect(savedRecord()).toBeUndefined();
-	}
+	const titleInput = fixture.locator('.article-edit-title input');
+	await expect(titleInput).not.toHaveValue('');
+	await expect(fixture.locator('.cm-content')).not.toContainText('# ');
+	await titleInput.fill('   ');
+	await fixture.getByRole('button', { name: '投稿する', exact: true }).click();
+	await expect(fixture.getByRole('alert')).toHaveText('ブログにはタイトルが必要です');
+	expect(savedRecord()).toBeUndefined();
 	const updatedText = '# 変更後のタイトル\n\n変更後のブログ本文';
-	await fixture.locator('.cm-content').fill(updatedText);
+	await titleInput.fill('変更後のタイトル');
+	await fixture.locator('.cm-content').fill('変更後のブログ本文');
 	await fixture.getByRole('button', { name: '投稿する', exact: true }).click();
 	await expect(fixture.locator('.inline-edit')).toHaveCount(0);
 	await expect(fixture.getByTestId('article-body')).toHaveText(updatedText);
