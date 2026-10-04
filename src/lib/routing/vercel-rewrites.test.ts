@@ -112,7 +112,7 @@ describe('vercel SPA rewrites', () => {
 				`${path} must only use an explicitly supported noindex fallback`,
 			).toEqual(
 				path === '/blog/[did]/[rkey]'
-					? [{ source: '/blog/:did/:rkey', destination: '/api/spa?did=:did' }]
+					? [{ source: '/blog/:did/:rkey', destination: '/api/spa?did=:did&rkey=:rkey&kind=blog' }]
 					: [],
 			);
 			expect(

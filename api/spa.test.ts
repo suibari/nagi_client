@@ -35,6 +35,26 @@ describe('SPA fallback SEO', () => {
 		}
 	});
 
+	it.each(['post', 'blog'])('uses the post card for %s pages', async (kind) => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html><head></head></html>')));
+		const response = responseMock();
+
+		await handler({ method: 'GET', query: { did, rkey: '3mwz6vcf7jz2q', kind } }, response);
+
+		const html = response.send.mock.calls[0][0] as string;
+		expect(html).toContain(`/api/post-card?v=1&amp;kind=${kind}&amp;`);
+		expect(html).not.toContain('/api/profile-card');
+	});
+
+	it('falls back to the profile card for an unsafe record key', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html><head></head></html>')));
+		const response = responseMock();
+
+		await handler({ method: 'GET', query: { did, rkey: '../x', kind: 'post' } }, response);
+
+		expect(response.send).toHaveBeenCalledWith(expect.stringContaining('/api/profile-card'));
+	});
+
 	it('keeps the error fallback out of the index too', async () => {
 		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 503 })));
 		vi.spyOn(console, 'error').mockImplementation(() => undefined);

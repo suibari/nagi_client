@@ -21,39 +21,18 @@ import {
 } from '../src/lib/card/design.js';
 import { qrRenderData } from '../src/lib/card/qr.js';
 import { isSafeDid } from '../src/lib/og/html.js';
+import {
+	NAGI_ORIGIN,
+	absoluteAvatar,
+	fallback,
+	first,
+	flatten,
+	getProfile,
+	initials,
+	type FunctionRequest,
+	type ImageFunctionResponse,
+} from './_ogp.js';
 import { prepareOgpAvatar } from './profile-card-image.js';
-
-type FunctionRequest = {
-	method?: string;
-	query: Record<string, string | string[] | undefined>;
-};
-
-type FunctionResponse = {
-	status(code: number): FunctionResponse;
-	setHeader(name: string, value: string): void;
-	end(body?: Uint8Array): void;
-};
-
-type Profile = {
-	did: string;
-	handle: string;
-	displayName?: string;
-	description?: string;
-	avatar?: string;
-	comment?: string;
-	tagline?: string;
-	tags?: string[];
-	joinedAt?: string;
-	cardUpdatedAt?: string;
-};
-
-const APPVIEW_ORIGIN = 'https://nagi-api.suibari.com';
-const NAGI_ORIGIN = 'https://nagi.suibari.com';
-
-const flatten = (value: string | undefined, limit = 120) => {
-	const text = value?.replace(/\s+/g, ' ').trim() ?? '';
-	return text.length <= limit ? text : `${text.slice(0, limit)}…`;
-};
 
 const date = (value: string | undefined) =>
 	value
@@ -65,38 +44,7 @@ const date = (value: string | undefined) =>
 			}).format(new Date(value))
 		: undefined;
 
-async function getProfile(did: string): Promise<Profile> {
-	const query = new URLSearchParams({ actor: did, limit: '1', lang: 'ja' });
-	const response = await fetch(`${APPVIEW_ORIGIN}/xrpc/com.suibari.nagi.getProfile?${query}`, {
-		headers: { Accept: 'application/json' },
-		signal: AbortSignal.timeout(5_000),
-	});
-	if (!response.ok) throw new Error(`getProfile returned ${response.status}`);
-	const body = (await response.json()) as { profile?: Profile };
-	if (!body.profile) throw new Error('getProfile returned no profile');
-	return body.profile;
-}
-
-const absoluteAvatar = (avatar: string | undefined) =>
-	// AppView のプロフィール画像は自前の blob proxy 相対URLだけを正規経路とする。
-	// DB値を任意URLとして画像レンダラーに取得させない（SSRF 防止）。
-	avatar?.startsWith('/api/blob/') ? `${APPVIEW_ORIGIN}${avatar}` : undefined;
-
-const initials = (profile: Profile) =>
-	(profile.displayName?.slice(0, 1) || profile.handle?.slice(0, 1).toUpperCase() || '○').slice(
-		0,
-		1,
-	);
-
-const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
-
-function fallback(response: FunctionResponse) {
-	response.status(307);
-	response.setHeader('Location', '/nagi_ogp.jpg');
-	return response.end();
-}
-
-export default async function handler(request: FunctionRequest, response: FunctionResponse) {
+export default async function handler(request: FunctionRequest, response: ImageFunctionResponse) {
 	if (request.method !== 'GET' && request.method !== 'HEAD') return response.status(405).end();
 	const did = first(request.query.did);
 	if (!isSafeDid(did)) return fallback(response);

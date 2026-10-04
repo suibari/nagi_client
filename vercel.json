@@ -86,11 +86,11 @@
 		},
 		{
 			"source": "/thread/:did/:rkey",
-			"destination": "/api/spa?did=:did"
+			"destination": "/api/spa?did=:did&rkey=:rkey&kind=post"
 		},
 		{
 			"source": "/blog/:did/:rkey",
-			"destination": "/api/spa?did=:did"
+			"destination": "/api/spa?did=:did&rkey=:rkey&kind=blog"
 		},
 		{ "source": "/affirmation", "destination": "/200" },
 		{ "source": "/cards", "destination": "/200" },

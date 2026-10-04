@@ -1,7 +1,12 @@
 const DID_PATTERN = /^did:[a-z0-9]+:[A-Za-z0-9._:%-]+$/;
+const RKEY_PATTERN = /^[A-Za-z0-9._:~-]{1,512}$/;
 
 export function isSafeDid(value: unknown): value is string {
 	return typeof value === 'string' && value.length <= 256 && DID_PATTERN.test(value);
+}
+
+export function isSafeRkey(value: unknown): value is string {
+	return typeof value === 'string' && value !== '.' && value !== '..' && RKEY_PATTERN.test(value);
 }
 
 const escapeAttribute = (value: string) =>
@@ -22,6 +27,16 @@ function replaceMeta(html: string, selector: 'property' | 'name', key: string, c
 		: html.replace('</head>', `\t\t${meta}\n\t</head>`);
 }
 
+export type PostCardKind = 'post' | 'blog';
+
+function withImageMeta(html: string, image: string, alt: string) {
+	let output = replaceMeta(html, 'property', 'og:image', image);
+	output = replaceMeta(output, 'property', 'og:image:type', 'image/png');
+	output = replaceMeta(output, 'property', 'og:image:alt', alt);
+	output = replaceMeta(output, 'name', 'twitter:image', image);
+	return replaceMeta(output, 'name', 'twitter:image:alt', alt);
+}
+
 /**
  * adapter-static が作った SPA shell は全URLで同一なので、動的ページだけ画像メタを差し替える。
  * script を足さないため、SvelteKit が生成した CSP hash は変更不要。
@@ -29,10 +44,12 @@ function replaceMeta(html: string, selector: 'property' | 'name', key: string, c
 export function withProfileCardMeta(html: string, did: string) {
 	// v2 は WebP アバターを直接埋め込んでいた旧画像の長期キャッシュを回避する。
 	const image = `https://nagi.suibari.com/api/profile-card?v=2&did=${encodeURIComponent(did)}`;
-	const alt = 'Nagiのプロフィールカード';
-	let output = replaceMeta(html, 'property', 'og:image', image);
-	output = replaceMeta(output, 'property', 'og:image:type', 'image/png');
-	output = replaceMeta(output, 'property', 'og:image:alt', alt);
-	output = replaceMeta(output, 'name', 'twitter:image', image);
-	return replaceMeta(output, 'name', 'twitter:image:alt', alt);
+	return withImageMeta(html, image, 'Nagiのプロフィールカード');
+}
+
+/** ポスト・ブログの共有リンクには、本文やタイトルを載せた専用カードを出す。 */
+export function withPostCardMeta(html: string, did: string, rkey: string, kind: PostCardKind) {
+	const query = new URLSearchParams({ v: '1', kind, did, rkey });
+	const image = `https://nagi.suibari.com/api/post-card?${query}`;
+	return withImageMeta(html, image, kind === 'blog' ? 'Nagiのブログ' : 'Nagiのポスト');
 }
