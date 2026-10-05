@@ -71,7 +71,6 @@ export const en: Messages = {
 	newsCategoryTechnology: 'Science & tech',
 	newsRecommendedEmpty: 'There are no recommended news stories for you yet.',
 	myNagiBotUnreadAria: 'A new bot-tan update is available',
-	communityAffirmationUnreadAria: 'A new community affirmation summary is available',
 	myNagiListUnreadAria: 'A new post from your list is available',
 	myNagiChannelsUnreadAria: 'A new channel post is available',
 	newsEmpty: 'There are no bright news stories to show right now.',
@@ -112,22 +111,6 @@ export const en: Messages = {
 	newsDelete: 'Delete news you added',
 	newsDeleteConfirm: 'Delete this news story? It will also become unavailable in quotes.',
 	newsDeleteFailed: 'Could not delete the news story',
-	communityAffirmationTitle: 'Affirm together',
-	communityAffirmationIntro: 'Bot-tan found a voice that could use a gentle response',
-	communityAffirmationReact: 'Send warmth with an emoji',
-	communityAffirmationReactAria: 'Choose an emoji to send to the original post',
-	communityAffirmationDismiss: 'Skip similar posts',
-	communityAffirmationDismissAria: 'Skip similar posts from this user',
-	communityAffirmationDismissSaveFailed: 'Could not save this choice. Please try again.',
-	communityAffirmationGuest: 'Sign in to send a warm emoji to voices from the community.',
-	communityAffirmationScrollPrev: 'See the previous voice',
-	communityAffirmationScrollNext: 'See the next voice',
-	communityAffirmationLoading: 'Bot-tan is listening for a voice…',
-	communityAffirmationEmpty: 'There is no voice to share right now. Please come back later',
-	communityAffirmationDone:
-		'You have seen every voice for now. Bot-tan will share more when they arrive',
-	communityAffirmationError: 'Could not receive a voice right now',
-	communityAffirmationRefreshPermissions: 'Refresh login permissions',
 	newsUnavailable: 'This news story is no longer available',
 
 	myNagiMore: 'See more',
@@ -366,7 +349,7 @@ export const en: Messages = {
 	postScopeKossori: 'Limited',
 	postScopeKossoriShort: 'Limited',
 	postScopeKossoriDetail:
-		'Only you and bot-tan can read this post. All replies that follow are also limited. Choosing Limited partway through a thread does not change earlier posts. (Bot-tan may anonymize it and share it in Affirm together.)',
+		'Only you and bot-tan can read this post. All replies that follow are also limited. Choosing Limited partway through a thread does not change earlier posts.',
 	postScopeFeed: 'This feed',
 	postScopeFeedShort: 'Everyone',
 	postScopeFeedDetail:
@@ -383,7 +366,7 @@ export const en: Messages = {
 	guestPostTitle: 'Post only on this device',
 	guestPostScope: 'Private on this device',
 	guestPostScopeDetail:
-		'Saved on this device only. It will not appear in feeds or Affirm together.',
+		'Saved on this device only. It will not appear in feeds.',
 	guestPostPlaceholder: 'Write what is on your mind…',
 	guestPostSubmit: 'Post privately',
 	guestPostSaving: 'Saving…',
@@ -491,7 +474,7 @@ export const en: Messages = {
 	kossoriBadge: 'Limited',
 	reactionKossoriHidden: 'A reaction to a Limited post. Its contents cannot be shown.',
 	kossoriBadgeAria:
-		'Limited post (only you and bot-tan can read it; it may still be summarized anonymously)',
+		'Limited post (only you and bot-tan can read it)',
 	editPost: 'Edit',
 	editPostAria: 'Edit this post',
 	editPlaceholder: 'Edit your post',

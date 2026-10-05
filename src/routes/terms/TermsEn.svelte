@@ -24,8 +24,7 @@
 			<strong>Use a Content Warning (CW) when the content of your post calls for one.</strong>
 		</li>
 		<li>
-			<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan</strong> - though an anonymous
-			summary of one may appear in "Support together."
+			<strong>"Kossori" (quiet) posts are readable only by you and Bot-tan.</strong>
 		</li>
 	</ul>
 </div>
@@ -117,7 +116,7 @@
 	<li><strong>You retain the rights to the content you post.</strong></li>
 	<li>
 		The operator uses it only as needed to provide the Service - displaying it in timelines,
-		searching, translating, and generating Bot-tan's replies and anonymous summaries.
+		searching, translating, and generating Bot-tan's replies.
 	</li>
 	<li>
 		Your posts are stored in your own PDS (except "Kossori" posts - see below). Because of how the
@@ -136,11 +135,7 @@
 		Images cannot be attached.
 	</p>
 	<p>
-		However, <strong
-			>an anonymous Bot-tan summary - with neither your name nor the original wording - may appear
-			in "Support together."</strong
-		> Readers can react to that summary, but they cannot trace it back to you or to the original text.
-		Summaries are AI-generated, so they may differ from what you actually wrote.
+		Kossori posts are also never used for the automatic profile analysis that other users can see.
 	</p>
 	<p>
 		Note that <strong
@@ -153,7 +148,7 @@
 	<p>
 		“Private on this device” while signed out is a device-local feature, separate from ordinary
 		Kossori posts. The post and Bot-tan’s reply are stored in your browser and never appear in
-		shared timelines, search, profiles, or “Affirm together.” They may be impossible to recover
+		shared timelines, search, or profiles. They may be impossible to recover
 		after browser-data deletion, the end of a private-browsing session, or loss of the device.
 	</p>
 	<p>
@@ -348,8 +343,7 @@
 <div class="callout">
 	<p>
 		<strong>Bot-tan is an AI, not a human.</strong> Bot-tan's replies and conversations, the automatic
-		analysis of your profile, diaries, card comments, news selection, and the anonymous summaries in "Support
-		together" are all produced by generative AI.
+		analysis of your profile, diaries, card comments, and news selection are all produced by generative AI.
 	</p>
 </div>
 <ul>
