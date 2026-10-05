@@ -12,7 +12,6 @@
 	import { drafts } from '$lib/drafts/drafts.svelte';
 	import { clearLocalPreferenceCache } from '$lib/preferences/sync.svelte';
 	import { clearBookmarkPreferenceCache } from '$lib/bookmarks/bookmarks.svelte';
-	import { clearLegacyCommunityAffirmationHandledUris } from '$lib/community-affirmation/seen';
 
 	let confirmation = $state('');
 	let dialogOpen = $state(false);
@@ -39,7 +38,12 @@
 			// deleteAccountData が消すので、端末のキャッシュもここで揃えて消す。
 			clearLocalPreferenceCache(did);
 			clearBookmarkPreferenceCache(did);
-			clearLegacyCommunityAffirmationHandledUris();
+			// 廃止した「みんなで全肯定」で反応済みの URI（こっそり投稿を含みうる）。
+			try {
+				localStorage.removeItem('nagi:community-affirmation-reacted:v1');
+			} catch {
+				/* 端末側の掃除なので失敗しても続ける。 */
+			}
 			await signOut().catch(() => undefined);
 			await goto('/');
 		} catch (e) {

@@ -59,9 +59,6 @@ describe('mobile overflow layout contracts', () => {
 		expect(myNagiPage).toMatch(
 			/\.my-nagi-heading\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
 		);
-		expect(shellCss).toMatch(
-			/\.community-affirmation\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
-		);
 	});
 
 	it('contains the custom feed-tab preview inside the settings card', () => {

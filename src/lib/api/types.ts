@@ -184,16 +184,6 @@ export type MyNagiListUser = { actor: ActorView; post: FeedItem };
 export type MyNagiChannel = { channel: ChannelView; post: FeedItem };
 export type MyNagiView = { listUsers: MyNagiListUser[]; channels: MyNagiChannel[] };
 export type TimelinePage = Page<FeedItem>;
-export type CommunityAffirmationView = {
-	uri: string;
-	cid: string;
-	summary: string;
-	createdAt: string;
-	reactions: ReactionView[];
-	images?: PostImage[];
-	linkCards?: LinkCardView[];
-};
-export type CommunityAffirmationPage = Page<CommunityAffirmationView>;
 /** 本人だけが取得できる、ホームに表示するユーザーの非公開一覧。 */
 export type PrivateListView = { members: ActorView[]; limit: 200 };
 export type BookmarkSubjectType = 'post' | 'news' | 'diary';

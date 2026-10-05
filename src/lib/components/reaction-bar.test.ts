@@ -8,7 +8,6 @@ const reactionStamp = read('./ReactionStamp.svelte');
 const chatBubble = read('./ChatBubble.svelte');
 const newsCard = read('./NewsCard.svelte');
 const kossoriReactionBubble = read('./KossoriReactionBubble.svelte');
-const communityAffirmationPanel = read('./CommunityAffirmationPanel.svelte');
 
 function cssRule(selector: string): string {
 	return componentsCss.match(new RegExp(`\\.${selector}\\s*\\{[^}]*\\}`, 's'))?.[0] ?? '';
@@ -19,7 +18,6 @@ describe('reaction bar presentation', () => {
 		expect(reactionBar).toMatch(/showReactors\s*=\s*false/);
 		expect(chatBubble).toContain('showReactors={mine}');
 		expect(newsCard).toContain('showReactors={false}');
-		expect(communityAffirmationPanel).toContain('showReactors={false}');
 		expect(kossoriReactionBubble).toMatch(/<ReactionBar[\s\S]*?showReactors[\s\S]*?\/>/);
 	});
 

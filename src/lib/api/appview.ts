@@ -13,7 +13,6 @@ import type {
 	BookmarksPage,
 	ChannelsPage,
 	ChannelView,
-	CommunityAffirmationPage,
 	DraftContent,
 	DraftsView,
 	DraftView,
@@ -167,23 +166,6 @@ export const getAffirmation = (cursor?: string) =>
 	call<TimelinePage>(
 		'com.suibari.nagi.getAffirmation',
 		`/xrpc/com.suibari.nagi.getAffirmation?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
-	);
-export const getCommunityAffirmations = (lang: 'ja' | 'en', cursor?: string, limit = 10) => {
-	const params = new URLSearchParams({ lang, limit: String(limit) });
-	if (cursor) params.set('cursor', cursor);
-	return call<CommunityAffirmationPage>(
-		'com.suibari.nagi.getCommunityAffirmations',
-		`/xrpc/com.suibari.nagi.getCommunityAffirmations?${params}`,
-		{},
-		'required',
-	);
-};
-export const putCommunityAffirmationDismissals = (uris: string[]) =>
-	call<{ accepted: number }>(
-		'com.suibari.nagi.putCommunityAffirmationDismissals',
-		'/xrpc/com.suibari.nagi.putCommunityAffirmationDismissals',
-		{ method: 'POST', body: JSON.stringify({ uris }) },
-		'required',
 	);
 export const getDrafts = () =>
 	call<DraftsView>(

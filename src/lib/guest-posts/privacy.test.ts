@@ -31,7 +31,7 @@ describe('guest post privacy boundary', () => {
 	it('uses only dedicated unauthenticated affirmation procedures', () => {
 		expect(api).toMatch(/createGuestAffirmation[\s\S]*?'none'/);
 		expect(api).toMatch(/getGuestAffirmation[\s\S]*?'none'/);
-		expect(store).not.toMatch(/createPost|createKossoriPost|getCommunityAffirmations/);
+		expect(store).not.toMatch(/createPost|createKossoriPost/);
 	});
 
 	it('renders the local author through the non-profile ChatBubble variant', () => {

@@ -4,7 +4,7 @@
 	 * my Nagi — Nagi の起点。公開部分はサインイン前にも見せる。
 	 *
 	 * パーソナルな全肯定を起点に、内部のつながりから外部の話題へ段階的に広げる:
-	 * botたん（1件）→ みんなで全肯定 → 全肯定ニュース → リスト動向。
+	 * botたん（1件）→ 全肯定ニュース → リスト動向。
 	 * 投稿は左下／右下の FAB からポストモーダルで行う（+layout.svelte に常駐）。
 	 *
 	 * 各セクションは独立して読み込み・失敗する。1本コケても画面全体は落ちない。
@@ -14,7 +14,6 @@
 	import type { ActorView, MyNagiView, NewsView, PostView } from '$lib/api/types';
 	import CarouselArrows from '$lib/components/CarouselArrows.svelte';
 	import CardDrawEntry from '$lib/components/CardDrawEntry.svelte';
-	import CommunityAffirmationPanel from '$lib/components/CommunityAffirmationPanel.svelte';
 	import MyNagiNewsCarousel from '$lib/components/MyNagiNewsCarousel.svelte';
 	import MyNagiSection from '$lib/components/MyNagiSection.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
@@ -364,8 +363,6 @@
 			</div>
 		{/if}
 	</MyNagiSection>
-
-	<CommunityAffirmationPanel {botActor} />
 
 	<MyNagiSection
 		title={m.myNagiNewsTitle()}

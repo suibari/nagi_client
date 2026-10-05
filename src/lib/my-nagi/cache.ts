@@ -1,6 +1,5 @@
 import type {
 	ActorView,
-	CommunityAffirmationView,
 	MyNagiView,
 	NewsView,
 	PostView,
@@ -22,15 +21,7 @@ export type MyNagiPageCache = {
 	listActivity: MyNagiView;
 };
 
-export type CommunityAffirmationCache = {
-	loaded: boolean;
-	items: CommunityAffirmationView[];
-	completed: boolean;
-	botActor?: ActorView;
-};
-
 const pageCache = new Map<string, MyNagiPageCache>();
-const communityCache = new Map<string, CommunityAffirmationCache>();
 
 function readLru<T>(cache: Map<string, T>, key: string): T | undefined {
 	if (typeof window === 'undefined') return undefined;
@@ -60,18 +51,4 @@ export function updateMyNagiPageCache(key: string, patch: Partial<MyNagiPageCach
 		listActivity: { listUsers: [], channels: [] },
 	};
 	updateLru(pageCache, key, { ...current, ...patch });
-}
-
-export const readCommunityAffirmationCache = (key: string) => readLru(communityCache, key);
-
-export function updateCommunityAffirmationCache(
-	key: string,
-	patch: Partial<CommunityAffirmationCache>,
-): void {
-	const current = communityCache.get(key) ?? {
-		loaded: false,
-		items: [],
-		completed: false,
-	};
-	updateLru(communityCache, key, { ...current, ...patch });
 }
