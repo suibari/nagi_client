@@ -70,7 +70,7 @@
 		// 実行時に現在の feed を読むので、タブを切り替えても同じ2本で足りる。
 		const base = startVisiblePolling(() => feed.refresh(), 30_000, { onReturn: true });
 		const fast = startVisiblePolling(() => feed.refresh(), 3_000, {
-			when: () => feed.hasOptimistic() || feed.hasPendingFor($session?.did),
+			when: () => feed.hasOptimistic() || feed.hasRecentPostFor($session?.did),
 		});
 		const onScroll = () => {
 			if (window.scrollY <= 24) newPostsAvailable = false;

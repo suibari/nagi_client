@@ -353,7 +353,9 @@
 		const fast = startVisiblePolling(() => feed?.refresh(), 3_000, {
 			when: () =>
 				Boolean(
-					feed?.hasOptimistic() || feed?.hasPendingFor($session?.did) || isAwaitingInitialBotPost,
+					feed?.hasOptimistic() ||
+					feed?.hasRecentPostFor($session?.did) ||
+					isAwaitingInitialBotPost,
 				),
 		});
 		return () => {

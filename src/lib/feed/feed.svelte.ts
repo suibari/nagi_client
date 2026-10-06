@@ -288,6 +288,15 @@ export class Feed {
 			];
 		});
 	}
+	/** 投稿直後は bot の返信完了後もリアクションの到着を短い間隔で確認する。 */
+	hasRecentPostFor(did?: string, windowMs = 180_000) {
+		if (!did) return false;
+		const now = Date.now();
+		return this.items.flatMap(feedPosts).some((post) => {
+			const age = now - new Date(post.createdAt).valueOf();
+			return post.author.did === did && age >= 0 && age < windowMs;
+		});
+	}
 	/** true while one of `did`'s recent posts is still waiting for botたん */
 	hasPendingFor(did?: string, windowMs = 180_000) {
 		if (!did) return false;
