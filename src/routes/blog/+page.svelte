@@ -6,6 +6,9 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { fetchBlogDirectory, type BlogDirectoryItem } from '$lib/blog/directory';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { session } from '$lib/oauth/session.svelte';
+	import { composerHost } from '$lib/post/composer-host.svelte';
+	import { setComposerMode } from '$lib/post/composer-mode';
 
 	let { data } = $props();
 	// svelte-ignore state_referenced_locally -- prerender seed; onMount enriches it with document tags
@@ -40,9 +43,23 @@
 	}
 
 	onMount(() => void load());
+
+	function openBlogComposer() {
+		if (!$session) {
+			location.href = '/login';
+			return;
+		}
+		composerHost.clearAllTargets();
+		composerHost.clearChannel();
+		setComposerMode('blog');
+		composerHost.show();
+	}
 </script>
 
-<section class="page-title"><h1>{m.blogTitle()}</h1></section>
+<section class="page-title blog-title">
+	<h1>{m.blogTitle()}</h1>
+	<button type="button" class="primary" onclick={openBlogComposer}>{m.blogWrite()}</button>
+</section>
 
 <section class="blog-directory">
 	<p class="blog-intro">{m.blogIntro()}</p>
@@ -76,3 +93,12 @@
 		</div>
 	{/if}
 </section>
+
+<style>
+	.blog-title {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+</style>
