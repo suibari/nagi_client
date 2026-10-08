@@ -1122,6 +1122,7 @@ export const en: Messages = {
 	navBlog: 'Blog',
 	channelsTitle: 'Channels',
 	blogTitle: 'Blog',
+	blogWrite: 'Write a blog',
 	blogIntro: 'Read blogs published on Nagi. Choose a tag to filter the articles.',
 	blogTags: 'Blog tags',
 	blogAll: 'All',

@@ -1157,6 +1157,7 @@ export const ja = {
 	navBlog: 'ブログ',
 	channelsTitle: 'チャンネル',
 	blogTitle: 'ブログ',
+	blogWrite: 'ブログを書く',
 	blogIntro: 'Nagiで公開されたブログを読めます。タグを選ぶと記事を絞り込めます。',
 	blogTags: 'ブログのタグ',
 	blogAll: 'すべて',
