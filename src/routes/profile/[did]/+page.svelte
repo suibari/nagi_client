@@ -94,7 +94,7 @@
 			homeListError = m.homeListUpdateFailed();
 		}
 	}
-	// per-(did, tab) feed cache so switching tabs back doesn't refetch
+	// 閲覧者ごとにキャッシュする。匿名取得後のログイン復元では本人向けの情報を再取得する。
 	const feeds = new Map<string, Feed>();
 	const reactionFeeds = new Map<string, ProfileReactionFeed>();
 	let feed = $state<Feed>();
@@ -119,12 +119,13 @@
 	});
 	$effect(() => {
 		const actor = did;
+		const viewer = $session?.did ?? '';
 		const locale = i18n.locale;
 		// カードタブでもプロフィール欄は要るので、投稿フィードは読んでおく。
 		const filter: ProfileFeedFilter = tab === 'cards' || tab === 'bookmarks' ? 'posts' : tab;
 		if (!actor) return;
 		if (filter === 'reactions') {
-			const key = `${actor}:reactions:${locale}`;
+			const key = `${viewer}:${actor}:reactions:${locale}`;
 			let f = reactionFeeds.get(key);
 			if (!f) {
 				f = new ProfileReactionFeed((cursor) =>
@@ -146,7 +147,7 @@
 			reactionFeed = f;
 			return;
 		}
-		const key = `${actor}:${filter}:${locale}`;
+		const key = `${viewer}:${actor}:${filter}:${locale}`;
 		let f = feeds.get(key);
 		if (!f) {
 			f = new Feed(
