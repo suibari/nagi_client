@@ -76,6 +76,20 @@ describe('parsePostText: links', () => {
 		expect(urls).toEqual(['https://example.com/neko']);
 	});
 
+	it('excludes markdown targets from automatic link cards, including empty labels', () => {
+		const parsed = parsePostText('[ねこ](https://example.com/neko) [](https://example.com/empty)');
+		expect(parsed.cardUrls).toEqual([]);
+		expect(parsed.facets).toHaveLength(1);
+		expect(parsed.text).toBe('ねこ [](https://example.com/empty)');
+	});
+
+	it('keeps bare URLs as card candidates even when also used in markdown', () => {
+		const parsed = parsePostText(
+			'[ねこ](https://example.com/a) https://example.com/a https://example.com/a',
+		);
+		expect(parsed.cardUrls).toEqual(['https://example.com/a']);
+	});
+
 	it('leaves a markdown link with a non-http target as plain text', () => {
 		const { text, facets } = parsePostText('[x](javascript:alert(1))');
 		expect(text).toBe('[x](javascript:alert(1))');
