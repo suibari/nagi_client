@@ -15,6 +15,7 @@
 	import { createPost, deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
+	import VideoPlayer from './VideoPlayer.svelte';
 	import type { ImageAttachment, PostEditImage } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCard from './LinkCard.svelte';
@@ -44,6 +45,10 @@
 		scrollToElement,
 	} from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
+	import PostVideoEditor, { type ExistingVideoEdit } from './PostVideoEditor.svelte';
+	import VideoAttachmentPicker from './VideoAttachmentPicker.svelte';
+	import type { VideoAttachment } from '$lib/video-attachment.svelte';
+	import type { PostVideoEdit } from '$lib/atproto/records';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
@@ -157,6 +162,10 @@
 	let editChannelWasTagged = $state(false);
 	let editEmojis = $state<EmojiSelection[]>([]);
 	let editImages = $state<PostEditImage[]>([]);
+	// 編集前から付いていた動画（外すと undefined）と、編集で付け直した動画。
+	let editExistingVideo = $state<ExistingVideoEdit>();
+	let editNewVideo = $state<VideoAttachment>();
+	const editVideoPending = $derived(Boolean(editNewVideo && !editNewVideo.ready));
 	let editLinkCards = $state<LinkCardDraft[]>([]);
 	let editDismissedUrls = $state<string[]>([]);
 	let editImageProcessing = $state(false);
@@ -230,7 +239,14 @@
 	);
 	let hasSecondaryActions = $derived(canTranslateExternally || canPin || mine);
 	let editHasContent = $derived(
-		Boolean(editText.trim() || editImages.length || editLinkCards.length || post.quote),
+		Boolean(
+			editText.trim() ||
+			editImages.length ||
+			editExistingVideo ||
+			editNewVideo ||
+			editLinkCards.length ||
+			post.quote,
+		),
 	);
 	let editContentWarningValid = $derived(validContentWarningSyntax(editText));
 	let composeContentWarningValid = $derived(validContentWarningSyntax(composeText));
@@ -334,6 +350,14 @@
 			description: card.description,
 			previewUrl: card.thumb,
 		}));
+		editExistingVideo = post.video
+			? {
+					thumbnail: post.video.thumbnail,
+					alt: post.video.alt ?? '',
+					...(post.video.contentWarning ? { contentWarning: true } : {}),
+				}
+			: undefined;
+		editNewVideo = undefined;
 		editDismissedUrls = [];
 		editing = true;
 	}
@@ -347,6 +371,8 @@
 		editOriginalChannel = undefined;
 		editChannelWasTagged = false;
 		editImages = [];
+		editExistingVideo = undefined;
+		editNewVideo = undefined;
 		editLinkCards = [];
 		editDismissedUrls = [];
 		editImageProcessing = false;
@@ -395,7 +421,14 @@
 	async function submitEdit() {
 		const match =
 			/^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(post.uri);
-		if (!editHasContent || !editContentWarningValid || editImageProcessing || editBusy || !$session)
+		if (
+			!editHasContent ||
+			!editContentWarningValid ||
+			editImageProcessing ||
+			editVideoPending ||
+			editBusy ||
+			!$session
+		)
 			return;
 		if (!match) {
 			editError = m.editPostFailed();
@@ -434,11 +467,26 @@
 		}
 		if (
 			!post.cwRestricted &&
-			(hasContentWarning(draft.text) || editImages.some((image) => image.contentWarning))
+			(hasContentWarning(draft.text) ||
+				editImages.some((image) => image.contentWarning) ||
+				editExistingVideo?.contentWarning ||
+				editNewVideo?.contentWarning)
 		) {
 			editError = m.contentWarningEditForbidden();
 			return;
 		}
+		const newVideoRecord = editNewVideo?.toRecord();
+		const videoEdit: PostVideoEdit | undefined = newVideoRecord
+			? { kind: 'new', record: newVideoRecord, contentWarning: newVideoRecord.contentWarning }
+			: editExistingVideo
+				? {
+						kind: 'keep',
+						alt: editExistingVideo.alt,
+						contentWarning: editExistingVideo.contentWarning,
+					}
+				: post.video
+					? { kind: 'remove' }
+					: undefined;
 		editBusy = true;
 		editError = '';
 		try {
@@ -447,6 +495,7 @@
 			const result = await updatePost(match[2], draft, editImages, {
 				applyChannel: true,
 				collection: match[1],
+				...(videoEdit ? { video: videoEdit } : {}),
 			});
 			// 楽観反映: このカードの本文/facets/画像を差し替え「編集済み」を立てる。AppView が
 			// putRecord を取り込むと同じ内容へ収束するため、即時 refresh は呼ばない
@@ -459,6 +508,7 @@
 				parsedContentWarning.status === 'valid' ? parsedContentWarning.range : undefined;
 			post.langs = draft.langs;
 			post.images = result.imageViews?.length ? result.imageViews : undefined;
+			if (result.videoView !== undefined) post.video = result.videoView ?? undefined;
 			post.linkCards = result.linkCardViews.length ? result.linkCardViews : undefined;
 			post.edited = true;
 			// 返信では所属を触らないので、楽観反映もルート（=非返信）のときだけ行う。
@@ -476,6 +526,8 @@
 			editChannelWasTagged = false;
 			editEmojis = [];
 			editImages = [];
+			editExistingVideo = undefined;
+			editNewVideo = undefined;
 			editLinkCards = [];
 			editDismissedUrls = [];
 			editImageProcessing = false;
@@ -702,13 +754,19 @@
 			{#if editing}
 				<div class="inline-edit" use:editEscape>
 					{#snippet editTools()}
-						<PostImageEditor
-							bind:this={editImageEditor}
-							bind:images={editImages}
-							bind:processing={editImageProcessing}
-							disabled={editBusy}
-							contentWarningEnabled={Boolean(post.cwRestricted)}
-						/>
+						<div class="attachment-pickers">
+							<PostImageEditor
+								bind:this={editImageEditor}
+								bind:images={editImages}
+								bind:processing={editImageProcessing}
+								disabled={editBusy || Boolean(editExistingVideo || editNewVideo)}
+								contentWarningEnabled={Boolean(post.cwRestricted)}
+							/>
+							<!-- 画像があると PostImageEditor が一覧ごと横に広がるので、動画ボタンは出さない。 -->
+							{#if !editingArticle && !editExistingVideo && !editImages.length && !isAppviewOwnedUri(post.uri)}
+								<VideoAttachmentPicker bind:video={editNewVideo} disabled={editBusy} />
+							{/if}
+						</div>
 					{/snippet}
 					{#if editingArticle && !externalTitleEditor}
 						<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
@@ -726,6 +784,12 @@
 						onsubmit={() => void submitEdit()}
 						onpaste={(event) => editImageEditor?.handlePaste(event)}
 						tools={editTools}
+					/>
+					<PostVideoEditor
+						bind:existing={editExistingVideo}
+						bind:video={editNewVideo}
+						disabled={editBusy}
+						contentWarningEnabled={Boolean(post.cwRestricted)}
 					/>
 					<LinkCardEditor
 						text={editText}
@@ -748,6 +812,7 @@
 							type="button"
 							disabled={editBusy ||
 								editImageProcessing ||
+								editVideoPending ||
 								!editHasContent ||
 								!editContentWarningValid}
 							aria-label={editBusy ? m.composerSubmitting() : m.composerSubmit()}
@@ -787,7 +852,9 @@
 				<ImageGallery images={visibleImages} clampTall={clampTallImages} />
 				{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
 						>{showAllImages ? m.readLess() : m.showAllMedia()}</button
-					>{/if}{/if}{#if !managementOnly && visibleLinkCards?.length}<div class="link-cards">
+					>{/if}{/if}{#if !managementOnly && !editing && post.video}<VideoPlayer
+					video={post.video}
+				/>{/if}{#if !managementOnly && visibleLinkCards?.length}<div class="link-cards">
 					{#each visibleLinkCards as card}<LinkCard {card} />{/each}
 				</div>
 				{#if linkCardToggleable}<button

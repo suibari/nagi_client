@@ -155,6 +155,26 @@ describe('prepareCrosspostContent', () => {
 		});
 	});
 
+	it('reuses the processed video blob as a Bluesky video embed', () => {
+		const video = {
+			video: { ref: { $link: 'bafkreivideo' }, mimeType: 'video/mp4', size: 1 },
+			alt: 'running cat',
+			contentWarning: true,
+			aspectRatio: { width: 16, height: 9 },
+		};
+		const assets: PostAssets = { images: [], cards: [], video };
+
+		expect(prepareCrosspostContent(draft(), assets)).toEqual({
+			chunks: [{ text: '', facets: [] }],
+			embed: {
+				$type: 'app.bsky.embed.video',
+				video: video.video,
+				alt: 'running cat',
+				aspectRatio: { width: 16, height: 9 },
+			},
+		});
+	});
+
 	it('does not create a chunk when both text and embeds are absent', () => {
 		expect(prepareCrosspostContent(draft(), emptyAssets())).toEqual({
 			chunks: [],

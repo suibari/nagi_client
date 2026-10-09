@@ -114,7 +114,8 @@
 			f = new Feed(
 				(cursor) => getChannelTimeline(target, cursor, active === 'media' ? 'media' : undefined),
 				(item) =>
-					item.channel?.uri === target && (active !== 'media' || Boolean(item.images?.length)),
+					item.channel?.uri === target &&
+					(active !== 'media' || Boolean(item.images?.length || item.video)),
 			);
 			feeds.set(key, f);
 			void f.load();

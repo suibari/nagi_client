@@ -173,6 +173,163 @@ describe('content warning storage boundaries', () => {
 	});
 });
 
+const videoRecord = {
+	video: { $type: 'blob', ref: { $link: 'bafkreivideo' }, mimeType: 'video/mp4', size: 1 },
+	alt: 'running cat',
+	aspectRatio: { width: 16, height: 9 },
+};
+const quoteRef = { uri: 'at://did:plc:other/com.suibari.nagi.post/quoted', cid: 'bafyquote' };
+const videoDraft = (video = videoRecord, quote?: typeof quoteRef) =>
+	preparePostDraft(
+		'video',
+		undefined,
+		quote,
+		[],
+		[],
+		[],
+		[],
+		[],
+		false,
+		undefined,
+		false,
+		false,
+		[],
+		video,
+	);
+
+describe('video posts', () => {
+	beforeEach(() => {
+		createRecord.mockReset();
+		getRecord.mockReset();
+		putRecord.mockReset();
+		uploadBlob.mockReset();
+		createRecord.mockResolvedValue({
+			data: { uri: `at://${did}/com.suibari.nagi.post/video`, cid: 'bafyvideo' },
+		});
+		putRecord.mockResolvedValue({
+			data: { uri: `at://${did}/com.suibari.nagi.post/post`, cid: 'bafyupdated' },
+		});
+		ensureRecord.mockResolvedValue({});
+	});
+
+	it('writes a #video embed without uploading anything again', async () => {
+		const draft = videoDraft();
+		await createPost(draft, { images: [], cards: [], video: draft.video });
+
+		expect(uploadBlob).not.toHaveBeenCalled();
+		expect(createRecord.mock.calls[0][0].record.embed).toEqual({
+			$type: 'com.suibari.nagi.post#video',
+			...videoRecord,
+		});
+	});
+
+	it('puts the video inside the quote embed when quoting', async () => {
+		const draft = videoDraft(videoRecord, quoteRef);
+		await createPost(draft, { images: [], cards: [], video: draft.video });
+
+		expect(createRecord.mock.calls[0][0].record.embed).toEqual({
+			$type: 'com.suibari.nagi.post#quote',
+			record: quoteRef,
+			video: videoRecord,
+		});
+	});
+
+	it('marks the post CW-restricted when the video has a content warning', () => {
+		expect(
+			videoDraft({ ...videoRecord, contentWarning: true } as typeof videoRecord).cwRestricted,
+		).toBe(true);
+	});
+
+	it('refuses to combine images and a video', async () => {
+		const draft = videoDraft();
+		const image = { image: {}, alt: '', aspectRatio: { width: 1, height: 1 } };
+		await expect(
+			createPost(draft, { images: [image], cards: [], video: draft.video }),
+		).rejects.toThrow();
+		expect(createRecord).not.toHaveBeenCalled();
+	});
+
+	it('keeps the stored blob and only rewrites alt when editing', async () => {
+		getRecord.mockResolvedValue({
+			data: {
+				value: {
+					$type: 'com.suibari.nagi.post',
+					text: 'old',
+					embed: { $type: 'com.suibari.nagi.post#video', ...videoRecord },
+				},
+			},
+		});
+
+		const result = await updatePost('post', preparePostDraft('new'), [], {
+			video: { kind: 'keep', alt: '' },
+		});
+
+		const embed = putRecord.mock.calls[0][0].record.embed;
+		expect(embed).toEqual({
+			$type: 'com.suibari.nagi.post#video',
+			video: videoRecord.video,
+			aspectRatio: videoRecord.aspectRatio,
+		});
+		expect(result.videoView?.playlist).toBe(
+			`https://video.bsky.app/watch/${encodeURIComponent(did)}/bafkreivideo/playlist.m3u8`,
+		);
+	});
+
+	it('removes the video, and lets images replace it in the same edit', async () => {
+		getRecord.mockResolvedValue({
+			data: {
+				value: {
+					$type: 'com.suibari.nagi.post',
+					text: 'old',
+					embed: { $type: 'com.suibari.nagi.post#video', ...videoRecord },
+				},
+			},
+		});
+		uploadBlob.mockResolvedValue({ data: { blob: { ref: { $link: 'bafyimage' } } } });
+		const image = {
+			kind: 'new' as const,
+			id: 'new',
+			blob: new Blob(['x'], { type: 'image/png' }),
+			previewUrl: 'blob:x',
+			alt: '',
+			aspectRatio: { width: 1, height: 1 },
+		};
+
+		const result = await updatePost('post', preparePostDraft('new'), [image], {
+			video: { kind: 'remove' },
+		});
+
+		const embed = putRecord.mock.calls[0][0].record.embed;
+		expect(embed.$type).toBe('com.suibari.nagi.post#images');
+		expect(embed).not.toHaveProperty('video');
+		expect(result.videoView).toBeNull();
+	});
+
+	it('replaces removed images with a newly attached video', async () => {
+		getRecord.mockResolvedValue({
+			data: {
+				value: {
+					$type: 'com.suibari.nagi.post',
+					text: 'old',
+					embed: {
+						$type: 'com.suibari.nagi.post#images',
+						images: [{ image: { ref: { $link: 'bafyold' } }, alt: '' }],
+					},
+				},
+			},
+		});
+
+		await updatePost('post', preparePostDraft('new'), [], {
+			video: { kind: 'new', record: videoRecord },
+		});
+
+		expect(putRecord.mock.calls[0][0].record.embed).toEqual({
+			$type: 'com.suibari.nagi.post#video',
+			...videoRecord,
+		});
+	});
+});
+
 describe('post link card editing', () => {
 	beforeEach(() => {
 		getRecord.mockReset();

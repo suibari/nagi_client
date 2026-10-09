@@ -58,6 +58,8 @@
 		bookmarkFilled: 'M6 3h12v18l-6-4-6 4V3Z',
 		arrowUp: 'M12 19V5M5 12l7-7 7 7',
 		arrowDown: 'M12 5v14M5 12l7 7 7-7',
+		play: 'M8 5v14l11-7L8 5Z',
+		video: 'M3 6h12v12H3V6Zm12 4.5 6-3.5v10l-6-3.5',
 		bluesky:
 			'M12 10.8C10.5 7.8 6.4 3 3.7 4.8 1.8 6.1 2.8 10 3.2 11.2c.5 1.6 2.3 2 4.2 1.7-3 .5-5.6 1.8-2.1 5 2 1.9 4.6-.3 5.9-2.8.5-.9.8-1.8.9-2.7.1.9.4 1.8.9 2.7 1.3 2.5 3.9 4.7 5.9 2.8 3.5-3.2.9-4.5-2.1-5 1.9.3 3.7-.1 4.2-1.7.4-1.2 1.4-5.1-.5-6.4-2.7-1.8-6.8 3-8.3 6Z',
 	};
@@ -94,7 +96,7 @@
 		width={size}
 		height={size}
 		viewBox="0 0 24 24"
-		fill={name === 'bookmarkFilled' ? 'currentColor' : 'none'}
+		fill={name === 'bookmarkFilled' || name === 'play' ? 'currentColor' : 'none'}
 		stroke="currentColor"
 		stroke-width="1.5"
 		stroke-linecap="round"

@@ -1,0 +1,181 @@
+import { readFileSync } from 'node:fs';
+import { expect, test, type Page } from '@playwright/test';
+
+const did = 'did:plc:playwright-video';
+const fixtures = new URL('./fixtures/', import.meta.url);
+const blob = {
+	$type: 'blob',
+	ref: { $link: 'bafkreiuploadedvideo' },
+	mimeType: 'video/mp4',
+	size: 29060,
+};
+
+async function mockServices(page: Page) {
+	const calls = { serviceAuth: [] as string[], createdRecord: undefined as unknown, polls: 0 };
+	await page.route('**/xrpc/**', async (route) => {
+		const request = route.request();
+		const url = new URL(request.url());
+		const method = url.pathname.split('/').pop();
+		const json = (body: unknown, status = 200) =>
+			route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+
+		if (url.host === 'video.bsky.app') {
+			if (method === 'app.bsky.video.getUploadLimits')
+				return json({ canUpload: true, remainingDailyVideos: 100, remainingDailyBytes: 1e10 });
+			if (method === 'app.bsky.video.uploadVideo')
+				return json({ did, jobId: 'job-1', state: 'JOB_STATE_CREATED' });
+			if (method === 'app.bsky.video.getJobStatus') {
+				calls.polls++;
+				return json({
+					jobStatus:
+						calls.polls < 2
+							? { jobId: 'job-1', did, state: 'JOB_STATE_ENCODING', progress: 50 }
+							: { jobId: 'job-1', did, state: 'JOB_STATE_COMPLETED', blob },
+				});
+			}
+		}
+		if (method === 'com.atproto.server.getServiceAuth') {
+			calls.serviceAuth.push(`${url.searchParams.get('aud')} ${url.searchParams.get('lxm')}`);
+			return json({ token: 'service-token' });
+		}
+		if (method === 'com.atproto.repo.createRecord') {
+			calls.createdRecord = request.postDataJSON().record;
+			return json({ uri: `at://${did}/com.suibari.nagi.post/new`, cid: 'bafynew' });
+		}
+		if (method === 'com.atproto.repo.getRecord')
+			return json({
+				uri: `at://${did}/com.suibari.nagi.profile/self`,
+				cid: 'bafyreidnq5e4j7qaw5l4dpa4g5vjt4y5dpjywqrnit23nkrnnjwf5f24xi',
+				value: { $type: 'com.suibari.nagi.profile', displayName: '動画確認用' },
+			});
+		return json({ drafts: [], items: [], folders: [], uris: [] });
+	});
+	await page.route('https://video.bsky.app/watch/**/thumbnail.jpg', (route) =>
+		route.fulfill({
+			contentType: 'image/jpeg',
+			body: readFileSync(new URL('thumbnail.jpg', fixtures)),
+		}),
+	);
+	return calls;
+}
+
+test.beforeEach(async ({ page }) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+});
+
+test('動画を添付すると変換が終わるまで投稿できず、終わると #video で保存する', async ({ page }) => {
+	const calls = await mockServices(page);
+	await page.goto('/dev/e2e/video');
+	await page.getByRole('button', { name: 'Open composer' }).click();
+	const composer = page.locator('.post-modal .composer');
+	await expect(composer).toBeVisible();
+
+	await composer.locator('input[type="file"][accept*="video"]').setInputFiles({
+		name: 'sample.webm',
+		mimeType: 'video/webm',
+		buffer: readFileSync(new URL('sample.webm', fixtures)),
+	});
+	const submit = composer.locator('.submit-primary');
+	await expect(submit).toBeDisabled();
+	await expect(composer.getByText('動画の準備ができました')).toBeVisible();
+	// 動画を付けている間は画像を足せない。
+	await expect(composer.getByRole('button', { name: '画像を追加' })).toBeDisabled();
+	await composer.getByLabel('動画の説明（任意）').fill('テスト動画');
+	await expect(submit).toBeEnabled();
+
+	await submit.click();
+	await expect.poll(() => calls.createdRecord).toBeTruthy();
+	expect(calls.serviceAuth).toEqual([
+		'did:web:video.bsky.app app.bsky.video.getUploadLimits',
+		'did:web:pds.example com.atproto.repo.uploadBlob',
+	]);
+	expect((calls.createdRecord as { embed: unknown }).embed).toEqual({
+		$type: 'com.suibari.nagi.post#video',
+		video: blob,
+		alt: 'テスト動画',
+		aspectRatio: { width: 320, height: 180 },
+	});
+});
+
+test('送信中は%、変換中と仕上げ中は段階を出し、ページ離脱を確認する', async ({
+	page,
+}, testInfo) => {
+	let jobState = 'JOB_STATE_ENCODING';
+	let releaseUpload: () => void = () => {};
+	const uploadHeld = new Promise<void>((resolve) => (releaseUpload = resolve));
+	await mockServices(page);
+	// mockServices より後に登録したルートが優先される。送信の応答と変換の段階をテスト側で進める。
+	await page.route('https://video.bsky.app/xrpc/app.bsky.video.uploadVideo**', async (route) => {
+		await uploadHeld;
+		await route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({ did, jobId: 'job-1', state: 'JOB_STATE_CREATED' }),
+		});
+	});
+	await page.route('https://video.bsky.app/xrpc/app.bsky.video.getJobStatus**', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				jobStatus:
+					jobState === 'JOB_STATE_COMPLETED'
+						? { jobId: 'job-1', did, state: jobState, blob }
+						: { jobId: 'job-1', did, state: jobState, progress: 0 },
+			}),
+		}),
+	);
+	await page.goto('/dev/e2e/video');
+	await page.getByRole('button', { name: 'Open composer' }).click();
+	const composer = page.locator('.post-modal .composer');
+	await composer.locator('input[type="file"][accept*="video"]').setInputFiles({
+		name: 'sample.webm',
+		mimeType: 'video/webm',
+		buffer: readFileSync(new URL('sample.webm', fixtures)),
+	});
+	const attachment = composer.locator('.video-attachment');
+	const progress = attachment.locator('progress');
+	const shot = (name: string) =>
+		attachment.screenshot({ path: testInfo.outputPath(`video-${name}.png`) });
+
+	await expect(attachment).toContainText(/動画を送信中…（\d+%）/);
+	await expect(progress).toHaveAttribute('value', /\d+/);
+	await shot('uploading');
+
+	// 送信中にページを離れようとすると、ブラウザの離脱確認が出る。
+	const dialog = page.waitForEvent('dialog');
+	void page.evaluate(() => location.reload());
+	const prompt = await dialog;
+	expect(prompt.type()).toBe('beforeunload');
+	await prompt.dismiss();
+
+	releaseUpload();
+	await expect(attachment).toContainText('動画を変換中…');
+	await expect(progress).not.toHaveAttribute('value');
+	await expect(composer.locator('.submit-primary')).toBeDisabled();
+	await shot('processing');
+
+	jobState = 'JOB_STATE_UPLOADING';
+	await expect(attachment).toContainText('動画を仕上げ中…');
+	await shot('finishing');
+
+	jobState = 'JOB_STATE_COMPLETED';
+	await expect(attachment).toContainText('動画の準備ができました');
+	await expect(progress).toHaveCount(0);
+	await composer.locator('textarea, [contenteditable="true"]').first().fill('動画のテスト');
+	await expect(composer.locator('.submit-primary')).toBeEnabled();
+	await shot('ready');
+	await page.screenshot({ path: testInfo.outputPath('video-composer.png') });
+});
+
+test('動画はサムネイルと再生ボタンで表示し、タップで再生器に切り替える', async ({ page }) => {
+	await mockServices(page);
+	await page.goto('/dev/e2e/video');
+	const frame = page.locator('[data-testid="video-fixture"] .video-frame');
+	const play = frame.getByRole('button', { name: '動画を再生: 走る猫' });
+	await expect(play).toBeVisible();
+	await expect(frame.locator('img')).toHaveAttribute('src', /thumbnail\.jpg$/);
+	await expect(frame.locator('video')).toHaveCount(0);
+
+	await play.click();
+	await expect(frame.locator('video')).toHaveCount(1);
+	await expect(frame.locator('video')).toHaveAttribute('aria-label', '走る猫');
+});

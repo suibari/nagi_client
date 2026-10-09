@@ -13,6 +13,9 @@
 	import type { ImageAttachment } from '$lib/images';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageAttachmentPicker from './ImageAttachmentPicker.svelte';
+	import VideoAttachmentEditor from './VideoAttachmentEditor.svelte';
+	import VideoAttachmentPicker from './VideoAttachmentPicker.svelte';
+	import type { VideoAttachment } from '$lib/video-attachment.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
@@ -90,6 +93,8 @@
 	let error = $state('');
 	let warning = $state('');
 	let attachments = $state<ImageAttachment[]>([]);
+	// 動画は画像と同時に付けない（Bluesky と同じ）。添付した時点で送信と変換が始まる。
+	let video = $state<VideoAttachment>();
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
 	let channels = $state<ChannelSelection[]>([]);
@@ -118,7 +123,9 @@
 	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
 	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 
-	let empty = $derived(!text.trim() && !attachments.length && !linkCards.length);
+	let empty = $derived(!text.trim() && !attachments.length && !video && !linkCards.length);
+	/** 動画の変換が終わるまでは投稿させない（blob がまだ無い）。 */
+	const videoPending = $derived(Boolean(video && !video.ready));
 	let draftSaveable = $derived(Boolean(text.trim() || linkCards.length || quotePick.ref));
 	let draftKey = $derived(
 		JSON.stringify({
@@ -134,6 +141,7 @@
 	let hasEmbeds = $derived(
 		Boolean(
 			attachments.length - (mode === 'blog' && attachments.length ? 1 : 0) ||
+			video ||
 			linkCards.length ||
 			quotePick.pending ||
 			quotePick.post ||
@@ -144,6 +152,7 @@
 		submittable =
 			!busy &&
 			!empty &&
+			!videoPending &&
 			(blog || graphemes <= 3000) &&
 			!articleTitleMissing &&
 			contentWarningValid &&
@@ -168,7 +177,12 @@
 	$effect(() => {
 		if (!kossori) return;
 		if (attachments.length) attachments = [];
+		if (video) video = undefined;
 		if (linkCards.length) linkCards = [];
+	});
+	// ブログは standard.site の document になり、動画を載せる場所が無い。
+	$effect(() => {
+		if (blog && video) video = undefined;
 	});
 	const selectedChannel = $derived(validChannelSelections(text, channels)[0]);
 	const effectiveChannel = $derived(
@@ -182,7 +196,9 @@
 				: undefined),
 	);
 	const hasContentWarningSetting = $derived(
-		hasContentWarning(text) || attachments.some((image) => image.contentWarning),
+		hasContentWarning(text) ||
+			attachments.some((image) => image.contentWarning) ||
+			Boolean(video?.contentWarning),
 	);
 	const contentWarningValid = $derived(validContentWarningSyntax(text));
 	/**
@@ -336,6 +352,7 @@
 	function clearComposer() {
 		text = '';
 		attachments = [];
+		video = undefined;
 		linkCards = [];
 		mentions = [];
 		channels = [];
@@ -473,6 +490,7 @@
 	export async function submit() {
 		if (
 			empty ||
+			videoPending ||
 			(!blog && graphemes > 3000) ||
 			busy ||
 			!$session ||
@@ -521,6 +539,7 @@
 			reply ? false : botSilent,
 			reply ? silentReply : false,
 			selfLabels,
+			video?.toRecord(),
 		);
 		// preparePostDraft の引数はすでに多いので、記事フラグは組み立て後に足す。
 		if (article) draft.article = true;
@@ -661,7 +680,16 @@
 	{#snippet editorTools()}
 		<!-- こっそりは画像を持てない。セルフラベルも統合CWメニュー側で無効にする。 -->
 		{#if !kossori}
-			<ImageAttachmentPicker bind:this={imagePicker} bind:attachments disabled={busy} />
+			<div class="attachment-pickers">
+				<ImageAttachmentPicker
+					bind:this={imagePicker}
+					bind:attachments
+					disabled={busy || Boolean(video)}
+				/>
+				{#if !blog}
+					<VideoAttachmentPicker bind:video disabled={busy || attachments.length > 0} />
+				{/if}
+			</div>
 		{/if}
 	{/snippet}
 
@@ -826,6 +854,7 @@
 			>
 				{#if !kossori}
 					<ImageAttachmentEditor bind:attachments disabled={busy} hideFirst={blog} />
+					<VideoAttachmentEditor bind:video disabled={busy} />
 					<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
 				{/if}
 				<ComposerQuoteEditor quote={quotePick} disabled={busy} />
@@ -905,13 +934,18 @@
 				type="button"
 				disabled={busy ||
 					empty ||
+					videoPending ||
 					(!blog && graphemes > 3000) ||
 					articleTitleMissing ||
 					!contentWarningValid ||
 					!articleReady ||
 					Boolean(articleBlockedReason)}
 				aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
-				title={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
+				title={busy
+					? m.composerSubmitting()
+					: videoPending
+						? m.videoNotReady()
+						: m.composerSubmitNagi()}
 				onclick={() => submit()}
 			>
 				{#if busy}<Spinner inline size="sm" decorative />
