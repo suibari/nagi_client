@@ -11,21 +11,38 @@
 		type PostEditImage,
 	} from '$lib/images';
 	import type { GifCompressionProgress } from '$lib/gif-compression';
+	import {
+		IMAGE_ACCEPT,
+		MEDIA_ACCEPT,
+		pastedMediaFiles,
+		splitMediaSelection,
+	} from '$lib/media-selection';
+	import { VideoAttachment } from '$lib/video-attachment.svelte';
 	import Icon from './shell/Icon.svelte';
 	import SortableImageList from './SortableImageList.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
 
 	let {
 		images = $bindable(),
+		video = $bindable(),
+		allowVideo = false,
+		hasVideo = false,
 		disabled = false,
 		contentWarningEnabled = true,
 		processing = $bindable(false),
 	}: {
 		images: PostEditImage[];
+		/** allowVideo のとき、選んだ動画をここへ入れる。画像とは同時に付けない。 */
+		video?: VideoAttachment;
+		allowVideo?: boolean;
+		/** 編集前からの動画も含め、動画が付いている。付いている間は何も足せない。 */
+		hasVideo?: boolean;
 		disabled?: boolean;
 		contentWarningEnabled?: boolean;
 		processing?: boolean;
 	} = $props();
+	const accept = $derived(allowVideo ? MEDIA_ACCEPT : IMAGE_ACCEPT);
+	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
 
 	let errors = $state<string[]>([]);
 	let compressionProgress = $state<GifCompressionProgress | null>(null);
@@ -60,8 +77,19 @@
 	}
 
 	async function addFiles(files: File[]) {
-		if (!files.length || processing) return;
+		if (!files.length || processing || hasVideo) return;
 		errors = [];
+		const selection = splitMediaSelection(files, { allowVideo, hasImages: images.length > 0 });
+		if (selection.kind === 'error') {
+			errors = [selection.reason === 'video-count' ? m.videoOnlyOne() : m.videoWithImages()];
+			return;
+		}
+		if (selection.kind === 'video') {
+			const attachment = new VideoAttachment(selection.file);
+			video = attachment;
+			void attachment.start();
+			return;
+		}
 		const available = MAX_IMAGE_COUNT - images.length;
 		if (files.length > available) errors = [m.postImageCountError()];
 		if (available <= 0) return;
@@ -97,15 +125,7 @@
 
 	export function handlePaste(event: ClipboardEvent) {
 		if (disabled || !event.clipboardData) return;
-		const itemFiles = [...event.clipboardData.items]
-			.filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
-			.flatMap((item) => {
-				const file = item.getAsFile();
-				return file ? [file] : [];
-			});
-		const files = itemFiles.length
-			? itemFiles
-			: [...event.clipboardData.files].filter((file) => file.type.startsWith('image/'));
+		const files = pastedMediaFiles(event.clipboardData, allowVideo);
 		if (!files.length) return;
 		event.preventDefault();
 		if (processing) return;
@@ -142,23 +162,23 @@
 		class="visually-hidden"
 		bind:this={input}
 		type="file"
-		accept="image/jpeg,image/png,image/webp,image/gif"
+		{accept}
 		multiple
 		onchange={choose}
 	/>
 	<button
 		class="ghost attachment-add"
 		type="button"
-		disabled={disabled || processing || images.length >= MAX_IMAGE_COUNT}
-		aria-label={processing ? processingLabel : m.postImageAdd()}
-		title={processing ? processingLabel : m.postImageAdd()}
+		disabled={disabled || processing || hasVideo || images.length >= MAX_IMAGE_COUNT}
+		aria-label={processing ? processingLabel : addLabel}
+		title={processing ? processingLabel : addLabel}
 		onclick={() => input.click()}
 	>
 		{#if processing}
 			<Spinner inline size="sm" decorative />
 			<span>{processingLabel}</span>
 		{:else}
-			<Icon name="image" size={18} />
+			<Icon name={allowVideo ? 'media' : 'image'} size={18} />
 			<span>{images.length}/{MAX_IMAGE_COUNT}</span>
 		{/if}
 	</button>
