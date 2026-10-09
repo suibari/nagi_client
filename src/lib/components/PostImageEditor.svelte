@@ -32,16 +32,18 @@
 		processing = $bindable(false),
 	}: {
 		images: PostEditImage[];
-		/** allowVideo のとき、選んだ動画をここへ入れる。画像とは同時に付けない。 */
+		/** allowVideo のとき、選んだ動画（1本まで）をここへ入れる。画像と併用できる。 */
 		video?: VideoAttachment;
 		allowVideo?: boolean;
-		/** 編集前からの動画も含め、動画が付いている。付いている間は何も足せない。 */
+		/** 編集前からの動画も含め、動画が付いている。付いている間は動画を足せない。 */
 		hasVideo?: boolean;
 		disabled?: boolean;
 		contentWarningEnabled?: boolean;
 		processing?: boolean;
 	} = $props();
-	const accept = $derived(allowVideo ? MEDIA_ACCEPT : IMAGE_ACCEPT);
+	const accept = $derived(allowVideo && !hasVideo ? MEDIA_ACCEPT : IMAGE_ACCEPT);
+	/** 画像が上限で、動画もこれ以上足せないときだけボタンを止める。 */
+	const full = $derived(images.length >= MAX_IMAGE_COUNT && (!allowVideo || hasVideo));
 	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
 
 	let errors = $state<string[]>([]);
@@ -77,19 +79,20 @@
 	}
 
 	async function addFiles(files: File[]) {
-		if (!files.length || processing || hasVideo) return;
+		if (!files.length || processing) return;
 		errors = [];
-		const selection = splitMediaSelection(files, { allowVideo, hasImages: images.length > 0 });
+		const selection = splitMediaSelection(files, { allowVideo, hasVideo });
 		if (selection.kind === 'error') {
-			errors = [selection.reason === 'video-count' ? m.videoOnlyOne() : m.videoWithImages()];
+			errors = [m.videoOnlyOne()];
 			return;
 		}
-		if (selection.kind === 'video') {
-			const attachment = new VideoAttachment(selection.file);
+		if (selection.video) {
+			const attachment = new VideoAttachment(selection.video);
 			video = attachment;
 			void attachment.start();
-			return;
 		}
+		files = selection.images;
+		if (!files.length) return;
 		const available = MAX_IMAGE_COUNT - images.length;
 		if (files.length > available) errors = [m.postImageCountError()];
 		if (available <= 0) return;
@@ -169,7 +172,7 @@
 	<button
 		class="ghost attachment-add"
 		type="button"
-		disabled={disabled || processing || hasVideo || images.length >= MAX_IMAGE_COUNT}
+		disabled={disabled || processing || full}
 		aria-label={processing ? processingLabel : addLabel}
 		title={processing ? processingLabel : addLabel}
 		onclick={() => input.click()}

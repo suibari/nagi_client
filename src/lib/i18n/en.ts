@@ -289,7 +289,7 @@ export const en: Messages = {
 	postImageAdd: 'Add images',
 	postMediaAdd: 'Add images or a video',
 	videoOnlyOne: 'You can attach only one video',
-	videoWithImages: 'A video cannot be attached together with images',
+	crosspostVideoOnly: 'Only the video is posted to Bluesky (the images stay on Nagi)',
 	postImageProcessing: 'Processing image…',
 	postGifProcessing: (p) => `Compressing GIF… (${p.attempt}/${p.total})`,
 	postImageRemove: 'Remove image',

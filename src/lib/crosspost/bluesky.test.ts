@@ -175,6 +175,17 @@ describe('prepareCrosspostContent', () => {
 		});
 	});
 
+	it('sends only the video when images and a video are mixed', () => {
+		const image = { image: { ref: 'blob-ref' }, alt: '', aspectRatio: { width: 1, height: 1 } };
+		const video = { video: { ref: { $link: 'bafkreivideo' }, mimeType: 'video/mp4', size: 1 } };
+		const assets: PostAssets = { images: [image], cards: [], video };
+
+		expect(prepareCrosspostContent(draft(), assets).embed).toEqual({
+			$type: 'app.bsky.embed.video',
+			video: video.video,
+		});
+	});
+
 	it('does not create a chunk when both text and embeds are absent', () => {
 		expect(prepareCrosspostContent(draft(), emptyAssets())).toEqual({
 			chunks: [],

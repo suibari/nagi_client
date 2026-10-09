@@ -8,38 +8,47 @@ describe('splitMediaSelection', () => {
 	const video = file('video/mp4');
 
 	it('passes images through untouched', () => {
-		expect(splitMediaSelection([image], { allowVideo: true, hasImages: false })).toEqual({
-			kind: 'images',
-			files: [image],
+		expect(splitMediaSelection([image], { allowVideo: true, hasVideo: false })).toEqual({
+			kind: 'media',
+			images: [image],
 		});
 	});
 
-	it('accepts exactly one video when no images are attached', () => {
-		expect(splitMediaSelection([video], { allowVideo: true, hasImages: false })).toEqual({
-			kind: 'video',
-			file: video,
+	it('accepts one video, alone or together with images', () => {
+		expect(splitMediaSelection([video], { allowVideo: true, hasVideo: false })).toEqual({
+			kind: 'media',
+			images: [],
+			video,
+		});
+		expect(splitMediaSelection([video, image], { allowVideo: true, hasVideo: false })).toEqual({
+			kind: 'media',
+			images: [image],
+			video,
 		});
 	});
 
-	it('refuses two videos, or a video together with images', () => {
-		expect(splitMediaSelection([video, video], { allowVideo: true, hasImages: false })).toEqual({
+	it('still accepts images once a video is attached', () => {
+		expect(splitMediaSelection([image], { allowVideo: true, hasVideo: true })).toEqual({
+			kind: 'media',
+			images: [image],
+		});
+	});
+
+	it('refuses two videos, or a second video', () => {
+		expect(splitMediaSelection([video, video], { allowVideo: true, hasVideo: false })).toEqual({
 			kind: 'error',
 			reason: 'video-count',
 		});
-		expect(splitMediaSelection([video, image], { allowVideo: true, hasImages: false })).toEqual({
+		expect(splitMediaSelection([video], { allowVideo: true, hasVideo: true })).toEqual({
 			kind: 'error',
-			reason: 'video-with-images',
-		});
-		expect(splitMediaSelection([video], { allowVideo: true, hasImages: true })).toEqual({
-			kind: 'error',
-			reason: 'video-with-images',
+			reason: 'video-count',
 		});
 	});
 
 	it('treats videos as ordinary files where videos are not allowed', () => {
-		expect(splitMediaSelection([video], { allowVideo: false, hasImages: false })).toEqual({
-			kind: 'images',
-			files: [video],
+		expect(splitMediaSelection([video], { allowVideo: false, hasVideo: false })).toEqual({
+			kind: 'media',
+			images: [video],
 		});
 	});
 });

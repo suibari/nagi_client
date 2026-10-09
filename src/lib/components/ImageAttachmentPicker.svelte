@@ -24,12 +24,14 @@
 		disabled = false,
 	}: {
 		attachments: ImageAttachment[];
-		/** allowVideo のとき、選んだ動画をここへ入れる。画像とは同時に付けない。 */
+		/** allowVideo のとき、選んだ動画（1本まで）をここへ入れる。画像と併用できる。 */
 		video?: VideoAttachment;
 		allowVideo?: boolean;
 		disabled?: boolean;
 	} = $props();
-	const accept = $derived(allowVideo ? MEDIA_ACCEPT : IMAGE_ACCEPT);
+	const accept = $derived(allowVideo && !video ? MEDIA_ACCEPT : IMAGE_ACCEPT);
+	/** 画像が上限で、動画もこれ以上足せないときだけボタンを止める。 */
+	const full = $derived(attachments.length >= MAX_IMAGE_COUNT && (!allowVideo || Boolean(video)));
 	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
 	let processing = $state(false);
 	let compressionProgress = $state<GifCompressionProgress | null>(null);
@@ -49,22 +51,20 @@
 	}
 
 	async function addFiles(files: File[]) {
-		if (!files.length || processing || video) return;
+		if (!files.length || processing) return;
 		errors = [];
-		const selection = splitMediaSelection(files, {
-			allowVideo,
-			hasImages: attachments.length > 0,
-		});
+		const selection = splitMediaSelection(files, { allowVideo, hasVideo: Boolean(video) });
 		if (selection.kind === 'error') {
-			errors = [selection.reason === 'video-count' ? m.videoOnlyOne() : m.videoWithImages()];
+			errors = [m.videoOnlyOne()];
 			return;
 		}
-		if (selection.kind === 'video') {
-			const attachment = new VideoAttachment(selection.file);
+		if (selection.video) {
+			const attachment = new VideoAttachment(selection.video);
 			video = attachment;
 			void attachment.start();
-			return;
 		}
+		files = selection.images;
+		if (!files.length) return;
 		const available = MAX_IMAGE_COUNT - attachments.length;
 		if (files.length > available) errors = [m.postImageCountError()];
 		if (available <= 0) return;
@@ -116,7 +116,7 @@
 	<button
 		class="ghost attachment-add"
 		type="button"
-		disabled={disabled || processing || Boolean(video) || attachments.length >= MAX_IMAGE_COUNT}
+		disabled={disabled || processing || full}
 		aria-label={processing ? processingLabel : addLabel}
 		title={processing ? processingLabel : addLabel}
 		onclick={() => input.click()}

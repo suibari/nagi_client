@@ -121,6 +121,7 @@ export function splitForBluesky(
 
 function buildEmbed(assets: PostAssets) {
 	// 動画は video.bsky.app が PDS へ置いた blob なので、Bluesky 側でもそのまま再生できる。
+	// Bluesky には画像と動画を混ぜる embed が無いので、両方あるときは動画だけを送る。
 	if (assets.video)
 		return {
 			$type: 'app.bsky.embed.video',
