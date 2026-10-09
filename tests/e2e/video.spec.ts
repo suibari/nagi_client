@@ -252,8 +252,45 @@ test('投稿の編集で、動画を外して画像ボタンから別の動画�
 		});
 });
 
-test('動画はサムネイルと再生ボタンで表示し、タップで再生器に切り替える', async ({ page }) => {
+/**
+ * video.bsky.app と同じ形の HLS を返す。実物は断片を video.cdn.bsky.app へ 302 するが、
+ * Playwright はモックしたリダイレクトの行き先を再び横取りできないので、断片は直接返す。
+ */
+async function mockHls(page: Page) {
+	const base = `https://video.bsky.app/watch/${encodeURIComponent(did)}/bafkreivideofixture`;
+	const cors = { 'access-control-allow-origin': '*' };
+	await page.route(`${base}/playlist.m3u8`, (route) =>
+		route.fulfill({
+			headers: cors,
+			contentType: 'application/vnd.apple.mpegurl',
+			body: [
+				'#EXTM3U',
+				'#EXT-X-VERSION:3',
+				'#EXT-X-STREAM-INF:BANDWIDTH=300000,CODECS="avc1.4d401e,mp4a.40.2",RESOLUTION=320x180',
+				'360p/video.m3u8?session_id=fixture',
+				'',
+			].join('\n'),
+		}),
+	);
+	await page.route(`${base}/360p/video.m3u8**`, (route) =>
+		route.fulfill({
+			headers: cors,
+			contentType: 'application/vnd.apple.mpegurl',
+			body: readFileSync(new URL('hls/video.m3u8', fixtures)),
+		}),
+	);
+	await page.route(`${base}/360p/video0.ts**`, (route) =>
+		route.fulfill({
+			headers: cors,
+			contentType: 'video/mp2t',
+			body: readFileSync(new URL('hls/video0.mp2t', fixtures)),
+		}),
+	);
+}
+
+test('動画はサムネイルと再生ボタンで表示し、タップで hls.js 経由で再生する', async ({ page }) => {
 	await mockServices(page);
+	await mockHls(page);
 	await page.goto('/dev/e2e/video');
 	const frame = page.locator('[data-testid="video-fixture"] .video-frame');
 	const play = frame.getByRole('button', { name: '動画を再生: 走る猫' });
@@ -262,6 +299,15 @@ test('動画はサムネイルと再生ボタンで表示し、タップで再�
 	await expect(frame.locator('video')).toHaveCount(0);
 
 	await play.click();
-	await expect(frame.locator('video')).toHaveCount(1);
-	await expect(frame.locator('video')).toHaveAttribute('aria-label', '走る猫');
+	const video = frame.locator('video');
+	await expect(video).toHaveAttribute('aria-label', '走る猫');
+	// MSE（hls.js）で再生している。Chrome は canPlayType で HLS に 'maybe' を返すが、
+	// 組み込み再生は本番の video.cdn.bsky.app へのリダイレクトで失敗した（2026-10-10）。
+	await expect
+		.poll(() => video.evaluate((el: HTMLVideoElement) => el.currentSrc))
+		.toMatch(/^blob:/);
+	await expect
+		.poll(() => video.evaluate((el: HTMLVideoElement) => el.readyState))
+		.toBeGreaterThanOrEqual(2);
+	await expect(frame.locator('.video-error')).toHaveCount(0);
 });
