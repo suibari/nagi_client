@@ -46,7 +46,6 @@
 	} from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
 	import PostVideoEditor, { type ExistingVideoEdit } from './PostVideoEditor.svelte';
-	import VideoAttachmentPicker from './VideoAttachmentPicker.svelte';
 	import type { VideoAttachment } from '$lib/video-attachment.svelte';
 	import type { PostVideoEdit } from '$lib/atproto/records';
 	import LinkCardEditor from './LinkCardEditor.svelte';
@@ -754,19 +753,17 @@
 			{#if editing}
 				<div class="inline-edit" use:editEscape>
 					{#snippet editTools()}
-						<div class="attachment-pickers">
-							<PostImageEditor
-								bind:this={editImageEditor}
-								bind:images={editImages}
-								bind:processing={editImageProcessing}
-								disabled={editBusy || Boolean(editExistingVideo || editNewVideo)}
-								contentWarningEnabled={Boolean(post.cwRestricted)}
-							/>
-							<!-- 画像があると PostImageEditor が一覧ごと横に広がるので、動画ボタンは出さない。 -->
-							{#if !editingArticle && !editExistingVideo && !editImages.length && !isAppviewOwnedUri(post.uri)}
-								<VideoAttachmentPicker bind:video={editNewVideo} disabled={editBusy} />
-							{/if}
-						</div>
+						<!-- 画像ボタンから動画も選べる。ブログとこっそりは動画を持てないので画像だけ。 -->
+						<PostImageEditor
+							bind:this={editImageEditor}
+							bind:images={editImages}
+							bind:video={editNewVideo}
+							allowVideo={!editingArticle && !isAppviewOwnedUri(post.uri)}
+							hasVideo={Boolean(editExistingVideo || editNewVideo)}
+							bind:processing={editImageProcessing}
+							disabled={editBusy}
+							contentWarningEnabled={Boolean(post.cwRestricted)}
+						/>
 					{/snippet}
 					{#if editingArticle && !externalTitleEditor}
 						<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />

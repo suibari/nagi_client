@@ -8,12 +8,29 @@
 		type ImageAttachment,
 	} from '$lib/images';
 	import type { GifCompressionProgress } from '$lib/gif-compression';
+	import {
+		IMAGE_ACCEPT,
+		MEDIA_ACCEPT,
+		pastedMediaFiles,
+		splitMediaSelection,
+	} from '$lib/media-selection';
+	import { VideoAttachment } from '$lib/video-attachment.svelte';
 	import Icon from './shell/Icon.svelte';
 
 	let {
 		attachments = $bindable(),
+		video = $bindable(),
+		allowVideo = false,
 		disabled = false,
-	}: { attachments: ImageAttachment[]; disabled?: boolean } = $props();
+	}: {
+		attachments: ImageAttachment[];
+		/** allowVideo のとき、選んだ動画をここへ入れる。画像とは同時に付けない。 */
+		video?: VideoAttachment;
+		allowVideo?: boolean;
+		disabled?: boolean;
+	} = $props();
+	const accept = $derived(allowVideo ? MEDIA_ACCEPT : IMAGE_ACCEPT);
+	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
 	let processing = $state(false);
 	let compressionProgress = $state<GifCompressionProgress | null>(null);
 	let errors = $state<string[]>([]);
@@ -32,8 +49,22 @@
 	}
 
 	async function addFiles(files: File[]) {
-		if (!files.length || processing) return;
+		if (!files.length || processing || video) return;
 		errors = [];
+		const selection = splitMediaSelection(files, {
+			allowVideo,
+			hasImages: attachments.length > 0,
+		});
+		if (selection.kind === 'error') {
+			errors = [selection.reason === 'video-count' ? m.videoOnlyOne() : m.videoWithImages()];
+			return;
+		}
+		if (selection.kind === 'video') {
+			const attachment = new VideoAttachment(selection.file);
+			video = attachment;
+			void attachment.start();
+			return;
+		}
 		const available = MAX_IMAGE_COUNT - attachments.length;
 		if (files.length > available) errors = [m.postImageCountError()];
 		if (available <= 0) return;
@@ -64,15 +95,7 @@
 
 	export function handlePaste(event: ClipboardEvent) {
 		if (disabled || !event.clipboardData) return;
-		const itemFiles = [...event.clipboardData.items]
-			.filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
-			.flatMap((item) => {
-				const file = item.getAsFile();
-				return file ? [file] : [];
-			});
-		const files = itemFiles.length
-			? itemFiles
-			: [...event.clipboardData.files].filter((file) => file.type.startsWith('image/'));
+		const files = pastedMediaFiles(event.clipboardData, allowVideo);
 		if (!files.length) return;
 		// 画像と一緒に入っている HTML や代替テキストを本文へ貼り付けない。
 		event.preventDefault();
@@ -86,23 +109,23 @@
 		class="visually-hidden"
 		bind:this={input}
 		type="file"
-		accept="image/jpeg,image/png,image/webp,image/gif"
+		{accept}
 		multiple
 		onchange={choose}
 	/>
 	<button
 		class="ghost attachment-add"
 		type="button"
-		disabled={disabled || processing || attachments.length >= MAX_IMAGE_COUNT}
-		aria-label={processing ? processingLabel : m.postImageAdd()}
-		title={processing ? processingLabel : m.postImageAdd()}
+		disabled={disabled || processing || Boolean(video) || attachments.length >= MAX_IMAGE_COUNT}
+		aria-label={processing ? processingLabel : addLabel}
+		title={processing ? processingLabel : addLabel}
 		onclick={() => input.click()}
 	>
 		{#if processing}
 			<Spinner inline size="sm" decorative />
 			<span>{processingLabel}</span>
 		{:else}
-			<Icon name="image" size={18} />
+			<Icon name={allowVideo ? 'media' : 'image'} size={18} />
 			<span>{attachments.length}/{MAX_IMAGE_COUNT}</span>
 		{/if}
 	</button>

@@ -14,7 +14,6 @@
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageAttachmentPicker from './ImageAttachmentPicker.svelte';
 	import VideoAttachmentEditor from './VideoAttachmentEditor.svelte';
-	import VideoAttachmentPicker from './VideoAttachmentPicker.svelte';
 	import type { VideoAttachment } from '$lib/video-attachment.svelte';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import type { LinkCardDraft } from '$lib/atproto/records';
@@ -680,16 +679,14 @@
 	{#snippet editorTools()}
 		<!-- こっそりは画像を持てない。セルフラベルも統合CWメニュー側で無効にする。 -->
 		{#if !kossori}
-			<div class="attachment-pickers">
-				<ImageAttachmentPicker
-					bind:this={imagePicker}
-					bind:attachments
-					disabled={busy || Boolean(video)}
-				/>
-				{#if !blog}
-					<VideoAttachmentPicker bind:video disabled={busy || attachments.length > 0} />
-				{/if}
-			</div>
+			<!-- 画像ボタンから動画も選べる。ブログには動画を載せる場所が無いので画像だけ。 -->
+			<ImageAttachmentPicker
+				bind:this={imagePicker}
+				bind:attachments
+				bind:video
+				allowVideo={!blog}
+				disabled={busy}
+			/>
 		{/if}
 	{/snippet}
 

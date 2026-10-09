@@ -11,7 +11,12 @@ const blob = {
 };
 
 async function mockServices(page: Page) {
-	const calls = { serviceAuth: [] as string[], createdRecord: undefined as unknown, polls: 0 };
+	const calls = {
+		serviceAuth: [] as string[],
+		createdRecord: undefined as unknown,
+		savedRecord: undefined as unknown,
+		polls: 0,
+	};
 	await page.route('**/xrpc/**', async (route) => {
 		const request = route.request();
 		const url = new URL(request.url());
@@ -42,6 +47,31 @@ async function mockServices(page: Page) {
 			calls.createdRecord = request.postDataJSON().record;
 			return json({ uri: `at://${did}/com.suibari.nagi.post/new`, cid: 'bafynew' });
 		}
+		if (method === 'com.atproto.repo.putRecord') {
+			calls.savedRecord = request.postDataJSON().record;
+			return json({
+				uri: `at://${did}/com.suibari.nagi.post/video`,
+				cid: 'bafyreidnq5e4j7qaw5l4dpa4g5vjt4y5dpjywqrnit23nkrnnjwf5f24xi',
+			});
+		}
+		if (
+			method === 'com.atproto.repo.getRecord' &&
+			url.searchParams.get('collection') === 'com.suibari.nagi.post'
+		)
+			return json({
+				uri: `at://${did}/com.suibari.nagi.post/video`,
+				cid: 'bafyreidnq5e4j7qaw5l4dpa4g5vjt4y5dpjywqrnit23nkrnnjwf5f24xi',
+				value: {
+					$type: 'com.suibari.nagi.post',
+					text: '動画つきの投稿',
+					createdAt: '2026-10-09T00:00:00.000Z',
+					embed: {
+						$type: 'com.suibari.nagi.post#video',
+						video: { ...blob, ref: { $link: 'bafkreivideofixture' } },
+						alt: '走る猫',
+					},
+				},
+			});
 		if (method === 'com.atproto.repo.getRecord')
 			return json({
 				uri: `at://${did}/com.suibari.nagi.profile/self`,
@@ -78,8 +108,8 @@ test('動画を添付すると変換が終わるまで投稿できず、終わ�
 	const submit = composer.locator('.submit-primary');
 	await expect(submit).toBeDisabled();
 	await expect(composer.getByText('動画の準備ができました')).toBeVisible();
-	// 動画を付けている間は画像を足せない。
-	await expect(composer.getByRole('button', { name: '画像を追加' })).toBeDisabled();
+	// 動画を付けている間は、画像も2本目の動画も足せない。
+	await expect(composer.getByRole('button', { name: '画像・動画を追加' })).toBeDisabled();
 	await composer.getByLabel('動画の説明（任意）').fill('テスト動画');
 	await expect(submit).toBeEnabled();
 
@@ -164,6 +194,62 @@ test('送信中は%、変換中と仕上げ中は段階を出し、ページ離�
 	await expect(composer.locator('.submit-primary')).toBeEnabled();
 	await shot('ready');
 	await page.screenshot({ path: testInfo.outputPath('video-composer.png') });
+});
+
+test('画像と動画を一緒に選ぶと、動画は付けずに理由を出す', async ({ page }) => {
+	await mockServices(page);
+	await page.goto('/dev/e2e/video');
+	await page.getByRole('button', { name: 'Open composer' }).click();
+	const composer = page.locator('.post-modal .composer');
+	await composer.locator('input[type="file"][accept*="video"]').setInputFiles([
+		{
+			name: 'sample.webm',
+			mimeType: 'video/webm',
+			buffer: readFileSync(new URL('sample.webm', fixtures)),
+		},
+		{
+			name: 'thumbnail.jpg',
+			mimeType: 'image/jpeg',
+			buffer: readFileSync(new URL('thumbnail.jpg', fixtures)),
+		},
+	]);
+	await expect(composer.getByRole('alert')).toHaveText('動画は画像と一緒に添付できません');
+	await expect(composer.locator('.video-attachment')).toHaveCount(0);
+});
+
+test('投稿の編集で、動画を外して画像ボタンから別の動画に差し替えられる', async ({ page }) => {
+	const calls = await mockServices(page);
+	await page.goto('/dev/e2e/video');
+	const fixture = page.getByTestId('video-fixture');
+	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
+	await fixture.getByRole('menuitem', { name: '編集' }).click();
+	const editor = fixture.locator('.inline-edit');
+	const add = editor.getByRole('button', { name: '画像・動画を追加' });
+
+	// 動画が付いている間は、画像も動画も足せない。
+	await expect(add).toBeDisabled();
+	await editor.getByRole('button', { name: '動画を削除' }).click();
+	await expect(add).toBeEnabled();
+
+	await editor.locator('input[type="file"][accept*="video"]').setInputFiles({
+		name: 'sample.webm',
+		mimeType: 'video/webm',
+		buffer: readFileSync(new URL('sample.webm', fixtures)),
+	});
+	await expect(editor.getByText('動画の準備ができました')).toBeVisible();
+	await expect(add).toBeDisabled();
+	await editor.getByRole('button', { name: '投稿する' }).click();
+	await expect(editor).toHaveCount(0);
+
+	await expect
+		.poll(() => calls.savedRecord)
+		.toMatchObject({
+			embed: {
+				$type: 'com.suibari.nagi.post#video',
+				video: blob,
+				aspectRatio: { width: 320, height: 180 },
+			},
+		});
 });
 
 test('動画はサムネイルと再生ボタンで表示し、タップで再生器に切り替える', async ({ page }) => {

@@ -302,6 +302,9 @@ export const ja = {
 	postRecordCreateFailed:
 		'投稿を保存できませんでした。通信状態を確認して、もう一度投稿してください。',
 	postImageAdd: '画像を追加',
+	postMediaAdd: '画像・動画を追加',
+	videoOnlyOne: '動画は1本まで添付できます',
+	videoWithImages: '動画は画像と一緒に添付できません',
 	postImageProcessing: '画像を処理中…',
 	postGifProcessing: (p: { attempt: number; total: number }) =>
 		`GIFを圧縮中…（${p.attempt}/${p.total}）`,

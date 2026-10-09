@@ -2601,13 +2601,6 @@ button.emoji-return {
 	white-space: nowrap;
 	border: 0;
 }
-/* 画像と動画の追加ボタンを横に並べる。エラー文は各ピッカーの中で折り返す。 */
-.attachment-pickers {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	gap: 0 8px;
-}
 .attachment-editor,
 .attachment-picker {
 	display: grid;
