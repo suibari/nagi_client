@@ -21,7 +21,7 @@
 		disabled?: boolean;
 	} = $props();
 	let loading = $state<string[]>([]);
-	let urls = $derived(parsePostText(text).urls);
+	let urls = $derived(parsePostText(text).cardUrls);
 	const previews = new Set<string>();
 	const hydrationAttempted = new Set<string>();
 	let previousUrls = new Set<string>();

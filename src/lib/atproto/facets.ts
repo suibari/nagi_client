@@ -42,6 +42,8 @@ export type ParsedPostText = {
 	text: string;
 	facets: Facet[];
 	urls: string[];
+	/** Markdown リンクを除いた、自動リンクカードの候補。 */
+	cardUrls: string[];
 	sourceIndex: number[];
 };
 type StoredFacet = {
@@ -249,6 +251,7 @@ export function parsePostText(
 	let text = '';
 	const facets: Facet[] = [];
 	const urls: string[] = [];
+	const cardUrls: string[] = [];
 	const sourceIndex: number[] = [];
 	/** 入力の from 以降の連続した文字列をそのまま本文へ写す。 */
 	const append = (value: string, from: number) => {
@@ -374,7 +377,7 @@ export function parsePostText(
 		}
 		if (source[index] === '[') {
 			const labelEnd = source.indexOf('](', index + 1);
-			if (labelEnd > index + 1) {
+			if (labelEnd >= index + 1) {
 				let depth = 1;
 				let end = labelEnd + 2;
 				for (; end < source.length; end++) {
@@ -384,7 +387,11 @@ export function parsePostText(
 				if (depth === 0) {
 					const uri = httpUrl(source.slice(labelEnd + 2, end));
 					if (uri) {
-						add(source.slice(index + 1, labelEnd), uri, index + 1);
+						if (labelEnd === index + 1) {
+							append(source.slice(index, end + 1), index);
+						} else {
+							add(source.slice(index + 1, labelEnd), uri, index + 1);
+						}
 						index = end + 1;
 						continue;
 					}
@@ -397,6 +404,7 @@ export function parsePostText(
 			const uri = httpUrl(label);
 			if (uri) {
 				add(label, uri, index);
+				if (!cardUrls.includes(uri)) cardUrls.push(uri);
 				index += label.length;
 				continue;
 			}
@@ -404,7 +412,7 @@ export function parsePostText(
 		append(source[index], index);
 		index++;
 	}
-	return { text, facets, urls, sourceIndex };
+	return { text, facets, urls, cardUrls, sourceIndex };
 }
 
 export const linkFacets = (text: string) => parsePostText(text).facets;
