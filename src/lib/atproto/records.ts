@@ -30,6 +30,7 @@ import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 import { buildRecord as buildArticleRecord, usableAsCoverImage } from '$lib/standardsite/record';
 import { DOCUMENT } from '$lib/standardsite/types';
 import { extractTitle } from './markdown';
+import { buildPostEmbed, postEmbedMedia, type StoredPostImage } from './post-embed';
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
@@ -185,7 +186,7 @@ export type PostDraft = {
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
 	quote?: { uri: string; cid: string };
 	attachments: ImageAttachment[];
-	/** video.bsky.app で変換済みの動画。画像とは同時に付けない。 */
+	/** video.bsky.app で変換済みの動画。画像と併用できる（引用なしなら #gallery で書く）。 */
 	video?: PostVideoRecord;
 	linkCards: LinkCardDraft[];
 	/** こっそりモード。true のトップレベル投稿はグローバル/全肯定TLに出さない。 */
@@ -433,19 +434,7 @@ export async function createPost(
 		}
 	}
 	const { images, cards, video } = assets ?? (await uploadPostAssets(draft));
-	if (video && images.length) throw new Error('A post cannot contain both images and a video');
-	const embed = draft.quote
-		? {
-				$type: `${POST}#quote`,
-				record: draft.quote,
-				...(images.length ? { images } : {}),
-				...(video ? { video } : {}),
-			}
-		: video
-			? { $type: `${POST}#video`, ...video }
-			: images.length
-				? { $type: `${POST}#images`, images }
-				: undefined;
+	const embed = buildPostEmbed({ images, video, quote: draft.quote });
 	try {
 		const { data } = await agent.com.atproto.repo.createRecord({
 			repo: s.did,
@@ -488,12 +477,6 @@ export async function deletePost(uri: string, cid?: string) {
 	if (!match) throw new Error('Invalid post URI');
 	return deleteRecord(match[1], match[2], cid);
 }
-type StoredPostImage = {
-	image: unknown;
-	alt: string;
-	contentWarning?: boolean;
-	aspectRatio?: { width: number; height: number };
-};
 
 type StoredPostLinkCard = {
 	uri: string;
@@ -510,18 +493,6 @@ export type PostVideoEdit =
 	| { kind: 'keep'; alt: string; contentWarning?: boolean }
 	| { kind: 'new'; record: PostVideoRecord; contentWarning?: boolean }
 	| { kind: 'remove' };
-
-/** #video はそれ自体が動画、#quote は video プロパティに持つ。 */
-function storedVideoOf(embed: Record<string, unknown> | undefined): PostVideoRecord | undefined {
-	if (!embed) return undefined;
-	if (embed.$type === `${POST}#video`) {
-		const { $type: _type, ...video } = embed;
-		return video as PostVideoRecord;
-	}
-	if (embed.$type === `${POST}#quote` && embed.video && typeof embed.video === 'object')
-		return embed.video as PostVideoRecord;
-	return undefined;
-}
 
 function blobCid(blob: unknown): string | undefined {
 	if (!blob || typeof blob !== 'object') return undefined;
@@ -580,18 +551,17 @@ export async function updatePost(
 		throw new Error('Content warnings can only be edited on posts that started with a warning');
 	}
 	if (cwRestricted) record.cwRestricted = true;
+	// 画像・動画は既存 embed を均した値に編集を当て、最後に embed を1回だけ組み立て直す。
+	// 型の遷移（#images ⇄ #gallery ⇄ #video、#quote 内の付け外し）は buildPostEmbed に任せる。
+	const media = postEmbedMedia(record.embed);
+	if (!media && (opts.video || images !== undefined))
+		throw new Error('This post embed does not support media');
 	let videoView: PostVideoView | null | undefined;
-	if (opts.video) {
-		const embed =
-			record.embed && typeof record.embed === 'object'
-				? ({ ...(record.embed as Record<string, unknown>) } as Record<string, unknown>)
-				: undefined;
-		const embedType = typeof embed?.$type === 'string' ? embed.$type : undefined;
-		const stored = storedVideoOf(embed);
+	if (media && opts.video) {
 		let next: PostVideoRecord | undefined;
 		if (opts.video.kind === 'keep') {
-			if (!stored) throw new Error('The existing video is unavailable');
-			next = { ...stored };
+			if (!media.video) throw new Error('The existing video is unavailable');
+			next = { ...media.video };
 			if (opts.video.alt) next.alt = opts.video.alt;
 			else delete next.alt;
 			if (opts.video.contentWarning) next.contentWarning = true;
@@ -599,19 +569,7 @@ export async function updatePost(
 		} else if (opts.video.kind === 'new') {
 			next = opts.video.record;
 		}
-		if (embed && embedType === `${POST}#quote`) {
-			if (next) embed.video = next;
-			else delete embed.video;
-			record.embed = embed;
-		} else if (next) {
-			// 画像を全部外して動画に替える編集だけは、画像の embed を置き換えてよい。
-			const replacingImages = embedType === `${POST}#images` && images?.length === 0;
-			if (embedType && embedType !== `${POST}#video` && !replacingImages)
-				throw new Error('This post embed does not support a video');
-			record.embed = { $type: `${POST}#video`, ...next };
-		} else if (embedType === `${POST}#video`) {
-			delete record.embed;
-		}
+		media.video = next;
 		const cid = next ? blobCid(next.video) : undefined;
 		videoView = cid
 			? {
@@ -623,14 +581,9 @@ export async function updatePost(
 			: null;
 	}
 	let imageViews: PostImage[] | undefined;
-	if (images !== undefined) {
+	if (media && images !== undefined) {
 		if (images.length > 4) throw new Error('A post can contain at most four images');
-		const embed =
-			record.embed && typeof record.embed === 'object'
-				? ({ ...(record.embed as Record<string, unknown>) } as Record<string, unknown>)
-				: undefined;
-		const embedType = typeof embed?.$type === 'string' ? embed.$type : undefined;
-		const storedImages = Array.isArray(embed?.images) ? (embed.images as StoredPostImage[]) : [];
+		const storedImages = media.images;
 		const existingIndexes = images
 			.filter(
 				(image): image is Extract<PostEditImage, { kind: 'existing' }> => image.kind === 'existing',
@@ -672,7 +625,7 @@ export async function updatePost(
 				}),
 		);
 
-		const orderedImages = images.map((image): StoredPostImage => {
+		media.images = images.map((image): StoredPostImage => {
 			if (image.kind === 'new') {
 				const result = uploaded.get(image.id);
 				if (!result) throw new Error('The uploaded image is unavailable');
@@ -702,23 +655,12 @@ export async function updatePost(
 			};
 		});
 
-		if (embed && embedType === `${POST}#quote`) {
-			if (orderedImages.length) embed.images = orderedImages;
-			else delete embed.images;
-			record.embed = embed;
-		} else if (orderedImages.length) {
-			if (embedType && embedType !== `${POST}#images`) {
-				throw new Error('This post embed does not support images');
-			}
-			record.embed = { $type: `${POST}#images`, images: orderedImages };
-		} else if (embedType === `${POST}#images`) {
-			delete record.embed;
-		}
 	}
-
-	const finalEmbed = record.embed as { images?: unknown[]; video?: unknown } | undefined;
-	if (finalEmbed?.images?.length && (finalEmbed.video || storedVideoOf(finalEmbed)))
-		throw new Error('A post cannot contain both images and a video');
+	if (media && (opts.video || images !== undefined)) {
+		const embed = buildPostEmbed(media);
+		if (embed) record.embed = embed;
+		else delete record.embed;
+	}
 
 	if (draft.linkCards.length > 4) throw new Error('A post can contain at most four link cards');
 	const storedLinkCards = Array.isArray(record.linkCards)
@@ -777,7 +719,7 @@ export async function updatePost(
 	else delete record.linkCards;
 	let savedRecord = record;
 	if (collection === DOCUMENT) {
-		const cover = (record.embed as { images?: StoredPostImage[] } | undefined)?.images?.[0]?.image;
+		const cover = postEmbedMedia(record.embed)?.images[0]?.image;
 		if (cover && !usableAsCoverImage(cover)) throw new Error('Blog cover images must be smaller than 1 MB');
 		const originalTitle = typeof original.title === 'string' ? original.title : '';
 		const publishedAt = typeof original.publishedAt === 'string' ? original.publishedAt : '';

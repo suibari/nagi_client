@@ -3,6 +3,7 @@ import type { FeedItem, PostImage, PostView } from '$lib/api/types';
 /**
  * メディアグリッドの1マス。1投稿に複数画像があれば、その枚数ぶんのタイルになる。
  * 動画はサムネイルを image に入れた1マスで、video を立てて再生アイコンを重ねる。
+ * 画像と動画が混ざった投稿は、画像→動画の順に並べる（スレッドでの表示順と同じ）。
  */
 export type MediaTile = { post: PostView; image: PostImage; index: number; video?: boolean };
 
@@ -11,23 +12,23 @@ export type MediaTile = { post: PostView; image: PostImage; index: number; video
  * 各 FeedItem は自分自身が画像を持つ投稿であり、会話バブルまで潜る必要はない。
  */
 export const mediaTiles = (items: FeedItem[]): MediaTile[] =>
-	items.flatMap((post): MediaTile[] =>
-		post.video
-			? [
-					{
-						post,
-						image: {
-							url: post.video.thumbnail,
-							alt: post.video.alt ?? '',
-							...(post.video.contentWarning ? { contentWarning: true } : {}),
-							...(post.video.aspectRatio ? { aspectRatio: post.video.aspectRatio } : {}),
-						},
-						index: 0,
-						video: true,
-					},
-				]
-			: (post.images ?? []).map((image, index) => ({ post, image, index })),
-	);
+	items.flatMap((post): MediaTile[] => {
+		const images = post.images ?? [];
+		const tiles: MediaTile[] = images.map((image, index) => ({ post, image, index }));
+		if (post.video)
+			tiles.push({
+				post,
+				image: {
+					url: post.video.thumbnail,
+					alt: post.video.alt ?? '',
+					...(post.video.contentWarning ? { contentWarning: true } : {}),
+					...(post.video.aspectRatio ? { aspectRatio: post.video.aspectRatio } : {}),
+				},
+				index: images.length,
+				video: true,
+			});
+		return tiles;
+	});
 
 /** DOMキー。楽観投稿が確定して uri が変わったらタイルごと差し替わってよい。 */
 export const mediaTileKey = (tile: MediaTile) => `${tile.post.uri}#${tile.index}`;

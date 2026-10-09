@@ -304,7 +304,7 @@ export const ja = {
 	postImageAdd: '画像を追加',
 	postMediaAdd: '画像・動画を追加',
 	videoOnlyOne: '動画は1本まで添付できます',
-	videoWithImages: '動画は画像と一緒に添付できません',
+	crosspostVideoOnly: 'Bluesky には動画だけが載ります（画像は Nagi にだけ載ります）',
 	postImageProcessing: '画像を処理中…',
 	postGifProcessing: (p: { attempt: number; total: number }) =>
 		`GIFを圧縮中…（${p.attempt}/${p.total}）`,

@@ -5,13 +5,11 @@ export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
 export const MEDIA_ACCEPT = `${IMAGE_ACCEPT},${SUPPORTED_VIDEO_TYPES.join(',')}`;
 
 /**
- * 画像ボタンで選ばれたファイルの振り分け。動画は1本だけで、画像とは同時に付けない
- * （Bluesky と同じ）。ポストモーダルと投稿編集の両方がこの規則を使う。
+ * 画像ボタンで選ばれたファイルの振り分け。画像（4枚まで）と動画（1本まで）は同じ投稿に
+ * 混ぜてよい。ポストモーダルと投稿編集の両方がこの規則を使う。
  */
 export type MediaSelection =
-	| { kind: 'images'; files: File[] }
-	| { kind: 'video'; file: File }
-	| { kind: 'error'; reason: 'video-count' | 'video-with-images' };
+	{ kind: 'media'; images: File[]; video?: File } | { kind: 'error'; reason: 'video-count' };
 
 export function isVideoFile(file: Pick<File, 'type'>) {
 	return file.type.startsWith('video/');
@@ -19,14 +17,13 @@ export function isVideoFile(file: Pick<File, 'type'>) {
 
 export function splitMediaSelection(
 	files: File[],
-	options: { allowVideo: boolean; hasImages: boolean },
+	options: { allowVideo: boolean; hasVideo: boolean },
 ): MediaSelection {
-	const videos = options.allowVideo ? files.filter(isVideoFile) : [];
-	if (!videos.length) return { kind: 'images', files };
-	if (videos.length > 1) return { kind: 'error', reason: 'video-count' };
-	if (videos.length !== files.length || options.hasImages)
-		return { kind: 'error', reason: 'video-with-images' };
-	return { kind: 'video', file: videos[0] };
+	if (!options.allowVideo) return { kind: 'media', images: files };
+	const videos = files.filter(isVideoFile);
+	if (videos.length > (options.hasVideo ? 0 : 1)) return { kind: 'error', reason: 'video-count' };
+	const images = files.filter((file) => !isVideoFile(file));
+	return { kind: 'media', images, ...(videos.length ? { video: videos[0] } : {}) };
 }
 
 /** 貼り付けから拾うファイル。動画を受け付けない入口では画像だけ。 */

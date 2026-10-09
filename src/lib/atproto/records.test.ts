@@ -240,13 +240,31 @@ describe('video posts', () => {
 		).toBe(true);
 	});
 
-	it('refuses to combine images and a video', async () => {
+	it('writes images and a video together as a #gallery embed', async () => {
 		const draft = videoDraft();
 		const image = { image: {}, alt: '', aspectRatio: { width: 1, height: 1 } };
-		await expect(
-			createPost(draft, { images: [image], cards: [], video: draft.video }),
-		).rejects.toThrow();
-		expect(createRecord).not.toHaveBeenCalled();
+		await createPost(draft, { images: [image], cards: [], video: draft.video });
+
+		expect(createRecord.mock.calls[0][0].record.embed).toEqual({
+			$type: 'com.suibari.nagi.post#gallery',
+			items: [
+				{ $type: 'com.suibari.nagi.post#image', ...image },
+				{ $type: 'com.suibari.nagi.post#video', ...videoRecord },
+			],
+		});
+	});
+
+	it('keeps images and a video side by side in a quote', async () => {
+		const draft = videoDraft(videoRecord, quoteRef);
+		const image = { image: {}, alt: '', aspectRatio: { width: 1, height: 1 } };
+		await createPost(draft, { images: [image], cards: [], video: draft.video });
+
+		expect(createRecord.mock.calls[0][0].record.embed).toEqual({
+			$type: 'com.suibari.nagi.post#quote',
+			record: quoteRef,
+			images: [image],
+			video: videoRecord,
+		});
 	});
 
 	it('keeps the stored blob and only rewrites alt when editing', async () => {
@@ -327,6 +345,89 @@ describe('video posts', () => {
 			$type: 'com.suibari.nagi.post#video',
 			...videoRecord,
 		});
+	});
+
+	const storedImage = { image: { ref: { $link: 'bafyold' } }, alt: 'old image' };
+	const existingImage = {
+		kind: 'existing' as const,
+		id: 'old',
+		sourceIndex: 0,
+		previewUrl: '/api/blob/old',
+		alt: 'old image',
+	};
+	const galleryRecord = {
+		$type: 'com.suibari.nagi.post#gallery',
+		items: [
+			{ $type: 'com.suibari.nagi.post#image', ...storedImage },
+			{ $type: 'com.suibari.nagi.post#video', ...videoRecord },
+		],
+	};
+	const storedPost = (embed: unknown) =>
+		getRecord.mockResolvedValue({
+			data: { value: { $type: 'com.suibari.nagi.post', text: 'old', embed } },
+		});
+
+	it('turns an image post into a #gallery when a video is added', async () => {
+		storedPost({ $type: 'com.suibari.nagi.post#images', images: [storedImage] });
+
+		await updatePost('post', preparePostDraft('new'), [existingImage], {
+			video: { kind: 'new', record: videoRecord },
+		});
+
+		expect(putRecord.mock.calls[0][0].record.embed).toEqual(galleryRecord);
+	});
+
+	it('falls back to #images when the video is removed from a #gallery', async () => {
+		storedPost(galleryRecord);
+
+		await updatePost('post', preparePostDraft('new'), [existingImage], {
+			video: { kind: 'remove' },
+		});
+
+		expect(putRecord.mock.calls[0][0].record.embed).toEqual({
+			$type: 'com.suibari.nagi.post#images',
+			images: [storedImage],
+		});
+	});
+
+	it('falls back to #video when the images are removed from a #gallery', async () => {
+		storedPost(galleryRecord);
+
+		await updatePost('post', preparePostDraft('new'), [], {
+			video: { kind: 'keep', alt: videoRecord.alt },
+		});
+
+		expect(putRecord.mock.calls[0][0].record.embed).toEqual({
+			$type: 'com.suibari.nagi.post#video',
+			...videoRecord,
+		});
+	});
+
+	it('drops the embed when everything is removed from a #gallery', async () => {
+		storedPost(galleryRecord);
+
+		await updatePost('post', preparePostDraft('new'), [], { video: { kind: 'remove' } });
+
+		expect(putRecord.mock.calls[0][0].record).not.toHaveProperty('embed');
+	});
+
+	it('keeps the #gallery untouched when only the text is edited', async () => {
+		storedPost(galleryRecord);
+
+		await updatePost('post', preparePostDraft('new'));
+
+		expect(putRecord.mock.calls[0][0].record.embed).toEqual(galleryRecord);
+	});
+
+	it('refuses to put media into an unknown embed', async () => {
+		storedPost({ $type: 'com.example.unknown' });
+
+		await expect(
+			updatePost('post', preparePostDraft('new'), [], {
+				video: { kind: 'new', record: videoRecord },
+			}),
+		).rejects.toThrow();
+		expect(putRecord).not.toHaveBeenCalled();
 	});
 });
 

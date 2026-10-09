@@ -92,7 +92,7 @@
 	let error = $state('');
 	let warning = $state('');
 	let attachments = $state<ImageAttachment[]>([]);
-	// 動画は画像と同時に付けない（Bluesky と同じ）。添付した時点で送信と変換が始まる。
+	// 動画は1本まで、画像と併用できる。添付した時点で送信と変換が始まる。
 	let video = $state<VideoAttachment>();
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
@@ -951,6 +951,10 @@
 			</button>
 		</div>
 	</div>
+	<!-- Bluesky には画像と動画を混ぜる embed が無いので、動画だけを送る（crosspost/bluesky.ts の buildEmbed）。 -->
+	{#if scope === 'external' && video && attachments.length}<p class="draft-image-note">
+			{m.crosspostVideoOnly()}
+		</p>{/if}
 	{#if attachments.length}<p class="draft-image-note">
 			{m.draftImagesUnsupported()}
 		</p>{/if}
