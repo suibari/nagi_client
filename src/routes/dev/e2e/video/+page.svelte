@@ -45,6 +45,6 @@
 <section class="e2e-fixture" data-testid="video-fixture">
 	{#if ready}
 		<button type="button" onclick={() => composerHost.show()}>Open composer</button>
-		<ChatBubble {post} />
+		<ChatBubble bind:post />
 	{/if}
 </section>

@@ -48,27 +48,33 @@
 	});
 
 	async function attach(media: HTMLVideoElement, cancelled: () => boolean) {
-		// Safari（iOS 含む）は HLS をそのまま再生できる。それ以外は hls.js を必要なときだけ読む。
-		if (media.canPlayType('application/vnd.apple.mpegurl')) {
-			media.src = video.playlist;
-		} else {
-			const { default: Hls } = await import('hls.js');
-			if (cancelled()) return;
-			if (!Hls.isSupported()) {
-				failed = true;
-				playing = false;
-				return;
-			}
+		// MSE があるブラウザでは hls.js を使う。Chrome は canPlayType で HLS に 'maybe' を返すが、
+		// 組み込みの HLS 再生は video.cdn.bsky.app へのリダイレクトを挟むと失敗する（2026-10-10 実測）。
+		// 組み込み再生は MSE の無い環境（古い iPhone の Safari）だけに残す。
+		const { default: Hls } = await import('hls.js');
+		if (cancelled()) return;
+		if (Hls.isSupported()) {
 			hls = new Hls({ capLevelToPlayerSize: true });
 			hls.on(Hls.Events.ERROR, (_event, data) => {
 				if (!data.fatal) return;
-				failed = true;
-				playing = false;
+				console.warn('[VideoPlayer] HLS error', data.type, data.details, video.playlist);
+				fail();
 			});
 			hls.loadSource(video.playlist);
 			hls.attachMedia(media);
+		} else if (media.canPlayType('application/vnd.apple.mpegurl')) {
+			media.src = video.playlist;
+		} else {
+			console.warn('[VideoPlayer] HLS is not supported in this browser');
+			fail();
+			return;
 		}
 		media.play().catch(() => undefined);
+	}
+
+	function fail() {
+		failed = true;
+		playing = false;
 	}
 
 	function onplay(event: Event) {
@@ -98,8 +104,10 @@
 			aria-label={video.alt || m.videoPlayerLabel()}
 			{onplay}
 			onerror={() => {
-				failed = true;
-				playing = false;
+				// hls.js が付いているときは、そちらの ERROR で判断する（MSE の一時的な失敗で止めない）。
+				if (hls) return;
+				console.warn('[VideoPlayer] media error', element?.error?.code, element?.error?.message);
+				fail();
 			}}
 		></video>
 	{:else}
