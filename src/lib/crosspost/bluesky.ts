@@ -120,6 +120,14 @@ export function splitForBluesky(
 }
 
 function buildEmbed(assets: PostAssets) {
+	// 動画は video.bsky.app が PDS へ置いた blob なので、Bluesky 側でもそのまま再生できる。
+	if (assets.video)
+		return {
+			$type: 'app.bsky.embed.video',
+			video: assets.video.video,
+			...(assets.video.alt ? { alt: assets.video.alt } : {}),
+			...(assets.video.aspectRatio ? { aspectRatio: assets.video.aspectRatio } : {}),
+		};
 	if (assets.images.length)
 		return { $type: 'app.bsky.embed.images', images: assets.images.slice(0, 4) };
 	const card = assets.cards[0];

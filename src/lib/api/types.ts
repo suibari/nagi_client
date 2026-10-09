@@ -55,6 +55,14 @@ export type PostImage = {
 	contentWarning?: boolean;
 	aspectRatio?: AspectRatio;
 };
+/** video.bsky.app が配信する HLS とサムネイル。 */
+export type PostVideoView = {
+	playlist: string;
+	thumbnail: string;
+	alt?: string;
+	contentWarning?: boolean;
+	aspectRatio?: AspectRatio;
+};
 export type Facet = { index: { byteStart: number; byteEnd: number }; features: unknown[] };
 export type LinkCardView = { uri: string; title: string; description?: string; thumb?: string };
 export type StrongRef = { uri: string; cid: string };
@@ -120,6 +128,7 @@ export type PostView = {
 	indexedAt: string;
 	reply?: { root: StrongRef; parent: StrongRef };
 	images?: PostImage[];
+	video?: PostVideoView;
 	linkCards?: LinkCardView[];
 	quote?: { kind: 'post'; post: PostView } | { kind: 'news'; news: NewsView };
 	reactions: ReactionView[];

@@ -9,7 +9,14 @@ import {
 } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment, PostEditImage } from '$lib/images';
-import type { EmojiView, LinkCardView, NewsSubmissionPreview, PostImage } from '$lib/api/types';
+import type {
+	EmojiView,
+	LinkCardView,
+	NewsSubmissionPreview,
+	PostImage,
+	PostVideoView,
+} from '$lib/api/types';
+import { blueskyVideoUrls } from '$lib/video';
 import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
 import { hasOptInScope } from '$lib/optin/scope-optin';
 import { forgetPublicationCache } from '$lib/standardsite/cache';
@@ -178,6 +185,8 @@ export type PostDraft = {
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
 	quote?: { uri: string; cid: string };
 	attachments: ImageAttachment[];
+	/** video.bsky.app で変換済みの動画。画像とは同時に付けない。 */
+	video?: PostVideoRecord;
 	linkCards: LinkCardDraft[];
 	/** こっそりモード。true のトップレベル投稿はグローバル/全肯定TLに出さない。 */
 	kossori?: boolean;
@@ -199,6 +208,14 @@ export type PostDraft = {
 	article?: boolean;
 };
 
+/** com.suibari.nagi.post#video の中身（$type を除く）。 */
+export type PostVideoRecord = {
+	video: unknown;
+	alt?: string;
+	contentWarning?: boolean;
+	aspectRatio?: { width: number; height: number };
+};
+
 export function preparePostDraft(
 	text: string,
 	reply?: PostDraft['reply'],
@@ -213,6 +230,7 @@ export function preparePostDraft(
 	botSilent = false,
 	silentReply = false,
 	selfLabels: string[] = [],
+	video?: PostVideoRecord,
 ): PostDraft {
 	const leadingWhitespace = text.length - text.trimStart().length;
 	const source = text.trim();
@@ -242,8 +260,11 @@ export function preparePostDraft(
 		reply,
 		quote,
 		attachments: [...attachments],
+		...(video ? { video } : {}),
 		linkCards: linkCards.slice(0, 4).map((card) => ({ ...card })),
-		...(hasContentWarning(parsed.text) || attachments.some((image) => image.contentWarning)
+		...(hasContentWarning(parsed.text) ||
+		attachments.some((image) => image.contentWarning) ||
+		video?.contentWarning
 			? { cwRestricted: true }
 			: {}),
 		...(kossori ? { kossori: true } : {}),
@@ -335,6 +356,8 @@ export type PostAssets = {
 		aspectRatio: { width: number; height: number };
 	}[];
 	cards: { uri: string; title: string; description?: string; thumb?: unknown }[];
+	/** 動画は添付した時点で送ってあるので、ここでは draft の値をそのまま運ぶ。 */
+	video?: PostVideoRecord;
 };
 
 export async function uploadPostAssets(draft: PostDraft): Promise<PostAssets> {
@@ -378,7 +401,7 @@ export async function uploadPostAssets(draft: PostDraft): Promise<PostAssets> {
 			}
 		}),
 	);
-	return { images, cards };
+	return { images, cards, ...(draft.video ? { video: draft.video } : {}) };
 }
 
 /**
@@ -409,12 +432,20 @@ export async function createPost(
 			throw new PostSubmissionError('record-create', cause);
 		}
 	}
-	const { images, cards } = assets ?? (await uploadPostAssets(draft));
+	const { images, cards, video } = assets ?? (await uploadPostAssets(draft));
+	if (video && images.length) throw new Error('A post cannot contain both images and a video');
 	const embed = draft.quote
-		? { $type: `${POST}#quote`, record: draft.quote, ...(images.length ? { images } : {}) }
-		: images.length
-			? { $type: `${POST}#images`, images }
-			: undefined;
+		? {
+				$type: `${POST}#quote`,
+				record: draft.quote,
+				...(images.length ? { images } : {}),
+				...(video ? { video } : {}),
+			}
+		: video
+			? { $type: `${POST}#video`, ...video }
+			: images.length
+				? { $type: `${POST}#images`, images }
+				: undefined;
 	try {
 		const { data } = await agent.com.atproto.repo.createRecord({
 			repo: s.did,
@@ -471,6 +502,27 @@ type StoredPostLinkCard = {
 	thumb?: unknown;
 };
 
+/**
+ * 編集で動画をどうするか。keep は既存の blob のまま alt と CW だけ書き直す。
+ * new は添付し直した動画（video.bsky.app で変換済み）。
+ */
+export type PostVideoEdit =
+	| { kind: 'keep'; alt: string; contentWarning?: boolean }
+	| { kind: 'new'; record: PostVideoRecord; contentWarning?: boolean }
+	| { kind: 'remove' };
+
+/** #video はそれ自体が動画、#quote は video プロパティに持つ。 */
+function storedVideoOf(embed: Record<string, unknown> | undefined): PostVideoRecord | undefined {
+	if (!embed) return undefined;
+	if (embed.$type === `${POST}#video`) {
+		const { $type: _type, ...video } = embed;
+		return video as PostVideoRecord;
+	}
+	if (embed.$type === `${POST}#quote` && embed.video && typeof embed.video === 'object')
+		return embed.video as PostVideoRecord;
+	return undefined;
+}
+
 function blobCid(blob: unknown): string | undefined {
 	if (!blob || typeof blob !== 'object') return undefined;
 	const ref = (blob as { ref?: unknown }).ref;
@@ -496,7 +548,7 @@ export async function updatePost(
 	rkey: string,
 	draft: PostDraft,
 	images?: PostEditImage[],
-	opts: { applyChannel?: boolean; collection?: string } = {},
+	opts: { applyChannel?: boolean; collection?: string; video?: PostVideoEdit } = {},
 ) {
 	const s = current();
 	const agent = new Agent(s);
@@ -521,11 +573,55 @@ export async function updatePost(
 	const cwRestricted = record.cwRestricted === true;
 	if (
 		!cwRestricted &&
-		(hasContentWarning(draft.text) || images?.some((image) => image.contentWarning))
+		(hasContentWarning(draft.text) ||
+			images?.some((image) => image.contentWarning) ||
+			(opts.video && opts.video.kind !== 'remove' && opts.video.contentWarning))
 	) {
 		throw new Error('Content warnings can only be edited on posts that started with a warning');
 	}
 	if (cwRestricted) record.cwRestricted = true;
+	let videoView: PostVideoView | null | undefined;
+	if (opts.video) {
+		const embed =
+			record.embed && typeof record.embed === 'object'
+				? ({ ...(record.embed as Record<string, unknown>) } as Record<string, unknown>)
+				: undefined;
+		const embedType = typeof embed?.$type === 'string' ? embed.$type : undefined;
+		const stored = storedVideoOf(embed);
+		let next: PostVideoRecord | undefined;
+		if (opts.video.kind === 'keep') {
+			if (!stored) throw new Error('The existing video is unavailable');
+			next = { ...stored };
+			if (opts.video.alt) next.alt = opts.video.alt;
+			else delete next.alt;
+			if (opts.video.contentWarning) next.contentWarning = true;
+			else delete next.contentWarning;
+		} else if (opts.video.kind === 'new') {
+			next = opts.video.record;
+		}
+		if (embed && embedType === `${POST}#quote`) {
+			if (next) embed.video = next;
+			else delete embed.video;
+			record.embed = embed;
+		} else if (next) {
+			// 画像を全部外して動画に替える編集だけは、画像の embed を置き換えてよい。
+			const replacingImages = embedType === `${POST}#images` && images?.length === 0;
+			if (embedType && embedType !== `${POST}#video` && !replacingImages)
+				throw new Error('This post embed does not support a video');
+			record.embed = { $type: `${POST}#video`, ...next };
+		} else if (embedType === `${POST}#video`) {
+			delete record.embed;
+		}
+		const cid = next ? blobCid(next.video) : undefined;
+		videoView = cid
+			? {
+					...blueskyVideoUrls(s.did, cid),
+					...(next?.alt ? { alt: next.alt } : {}),
+					...(next?.contentWarning ? { contentWarning: true } : {}),
+					...(next?.aspectRatio ? { aspectRatio: next.aspectRatio } : {}),
+				}
+			: null;
+	}
 	let imageViews: PostImage[] | undefined;
 	if (images !== undefined) {
 		if (images.length > 4) throw new Error('A post can contain at most four images');
@@ -620,6 +716,10 @@ export async function updatePost(
 		}
 	}
 
+	const finalEmbed = record.embed as { images?: unknown[]; video?: unknown } | undefined;
+	if (finalEmbed?.images?.length && (finalEmbed.video || storedVideoOf(finalEmbed)))
+		throw new Error('A post cannot contain both images and a video');
+
 	if (draft.linkCards.length > 4) throw new Error('A post can contain at most four link cards');
 	const storedLinkCards = Array.isArray(record.linkCards)
 		? (record.linkCards as StoredPostLinkCard[])
@@ -712,7 +812,7 @@ export async function updatePost(
 			record: savedRecord,
 		}),
 	);
-	return { response, imageViews, linkCardViews };
+	return { response, imageViews, linkCardViews, videoView };
 }
 export async function createReaction(
 	subject: { uri: string; cid: string },

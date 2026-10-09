@@ -40,6 +40,11 @@ const baseScopes = [
 	'rpc:com.suibari.nagi.getRadioHistory?aud=*',
 	'rpc:com.suibari.nagi.markRadioSeen?aud=*',
 	'repo:com.suibari.nagi.cardGet',
+	// 動画は video.bsky.app に変換を任せる。PDS から service auth を取るための権限で、
+	// どちらも Nagi namespace ではないので permission set に入れられない。
+	// 真実源は nagi-lexicon の NAGI_VIDEO_SCOPES。
+	'rpc:com.atproto.repo.uploadBlob?aud=*',
+	'rpc:app.bsky.video.getUploadLimits?aud=*',
 	BLUEMOJI_SCOPE,
 	BLUESKY_PROFILE_SCOPE,
 	...STANDARD_SITE_COLLECTION_SCOPES,

@@ -91,6 +91,9 @@ export default defineConfig(({ command, mode }) => {
 						'img-src': isDev
 							? ['self', 'https:', 'data:', 'blob:', 'http://localhost:*', 'http://127.0.0.1:*']
 							: ['self', 'https:', 'data:', 'blob:'],
+						// 動画は video.bsky.app の HLS を再生する。hls.js は MSE の blob: URL を使い、
+						// 投稿前のプレビューも添付ファイルの blob: URL で見せる。
+						'media-src': ['self', 'https:', 'blob:'],
 						'font-src': ['self', 'data:'],
 						'connect-src': isDev
 							? ['self', 'https:', 'data:', 'http://localhost:*', 'http://127.0.0.1:*']

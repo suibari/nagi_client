@@ -62,6 +62,9 @@
 						><Icon name="hash" size={12} />{tile.post.channel.name ?? m.navChannels()}</span
 					>
 				{/if}
+				{#if tile.video}
+					<span class="media-tile-video" aria-hidden="true"><Icon name="play" size={22} /></span>
+				{/if}
 				{#if tile.image.alt}
 					<span class="media-tile-alt" aria-hidden="true">ALT</span>
 				{/if}

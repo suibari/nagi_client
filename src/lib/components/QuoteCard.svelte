@@ -3,6 +3,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import TranslateToggle from './TranslateToggle.svelte';
 	import ImageGallery from './ImageGallery.svelte';
+	import VideoPlayer from './VideoPlayer.svelte';
 	import LinkCard from './LinkCard.svelte';
 	import QuoteFrame from './QuoteFrame.svelte';
 	import PostModerationGuard from './PostModerationGuard.svelte';
@@ -44,6 +45,7 @@
 			/>
 		{/if}
 		{#if post.images?.length}<ImageGallery images={post.images} />{/if}
+		{#if post.video}<VideoPlayer video={post.video} />{/if}
 		{#if post.linkCards?.length}<div class="link-cards">
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
 			</div>{/if}

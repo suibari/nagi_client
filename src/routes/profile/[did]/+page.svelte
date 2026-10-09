@@ -171,7 +171,7 @@
 					if (item.author.did !== actor) return false;
 					if (filter === 'posts') return !item.reply;
 					if (filter === 'replies') return Boolean(item.reply);
-					if (filter === 'media') return Boolean(item.images?.length);
+					if (filter === 'media') return Boolean(item.images?.length || item.video);
 					return false;
 				},
 			);

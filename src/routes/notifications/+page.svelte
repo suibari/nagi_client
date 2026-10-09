@@ -201,6 +201,14 @@
 					<img src={resolveImage(image.url)} alt={image.alt} loading="lazy" />
 				{/if}
 			{/each}
+		</div>{:else if item.post?.video}<div class="notification-thumbs">
+			{#if item.post.video.contentWarning}
+				<ContentWarningMask kind="image" interactive={false}
+					><img src={item.post.video.thumbnail} alt="" loading="lazy" /></ContentWarningMask
+				>
+			{:else}
+				<img src={item.post.video.thumbnail} alt={item.post.video.alt ?? ''} loading="lazy" />
+			{/if}
 		</div>{/if}
 {/snippet}
 

@@ -1,7 +1,20 @@
-import type { ActorView, FeedItem, PostView } from '$lib/api/types';
+import type { ActorView, FeedItem, PostVideoView, PostView } from '$lib/api/types';
 import type { PostDraft } from '$lib/atproto/records';
+import { blueskyVideoUrls } from '$lib/video';
 
 type Entry = { id: string; item: FeedItem; objectUrls: string[] };
+
+/** 動画は添付した時点で変換が済んでいるので、投稿前から配信先の URL が決まる。 */
+function optimisticVideo(did: string, video: PostDraft['video']): PostVideoView | undefined {
+	const cid = (video?.video as { ref?: { $link?: string } } | undefined)?.ref?.$link;
+	if (!video || !cid) return undefined;
+	return {
+		...blueskyVideoUrls(did, cid),
+		...(video.alt ? { alt: video.alt } : {}),
+		...(video.contentWarning ? { contentWarning: true } : {}),
+		...(video.aspectRatio ? { aspectRatio: video.aspectRatio } : {}),
+	};
+}
 
 class OptimisticPosts {
 	entries = $state<Entry[]>([]);
@@ -62,6 +75,7 @@ class OptimisticPosts {
 					aspectRatio: attachment.aspectRatio,
 				})),
 			}),
+			...(optimisticVideo(did, draft.video) && { video: optimisticVideo(did, draft.video) }),
 			...(draft.linkCards.length && {
 				linkCards: draft.linkCards.map((card) => ({
 					uri: card.uri,
