@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+	blobExistsOnPds,
 	blueskyVideoUrls,
 	checkVideoFile,
 	checkVideoMetadata,
@@ -129,5 +130,28 @@ describe('helpers', () => {
 		expect(isMissingScopeError({ error: 'ScopeMissingError' })).toBe(true);
 		expect(isMissingScopeError(new Error('Missing required scope "rpc:..."'))).toBe(true);
 		expect(isMissingScopeError(new Error('fetch failed'))).toBe(false);
+	});
+});
+
+describe('blobExistsOnPds', () => {
+	it('asks the PDS for the blob and only looks at the status', async () => {
+		const fetcher = vi.fn().mockResolvedValue(new Response('video', { status: 200 }));
+		await expect(
+			blobExistsOnPds('https://pds.example', 'did:plc:a', 'bafkreix', undefined, fetcher),
+		).resolves.toBe(true);
+		expect(String(fetcher.mock.calls[0][0])).toBe(
+			'https://pds.example/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aa&cid=bafkreix',
+		);
+	});
+
+	it('treats a missing blob or a network failure as gone', async () => {
+		const missing = vi.fn().mockResolvedValue(new Response('{}', { status: 400 }));
+		const broken = vi.fn().mockRejectedValue(new Error('network'));
+		await expect(
+			blobExistsOnPds('https://pds.example', 'did:plc:a', 'x', undefined, missing),
+		).resolves.toBe(false);
+		await expect(
+			blobExistsOnPds('https://pds.example', 'did:plc:a', 'x', undefined, broken),
+		).resolves.toBe(false);
 	});
 });

@@ -14,6 +14,8 @@ export class PostSubmissionError extends Error {
 }
 
 export function postSubmissionErrorMessage(error: unknown): string {
+	// 画面には再試行の単位しか出さないので、PDS が返した理由はコンソールに残す。
+	console.error('[post] submission failed', error, (error as { cause?: unknown })?.cause);
 	if (!(error instanceof PostSubmissionError)) return m.postFailedRetry();
 	if (error.stage === 'image-upload') return m.postImageUploadFailed();
 	if (error.stage === 'link-card-upload') return m.postLinkCardUploadFailed();

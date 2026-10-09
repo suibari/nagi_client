@@ -33,7 +33,8 @@ export type VideoErrorCode =
 	| 'scope'
 	| 'upload'
 	| 'processing'
-	| 'aborted';
+	| 'aborted'
+	| 'duplicate';
 
 export class VideoUploadError extends Error {
 	constructor(
@@ -299,17 +300,56 @@ export async function uploadVideo(
 		options.signal,
 	);
 	const job = jobStatusOf(body);
-	// 409 は同じ動画を以前にも送ったとき。返ってきた jobId をそのまま待てばよい。
-	if (!job?.jobId || (status >= 400 && status !== 409)) {
-		const detail = (body as { message?: string } | null)?.message;
+	const detail = (body as { message?: string } | null)?.message;
+	// 409 は同じ動画を以前にも送ったとき。サービスは変換し直さず、前回の blob を返す。
+	const duplicate = status === 409;
+	if (!job?.jobId) {
+		if (duplicate) throw new VideoUploadError('Video was already uploaded', 'duplicate', detail);
 		throw new VideoUploadError('Video upload failed', 'upload', detail);
 	}
-	if (job.state === 'JOB_STATE_COMPLETED' && job.blob?.ref?.$link) return job.blob;
-	options.onPhase?.({ phase: 'processing' });
-	return waitForVideoJob(job.jobId, {
-		signal: options.signal,
-		onState: (state) => options.onPhase?.({ phase: phaseOfJobState(state) }),
-	});
+	if (status >= 400 && !duplicate)
+		throw new VideoUploadError('Video upload failed', 'upload', detail);
+	let blob: VideoBlobRef;
+	if (job.state === 'JOB_STATE_COMPLETED' && job.blob?.ref?.$link) blob = job.blob;
+	else {
+		options.onPhase?.({ phase: 'processing' });
+		blob = await waitForVideoJob(job.jobId, {
+			signal: options.signal,
+			onState: (state) => options.onPhase?.({ phase: phaseOfJobState(state) }),
+		});
+	}
+	// 前回の投稿を消していると、PDS 側の blob も消えていて、投稿の保存が BlobNotFound で
+	// 失敗する（2026-10-10 実例）。投稿ボタンを押す前に、ここで理由を出して止める。
+	if (duplicate && !(await blobExistsOnPds(pdsUrl, did, blob.ref.$link, options.signal)))
+		throw new VideoUploadError('Video was already uploaded', 'duplicate', detail);
+	return blob;
+}
+
+/**
+ * PDS にその blob がまだあるか。getBlob は本体まで返すので、応答の見出しだけ見て切る。
+ * 投稿から参照されていない一時 blob も「無い」扱いになるが、その場合も投稿は保存できない。
+ */
+export async function blobExistsOnPds(
+	pdsUrl: string,
+	did: string,
+	cid: string,
+	signal?: AbortSignal,
+	fetcher: typeof fetch = fetch,
+): Promise<boolean> {
+	const url = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl);
+	url.searchParams.set('did', did);
+	url.searchParams.set('cid', cid);
+	const controller = new AbortController();
+	signal?.addEventListener('abort', () => controller.abort(), { once: true });
+	try {
+		const response = await fetcher(url, { signal: controller.signal });
+		return response.ok;
+	} catch {
+		if (signal?.aborted) throw new VideoUploadError('Aborted', 'aborted');
+		return false;
+	} finally {
+		controller.abort();
+	}
 }
 
 function extensionOf(type: string) {

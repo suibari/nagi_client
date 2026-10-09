@@ -38,6 +38,7 @@
 		upload: m.videoErrorUpload,
 		processing: m.videoErrorProcessing,
 		aborted: m.videoErrorUpload,
+		duplicate: m.videoErrorDuplicate,
 	};
 	const status = $derived.by(() => {
 		if (!video) return '';

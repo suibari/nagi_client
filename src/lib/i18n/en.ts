@@ -351,6 +351,8 @@ export const en: Messages = {
 	videoErrorScope: 'Update permissions and sign in again to upload videos',
 	videoErrorUpload: 'Could not upload the video. Check your connection and try again',
 	videoErrorProcessing: 'Could not process the video. Please try another one',
+	videoErrorDuplicate:
+		'This video was uploaded before and cannot be sent again. Choose an edited or different video',
 	videoReauthorize: 'Update permissions',
 	videoRetry: 'Try again',
 	videoBlogDisabled: 'Videos cannot be attached to blog posts',
