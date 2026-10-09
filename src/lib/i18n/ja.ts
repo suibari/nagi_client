@@ -367,6 +367,8 @@ export const ja = {
 	videoErrorScope: '動画を送るには、権限を更新して再ログインしてください',
 	videoErrorUpload: '動画を送信できませんでした。通信状態を確認して、もう一度お試しください',
 	videoErrorProcessing: '動画を変換できませんでした。別の動画でお試しください',
+	videoErrorDuplicate:
+		'この動画は以前に送信済みのため、もう一度は送れません。少し編集した動画か、別の動画を選んでください',
 	videoReauthorize: '権限を更新する',
 	videoRetry: 'もう一度送る',
 	videoBlogDisabled: 'ブログには動画を添付できません',

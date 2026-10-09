@@ -196,6 +196,44 @@ test('送信中は%、変換中と仕上げ中は段階を出し、ページ離�
 	await page.screenshot({ path: testInfo.outputPath('video-composer.png') });
 });
 
+test('以前に送った動画で PDS に残っていなければ、添付の時点で理由を出す', async ({ page }) => {
+	await mockServices(page);
+	// 同じ動画の再送。サービスは 409 と前回の blob を返すが、PDS からは消えている。
+	await page.route('https://video.bsky.app/xrpc/app.bsky.video.uploadVideo**', (route) =>
+		route.fulfill({
+			status: 409,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				did,
+				jobId: 'job-old',
+				state: 'JOB_STATE_COMPLETED',
+				blob,
+				error: 'already_exists',
+				message: 'Video already processed',
+			}),
+		}),
+	);
+	await page.route('https://pds.example/xrpc/com.atproto.sync.getBlob**', (route) =>
+		route.fulfill({
+			status: 400,
+			contentType: 'application/json',
+			body: JSON.stringify({ error: 'BlobNotFound', message: 'Blob not found' }),
+		}),
+	);
+	await page.goto('/dev/e2e/video');
+	await page.getByRole('button', { name: 'Open composer' }).click();
+	const composer = page.locator('.post-modal .composer');
+	await composer.locator('input[type="file"][accept*="video"]').setInputFiles({
+		name: 'sample.webm',
+		mimeType: 'video/webm',
+		buffer: readFileSync(new URL('sample.webm', fixtures)),
+	});
+	await expect(composer.locator('.video-attachment [role="alert"]')).toContainText(
+		'この動画は以前に送信済みのため',
+	);
+	await expect(composer.locator('.submit-primary')).toBeDisabled();
+});
+
 test('画像と動画を一緒に選ぶと、動画は付けずに理由を出す', async ({ page }) => {
 	await mockServices(page);
 	await page.goto('/dev/e2e/video');
