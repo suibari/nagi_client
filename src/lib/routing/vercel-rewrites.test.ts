@@ -102,7 +102,7 @@ describe('vercel SPA rewrites', () => {
 
 	it('keeps prerendered entries indexable and only permits the noindex blog fallback', () => {
 		// Vercel は既存 HTML を rewrites より優先する。未生成ブログは直リンクを
-		// 維持するため /api/spa へ送り、API の応答だけ noindex にする（api/spa.test.ts）。
+		// 維持するため /api/spa へ送り、API の応答だけ noindex にする（api/_spa.test.ts）。
 		// /200 への直接転送は索引可能な空ページになるため許可しない。
 		// パス全体への noindex ヘッダも、生成済み記事を巻き込むので許可しない。
 		for (const { path } of entryRoutes) {
