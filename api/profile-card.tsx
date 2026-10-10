@@ -32,7 +32,7 @@ import {
 	type FunctionRequest,
 	type ImageFunctionResponse,
 } from './_ogp.js';
-import { prepareOgpAvatar } from './profile-card-image.js';
+import { prepareOgpAvatar } from './_profile-card-image.js';
 
 const date = (value: string | undefined) =>
 	value
@@ -51,7 +51,7 @@ export default async function handler(request: FunctionRequest, response: ImageF
 
 	try {
 		const profile = await getProfile(did);
-		const avatar = await prepareOgpAvatar(absoluteAvatar(profile.avatar), AVATAR_SIZE);
+		const avatar = await prepareOgpAvatar(absoluteAvatar(profile.avatar));
 		const tags = (profile.tags ?? []).slice(0, 3);
 		const tagline =
 			flatten(profile.tagline) ||

@@ -15,7 +15,7 @@ import {
 	type ImageFunctionResponse,
 	type OgpProfile,
 } from './_ogp.js';
-import { prepareOgpAvatar } from './profile-card-image.js';
+import { prepareOgpAvatar } from './_profile-card-image.js';
 
 type ThreadPost = {
 	uri: string;
@@ -137,7 +137,7 @@ export default async function handler(request: FunctionRequest, response: ImageF
 		// こっそり投稿は誰が書いたかも外へ出さず、サイト共通の画像に倒す。
 		if (post.kossori || post.threadKossori) return fallback(response);
 		const profile = await getProfile(post.author.did).catch(() => post.author as OgpProfile);
-		const avatar = await prepareOgpAvatar(absoluteAvatar(profile.avatar), AVATAR);
+		const avatar = await prepareOgpAvatar(absoluteAvatar(profile.avatar));
 		const tags = (profile.tags ?? []).slice(0, 3);
 		const isBlog = kind === 'blog' || post.article === true;
 		const hidden = isPrivate(post);
