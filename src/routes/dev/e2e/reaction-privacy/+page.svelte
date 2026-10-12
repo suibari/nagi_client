@@ -3,6 +3,7 @@
 	import type { NewsView, PostView, ReactionView } from '$lib/api/types';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
+	import CardItemReactions from '$lib/components/CardItemReactions.svelte';
 	import { session, type OAuthSession } from '$lib/oauth/session.svelte';
 
 	const viewerDid = 'did:plc:playwright-reaction-owner';
@@ -37,6 +38,7 @@
 		indexedAt: '2026-09-14T00:00:00.000Z',
 		reactions: [reaction],
 	};
+	const zenkatsuUri = (did: string) => `at://${did}/com.suibari.nagi.zenkatsu/playwright`;
 	let ready = $state(false);
 
 	onMount(() => {
@@ -57,4 +59,18 @@
 	<section data-testid="own-post"><ChatBubble post={ownPost} /></section>
 	<section data-testid="other-post"><ChatBubble post={otherPost} /></section>
 	<section data-testid="search-news"><NewsCard {news} /></section>
+	<section data-testid="own-zenkatsu">
+		<CardItemReactions
+			uri={zenkatsuUri(viewerDid)}
+			cid="bafy-own-zenkatsu"
+			reactions={[reaction]}
+		/>
+	</section>
+	<section data-testid="other-zenkatsu">
+		<CardItemReactions
+			uri={zenkatsuUri('did:plc:playwright-other')}
+			cid="bafy-other-zenkatsu"
+			reactions={[reaction]}
+		/>
+	</section>
 {/if}

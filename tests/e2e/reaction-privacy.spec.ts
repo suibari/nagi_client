@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('リアクターは自分の投稿だけに表示し、他人の投稿と検索ニュースでは隠す', async ({ page }) => {
+test('リアクターは自分の投稿・ゼンカツだけに表示し、他人のものと検索ニュースでは隠す', async ({
+	page,
+}) => {
 	const viewerDid = 'did:plc:playwright-reaction-owner';
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	// レイアウトがログイン直後に読む周辺データは、この表示検証では空レスポンスで固定する。
@@ -55,4 +57,14 @@ test('リアクターは自分の投稿だけに表示し、他人の投稿と�
 	await expect(searchNews.locator('.reaction-emoji')).toBeVisible();
 	await expect(searchNews.locator('.reaction-actors')).toHaveCount(0);
 	await expect(searchNews.getByTitle('リアクションした人')).toHaveCount(0);
+
+	const ownZenkatsu = page.getByTestId('own-zenkatsu');
+	const otherZenkatsu = page.getByTestId('other-zenkatsu');
+
+	await expect(ownZenkatsu.locator('.reaction-emoji')).toBeVisible();
+	await expect(ownZenkatsu.getByTitle('リアクションした人')).toBeVisible();
+
+	await expect(otherZenkatsu.locator('.reaction-emoji')).toBeVisible();
+	await expect(otherZenkatsu.locator('.reaction-actors')).toHaveCount(0);
+	await expect(otherZenkatsu.getByTitle('リアクションした人')).toHaveCount(0);
 });

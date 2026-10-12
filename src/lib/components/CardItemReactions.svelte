@@ -11,15 +11,18 @@
 	 * subject は本人の repo にある `com.suibari.nagi.zenkatsu` / `com.suibari.nagi.cardGet`
 	 * そのもの。投稿・ニュースとまったく同じ経路なので、通知も従来どおり飛ぶ。
 	 *
-	 * **送信者は出さない。** 誰が誰に反応したかを第三者が追えないよう、AppView は
-	 * リアクター一覧を subject の持ち主にしか返さない。ここは持ち主判定を持たないので
-	 * 匿名側に倒す（`NewsCard` と同じ扱い）。
+	 * **送信者は持ち主にだけ出す。** 誰が誰に反応したかを第三者が追えないよう、AppView は
+	 * リアクター一覧を subject の持ち主にしか返さない。表示側も投稿（`ChatBubble`）と同じく、
+	 * subject の repo（at://<did>/...）が閲覧者本人のときだけリアクターを出す。
 	 */
 	let {
 		uri,
 		cid,
 		reactions = [],
 	}: { uri: string; cid: string; reactions?: ReactionView[] } = $props();
+
+	const ownerDid = $derived(uri.startsWith('at://') ? uri.slice(5).split('/')[0] : '');
+	const mine = $derived(Boolean($session?.did && ownerDid === $session.did));
 
 	let pickerOpen = $state(false);
 	let pickerButton = $state<HTMLButtonElement>();
@@ -38,7 +41,7 @@
 		{uri}
 		{cid}
 		{reactions}
-		showReactors={false}
+		showReactors={mine}
 		bind:pickerOpen
 		pickerAnchor={pickerButton}
 	/>
