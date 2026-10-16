@@ -7,6 +7,13 @@
 	import Icon from './shell/Icon.svelte';
 	import { replyIndent } from '$lib/thread/replyIndent';
 	import { postPageHref } from '$lib/feed/post-follow.svelte';
+	import { session, oauthReady, hadRecentSession } from '$lib/oauth/session.svelte';
+	import { itemPosts, collapsibleBotReplies } from '$lib/thread/bot-reply-collapse';
+	import {
+		botReplyChecks,
+		botReplyCheckRevision,
+		invalidateBotReplyChecks,
+	} from '$lib/thread/bot-reply-checks';
 	let {
 		item,
 		botActor,
@@ -19,7 +26,6 @@
 		pinBusy = false,
 		ontogglepin,
 		unread = false,
-		collapsibleReplies = false,
 		entering = false,
 		isPostEntering = () => false,
 	}: {
@@ -37,15 +43,63 @@
 		ontogglepin?: (post: PostView) => void | Promise<void>;
 		/** 前回このフィードを見た時点より新しいスレッドか。カード全体に1本だけマークを出す。 */
 		unread?: boolean;
-		/** 返信を最初は折りたたんで展開ボタン形式にするか。 */
-		collapsibleReplies?: boolean;
 		/** ポーリングで新しく先頭へ入ったスレッドだけを滑り込ませる。 */
 		entering?: boolean;
 		/** 既存スレッドへ後着した返信だけを発言単位で滑り込ませる。 */
 		isPostEntering?: (uri: string) => boolean;
 	} = $props();
 
-	let repliesExpanded = $state(false);
+	let expandedUris = $state<Set<string>>(new Set());
+	let checkedUris = $state<Set<string>>(new Set());
+	let knownPosts = $derived(itemPosts(item));
+	let candidates = $derived(collapsibleBotReplies(knownPosts, $session?.did, true));
+	let ready = $derived(Boolean($session || $oauthReady || !hadRecentSession()));
+	let collapseUris = $derived(
+		ready ? new Set([...candidates].filter((uri) => checkedUris.has(uri))) : new Set<string>(),
+	);
+	$effect(() => {
+		const posts = knownPosts;
+		const viewer = $session?.did;
+		const revision = $botReplyCheckRevision;
+		const currentItem = item;
+		const eligible = candidates;
+		checkedUris = new Set();
+		if (!ready || !eligible.size) return;
+		if (currentItem.conversation?.hiddenCount === 0) {
+			checkedUris = eligible;
+			return;
+		}
+		const rootUri = posts.find((post) => eligible.has(post.uri))?.reply?.root.uri;
+		if (!rootUri) return;
+		let active = true;
+		const signature = JSON.stringify([
+			revision,
+			posts.map((post) => [post.uri, post.cid, post.reply, post.deleted]),
+			currentItem.conversation?.totalCount,
+		]);
+		void botReplyChecks.get(viewer, rootUri, signature).then((thread) => {
+			if (!active || !thread) return;
+			// Local optimistic replies override a fetched snapshot immediately.
+			checkedUris = collapsibleBotReplies([thread.post, ...thread.replies, ...posts], viewer);
+		});
+		return () => {
+			active = false;
+		};
+	});
+	function toggleReply(uri: string) {
+		const next = new Set(expandedUris);
+		if (next.has(uri)) next.delete(uri);
+		else next.add(uri);
+		expandedUris = next;
+	}
+	function postDeleted(uri: string) {
+		invalidateBotReplyChecks();
+		ondeleted?.(uri);
+	}
+	async function postPosted() {
+		invalidateBotReplyChecks();
+		await onposted?.();
+	}
 
 	// 会話グループ(group モード)では待機状態は conversation.awaitingBotReply が持つ。
 	let conv = $derived(item.conversation);
@@ -80,6 +134,39 @@
 		canPin && (!pinChannelUri || post.channel?.uri === pinChannelUri);
 </script>
 
+{#snippet replyToggle(post: PostView, expanded: boolean)}
+	<button
+		type="button"
+		class="thread-reply-toggle-btn"
+		class:expanded
+		aria-expanded={expanded}
+		onclick={() => toggleReply(post.uri)}
+	>
+		<Icon name="chevron" size={14} />
+		<span>{expanded ? m.hideReplies() : m.showReplies({ count: 1 })}</span>
+	</button>
+{/snippet}
+
+{#snippet postBubble(post: PostView)}
+	{@const collapsible = collapseUris.has(post.uri)}
+	{@const expanded = expandedUris.has(post.uri)}
+	{#if collapsible && !expanded}
+		{@render replyToggle(post, false)}
+	{:else}
+		<ChatBubble
+			{post}
+			{botActor}
+			ondeleted={postDeleted}
+			onposted={postPosted}
+			canPin={canPinPost(post)}
+			pinned={post.uri === pinnedPostUri}
+			{pinBusy}
+			{ontogglepin}
+		/>
+		{#if collapsible}{@render replyToggle(post, true)}{/if}
+	{/if}
+{/snippet}
+
 {#if conv && showConversation}
 	<article
 		class="thread-unit"
@@ -91,16 +178,7 @@
 	>
 		<ThreadFlags channel={convChannel} kossori={convKossori} />
 		{#if showConvRoot}
-			<ChatBubble
-				post={conv.root}
-				{botActor}
-				{ondeleted}
-				{onposted}
-				canPin={canPinPost(conv.root)}
-				pinned={conv.root.uri === pinnedPostUri}
-				{pinBusy}
-				{ontogglepin}
-			/>
+			{@render postBubble(conv.root)}
 		{/if}
 		{#if conv.hiddenCount > 0}<a
 				class="thread-gap"
@@ -108,50 +186,17 @@
 				aria-label={m.threadViewAll()}>{m.threadMore({ count: conv.hiddenCount })}</a
 			>{/if}
 
-		{#if visibleConvBubbles.length > 0}
-			{#if collapsibleReplies && !repliesExpanded}
-				<button
-					type="button"
-					class="thread-reply-toggle-btn"
-					onclick={() => (repliesExpanded = true)}
-				>
-					<Icon name="chevron" size={14} />
-					<span>{m.showReplies({ count: visibleConvBubbles.length })}</span>
-				</button>
-			{:else}
-				{#each visibleConvBubbles as bubble (bubble.post.uri)}
-					<!-- data-* は投稿後の追従スクロールの目印。楽観返信はここへ合流して出る。 -->
-					<div
-						class="thread-reply"
-						class:message-entering={!entering && isPostEntering(bubble.post.uri)}
-						style="--reply-indent: {replyIndent(bubble.depth)}"
-						data-post-uri={bubble.post.uri}
-						data-optimistic-key={bubble.post.optimisticKey}
-					>
-						<ChatBubble
-							post={bubble.post}
-							{botActor}
-							{ondeleted}
-							{onposted}
-							canPin={canPinPost(bubble.post)}
-							pinned={bubble.post.uri === pinnedPostUri}
-							{pinBusy}
-							{ontogglepin}
-						/>
-					</div>
-				{/each}
-				{#if collapsibleReplies && repliesExpanded}
-					<button
-						type="button"
-						class="thread-reply-toggle-btn expanded"
-						onclick={() => (repliesExpanded = false)}
-					>
-						<Icon name="chevron" size={14} />
-						<span>{m.hideReplies()}</span>
-					</button>
-				{/if}
-			{/if}
-		{/if}
+		{#each visibleConvBubbles as bubble (bubble.post.uri)}
+			<div
+				class="thread-reply"
+				class:message-entering={!entering && isPostEntering(bubble.post.uri)}
+				style="--reply-indent: {replyIndent(bubble.depth)}"
+				data-post-uri={bubble.post.uri}
+				data-optimistic-key={bubble.post.optimisticKey}
+			>
+				{@render postBubble(bubble.post)}
+			</div>
+		{/each}
 
 		<BotReplyStatus
 			state={botState}
@@ -171,90 +216,19 @@
 	>
 		<ThreadFlags {channel} kossori={threadKossori} />
 		{#if showParent && item.replyParent}
-			<ChatBubble
-				post={item.replyParent}
-				{botActor}
-				{ondeleted}
-				{onposted}
-				canPin={canPinPost(item.replyParent)}
-				pinned={item.replyParent.uri === pinnedPostUri}
-				{pinBusy}
-				{ontogglepin}
-			/>
+			{@render postBubble(item.replyParent)}
 		{/if}
 		{#if showItem}
 			{#if showParent}<div class="thread-reply" class:message-entering={isPostEntering(item.uri)}>
-					<ChatBubble
-						post={item}
-						{botActor}
-						{ondeleted}
-						{onposted}
-						canPin={canPinPost(item)}
-						pinned={item.uri === pinnedPostUri}
-						{pinBusy}
-						{ontogglepin}
-					/>
+					{@render postBubble(item)}
 				</div>
-			{:else}<ChatBubble
-					post={item}
-					{botActor}
-					{ondeleted}
-					{onposted}
-					canPin={canPinPost(item)}
-					pinned={item.uri === pinnedPostUri}
-					{pinBusy}
-					{ontogglepin}
-				/>
+			{:else}{@render postBubble(item)}
 			{/if}
 		{/if}
 		{#if !item.optimisticState && showBotReply && item.botReply}
-			{#if collapsibleReplies && !repliesExpanded}
-				<button
-					type="button"
-					class="thread-reply-toggle-btn"
-					onclick={() => (repliesExpanded = true)}
-				>
-					<Icon name="chevron" size={14} />
-					<span>{m.showReplies({ count: 1 })}</span>
-				</button>
-			{:else}
-				{#if showItem}<div
-						class="thread-reply"
-						class:message-entering={isPostEntering(item.botReply.uri)}
-					>
-						<ChatBubble
-							post={item.botReply}
-							{botActor}
-							{ondeleted}
-							{onposted}
-							canPin={canPinPost(item.botReply)}
-							pinned={item.botReply.uri === pinnedPostUri}
-							{pinBusy}
-							{ontogglepin}
-						/>
-					</div>
-				{:else}<ChatBubble
-						post={item.botReply}
-						{botActor}
-						{ondeleted}
-						{onposted}
-						canPin={canPinPost(item.botReply)}
-						pinned={item.botReply.uri === pinnedPostUri}
-						{pinBusy}
-						{ontogglepin}
-					/>
-				{/if}
-				{#if collapsibleReplies && repliesExpanded}
-					<button
-						type="button"
-						class="thread-reply-toggle-btn expanded"
-						onclick={() => (repliesExpanded = false)}
-					>
-						<Icon name="chevron" size={14} />
-						<span>{m.hideReplies()}</span>
-					</button>
-				{/if}
-			{/if}
+			<div class:thread-reply={showItem} class:message-entering={isPostEntering(item.botReply.uri)}>
+				{@render postBubble(item.botReply)}
+			</div>
 		{:else if showItem}
 			<BotReplyStatus
 				state={item.botReplyState}
