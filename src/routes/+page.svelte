@@ -353,13 +353,7 @@
 	>
 		{#if botPosts[0]}
 			<div class="my-nagi-bot-card">
-				<ThreadUnit
-					item={botPosts[0]}
-					unread={botUnread}
-					{botActor}
-					onposted={loadBotPosts}
-					collapsibleReplies={true}
-				/>
+				<ThreadUnit item={botPosts[0]} unread={botUnread} {botActor} onposted={loadBotPosts} />
 			</div>
 		{/if}
 	</MyNagiSection>
@@ -422,7 +416,6 @@
 						unread={readIncludedPosts(listUnreadView, [entry.post])}
 						{botActor}
 						onposted={loadListActivity}
-						collapsibleReplies={true}
 					/>
 				</div>
 			{/each}
@@ -452,7 +445,6 @@
 						unread={readIncludedPosts(channelsUnreadView, [entry.post])}
 						{botActor}
 						onposted={loadListActivity}
-						collapsibleReplies={true}
 					/>
 				</div>
 			{/each}
