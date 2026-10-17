@@ -6,7 +6,6 @@ import {
 	checkVideoMetadata,
 	isMissingScopeError,
 	jobStatusOf,
-	MAX_VIDEO_SIZE,
 	phaseOfJobState,
 	VideoUploadError,
 	waitForVideoJob,
@@ -26,7 +25,9 @@ describe('checkVideoFile / checkVideoMetadata', () => {
 		expect(codeOf(() => checkVideoFile({ type: 'video/mp4', size: 10 }))).toBeUndefined();
 		expect(codeOf(() => checkVideoFile({ type: 'video/quicktime', size: 10 }))).toBeUndefined();
 		expect(codeOf(() => checkVideoFile({ type: 'image/gif', size: 10 }))).toBe('type');
-		expect(codeOf(() => checkVideoFile({ type: 'video/mp4', size: MAX_VIDEO_SIZE + 1 }))).toBe(
+		expect(codeOf(() => checkVideoFile({ type: 'video/mp4', size: 100_000_001 }))).toBeUndefined();
+		expect(codeOf(() => checkVideoFile({ type: 'video/mp4', size: 300_000_000 }))).toBeUndefined();
+		expect(codeOf(() => checkVideoFile({ type: 'video/mp4', size: 300_000_001 }))).toBe(
 			'size',
 		);
 	});
