@@ -344,7 +344,7 @@ export const en: Messages = {
 	videoServiceNote: 'Videos are processed and served by the Bluesky video service',
 	videoNotReady: 'Please wait until the video has finished processing',
 	videoErrorType: 'Choose an MP4, MOV, WebM, or MPEG video',
-	videoErrorSize: 'Choose a video of 100 MB or less',
+	videoErrorSize: 'Choose a video of 300 MB or less',
 	videoErrorDuration: 'Choose a video of 3 minutes or less',
 	videoErrorMetadata: 'Could not read this video',
 	videoErrorLimit: 'You have reached today’s video upload limit. Please try again tomorrow',

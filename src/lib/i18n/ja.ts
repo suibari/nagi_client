@@ -360,7 +360,7 @@ export const ja = {
 	videoServiceNote: '動画は Bluesky の動画サービスで変換・配信されます',
 	videoNotReady: '動画の変換が終わるまでお待ちください',
 	videoErrorType: 'MP4・MOV・WebM・MPEG の動画を選択してください',
-	videoErrorSize: '100MB以下の動画を選択してください',
+	videoErrorSize: '300MB以下の動画を選択してください',
 	videoErrorDuration: '3分以内の動画を選択してください',
 	videoErrorMetadata: 'この動画を読み込めませんでした',
 	videoErrorLimit: '今日送れる動画の上限に達しました。明日もう一度お試しください',
