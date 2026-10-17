@@ -13,7 +13,7 @@ export const VIDEO_SERVICE = 'https://video.bsky.app';
 const VIDEO_SERVICE_DID = 'did:web:video.bsky.app';
 /** Bluesky の動画アップロード上限（300MB）。 */
 export const MAX_VIDEO_SIZE = 300_000_000;
-export const MAX_VIDEO_DURATION_SECONDS = 180;
+export const MAX_VIDEO_DURATION_SECONDS = 600;
 export const SUPPORTED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/mpeg'];
 const JOB_POLL_INTERVAL_MS = 1_500;
 const JOB_TIMEOUT_MS = 10 * 60_000;

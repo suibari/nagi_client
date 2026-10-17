@@ -345,7 +345,7 @@ export const en: Messages = {
 	videoNotReady: 'Please wait until the video has finished processing',
 	videoErrorType: 'Choose an MP4, MOV, WebM, or MPEG video',
 	videoErrorSize: 'Choose a video of 300 MB or less',
-	videoErrorDuration: 'Choose a video of 3 minutes or less',
+	videoErrorDuration: 'Choose a video of 10 minutes or less',
 	videoErrorMetadata: 'Could not read this video',
 	videoErrorLimit: 'You have reached today’s video upload limit. Please try again tomorrow',
 	videoErrorScope: 'Update permissions and sign in again to upload videos',

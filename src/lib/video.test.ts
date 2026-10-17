@@ -32,10 +32,12 @@ describe('checkVideoFile / checkVideoMetadata', () => {
 		);
 	});
 
-	it('limits videos to three minutes', () => {
+	it('limits videos to ten minutes', () => {
 		const aspectRatio = { width: 16, height: 9 };
 		expect(codeOf(() => checkVideoMetadata({ duration: 180, aspectRatio }))).toBeUndefined();
-		expect(codeOf(() => checkVideoMetadata({ duration: 180.5, aspectRatio }))).toBe('duration');
+		expect(codeOf(() => checkVideoMetadata({ duration: 180.5, aspectRatio }))).toBeUndefined();
+		expect(codeOf(() => checkVideoMetadata({ duration: 600, aspectRatio }))).toBeUndefined();
+		expect(codeOf(() => checkVideoMetadata({ duration: 600.5, aspectRatio }))).toBe('duration');
 		expect(codeOf(() => checkVideoMetadata({ duration: Number.NaN, aspectRatio }))).toBe(
 			'metadata',
 		);
