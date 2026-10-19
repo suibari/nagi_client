@@ -5,7 +5,7 @@
 		ZenkatsuComboView,
 		ZenkatsuDeckView,
 	} from '$lib/api/types';
-	import { tick } from 'svelte';
+	import RecordDetailModal from './RecordDetailModal.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import ZenkatsuTrophyGuide from './ZenkatsuTrophyGuide.svelte';
@@ -14,8 +14,8 @@
 	 * レコードタブの表示部分。取得は呼び出し側に任せ、モックでも同じ見た目で確かめられるようにする。
 	 *
 	 * 一覧を縦に積むとトロフィーが増えるほど画面が流れていくので、
-	 * - トロフィーは「種類ごとのメダル1枚＋獲得回数」に畳み、選んだメダルの日付だけを開く
-	 * - コンボは全種類ぶんのマス目（未発見は伏せ札）に図鑑番号順で並べ、選んだ1つだけ詳しく出す。
+	 * - トロフィーは「種類ごとのメダル1枚＋獲得回数」に畳み、選んだメダルの履歴をモーダルで開く
+	 * - コンボは全種類ぶんのマス目（未発見は伏せ札）に図鑑番号順で並べ、選んだ1つだけモーダルで詳しく出す。
 	 *   伏せ札を選ぶと、サーバが渡してくれたぶんのヒント（枚数、見つかっていれば謎かけ）を出す
 	 * という「棚」の形にしている。
 	 */
@@ -98,18 +98,8 @@
 			(a, b) => order(a).volume - order(b).volume || order(a).id - order(b).id,
 		);
 	});
-	/**
-	 * 詳しい欄は棚の下に開くので、上のほうの枠を選ぶとスマホでは画面の外に出てしまう。
-	 * 開いたら欄が見えるところまで送る。
-	 */
-	async function toggleCombo(key: string) {
-		openCombo = openCombo === key ? undefined : key;
-		if (!openCombo) return;
-		await tick();
-		document.getElementById('record-combo-detail')?.scrollIntoView({
-			block: 'nearest',
-			behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-		});
+	function toggleCombo(key: string) {
+		openCombo = key;
 	}
 	const ratio = $derived(record.comboTotal ? record.combos.length / record.comboTotal : 0);
 
@@ -161,7 +151,7 @@
 						class:open={openKind === medal.kind}
 						style:--medal={medal.color}
 						disabled={count === 0}
-						aria-expanded={openKind === medal.kind}
+						aria-haspopup="dialog"
 						aria-controls="record-trophy-history"
 						title={count ? medal.label() : `${medal.label()} — ${m.recordTrophyNone()}`}
 						onclick={() => toggleMedal(medal.kind)}
@@ -177,44 +167,47 @@
 			<p class="note">{m.deckTrophiesEmpty()}</p>
 		{/if}
 		{#if openMedal && openList.length}
-			<div class="history" id="record-trophy-history" style:--medal={openMedal.color}>
-				<p class="history-title" aria-hidden="true">
-					{m.recordTrophyHistory({ name: openMedal.label() })}
-				</p>
-				<div
-					class="dates"
-					role="group"
-					aria-label={m.recordTrophyHistory({ name: openMedal.label() })}
-				>
-					{#each openList as t (t.submissionUri + t.kind)}
-						<button
-							type="button"
-							class="date"
-							class:active={openTrophy === t.submissionUri + t.kind}
-							aria-pressed={openTrophy === t.submissionUri + t.kind}
-							onclick={() => (openTrophy = t.submissionUri + t.kind)}
-						>
-							<time datetime={t.themeDate}>{shortDate(t.themeDate)}</time>
-						</button>
-					{/each}
-				</div>
-				{#if selectedTrophy}
-					<div class="ticket">
-						<p class="ticket-date">{selectedTrophy.themeDate}</p>
-						{#if selectedTrophy.themeJa || selectedTrophy.themeEn}
-							<p class="ticket-theme">
-								{(ja ? selectedTrophy.themeJa : selectedTrophy.themeEn) || selectedTrophy.themeJa}
-							</p>
-						{/if}
-						{#if selectedTrophy.commentJa || selectedTrophy.commentEn}
-							<p class="ticket-comment">
-								{(ja ? selectedTrophy.commentJa : selectedTrophy.commentEn) ||
-									selectedTrophy.commentJa}
-							</p>
-						{/if}
+			<RecordDetailModal
+				id="record-trophy-history"
+				title={m.recordTrophyHistory({ name: openMedal.label() })}
+				onclose={() => (openKind = undefined)}
+			>
+				<div class="history" style:--medal={openMedal.color}>
+					<div
+						class="dates"
+						role="group"
+						aria-label={m.recordTrophyHistory({ name: openMedal.label() })}
+					>
+						{#each openList as t (t.submissionUri + t.kind)}
+							<button
+								type="button"
+								class="date"
+								class:active={openTrophy === t.submissionUri + t.kind}
+								aria-pressed={openTrophy === t.submissionUri + t.kind}
+								onclick={() => (openTrophy = t.submissionUri + t.kind)}
+							>
+								<time datetime={t.themeDate}>{shortDate(t.themeDate)}</time>
+							</button>
+						{/each}
 					</div>
-				{/if}
-			</div>
+					{#if selectedTrophy}
+						<div class="ticket">
+							<p class="ticket-date">{selectedTrophy.themeDate}</p>
+							{#if selectedTrophy.themeJa || selectedTrophy.themeEn}
+								<p class="ticket-theme">
+									{(ja ? selectedTrophy.themeJa : selectedTrophy.themeEn) || selectedTrophy.themeJa}
+								</p>
+							{/if}
+							{#if selectedTrophy.commentJa || selectedTrophy.commentEn}
+								<p class="ticket-comment">
+									{(ja ? selectedTrophy.commentJa : selectedTrophy.commentEn) ||
+										selectedTrophy.commentJa}
+								</p>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			</RecordDetailModal>
 		{/if}
 	</section>
 
@@ -237,7 +230,7 @@
 							type="button"
 							class="stamp"
 							class:open={openCombo === comboKey(combo)}
-							aria-expanded={openCombo === comboKey(combo)}
+							aria-haspopup="dialog"
 							aria-controls="record-combo-detail"
 							onclick={() => toggleCombo(comboKey(combo))}
 						>
@@ -260,7 +253,7 @@
 							type="button"
 							class="stamp hidden"
 							class:open={openCombo === comboKey(hint)}
-							aria-expanded={openCombo === comboKey(hint)}
+							aria-haspopup="dialog"
 							aria-controls="record-combo-detail"
 							aria-label={m.recordHintLabel({ n: hint.id, size: hint.size })}
 							onclick={() => toggleCombo(comboKey(hint))}
@@ -293,60 +286,52 @@
 			{/if}
 		</ul>
 		{#if selectedCombo}
-			<article class="combo-detail" id="record-combo-detail">
-				<div class="combo-head">
-					<h3>{ja ? selectedCombo.nameJa : selectedCombo.nameEn}</h3>
-					<button
-						type="button"
-						class="text-button"
-						aria-label={m.recordComboClose()}
-						onclick={() => (openCombo = undefined)}>✕</button
-					>
-				</div>
-				{#if selectedCombo.isPioneer}<p class="pioneer">{m.deckComboPioneer()}</p>{/if}
-				<p class="combo-desc">{ja ? selectedCombo.descJa : selectedCombo.descEn}</p>
-				<div class="slots">
-					{#each selectedCombo.slots as slot, index (index)}
-						<div class="slot">
-							{#each slot as card (card.volume + ':' + card.id)}
-								<div class="slot-card"><AffirmationCard {card} /></div>
-							{/each}
-						</div>
-					{/each}
-				</div>
-				<p class="combo-meta">
-					{m.deckComboFound({ date: selectedCombo.firstPlayedDate })}
-					{#if !selectedCombo.isPioneer && selectedCombo.pioneer}
-						· {m.deckComboPioneerBy({
-							name: selectedCombo.pioneer.displayName || selectedCombo.pioneer.handle,
-						})}
-					{/if}
-				</p>
-			</article>
+			<RecordDetailModal
+				id="record-combo-detail"
+				title={ja ? selectedCombo.nameJa : selectedCombo.nameEn}
+				onclose={() => (openCombo = undefined)}
+			>
+				<article class="combo-detail">
+					{#if selectedCombo.isPioneer}<p class="pioneer">{m.deckComboPioneer()}</p>{/if}
+					<p class="combo-desc">{ja ? selectedCombo.descJa : selectedCombo.descEn}</p>
+					<div class="slots">
+						{#each selectedCombo.slots as slot, index (index)}
+							<div class="slot">
+								{#each slot as card (card.volume + ':' + card.id)}
+									<div class="slot-card"><AffirmationCard {card} /></div>
+								{/each}
+							</div>
+						{/each}
+					</div>
+					<p class="combo-meta">
+						{m.deckComboFound({ date: selectedCombo.firstPlayedDate })}
+						{#if !selectedCombo.isPioneer && selectedCombo.pioneer}
+							· {m.deckComboPioneerBy({
+								name: selectedCombo.pioneer.displayName || selectedCombo.pioneer.handle,
+							})}
+						{/if}
+					</p>
+				</article>
+			</RecordDetailModal>
 		{:else if selectedHint}
-			<article class="combo-detail hint" id="record-combo-detail">
-				<div class="combo-head">
-					<h3>
-						{m.recordComboNo({ n: selectedHint.id })}
-						{m.recordComboUnknown()}
-					</h3>
-					<button
-						type="button"
-						class="text-button"
-						aria-label={m.recordComboClose()}
-						onclick={() => (openCombo = undefined)}>✕</button
-					>
-				</div>
-				<p class="hint-label">{m.recordHintTitle()}</p>
-				<p class="hint-size">{m.recordHintSize({ n: selectedHint.size })}</p>
-				{#if selectedHint.discovered}
-					{@const riddle = (ja ? selectedHint.hintJa : selectedHint.hintEn) || selectedHint.hintJa}
-					{#if riddle}<p class="riddle">{riddle}</p>{/if}
-					<p class="combo-meta">👀 {m.recordHintDiscovered()}</p>
-				{:else}
-					<p class="combo-desc">{m.recordHintUndiscovered()}</p>
-				{/if}
-			</article>
+			<RecordDetailModal
+				id="record-combo-detail"
+				title={`${m.recordComboNo({ n: selectedHint.id })} ${m.recordComboUnknown()}`}
+				onclose={() => (openCombo = undefined)}
+			>
+				<article class="combo-detail hint">
+					<p class="hint-label">{m.recordHintTitle()}</p>
+					<p class="hint-size">{m.recordHintSize({ n: selectedHint.size })}</p>
+					{#if selectedHint.discovered}
+						{@const riddle =
+							(ja ? selectedHint.hintJa : selectedHint.hintEn) || selectedHint.hintJa}
+						{#if riddle}<p class="riddle">{riddle}</p>{/if}
+						<p class="combo-meta">👀 {m.recordHintDiscovered()}</p>
+					{:else}
+						<p class="combo-desc">{m.recordHintUndiscovered()}</p>
+					{/if}
+				</article>
+			</RecordDetailModal>
 		{/if}
 	</section>
 </div>
@@ -517,16 +502,11 @@
 		font-weight: 800;
 	}
 	.history {
-		margin: 0.6rem 1rem 0;
+		margin: 0;
 		padding: 0.7rem;
 		border-inline-start: 3px solid var(--medal);
 		border-radius: var(--r-md);
 		background: color-mix(in srgb, var(--medal) 7%, var(--surface-1));
-	}
-	.history-title {
-		margin-block-end: 0.5rem;
-		color: var(--text-faint);
-		font-size: 0.75rem;
 	}
 	.dates {
 		display: flex;
@@ -669,23 +649,7 @@
 		font-size: 0.8rem;
 	}
 	.combo-detail {
-		/* 開いたときに送る先。スマホの固定ヘッダーと下部ナビ（68px）に隠れないようにする。 */
-		scroll-margin-block: calc(var(--mobile-header-h) + 12px)
-			calc(68px + env(safe-area-inset-bottom) + 12px);
-		margin: 0.6rem 1rem 0;
-		padding: 0.8rem;
-		border: 1px solid var(--accent-strong);
-		border-radius: var(--r-md);
-		background: var(--surface-1);
-	}
-	.combo-head {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 0.5rem;
-	}
-	h3 {
-		font-size: 0.95rem;
+		padding: 0.2rem;
 	}
 	.pioneer {
 		display: inline-block;
