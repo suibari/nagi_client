@@ -2,9 +2,9 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getRadioHistory } from '$lib/api/appview';
 	import type { RadioTrack } from '$lib/api/types';
-	import RadioContent from '$lib/radio/RadioContent.svelte';
+	import RadioPlaylist from '$lib/radio/RadioPlaylist.svelte';
 	import { radio } from '$lib/radio/radio.svelte';
-	import { m, i18n } from '$lib/i18n/i18n.svelte';
+	import { m } from '$lib/i18n/i18n.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 
 	let tracks = $state<RadioTrack[]>([]);
@@ -12,7 +12,7 @@
 	let unreadSlotKey = $state<string>();
 	let loading = $state(false);
 	let error = $state(false);
-	let loadedFor = '';
+	let loadedFor = $state('');
 	let requestId = 0;
 
 	async function load(reset = false) {
@@ -63,11 +63,9 @@
 {#if $session}
 	<div class="radio-history">
 		<p class="radio-description">{m.radioDescription()}</p>
-		{#each tracks as track (track.slotKey)}
-			<article class="radio-entry">
-				<RadioContent {track} unread={track.slotKey === unreadSlotKey} variant="page" />
-			</article>
-		{/each}
+		{#key loadedFor}
+			<RadioPlaylist {tracks} {unreadSlotKey} />
+		{/key}
 		{#if !loading && !error && tracks.length === 0}
 			<p class="state">{m.radioHistoryEmpty()}</p>
 		{/if}
@@ -86,11 +84,6 @@
 		display: grid;
 		gap: 20px;
 		padding: 16px;
-	}
-	.radio-entry {
-		display: grid;
-		gap: 7px;
-		min-width: 0;
 	}
 	.radio-description {
 		margin: 0;
