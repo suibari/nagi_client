@@ -7,7 +7,7 @@
 	let content: HTMLDivElement;
 
 	const trophies = [
-		{ name: () => m.trophyBotan(), description: () => m.trophyBotanDescription() },
+		{ name: () => m.trophyBottan(), description: () => m.trophyBottanDescription() },
 		{ name: () => m.trophyAdventure(), description: () => m.trophyAdventureDescription() },
 		{ name: () => m.trophySolo(), description: () => m.trophySoloDescription() },
 		{ name: () => m.trophyTailwind(), description: () => m.trophyTailwindDescription() },

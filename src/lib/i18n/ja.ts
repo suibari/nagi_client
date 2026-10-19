@@ -1362,7 +1362,7 @@ export const ja = {
 	recordComboUnknown: (o: { n: number }) => `まだ見ぬコンボ ×${o.n}`,
 	recordComboClose: '閉じる',
 	recordLatest: (o: { date: string }) => `最後の受賞 ${o.date}`,
-	trophyBotan: '今日のナギカツ部長',
+	trophyBottan: '今日のナギカツ部長',
 	trophyAdventure: '決意のドラ切り賞',
 	trophyDebut: '初登板！',
 	trophySolo: '単騎待ち！',
@@ -1371,7 +1371,7 @@ export const ja = {
 	trophyGuideOpen: '獲得条件を見る',
 	trophyGuideTitle: 'トロフィーの獲得条件',
 	trophyGuideIntro: 'ナギカツ部長以外の賞は、ゼンカツ！で条件を満たすとすぐに贈られます。',
-	trophyBotanDescription:
+	trophyBottanDescription:
 		'翌朝4時（日本時間）に、botたんがお題と出したカードを見て候補から1人選びます。',
 	trophyAdventureDescription: 'SR以上のカードを1枚以上出すと受け取れます。',
 	trophySoloDescription: 'カード1枚で答えると受け取れます。',
