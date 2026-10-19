@@ -1,5 +1,11 @@
 <script lang="ts">
-	import type { CardAttribute, ZenkatsuComboView, ZenkatsuDeckView } from '$lib/api/types';
+	import type {
+		CardAttribute,
+		ZenkatsuComboHint,
+		ZenkatsuComboView,
+		ZenkatsuDeckView,
+	} from '$lib/api/types';
+	import { tick } from 'svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import ZenkatsuTrophyGuide from './ZenkatsuTrophyGuide.svelte';
@@ -9,7 +15,8 @@
 	 *
 	 * 一覧を縦に積むとトロフィーが増えるほど画面が流れていくので、
 	 * - トロフィーは「種類ごとのメダル1枚＋獲得回数」に畳み、選んだメダルの日付だけを開く
-	 * - コンボは全種類ぶんのマス目（未発見は伏せ札）に並べ、選んだ1つだけ詳しく出す
+	 * - コンボは全種類ぶんのマス目（未発見は伏せ札）に図鑑番号順で並べ、選んだ1つだけ詳しく出す。
+	 *   伏せ札を選ぶと、サーバが渡してくれたぶんのヒント（枚数、見つかっていれば謎かけ）を出す
 	 * という「棚」の形にしている。
 	 */
 	let { record }: { record: ZenkatsuDeckView } = $props();
@@ -73,10 +80,37 @@
 	const openList = $derived(openKind ? (byKind.get(openKind) ?? []) : []);
 	const openMedal = $derived(medals.find((medal) => medal.kind === openKind));
 	const selectedTrophy = $derived(openList.find((t) => t.submissionUri + t.kind === openTrophy));
-	const comboKey = (combo: ZenkatsuComboView) => `${combo.volume}:${combo.id}`;
+	const comboKey = (combo: { volume: number; id: number }) => `${combo.volume}:${combo.id}`;
 	const selectedCombo = $derived(record.combos.find((combo) => comboKey(combo) === openCombo));
+	const selectedHint = $derived(record.hints?.find((hint) => comboKey(hint) === openCombo));
 	/** まだ見つかっていないコンボの数。中身は伏せられている。 */
 	const hiddenCount = $derived(Math.max(0, record.comboTotal - record.combos.length));
+	type Stamp = { combo: ZenkatsuComboView } | { hint: ZenkatsuComboHint };
+	/**
+	 * 棚に並べる順。伏せ札が届いていれば発見済みと混ぜて図鑑番号順にする。
+	 * 伏せ札を返さない古い AppView では、発見順の後ろに番号なしの伏せ札を足すだけにする。
+	 */
+	const stamps = $derived.by((): Stamp[] => {
+		const found = record.combos.map((combo) => ({ combo }));
+		if (!record.hints) return found;
+		const order = (s: Stamp) => ('combo' in s ? s.combo : s.hint);
+		return [...found, ...record.hints.map((hint) => ({ hint }))].sort(
+			(a, b) => order(a).volume - order(b).volume || order(a).id - order(b).id,
+		);
+	});
+	/**
+	 * 詳しい欄は棚の下に開くので、上のほうの枠を選ぶとスマホでは画面の外に出てしまう。
+	 * 開いたら欄が見えるところまで送る。
+	 */
+	async function toggleCombo(key: string) {
+		openCombo = openCombo === key ? undefined : key;
+		if (!openCombo) return;
+		await tick();
+		document.getElementById('record-combo-detail')?.scrollIntoView({
+			block: 'nearest',
+			behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+		});
+	}
 	const ratio = $derived(record.comboTotal ? record.combos.length / record.comboTotal : 0);
 
 	function toggleMedal(kind: string) {
@@ -195,39 +229,67 @@
 			<p class="note">{m.deckCombosEmpty()}</p>
 		{/if}
 		<ul class="stamps">
-			{#each record.combos as combo (comboKey(combo))}
+			{#each stamps as stamp ('combo' in stamp ? comboKey(stamp.combo) : comboKey(stamp.hint))}
 				<li>
-					<button
-						type="button"
-						class="stamp"
-						class:open={openCombo === comboKey(combo)}
-						aria-expanded={openCombo === comboKey(combo)}
-						aria-controls="record-combo-detail"
-						onclick={() =>
-							(openCombo = openCombo === comboKey(combo) ? undefined : comboKey(combo))}
-					>
-						<span class="pips" aria-hidden="true">
-							{#each combo.slots as slot, index (index)}
-								<span
-									class="pip"
-									style:--pip={ATTRIBUTE_COLOR[slot[0]?.attribute ?? 'light']}
-									style:--tilt={`${(index - (combo.slots.length - 1) / 2) * 12}deg`}
-								></span>
-							{/each}
-						</span>
-						<span class="stamp-name">{ja ? combo.nameJa : combo.nameEn}</span>
-						{#if combo.isPioneer}<span class="crown" title={m.deckComboPioneer()}>★</span>{/if}
-					</button>
+					{#if 'combo' in stamp}
+						{@const combo = stamp.combo}
+						<button
+							type="button"
+							class="stamp"
+							class:open={openCombo === comboKey(combo)}
+							aria-expanded={openCombo === comboKey(combo)}
+							aria-controls="record-combo-detail"
+							onclick={() => toggleCombo(comboKey(combo))}
+						>
+							{#if record.hints}<span class="no">{m.recordComboNo({ n: combo.id })}</span>{/if}
+							<span class="pips" aria-hidden="true">
+								{#each combo.slots as slot, index (index)}
+									<span
+										class="pip"
+										style:--pip={ATTRIBUTE_COLOR[slot[0]?.attribute ?? 'light']}
+										style:--tilt={`${(index - (combo.slots.length - 1) / 2) * 12}deg`}
+									></span>
+								{/each}
+							</span>
+							<span class="stamp-name">{ja ? combo.nameJa : combo.nameEn}</span>
+							{#if combo.isPioneer}<span class="crown" title={m.deckComboPioneer()}>★</span>{/if}
+						</button>
+					{:else}
+						{@const hint = stamp.hint}
+						<button
+							type="button"
+							class="stamp hidden"
+							class:open={openCombo === comboKey(hint)}
+							aria-expanded={openCombo === comboKey(hint)}
+							aria-controls="record-combo-detail"
+							aria-label={m.recordHintLabel({ n: hint.id, size: hint.size })}
+							onclick={() => toggleCombo(comboKey(hint))}
+						>
+							<span class="no">{m.recordComboNo({ n: hint.id })}</span>
+							<!-- 世界で誰かが見つけたコンボには印を付け、狙いどころが一目でわかるようにする。 -->
+							{#if hint.discovered}
+								<span class="seen" title={m.recordHintDiscovered()}>👀</span>
+							{/if}
+							<span class="pips" aria-hidden="true">
+								{#each { length: hint.size }, index (index)}
+									<span class="pip back" style:--tilt={`${(index - (hint.size - 1) / 2) * 12}deg`}
+									></span>
+								{/each}
+							</span>
+							<span class="stamp-name">{m.recordComboUnknown()}</span>
+						</button>
+					{/if}
 				</li>
 			{/each}
-			<!-- 未発見ぶんは1枚の伏せ札の山にまとめる。総数が多くても棚が伸びない。 -->
-			{#if hiddenCount}
-				<li>
-					<span class="stamp hidden">
-						<span class="pile" aria-hidden="true"><i></i><i></i><i>？</i></span>
-						<span class="stamp-name">{m.recordComboUnknown({ n: hiddenCount })}</span>
-					</span>
-				</li>
+			{#if !record.hints}
+				{#each { length: hiddenCount }, index (index)}
+					<li>
+						<span class="stamp hidden">
+							<span class="pips" aria-hidden="true"><span class="pip back"></span></span>
+							<span class="stamp-name">{m.recordComboUnknown()}</span>
+						</span>
+					</li>
+				{/each}
 			{/if}
 		</ul>
 		{#if selectedCombo}
@@ -260,6 +322,30 @@
 						})}
 					{/if}
 				</p>
+			</article>
+		{:else if selectedHint}
+			<article class="combo-detail hint" id="record-combo-detail">
+				<div class="combo-head">
+					<h3>
+						{m.recordComboNo({ n: selectedHint.id })}
+						{m.recordComboUnknown()}
+					</h3>
+					<button
+						type="button"
+						class="text-button"
+						aria-label={m.recordComboClose()}
+						onclick={() => (openCombo = undefined)}>✕</button
+					>
+				</div>
+				<p class="hint-label">{m.recordHintTitle()}</p>
+				<p class="hint-size">{m.recordHintSize({ n: selectedHint.size })}</p>
+				{#if selectedHint.discovered}
+					{@const riddle = (ja ? selectedHint.hintJa : selectedHint.hintEn) || selectedHint.hintJa}
+					{#if riddle}<p class="riddle">{riddle}</p>{/if}
+					<p class="combo-meta">👀 {m.recordHintDiscovered()}</p>
+				{:else}
+					<p class="combo-desc">{m.recordHintUndiscovered()}</p>
+				{/if}
 			</article>
 		{/if}
 	</section>
@@ -516,29 +602,27 @@
 		border-style: dashed;
 		background: var(--bg-inset);
 		color: var(--text-faint);
+	}
+	span.stamp.hidden {
 		cursor: default;
 	}
-	.pile {
-		position: relative;
-		inline-size: 24px;
-		block-size: 36px;
+	.stamp.hidden.open {
+		border-style: solid;
 	}
-	.pile i {
+	/* 図鑑番号。右上は★と👀が使うので左上に置く。 */
+	.no {
 		position: absolute;
-		inset: 4px 0 0;
-		display: grid;
-		place-items: center;
-		border: 2px dashed var(--line-strong);
-		border-radius: 4px;
-		background: var(--surface-1);
-		font-style: normal;
-		font-weight: 800;
+		inset-block-start: 0.2rem;
+		inset-inline-start: 0.35rem;
+		color: var(--text-faint);
+		font-size: 0.6rem;
+		font-variant-numeric: tabular-nums;
 	}
-	.pile i:nth-child(1) {
-		transform: translate(-6px, 2px) rotate(-12deg);
-	}
-	.pile i:nth-child(2) {
-		transform: translate(6px, 2px) rotate(12deg);
+	.seen {
+		position: absolute;
+		inset-block-start: 0.15rem;
+		inset-inline-end: 0.3rem;
+		font-size: 0.75rem;
 	}
 	/* 構成札をトランプの手札のように扇形に重ねる。色はスロットの代表属性。 */
 	.pips {
@@ -554,8 +638,17 @@
 		border: 2px solid var(--surface-1);
 		border-radius: 4px;
 		background: linear-gradient(160deg, color-mix(in srgb, var(--pip) 55%, white), var(--pip));
-		transform: rotate(var(--tilt));
+		transform: rotate(var(--tilt, 0deg));
 		transform-origin: 50% 120%;
+	}
+	/* 伏せ札は裏向きの札。必要な枚数だけ並ぶ。 */
+	.pip.back {
+		border-color: var(--bg-inset);
+		background: repeating-linear-gradient(
+			45deg,
+			var(--line-strong) 0 2px,
+			var(--surface-1) 2px 5px
+		);
 	}
 	.stamp-name {
 		display: -webkit-box;
@@ -576,6 +669,9 @@
 		font-size: 0.8rem;
 	}
 	.combo-detail {
+		/* 開いたときに送る先。スマホの固定ヘッダーと下部ナビ（68px）に隠れないようにする。 */
+		scroll-margin-block: calc(var(--mobile-header-h) + 12px)
+			calc(68px + env(safe-area-inset-bottom) + 12px);
 		margin: 0.6rem 1rem 0;
 		padding: 0.8rem;
 		border: 1px solid var(--accent-strong);
@@ -618,6 +714,24 @@
 	}
 	.slot-card {
 		inline-size: 72px;
+	}
+	.hint-label {
+		margin-block-start: 0.2rem;
+		color: var(--text-faint);
+		font-size: 0.72rem;
+	}
+	.hint-size {
+		font-size: 0.85rem;
+		font-weight: 700;
+	}
+	.riddle {
+		margin-block: 0.5rem 0.2rem;
+		padding: 0.5rem 0.7rem;
+		border-inline-start: 3px solid var(--accent-strong);
+		border-radius: var(--r-md);
+		background: var(--accent-softer);
+		font-size: 0.9rem;
+		line-height: 1.6;
 	}
 	.combo-meta {
 		margin-block-start: 0.5rem;
