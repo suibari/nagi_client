@@ -1325,7 +1325,7 @@ export const en: Messages = {
 	recordLatest: (o: { date: string }) => `Latest award ${o.date}`,
 	deckCardsTitle: 'Cards',
 	recordFetchFailed: 'Could not load your records',
-	trophyBotan: "Today's Nagikatsu Chief",
+	trophyBottan: "Today's Nagikatsu Chief",
 	trophyAdventure: 'Decisive Dora Discard',
 	trophyDebut: 'Debut!',
 	trophySolo: 'Single Tile Wait!',
@@ -1335,7 +1335,7 @@ export const en: Messages = {
 	trophyGuideTitle: 'How trophies are awarded',
 	trophyGuideIntro:
 		'All awards except Nagikatsu Chief are granted as soon as your play meets their conditions.',
-	trophyBotanDescription:
+	trophyBottanDescription:
 		'At 4 AM Japan time the next morning, Bot-tan chooses one player from a shortlist after looking at the theme and cards played.',
 	trophyAdventureDescription: 'Awarded when you play at least one SR or rarer card.',
 	trophySoloDescription: 'Awarded when you answer with exactly one card.',

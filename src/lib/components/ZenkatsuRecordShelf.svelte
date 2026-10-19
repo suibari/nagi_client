@@ -19,7 +19,7 @@
 	type Medal = { kind: string; label: () => string; glyph: string; color: string };
 	/** 獲得条件ガイドと同じ並び。debut は廃止前の履歴があるときだけ出す。 */
 	const MEDALS: Medal[] = [
-		{ kind: 'botan', label: () => m.trophyBotan(), glyph: '👑', color: 'var(--card-attr-light)' },
+		{ kind: 'bottan', label: () => m.trophyBottan(), glyph: '👑', color: 'var(--card-attr-light)' },
 		{
 			kind: 'adventure',
 			label: () => m.trophyAdventure(),

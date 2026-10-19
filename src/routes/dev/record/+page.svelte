@@ -61,7 +61,7 @@
 		}));
 
 	const KINDS = [
-		'botan',
+		'bottan',
 		'adventure',
 		'adventure',
 		'solo',
@@ -81,7 +81,7 @@
 				themeJa: 'がんばったのに、うまくいかなかった日。',
 				themeEn: 'A day when you tried hard but things did not go as planned.',
 				submissionUri: `at://did:plc:demo/com.suibari.nagi.zenkatsu/${date}`,
-				...(kind === 'botan'
+				...(kind === 'bottan'
 					? {
 							commentJa:
 								'今日はきみの3枚がいちばん心にしみたよ。うまくいかない日にも、自分を置き去りにしないところがすてき！',
