@@ -173,16 +173,37 @@ function applyModerationPreferences(did: string, view: PreferencesView) {
 
 let syncing: Promise<void> = Promise.resolve();
 let syncedDid: string | undefined;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+let retryAttempt = 0;
+let retryDid: string | undefined;
+let syncGeneration = 0;
+
+function cancelRetry() {
+	if (retryTimer) clearTimeout(retryTimer);
+	retryTimer = undefined;
+}
+
+/** 自動再試行待ちでも、その場で取り直せる。 */
+export function retryPreferences(): Promise<void> {
+	const did = get(session)?.did;
+	if (!did || preferences.loading) return syncing;
+	cancelRetry();
+	syncedDid = undefined;
+	return syncPreferences(did);
+}
 
 /** 同期の完了を待ちたい処理（お気に入りパレットの事前解決など）から使う。 */
 export const preferencesReady = () => syncing;
 
 /**
- * サインイン状態が変わるたびに呼ぶ。DID が同じあいだは1回しか走らない。
+ * サインイン状態が変わるたびに呼ぶ。同じDIDの重複起動を抑え、一時失敗は再試行する。
  * 失敗しても投げない（同期はあくまで付加機能で、無くても全機能が動く）。
  */
 export function syncPreferences(did: string | undefined): Promise<void> {
 	if (!did) {
+		syncGeneration++;
+		cancelRetry();
+		retryAttempt = 0;
 		syncedDid = undefined;
 		setFavoritesScope(undefined);
 		setFeedTabsScope(undefined);
@@ -194,7 +215,12 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		return syncing;
 	}
 	if (syncedDid === did) return syncing;
+	if (retryDid !== did) retryAttempt = 0;
+	retryDid = did;
+	const generation = ++syncGeneration;
+	cancelRetry();
 	syncedDid = did;
+	setFavoritesScope(did);
 	// タブ構成はサーバー同期の成否に関わらずアカウント単位。load を待たずに切り替える
 	// （待つと、同期できない端末で guest のタブを見せたまま guest のキーへ書いてしまう）。
 	setFeedTabsScope(did);
@@ -202,9 +228,22 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 	setModerationPreferencesScope(did);
 	syncing = (async () => {
 		const view = await preferences.load();
-		if (!view || get(session)?.did !== did) return;
-		// ここから先の保存はアカウント（DID スコープ）のキャッシュへ書く。
-		setFavoritesScope(did);
+		if (generation !== syncGeneration || get(session)?.did !== did || syncedDid !== did) return;
+		if (!view) {
+			if (preferences.retryable) {
+				// 継続障害時は最大60秒間隔。429を即時に叩き直さない。
+				const delay = [5_000, 15_000, 60_000][Math.min(retryAttempt++, 2)];
+				retryTimer = setTimeout(() => {
+					retryTimer = undefined;
+					if (generation !== syncGeneration || get(session)?.did !== did || syncedDid !== did)
+						return;
+					syncedDid = undefined;
+					void syncPreferences(did);
+				}, delay);
+			}
+			return;
+		}
+		retryAttempt = 0;
 		// ニュースだけはサインイン前（guest スコープ）に作られていることがある。
 		// アカウント側のキーへ差し替えてから突き合わせる。
 		sectionWatermark('news', newsStorageKey(did), did);
@@ -214,6 +253,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		applyLanguagePreferences(did, view);
 		applyModerationPreferences(did, view);
 		applyAgeAssurance(view.ageAssurance);
+		preferences.cacheVersion++;
 	})();
 	return syncing;
 }
@@ -231,6 +271,8 @@ const PRE_SCOPE_KEYS = ['nagi.news-read-state.v1', 'nagi.my-nagi-read-state.v1.b
  * サインアウト前のスコープ（DID）と、旧キー・guest スコープの両方を対象にする。
  */
 export function clearLocalPreferenceCache(did: string) {
+	syncGeneration++;
+	cancelRetry();
 	clearChronicleReadState(did);
 	const keys = [
 		chronicleStorageKey(did),

@@ -1,4 +1,7 @@
 <script lang="ts">
+	import PreferencesSyncNotice from './PreferencesSyncNotice.svelte';
+	import { preferences } from '$lib/preferences/preferences.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
@@ -50,6 +53,12 @@
 		? loadFavorites().map((choice) => ({ id: reactionChoiceKey(choice), choice }))
 		: [];
 	let favorites = $state<FavoriteItem[]>(initialFavorites);
+	$effect(() => {
+		preferences.cacheVersion;
+		$session?.did;
+		if (showFavorites)
+			favorites = loadFavorites().map((choice) => ({ id: reactionChoiceKey(choice), choice }));
+	});
 	let host: HTMLDivElement;
 	let unicodeHost = $state<HTMLDivElement>();
 	let positionStyle = $state('');
@@ -298,6 +307,7 @@
 	</div>
 	{#if tab === 'favorites'}
 		<div class="emoji-panel emoji-favorites">
+			<PreferencesSyncNotice />
 			{#if favorites.length}
 				<SortableEmojiGrid
 					bind:items={favorites}
@@ -317,7 +327,11 @@
 					{/snippet}
 				</SortableEmojiGrid>
 			{:else}
-				<p class="emoji-custom-empty">{m.emojiFavoritesEmpty()}</p>
+				<p class="emoji-custom-empty">
+					{$session && !preferences.synced
+						? m.emojiFavoritesUnconfirmed()
+						: m.emojiFavoritesEmpty()}
+				</p>
 			{/if}
 			<a class="emoji-custom-add" href={favoritesSettingsHref}>{m.emojiFavoriteAdd()}</a>
 		</div>

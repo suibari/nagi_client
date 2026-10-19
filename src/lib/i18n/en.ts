@@ -580,6 +580,11 @@ export const en: Messages = {
 	emojiFavoritesSettingsDescription: 'Pin the emoji you use most for one-tap reactions',
 	emojiFavoritesSettingsNote:
 		'Favorites appear first in the reaction palette, in this order. Drag (or use the arrow keys) to rearrange them. This setting is saved to your account, so it follows you to your other devices.',
+	preferencesSyncLoading: 'Syncing preferences. Showing settings saved on this device.',
+	preferencesSyncFailed: 'Could not load preferences. Showing settings saved on this device.',
+	preferencesSyncRetrying: 'A temporary connection error occurred. Retrying automatically shortly.',
+	preferencesSyncRetry: 'Retry',
+	emojiFavoritesUnconfirmed: 'Your saved favorites have not been confirmed yet.',
 	emojiFavoritesEmpty: 'No favorites yet.',
 	emojiFavoritesEmptyHint: 'Emoji you add to favorites show up here',
 	emojiFavoriteAdd: 'Add emoji',

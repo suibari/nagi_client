@@ -47,6 +47,11 @@ type MergedHandler = (
 class Preferences {
 	/** サーバーと同期できている（getPreferences が成功した）か。 */
 	synced = $state(false);
+	loading = $state(false);
+	loadFailed = $state(false);
+	retryable = $state(false);
+	/** 同期結果をキャッシュへ保存した後、表示側へ再読込を知らせる。 */
+	cacheVersion = $state(0);
 	/**
 	 * スコープが足りずに拒否された。再ログインを促す告知はこれが true のときだけ出す
 	 * （オフラインや一時的な障害と区別するため）。
@@ -86,6 +91,9 @@ class Preferences {
 		const did = current.did;
 		const request = ++this.#loadRequest;
 		this.#did = did;
+		this.loading = true;
+		this.loadFailed = false;
+		this.retryable = false;
 		this.synced = false;
 		this.unauthorized = false;
 		this.#remotePositions.clear();
@@ -98,13 +106,25 @@ class Preferences {
 		} catch (error) {
 			if (request !== this.#loadRequest || get(session)?.did !== did) return undefined;
 			this.unauthorized = isScopeDenied(error);
+			this.loadFailed = true;
+			this.retryable =
+				!this.unauthorized &&
+				(!(error instanceof ApiRequestError) ||
+					error.status === 408 ||
+					error.status === 429 ||
+					error.status >= 500);
 			return undefined;
+		} finally {
+			if (request === this.#loadRequest) this.loading = false;
 		}
 	}
 
 	clear() {
 		this.#loadRequest++;
 		this.#did = undefined;
+		this.loading = false;
+		this.loadFailed = false;
+		this.retryable = false;
 		this.synced = false;
 		this.unauthorized = false;
 		this.#remotePositions.clear();

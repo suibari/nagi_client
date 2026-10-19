@@ -2,6 +2,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { session, signIn } from '$lib/oauth/session.svelte';
+	import { retryPreferences } from '$lib/preferences/sync.svelte';
 	import { preferences } from '$lib/preferences/preferences.svelte';
 
 	/**
@@ -30,6 +31,16 @@
 		<button type="button" disabled={busy} onclick={reauthorize}
 			>{m.preferencesSyncReauthorize()}</button
 		>
+	</p>
+{:else if $session && (preferences.loading || preferences.loadFailed)}
+	<p class="sync-notice" role="status">
+		{preferences.loading ? m.preferencesSyncLoading() : m.preferencesSyncFailed()}
+		{#if !preferences.loading}
+			{#if preferences.retryable}{m.preferencesSyncRetrying()}{/if}
+			<button type="button" onclick={() => void retryPreferences()}
+				>{m.preferencesSyncRetry()}</button
+			>
+		{/if}
 	</p>
 {/if}
 

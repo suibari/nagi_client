@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { preferences } from '$lib/preferences/preferences.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { displayEmojiName } from '$lib/atproto/bluemoji';
@@ -11,7 +12,6 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import BluemojiMedia from '$lib/components/BluemojiMedia.svelte';
 	import PreferencesSyncNotice from '$lib/components/PreferencesSyncNotice.svelte';
-	import { preferencesReady } from '$lib/preferences/sync.svelte';
 
 	type FavoriteItem = { id: string; choice: ReactionChoice };
 
@@ -38,12 +38,11 @@
 	const toItems = (favorites: ReactionChoice[]) =>
 		favorites.map((choice) => ({ id: reactionChoiceKey(choice), choice }));
 
-	// アカウント同期の取り込みが済んでから読む。先に読むと、初回同期の和集合が
-	// 反映される前の一覧を編集して上書きしてしまう。
-	onMount(() => {
-		void preferencesReady().then(() => {
-			items = toItems(loadFavorites());
-		});
+	// 取得中・失敗中も端末のキャッシュを表示し、再試行が成功したら読み直す。
+	$effect(() => {
+		preferences.cacheVersion;
+		$session?.did;
+		items = toItems(loadFavorites());
 	});
 
 	function add(raw: string | EmojiView) {
@@ -106,7 +105,9 @@
 			</SortableEmojiGrid>
 		</div>
 	{:else}
-		<p>{m.emojiFavoritesEmpty()}</p>
+		<p>
+			{$session && !preferences.synced ? m.emojiFavoritesUnconfirmed() : m.emojiFavoritesEmpty()}
+		</p>
 	{/if}
 </section>
 
