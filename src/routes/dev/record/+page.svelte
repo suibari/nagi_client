@@ -1,5 +1,11 @@
 <script lang="ts">
-	import type { CardAttribute, CardRarity, CardView, ZenkatsuDeckView } from '$lib/api/types';
+	import type {
+		CardAttribute,
+		CardRarity,
+		CardView,
+		ZenkatsuComboHint,
+		ZenkatsuDeckView,
+	} from '$lib/api/types';
 	import ZenkatsuRecordShelf from '$lib/components/ZenkatsuRecordShelf.svelte';
 
 	/**
@@ -60,6 +66,25 @@
 					: { did: 'did:plc:pioneer', handle: 'pioneer.example', displayName: 'さきがけさん' },
 		}));
 
+	/** 見つけた n 種のあとから total 種目までの伏せ札。3つおきに「世界で発見済み」にする。 */
+	const hints = (found: number, total: number): ZenkatsuComboHint[] =>
+		Array.from({ length: total - found }, (_, index) => {
+			const id = found + index + 1;
+			const discovered = id % 3 === 0;
+			return {
+				volume: 1,
+				id,
+				size: (id % 2) + 2,
+				discovered,
+				...(discovered
+					? {
+							hintJa: '目を覚まし、内から温め、外に干す。ある朝の手順',
+							hintEn: 'Wake up, warm up from within, hang it out to dry. A morning routine',
+						}
+					: {}),
+			};
+		});
+
 	const KINDS = [
 		'bottan',
 		'adventure',
@@ -94,6 +119,15 @@
 	const SCENARIOS: Record<string, { label: string; record: ZenkatsuDeckView }> = {
 		typical: {
 			label: 'ふつう（コンボ7/24・トロフィー20）',
+			record: {
+				comboTotal: 24,
+				combos: combos(7),
+				hints: hints(7, 24),
+				trophies: trophies(20),
+			},
+		},
+		legacy: {
+			label: '伏せ札なし（古いAppView）',
 			record: { comboTotal: 24, combos: combos(7), trophies: trophies(20) },
 		},
 		heavy: {
@@ -101,13 +135,17 @@
 			record: {
 				comboTotal: 12,
 				combos: combos(7),
+				hints: hints(7, 12),
 				trophies: [
 					...trophies(60),
 					{ kind: 'debut', themeDate: '2026-07-01', submissionUri: 'at://debut' },
 				],
 			},
 		},
-		empty: { label: 'はじめて（何もない）', record: { comboTotal: 24, combos: [], trophies: [] } },
+		empty: {
+			label: 'はじめて（何もない）',
+			record: { comboTotal: 24, combos: [], hints: hints(0, 24), trophies: [] },
+		},
 	};
 	let scenario = $state('typical');
 </script>

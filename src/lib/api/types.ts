@@ -853,9 +853,25 @@ export type ZenkatsuTrophyView = {
 	commentJa?: string;
 	commentEn?: string;
 };
+/**
+ * まだ出していないコンボの伏せ札。名前も構成札も伏せ、手がかりだけ届く。
+ * 謎かけは世界で誰かが見つけたあとにだけ入る。
+ */
+export type ZenkatsuComboHint = {
+	volume: number;
+	id: number;
+	/** 必要な枚数（スロット数）。 */
+	size: number;
+	/** 世界で誰かがもう見つけているか。 */
+	discovered: boolean;
+	hintJa?: string;
+	hintEn?: string;
+};
 export type ZenkatsuDeckView = {
 	/** 存在するコンボの総数。未発見のぶんは中身を伏せる。 */
 	comboTotal: number;
 	combos: ZenkatsuComboView[];
+	/** 未発見ぶんの伏せ札。図鑑番号順。伏せ札を返さない古い AppView では無い。 */
+	hints?: ZenkatsuComboHint[];
 	trophies: ZenkatsuTrophyView[];
 };
