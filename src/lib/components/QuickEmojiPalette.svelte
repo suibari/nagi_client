@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PreferencesSyncNotice from './PreferencesSyncNotice.svelte';
+	import { preferences } from '$lib/preferences/preferences.svelte';
 	import { untrack } from 'svelte';
 	import { portal } from '$lib/actions/portal';
 	import type { EmojiView } from '$lib/api/types';
@@ -113,6 +115,8 @@
 
 	$effect(() => {
 		if (!open || fullPickerOpen) return;
+		const wasSynced = untrack(() => preferences.synced);
+		const cacheVersion = preferences.cacheVersion;
 		favoritesDirty = false;
 		flashKey = undefined;
 		announcement = '';
@@ -137,7 +141,13 @@
 			void prepareReactionPalette(did, usageSnapshot, favoriteSnapshot)
 				.then((prepared) => {
 					// ドラッグで編集した後は、開いた時点のスナップショットで巻き戻さない。
-					if (favoritesDirty) return;
+					if (
+						favoritesDirty ||
+						!wasSynced ||
+						$session?.did !== did ||
+						preferences.cacheVersion !== cacheVersion
+					)
+						return;
 					saveFavorites(prepared.favorites);
 				})
 				.catch(() => undefined);
@@ -401,6 +411,7 @@
 				role="dialog"
 				aria-label={ariaLabel}
 			>
+				<PreferencesSyncNotice />
 				{#if quickSearching}
 					<div class="reaction-quick-results">
 						{#if quickResults.length}

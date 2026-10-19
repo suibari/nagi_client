@@ -26,6 +26,7 @@
 	import { privateList } from '$lib/private-list/private-list.svelte';
 	import { loadReactionUsage, prepareReactionPalette } from '$lib/emoji/reactionUsage';
 	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
+	import { preferences } from '$lib/preferences/preferences.svelte';
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
 	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
@@ -148,11 +149,13 @@
 			// この保存で上書きしてしまう。
 			void preferencesReady()
 				.then(async () => {
-					if (cancelled) return;
+					if (cancelled || !preferences.synced) return;
 					const usage = loadReactionUsage();
 					const favorites = loadFavorites();
+					const cacheVersion = preferences.cacheVersion;
 					const prepared = await prepareReactionPalette(did, usage, favorites);
-					if (!cancelled) saveFavorites(prepared.favorites);
+					if (!cancelled && preferences.cacheVersion === cacheVersion)
+						saveFavorites(prepared.favorites);
 				})
 				.catch(() => undefined);
 		};

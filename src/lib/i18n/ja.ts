@@ -594,6 +594,11 @@ export const ja = {
 	emojiFavoritesSettingsDescription: 'よく使う絵文字を登録して、すぐ押せるようにする',
 	emojiFavoritesSettingsNote:
 		'ここで登録した絵文字が、リアクションパレットの先頭にこの並びで出ます。ドラッグ（または矢印キー）で並び替えできます。設定はアカウントに保存され、他の端末でも同じ並びになります。',
+	preferencesSyncLoading: '設定を同期しています。端末に保存済みの内容を表示しています。',
+	preferencesSyncFailed: '設定を取得できませんでした。端末に保存済みの内容を表示しています。',
+	preferencesSyncRetrying: '一時的な通信エラーのため、しばらくして自動で再試行します。',
+	preferencesSyncRetry: '再試行',
+	emojiFavoritesUnconfirmed: 'お気に入りの登録状況を確認できていません。',
 	emojiFavoritesEmpty: 'まだお気に入りがありません。',
 	emojiFavoritesEmptyHint: 'お気に入りを登録すると、ここに出ます',
 	emojiFavoriteAdd: '絵文字を追加',
