@@ -1157,6 +1157,9 @@ export const en: Messages = {
 	blogAll: 'All',
 	blogEmpty: 'No blogs have been published yet.',
 	blogTagEmpty: (p: { tag: string }) => `No blogs with #${p.tag} yet.`,
+	tagSuggestions: 'Hashtag suggestions',
+	tagSuggestionCount: (o: { count: number }) =>
+		`${o.count.toLocaleString()} ${o.count === 1 ? 'post' : 'posts'}`,
 	emojiSuggestions: 'Custom emoji suggestions',
 	suggestionsLoading: 'Looking for matches…',
 	suggestionsEmpty: 'No matching suggestions',

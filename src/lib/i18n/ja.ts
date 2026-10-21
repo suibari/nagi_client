@@ -1193,6 +1193,8 @@ export const ja = {
 	blogAll: 'すべて',
 	blogEmpty: '公開されているブログはまだありません。',
 	blogTagEmpty: (p: { tag: string }) => `#${p.tag} のブログはまだありません。`,
+	tagSuggestions: 'ハッシュタグ候補',
+	tagSuggestionCount: (o: { count: number }) => `${o.count.toLocaleString()}件`,
 	emojiSuggestions: 'カスタム絵文字候補',
 	suggestionsLoading: '候補を探しています…',
 	suggestionsEmpty: '一致する候補はありません',

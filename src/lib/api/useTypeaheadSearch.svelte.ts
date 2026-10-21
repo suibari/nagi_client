@@ -16,9 +16,9 @@ type TypeaheadOptions<T> = {
 const normalize = (query: string) => query.trim().toLowerCase();
 
 /**
- * 候補サジェスト（@メンション / #チャンネル）のフェッチ・デバウンス・レース制御を
- * まとめた runes ファクトリ。検索関数を注入できるので、メンション（Nagi AppView）・
- * チャンネル・ログイン画面（公開 Bsky AppView）で同じロジックを使い回せる。
+ * 候補サジェスト（@メンション / #タグ / :絵文字）のフェッチ・デバウンス・レース制御を
+ * まとめた runes ファクトリ。検索関数を注入できるので、メンション・タグ（Nagi AppView）・
+ * ログイン画面（公開 Bsky AppView）で同じロジックを使い回せる。
  * activeIndex やキーボード操作はホスト固有なので持たせない。
  *
  * 体感速度のための仕掛けは3つ:
@@ -104,7 +104,7 @@ export function createTypeaheadSearch<T>(fetchFn: FetchFn<T>, options: Typeahead
 		timer = undefined;
 		abort();
 		started = false;
-		// キャッシュは残す。同じ Composer で `#` を開き直したときに即出したい。
+		// キャッシュは残す。同じ Composer で候補を開き直したときに即出したい。
 	}
 
 	return {

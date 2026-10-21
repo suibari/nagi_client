@@ -561,6 +561,16 @@
 		animation: none;
 	}
 }
+.tag-suggestions .tag-suggestion-icon {
+	display: grid;
+	flex: 0 0 28px;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	border-radius: var(--radius-s);
+	background: var(--accent-soft);
+	color: var(--accent-strong);
+}
 .emoji-suggestions .emoji-suggestion-media {
 	display: grid;
 	flex: 0 0 32px;
