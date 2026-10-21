@@ -30,7 +30,6 @@ import {
 	loadStoredFeedTabs,
 	setFeedTabsScope,
 } from '$lib/feed-tabs/feed-tabs.svelte';
-import { feedTabLabelsStorageKey } from '$lib/feed-tabs/labels.svelte';
 import { myNagiStorageKey, type MyNagiUnreadSection } from '$lib/my-nagi/unread.svelte';
 import { newsStorageKey } from '$lib/news/unread.svelte';
 import { session } from '$lib/oauth/session.svelte';
@@ -263,7 +262,12 @@ const MY_NAGI_SECTIONS: MyNagiUnreadSection[] = ['bot', 'community', 'list', 'ch
  * DID スコープへ移行する前に使っていたキー。移行前から使っている端末には
  * まだ残っているので、全データ削除ではこれらも消す。
  */
-const PRE_SCOPE_KEYS = ['nagi.news-read-state.v1', 'nagi.my-nagi-read-state.v1.bot.public'];
+const PRE_SCOPE_KEYS = [
+	'nagi.news-read-state.v1',
+	'nagi.my-nagi-read-state.v1.bot.public',
+	// 廃止したチャンネルタブの表示名キャッシュ。
+	'nagi.feed-tabs.labels.v1',
+];
 
 /**
  * 同期していた設定の端末側キャッシュを消す。全データ削除で AppView の行を消しても、
@@ -285,7 +289,6 @@ export function clearLocalPreferenceCache(did: string) {
 		feedTabsStorageKey(did),
 		languagePreferencesStorageKey(did),
 		moderationPreferencesStorageKey(did),
-		feedTabLabelsStorageKey,
 		newsStorageKey(),
 		newsStorageKey(did),
 		...MY_NAGI_SECTIONS.flatMap((section) => [

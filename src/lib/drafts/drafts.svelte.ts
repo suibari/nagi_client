@@ -1,4 +1,4 @@
-import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 import type { LinkCardDraft } from '$lib/atproto/records';
 import type { DraftContent, DraftSummary } from '$lib/api/types';
 import {
@@ -6,7 +6,6 @@ import {
 	deleteDraft as deleteRemoteDraft,
 	getDraft as getRemoteDraft,
 	getDrafts as getRemoteDrafts,
-	getChannel,
 	getEmoji,
 	putDraft as putRemoteDraft,
 } from '$lib/api/appview';
@@ -24,7 +23,6 @@ export type ComposerSnapshot = {
 	attachments: ImageAttachment[];
 	linkCards: LinkCardDraft[];
 	mentions: MentionSelection[];
-	channels: ChannelSelection[];
 	emojis: EmojiSelection[];
 	dismissedUrls: string[];
 	quoteUri?: string;
@@ -36,7 +34,6 @@ export type DraftSaveTarget = { id: string; createdAt: string };
 const remoteContent = (draft: StoredDraft | ComposerSnapshot): DraftContent => ({
 	text: draft.text,
 	mentions: draft.mentions,
-	channels: (draft.channels ?? []).map(({ start, end, uri, name }) => ({ start, end, uri, name })),
 	emojis: (draft.emojis ?? []).map(({ start, end, emoji }) => ({ start, end, uri: emoji.uri })),
 	linkCards: draft.linkCards.map(({ uri, title, description }) => ({ uri, title, description })),
 	dismissedUrls: draft.dismissedUrls,
@@ -135,16 +132,6 @@ class Drafts {
 			await deleteLocalDraft(id);
 		} else {
 			const remote = await getRemoteDraft(id);
-			const channels = (
-				await Promise.all(
-					remote.channels.map(async (selection) => {
-						const result = await getChannel(selection.uri).catch(() => undefined);
-						return result
-							? ({ ...selection, ...result.channel, uri: selection.uri } as ChannelSelection)
-							: undefined;
-					}),
-				)
-			).filter((value): value is ChannelSelection => Boolean(value));
 			const emojis = (
 				await Promise.all(
 					remote.emojis.map(async (selection) => {
@@ -159,7 +146,6 @@ class Drafts {
 				...remote,
 				did: this.#did,
 				mentions: remote.mentions as MentionSelection[],
-				channels,
 				emojis,
 				images: [],
 				linkCards: remote.linkCards,

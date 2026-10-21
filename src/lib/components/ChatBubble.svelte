@@ -27,8 +27,6 @@
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
 		restorePostEditState,
-		validChannelSelections,
-		type ChannelSelection,
 		type EmojiSelection,
 		type MentionSelection,
 	} from '$lib/atproto/facets';
@@ -78,10 +76,6 @@
 		editBusy = $bindable(false),
 		externalTitleEditor = false,
 		hideTimestamp = false,
-		canPin = false,
-		pinned = false,
-		pinBusy = false,
-		ontogglepin,
 		clampLines,
 		maxImages,
 		maxLinkCards,
@@ -107,11 +101,6 @@
 		externalTitleEditor?: boolean;
 		/** APIのローリング更新などで信頼できる日時が無い読み取り専用表示に使う。 */
 		hideTimestamp?: boolean;
-		/** チャンネル作成者向け。投稿者に関係なく、この投稿をピン操作できる。 */
-		canPin?: boolean;
-		pinned?: boolean;
-		pinBusy?: boolean;
-		ontogglepin?: (post: PostView) => void | Promise<void>;
 		/** 省略時の表示行数。未指定時は CSS の 6 行。 */
 		clampLines?: number;
 		/** 画像の初期表示枚数上限。未指定時は制限なし。 */
@@ -146,7 +135,6 @@
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
-	let channels = $state<ChannelSelection[]>([]);
 	let emojis = $state<EmojiSelection[]>([]);
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
 	let editText = $state('');
@@ -154,11 +142,6 @@
 		Boolean(post.article || post.uri.includes('/site.standard.document/')),
 	);
 	let editMentions = $state<MentionSelection[]>([]);
-	let editChannels = $state<ChannelSelection[]>([]);
-	// 編集開始時点の所属。タグ由来（本文の #CH名 から復元できた）かどうかで、
-	// タグを消したときに CH から外すかを決める。
-	let editOriginalChannel = $state<{ uri: string; cid: string; name?: string }>();
-	let editChannelWasTagged = $state(false);
 	let editEmojis = $state<EmojiSelection[]>([]);
 	let editImages = $state<PostEditImage[]>([]);
 	// 編集前から付いていた動画（外すと undefined）と、編集で付け直した動画。
@@ -236,7 +219,7 @@
 			Boolean(translateSourceLang) &&
 			translateSourceLang !== languagePreferences.translationLanguage,
 	);
-	let hasSecondaryActions = $derived(canTranslateExternally || canPin || mine);
+	let hasSecondaryActions = $derived(canTranslateExternally || mine);
 	let editHasContent = $derived(
 		Boolean(
 			editText.trim() ||
@@ -297,7 +280,6 @@
 		attachments = [];
 		linkCards = [];
 		mentions = [];
-		channels = [];
 		emojis = [];
 		quotePick.clear();
 	}
@@ -307,11 +289,6 @@
 			return;
 		}
 		editError = '';
-		// 所属はスレッドルートが持つので、返信の編集ではチャンネルに一切触れない。
-		editOriginalChannel =
-			!post.reply && post.channel?.cid
-				? { uri: post.channel.uri, cid: post.channel.cid, name: post.channel.name }
-				: undefined;
 		editTitle = editingArticle ? (extractTitle(post.text) ?? '') : '';
 		const prefix = editingArticle ? (post.text.match(/^# [^\n]+\n*/)?.[0] ?? '') : '';
 		const offset = new TextEncoder().encode(prefix).length;
@@ -321,15 +298,9 @@
 				...facet,
 				index: { byteStart: facet.index.byteStart - offset, byteEnd: facet.index.byteEnd - offset },
 			}));
-		const restored = restorePostEditState(
-			post.text.slice(prefix.length),
-			facets,
-			editOriginalChannel,
-		);
+		const restored = restorePostEditState(post.text.slice(prefix.length), facets);
 		editText = restored.text;
 		editMentions = restored.mentions;
-		editChannels = restored.channels;
-		editChannelWasTagged = restored.channels.length > 0;
 		editEmojis = restored.emojis;
 		editImageProcessing = false;
 		editImages = (post.images ?? []).map((image, sourceIndex) => ({
@@ -366,9 +337,6 @@
 		editText = '';
 		editEmojis = [];
 		editMentions = [];
-		editChannels = [];
-		editOriginalChannel = undefined;
-		editChannelWasTagged = false;
 		editImages = [];
 		editExistingVideo = undefined;
 		editNewVideo = undefined;
@@ -433,14 +401,6 @@
 			editError = m.editPostFailed();
 			return;
 		}
-		// サジェストから選び直したチャンネルが最優先。選択が無いときは、元がタグ由来の
-		// 所属なら「タグを消した＝CH から外す」、そうでなければ（CH ページからの投稿）保持する。
-		const selectedChannel = validChannelSelections(editText, editChannels)[0];
-		const nextChannel = selectedChannel
-			? { uri: selectedChannel.uri, cid: selectedChannel.cid, name: selectedChannel.name }
-			: editChannelWasTagged
-				? undefined
-				: editOriginalChannel;
 		const heading = editingArticle ? `# ${editTitle.trim()}\n\n` : '';
 		const shift = <T extends { start: number; end: number }>(items: T[]) =>
 			items.map((item) => ({
@@ -455,10 +415,7 @@
 			[],
 			editLinkCards,
 			shift(editMentions),
-			shift(editChannels),
 			shift(editEmojis),
-			false,
-			nextChannel ? { uri: nextChannel.uri, cid: nextChannel.cid } : undefined,
 		);
 		if (editingArticle && !editTitle.trim()) {
 			editError = m.articleTitleRequired();
@@ -489,10 +446,8 @@
 		editBusy = true;
 		editError = '';
 		try {
-			// applyChannel: 返信では常に nextChannel が undefined になるため、旧クライアントが
-			// 複製した channel が残っていればこの編集で落ちる（ルート所有への正規化）。
+			// 旧チャンネル投稿の channel は updatePost が元レコードから引き継ぐ。
 			const result = await updatePost(match[2], draft, editImages, {
-				applyChannel: true,
 				collection: match[1],
 				...(videoEdit ? { video: videoEdit } : {}),
 			});
@@ -510,19 +465,9 @@
 			if (result.videoView !== undefined) post.video = result.videoView ?? undefined;
 			post.linkCards = result.linkCardViews.length ? result.linkCardViews : undefined;
 			post.edited = true;
-			// 返信では所属を触らないので、楽観反映もルート（=非返信）のときだけ行う。
-			// 配下の返信のバッジは AppView がルートから配り直すので取り込み後に揃う。
-			if (!post.reply) {
-				post.channel = nextChannel
-					? { uri: nextChannel.uri, cid: nextChannel.cid, name: nextChannel.name }
-					: undefined;
-			}
 			editing = false;
 			editText = '';
 			editMentions = [];
-			editChannels = [];
-			editOriginalChannel = undefined;
-			editChannelWasTagged = false;
 			editEmojis = [];
 			editImages = [];
 			editExistingVideo = undefined;
@@ -558,14 +503,6 @@
 		// 引用（あれば）がそのまま乗るので、返信と引用が同居する。
 		const quotedPost = mode === 'quote' ? post : quotePick.post;
 		const quoteRef = mode === 'quote' ? subject : quotePick.ref;
-		// 所属チャンネルはこっそりと同じくスレッドルートだけが所有する。返信レコードへは
-		// 複製せず、AppView が reply.root から解決して CH TL に並べる（返信単位で所属を
-		// 持てるように見せない）。引用は新しいスレッドなので引用元の CH には入れない。
-		const selectedChannel =
-			mode === 'quote' ? validChannelSelections(composeText, channels)[0] : undefined;
-		const targetChannel = selectedChannel
-			? { uri: selectedChannel.uri, cid: selectedChannel.cid }
-			: undefined;
 		const draft = preparePostDraft(
 			composeText,
 			reply,
@@ -573,29 +510,14 @@
 			attachments,
 			linkCards,
 			mentions,
-			mode === 'quote' ? channels : [],
 			emojis,
 			// こっそりは「共有TLに出すか」ではなく「どこに保存するか」の設定なので、
 			// スレッドルートだけの所有にはできず、返信にも引き継ぐ。
 			mode === 'reply' && replyIsKossori,
-			targetChannel,
 		);
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(mode === 'reply' ? { replyParent: post } : {}),
 			...(quotedPost ? { quote: quotedPost } : {}),
-			// 楽観表示のバッジだけは返信でも出す（レコードには持たないが、AppView は
-			// ルート由来で channel_uri を埋めるので取り込み後も同じ見え方に収束する）。
-			...(mode === 'reply' && post.channel
-				? { channel: post.channel }
-				: selectedChannel
-					? {
-							channel: {
-								uri: selectedChannel.uri,
-								cid: selectedChannel.cid,
-								name: selectedChannel.name,
-							},
-						}
-					: {}),
 			threadKossori: mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori) : false,
 		});
 		// 楽観カード →（サーバー確定後）本物のカード、と2段階で入れ替わるので、追従先は
@@ -610,7 +532,6 @@
 		attachments = [];
 		linkCards = [];
 		mentions = [];
-		channels = [];
 		emojis = [];
 		composeMode = undefined;
 		quotePick.clear();
@@ -772,9 +693,7 @@
 						id={`edit-${post.cid}`}
 						bind:value={editText}
 						bind:mentions={editMentions}
-						bind:channels={editChannels}
 						bind:emojis={editEmojis}
-						channelSuggestionsEnabled={!post.reply}
 						placeholder={m.editPlaceholder()}
 						disabled={editBusy}
 						contentWarningEnabled={Boolean(post.cwRestricted)}
@@ -933,18 +852,6 @@
 								>
 									<Icon name="language" size={17} />
 									<span>{m.translateExternally()}</span>
-								</button>
-							{/if}
-							{#if canPin}
-								<button
-									role="menuitemcheckbox"
-									class:active={pinned}
-									disabled={pinBusy}
-									aria-checked={pinned}
-									onclick={() => runSecondaryAction(closeMenu, () => void ontogglepin?.(post))}
-								>
-									<Icon name="pin" size={17} />
-									<span>{pinned ? m.channelUnpinPost() : m.channelPinPost()}</span>
 								</button>
 							{/if}
 							{#if mine}

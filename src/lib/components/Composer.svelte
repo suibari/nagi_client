@@ -27,12 +27,7 @@
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
 	import Icon from './shell/Icon.svelte';
-	import {
-		validChannelSelections,
-		type ChannelSelection,
-		type EmojiSelection,
-		type MentionSelection,
-	} from '$lib/atproto/facets';
+	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import {
 		drafts,
 		DraftStorageError,
@@ -61,14 +56,11 @@
 		setLastPostScope,
 		type PostScope,
 	} from '$lib/post/scope';
-	// channel を渡すとチャンネル投稿になる（CH ページから使う）。CH 限定は投稿範囲の
-	// 「こっそり」で表現する（レコード上は kossori）。
 	let {
 		onposted,
 		onsendingchange,
 		ontextinput,
 		oncompositionchange,
-		channel,
 		defaultScope = 'feed',
 		mode = 'simple',
 		publishingPreferencesVersion = 0,
@@ -79,7 +71,6 @@
 		onsendingchange?: (sending: boolean) => void;
 		ontextinput?: (event: InputEvent) => void;
 		oncompositionchange?: (composing: boolean) => void;
-		channel?: { uri: string; cid: string; name?: string };
 		defaultScope?: PostScope;
 		mode?: ComposerMode;
 		publishingPreferencesVersion?: number;
@@ -96,7 +87,6 @@
 	let video = $state<VideoAttachment>();
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let mentions = $state<MentionSelection[]>([]);
-	let channels = $state<ChannelSelection[]>([]);
 	let emojis = $state<EmojiSelection[]>([]);
 	// defaultScope はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
 	let scope = $state<PostScope>(untrack(() => defaultScope));
@@ -130,7 +120,6 @@
 		JSON.stringify({
 			text,
 			mentions,
-			channels: channels.map(({ start, end, uri, name }) => ({ start, end, uri, name })),
 			emojis: emojis.map(({ start, end, emoji }) => ({ start, end, uri: emoji.uri })),
 			linkCards: linkCards.map(({ uri, title, description }) => ({ uri, title, description })),
 			dismissedUrls,
@@ -183,17 +172,6 @@
 	$effect(() => {
 		if (blog && video) video = undefined;
 	});
-	const selectedChannel = $derived(validChannelSelections(text, channels)[0]);
-	const effectiveChannel = $derived(
-		channel ??
-			(selectedChannel
-				? {
-						uri: selectedChannel.uri,
-						cid: selectedChannel.cid,
-						name: selectedChannel.name,
-					}
-				: undefined),
-	);
 	const hasContentWarningSetting = $derived(
 		hasContentWarning(text) ||
 			attachments.some((image) => image.contentWarning) ||
@@ -209,7 +187,6 @@
 	 */
 	const externalEligible = $derived(
 		crosspostReady &&
-			!effectiveChannel &&
 			!hasContentWarningSetting &&
 			!quotePick.active &&
 			!composerHost.replyTarget &&
@@ -218,13 +195,11 @@
 	const externalDisabledReason = $derived(
 		!crosspostReady
 			? m.postScopeExternalUnavailable()
-			: effectiveChannel
-				? m.postScopeExternalChannel()
-				: hasContentWarningSetting
-					? m.crosspostDisabledContentWarning()
-					: quotePick.active
-						? m.quoteExternalDisabled()
-						: '',
+			: hasContentWarningSetting
+				? m.crosspostDisabledContentWarning()
+				: quotePick.active
+					? m.quoteExternalDisabled()
+					: '',
 	);
 	/**
 	 * 本文先頭の「# 見出し」はタイトルそのもの。タイトルの真実源は常に本文側に置き、
@@ -244,7 +219,7 @@
 	 * ブログにできない投稿をブログタブのまま出そうとしている理由。
 	 *
 	 * document は公開レコードとして外から読まれるので、Nagi の共有TLに出さない投稿
-	 * （こっそり・チャンネル）、外部コピーを作らない投稿（CW）、本文に現れない参照を
+	 * （こっそり）、外部コピーを作らない投稿（CW）、本文に現れない参照を
 	 * 持つ投稿（引用）は記事にできない（standardsite/preferences.ts の
 	 * isArticleCandidate と同じ線引き）。
 	 *
@@ -255,15 +230,13 @@
 	const articleBlockedReason = $derived(
 		!blog
 			? ''
-			: effectiveChannel
-				? m.articleChannelDisabled()
-				: kossori
-					? m.postScopeKossoriArticle()
-					: hasContentWarningSetting
-						? m.articleContentWarningDisabled()
-						: quotePick.active || composerHost.quoteTarget || composerHost.replyTarget
-							? m.articleQuoteDisabled()
-							: '',
+			: kossori
+				? m.postScopeKossoriArticle()
+				: hasContentWarningSetting
+					? m.articleContentWarningDisabled()
+					: quotePick.active || composerHost.quoteTarget || composerHost.replyTarget
+						? m.articleQuoteDisabled()
+						: '',
 	);
 	/** ブログとして standard.site に出す投稿か。記事フラグと公開の判定はこれ1本。 */
 	const publishesArticle = $derived(blog && !articleBlockedReason);
@@ -354,7 +327,6 @@
 		video = undefined;
 		linkCards = [];
 		mentions = [];
-		channels = [];
 		emojis = [];
 		dismissedUrls = [];
 		quotePick.clear();
@@ -377,7 +349,6 @@
 			attachments: [],
 			linkCards,
 			mentions,
-			channels,
 			emojis,
 			dismissedUrls,
 			quoteUri: quotePick.ref?.uri,
@@ -464,7 +435,6 @@
 		// ImageAttachmentEditor / LinkCardEditor の既存ライフサイクルに任せる。
 		text = draft.text;
 		mentions = [...draft.mentions];
-		channels = [...(draft.channels ?? [])];
 		emojis = [...(draft.emojis ?? [])];
 		attachments = draft.images.map((image) => ({
 			...image,
@@ -531,10 +501,8 @@
 			attachments,
 			linkCards,
 			shift(mentions),
-			shift(channels),
 			shift(emojis),
 			kossori,
-			effectiveChannel ? { uri: effectiveChannel.uri, cid: effectiveChannel.cid } : undefined,
 			reply ? false : botSilent,
 			reply ? silentReply : false,
 			selfLabels,
@@ -545,7 +513,6 @@
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(replyPost && { replyParent: replyPost }),
 			...(quotedPost && { quote: quotedPost }),
-			...(effectiveChannel && { channel: effectiveChannel }),
 			threadKossori: kossori,
 		});
 		// 表示中のフィードに楽観カードが出たらそこへ、確定したらその投稿へ画面を寄せる。
@@ -593,13 +560,7 @@
 			// 引用はNagi内のレコードを参照するため、Blueskyへはクロスポストしない
 			// （返信・引用の既存方針と同じ）。scope 側でも外部を選べなくしてある。
 			let bskyPostRef: { uri: string; cid: string } | undefined;
-			if (
-				wantsCrosspost &&
-				!draft.kossori &&
-				!draft.channel &&
-				!draft.cwRestricted &&
-				!draft.quote
-			) {
+			if (wantsCrosspost && !draft.kossori && !draft.cwRestricted && !draft.quote) {
 				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
 					warning = m.crosspostPermissionMissing();
 				else
@@ -645,18 +606,10 @@
 			? m.postScopeKossoriShort()
 			: scope === 'external'
 				? m.postScopeBlueskyShort()
-				: effectiveChannel
-					? (effectiveChannel.name ?? m.postScopeChannelShort())
-					: m.postScopeFeedShort(),
+				: m.postScopeFeedShort(),
 	);
 	const scopeIcon = $derived(
-		scope === 'kossori'
-			? 'hide'
-			: scope === 'external'
-				? 'bluesky'
-				: effectiveChannel
-					? 'hash'
-					: 'home',
+		scope === 'kossori' ? 'hide' : scope === 'external' ? 'bluesky' : 'home',
 	);
 
 	/** 記事の書き込み権限が無いときに、その場で追加の認可を取りに行く。 */
@@ -822,9 +775,7 @@
 				{oncompositionchange}
 				bind:value={text}
 				bind:mentions
-				bind:channels
 				bind:emojis
-				channelSuggestionsEnabled={!channel}
 				placeholder={m.composerPlaceholder()}
 				ariaLabel={m.composerAria()}
 				disabled={busy}
@@ -971,7 +922,6 @@
 		{externalDisabledReason}
 		kossoriDisabled={blog}
 		kossoriDisabledReason={blog ? m.postScopeKossoriArticle() : ''}
-		channelName={effectiveChannel?.name}
 		onselect={(next) => {
 			scope = next;
 			setLastPostScope(next);

@@ -174,9 +174,8 @@ export async function crosspostToBluesky(
 	draft: PostDraft,
 	assets: PostAssets,
 ): Promise<StrongRef | undefined> {
-	// こっそり投稿、およびチャンネル投稿は Bluesky にクロスポストしない。
-	// チャンネルは通常/こっそり問わず常に無効（チャンネルのコンテキストを外部に漏らさないため）。
-	if (draft.kossori || draft.channel || draft.cwRestricted) return;
+	// こっそり投稿は Bluesky にクロスポストしない。
+	if (draft.kossori || draft.cwRestricted) return;
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);
@@ -291,7 +290,7 @@ export async function crosspostArticleToBluesky(
 	assets: PostAssets,
 	article: { url: string; title: string; teaser: string },
 ): Promise<StrongRef | undefined> {
-	if (draft.kossori || draft.channel || draft.cwRestricted) return;
+	if (draft.kossori || draft.cwRestricted) return;
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 

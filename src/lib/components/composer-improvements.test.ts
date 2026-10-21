@@ -16,7 +16,7 @@ describe('rich composer improvements', () => {
 		expect(editor).not.toContain('RichText');
 		expect(editor).not.toContain('role="tablist"');
 		expect(input).toContain('new EditorView(');
-		expect(input).toContain('composerDecorations(() => ({ mentions, channels, emojis }))');
+		expect(input).toContain('composerDecorations(() => ({ mentions, emojis }))');
 		expect(decorations).toContain('highlightComposerText(');
 		// しっかりは本文 1 列になったので、広い画面でもモーダルを広げない
 		expect(modal).not.toContain('1040px');

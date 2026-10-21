@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
-	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
@@ -19,7 +19,6 @@
 	let wasOpen = $state(false);
 	let text = $state('');
 	let mentions = $state<MentionSelection[]>([]);
-	let channels = $state<ChannelSelection[]>([]);
 	let emojis = $state<EmojiSelection[]>([]);
 	let busy = $state(false);
 	let error = $state('');
@@ -57,7 +56,6 @@
 			const id = await guestPosts.create(text, i18n.locale === 'en' ? 'en' : 'ja');
 			text = '';
 			mentions = [];
-			channels = [];
 			emojis = [];
 			mode = resetComposerMode();
 			onclose();
@@ -100,10 +98,8 @@
 		<ComposerEditor
 			bind:value={text}
 			bind:mentions
-			bind:channels
 			bind:emojis
 			mentionSuggestionsEnabled={false}
-			channelSuggestionsEnabled={false}
 			emojiPickerEnabled={false}
 			contentWarningEnabled={false}
 			placeholder={m.composerPlaceholder()}

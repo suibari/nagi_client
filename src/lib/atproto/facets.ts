@@ -27,15 +27,6 @@ export type Facet = {
 };
 
 export type MentionSelection = { start: number; end: number; did: string; handle: string };
-export type ChannelSelection = {
-	start: number;
-	end: number;
-	uri: string;
-	cid: string;
-	name: string;
-	banner?: string;
-	description?: string;
-};
 export type EmojiSelection = { start: number; end: number; emoji: EmojiView };
 /** sourceIndex[i] は text[i] が入力のどの位置から来たか。入力欄の装飾で記法の文字を見分けるのに使う。 */
 export type ParsedPostText = {
@@ -53,7 +44,6 @@ type StoredFacet = {
 type PostEditState = {
 	text: string;
 	mentions: MentionSelection[];
-	channels: ChannelSelection[];
 	emojis: EmojiSelection[];
 };
 
@@ -62,20 +52,6 @@ const decoder = new TextDecoder('utf-8', { fatal: true });
 const byteLength = (value: string) => encoder.encode(value).length;
 // Bluesky detectFacets のタグ本体クラス: 先頭のゼロ幅系を除外し、数字のみのタグを弾く。
 const TAG_BODY = /^[^\s\u00AD\u2060\u200A\u200B\u200C\u200D\u20E2]*[^\d\s]\S*/u;
-export const validChannelSelections = (
-	source: string,
-	channelSelections: ChannelSelection[],
-): ChannelSelection[] =>
-	[...channelSelections]
-		.filter(
-			(channel) =>
-				channel.start >= 0 &&
-				channel.end > channel.start &&
-				['#', '＃'].some(
-					(marker) => source.slice(channel.start, channel.end) === `${marker}${channel.name}`,
-				),
-		)
-		.sort((a, b) => a.start - b.start);
 export const httpUrl = (value: string) => {
 	try {
 		const url = new URL(value);
@@ -99,19 +75,13 @@ const trimRawUrl = (value: string) => {
  * 保存済み本文と facet を Composer が再解釈できる編集入力へ戻す。
  * facet の位置は UTF-8 バイト単位なので、文字列へ戻しながら mention の文字位置を組み直す。
  * 名前付きリンクは保存時に Markdown 記法が本文から除かれるため、[label](url) へ復元する。
- *
- * channel を渡すと、本文中の `#チャンネル名` タグを ChannelSelection として復元する。
- * これが復元できた投稿だけが「タグ由来の所属」であり、編集でタグを消すと CH から外れる。
- * CH ページから投稿したものは本文にタグが無いので復元されず、編集しても所属を保つ。
  */
 export function restorePostEditState(
 	text: string,
 	facets: readonly StoredFacet[] = [],
-	channel?: { uri: string; cid: string; name?: string },
 ): PostEditState {
 	const bytes = encoder.encode(text);
 	const mentions: MentionSelection[] = [];
-	const channels: ChannelSelection[] = [];
 	const emojis: EmojiSelection[] = [];
 	let source = '';
 	let byteOffset = 0;
@@ -199,24 +169,6 @@ export function restorePostEditState(
 					});
 				}
 			}
-			// 所属 CH と同名のタグ facet を ChannelSelection へ戻す。ラベルの完全一致だけを
-			// 採るのは、大文字小文字が違う表記を「タグ由来」と誤認して、編集時に所属を
-			// 落としてしまわないため（一致しなければ復元せず＝所属を保つ側に倒れる）。
-			if (
-				feature.$type === 'app.bsky.richtext.facet#tag' &&
-				channel?.name &&
-				channel.cid &&
-				!channels.length &&
-				['#', '＃'].some((marker) => label === `${marker}${channel.name}`)
-			) {
-				channels.push({
-					start: selectionStart,
-					end: selectionStart + label.length,
-					uri: channel.uri,
-					cid: channel.cid,
-					name: channel.name,
-				});
-			}
 			if (
 				feature.$type === 'app.bsky.richtext.facet#mention' &&
 				typeof feature.did === 'string' &&
@@ -237,15 +189,14 @@ export function restorePostEditState(
 	try {
 		source += decoder.decode(bytes.slice(byteOffset));
 	} catch {
-		return { text, mentions: [], channels: [], emojis: [] };
+		return { text, mentions: [], emojis: [] };
 	}
-	return { text: source, mentions, channels, emojis };
+	return { text: source, mentions, emojis };
 }
 
 export function parsePostText(
 	source: string,
 	mentionSelections: MentionSelection[] = [],
-	channelSelections: ChannelSelection[] = [],
 	emojiSelections: EmojiSelection[] = [],
 ): ParsedPostText {
 	let text = '';
@@ -275,7 +226,6 @@ export function parsePostText(
 				source.slice(mention.start, mention.end) === `@${mention.handle}`,
 		)
 		.sort((a, b) => a.start - b.start);
-	const channels = validChannelSelections(source, channelSelections);
 	const emojis = [...emojiSelections]
 		.filter(
 			(selection) =>
@@ -285,12 +235,10 @@ export function parsePostText(
 		)
 		.sort((a, b) => a.start - b.start);
 	let mentionIndex = 0;
-	let channelIndex = 0;
 	let emojiIndex = 0;
 
 	for (let index = 0; index < source.length;) {
 		while (mentions[mentionIndex]?.start < index) mentionIndex++;
-		while (channels[channelIndex]?.start < index) channelIndex++;
 		while (emojis[emojiIndex]?.start < index) emojiIndex++;
 		const emojiSelection = emojis[emojiIndex];
 		if (emojiSelection?.start === index) {
@@ -325,19 +273,6 @@ export function parsePostText(
 			});
 			index = emojiSelection.end;
 			emojiIndex++;
-			continue;
-		}
-		const channel = channels[channelIndex];
-		if (channel?.start === index) {
-			const label = source.slice(channel.start, channel.end);
-			const byteStart = byteLength(text);
-			append(label, channel.start);
-			facets.push({
-				index: { byteStart, byteEnd: byteStart + byteLength(label) },
-				features: [{ $type: 'app.bsky.richtext.facet#tag', tag: channel.name }],
-			});
-			index = channel.end;
-			channelIndex++;
 			continue;
 		}
 		const mention = mentions[mentionIndex];

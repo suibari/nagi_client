@@ -534,12 +534,6 @@
 	height: 32px;
 	border-radius: 50%;
 }
-.channel-suggestions .suggestion-skeleton-figure {
-	flex-basis: 76px;
-	width: 76px;
-	height: 44px;
-	border-radius: var(--radius-s);
-}
 .suggestion-skeleton-copy {
 	display: grid;
 	gap: 6px;
@@ -566,28 +560,6 @@
 	.suggestion-skeleton-bar {
 		animation: none;
 	}
-}
-.channel-suggestions button {
-	align-items: stretch;
-}
-.channel-suggestions .channel-suggestion-header {
-	display: grid;
-	flex: 0 0 76px;
-	place-items: center;
-	overflow: hidden;
-	min-width: 76px;
-	height: 44px;
-	border-radius: var(--radius-s);
-	background: var(--accent-soft);
-	color: var(--accent-strong);
-}
-.channel-suggestions .channel-suggestion-header img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-.channel-suggestions .channel-suggestion-copy {
-	align-content: center;
 }
 .emoji-suggestions .emoji-suggestion-media {
 	display: grid;
@@ -1529,24 +1501,6 @@
 	font-size: 10px;
 	font-weight: 800;
 	white-space: nowrap;
-}
-/* スレッドの所属チャンネルを示すバッジ（グローバルTLからの導線）。 */
-.channel-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 3px;
-	flex: 0 0 auto;
-	border-radius: var(--radius-pill);
-	background: var(--accent-softer);
-	color: var(--accent);
-	padding: 2px 8px 2px 5px;
-	font-size: 10px;
-	font-weight: 800;
-	white-space: nowrap;
-	text-decoration: none;
-}
-.channel-badge:hover {
-	background: var(--accent-soft);
 }
 /* バッジのトーン。どれを付けるかは lib/badges/badges.ts が決める */
 .badge--bot {
@@ -2982,15 +2936,6 @@ button.emoji-return {
 .media-tile:focus-visible {
 	outline: 2px solid var(--accent);
 	outline-offset: -2px;
-}
-/* バッジ類はタイルの角に重ねる。長い CH 名はタイル幅で切る。 */
-.media-tile-channel {
-	position: absolute;
-	inset: 5px 5px auto 5px;
-	max-inline-size: calc(100% - 10px);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	pointer-events: none;
 }
 .media-tile-video {
 	position: absolute;
@@ -4906,342 +4851,6 @@ a.about-feature:focus-visible {
 .blog-card-tags a {
 	padding: 3px 8px;
 }
-.channels-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	margin: 4px 0 12px;
-}
-.channels-head h1 {
-	font-size: 1.15rem;
-	margin: 0;
-}
-.channels-intro {
-	margin: 0 0 14px;
-	color: var(--text-muted);
-	font-size: 0.85rem;
-	line-height: 1.7;
-}
-/* タブ数はページによって違うので、基本は本数に合わせて等分する。 */
-.channel-tabs {
-	display: grid;
-	grid-auto-flow: column;
-	grid-auto-columns: minmax(0, 1fr);
-	margin-block-end: 8px;
-	border-block-end: 1px solid var(--line);
-}
-.channel-directory-tabs {
-	grid-template-columns: repeat(3, minmax(0, 1fr)) 42px;
-	grid-auto-flow: initial;
-	grid-auto-columns: initial;
-}
-.channel-directory-tabs .channel-search-tab {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding-inline: 8px;
-}
-.channel-tabs button {
-	position: relative;
-	min-inline-size: 0;
-	padding: 10px 6px;
-	border: 0;
-	background: transparent;
-	color: var(--text-muted);
-	font: inherit;
-	font-size: 0.86rem;
-	font-weight: 700;
-	white-space: nowrap;
-	cursor: pointer;
-}
-.channel-tabs button:hover,
-.channel-tabs button:focus-visible {
-	color: var(--accent-strong);
-}
-.channel-tabs button.active {
-	color: var(--accent-strong);
-}
-.channel-tabs button.active::after {
-	content: '';
-	position: absolute;
-	inset-inline: 8px;
-	inset-block-end: -1px;
-	block-size: 3px;
-	border-radius: 3px 3px 0 0;
-	background: var(--accent);
-}
-.channel-sign-in p {
-	margin-block-start: 0;
-}
-.channel-sign-in a {
-	display: inline-block;
-}
-.channels-head button.primary {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	flex: 0 0 auto;
-}
-.channels-list {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-.channel-search-form {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) 42px;
-	gap: 8px;
-	margin-block-end: 12px;
-}
-.channel-search-form input {
-	min-inline-size: 0;
-	padding: 9px 11px;
-	border: 1px solid var(--line-strong);
-	border-radius: var(--radius-m);
-	background: var(--bg-inset);
-	color: var(--text);
-	font: inherit;
-	font-size: 0.9rem;
-}
-.channel-search-form button {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0;
-}
-/* Misskey 風の大きなヘッダーカード。バナーがカードいっぱいに広がり、
-   左上にチャンネル名、下部に説明と更新日時を重ねる。banner が無くても同じ枠で表示。 */
-.channel-card,
-.channel-hero {
-	position: relative;
-	display: block;
-	overflow: hidden;
-	border-radius: var(--radius-m);
-	background: var(--bg-inset);
-	/* 文字が乗るので十分な高さを確保しつつ、横長を保つ。 */
-	aspect-ratio: 3 / 1;
-	min-block-size: 140px;
-	text-decoration: none;
-	color: #fff;
-}
-.channel-card {
-	box-shadow: var(--shadow-card);
-}
-.channel-card:hover {
-	filter: brightness(0.97);
-}
-.channel-card-media {
-	position: absolute;
-	inset: 0;
-	display: block;
-	background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
-}
-.channel-card-media img {
-	inline-size: 100%;
-	block-size: 100%;
-	object-fit: cover;
-}
-/* 上下にスクリムを敷いて、明るい画像でも名前・説明が読めるようにする。 */
-.channel-card::after,
-.channel-hero::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-	pointer-events: none;
-	background:
-		linear-gradient(to bottom, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0) 38%),
-		linear-gradient(to top, rgb(0 0 0 / 0.7) 0%, rgb(0 0 0 / 0) 46%);
-}
-.channel-card-name {
-	position: absolute;
-	inset-block-start: 12px;
-	inset-inline-start: 14px;
-	z-index: 1;
-	margin: 0;
-	max-inline-size: calc(100% - 28px);
-	font-size: 1.1rem;
-	font-weight: 800;
-	color: #fff;
-	text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
-	overflow-wrap: anywhere;
-}
-.channel-card-foot {
-	position: absolute;
-	inset-block-end: 12px;
-	inset-inline: 14px;
-	z-index: 1;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
-}
-.channel-card-desc {
-	color: rgb(255 255 255 / 0.95);
-	font-size: 0.85rem;
-	display: -webkit-box;
-	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 2;
-	line-clamp: 2;
-	overflow: hidden;
-	overflow-wrap: anywhere;
-}
-.channel-card-updated {
-	color: rgb(255 255 255 / 0.85);
-	font-size: 0.72rem;
-}
-/* チャンネルページのヘッダー */
-.channel-header {
-	margin-bottom: 12px;
-}
-.channel-hero {
-	margin-block-start: 8px;
-}
-.channel-hero-actions {
-	position: absolute;
-	inset-block-start: 10px;
-	inset-inline-end: 10px;
-	z-index: 2;
-	display: flex;
-	gap: 6px;
-}
-.channel-hero-action {
-	display: grid;
-	place-items: center;
-	inline-size: 34px;
-	block-size: 34px;
-	padding: 0;
-	border: 0;
-	border-radius: 50%;
-	background: rgb(0 0 0 / 0.4);
-	color: #fff;
-	cursor: pointer;
-}
-.channel-hero-action:hover {
-	background: rgb(0 0 0 / 0.6);
-}
-.channel-hero-action:disabled {
-	opacity: 0.6;
-	cursor: default;
-}
-/* 参加ボタンはバナー上に載るので、アイコンボタンと同じ暗幕の上に置く。
-   参加中はアクセント色にして、押せば外れることを見た目で示す。 */
-.channel-join {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	block-size: 34px;
-	padding: 0 13px;
-	border: 0;
-	border-radius: var(--radius-pill);
-	background: rgb(0 0 0 / 0.4);
-	color: #fff;
-	font-size: 12px;
-	font-weight: 800;
-	white-space: nowrap;
-	cursor: pointer;
-}
-.channel-join:hover {
-	background: rgb(0 0 0 / 0.6);
-}
-.channel-join.joined {
-	background: var(--accent);
-	color: var(--text-on-accent);
-}
-.channel-join:disabled {
-	opacity: 0.6;
-	cursor: default;
-}
-/* CH 一覧での「参加中」バッジ。 */
-.channel-card-joined {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 2px 9px;
-	border-radius: var(--radius-pill);
-	background: var(--accent-soft);
-	color: var(--accent-strong);
-	font-size: 11px;
-	font-weight: 800;
-}
-/* ミュート中の CH は一覧・検索から消えるので、URL で開いたときだけ状態が分かるようにする。 */
-.channel-muted-badge {
-	position: absolute;
-	inset-block-start: 12px;
-	inset-inline-start: 12px;
-	padding: 3px 10px;
-	border-radius: var(--radius-pill);
-	background: rgb(0 0 0 / 0.55);
-	color: #fff;
-	font-size: 12px;
-	font-weight: 700;
-}
-.channel-hero .channel-card-name {
-	max-inline-size: calc(100% - 100px);
-}
-@media (max-width: 767px) {
-	/* PC用の最小高を狭い画面へ持ち込むと、3:1の比率から横幅が押し広げられる。 */
-	.channel-hero {
-		inline-size: 100%;
-		max-inline-size: 100%;
-		min-block-size: 0;
-	}
-	.channel-hero .channel-card-media img {
-		display: block;
-		max-inline-size: 100%;
-	}
-}
-.channel-pinned {
-	margin-block: 12px;
-	padding: 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius-m);
-	background: var(--bg-inset);
-}
-.channel-pinned-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	margin-block-end: 8px;
-	color: var(--text-muted);
-	font-size: 0.8rem;
-	font-weight: 700;
-}
-.channel-pinned-head > span {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-}
-.channel-pinned-unavailable p {
-	margin: 0;
-	color: var(--text-muted);
-	font-size: 0.85rem;
-}
-.channel-pin-error {
-	margin-block: 8px;
-}
-/* 作成ダイアログのバナープレビュー（オーバーレイなしの素の枠） */
-.channel-banner.preview {
-	display: block;
-	inline-size: 100%;
-	max-inline-size: 240px;
-	aspect-ratio: 3 / 1;
-	background: var(--bg-inset);
-	border-radius: var(--radius-s);
-	overflow: hidden;
-}
-.channel-banner.preview img {
-	inline-size: 100%;
-	block-size: 100%;
-	object-fit: cover;
-}
-.channel-banner-actions {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 8px;
-}
 /* 新規作成ダイアログのフォーム行（draft-dialog 内で使う） */
 .draft-dialog .field {
 	display: flex;
@@ -5663,8 +5272,7 @@ a.about-feature:focus-visible {
 .feed-tab-handle {
 	flex: 0 0 auto;
 }
-.feed-tab-kinds,
-.feed-tab-channels {
+.feed-tab-kinds {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -5708,42 +5316,6 @@ a.about-feature:focus-visible {
 .feed-tab-kind-text small {
 	color: var(--text-muted);
 	font-size: 0.75rem;
-}
-.feed-tab-group {
-	margin: 10px 0 4px;
-	color: var(--text-muted);
-	font-size: 0.78rem;
-}
-.feed-tab-channels button {
-	width: 100%;
-	padding: 8px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius-m);
-	background: transparent;
-	text-align: start;
-}
-.feed-tab-channels button:hover:not(:disabled) {
-	background: var(--bg-hover);
-}
-.feed-tab-channels button:disabled {
-	opacity: 0.45;
-}
-.feed-tab-search-kind {
-	display: inline-flex;
-	gap: 4px;
-	margin-bottom: 8px;
-}
-.feed-tab-search-kind button {
-	padding: 6px 12px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius-pill);
-	background: transparent;
-	font-size: 0.85rem;
-}
-.feed-tab-search-kind button.active {
-	border-color: var(--accent);
-	background: var(--accent-softer);
-	color: var(--accent-strong);
 }
 /* プレビュー。実物と同じ .feed-tabs を使うので、sticky だけ打ち消す。 */
 .feed-tab-preview {

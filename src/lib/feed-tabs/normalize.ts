@@ -10,6 +10,7 @@ import {
 	type FeedTab,
 	type FeedTabKind,
 } from './types';
+import { normalizeTag } from '$lib/tags';
 
 /**
  * 他人が書いた JSON として扱う。サーバー（AppView の parseFeedTabs）と同じルールで
@@ -29,17 +30,33 @@ function parseTab(raw: unknown): FeedTab | undefined {
 	// list / custom は今それぞれ1つずつしか無いので、未知の source（将来のクライアントが
 	// 書いたもの）は素通しせず既定へ寄せる。
 	if (kind === 'list' || kind === 'custom') tab.source = DEFAULT_SOURCE[kind];
-	if (kind === 'channel') {
-		if (typeof item.uri !== 'string' || !item.uri.startsWith('at://')) return undefined;
-		tab.uri = item.uri;
-	}
-	if (kind === 'search') {
-		const query = typeof item.query === 'string' ? item.query.trim() : '';
+	if (kind === 'search' || kind === 'hashtag') {
+		const raw = typeof item.query === 'string' ? item.query : '';
+		const query = kind === 'hashtag' ? normalizeTag(raw) : raw.trim();
 		if (!query || query.length > MAX_TAB_QUERY_LENGTH) return undefined;
 		tab.query = query;
-		tab.queryKind = item.queryKind === 'tag' ? 'tag' : 'keyword';
 	}
 	return tab;
+}
+
+/**
+ * 廃止した形のタブを hashtag タブへ寄せる。AppView も読み書きのたびに同じ変換をするが、
+ * この端末の localStorage に残った分はここで直す。
+ *  - channel タブ → チャンネル名（label のスナップショット）の hashtag タブ。名前が無ければ落とす。
+ *  - queryKind: 'tag' の search タブ → hashtag タブ。
+ */
+function upgradeLegacyTab(raw: unknown): unknown {
+	if (!raw || typeof raw !== 'object') return raw;
+	const item = raw as Record<string, unknown>;
+	if (item.kind === 'channel')
+		return typeof item.label === 'string' && item.label
+			? { id: item.id, kind: 'hashtag', query: item.label }
+			: undefined;
+	if (item.kind === 'search' && item.queryKind !== undefined) {
+		const { queryKind, ...rest } = item;
+		return queryKind === 'tag' ? { ...rest, kind: 'hashtag' } : rest;
+	}
+	return raw;
 }
 
 /**
@@ -53,13 +70,13 @@ export function normalizeFeedTabs(raw: unknown): FeedTab[] {
 	const ids = new Set<string>();
 	for (const entry of raw) {
 		if (tabs.length >= FEED_TABS_LIMIT) break;
-		const tab = parseTab(entry);
+		const tab = parseTab(upgradeLegacyTab(entry));
 		if (!tab) continue;
 		const identity = tabIdentity(tab);
 		if (identities.has(identity)) continue;
 		identities.add(identity);
 		// id が無い / 重なるものは採番し直す。?tab= で引くタブが一意に決まらないため。
-		if (!tab.id || ids.has(tab.id)) tab.id = newTabId(tab.kind === 'search' ? 'q' : 'ch');
+		if (!tab.id || ids.has(tab.id)) tab.id = newTabId(tab.kind === 'search' ? 'q' : 'tag');
 		ids.add(tab.id);
 		tabs.push(tab);
 	}

@@ -1,9 +1,4 @@
-import type {
-	ActorView,
-	MyNagiView,
-	NewsView,
-	PostView,
-} from '$lib/api/types';
+import type { ActorView, MyNagiView, NewsView, PostView } from '$lib/api/types';
 
 /**
  * ルートを離れても、同じブラウザセッション中は直近の my Nagi をすぐ再表示する。
@@ -48,7 +43,7 @@ export function updateMyNagiPageCache(key: string, patch: Partial<MyNagiPageCach
 		botLoaded: false,
 		botPosts: [],
 		listLoaded: false,
-		listActivity: { listUsers: [], channels: [] },
+		listActivity: { listUsers: [] },
 	};
 	updateLru(pageCache, key, { ...current, ...patch });
 }

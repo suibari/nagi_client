@@ -84,7 +84,12 @@
 		store the attached images themselves — we fetch them from your PDS and relay them each time they are
 		displayed.
 	</li>
-	<li><strong>Reactions, profile, channels, and custom emoji.</strong> Also copies.</li>
+	<li>
+		<strong
+			>Reactions, profile, custom emoji, and channels created with the retired channel feature.</strong
+		>
+		Also copies. We keep channels so that past posts can be shown under the channel name as a hashtag.
+	</li>
 	<li>
 		<strong>The text of "Kossori" posts, and of the diaries Bot-tan writes.</strong>
 		These are not copies but the <strong>only</strong> copy. They are visible to no one but you and Bot-tan.
@@ -122,9 +127,9 @@
 		and we do not create a snapshot of the bookmarked content.
 	</li>
 	<li>
-		<strong>Drafts and synced settings.</strong> For drafts without images, we store text, mentions, channels,
-		Bluemoji, link URL/title/description, and quote URI, plus post and translation settings, visible only
-		to you. We do not store images, link thumbnails, or other binary data.
+		<strong>Drafts and synced settings.</strong> For drafts without images, we store text, mentions, Bluemoji,
+		link URL/title/description, and quote URI, plus post and translation settings, visible only to you.
+		We do not store images, link thumbnails, or other binary data.
 	</li>
 	<li><strong>Translation cache and card collection records.</strong></li>
 </ul>
@@ -153,7 +158,7 @@
 
 <h2 id="p4">4. How we use information</h2>
 <ul>
-	<li>To provide the Service — timelines, profiles, channels, and search</li>
+	<li>To provide the Service — timelines, profiles, hashtags, and search</li>
 	<li>
 		To provide AI features — Bot-tan's replies, automatic analysis, diaries, and card comments
 	</li>
@@ -468,9 +473,6 @@
 		folders
 	</li>
 	<li>The date of birth you declared</li>
-	<li>
-		Channel subscriptions (both yours, and records of other people subscribing to your channels)
-	</li>
 </ul>
 <p>We also delete entries where another user had added you to their Home.</p>
 

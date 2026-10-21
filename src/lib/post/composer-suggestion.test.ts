@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { EmojiView } from '$lib/api/types';
 import { detectComposerSuggestionToken, replaceEmojiSuggestion } from './composer-suggestion';
 
-const options = { mentions: true, channels: true };
+const options = { mentions: true };
 
 describe('detectComposerSuggestionToken', () => {
 	it('detects a custom emoji query at line start or after whitespace', () => {
@@ -23,9 +23,9 @@ describe('detectComposerSuggestionToken', () => {
 		expect(detectComposerSuggestionToken(':猫', 2, options)).toBeUndefined();
 	});
 
-	it('preserves mention and channel detection precedence', () => {
+	it('detects mentions, and leaves hashtags as plain text without suggestions', () => {
 		expect(detectComposerSuggestionToken('@alice', 6, options)?.kind).toBe('mention');
-		expect(detectComposerSuggestionToken('#nagi', 5, options)?.kind).toBe('channel');
+		expect(detectComposerSuggestionToken('#nagi', 5, options)).toBeUndefined();
 	});
 });
 

@@ -57,14 +57,12 @@
 	let botUnread = $state(false);
 	let botUnreadView = $state<UnreadView | undefined>(undefined);
 
-	let listActivity = $state<MyNagiView>({ listUsers: [], channels: [] });
+	let listActivity = $state<MyNagiView>({ listUsers: [] });
 	let listLoading = $state(true);
 	let listLoaded = false;
 	let listError = $state('');
 	let listUnread = $state(false);
-	let channelsUnread = $state(false);
 	let listUnreadView = $state<UnreadView | undefined>(undefined);
-	let channelsUnreadView = $state<UnreadView | undefined>(undefined);
 	// プリレンダ時は $session も目印も無いのでヒーローが出る（＝クローラと初回訪問者が見る形）。
 	// 戻ってきた利用者には、OAuth 復元を待たずに最初の描画から出さない。
 	const showHero = $derived(!$session && !hadRecentSession());
@@ -79,7 +77,6 @@
 		new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime() ||
 		b.post.uri.localeCompare(a.post.uri);
 	let listUsersByRecency = $derived([...listActivity.listUsers].sort(newestFirst));
-	let channelsByRecency = $derived([...listActivity.channels].sort(newestFirst));
 
 	const message = (cause: unknown) => (cause instanceof Error ? cause.message : m.loadFailed());
 	function showBotPosts(items: PostView[], unreadView = botUnreadView) {
@@ -171,7 +168,6 @@
 	async function loadListActivity(key = loadedFor) {
 		if (!key) return;
 		const activeListUnreadView = listUnreadView;
-		const activeChannelsUnreadView = channelsUnreadView;
 		listLoading = !listLoaded;
 		listError = '';
 		try {
@@ -182,10 +178,6 @@
 			listUnread = readPositions(
 				activeListUnreadView,
 				includedPostPositions(listActivity.listUsers.map(({ post }) => post)),
-			);
-			channelsUnread = readPositions(
-				activeChannelsUnreadView,
-				includedPostPositions(listActivity.channels.map(({ post }) => post)),
 			);
 			updateMyNagiPageCache(key, { listLoaded, listActivity });
 		} catch (cause) {
@@ -210,7 +202,7 @@
 		void loadNews(key).then(() => {
 			if (loadedFor === key) void loadBotPosts(key);
 		});
-		listActivity = { listUsers: [], channels: [] };
+		listActivity = { listUsers: [] };
 		listLoaded = true;
 		listLoading = false;
 		listError = '';
@@ -229,7 +221,6 @@
 		// botたんセクションは公開だが、既読はアカウント同期するので DID で分ける。
 		botUnreadView = openMyNagiUnreadView('bot', did);
 		listUnreadView = did ? openMyNagiUnreadView('list', did) : undefined;
-		channelsUnreadView = did ? openMyNagiUnreadView('channels', did) : undefined;
 		// キャッシュ表示も今回開いた時点の既読基準で評価する。前回すでに表示した内容なら
 		// バーは消え、バックグラウンド取得で新しい内容が来たときだけ再び点く。
 		newsUnread = readLatest(
@@ -240,10 +231,6 @@
 		listUnread = readPositions(
 			listUnreadView,
 			includedPostPositions(listActivity.listUsers.map(({ post }) => post)),
-		);
-		channelsUnread = readPositions(
-			channelsUnreadView,
-			includedPostPositions(listActivity.channels.map(({ post }) => post)),
 		);
 		initializedFor = key;
 		if (did) loadAll();
@@ -266,7 +253,7 @@
 		botActor = cached?.botActor;
 		botLoaded = cached?.botLoaded ?? false;
 		botLoading = !botLoaded;
-		listActivity = cached?.listActivity ?? { listUsers: [], channels: [] };
+		listActivity = cached?.listActivity ?? { listUsers: [] };
 		listLoaded = cached?.listLoaded ?? false;
 		listLoading = !listLoaded;
 		newsError = '';
@@ -275,11 +262,9 @@
 		newsUnread = false;
 		botUnread = false;
 		listUnread = false;
-		channelsUnread = false;
 		newsUnreadView = undefined;
 		botUnreadView = undefined;
 		listUnreadView = undefined;
-		channelsUnreadView = undefined;
 		void initialize(key, did);
 	});
 	/**
@@ -414,35 +399,6 @@
 					<ThreadUnit
 						item={entry.post}
 						unread={readIncludedPosts(listUnreadView, [entry.post])}
-						{botActor}
-						onposted={loadListActivity}
-					/>
-				</div>
-			{/each}
-		</MyNagiSection>
-
-		<MyNagiSection
-			title={m.myNagiChannelsTitle()}
-			icon="hash"
-			moreHref="/channels"
-			loading={listLoading}
-			error={listError}
-			empty={!listActivity.channels.length}
-			unread={channelsUnread}
-			unreadLabel={m.myNagiChannelsUnreadAria()}
-			onretry={loadListActivity}
-		>
-			{#snippet emptyState()}
-				<p class="my-nagi-state">
-					{m.myNagiChannelsEmpty()}
-					<a href="/channels">{m.myNagiChannelsEmptyCta()}</a>
-				</p>
-			{/snippet}
-			{#each channelsByRecency as entry (entry.post.uri)}
-				<div class="my-nagi-activity-card">
-					<ThreadUnit
-						item={entry.post}
-						unread={readIncludedPosts(channelsUnreadView, [entry.post])}
 						{botActor}
 						onposted={loadListActivity}
 					/>

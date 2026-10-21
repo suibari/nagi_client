@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EmojiView } from '$lib/api/types';
-import {
-	httpUrl,
-	parsePostText,
-	restorePostEditState,
-	validChannelSelections,
-	type ChannelSelection,
-	type MentionSelection,
-} from './facets';
+import { httpUrl, parsePostText, restorePostEditState, type MentionSelection } from './facets';
 
 /** facet の index は UTF-8 バイト。テストの意図を「何バイト目か」で書けるようにする。 */
 const bytes = (value: string) => new TextEncoder().encode(value).length;
@@ -165,7 +158,7 @@ describe('parsePostText: mentions', () => {
 describe('parsePostText: bluemoji', () => {
 	it('emits the Nagi reference facet, and the official one only when formats exist', () => {
 		const selection = { start: 0, end: emoji.name.length, emoji };
-		const { text, facets } = parsePostText(':neko: だよ', [], [], [selection]);
+		const { text, facets } = parsePostText(':neko: だよ', [], [selection]);
 		expect(text).toBe(':neko: だよ');
 		expect(facets[0].index).toEqual({ byteStart: 0, byteEnd: bytes(':neko:') });
 		expect(facets[0].features).toEqual([
@@ -177,25 +170,6 @@ describe('parsePostText: bluemoji', () => {
 				mediaType: emoji.mediaType,
 			},
 		]);
-	});
-});
-
-describe('validChannelSelections', () => {
-	const channel: ChannelSelection = {
-		start: 0,
-		end: '#にゃんこ'.length,
-		uri: 'at://did:plc:ch/com.suibari.nagi.channel/abc',
-		cid: 'bafych',
-		name: 'にゃんこ',
-	};
-
-	it('keeps a selection whose text still reads as its own tag', () => {
-		expect(validChannelSelections('#にゃんこ で話す', [channel])).toEqual([channel]);
-		expect(validChannelSelections('＃にゃんこ で話す', [channel])).toEqual([channel]);
-	});
-
-	it('drops a selection once the tag text changed', () => {
-		expect(validChannelSelections('#いぬ で話す', [channel])).toEqual([]);
 	});
 });
 
@@ -228,16 +202,11 @@ describe('restorePostEditState', () => {
 		]);
 	});
 
-	it('restores a channel tag only when the label matches the channel name exactly', () => {
+	it('keeps a hashtag as plain text with its tag facet when restored', () => {
 		const parsed = parsePostText('#にゃんこ で話す');
-		const channel = { uri: 'at://did:plc:ch/c/abc', cid: 'bafych', name: 'にゃんこ' };
-		expect(restorePostEditState(parsed.text, parsed.facets, channel).channels).toEqual([
-			{ start: 0, end: '#にゃんこ'.length, uri: channel.uri, cid: channel.cid, name: channel.name },
-		]);
-		// 表記が違えば「タグ由来の所属」と見なさない＝編集しても CH から外れない。
-		expect(
-			restorePostEditState(parsed.text, parsed.facets, { ...channel, name: 'ニャンコ' }).channels,
-		).toEqual([]);
+		const restored = restorePostEditState(parsed.text, parsed.facets);
+		expect(restored.text).toBe('#にゃんこ で話す');
+		expect(parsePostText(restored.text).facets).toEqual(parsed.facets);
 	});
 
 	it('ignores facets with impossible ranges', () => {

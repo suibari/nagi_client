@@ -1,4 +1,4 @@
-import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 
 /**
  * AppView同期以前の下書きを読むための互換形式。新規保存には使わない。
@@ -23,8 +23,6 @@ export type StoredDraft = {
 	did: string;
 	text: string;
 	mentions: MentionSelection[];
-	/** 候補から明示選択したチャンネルタグ。旧下書きには無いので復元側で空配列にする。 */
-	channels?: ChannelSelection[];
 	/** 本文内Bluemojiの参照範囲。旧下書きでは未定義。 */
 	emojis?: EmojiSelection[];
 	images: StoredDraftImage[];

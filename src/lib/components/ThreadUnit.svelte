@@ -19,12 +19,7 @@
 		botActor,
 		ondeleted,
 		onposted,
-		canPin = false,
-		pinChannelUri,
-		pinnedPostUri,
 		hiddenPostUri,
-		pinBusy = false,
-		ontogglepin,
 		unread = false,
 		entering = false,
 		isPostEntering = () => false,
@@ -33,14 +28,8 @@
 		botActor?: ActorView;
 		ondeleted?: (uri: string) => void;
 		onposted?: () => void | Promise<void>;
-		canPin?: boolean;
-		/** ピン操作を許可する所属チャンネル。異なるチャンネルの親投稿は対象外にする。 */
-		pinChannelUri?: string;
-		pinnedPostUri?: string;
-		/** ピン枠と重複するこのURIの吹き出しだけを通常タイムラインから省く。 */
+		/** 別枠で表示済みの投稿など、このURIの吹き出しだけを通常タイムラインから省く。 */
 		hiddenPostUri?: string;
-		pinBusy?: boolean;
-		ontogglepin?: (post: PostView) => void | Promise<void>;
 		/** 前回このフィードを見た時点より新しいスレッドか。カード全体に1本だけマークを出す。 */
 		unread?: boolean;
 		/** ポーリングで新しく先頭へ入ったスレッドだけを滑り込ませる。 */
@@ -113,11 +102,7 @@
 	);
 	// こっそり投稿の URI は著者ではなく AppView の DID 配下なので、リンクは URI から組む。
 	let fullThreadHref = $derived(conv ? postPageHref(conv.root) : '');
-	let convChannel = $derived(
-		conv?.root.channel ?? conv?.bubbles.find((b) => b.post.channel)?.post.channel,
-	);
 	let convKossori = $derived(Boolean(conv && (conv.root.threadKossori ?? conv.root.kossori)));
-	let channel = $derived(item.channel ?? item.replyParent?.channel ?? item.botReply?.channel);
 	let threadKossori = $derived(
 		Boolean(
 			item.threadKossori ??
@@ -130,8 +115,6 @@
 	let showItem = $derived(item.uri !== hiddenPostUri);
 	let showBotReply = $derived(Boolean(item.botReply && item.botReply.uri !== hiddenPostUri));
 	let hasVisiblePost = $derived(showParent || showItem || showBotReply);
-	const canPinPost = (post: PostView) =>
-		canPin && (!pinChannelUri || post.channel?.uri === pinChannelUri);
 </script>
 
 {#snippet replyToggle(post: PostView, expanded: boolean)}
@@ -153,16 +136,7 @@
 	{#if collapsible && !expanded}
 		{@render replyToggle(post, false)}
 	{:else}
-		<ChatBubble
-			{post}
-			{botActor}
-			ondeleted={postDeleted}
-			onposted={postPosted}
-			canPin={canPinPost(post)}
-			pinned={post.uri === pinnedPostUri}
-			{pinBusy}
-			{ontogglepin}
-		/>
+		<ChatBubble {post} {botActor} ondeleted={postDeleted} onposted={postPosted} />
 		{#if collapsible}{@render replyToggle(post, true)}{/if}
 	{/if}
 {/snippet}
@@ -176,7 +150,7 @@
 		data-post-uri={item.uri}
 		data-optimistic-key={item.optimisticKey}
 	>
-		<ThreadFlags channel={convChannel} kossori={convKossori} />
+		<ThreadFlags kossori={convKossori} />
 		{#if showConvRoot}
 			{@render postBubble(conv.root)}
 		{/if}
@@ -214,7 +188,7 @@
 		data-post-uri={item.uri}
 		data-optimistic-key={item.optimisticKey}
 	>
-		<ThreadFlags {channel} kossori={threadKossori} />
+		<ThreadFlags kossori={threadKossori} />
 		{#if showParent && item.replyParent}
 			{@render postBubble(item.replyParent)}
 		{/if}

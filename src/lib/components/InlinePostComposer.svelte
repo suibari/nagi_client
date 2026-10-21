@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import type { ImageAttachment } from '$lib/images';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -23,16 +23,13 @@
 		placeholder,
 		text = $bindable(),
 		mentions = $bindable(),
-		channels = $bindable<ChannelSelection[]>([]),
 		emojis = $bindable<EmojiSelection[]>([]),
-		channelSuggestionsEnabled = false,
 		attachments = $bindable(),
 		linkCards = $bindable(),
 		quote,
 		busy = false,
 		error = '',
 		scope = 'feed',
-		channelName,
 		onsubmit,
 		oncancel,
 	}: {
@@ -41,9 +38,7 @@
 		placeholder: string;
 		text: string;
 		mentions: MentionSelection[];
-		channels?: ChannelSelection[];
 		emojis?: EmojiSelection[];
-		channelSuggestionsEnabled?: boolean;
 		attachments: ImageAttachment[];
 		linkCards: LinkCardDraft[];
 		/** 渡したときだけ、Nagi のスレッドURL貼り付けで引用を付けられる。 */
@@ -51,7 +46,6 @@
 		busy?: boolean;
 		error?: string;
 		scope?: PostScope;
-		channelName?: string;
 		onsubmit: () => void;
 		oncancel: () => void;
 	} = $props();
@@ -61,13 +55,9 @@
 	let imagePicker: { handlePaste: (event: ClipboardEvent) => void } | undefined;
 
 	const scopeLabel = $derived(
-		scope === 'kossori'
-			? m.postScopeKossoriShort()
-			: channelName
-				? channelName
-				: m.postScopeFeedShort(),
+		scope === 'kossori' ? m.postScopeKossoriShort() : m.postScopeFeedShort(),
 	);
-	const scopeIcon = $derived(scope === 'kossori' ? 'hide' : channelName ? 'hash' : 'home');
+	const scopeIcon = $derived(scope === 'kossori' ? 'hide' : 'home');
 </script>
 
 <div class="post-row mine composer-row">
@@ -85,9 +75,7 @@
 			{id}
 			bind:value={text}
 			bind:mentions
-			bind:channels
 			bind:emojis
-			{channelSuggestionsEnabled}
 			{placeholder}
 			ariaLabel={label}
 			disabled={busy}

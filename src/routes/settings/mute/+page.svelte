@@ -6,7 +6,8 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
-	import type { ActorView, ChannelView } from '$lib/api/types';
+	import type { ActorView } from '$lib/api/types';
+	import { hashtagHref, normalizeTag } from '$lib/tags';
 
 	let error = $state('');
 	let loading = $state(false);
@@ -35,16 +36,27 @@
 			error = m.muteUpdateFailed();
 		}
 	}
-	async function unmuteChannel(channel: ChannelView) {
+	async function setTagMute(tag: string, muted: boolean) {
 		error = '';
 		try {
-			await mutes.toggleChannel(channel, false);
+			await mutes.toggleTag(tag, muted);
+			return true;
 		} catch {
 			error = m.muteUpdateFailed();
+			return false;
 		}
 	}
-	const channelHref = (channel: ChannelView) =>
-		`/channels/${channel.did}/${channel.uri.split('/').pop()}`;
+
+	let tagInput = $state('');
+	const newTag = $derived(normalizeTag(tagInput));
+	async function addTagMute(event: SubmitEvent) {
+		event.preventDefault();
+		if (!newTag || mutes.hasTag(newTag)) {
+			tagInput = '';
+			return;
+		}
+		if (await setTagMute(newTag, true)) tagInput = '';
+	}
 </script>
 
 <section class="auth-card settings-detail">
@@ -96,30 +108,36 @@
 		</fieldset>
 
 		<fieldset class="theme-settings">
-			<legend>{m.muteChannelsLegend()}</legend>
+			<legend>{m.muteTagsLegend()}</legend>
+			<form class="mute-tag-form" onsubmit={addTagMute}>
+				<input
+					bind:value={tagInput}
+					maxlength="128"
+					placeholder={m.muteTagPlaceholder()}
+					aria-label={m.muteTagAdd()}
+				/>
+				<button type="submit" class="ghost" disabled={!newTag || mutes.isPending(newTag)}>
+					{m.muteTagAdd()}
+				</button>
+			</form>
 			{#if loading && !mutes.loaded}
 				<Spinner />
-			{:else if !mutes.channels.length}
-				<p class="muted">{m.muteChannelsEmpty()}</p>
+			{:else if !mutes.tags.length}
+				<p class="muted">{m.muteTagsEmpty()}</p>
 			{:else}
 				<ul class="mute-list">
-					{#each mutes.channels as channel (channel.uri)}
+					{#each mutes.tags as tag (tag)}
 						<li class="mute-item">
-							<a class="mute-subject" href={channelHref(channel)}>
-								<span class="mute-names">
-									<strong>{channel.name}</strong>
-									{#if channel.description}
-										<span class="muted">{channel.description}</span>
-									{/if}
-								</span>
+							<a class="mute-subject" href={hashtagHref(tag)}>
+								<span class="mute-names"><strong>#{tag}</strong></span>
 							</a>
 							<button
 								type="button"
 								class="ghost"
-								disabled={mutes.isPending(channel.uri)}
-								onclick={() => void unmuteChannel(channel)}
+								disabled={mutes.isPending(tag)}
+								onclick={() => void setTagMute(tag, false)}
 							>
-								{m.unmuteChannel()}
+								{m.unmuteTag()}
 							</button>
 						</li>
 					{/each}
@@ -162,6 +180,16 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.mute-tag-form {
+		display: flex;
+		gap: 0.5rem;
+		margin-block-end: 0.75rem;
+		min-width: 0;
+	}
+	.mute-tag-form input {
+		flex: 1;
+		min-width: 0;
 	}
 	.mute-error {
 		color: var(--danger, #c0392b);

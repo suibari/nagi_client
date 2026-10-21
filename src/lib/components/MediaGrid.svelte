@@ -11,11 +11,7 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { trackPostSeen } from '$lib/post/seen';
 
-	let {
-		feed,
-		showChannel = false,
-		emptyLabel,
-	}: { feed?: Feed; showChannel?: boolean; emptyLabel: string } = $props();
+	let { feed, emptyLabel }: { feed?: Feed; emptyLabel: string } = $props();
 
 	const resolve = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 	let tiles = $derived(feed ? mediaTiles(feed.visibleItems) : []);
@@ -55,12 +51,6 @@
 					</ContentWarningMask>
 				{:else}
 					<img src={resolve(tile.image.url)} alt={tile.image.alt} loading="lazy" />
-				{/if}
-				{#if showChannel && tile.post.channel}
-					<!-- リンクの入れ子は不正なので、ここはバッジ表示だけ。CH へはスレッド側から辿れる。 -->
-					<span class="channel-badge media-tile-channel"
-						><Icon name="hash" size={12} />{tile.post.channel.name ?? m.navChannels()}</span
-					>
 				{/if}
 				{#if tile.video}
 					<span class="media-tile-video" aria-hidden="true"><Icon name="play" size={22} /></span>

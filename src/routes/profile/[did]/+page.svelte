@@ -371,7 +371,7 @@
 		</section>
 	{:else if tab === 'media'}
 		<section class="timeline" aria-busy={feed?.loading}>
-			<MediaGrid {feed} showChannel emptyLabel={m.profileEmptyMedia()} />
+			<MediaGrid {feed} emptyLabel={m.profileEmptyMedia()} />
 		</section>
 	{:else}
 		<section class="timeline" aria-busy={feed?.loading}>

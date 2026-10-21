@@ -1,12 +1,7 @@
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
-import {
-	parsePostText,
-	type ChannelSelection,
-	type EmojiSelection,
-	type MentionSelection,
-} from './facets';
+import { parsePostText, type EmojiSelection, type MentionSelection } from './facets';
 import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 import type { ImageAttachment, PostEditImage } from '$lib/images';
 import type {
@@ -34,6 +29,7 @@ import { buildPostEmbed, postEmbedMedia, type StoredPostImage } from './post-emb
 const POST = 'com.suibari.nagi.post',
 	REACTION = 'com.suibari.nagi.reaction',
 	PROFILE = 'com.suibari.nagi.profile',
+	// チャンネルは廃止したが、全データ削除で過去に作ったレコードを消せるよう一覧に残す。
 	CHANNEL = 'com.suibari.nagi.channel';
 const NEWS = 'com.suibari.nagi.news';
 const ZENKATSU = 'com.suibari.nagi.zenkatsu';
@@ -191,8 +187,6 @@ export type PostDraft = {
 	linkCards: LinkCardDraft[];
 	/** こっそりモード。true のトップレベル投稿はグローバル/全肯定TLに出さない。 */
 	kossori?: boolean;
-	/** 所属チャンネルへの参照。返信は親の channel を引き継ぐ。 */
-	channel?: { uri: string; cid: string };
 	/** 作成時からCW運用であり、外部コピーを永久に作らない投稿。 */
 	cwRestricted?: boolean;
 	/** botたんサイレント機能。true の投稿には botたんが返信しない。 */
@@ -224,10 +218,8 @@ export function preparePostDraft(
 	attachments: ImageAttachment[] = [],
 	linkCards: LinkCardDraft[] = [],
 	mentions: MentionSelection[] = [],
-	channels: ChannelSelection[] = [],
 	emojis: EmojiSelection[] = [],
 	kossori = false,
-	channel?: { uri: string; cid: string },
 	botSilent = false,
 	silentReply = false,
 	selfLabels: string[] = [],
@@ -241,11 +233,6 @@ export function preparePostDraft(
 			...mention,
 			start: mention.start - leadingWhitespace,
 			end: mention.end - leadingWhitespace,
-		})),
-		channels.map((selected) => ({
-			...selected,
-			start: selected.start - leadingWhitespace,
-			end: selected.end - leadingWhitespace,
 		})),
 		emojis.map((selection) => ({
 			...selection,
@@ -269,7 +256,6 @@ export function preparePostDraft(
 			? { cwRestricted: true }
 			: {}),
 		...(kossori ? { kossori: true } : {}),
-		...(channel ? { channel } : {}),
 		...(botSilent ? { botSilent: true } : {}),
 		...(reply && silentReply ? { silentReply: true } : {}),
 		...(selfLabels.length > 0
@@ -450,7 +436,6 @@ export async function createPost(
 				// kossori はここへ来ない（上で AppView 経路へ分岐済み）。
 				...(draft.botSilent && { botSilent: true }),
 				...(draft.silentReply && { silentReply: true }),
-				...(draft.channel && { channel: draft.channel }),
 				...(draft.reply && { reply: draft.reply }),
 				// ニュース記事そのものは引用カードで描画し、本文中の別URLだけがここへ入る。
 				...(cards.length && { linkCards: cards }),
@@ -473,7 +458,9 @@ export async function createPost(
  */
 export async function deletePost(uri: string, cid?: string) {
 	if (isAppviewOwnedUri(uri)) return deleteKossoriPost(uri);
-	const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(uri);
+	const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(
+		uri,
+	);
 	if (!match) throw new Error('Invalid post URI');
 	return deleteRecord(match[1], match[2], cid);
 }
@@ -511,15 +498,13 @@ function blobCid(blob: unknown): string | undefined {
 /**
  * 既存投稿の本文・画像・リンクカードを編集する。既存の画像とカードサムネイルは
  * getRecord した BlobRef を再利用し、新規 Blob だけアップロードする。
- * createdAt・reply・kossori 等のフィールドは保持する。
- *
- * applyChannel を渡したときだけ所属チャンネルを draft の内容で書き直す（未指定なら保持）。
+ * createdAt・reply・kossori・旧チャンネルの所属等のフィールドは保持する。
  */
 export async function updatePost(
 	rkey: string,
 	draft: PostDraft,
 	images?: PostEditImage[],
-	opts: { applyChannel?: boolean; collection?: string; video?: PostVideoEdit } = {},
+	opts: { collection?: string; video?: PostVideoEdit } = {},
 ) {
 	const s = current();
 	const agent = new Agent(s);
@@ -531,16 +516,12 @@ export async function updatePost(
 	});
 	const original = data.value as Record<string, unknown>;
 	const record: Record<string, unknown> = {
-		...(collection === DOCUMENT ? (original.nagi as Record<string, unknown> ?? {}) : original),
+		...(collection === DOCUMENT ? ((original.nagi as Record<string, unknown>) ?? {}) : original),
 		$type: POST,
 		text: draft.text,
 		facets: draft.facets,
 		langs: draft.langs,
 	};
-	if (opts.applyChannel) {
-		if (draft.channel) record.channel = draft.channel;
-		else delete record.channel;
-	}
 	const cwRestricted = record.cwRestricted === true;
 	if (
 		!cwRestricted &&
@@ -654,7 +635,6 @@ export async function updatePost(
 				...(image.aspectRatio ? { aspectRatio: image.aspectRatio } : {}),
 			};
 		});
-
 	}
 	if (media && (opts.video || images !== undefined)) {
 		const embed = buildPostEmbed(media);
@@ -720,26 +700,33 @@ export async function updatePost(
 	let savedRecord = record;
 	if (collection === DOCUMENT) {
 		const cover = postEmbedMedia(record.embed)?.images[0]?.image;
-		if (cover && !usableAsCoverImage(cover)) throw new Error('Blog cover images must be smaller than 1 MB');
+		if (cover && !usableAsCoverImage(cover))
+			throw new Error('Blog cover images must be smaller than 1 MB');
 		const originalTitle = typeof original.title === 'string' ? original.title : '';
 		const publishedAt = typeof original.publishedAt === 'string' ? original.publishedAt : '';
 		const site = typeof original.site === 'string' ? original.site : '';
 		if (!originalTitle || !publishedAt || !site) throw new Error('Invalid blog document');
 		savedRecord = {
 			...original,
-			...buildArticleRecord({
-				rkey, title: extractTitle(draft.text) ?? originalTitle, markdown: draft.text,
-				publishedAt,
-				nagi: {
-					facets: draft.facets,
-					langs: draft.langs,
-					embed: record.embed,
-					linkCards: record.linkCards,
-					...(record.botSilent === true ? { botSilent: true } : {}),
+			...buildArticleRecord(
+				{
+					rkey,
+					title: extractTitle(draft.text) ?? originalTitle,
+					markdown: draft.text,
+					publishedAt,
+					nagi: {
+						facets: draft.facets,
+						langs: draft.langs,
+						embed: record.embed,
+						linkCards: record.linkCards,
+						...(record.botSilent === true ? { botSilent: true } : {}),
+					},
+					...(original.labels ? { labels: original.labels } : {}),
+					...(cover ? { coverImage: cover } : {}),
 				},
-				...(original.labels ? { labels: original.labels } : {}),
-				...(cover ? { coverImage: cover } : {}),
-			}, site, s.did),
+				site,
+				s.did,
+			),
 			updatedAt: new Date().toISOString(),
 		};
 		if (!cover) delete savedRecord.coverImage;
@@ -809,108 +796,6 @@ export async function deleteOwnNews(uri: string, cid?: string) {
 }
 export async function deleteRecord(collection: string, rkey: string, cid?: string) {
 	return deleteAndIndex(collection, rkey, cid);
-}
-/**
- * チャンネルを作成する。誰でも作成でき、作成者が所有者（レコードは作成者の PDS）。
- * banner はアバターと同じく AvatarCropper で切り出した webp Blob をアップロードして載せる。
- */
-export async function createChannel(input: { name: string; description?: string; banner?: Blob }) {
-	const s = current();
-	const agent = new Agent(s);
-	const banner = input.banner
-		? (await agent.com.atproto.repo.uploadBlob(input.banner, { encoding: input.banner.type })).data
-				.blob
-		: undefined;
-	return indexed(
-		agent.com.atproto.repo.createRecord({
-			repo: s.did,
-			collection: CHANNEL,
-			validate: false,
-			record: {
-				$type: CHANNEL,
-				name: input.name,
-				...(input.description ? { description: input.description } : {}),
-				...(banner ? { banner } : {}),
-				createdAt: new Date().toISOString(),
-			},
-		}),
-	);
-}
-/**
- * チャンネルの表示情報を更新する。banner は undefined=維持、null=削除、Blob=差し替え。
- * 最新レコードを読み、createdAt・pinnedPost・未知の将来フィールドを保持したまま書き戻す。
- */
-export async function updateChannel(
-	rkey: string,
-	input: { name: string; description?: string; banner?: Blob | null },
-) {
-	const s = current();
-	const agent = new Agent(s);
-	const banner =
-		input.banner instanceof Blob
-			? (await agent.com.atproto.repo.uploadBlob(input.banner, { encoding: input.banner.type }))
-					.data.blob
-			: input.banner;
-	const { data } = await agent.com.atproto.repo.getRecord({
-		repo: s.did,
-		collection: CHANNEL,
-		rkey,
-	});
-	const record: Record<string, unknown> = {
-		...(data.value as Record<string, unknown>),
-		$type: CHANNEL,
-		name: input.name,
-	};
-	if (input.description) record.description = input.description;
-	else delete record.description;
-	if (banner === null) delete record.banner;
-	else if (banner !== undefined) record.banner = banner;
-	return indexed(
-		agent.com.atproto.repo.putRecord({
-			repo: s.did,
-			collection: CHANNEL,
-			rkey,
-			validate: false,
-			swapRecord: data.cid,
-			record,
-		}),
-	);
-}
-/**
- * チャンネルのピンを設定・解除する。PDS はログイン中ユーザー自身の repo にしか書かないため、
- * チャンネル作成者以外が他人のチャンネルレコードを変更することはできない。
- */
-export async function setChannelPinnedPost(
-	rkey: string,
-	pinnedPost?: { uri: string; cid: string },
-) {
-	const s = current();
-	const agent = new Agent(s);
-	const { data } = await agent.com.atproto.repo.getRecord({
-		repo: s.did,
-		collection: CHANNEL,
-		rkey,
-	});
-	const record: Record<string, unknown> = {
-		...(data.value as Record<string, unknown>),
-		$type: CHANNEL,
-	};
-	if (pinnedPost) record.pinnedPost = pinnedPost;
-	else delete record.pinnedPost;
-	return indexed(
-		agent.com.atproto.repo.putRecord({
-			repo: s.did,
-			collection: CHANNEL,
-			rkey,
-			validate: false,
-			swapRecord: data.cid,
-			record,
-		}),
-	);
-}
-/** チャンネル削除。所有者だけが自分の PDS のレコードを消せる。所属投稿は残る。 */
-export async function deleteChannel(rkey: string, cid?: string) {
-	return deleteRecord(CHANNEL, rkey, cid);
 }
 export async function deleteAllNagiRecords() {
 	const s = current();

@@ -104,10 +104,7 @@
 	{:else if !thread}<Spinner />
 	{:else}
 		<article class="thread-unit">
-			<ThreadFlags
-				channel={thread.post.channel}
-				kossori={Boolean(thread.post.threadKossori ?? thread.post.kossori)}
-			/>
+			<ThreadFlags kossori={Boolean(thread.post.threadKossori ?? thread.post.kossori)} />
 			<div data-post-uri={thread.post.uri}>
 				<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
 			</div>
