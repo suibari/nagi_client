@@ -2,6 +2,7 @@ import type { EmojiView } from '$lib/api/types';
 
 export type ComposerSuggestionToken =
 	| { kind: 'mention'; start: number; end: number; query: string }
+	| { kind: 'tag'; start: number; end: number; query: string; marker: '#' | '＃' }
 	| { kind: 'emoji'; start: number; end: number; query: string };
 
 export function detectComposerSuggestionToken(
@@ -17,6 +18,16 @@ export function detectComposerSuggestionToken(
 			start: caret - mention[2].length - 1,
 			end: caret,
 			query: mention[2],
+		};
+	// facets.ts と同じく、行頭か空白の直後の # / ＃ だけをハッシュタグとして扱う。
+	const tag = /(^|\s)([#＃])([^\s#＃]+)$/u.exec(before);
+	if (tag)
+		return {
+			kind: 'tag',
+			start: caret - tag[3].length - 1,
+			end: caret,
+			query: tag[3],
+			marker: tag[2] as '#' | '＃',
 		};
 	const emoji = /(^|[\s(\[{]):([A-Za-z0-9_-]+)$/.exec(before);
 	if (emoji?.[2])

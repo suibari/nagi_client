@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { searchActors } from '$lib/api/appview';
+	import { searchActors, searchTags } from '$lib/api/appview';
 	import { createTypeaheadSearch } from '$lib/api/useTypeaheadSearch.svelte';
-	import type { ActorView, EmojiView } from '$lib/api/types';
+	import type { ActorView, EmojiView, TagSuggestionView } from '$lib/api/types';
 	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { portal } from '$lib/actions/portal';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
 	import EmojiSuggestionList from './EmojiSuggestionList.svelte';
+	import TagSuggestionList from './TagSuggestionList.svelte';
 	import type { MarkdownFormat } from './MarkdownPalette.svelte';
 	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
 	import {
@@ -14,6 +15,7 @@
 		replaceEmojiSuggestion,
 		type ComposerSuggestionToken,
 	} from '$lib/post/composer-suggestion';
+	import { normalizeTag } from '$lib/tags';
 	import { onMount } from 'svelte';
 	import { Annotation, Compartment, EditorState, type Transaction } from '@codemirror/state';
 	import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view';
@@ -92,13 +94,23 @@
 				displayEmojiName(emoji.name).toLowerCase().includes(query.toLowerCase()),
 		},
 	);
+	const tagSuggest = createTypeaheadSearch<TagSuggestionView>(
+		(query, signal) => searchTags(query, 10, signal).then((result) => result.tags),
+		{
+			debounceMs: 80,
+			leading: true,
+			matches: (tag, query) => tag.tag.startsWith(query),
+		},
+	);
 	let activeIndex = $state(0);
 	let suggestionLayer = $state<HTMLDivElement>();
 	let suggestionStyle = $state('');
 	let suggestionPositioned = $state(false);
 	let token = $state<ComposerSuggestionToken>();
 	// いま候補を出している方（トークンの種類で決まる）。件数・確定はこれ経由で扱う。
-	let activeSuggest = $derived(token?.kind === 'emoji' ? emojiSuggest : suggest);
+	let activeSuggest = $derived(
+		token?.kind === 'tag' ? tagSuggest : token?.kind === 'emoji' ? emojiSuggest : suggest,
+	);
 
 	const selectionStart = () =>
 		view?.state.selection.main.from ?? textarea?.selectionStart ?? value.length;
@@ -330,6 +342,7 @@
 		token = undefined;
 		suggestionPositioned = false;
 		suggest.reset();
+		tagSuggest.reset();
 		emojiSuggest.reset();
 		activeIndex = 0;
 	}
@@ -383,13 +396,22 @@
 		});
 		if (next?.kind === 'mention') {
 			token = next;
+			tagSuggest.reset();
 			emojiSuggest.reset();
 			suggest.search(next.query, () => (activeIndex = 0));
+			return;
+		}
+		if (next?.kind === 'tag') {
+			token = next;
+			suggest.reset();
+			emojiSuggest.reset();
+			tagSuggest.search(normalizeTag(next.query), () => (activeIndex = 0));
 			return;
 		}
 		if (next?.kind === 'emoji') {
 			token = next;
 			suggest.reset();
+			tagSuggest.reset();
 			emojiSuggest.search(next.query, () => (activeIndex = 0));
 			return;
 		}
@@ -593,6 +615,21 @@
 		focusEditor();
 	}
 
+	// タグはテキストだけで facet になるので、選択範囲は持たず置き換えるだけ。
+	function chooseTag(tag: TagSuggestionView) {
+		if (!token || token.kind !== 'tag') return;
+		const label = `${token.marker}${tag.tag}`;
+		const suffix = value.slice(token.end);
+		const trailingSpace = suffix.startsWith(' ') ? '' : ' ';
+		const delta = label.length + trailingSpace.length - (token.end - token.start);
+		value = `${value.slice(0, token.start)}${label}${trailingSpace}${suffix}`;
+		mentions = shiftedSelections(mentions, token.start, token.end, delta);
+		emojis = shiftedSelections(emojis, token.start, token.end, delta);
+		setText(value, token.start + label.length + trailingSpace.length);
+		close();
+		focusEditor();
+	}
+
 	function chooseEmoji(emoji: EmojiView) {
 		if (!token || token.kind !== 'emoji') return;
 		const replacement = replaceEmojiSuggestion(value, token, emoji);
@@ -631,7 +668,8 @@
 
 	function chooseActive() {
 		if (!suggestionsOpen() || !token) return false;
-		if (token.kind === 'emoji') chooseEmoji(emojiSuggest.items[activeIndex]);
+		if (token.kind === 'tag') chooseTag(tagSuggest.items[activeIndex]);
+		else if (token.kind === 'emoji') chooseEmoji(emojiSuggest.items[activeIndex]);
 		else choose(suggest.items[activeIndex]);
 		return true;
 	}
@@ -715,7 +753,11 @@
 	{:else}
 		<div bind:this={host} class="composer-input-host"></div>
 	{/if}
-	{#if token}
+	<!--
+		タグは新しく作ることも多いので、既存タグが見つかったときだけ出す。
+		「該当なし」やスケルトンを毎回挟むと、打っている途中がうるさい。
+	-->
+	{#if token && (token.kind !== 'tag' || tagSuggest.items.length)}
 		<div
 			bind:this={suggestionLayer}
 			use:portal
@@ -729,6 +771,13 @@
 					pending={suggest.pending}
 					{activeIndex}
 					onchoose={choose}
+				/>
+			{:else if token.kind === 'tag'}
+				<TagSuggestionList
+					tags={tagSuggest.items}
+					marker={token.marker}
+					{activeIndex}
+					onchoose={chooseTag}
 				/>
 			{:else}
 				<EmojiSuggestionList

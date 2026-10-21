@@ -429,6 +429,9 @@ export type NotificationCardSubject = {
 	cards: CardView[];
 };
 export type SearchActorsResult = { actors: ActorView[] };
+/** 既存ハッシュタグの候補。tag は正規形（# を除いた小文字）、count はそのタグの投稿数。 */
+export type TagSuggestionView = { tag: string; count?: number };
+export type SearchTagsResult = { tags: TagSuggestionView[] };
 /** ミュート対象の種別。actor は相手の DID、tag はハッシュタグ（# を除いた小文字）を指す。 */
 export type MuteSubjectType = 'actor' | 'tag';
 /** 自分のミュート一覧。AppView は本人のリクエストにしか返さない。 */

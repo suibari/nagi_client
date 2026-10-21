@@ -23,9 +23,32 @@ describe('detectComposerSuggestionToken', () => {
 		expect(detectComposerSuggestionToken(':猫', 2, options)).toBeUndefined();
 	});
 
-	it('detects mentions, and leaves hashtags as plain text without suggestions', () => {
+	it('detects mentions', () => {
 		expect(detectComposerSuggestionToken('@alice', 6, options)?.kind).toBe('mention');
-		expect(detectComposerSuggestionToken('#nagi', 5, options)).toBeUndefined();
+	});
+
+	it('detects a hashtag query at line start or after whitespace, keeping the marker', () => {
+		expect(detectComposerSuggestionToken('#nagi', 5, options)).toEqual({
+			kind: 'tag',
+			start: 0,
+			end: 5,
+			query: 'nagi',
+			marker: '#',
+		});
+		expect(detectComposerSuggestionToken('今日の ＃さんぽ', 9, options)).toEqual({
+			kind: 'tag',
+			start: 5,
+			end: 9,
+			query: 'さんぽ',
+			marker: '＃',
+		});
+	});
+
+	it('does not treat an empty marker, URL fragments, or a mid-word # as a hashtag query', () => {
+		expect(detectComposerSuggestionToken('#', 1, options)).toBeUndefined();
+		expect(detectComposerSuggestionToken('https://example.com/#top', 24, options)).toBeUndefined();
+		expect(detectComposerSuggestionToken('C#', 2, options)).toBeUndefined();
+		expect(detectComposerSuggestionToken('#nagi ', 6, options)).toBeUndefined();
 	});
 });
 

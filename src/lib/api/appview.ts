@@ -37,6 +37,7 @@ import type {
 	PrivateListView,
 	PutPreferencesInput,
 	SearchActorsResult,
+	SearchTagsResult,
 	ThreadView,
 	TimelinePage,
 	ZenkatsuDeckView,
@@ -461,6 +462,19 @@ export const searchActors = (
 	return call<SearchActorsResult>(
 		'com.suibari.nagi.searchActors',
 		`/xrpc/com.suibari.nagi.searchActors?${params}`,
+		{ signal },
+		'none',
+	);
+};
+// 投稿欄の #タグ候補。既存タグを前方一致で返す（q は # を除いた入力）。公開情報なので AppView 直読み。
+export const searchTags = (query: string, limit = 10, signal?: AbortSignal) => {
+	const params = new URLSearchParams({
+		q: query,
+		limit: String(Math.min(20, Math.max(1, limit))),
+	});
+	return call<SearchTagsResult>(
+		'com.suibari.nagi.searchTags',
+		`/xrpc/com.suibari.nagi.searchTags?${params}`,
 		{ signal },
 		'none',
 	);
