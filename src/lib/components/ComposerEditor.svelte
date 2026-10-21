@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import MarkdownPalette, { type MarkdownFormat } from './MarkdownPalette.svelte';
 	import ComposerInput from './ComposerInput.svelte';
@@ -14,10 +14,8 @@
 	let {
 		value = $bindable(''),
 		mentions = $bindable<MentionSelection[]>([]),
-		channels = $bindable<ChannelSelection[]>([]),
 		emojis = $bindable<EmojiSelection[]>([]),
 		mentionSuggestionsEnabled = true,
-		channelSuggestionsEnabled = false,
 		emojiPickerEnabled = true,
 		id,
 		placeholder,
@@ -35,10 +33,8 @@
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
-		channels?: ChannelSelection[];
 		emojis?: EmojiSelection[];
 		mentionSuggestionsEnabled?: boolean;
-		channelSuggestionsEnabled?: boolean;
 		emojiPickerEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
@@ -88,10 +84,8 @@
 		bind:this={editor}
 		bind:value
 		bind:mentions
-		bind:channels
 		bind:emojis
 		{mentionSuggestionsEnabled}
-		{channelSuggestionsEnabled}
 		{id}
 		{placeholder}
 		{ariaLabel}

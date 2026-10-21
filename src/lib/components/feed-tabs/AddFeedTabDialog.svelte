@@ -1,22 +1,19 @@
 <script lang="ts">
-	import Spinner from '$lib/components/Spinner.svelte';
-	import { getChannels, searchChannelsByQuery } from '$lib/api/appview';
-	import type { ChannelView } from '$lib/api/types';
-	import { rememberChannelLabel } from '$lib/feed-tabs/labels.svelte';
 	import {
 		builtinTabId,
 		DEFAULT_SOURCE,
+		MAX_TAB_QUERY_LENGTH,
 		newTabId,
 		tabIdentity,
 		type FeedTab,
 		type FeedTabKind,
 	} from '$lib/feed-tabs/types';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { session } from '$lib/oauth/session.svelte';
+	import { normalizeTag } from '$lib/tags';
 	import Icon from '$lib/components/shell/Icon.svelte';
 
 	/**
-	 * タブの追加。種別を選ぶ1段目と、チャンネル選択／検索語入力の2段目からなる。
+	 * タブの追加。種別を選ぶ1段目と、タグ／検索語入力の2段目からなる。
 	 * 「リスト」「カスタム」は中身が1つずつしか無いので、種別を選んだ時点で確定する。
 	 */
 	let {
@@ -25,11 +22,12 @@
 		onclose,
 	}: { existing: FeedTab[]; onadd: (tab: FeedTab) => void; onclose: () => void } = $props();
 
-	type Step = 'kind' | 'channel' | 'search';
+	type Step = 'kind' | 'hashtag' | 'search';
 	let step = $state<Step>('kind');
 
 	const taken = $derived(new Set(existing.map(tabIdentity)));
 
+	// 検索は自由文だけに絞ったので、迷いやすい検索を一番下に置く。
 	const KINDS: { kind: FeedTabKind; label: () => string; hint: () => string; icon: string }[] = [
 		{ kind: 'list', label: m.feedTabsKindList, hint: m.feedTabsKindListHint, icon: 'text' },
 		{
@@ -40,9 +38,9 @@
 		},
 		{ kind: 'custom', label: m.feedTabsKindCustom, hint: m.feedTabsKindCustomHint, icon: 'heart' },
 		{
-			kind: 'channel',
-			label: m.feedTabsKindChannel,
-			hint: m.feedTabsKindChannelHint,
+			kind: 'hashtag',
+			label: m.feedTabsKindHashtag,
+			hint: m.feedTabsKindHashtagHint,
 			icon: 'hash',
 		},
 		{ kind: 'search', label: m.feedTabsKindSearch, hint: m.feedTabsKindSearchHint, icon: 'search' },
@@ -50,19 +48,14 @@
 
 	/** list / custom は中身が1つなので、既にあるなら選ばせない。 */
 	const disabledKind = (kind: FeedTabKind) =>
-		kind === 'channel' || kind === 'search'
+		kind === 'hashtag' || kind === 'search'
 			? false
 			: taken.has(kind === 'global' ? 'global' : `${kind}:${DEFAULT_SOURCE[kind]}`);
 
 	function pickKind(kind: FeedTabKind) {
 		if (disabledKind(kind)) return;
-		if (kind === 'channel') {
-			step = 'channel';
-			void loadChannels();
-			return;
-		}
-		if (kind === 'search') {
-			step = 'search';
+		if (kind === 'hashtag' || kind === 'search') {
+			step = kind;
 			return;
 		}
 		const source = DEFAULT_SOURCE[kind];
@@ -71,96 +64,34 @@
 		onadd({ ...tab, id: builtinTabId(tab) ?? kind });
 	}
 
-	// --- チャンネル選択 -------------------------------------------------------
-	let channels = $state<ChannelView[]>([]);
-	let channelsLoading = $state(false);
-	let channelsError = $state('');
-	let query = $state('');
-	let searching = $state(false);
+	// --- ハッシュタグタブ -----------------------------------------------------
+	let tagQuery = $state('');
+	const tag = $derived(normalizeTag(tagQuery));
+	const tagDuplicate = $derived(Boolean(tag) && taken.has(`hashtag:${tag}`));
 
-	/**
-	 * 参加中とトレンドを合流させ、viewerSubscribed で二分する。
-	 * 追加済みを上、それ以外を下に並べる。
-	 */
-	async function loadChannels() {
-		if (channels.length || channelsLoading) return;
-		channelsLoading = true;
-		channelsError = '';
-		try {
-			const [subscribed, trending] = await Promise.all([
-				$session
-					? getChannels('list')
-							.then((page) => page.channels)
-							.catch(() => [] as ChannelView[])
-					: Promise.resolve([] as ChannelView[]),
-				getChannels('trend').then((page) => page.channels),
-			]);
-			const byUri = new Map<string, ChannelView>();
-			for (const channel of [...subscribed, ...trending]) {
-				const merged = { ...byUri.get(channel.uri), ...channel };
-				byUri.set(channel.uri, merged);
-			}
-			channels = [...byUri.values()];
-			for (const channel of channels) rememberChannelLabel(channel.uri, channel.name);
-		} catch (error) {
-			channelsError = error instanceof Error ? error.message : m.loadFailed();
-		} finally {
-			channelsLoading = false;
-		}
-	}
-
-	async function runSearch() {
-		const q = query.trim();
-		if (!q) {
-			channels = [];
-			await loadChannels();
-			return;
-		}
-		searching = true;
-		channelsError = '';
-		try {
-			const page = await searchChannelsByQuery(q, undefined, 'exact');
-			channels = page.channels;
-			for (const channel of channels) rememberChannelLabel(channel.uri, channel.name);
-		} catch (error) {
-			channelsError = error instanceof Error ? error.message : m.loadFailed();
-		} finally {
-			searching = false;
-		}
-	}
-
-	const subscribed = $derived(channels.filter((channel) => channel.viewerSubscribed));
-	const others = $derived(channels.filter((channel) => !channel.viewerSubscribed));
-
-	function pickChannel(channel: ChannelView) {
-		rememberChannelLabel(channel.uri, channel.name);
-		onadd({ id: newTabId('ch'), kind: 'channel', uri: channel.uri, label: channel.name });
+	function addHashtag() {
+		if (!tag || tagDuplicate) return;
+		onadd({ id: newTabId('tag'), kind: 'hashtag', query: tag });
 	}
 
 	// --- 検索タブ -------------------------------------------------------------
 	let searchQuery = $state('');
-	let searchKind = $state<'keyword' | 'tag'>('keyword');
-	// 先頭に # を打った時点でタグ検索の意図とみなす。
+	// 検索は自由文だけ。先頭に # を打ったらタグの意図とみなし、ハッシュタグの入力へ移す。
 	$effect(() => {
 		if (/^[#＃]/.test(searchQuery)) {
-			searchKind = 'tag';
-			searchQuery = searchQuery.replace(/^[#＃]+/, '');
+			tagQuery = searchQuery;
+			searchQuery = '';
+			step = 'hashtag';
 		}
 	});
 	const trimmedQuery = $derived(searchQuery.trim());
 	const searchDuplicate = $derived(
-		Boolean(trimmedQuery) && taken.has(`search:${searchKind}:${trimmedQuery.toLowerCase()}`),
+		Boolean(trimmedQuery) && taken.has(`search:${trimmedQuery.toLowerCase()}`),
 	);
 
 	function addSearch() {
 		if (!trimmedQuery || searchDuplicate) return;
-		onadd({
-			id: newTabId('q'),
-			kind: 'search',
-			query: trimmedQuery,
-			queryKind: searchKind,
-			label: trimmedQuery,
-		});
+		onadd({ id: newTabId('q'), kind: 'search', query: trimmedQuery, label: trimmedQuery });
 	}
 </script>
 
@@ -192,74 +123,30 @@
 					</li>
 				{/each}
 			</ul>
-		{:else if step === 'channel'}
+		{:else if step === 'hashtag'}
 			<button type="button" class="settings-back" onclick={() => (step = 'kind')}
 				>← {m.feedTabsBackToKinds()}</button
 			>
 			<label class="field"
-				>{m.feedTabsPickChannel()}
+				>{m.feedTabsHashtagLabel()}
 				<input
-					bind:value={query}
-					placeholder={m.searchPlaceholder()}
-					onkeydown={(event) => event.key === 'Enter' && runSearch()}
+					bind:value={tagQuery}
+					maxlength={MAX_TAB_QUERY_LENGTH}
+					placeholder={m.feedTabsHashtagPlaceholder()}
+					onkeydown={(event) => event.key === 'Enter' && addHashtag()}
 				/>
+				<small>{m.feedTabsHashtagHint()}</small>
 			</label>
-			{#if channelsLoading || searching}
-				<Spinner />
-			{:else if channelsError}
-				<p class="error">{channelsError}</p>
-			{:else}
-				{#if subscribed.length}
-					<h3 class="feed-tab-group">{m.feedTabsAddedChannels()}</h3>
-					<ul class="feed-tab-channels">
-						{#each subscribed as channel (channel.uri)}
-							<li>
-								<button
-									type="button"
-									disabled={taken.has(`channel:${channel.uri}`)}
-									onclick={() => pickChannel(channel)}>{channel.name}</button
-								>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-				{#if others.length}
-					<h3 class="feed-tab-group">{m.feedTabsOtherChannels()}</h3>
-					<ul class="feed-tab-channels">
-						{#each others as channel (channel.uri)}
-							<li>
-								<button
-									type="button"
-									disabled={taken.has(`channel:${channel.uri}`)}
-									onclick={() => pickChannel(channel)}>{channel.name}</button
-								>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-				{#if !subscribed.length && !others.length}<p>{m.channelsEmpty()}</p>{/if}
-			{/if}
+			{#if tagDuplicate}<p class="error">{m.feedTabsDuplicate()}</p>{/if}
 		{:else}
 			<button type="button" class="settings-back" onclick={() => (step = 'kind')}
 				>← {m.feedTabsBackToKinds()}</button
 			>
-			<div class="feed-tab-search-kind" role="group" aria-label={m.feedTabsKindSearch()}>
-				<button
-					type="button"
-					class:active={searchKind === 'keyword'}
-					onclick={() => (searchKind = 'keyword')}>{m.feedTabsSearchKindKeyword()}</button
-				>
-				<button
-					type="button"
-					class:active={searchKind === 'tag'}
-					onclick={() => (searchKind = 'tag')}>{m.feedTabsSearchKindTag()}</button
-				>
-			</div>
 			<label class="field"
 				>{m.feedTabsSearchLabel()}
 				<input
 					bind:value={searchQuery}
-					maxlength="128"
+					maxlength={MAX_TAB_QUERY_LENGTH}
 					placeholder={m.feedTabsSearchPlaceholder()}
 					onkeydown={(event) => event.key === 'Enter' && addSearch()}
 				/>
@@ -270,7 +157,11 @@
 
 		<div class="delete-actions">
 			<button type="button" class="ghost" onclick={onclose}>{m.cancel()}</button>
-			{#if step === 'search'}
+			{#if step === 'hashtag'}
+				<button type="button" class="primary" disabled={!tag || tagDuplicate} onclick={addHashtag}
+					>{m.feedTabsAdd()}</button
+				>
+			{:else if step === 'search'}
 				<button
 					type="button"
 					class="primary"

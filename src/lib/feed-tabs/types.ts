@@ -2,13 +2,13 @@ import type { FeedTab, FeedTabKind, FeedTabSource } from '$lib/api/types';
 
 export type { FeedTab, FeedTabKind, FeedTabSource };
 
-/** タブ数の上限。チャンネル追加の上限（50）より意図的に少ない。 */
+/** タブ数の上限。 */
 export const FEED_TABS_LIMIT = 16;
 export const FEED_TAB_KINDS: readonly FeedTabKind[] = [
 	'list',
 	'global',
 	'custom',
-	'channel',
+	'hashtag',
 	'search',
 ] as const;
 export const MAX_TAB_QUERY_LENGTH = 128;
@@ -32,17 +32,17 @@ export const DEFAULT_FEED_TABS: FeedTab[] = [
 
 /**
  * 「同じ中身のタブか」の判定キー。id はランダムなので重複判定には使えない
- * （同じチャンネルを2回追加したら別 id の同じタブが並んでしまう）。
+ * （同じタグを2回追加したら別 id の同じタブが並んでしまう）。
  */
 export function tabIdentity(tab: FeedTab): string {
 	switch (tab.kind) {
 		case 'list':
 		case 'custom':
 			return `${tab.kind}:${tab.source ?? DEFAULT_SOURCE[tab.kind]}`;
-		case 'channel':
-			return `channel:${tab.uri ?? ''}`;
+		case 'hashtag':
+			return `hashtag:${tab.query ?? ''}`;
 		case 'search':
-			return `search:${tab.queryKind ?? 'keyword'}:${(tab.query ?? '').toLowerCase()}`;
+			return `search:${(tab.query ?? '').toLowerCase()}`;
 		default:
 			return tab.kind;
 	}
@@ -50,7 +50,7 @@ export function tabIdentity(tab: FeedTab): string {
 
 /**
  * 組み込みタブの固定 id。`/feed?tab=global` を端末間で安定させたいので、
- * ランダム採番せずこの表から採る。ここに無いタブ（channel / search）は newTabId。
+ * ランダム採番せずこの表から採る。ここに無いタブ（hashtag / search）は newTabId。
  */
 const BUILTIN_IDS: Record<string, string> = {
 	'list:home': 'home',
@@ -60,10 +60,10 @@ const BUILTIN_IDS: Record<string, string> = {
 export const builtinTabId = (tab: FeedTab): string | undefined => BUILTIN_IDS[tabIdentity(tab)];
 
 /**
- * channel / search タブの id。衝突しても normalize が採番し直すので短くてよい。
+ * hashtag / search タブの id。衝突しても normalize が採番し直すので短くてよい。
  * プリレンダ（Node）でも通るよう crypto が無ければ Math.random に落ちる。
  */
-export function newTabId(prefix: 'ch' | 'q'): string {
+export function newTabId(prefix: 'tag' | 'q'): string {
 	const bytes = new Uint8Array(4);
 	if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
 	else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);

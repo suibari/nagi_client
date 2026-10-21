@@ -139,8 +139,6 @@ export type PostView = {
 	kossori?: boolean;
 	/** ルート投稿から解決した、スレッド全体の有効なこっそり状態。 */
 	threadKossori?: boolean;
-	/** 所属チャンネル（あれば）。バッジ表示・返信時の継承元に使う。 */
-	channel?: { uri: string; cid: string; name?: string };
 	/**
 	 * ブログとして書かれた投稿。本文先頭の見出しをタイトル、1枚目の画像を
 	 * ヘッダーとして記事の体裁で描画する。先頭が見出しなだけの通常投稿と
@@ -186,12 +184,11 @@ export type FeedItem = PostView & {
 };
 export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean; botActor?: ActorView };
 /**
- * my Nagi の「リスト動向」。1人 / 1チャンネルにつき最新1件しか来ないので、
+ * my Nagi の「リスト動向」。1人につき最新1件しか来ないので、
  * 活発な相手が枠を埋め尽くさない。ページングは無く、続きは既存のTLへ送る。
  */
 export type MyNagiListUser = { actor: ActorView; post: FeedItem };
-export type MyNagiChannel = { channel: ChannelView; post: FeedItem };
-export type MyNagiView = { listUsers: MyNagiListUser[]; channels: MyNagiChannel[] };
+export type MyNagiView = { listUsers: MyNagiListUser[] };
 export type TimelinePage = Page<FeedItem>;
 /** 本人だけが取得できる、ホームに表示するユーザーの非公開一覧。 */
 export type PrivateListView = { members: ActorView[]; limit: 200 };
@@ -432,38 +429,10 @@ export type NotificationCardSubject = {
 	cards: CardView[];
 };
 export type SearchActorsResult = { actors: ActorView[] };
-/** ユーザーが作るチャンネルのビュー。banner は AppView の blob プロキシへの相対パス。 */
-export type ChannelView = {
-	uri: string;
-	cid: string;
-	did: string;
-	name: string;
-	description?: string;
-	banner?: string;
-	createdAt: string;
-	indexedAt: string;
-	/** 最新投稿時刻（活動順・過疎判定用）。投稿ゼロなら付かない。 */
-	lastPostAt?: string;
-	/** PDS のチャンネルレコードに保存された参照。取得不能でも解除に使う。 */
-	pinnedPostRef?: StrongRef;
-	/** 非削除かつこのチャンネル所属であることを確認済みのピン投稿。 */
-	pinnedPost?: PostView;
-	/**
-	 * 自分がこの CH をミュートしているか。ミュート済み CH は一覧・検索から消えるが URL 直打ち
-	 * では開けるので、そのページで解除できるように getChannel だけが返す。
-	 */
-	viewerMuted?: boolean;
-	/**
-	 * 自分がこの CH に参加（購読）しているか。my Nagi の「参加中チャンネル」枠の対象になる。
-	 * ミュートと同じく本人にしか意味のない情報なので、サインアウト時は付かない。
-	 */
-	viewerSubscribed?: boolean;
-};
-export type ChannelsPage = { channels: ChannelView[]; cursor?: string; hasMore: boolean };
-/** ミュート対象の種別。actor は相手の DID、channel はチャンネルの AT-URI を指す。 */
-export type MuteSubjectType = 'actor' | 'channel';
+/** ミュート対象の種別。actor は相手の DID、tag はハッシュタグ（# を除いた小文字）を指す。 */
+export type MuteSubjectType = 'actor' | 'tag';
 /** 自分のミュート一覧。AppView は本人のリクエストにしか返さない。 */
-export type MutesView = { actors: ActorView[]; channels: ChannelView[] };
+export type MutesView = { actors: ActorView[]; tags: string[] };
 
 // ---------------------------------------------------------------------------
 // 端末をまたいで同期する設定（既読位置・お気に入り絵文字）
@@ -480,7 +449,7 @@ export type EmojiFavorite =
  * list / custom は「入れ物」で、どれを指すかは source が持つ（list はいまホームだけ、
  * custom はいま全肯定だけ）。将来ユーザーが定義したカスタムフィードも custom に入る。
  */
-export type FeedTabKind = 'list' | 'global' | 'custom' | 'channel' | 'search';
+export type FeedTabKind = 'list' | 'global' | 'custom' | 'hashtag' | 'search';
 /** list / custom が指す組み込みの中身。ユーザー定義のフィードは将来 uri で指す。 */
 export type FeedTabSource = 'home' | 'affirmation';
 /**
@@ -492,12 +461,9 @@ export type FeedTab = {
 	kind: FeedTabKind;
 	/** kind が list / custom のときの参照先（list=home, custom=affirmation）。 */
 	source?: FeedTabSource;
-	/** kind==='channel' のチャンネル AT-URI。 */
-	uri?: string;
-	/** kind==='search' の保存クエリ。 */
+	/** kind==='search' は自由文の保存クエリ、kind==='hashtag' はタグ（# を除いた小文字）。 */
 	query?: string;
-	queryKind?: 'keyword' | 'tag';
-	/** 表示名のスナップショット。権威は uri / query 側で、これは初回描画用。 */
+	/** 表示名のスナップショット。権威は query 側で、これは初回描画用。 */
 	label?: string;
 };
 export type PreferencesView = {
@@ -577,7 +543,6 @@ export type DraftLinkCard = { uri: string; title: string; description?: string }
 export type DraftContent = {
 	text: string;
 	mentions: Array<{ start: number; end: number; did: string; handle: string }>;
-	channels: Array<{ start: number; end: number; uri: string; name: string }>;
 	emojis: Array<{ start: number; end: number; uri: string }>;
 	linkCards: DraftLinkCard[];
 	dismissedUrls: string[];

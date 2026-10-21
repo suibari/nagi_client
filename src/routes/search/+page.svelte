@@ -5,23 +5,15 @@
 	import {
 		searchPosts,
 		searchPostsByQuery,
-		searchChannelsByQuery,
 		searchNewsByQuery,
 		searchActors,
 		getBookmarkFolders,
 		getBookmarks,
 	} from '$lib/api/appview';
-	import type {
-		ActorView,
-		BookmarkFolderView,
-		BookmarkItemView,
-		ChannelView,
-		NewsView,
-	} from '$lib/api/types';
+	import type { ActorView, BookmarkFolderView, BookmarkItemView, NewsView } from '$lib/api/types';
 	import { Feed, feedKey } from '$lib/feed/feed.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
-	import ChannelCard from '$lib/components/ChannelCard.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -31,24 +23,34 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { startVisiblePolling } from '$lib/polling';
 	import { session } from '$lib/oauth/session.svelte';
+	import { mutes } from '$lib/mute/mutes.svelte';
+	import { normalizeTag } from '$lib/tags';
 
 	// 自由文検索(?q=)を優先。無ければタグ検索(?tag=、小文字で正規化して保存側と一致)。
 	let q = $derived((page.url.searchParams.get('q') ?? '').trim());
-	let tag = $derived(
-		(page.url.searchParams.get('tag') ?? '')
-			.trim()
-			.replace(/^[#＃]+/, '')
-			.toLowerCase(),
-	);
+	let tag = $derived(normalizeTag(page.url.searchParams.get('tag') ?? ''));
 	let hasQuery = $derived(Boolean(q || tag));
+
+	// タグのミュート。このページ自体はミュート中でも今までどおり見える（開いたタグなので）。
+	// 効くのはTL・検索など、ほかの場所に流れてくる投稿のほう。
+	let tagMuted = $derived(Boolean(tag) && mutes.hasTag(tag));
+	let tagMuteError = $state('');
+	async function toggleTagMute() {
+		if (!tag || mutes.isPending(tag)) return;
+		tagMuteError = '';
+		try {
+			await mutes.toggleTag(tag);
+		} catch {
+			tagMuteError = m.muteUpdateFailed();
+		}
+	}
 
 	// 自由文モードは対象ごとにタブを分ける。意味検索のある対象は「一致」→
 	// 「botたんの気まぐれ」の順に縦に並べ、一致側には見出しを付けない。
-	type TabId = 'posts' | 'users' | 'channels' | 'blogs' | 'news' | 'bookmarks';
+	type TabId = 'posts' | 'users' | 'blogs' | 'news' | 'bookmarks';
 	const publicTabs: { id: TabId; label: () => string }[] = [
 		{ id: 'posts', label: () => m.searchTabPosts() },
 		{ id: 'users', label: () => m.searchTabUsers() },
-		{ id: 'channels', label: () => m.searchTabChannels() },
 		{ id: 'blogs', label: () => m.searchTabBlogs() },
 		{ id: 'news', label: () => m.searchTabNews() },
 	];
@@ -68,8 +70,6 @@
 	// 投稿以外は FeedItem ではないので素の配列で持つ。
 	let usersExact = $state<ActorView[]>([]);
 	let usersFuzzy = $state<ActorView[]>([]);
-	let channelsExact = $state<ChannelView[]>([]);
-	let channelsFuzzy = $state<ChannelView[]>([]);
 	let blogsExact = $state<BlogDirectoryItem[]>([]);
 	let newsExact = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
 	let newsFuzzy = $state<{ items: NewsView[]; botActor?: ActorView }>({ items: [] });
@@ -85,7 +85,6 @@
 	let readyExact = $state<Record<TabId, boolean>>({
 		posts: false,
 		users: false,
-		channels: false,
 		blogs: false,
 		news: false,
 		bookmarks: false,
@@ -93,7 +92,6 @@
 	let readyFuzzy = $state<Record<TabId, boolean>>({
 		posts: false,
 		users: false,
-		channels: false,
 		blogs: true,
 		news: false,
 		bookmarks: true,
@@ -112,8 +110,6 @@
 		tagFeed = undefined;
 		usersExact = [];
 		usersFuzzy = [];
-		channelsExact = [];
-		channelsFuzzy = [];
 		blogsExact = [];
 		newsExact = { items: [] };
 		newsFuzzy = { items: [] };
@@ -126,7 +122,6 @@
 		readyExact = {
 			posts: false,
 			users: false,
-			channels: false,
 			blogs: false,
 			news: false,
 			bookmarks: false,
@@ -134,7 +129,6 @@
 		readyFuzzy = {
 			posts: false,
 			users: false,
-			channels: false,
 			blogs: true,
 			news: false,
 			bookmarks: true,
@@ -159,10 +153,6 @@
 			.then((r) => fresh() && (usersExact = r.actors))
 			.catch(() => {})
 			.finally(() => fresh() && (readyExact.users = true));
-		void searchChannelsByQuery(q, undefined, 'exact')
-			.then((r) => fresh() && (channelsExact = r.channels))
-			.catch(() => {})
-			.finally(() => fresh() && (readyExact.channels = true));
 		void fetchBlogDirectory()
 			.then((items) => fresh() && (blogsExact = items.filter((item) => blogMatches(item, q))))
 			.catch(() => {})
@@ -201,11 +191,6 @@
 		} else if (target === 'users') {
 			void searchActors(q, 20, 'semantic')
 				.then((r) => fresh() && (usersFuzzy = r.actors))
-				.catch(() => {})
-				.finally(done);
-		} else if (target === 'channels') {
-			void searchChannelsByQuery(q, undefined, 'semantic')
-				.then((r) => fresh() && (channelsFuzzy = r.channels))
 				.catch(() => {})
 				.finally(done);
 		} else if (target === 'news') {
@@ -274,7 +259,6 @@
 	let exactCounts = $derived<Record<TabId, number>>({
 		posts: postsExact?.visibleItems.length ?? 0,
 		users: usersExact.length,
-		channels: channelsExact.length,
 		blogs: blogsExact.length,
 		news: newsExact.items.length,
 		bookmarks: bookmarkItems.length,
@@ -282,12 +266,11 @@
 	let allExactReady = $derived(
 		readyExact.posts &&
 			readyExact.users &&
-			readyExact.channels &&
 			readyExact.blogs &&
 			readyExact.news &&
 			readyExact.bookmarks,
 	);
-	// 自分でタブを選ぶ前に限り、当たりのあるタブへ寄せる。「チャンネルはあるのに検索して
+	// 自分でタブを選ぶ前に限り、当たりのあるタブへ寄せる。「ユーザーはいるのに検索して
 	// ヒットしない」と見えてしまう事故を防ぐのが目的。
 	$effect(() => {
 		if (!allExactReady || tabPicked || exactCounts[tab] > 0) return;
@@ -362,9 +345,23 @@
 {#if q}
 	<section class="page-title"><h1>{q}</h1></section>
 {:else if tag}
-	<section class="page-title">
+	<section class="page-title tag-title">
 		<h1 aria-label={m.searchTagAria({ tag })}>{m.searchTagTitle({ tag })}</h1>
+		{#if $session}
+			<button
+				class="tag-mute"
+				class:active={tagMuted}
+				type="button"
+				aria-pressed={tagMuted}
+				disabled={mutes.isPending(tag)}
+				onclick={() => void toggleTagMute()}
+			>
+				<Icon name="hide" size={16} />
+				<span>{tagMuted ? m.unmuteTag() : m.muteTag()}</span>
+			</button>
+		{/if}
 	</section>
+	{#if tagMuteError}<p class="error">{tagMuteError}</p>{/if}
 {/if}
 
 {#if !hasQuery}
@@ -442,32 +439,6 @@
 				<div class="state">{m.searchFuzzyEmpty()}</div>
 			{:else}
 				{@render actorRows(usersFuzzy)}
-			{/if}
-		</section>
-	{:else if tab === 'channels'}
-		<section class="search-section">
-			{#if !readyExact.channels}
-				<Spinner label={m.feedWaiting()} />
-			{:else if !channelsExact.length}
-				<div class="state">{m.searchExactEmpty()}</div>
-			{:else}
-				<div class="channels-list">
-					{#each channelsExact as ch (ch.uri)}
-						<ChannelCard channel={ch} />
-					{/each}
-				</div>
-			{/if}
-		</section>
-		<section class="search-section">
-			{@render fuzzyHeading()}
-			{#if readyFuzzy.channels && !channelsFuzzy.length}
-				<div class="state">{m.searchFuzzyEmpty()}</div>
-			{:else}
-				<div class="channels-list">
-					{#each channelsFuzzy as ch (ch.uri)}
-						<ChannelCard channel={ch} />
-					{/each}
-				</div>
 			{/if}
 		</section>
 	{:else if tab === 'blogs'}
@@ -567,6 +538,44 @@
 {/if}
 
 <style>
+	.tag-title {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px 12px;
+		min-inline-size: 0;
+	}
+	.tag-title h1 {
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
+	}
+	.tag-mute {
+		display: inline-flex;
+		flex: 0 0 auto;
+		align-items: center;
+		gap: 5px;
+		block-size: 34px;
+		padding: 0 13px;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-pill);
+		background: var(--bg-raised);
+		color: var(--text);
+		font-size: 12px;
+		font-weight: 800;
+		white-space: nowrap;
+	}
+	.tag-mute:hover:not(:disabled) {
+		border-color: var(--accent-border);
+	}
+	.tag-mute.active {
+		border-color: transparent;
+		background: var(--accent-soft);
+		color: var(--accent-strong);
+	}
+	.tag-mute:disabled {
+		opacity: 0.6;
+	}
 	.search-tabs {
 		display: flex;
 		gap: 4px;

@@ -55,9 +55,7 @@ describe('silent replies', () => {
 			[],
 			[],
 			[],
-			[],
 			false,
-			undefined,
 			false,
 			true,
 		);
@@ -69,9 +67,7 @@ describe('silent replies', () => {
 			[],
 			[],
 			[],
-			[],
 			false,
-			undefined,
 			true,
 			true,
 		);
@@ -85,20 +81,7 @@ describe('silent replies', () => {
 		createRecord.mockResolvedValue({
 			data: { uri: 'at://did:plc:self/com.suibari.nagi.post/reply', cid: 'bafyreply' },
 		});
-		const draft = preparePostDraft(
-			'reply',
-			reply,
-			undefined,
-			[],
-			[],
-			[],
-			[],
-			[],
-			false,
-			undefined,
-			false,
-			true,
-		);
+		const draft = preparePostDraft('reply', reply, undefined, [], [], [], [], false, false, true);
 
 		await createPost(draft, { images: [], cards: [] });
 
@@ -114,20 +97,7 @@ describe('silent replies', () => {
 			uri: 'at://did:web:nagi-api.suibari.com/com.suibari.nagi.post/reply',
 			cid: 'bafykossori',
 		});
-		const draft = preparePostDraft(
-			'reply',
-			reply,
-			undefined,
-			[],
-			[],
-			[],
-			[],
-			[],
-			true,
-			undefined,
-			false,
-			true,
-		);
+		const draft = preparePostDraft('reply', reply, undefined, [], [], [], [], true, false, true);
 
 		await createPost(draft);
 
@@ -156,9 +126,7 @@ describe('content warning storage boundaries', () => {
 			[],
 			[],
 			[],
-			[],
 			false,
-			undefined,
 			false,
 			false,
 			['sexual', 'ai-generated'],
@@ -180,22 +148,7 @@ const videoRecord = {
 };
 const quoteRef = { uri: 'at://did:plc:other/com.suibari.nagi.post/quoted', cid: 'bafyquote' };
 const videoDraft = (video = videoRecord, quote?: typeof quoteRef) =>
-	preparePostDraft(
-		'video',
-		undefined,
-		quote,
-		[],
-		[],
-		[],
-		[],
-		[],
-		false,
-		undefined,
-		false,
-		false,
-		[],
-		video,
-	);
+	preparePostDraft('video', undefined, quote, [], [], [], [], false, false, false, [], video);
 
 describe('video posts', () => {
 	beforeEach(() => {

@@ -1,10 +1,5 @@
 import { parseContentWarning } from '$lib/atproto/contentWarning';
-import {
-	parsePostText,
-	type ChannelSelection,
-	type EmojiSelection,
-	type MentionSelection,
-} from '$lib/atproto/facets';
+import { parsePostText, type EmojiSelection, type MentionSelection } from '$lib/atproto/facets';
 import { annotateMarkdownSource, type Block } from '$lib/atproto/markdown';
 
 export type HighlightSegment = { text: string; className: string };
@@ -38,10 +33,9 @@ function facetClass(features: readonly unknown[]) {
 export function highlightComposerText(
 	source: string,
 	mentions: MentionSelection[] = [],
-	channels: ChannelSelection[] = [],
 	emojis: EmojiSelection[] = [],
 ): HighlightLine[] {
-	const parsed = parsePostText(source, mentions, channels, emojis);
+	const parsed = parsePostText(source, mentions, emojis);
 	const { marks } = annotateMarkdownSource(parsed.text);
 	const textClasses = marks.map((list) =>
 		list ? list.map((mark) => `md-${mark}`) : ['md-syntax'],

@@ -10,7 +10,6 @@
 		externalDisabledReason,
 		kossoriDisabled = false,
 		kossoriDisabledReason = '',
-		channelName,
 		onselect,
 		onclose,
 	}: {
@@ -20,7 +19,6 @@
 		/** ブログは公開レコードなので、こっそりを選ばせない。 */
 		kossoriDisabled?: boolean;
 		kossoriDisabledReason?: string;
-		channelName?: string;
 		onselect: (scope: PostScope) => void;
 		onclose: () => void;
 	} = $props();
@@ -37,20 +35,18 @@
 		value === 'kossori'
 			? m.postScopeKossori()
 			: value === 'feed'
-				? (channelName ?? m.postScopeFeed())
+				? m.postScopeFeed()
 				: m.postScopeBluesky();
 
 	const detailFor = (value: PostScope) =>
 		value === 'kossori'
 			? m.postScopeKossoriDetail()
 			: value === 'feed'
-				? channelName
-					? m.postScopeChannelDetail({ channel: channelName })
-					: m.postScopeFeedDetail()
+				? m.postScopeFeedDetail()
 				: m.postScopeBlueskyDetail();
 
 	const iconFor = (value: PostScope) =>
-		value === 'kossori' ? 'hide' : value === 'feed' ? (channelName ? 'hash' : 'home') : 'bluesky';
+		value === 'kossori' ? 'hide' : value === 'feed' ? 'home' : 'bluesky';
 
 	function select(value: PostScope) {
 		if (disabledFor(value)) return;

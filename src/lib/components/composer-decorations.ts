@@ -13,12 +13,11 @@ import {
 	type DecorationSet,
 	type ViewUpdate,
 } from '@codemirror/view';
-import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 import { highlightComposerText } from '$lib/post/composer-highlight';
 
 export type ComposerSelections = {
 	mentions: MentionSelection[];
-	channels: ChannelSelection[];
 	emojis: EmojiSelection[];
 };
 
@@ -58,12 +57,7 @@ const PENDING_BULLET = /^[-*][ \t]+$/;
 
 function build(view: EditorView, selections: ComposerSelections) {
 	const doc = view.state.doc;
-	const lines = highlightComposerText(
-		doc.toString(),
-		selections.mentions,
-		selections.channels,
-		selections.emojis,
-	);
+	const lines = highlightComposerText(doc.toString(), selections.mentions, selections.emojis);
 	const decorations: Range<Decoration>[] = [];
 	const atomic: Range<Decoration>[] = [];
 	lines.forEach((line, index) => {

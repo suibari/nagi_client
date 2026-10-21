@@ -11,8 +11,6 @@ import type {
 	BookmarkFoldersView,
 	BookmarkStateView,
 	BookmarksPage,
-	ChannelsPage,
-	ChannelView,
 	DraftContent,
 	DraftsView,
 	DraftView,
@@ -310,31 +308,6 @@ export const ensureRecord = (uri: string, cid: string) =>
 		},
 		'required',
 	);
-// トレンドは公開コンテンツなので、認証が拒否された場合だけ公開取得へ落とせる。
-// リスト（参加中）とmine（作成者本人）は本人向け一覧なので、公開フォールバックさせない。
-export type ChannelDirectoryView = 'trend' | 'list' | 'mine';
-export const getChannels = (view: ChannelDirectoryView = 'trend', cursor?: string) => {
-	const params = new URLSearchParams({ limit: '50', view });
-	if (cursor) params.set('cursor', cursor);
-	const path = `/xrpc/com.suibari.nagi.getChannels?${params}`;
-	return view === 'trend'
-		? withPublicFallback<ChannelsPage>('com.suibari.nagi.getChannels', path)
-		: call<ChannelsPage>('com.suibari.nagi.getChannels', path, {}, 'required');
-};
-export const getChannel = (uri: string) =>
-	withPublicFallback<{ channel: ChannelView }>(
-		'com.suibari.nagi.getChannel',
-		`/xrpc/com.suibari.nagi.getChannel?uri=${encodeURIComponent(uri)}`,
-	);
-export const getChannelTimeline = (uri: string, cursor?: string, filter?: 'media') => {
-	const params = new URLSearchParams({ uri, limit: POST_PAGE_LIMIT });
-	if (cursor) params.set('cursor', cursor);
-	if (filter) params.set('filter', filter);
-	return withPublicFallback<TimelinePage>(
-		'com.suibari.nagi.getChannelTimeline',
-		`/xrpc/com.suibari.nagi.getChannelTimeline?${params}`,
-	);
-};
 // タグ投稿の検索。将来のキーワード検索も同じ /search 画面・同系エンドポイントへ相乗りできるよう
 // tag を明示パラメータにする。
 export const searchPosts = (tag: string, cursor?: string) => {
@@ -358,26 +331,7 @@ export const searchPostsByQuery = (q: string, cursor?: string, mode?: SearchMode
 		`/xrpc/com.suibari.nagi.searchPosts?${params}`,
 	);
 };
-// チャンネルの自由文検索。検索する対象はチャンネルの name+description（中の投稿は見ない）。
-export const searchChannelsByQuery = (q: string, cursor?: string, mode?: SearchMode) => {
-	const params = new URLSearchParams({ q });
-	if (cursor) params.set('cursor', cursor);
-	if (mode) params.set('mode', mode);
-	return withPublicFallback<ChannelsPage>(
-		'com.suibari.nagi.searchChannels',
-		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
-	);
-};
-// Composer の #チャンネル候補。意味検索を走らせない軽量な name 検索を明示する。
-// signal は打鍵ごとに前の候補取得を打ち切るため（PDS プロキシ経由の往復を無駄に重ねない）。
-export const searchChannelsTypeahead = (q: string, signal?: AbortSignal) => {
-	const params = new URLSearchParams({ q, limit: '10', typeahead: 'true' });
-	return withPublicFallback<ChannelsPage>(
-		'com.suibari.nagi.searchChannels',
-		`/xrpc/com.suibari.nagi.searchChannels?${params}`,
-		{ signal },
-	);
-};
+
 // ニュースの自由文検索（意味検索＋語彙一致）。公開コンテンツなので AppView 直読み。
 export const searchNewsByQuery = (
 	q: string,
@@ -691,7 +645,7 @@ export const generatePostAssist = (
 		{ method: 'POST', body: JSON.stringify(input), signal },
 		'required',
 	);
-/** my Nagi の「リスト動向」。本人のリストと購読状況そのものなので認証必須。 */
+/** my Nagi の「リスト動向」。本人のリストそのものなので認証必須。 */
 export const getMyNagi = (limit = 6) =>
 	call<MyNagiView>(
 		'com.suibari.nagi.getMyNagi',
@@ -699,14 +653,7 @@ export const getMyNagi = (limit = 6) =>
 		{},
 		'required',
 	);
-/** チャンネルの参加・解除。参加状態は本人にしか返らないので必ず認証付きで叩く。 */
-export const setChannelSubscription = (uri: string, subscribed: boolean) =>
-	call<{ uri: string; subscribed: boolean }>(
-		'com.suibari.nagi.setChannelSubscription',
-		'/xrpc/com.suibari.nagi.setChannelSubscription',
-		{ method: 'POST', body: JSON.stringify({ uri, subscribed }) },
-		'required',
-	);
+
 // カードの所持状況は公開情報。自分の drawStatus と未反映の控えだけ認証付きで返る。
 // 図鑑は publicOnly で先に出し、本人向け情報は requireViewer であとから補う。
 export const getCards = (

@@ -338,7 +338,7 @@
 	box-shadow: -8px 0 8px -6px var(--bg);
 }
 /* チャンネルタブから元のチャンネルページへ。バナーや追加ボタンは向こうにある。 */
-.feed-tab-channel-link {
+.feed-tab-hashtag-link {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
@@ -346,7 +346,7 @@
 	font-size: 0.8rem;
 	color: var(--text-muted);
 }
-.feed-tab-channel-link:hover {
+.feed-tab-hashtag-link:hover {
 	color: var(--accent-strong);
 }
 /* --- mobile top bar & bottom nav (hidden on desktop) --- */

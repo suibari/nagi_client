@@ -42,7 +42,6 @@ vi.mock('$lib/feed-tabs/feed-tabs.svelte', () => ({
 	loadStoredFeedTabs: vi.fn(),
 	setFeedTabsScope: vi.fn(),
 }));
-vi.mock('$lib/feed-tabs/labels.svelte', () => ({ feedTabLabelsStorageKey: 'labels' }));
 vi.mock('$lib/my-nagi/unread.svelte', () => ({ myNagiStorageKey: vi.fn() }));
 vi.mock('$lib/news/unread.svelte', () => ({ newsStorageKey: vi.fn() }));
 vi.mock('$lib/i18n/languagePreferences.svelte', () => ({

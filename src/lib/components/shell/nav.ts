@@ -31,7 +31,6 @@ const notifications: NavItem = {
 		aria: (count) => m.notifUnreadBadgeAria({ count }),
 	},
 };
-const channels: NavItem = { href: '/channels', label: m.navChannels, icon: 'hash' };
 const blog: NavItem = { href: '/blog', label: m.navBlog, icon: 'blog' };
 const news: NavItem = { href: '/news', label: m.navNews, icon: 'newspaper' };
 // アクティビティ（日記 / 感情グラフ / 年表の3タブ）。URL は通知の ?date= と互換のため /diary のまま。
@@ -59,7 +58,7 @@ const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'sett
 /** PC の区切りも含めた表示順。グループを足せば区切り線も自動で増える。 */
 export const desktopNavGroups: NavItem[][] = [
 	[myNagi, feed, notifications],
-	[channels, blog, news],
+	[blog, news],
 	[diary, cards, radio],
 	[settings],
 ];
@@ -68,11 +67,7 @@ export const desktopNavGroups: NavItem[][] = [
 export const mobilePrimaryItems: NavItem[] = [myNagi, feed, notifications];
 
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
-export const mobileMenuGroups: NavItem[][] = [
-	[channels, blog, news],
-	[diary, cards, radio],
-	[settings],
-];
+export const mobileMenuGroups: NavItem[][] = [[blog, news], [diary, cards, radio], [settings]];
 export const mobileMenuItems: NavItem[] = mobileMenuGroups.flat();
 /** カード未プレイ・ラジオ未読・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
 export const mobileMenuNotice = derived(

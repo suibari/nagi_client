@@ -10,7 +10,8 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { pageRefresh } from '$lib/components/shell/nav';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
-	import { channelHref, feedTabLabel, resolveFeedTab } from '$lib/feed-tabs/resolve';
+	import { feedTabLabel, resolveFeedTab } from '$lib/feed-tabs/resolve';
+	import { hashtagHref } from '$lib/tags';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
@@ -54,10 +55,10 @@
 	<Spinner />
 {:else}
 	<FeedTabs activeId={tab.id} />
-	{#if spec.channelUri}
-		<!-- チャンネルタブは閲覧専用。バナーや追加ボタンはチャンネルページ側に置く。 -->
-		<a class="feed-tab-channel-link" href={channelHref(spec.channelUri)}>
-			<Icon name="hash" size={14} />{m.feedTabsOpenChannel({ name: feedTabLabel(tab) })}
+	{#if spec.tag}
+		<!-- ハッシュタグタブは閲覧専用。ミュートなどの操作はタグのページ側に置く。 -->
+		<a class="feed-tab-hashtag-link" href={hashtagHref(spec.tag)}>
+			<Icon name="hash" size={14} />{m.feedTabsOpenHashtag({ name: feedTabLabel(tab) })}
 		</a>
 	{/if}
 	<FeedShell bind:this={shell} {spec} {homeAuthError} />

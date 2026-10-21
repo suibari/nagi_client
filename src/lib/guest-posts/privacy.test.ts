@@ -46,7 +46,6 @@ describe('guest post privacy boundary', () => {
 		expect(guestModal).toContain("from './PostModalShell.svelte'");
 		expect(guestModal).toContain("from './ComposerEditor.svelte'");
 		expect(guestModal).toContain('mentionSuggestionsEnabled={false}');
-		expect(guestModal).toContain('channelSuggestionsEnabled={false}');
 	});
 
 	it('requires both text and age consent and renders the missing-requirements state', () => {

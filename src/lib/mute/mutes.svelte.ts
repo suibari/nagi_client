@@ -1,7 +1,8 @@
 import { get } from 'svelte/store';
 import { getMutes, setMute } from '$lib/api/appview';
-import type { ActorView, ChannelView, MuteSubjectType } from '$lib/api/types';
+import type { ActorView, MuteSubjectType } from '$lib/api/types';
 import { session } from '$lib/oauth/session.svelte';
+import { normalizeTag } from '$lib/tags';
 
 /**
  * 自分のミュート一覧。除外そのものは AppView が SQL でやるので、ここでフィードを絞ることは
@@ -11,7 +12,8 @@ import { session } from '$lib/oauth/session.svelte';
  */
 class Mutes {
 	actors = $state<ActorView[]>([]);
-	channels = $state<ChannelView[]>([]);
+	/** # を除いた小文字のタグ。AppView 側の正規形と同じ。 */
+	tags = $state<string[]>([]);
 	loaded = $state(false);
 	/** 進行中の切り替え（連打防止とスピナー表示用）。値は subject。 */
 	pending = $state<string[]>([]);
@@ -19,8 +21,8 @@ class Mutes {
 	hasActor(did: string) {
 		return this.actors.some((actor) => actor.did === did);
 	}
-	hasChannel(uri: string) {
-		return this.channels.some((channel) => channel.uri === uri);
+	hasTag(tag: string) {
+		return this.tags.includes(normalizeTag(tag));
 	}
 	isPending(subject: string) {
 		return this.pending.includes(subject);
@@ -35,7 +37,7 @@ class Mutes {
 		try {
 			const view = await getMutes();
 			this.actors = view.actors;
-			this.channels = view.channels;
+			this.tags = view.tags;
 			this.loaded = true;
 		} catch {
 			// 取得できなくてもサーバ側のフィルタは効くので、閲覧自体は止めない。
@@ -45,7 +47,7 @@ class Mutes {
 
 	clear() {
 		this.actors = [];
-		this.channels = [];
+		this.tags = [];
 		this.pending = [];
 		this.loaded = false;
 	}
@@ -61,13 +63,14 @@ class Mutes {
 		});
 	}
 
-	async toggleChannel(channel: ChannelView, muted = !this.hasChannel(channel.uri)) {
-		const previous = this.channels;
-		this.channels = muted
-			? [...this.channels.filter((c) => c.uri !== channel.uri), channel]
-			: this.channels.filter((c) => c.uri !== channel.uri);
-		await this.#commit('channel', channel.uri, muted, () => {
-			this.channels = previous;
+	async toggleTag(raw: string, muted = !this.hasTag(raw)) {
+		const tag = normalizeTag(raw);
+		if (!tag) return;
+		const previous = this.tags;
+		const rest = this.tags.filter((t) => t !== tag);
+		this.tags = muted ? [...rest, tag].sort() : rest;
+		await this.#commit('tag', tag, muted, () => {
+			this.tags = previous;
 		});
 	}
 

@@ -41,7 +41,6 @@ class OptimisticPosts {
 		context: {
 			replyParent?: PostView;
 			quote?: PostView;
-			channel?: PostView['channel'];
 			threadKossori?: boolean;
 		} = {},
 	) {
@@ -87,9 +86,6 @@ class OptimisticPosts {
 			...(context.quote && { quote: { kind: 'post' as const, post: context.quote } }),
 			...(context.replyParent && { replyParent: context.replyParent }),
 			...(draft.kossori && { kossori: true }),
-			...((context.channel ?? draft.channel) && {
-				channel: context.channel ?? draft.channel,
-			}),
 			...((context.threadKossori ?? draft.kossori) && { threadKossori: true }),
 			...(draft.article && { article: true }),
 			reactions: [],

@@ -53,12 +53,10 @@
 	 * （「グローバル / グローバル」）、代わりに中身の説明を出す。
 	 */
 	const kindLabel = (tab: FeedTab) =>
-		tab.kind === 'channel'
-			? m.feedTabsKindChannel()
+		tab.kind === 'hashtag'
+			? m.feedTabsKindHashtag()
 			: tab.kind === 'search'
-				? tab.queryKind === 'tag'
-					? m.feedTabsSearchKindTag()
-					: m.feedTabsSearchKindKeyword()
+				? m.feedTabsKindSearch()
 				: tab.kind === 'custom'
 					? m.feedTabsKindCustomHint()
 					: tab.kind === 'global'
@@ -66,7 +64,7 @@
 						: m.feedTabsKindListHint();
 
 	const iconOf = (tab: FeedTab) =>
-		tab.kind === 'channel'
+		tab.kind === 'hashtag'
 			? 'hash'
 			: tab.kind === 'search'
 				? 'search'
@@ -92,7 +90,12 @@
 	<p>{m.feedTabsHelp()}</p>
 	<PreferencesSyncNotice />
 
-	<button type="button" class="primary feed-tab-add-button" disabled={full} onclick={() => (addOpen = true)}>
+	<button
+		type="button"
+		class="primary feed-tab-add-button"
+		disabled={full}
+		onclick={() => (addOpen = true)}
+	>
 		<Icon name="plus" size={16} />{m.feedTabsAdd()}
 	</button>
 	{#if full}<p class="error">{m.feedTabsFull()}</p>{/if}

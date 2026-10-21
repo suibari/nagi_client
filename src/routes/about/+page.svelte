@@ -53,7 +53,12 @@
 			category: 'connect',
 			label: m.aboutCategoryConnect,
 			items: [
-				{ icon: 'hash', title: m.aboutChannelsTitle, body: m.aboutChannelsBody, href: '/channels' },
+				{
+					icon: 'hash',
+					title: m.aboutHashtagsTitle,
+					body: m.aboutHashtagsBody,
+					href: '/settings/feed-tabs',
+				},
 				{ icon: 'emoji', title: m.aboutReactionTitle, body: m.aboutReactionBody },
 				{ icon: 'newspaper', title: m.aboutNewsTitle, body: m.aboutNewsBody, href: '/news' },
 				{

@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { searchActors, searchChannelsTypeahead } from '$lib/api/appview';
+	import { searchActors } from '$lib/api/appview';
 	import { createTypeaheadSearch } from '$lib/api/useTypeaheadSearch.svelte';
-	import type { ActorView, ChannelView, EmojiView } from '$lib/api/types';
-	import type { ChannelSelection, EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+	import type { ActorView, EmojiView } from '$lib/api/types';
+	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { portal } from '$lib/actions/portal';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
-	import ChannelSuggestionList from './ChannelSuggestionList.svelte';
 	import EmojiSuggestionList from './EmojiSuggestionList.svelte';
 	import type { MarkdownFormat } from './MarkdownPalette.svelte';
 	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
@@ -29,10 +28,8 @@
 	let {
 		value = $bindable(''),
 		mentions = $bindable<MentionSelection[]>([]),
-		channels = $bindable<ChannelSelection[]>([]),
 		emojis = $bindable<EmojiSelection[]>([]),
 		mentionSuggestionsEnabled = true,
-		channelSuggestionsEnabled = false,
 		id,
 		placeholder,
 		ariaLabel,
@@ -45,10 +42,8 @@
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
-		channels?: ChannelSelection[];
 		emojis?: EmojiSelection[];
 		mentionSuggestionsEnabled?: boolean;
-		channelSuggestionsEnabled?: boolean;
 		id?: string;
 		placeholder?: string;
 		ariaLabel?: string;
@@ -87,14 +82,6 @@
 				(actor.displayName?.toLowerCase().includes(query) ?? false),
 		},
 	);
-	const channelSuggest = createTypeaheadSearch<ChannelView>(
-		(query, signal) => searchChannelsTypeahead(query, signal).then((result) => result.channels),
-		{
-			debounceMs: 80,
-			leading: true,
-			matches: (channel, query) => channel.name.toLowerCase().includes(query),
-		},
-	);
 	const emojiSuggest = createTypeaheadSearch<EmojiView>(
 		(query, signal) =>
 			searchAvailableBluemoji({ q: query, limit: 10, signal }).then((result) => result.emojis),
@@ -111,9 +98,7 @@
 	let suggestionPositioned = $state(false);
 	let token = $state<ComposerSuggestionToken>();
 	// いま候補を出している方（トークンの種類で決まる）。件数・確定はこれ経由で扱う。
-	let activeSuggest = $derived(
-		token?.kind === 'channel' ? channelSuggest : token?.kind === 'emoji' ? emojiSuggest : suggest,
-	);
+	let activeSuggest = $derived(token?.kind === 'emoji' ? emojiSuggest : suggest);
 
 	const selectionStart = () =>
 		view?.state.selection.main.from ?? textarea?.selectionStart ?? value.length;
@@ -194,7 +179,7 @@
 					// CodeMirror は更新のたびに外枠の class を組み直すので、属性として渡す
 					EditorView.editorAttributes.of({ class: 'composer-input' }),
 					EditorView.lineWrapping,
-					composerDecorations(() => ({ mentions, channels, emojis })),
+					composerDecorations(() => ({ mentions, emojis })),
 					placeholderText.of(placeholder ? placeholderExtension(placeholder) : []),
 					editable.of([EditorView.editable.of(!disabled), EditorState.readOnly.of(disabled)]),
 					attributes.of(EditorView.contentAttributes.of(contentAttributes())),
@@ -273,7 +258,7 @@
 
 	// メンション等の選択範囲が変わったら、リンク色の装飾を付け直す。
 	$effect(() => {
-		void [mentions, channels, emojis];
+		void [mentions, emojis];
 		view?.dispatch({ effects: refreshDecorations.of(null) });
 	});
 
@@ -338,7 +323,6 @@
 		const oldEnd = previous.length - suffix;
 		const delta = next.length - previous.length;
 		mentions = shiftedSelections(mentions, prefix, oldEnd, delta);
-		channels = shiftedSelections(channels, prefix, oldEnd, delta);
 		emojis = shiftedSelections(emojis, prefix, oldEnd, delta);
 	}
 
@@ -346,7 +330,6 @@
 		token = undefined;
 		suggestionPositioned = false;
 		suggest.reset();
-		channelSuggest.reset();
 		emojiSuggest.reset();
 		activeIndex = 0;
 	}
@@ -397,26 +380,16 @@
 		const caret = view?.state.selection.main.head ?? selectionEnd();
 		const next = detectComposerSuggestionToken(view?.state.doc.toString() ?? value, caret, {
 			mentions: mentionSuggestionsEnabled,
-			channels: channelSuggestionsEnabled,
 		});
 		if (next?.kind === 'mention') {
 			token = next;
-			channelSuggest.reset();
 			emojiSuggest.reset();
 			suggest.search(next.query, () => (activeIndex = 0));
-			return;
-		}
-		if (next?.kind === 'channel') {
-			token = next;
-			suggest.reset();
-			emojiSuggest.reset();
-			channelSuggest.search(next.query, () => (activeIndex = 0));
 			return;
 		}
 		if (next?.kind === 'emoji') {
 			token = next;
 			suggest.reset();
-			channelSuggest.reset();
 			emojiSuggest.search(next.query, () => (activeIndex = 0));
 			return;
 		}
@@ -465,7 +438,6 @@
 				];
 			});
 		mentions = shiftForInsertions(mentions);
-		channels = shiftForInsertions(channels);
 		emojis = shiftForInsertions(emojis);
 		setText(next, selectionStart, selectionEnd);
 		close();
@@ -553,7 +525,6 @@
 							],
 				);
 			mentions = shrink(mentions);
-			channels = shrink(channels);
 			emojis = shrink(emojis);
 		}
 		insertText([{ at: start, text }], start + text.length, start + text.length);
@@ -591,7 +562,6 @@
 				...remapContentWarningSelection(previous, result, item.start, item.end),
 			}));
 		mentions = remap(mentions);
-		channels = remap(channels);
 		emojis = remap(emojis);
 		setText(result.text, result.selectionStart, result.selectionEnd);
 		close();
@@ -616,36 +586,7 @@
 			}),
 			{ start: token.start, end: token.start + label.length, did: actor.did, handle: actor.handle },
 		].sort((a, b) => a.start - b.start);
-		channels = shiftedSelections(channels, token.start, token.end, delta);
 		emojis = shiftedSelections(emojis, token.start, token.end, delta);
-		const caret = token.start + label.length + trailingSpace.length;
-		setText(value, caret);
-		close();
-		focusEditor();
-	}
-
-	function chooseChannel(channel: ChannelView) {
-		if (!token || token.kind !== 'channel') return;
-		const label = `${token.marker}${channel.name}`;
-		const suffix = value.slice(token.end);
-		const trailingSpace = suffix.startsWith(' ') ? '' : ' ';
-		const replacementLength = label.length + trailingSpace.length;
-		const delta = replacementLength - (token.end - token.start);
-		value = `${value.slice(0, token.start)}${label}${trailingSpace}${suffix}`;
-		mentions = shiftedSelections(mentions, token.start, token.end, delta);
-		emojis = shiftedSelections(emojis, token.start, token.end, delta);
-		channels = [
-			...shiftedSelections(channels, token.start, token.end, delta),
-			{
-				start: token.start,
-				end: token.start + label.length,
-				uri: channel.uri,
-				cid: channel.cid,
-				name: channel.name,
-				banner: channel.banner,
-				description: channel.description,
-			},
-		].sort((a, b) => a.start - b.start);
 		const caret = token.start + label.length + trailingSpace.length;
 		setText(value, caret);
 		close();
@@ -657,7 +598,6 @@
 		const replacement = replaceEmojiSuggestion(value, token, emoji);
 		value = replacement.text;
 		mentions = shiftedSelections(mentions, token.start, token.end, replacement.delta);
-		channels = shiftedSelections(channels, token.start, token.end, replacement.delta);
 		emojis = [
 			...shiftedSelections(emojis, token.start, token.end, replacement.delta),
 			{ start: replacement.start, end: replacement.end, emoji },
@@ -691,8 +631,7 @@
 
 	function chooseActive() {
 		if (!suggestionsOpen() || !token) return false;
-		if (token.kind === 'channel') chooseChannel(channelSuggest.items[activeIndex]);
-		else if (token.kind === 'emoji') chooseEmoji(emojiSuggest.items[activeIndex]);
+		if (token.kind === 'emoji') chooseEmoji(emojiSuggest.items[activeIndex]);
 		else choose(suggest.items[activeIndex]);
 		return true;
 	}
@@ -790,13 +729,6 @@
 					pending={suggest.pending}
 					{activeIndex}
 					onchoose={choose}
-				/>
-			{:else if token.kind === 'channel'}
-				<ChannelSuggestionList
-					channels={channelSuggest.items}
-					pending={channelSuggest.pending}
-					{activeIndex}
-					onchoose={chooseChannel}
 				/>
 			{:else}
 				<EmojiSuggestionList

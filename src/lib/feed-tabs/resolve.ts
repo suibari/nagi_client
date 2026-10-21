@@ -1,7 +1,6 @@
 import {
 	ApiRequestError,
 	getAffirmation,
-	getChannelTimeline,
 	getHomeTimeline,
 	getTimeline,
 	searchPosts,
@@ -16,7 +15,6 @@ import {
 } from '$lib/feed/unread.svelte';
 import { m } from '$lib/i18n/i18n.svelte';
 import type { ReadWatermark } from '$lib/unread/watermark.svelte';
-import { channelLabel } from './labels.svelte';
 import type { FeedTab } from './types';
 
 /**
@@ -35,21 +33,9 @@ export type FeedTabSpec = {
 	showGuestHero?: boolean;
 	/** 401/403 のときに再ログイン導線を出すタブ（ホームだけ）。 */
 	handleHomeAuthError?: boolean;
-	/** チャンネルタブのとき、チャンネルページへ渡す AT-URI。 */
-	channelUri?: string;
+	/** ハッシュタグタブのとき、タグの投稿一覧（/search）へ渡すタグ。 */
+	tag?: string;
 };
-
-/** at://<did>/<collection>/<rkey> → /channels/<did>/<rkey> */
-export function channelHref(uri: string): string {
-	const rest = uri.slice('at://'.length).split('/');
-	return `/channels/${rest[0]}/${rest[2]}`;
-}
-
-/** チャンネルごとに既読を分ける。URI をそのままキーにすると `/` などが混ざる。 */
-function channelWatermarkKey(uri: string): string {
-	const rest = uri.slice('at://'.length).split('/');
-	return `channel.${rest[0]}.${rest[2]}`;
-}
 
 /** タブバー・設定画面・プレビューで共通の表示名。 */
 export function feedTabLabel(tab: FeedTab): string {
@@ -60,10 +46,10 @@ export function feedTabLabel(tab: FeedTab): string {
 			return m.navGlobal();
 		case 'custom':
 			return m.navAffirmation();
-		case 'channel':
-			return channelLabel(tab.uri) ?? tab.label ?? m.feedTabsKindChannel();
+		case 'hashtag':
+			return tab.query ? `#${tab.query}` : m.feedTabsKindHashtag();
 		case 'search':
-			return tab.queryKind === 'tag' ? `#${tab.query}` : (tab.query ?? m.feedTabsKindSearch());
+			return tab.query ?? m.feedTabsKindSearch();
 	}
 }
 
@@ -135,30 +121,30 @@ export function resolveFeedTab(
 				watermark: affirmationFeedRead,
 				empty: m.affirmationEmpty,
 			};
-		case 'channel': {
-			const uri = tab.uri ?? '';
+		case 'hashtag': {
+			const tag = tab.query ?? '';
 			return {
-				key: `${scope}:channel:${uri}`,
-				fetcher: (cursor) => getChannelTimeline(uri, cursor),
-				optimisticFilter: (item) => item.channel?.uri === uri,
-				watermark: feedRead(channelWatermarkKey(uri)),
-				empty: m.channelTimelineEmpty,
-				channelUri: uri,
+				key: `${scope}:hashtag:${tag}`,
+				fetcher: (cursor) => searchPosts(tag, cursor),
+				// 楽観投稿は本文のタグを解釈しないと一致を判定できないので出さない。
+				optimisticFilter: () => false,
+				// タグの投稿は時系列で並ぶので、チャンネルタブと同じく未読を持てる。
+				watermark: feedRead(`hashtag.${encodeURIComponent(tag)}`),
+				empty: m.searchTagEmpty,
+				tag,
 			};
 		}
 		case 'search': {
 			const query = tab.query ?? '';
-			const isTag = tab.queryKind === 'tag';
 			return {
-				key: `${scope}:search:${isTag ? 'tag' : 'q'}:${query}`,
+				key: `${scope}:search:q:${query}`,
 				// 意味検索(semantic)は Ollama への往復が走る。タブは開くたびに叩かれるので
 				// 一致(exact)に固定する。あいまい検索が要るときは /search へ。
-				fetcher: (cursor) =>
-					isTag ? searchPosts(query, cursor) : searchPostsByQuery(query, cursor, 'exact'),
+				fetcher: (cursor) => searchPostsByQuery(query, cursor, 'exact'),
 				// 検索結果に楽観投稿を混ぜても一致するとは限らないので出さない。
 				optimisticFilter: () => false,
 				// 結果の並びが安定しないため未読の意味がない（/search も渡していない）。
-				empty: isTag ? m.searchTagEmpty : m.searchExactEmpty,
+				empty: m.searchExactEmpty,
 			};
 		}
 	}

@@ -50,7 +50,6 @@
 			return;
 		}
 		composerHost.clearAllTargets();
-		composerHost.clearChannel();
 		setComposerMode('blog');
 		composerHost.show();
 	}

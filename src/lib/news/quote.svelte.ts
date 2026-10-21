@@ -6,12 +6,7 @@ import {
 	uploadPostAssets,
 	type LinkCardDraft,
 } from '$lib/atproto/records';
-import {
-	validChannelSelections,
-	type ChannelSelection,
-	type EmojiSelection,
-	type MentionSelection,
-} from '$lib/atproto/facets';
+import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 import type { ImageAttachment } from '$lib/images';
 import { m } from '$lib/i18n/i18n.svelte';
 import { postFollowNotice, postHref } from '$lib/feed/post-follow.svelte';
@@ -34,7 +29,6 @@ export class NewsQuote {
 	attachments = $state<ImageAttachment[]>([]);
 	linkCards = $state<LinkCardDraft[]>([]);
 	mentions = $state<MentionSelection[]>([]);
-	channels = $state<ChannelSelection[]>([]);
 	emojis = $state<EmojiSelection[]>([]);
 
 	get empty() {
@@ -57,7 +51,6 @@ export class NewsQuote {
 		this.attachments = [];
 		this.linkCards = [];
 		this.mentions = [];
-		this.channels = [];
 		this.emojis = [];
 	}
 
@@ -70,7 +63,6 @@ export class NewsQuote {
 		if (!get(session) || this.empty || this.busy) return;
 		this.busy = true;
 		this.error = '';
-		const selectedChannel = validChannelSelections(this.text, this.channels)[0];
 		const draft = preparePostDraft(
 			this.text,
 			undefined,
@@ -78,10 +70,7 @@ export class NewsQuote {
 			this.attachments,
 			this.linkCards,
 			this.mentions,
-			this.channels,
 			this.emojis,
-			false,
-			selectedChannel ? { uri: selectedChannel.uri, cid: selectedChannel.cid } : undefined,
 		);
 		try {
 			const assets = await uploadPostAssets(draft);

@@ -35,12 +35,10 @@
 	let composer = $state<{ submit: () => Promise<void> }>();
 
 	/**
-	 * ブログにできない文脈ではタブごと出さない。返信・引用は記事本文に文脈が現れず、
-	 * チャンネル投稿はその文脈を外へ出さない、という Composer 側の判定と同じ理由。
+	 * ブログにできない文脈ではタブごと出さない。返信・引用は記事本文に文脈が現れない、
+	 * という Composer 側の判定と同じ理由。
 	 */
-	const articleAllowed = $derived(
-		!composerHost.replyTarget && !composerHost.quoteTarget && !composerHost.channel,
-	);
+	const articleAllowed = $derived(!composerHost.replyTarget && !composerHost.quoteTarget);
 	const modes = $derived(
 		articleAllowed ? COMPOSER_MODES : COMPOSER_MODES.filter((value) => value !== 'blog'),
 	);
@@ -111,7 +109,6 @@
 		bind:submittable
 		{mode}
 		{publishingPreferencesVersion}
-		channel={composerHost.channel}
 		defaultScope={composerHost.defaultScope}
 		onsendingchange={(value) => (sending = value)}
 		onposted={postSucceeded}
