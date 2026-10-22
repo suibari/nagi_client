@@ -34,13 +34,21 @@ describe('rich composer improvements', () => {
 
 	it('sets the input in the same type as the posted text', () => {
 		expect(styles).toMatch(
-			/\.mention-textarea \.composer-input \.cm-content \{[^}]*font-size: 15px;\s*line-height: 1\.8;/,
+			/\.mention-textarea \.composer-input \.cm-content \{[^}]*font-size: var\(--markdown-font-size\);\s*line-height: var\(--markdown-line-height\);/,
 		);
-		expect(styles).toMatch(/\.post-text \{[\s\S]*?font-size: 15px;\s*line-height: 1\.8;/);
-		// 見出しは投稿の h3〜h5 と同じ大きさ
-		expect(styles).toMatch(/\.composer-input \.cm-line\[data-block='h1'\] \{\s*font-size: 20px;/);
-		expect(styles).toMatch(/\.composer-input \.cm-line\[data-block='h2'\] \{\s*font-size: 18px;/);
-		expect(styles).toMatch(/\.composer-input \.cm-line\[data-block='h3'\] \{\s*font-size: 16px;/);
+		expect(styles).toMatch(
+			/\.post-text \{[\s\S]*?font-size: var\(--markdown-font-size\);\s*line-height: var\(--markdown-line-height\);/,
+		);
+		// 見出しは投稿の h3〜h5 と同じ共通変数を使う
+		expect(styles).toMatch(
+			/\.composer-input \.cm-line\[data-block='h1'\] \{\s*font-size: var\(--markdown-h1-size\);/,
+		);
+		expect(styles).toMatch(
+			/\.composer-input \.cm-line\[data-block='h2'\] \{\s*font-size: var\(--markdown-h2-size\);/,
+		);
+		expect(styles).toMatch(
+			/\.composer-input \.cm-line\[data-block='h3'\] \{\s*font-size: var\(--markdown-h3-size\);/,
+		);
 		// 箇条書きの `- ` は「•」で見せる
 		expect(decorations).toContain("bullet.textContent = '•'");
 	});
@@ -64,10 +72,10 @@ describe('rich composer improvements', () => {
 		expect(guestModal).toContain('mode = resetComposerMode()');
 	});
 
-	it('keeps markdown headings larger than the 15px post body', () => {
-		expect(styles).toMatch(/\.post-text h3\s*\{\s*font-size: 20px;/);
-		expect(styles).toMatch(/\.post-text h4\s*\{\s*font-size: 18px;/);
-		expect(styles).toMatch(/\.post-text h5\s*\{\s*font-size: 16px;/);
+	it('keeps markdown headings shared with the input preview', () => {
+		expect(styles).toMatch(/\.post-text h3\s*\{\s*font-size: var\(--markdown-h1-size\);/);
+		expect(styles).toMatch(/\.post-text h4\s*\{\s*font-size: var\(--markdown-h2-size\);/);
+		expect(styles).toMatch(/\.post-text h5\s*\{\s*font-size: var\(--markdown-h3-size\);/);
 	});
 
 	it('keeps markdown lists flush with the surrounding text', () => {

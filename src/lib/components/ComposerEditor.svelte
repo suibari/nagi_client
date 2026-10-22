@@ -79,7 +79,7 @@
 	);
 </script>
 
-<div class="composer-write">
+<div class="composer-write" class:blog={mode === 'blog'}>
 	<ComposerInput
 		bind:this={editor}
 		bind:value
