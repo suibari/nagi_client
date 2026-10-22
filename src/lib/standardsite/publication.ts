@@ -4,7 +4,13 @@ import { session } from '$lib/oauth/session.svelte';
 import { getOwnNagiProfile } from '$lib/atproto/records';
 import { forgetPublicationCache, readPublicationCache, writePublicationCache } from './cache';
 import { findNagiPublication, type ExistingPublication } from './repo';
-import { NAGI_PUBLIC_ORIGIN, PUBLICATION, type StandardSitePreferences } from './types';
+import {
+	hasNagiTheme,
+	NAGI_BASIC_THEME,
+	NAGI_PUBLIC_ORIGIN,
+	PUBLICATION,
+	type StandardSitePreferences,
+} from './types';
 
 const current = () => {
 	const value = get(session);
@@ -39,7 +45,11 @@ export async function ensurePublication(options: { fallbackName?: string } = {})
 	if (existing) {
 		// Nagi では記事として公開する選択自体を発見フィードへの掲載同意として扱う。
 		// 過去の設定が false / 未設定でも、次に記事を公開するときに ON へ揃える。
-		if (existing.value.preferences?.showInDiscover !== true) {
+		// 配色も同じ機会に Nagi の既定へ揃える（Bluesky の記事カードのボタン色になる）。
+		if (
+			existing.value.preferences?.showInDiscover !== true ||
+			!hasNagiTheme(existing.value.basicTheme)
+		) {
 			await updatePublication({ showInDiscover: true }, options);
 		}
 		writePublicationCache(s.did, existing.uri);
@@ -56,6 +66,7 @@ export async function ensurePublication(options: { fallbackName?: string } = {})
 			$type: PUBLICATION,
 			url: NAGI_PUBLIC_ORIGIN,
 			...fields,
+			basicTheme: NAGI_BASIC_THEME,
 			preferences: { showInDiscover: true },
 		},
 	});
@@ -86,6 +97,7 @@ export async function updatePublication(
 		$type: PUBLICATION,
 		url: NAGI_PUBLIC_ORIGIN,
 		...fields,
+		basicTheme: NAGI_BASIC_THEME,
 		...(prefs
 			? { preferences: { ...(existing.value.preferences ?? {}), ...prefs } }
 			: existing.value.preferences
@@ -103,6 +115,22 @@ export async function updatePublication(
 		record,
 	});
 	writePublicationCache(s.did, existing.uri);
+}
+
+/**
+ * publication の現在の版への強参照。Bluesky のティーザーの associatedRefs に固定する。
+ * 後で publication を書き換えても、Bluesky は固定した版でカードを出し続ける。
+ */
+export async function getPublicationRef(): Promise<{ uri: string; cid: string }> {
+	const s = current();
+	const uri = await ensurePublication();
+	const { data } = await new Agent(s).com.atproto.repo.getRecord({
+		repo: s.did,
+		collection: PUBLICATION,
+		rkey: uri.slice(uri.lastIndexOf('/') + 1),
+	});
+	if (!data.cid) throw new Error('standard.site publication has no cid');
+	return { uri: data.uri, cid: data.cid };
 }
 
 /**

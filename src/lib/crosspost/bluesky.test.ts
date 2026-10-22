@@ -3,6 +3,7 @@ import type { Facet } from '$lib/atproto/facets';
 import { parsePostText } from '$lib/atproto/facets';
 import type { PostAssets, PostDraft } from '$lib/atproto/records';
 import {
+	buildArticleEmbed,
 	buildArticleTeaser,
 	getCrosspostSelfLabels,
 	prepareCrosspostContent,
@@ -261,6 +262,40 @@ describe('article teaser', () => {
 		expect(bytes(text)).toBeLessThanOrEqual(3000);
 		expect(excerpt.endsWith('…')).toBe(true);
 		expect(text.endsWith(`続きはNagiで：${url}`)).toBe(true);
+	});
+});
+
+describe('article teaser embed', () => {
+	const target = {
+		url: 'https://nagi.suibari.com/blog/did:plc:example/3abc',
+		title: 'ねこの話',
+		teaser: '続きはNagiで',
+	};
+
+	it('pins the standard.site records so Bluesky renders the article card', () => {
+		const documentRef = { uri: 'at://did:plc:example/site.standard.document/3abc', cid: 'bafydoc' };
+		const publicationRef = {
+			uri: 'at://did:plc:example/site.standard.publication/3pub',
+			cid: 'bafypub',
+		};
+		const embed = buildArticleEmbed(
+			{ ...target, associatedRefs: [documentRef, publicationRef] },
+			'抜粋',
+		);
+
+		expect(embed.external).toMatchObject({
+			uri: target.url,
+			title: 'ねこの話',
+			description: '抜粋',
+		});
+		expect(embed.external.associatedRefs).toEqual([
+			{ $type: 'com.atproto.repo.strongRef', ...documentRef },
+			{ $type: 'com.atproto.repo.strongRef', ...publicationRef },
+		]);
+	});
+
+	it('falls back to a plain link card without refs', () => {
+		expect(buildArticleEmbed(target, '抜粋').external).not.toHaveProperty('associatedRefs');
 	});
 });
 

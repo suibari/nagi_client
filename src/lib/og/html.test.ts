@@ -50,4 +50,16 @@ describe('dynamic OGP HTML', () => {
 		expect(blog.match(/Nagiのブログ/g)).toHaveLength(2);
 		expect(withPostCardMeta(html, did, '3mwz6vcf7jz2q', 'post')).toContain('kind=post');
 	});
+
+	it('marks only blog pages as standard.site documents for Bluesky link cards', () => {
+		const html = '<!doctype html><head></head>';
+		const did = 'did:plc:uixgxpiqf4i63p6rgpu7ytmx';
+
+		expect(withPostCardMeta(html, did, '3mwxsd6ee5k2h', 'blog')).toContain(
+			`<link rel="site.standard.document" href="at://${did}/site.standard.document/3mwxsd6ee5k2h" />`,
+		);
+		expect(withPostCardMeta(html, did, '3mwz6vcf7jz2q', 'post')).not.toContain(
+			'site.standard.document',
+		);
+	});
 });

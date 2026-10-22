@@ -277,6 +277,40 @@ export function buildArticleTeaser(
 	};
 }
 
+export type ArticleTeaserTarget = {
+	url: string;
+	title: string;
+	teaser: string;
+	/**
+	 * 記事の site.standard.document と publication への強参照。Bluesky の AppView は
+	 * external.associatedRefs に固定された版を読んで、出典・著者・読了時間つきのカードを出す
+	 * （URL から記事を探しには行かない）。document が site で指す publication も必ず含める。
+	 */
+	associatedRefs?: StrongRef[];
+};
+
+/** ティーザーのリンクカード。associatedRefs が無ければ通常のリンクカードになる。 */
+export function buildArticleEmbed(article: ArticleTeaserTarget, excerpt: string, thumb?: unknown) {
+	return {
+		$type: 'app.bsky.embed.external',
+		external: {
+			uri: article.url,
+			title: article.title,
+			description: excerpt,
+			...(thumb ? { thumb } : {}),
+			...(article.associatedRefs?.length
+				? {
+						associatedRefs: article.associatedRefs.map(({ uri, cid }) => ({
+							$type: 'com.atproto.repo.strongRef',
+							uri,
+							cid,
+						})),
+					}
+				: {}),
+		},
+	};
+}
+
 /**
  * ブログとして書いた投稿を Bluesky に1件だけ出す。
  *
@@ -288,7 +322,7 @@ export function buildArticleTeaser(
 export async function crosspostArticleToBluesky(
 	draft: PostDraft,
 	assets: PostAssets,
-	article: { url: string; title: string; teaser: string },
+	article: ArticleTeaserTarget,
 ): Promise<StrongRef | undefined> {
 	if (draft.kossori || draft.cwRestricted) return;
 	const current = get(session);
@@ -319,15 +353,7 @@ export async function crosspostArticleToBluesky(
 				: {}),
 			createdAt: draft.createdAt,
 			via: VIA,
-			embed: {
-				$type: 'app.bsky.embed.external',
-				external: {
-					uri: article.url,
-					title: article.title,
-					description: excerpt,
-					...(thumb ? { thumb } : {}),
-				},
-			},
+			embed: buildArticleEmbed(article, excerpt, thumb),
 		},
 	});
 	return { uri: response.data.uri, cid: response.data.cid };

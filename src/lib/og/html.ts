@@ -47,9 +47,22 @@ export function withProfileCardMeta(html: string, did: string) {
 	return withImageMeta(html, image, 'Nagiのプロフィールカード');
 }
 
+/**
+ * standard.site の記事ページであることを示す。Bluesky は投稿欄に貼られた URL の HTML から
+ * これを読み、document と publication の強参照を投稿へ埋めて記事カードで表示する。
+ */
+function withStandardSiteDocumentLink(html: string, did: string, rkey: string) {
+	const href = escapeAttribute(`at://${did}/site.standard.document/${rkey}`);
+	return html.replace(
+		'</head>',
+		`\t\t<link rel="site.standard.document" href="${href}" />\n\t</head>`,
+	);
+}
+
 /** ポスト・ブログの共有リンクには、本文やタイトルを載せた専用カードを出す。 */
 export function withPostCardMeta(html: string, did: string, rkey: string, kind: PostCardKind) {
 	const query = new URLSearchParams({ v: '1', kind, did, rkey });
 	const image = `https://nagi.suibari.com/api/post-card?${query}`;
-	return withImageMeta(html, image, kind === 'blog' ? 'Nagiのブログ' : 'Nagiのポスト');
+	if (kind === 'post') return withImageMeta(html, image, 'Nagiのポスト');
+	return withStandardSiteDocumentLink(withImageMeta(html, image, 'Nagiのブログ'), did, rkey);
 }

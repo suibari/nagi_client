@@ -14,12 +14,50 @@ export const NAGI_PUBLIC_ORIGIN = 'https://nagi.suibari.com';
 
 export type StandardSitePreferences = { showInDiscover?: boolean };
 
+const rgb = (r: number, g: number, b: number) => ({
+	$type: 'site.standard.theme.color#rgb',
+	r,
+	g,
+	b,
+});
+
+/**
+ * publication.basicTheme。Bluesky の記事カードはボタンに accent / accentForeground を使い、
+ * 両者のコントラスト比が 4.5 未満だと黙って既定色へ戻す。Nagi の主ボタン
+ * （tokens.css の --accent / --text-on-accent、比は約6.3）と同じ組み合わせにしている。
+ * background / foreground はカードではまだ使われないが、lexicon 上は必須。
+ */
+export const NAGI_BASIC_THEME = {
+	$type: 'site.standard.theme.basic',
+	background: rgb(0xf7, 0xf9, 0xf9),
+	foreground: rgb(0x2f, 0x35, 0x42),
+	accent: rgb(0x00, 0xce, 0xd1),
+	accentForeground: rgb(0x14, 0x38, 0x3d),
+};
+
+type ThemeColor = { r?: unknown; g?: unknown; b?: unknown };
+
+/**
+ * PDS から読んだ basicTheme が Nagi の配色か。DAG-CBOR はキー順を並べ替えて返すので、
+ * JSON 文字列ではなく色の値で比べる。
+ */
+export function hasNagiTheme(value: unknown): boolean {
+	if (!value || typeof value !== 'object') return false;
+	const theme = value as Record<string, ThemeColor | undefined>;
+	return (['background', 'foreground', 'accent', 'accentForeground'] as const).every((key) => {
+		const actual = theme[key];
+		const expected = NAGI_BASIC_THEME[key];
+		return actual?.r === expected.r && actual?.g === expected.g && actual?.b === expected.b;
+	});
+}
+
 export type StandardSitePublication = {
 	$type?: string;
 	url: string;
 	name: string;
 	description?: string;
 	icon?: unknown;
+	basicTheme?: unknown;
 	preferences?: StandardSitePreferences;
 };
 

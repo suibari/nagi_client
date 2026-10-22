@@ -44,6 +44,7 @@ describe('SPA fallback SEO', () => {
 		const html = response.send.mock.calls[0][0] as string;
 		expect(html).toContain(`/api/post-card?v=1&amp;kind=${kind}&amp;`);
 		expect(html).not.toContain('/api/profile-card');
+		expect(html.includes('rel="site.standard.document"')).toBe(kind === 'blog');
 	});
 
 	it('falls back to the profile card for an unsafe record key', async () => {
