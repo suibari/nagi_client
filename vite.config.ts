@@ -71,6 +71,17 @@ export default defineConfig(({ command, mode }) => {
 							'[seo] 索引対象のニュースが0件でした。記事ページは生成されません（一覧は noindex になります）。',
 						);
 					},
+					/**
+					 * ブログ記事の <link rel="site.standard.document" href="at://..."> は Bluesky が
+					 * 記事カードを作るための目印で、クロール先ではない。crawler は <link> の href も
+					 * URL として解決しようとして at:// で落ちるので、at:// だけを見逃す。
+					 * rel に external を足しても crawler は飛ばすが、Bluesky 側がその形を読むかは
+					 * 保証が無いため、mochott など既存実装と同じ単独の rel のままにしている。
+					 */
+					handleInvalidUrl: ({ href, message }) => {
+						if (href.startsWith('at://')) return;
+						throw new Error(message);
+					},
 				},
 
 				// Content-Security-Policy を <meta> タグとして出力する。hash モードにより
