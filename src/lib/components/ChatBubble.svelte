@@ -690,6 +690,7 @@
 						<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
 					{/if}
 					<ComposerEditor
+						mode={editingArticle ? 'blog' : 'rich'}
 						id={`edit-${post.cid}`}
 						bind:value={editText}
 						bind:mentions={editMentions}

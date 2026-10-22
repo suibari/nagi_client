@@ -182,7 +182,7 @@
 		/>
 	{/if}
 
-	<div class="blog-body"><RichText text={body} facets={bodyFacets} /></div>
+	<div class="blog-body post-text"><RichText text={body} facets={bodyFacets} /></div>
 	{#if bodyImages.length}<div class="blog-media"><ImageGallery images={bodyImages} /></div>{/if}
 	{#if post?.linkCards?.length}<div class="blog-links">
 			{#each post.linkCards as card}<LinkCard {card} />{/each}
@@ -365,39 +365,8 @@
 	}
 	.blog-body {
 		margin: 34px 0;
-		line-height: 1.9;
-		font-size: 1.03rem;
-		overflow-wrap: anywhere;
 	}
-	.blog-body :global(p),
-	.blog-body :global(li),
-	.blog-body :global(blockquote) {
-		white-space: pre-wrap;
-	}
-	.blog-body :global(.post-gap) {
-		height: calc(var(--gap) * 1lh);
-	}
-	.blog-body :global(p) {
-		margin: 0 0 1.25em;
-	}
-	.blog-body :global(h3),
-	.blog-body :global(h4),
-	.blog-body :global(h5) {
-		margin: 1.8em 0 0.6em;
-		line-height: 1.4;
-	}
-	.blog-body :global(h3) {
-		font-size: 1.5rem;
-	}
-	.blog-body :global(h4) {
-		font-size: 1.25rem;
-	}
-	.blog-body :global(blockquote) {
-		margin: 1.5em 0;
-		padding: 0.2em 1.1em;
-		border-left: 3px solid var(--accent-strong);
-		color: var(--text-muted);
-	}
+
 	.blog-media,
 	.blog-links {
 		margin: 24px 0;
