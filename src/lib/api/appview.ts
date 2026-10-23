@@ -220,6 +220,26 @@ export const getNewsItem = (rkey: string, lang: 'ja' | 'en') =>
 		{},
 		'none',
 	);
+/** パーマリンクの「似ているニュース」。公開コンテンツなので AppView 直読み。 */
+export const getSimilarNews = (rkey: string, lang: 'ja' | 'en', limit = 4) =>
+	call<{ items: NewsView[] }>(
+		'com.suibari.nagi.getSimilarNews',
+		`/xrpc/com.suibari.nagi.getSimilarNews?${new URLSearchParams({ rkey, lang, limit: String(limit) })}`,
+		{},
+		'none',
+	);
+/**
+ * パーマリンクの「みんなのコメント」（そのニュースを引用した投稿）。
+ * ログイン中は本人のこっそり投稿とミュートを反映させたいので認証付きで取りに行く。
+ */
+export const getNewsQuotes = (uri: string, cursor?: string) => {
+	const params = new URLSearchParams({ uri, limit: '10' });
+	if (cursor) params.set('cursor', cursor);
+	return withPublicFallback<TimelinePage>(
+		'com.suibari.nagi.getNewsQuotes',
+		`/xrpc/com.suibari.nagi.getNewsQuotes?${params}`,
+	);
+};
 /** 索引対象ニュースの列挙。ビルドが prerender の entries と sitemap を作るために叩く。 */
 export const listIndexableNews = (lang: 'ja' | 'en', cursor?: string) => {
 	const params = new URLSearchParams({ limit: '200', lang });

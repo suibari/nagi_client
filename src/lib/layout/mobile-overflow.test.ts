@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 
 const read = (relativePath: string) => readFileSync(new URL(relativePath, import.meta.url), 'utf8');
 
-const carousel = read('../components/HorizontalCarousel.svelte');
 const myNagiSection = read('../components/MyNagiSection.svelte');
 const myNagiPage = read('../../routes/+page.svelte');
 const baseCss = read('../../routes/styles/base.css');
@@ -40,15 +39,6 @@ function cssRules(source: string, selector: string): string[] {
 }
 
 describe('mobile overflow layout contracts', () => {
-	it('contains horizontal carousel content inside its own scroll viewport', () => {
-		expect(carousel).toMatch(
-			/\.horizontal-carousel\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;[^}]*overflow-x:\s*auto;[^}]*contain:\s*inline-size layout paint;/s,
-		);
-		expect(carousel).toMatch(
-			/\.horizontal-carousel\s+:global\(\.horizontal-carousel-track\)\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
-		);
-	});
-
 	it('keeps every my Nagi section within the main column', () => {
 		expect(myNagiSection).toMatch(
 			/\.my-nagi-section\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,

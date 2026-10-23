@@ -6,25 +6,48 @@ import { byNewestFirst } from './order';
 export const recommendedReason = (news: NewsView | RecommendedNewsView) =>
 	'reason' in news ? (news.reason?.genre ?? news.reason?.keyword) : undefined;
 
+/** my Nagi の候補にする期間。最新の候補からこの幅に入るものだけを比べる。 */
+const PICK_WINDOW_MS = 72 * 60 * 60 * 1000;
+
+const newsTime = (news: Pick<NewsView, 'createdAt' | 'indexedAt'>) =>
+	Date.parse(news.createdAt || news.indexedAt) || 0;
+
 /**
- * 未読のおすすめを新しい順に先頭（カルーセルの左側）へ置き、残りを新着で埋める。
- * 既読のおすすめは先頭に寄せないが、新着に含まれていればラベル付きで出す。同じカードは一度だけ出す。
+ * my Nagi に出すニュースを1件だけ選ぶ。
+ *
+ * 読んだ人が自分の話としてコメントしやすい記事（talkScore が高い記事）を最優先にし、
+ * 同点なら未読 → 関心ジャンルのおすすめ → 新しい順で決める。古い高得点記事が居座らないよう、
+ * 最新の候補から72時間以内に絞って比べる。talkScore の無い記事（導入前の承認）は最下位。
  */
-export function selectMyNagiNews(
+export function pickMyNagiNews(
 	page: NewsPage,
 	view: UnreadView | undefined,
-	limit: number,
-): Array<NewsView | RecommendedNewsView> {
-	const recommended = byNewestFirst(page.recommended ?? []);
-	// 新着側に紛れた既読おすすめにも理由ラベルを出すため、おすすめ側の記事に差し替える。
+): NewsView | RecommendedNewsView | undefined {
+	const recommended = page.recommended ?? [];
+	// 新着側に紛れたおすすめにも理由ラベルを出すため、おすすめ側の記事に差し替える。
 	const byUri = new Map(recommended.map((news) => [news.uri, news]));
-	const newest = byNewestFirst(page.items).map((news) => byUri.get(news.uri) ?? news);
 	const seen = new Set<string>();
-	return [...recommended.filter((news) => view?.isUnread(news)), ...newest]
-		.filter((news) => {
-			if (seen.has(news.uri)) return false;
-			seen.add(news.uri);
-			return true;
-		})
-		.slice(0, Math.max(0, limit));
+	const candidates = byNewestFirst([
+		...page.items.map((news) => byUri.get(news.uri) ?? news),
+		...recommended,
+	]).filter((news) => {
+		if (seen.has(news.uri)) return false;
+		seen.add(news.uri);
+		return true;
+	});
+	const newest = candidates[0];
+	if (!newest) return undefined;
+	const since = newsTime(newest) - PICK_WINDOW_MS;
+	const rank = (news: NewsView | RecommendedNewsView) => [
+		news.talkScore ?? -1,
+		view?.isUnread(news) ? 1 : 0,
+		recommendedReason(news) ? 1 : 0,
+	];
+	// 安定ソートなので、残りの同点は新しい順のまま。
+	return candidates
+		.filter((news) => newsTime(news) >= since)
+		.sort((a, b) => {
+			const [ra, rb] = [rank(a), rank(b)];
+			return rb[0] - ra[0] || rb[1] - ra[1] || rb[2] - ra[2];
+		})[0];
 }
