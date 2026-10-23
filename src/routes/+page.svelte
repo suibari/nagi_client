@@ -12,10 +12,9 @@
 	 */
 	import { getMyNagi, getPositiveNews, getProfile, getThread } from '$lib/api/appview';
 	import type { ActorView, MyNagiView, NewsView, PostView } from '$lib/api/types';
-	import CarouselArrows from '$lib/components/CarouselArrows.svelte';
 	import CardDrawEntry from '$lib/components/CardDrawEntry.svelte';
-	import MyNagiNewsCarousel from '$lib/components/MyNagiNewsCarousel.svelte';
 	import MyNagiSection from '$lib/components/MyNagiSection.svelte';
+	import NewsCard from '$lib/components/NewsCard.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
@@ -28,7 +27,7 @@
 		readPositions,
 	} from '$lib/my-nagi/unread.svelte';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
-	import { selectMyNagiNews } from '$lib/news/selection';
+	import { pickMyNagiNews, recommendedReason } from '$lib/news/selection';
 	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import { threadToConversationItem } from '$lib/thread/conversation';
@@ -38,7 +37,6 @@
 	import { startVisiblePolling } from '$lib/polling';
 	import { readMyNagiPageCache, updateMyNagiPageCache } from '$lib/my-nagi/cache';
 
-	const NEWS_COUNT = 5;
 	const BOT_POST_COUNT = 1;
 	const LIST_COUNT = 6;
 
@@ -66,11 +64,6 @@
 	// プリレンダ時は $session も目印も無いのでヒーローが出る（＝クローラと初回訪問者が見る形）。
 	// 戻ってきた利用者には、OAuth 復元を待たずに最初の描画から出さない。
 	const showHero = $derived(!$session && !hadRecentSession());
-	let newsCarousel = $state<{
-		scrollPrevious: () => void;
-		scrollNext: () => void;
-	}>();
-	let newsCarouselState = $state({ canPrevious: false, canNext: false });
 
 	// APIも新着順だが、表示境界でも時系列を保証し、リスト登録順には依存させない。
 	const newestFirst = <T extends { post: PostView }>(a: T, b: T) =>
@@ -96,7 +89,9 @@
 		try {
 			const page = await getPositiveNews(i18n.locale);
 			if (loadedFor !== key) return;
-			news = selectMyNagiNews(page, activeUnreadView, NEWS_COUNT);
+			// 1件だけ選ぶ。コメントしやすい記事を1つ置き、残りはニュース一覧へ任せる。
+			const picked = pickMyNagiNews(page, activeUnreadView);
+			news = picked ? [picked] : [];
 			newsLoaded = true;
 			newsUnread = readLatest(
 				activeUnreadView,
@@ -289,17 +284,6 @@
 	});
 </script>
 
-{#snippet newsCarouselActions()}
-	<CarouselArrows
-		previousLabel={m.myNagiNewsScrollPrev()}
-		nextLabel={m.myNagiNewsScrollNext()}
-		previousDisabled={!newsCarouselState.canPrevious}
-		nextDisabled={!newsCarouselState.canNext}
-		onprevious={() => newsCarousel?.scrollPrevious()}
-		onnext={() => newsCarousel?.scrollNext()}
-	/>
-{/snippet}
-
 <!-- 見出しとヒーローは $oauthReady のゲートの外に置く。ゲートの中だとプリレンダ結果が
      スピナーだけになり、検索エンジンにも初回訪問者にも中身の無いトップページが出る。
      並び（見出し → ヒーロー → botたん欄）は guest-posts/privacy.test.ts が固定している。
@@ -327,7 +311,6 @@
 	<MyNagiSection
 		title={m.myNagiBotTitle()}
 		icon="bot"
-		description={m.myNagiBotIntro()}
 		moreHref={botActor ? `/profile/${botActor.did}` : undefined}
 		loading={botLoading}
 		error={botError}
@@ -346,22 +329,25 @@
 	<MyNagiSection
 		title={m.myNagiNewsTitle()}
 		icon="newspaper"
-		description={m.myNagiNewsIntro()}
 		loading={newsLoading}
 		error={newsError}
 		empty={!news.length}
 		unread={newsUnread}
 		unreadLabel={m.newsUnreadAria()}
 		onretry={loadNews}
-		headerActions={news.length > 1 ? newsCarouselActions : undefined}
 	>
-		<MyNagiNewsCarousel
-			bind:this={newsCarousel}
-			items={news}
-			unreadView={newsUnreadView}
-			{botActor}
-			onscrollstatechange={(state) => (newsCarouselState = state)}
-		/>
+		{#if news[0]}
+			<div class="my-nagi-news-card">
+				<NewsCard
+					news={news[0]}
+					{botActor}
+					embedded
+					showImage
+					unread={newsUnreadView?.isUnread(news[0]) ?? false}
+					reasonGenre={recommendedReason(news[0])}
+				/>
+			</div>
+		{/if}
 		<div class="my-nagi-news-footer">
 			<a href="/news">{m.myNagiMore()}<Icon name="chevron" size={15} /></a>
 		</div>
@@ -431,6 +417,11 @@
 	.my-nagi-bot-card {
 		min-width: 0;
 		padding: 8px 4px 10px;
+	}
+
+	.my-nagi-news-card {
+		min-width: 0;
+		padding: 0 4px;
 	}
 
 	.my-nagi-news-footer {

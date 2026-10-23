@@ -84,6 +84,11 @@ export type NewsView = {
 	reactions: ReactionView[];
 	submittedBy?: ActorView;
 	unavailable?: boolean;
+	/**
+	 * 話しやすさ 0〜4（専門知識なしで話せる・経験や好みにつながる・成功体験がなくても
+	 * 答えられる・意見の正しさを争いにくい、の該当数）。my Nagi の1件選定に使う。
+	 */
+	talkScore?: number;
 };
 /** 検索公開を選んだブログ投稿の、ビルド時に使う公開スナップショット。 */
 export type IndexableBlog = {

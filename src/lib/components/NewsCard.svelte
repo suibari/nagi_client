@@ -116,10 +116,13 @@
 				<Icon name="heart" size={13} /><span>{m.newsRecommendedReason({ genre: reasonGenre })}</span
 				>
 			</p>{/if}
+		<!-- 「記事を読む」ボタンは置かない。記事へはサムネイルから飛べるので、
+		     サムネイルを出さない一覧（検索・プロフィールなど）のために配信元名を記事リンクにする。 -->
 		<div class="news-meta">
-			<span>{news.sourceName ?? m.newsSourceUnknown()}</span>{#if news.publishedAt}<time
-					datetime={news.publishedAt}>{publishedLabel}</time
-				>{/if}
+			{#if safeUrl}<a class="news-source" href={safeUrl} target="_blank" rel="noopener noreferrer"
+					>{news.sourceName ?? m.newsSourceUnknown()}</a
+				>{:else}<span>{news.sourceName ?? m.newsSourceUnknown()}</span
+				>{/if}{#if news.publishedAt}<time datetime={news.publishedAt}>{publishedLabel}</time>{/if}
 		</div>
 		<h3
 			class:clamped={clampTitle}
@@ -159,19 +162,12 @@
 				pickerAnchor={reactionButton}
 			/>
 			<div class="news-actions">
-				{#if safeUrl}<a
-						class="primary news-read"
-						href={safeUrl}
-						target="_blank"
-						rel="noopener noreferrer">{m.newsReadArticle()}</a
-					>{/if}
+				<!-- 主要アクションは「読む」ではなく、自分の話を書く「コメントする」（ニュースの引用投稿）。 -->
 				<button
-					class="ghost icon-action timeline-action"
+					class="primary news-comment"
 					class:active={composerHost.open && composerHost.quoteTarget?.news?.uri === news.uri}
 					type="button"
-					onclick={toggleQuote}
-					aria-label={m.newsQuote()}
-					title={m.newsQuote()}><Icon name="quote" size={18} /></button
+					onclick={toggleQuote}><Icon name="quote" size={16} />{m.newsComment()}</button
 				>
 				<button
 					bind:this={reactionButton}
@@ -186,7 +182,7 @@
 					<Icon name="emojiPlus" size={18} />
 				</button>
 				<BookmarkActions subject={{ kind: 'news', uri: news.uri }} />
-				{#if news.submittedBy?.did === $session?.did}<button
+				{#if $session && news.submittedBy?.did === $session.did}<button
 						class="ghost icon-action timeline-action"
 						type="button"
 						disabled={deleting}
@@ -280,9 +276,19 @@
 	.news-submitter:hover {
 		text-decoration: underline;
 	}
-	.news-meta > span {
+	.news-meta > span,
+	.news-meta > .news-source {
 		min-inline-size: 0;
 		overflow-wrap: anywhere;
+	}
+	.news-meta > .news-source {
+		color: inherit;
+		text-decoration: none;
+	}
+	.news-meta > .news-source:hover,
+	.news-meta > .news-source:focus-visible {
+		color: var(--accent-strong);
+		text-decoration: underline;
 	}
 	.news-meta time {
 		margin-left: auto;
@@ -338,12 +344,12 @@
 		flex-wrap: wrap;
 		margin-top: 0.5rem;
 	}
-	.news-actions .news-read {
+	.news-actions .news-comment {
 		display: inline-flex;
 		align-items: center;
+		gap: 0.35rem;
 		min-height: 36px;
 		padding: 0.45rem 0.9rem;
-		text-decoration: none;
 	}
 	.news-actions .icon-action {
 		width: 36px;
