@@ -77,25 +77,25 @@
 				{#each mobileMenuGroups as group, groupIndex}
 					{#if groupIndex > 0}<div class="mobile-menu-divider" role="separator"></div>{/if}
 					{#each group as item (item.href)}
-					<a
-						href={item.href}
-						class:active={isActive(page.url.pathname, item.href)}
-						aria-current={isActive(page.url.pathname, item.href) ? 'page' : undefined}
-						onclick={(event) => {
-							handleNavClick(event, page.url.pathname, item.href);
-							closeMenu(false);
-						}}
-					>
-						<span class="mobile-menu-item-icon nav-icon">
-							<Icon name={item.icon} size={21} />
-							{#if item.badge}<NavBadge
-									{...item.badge}
-									style={item.badge.style === 'text' ? 'dot' : item.badge.style}
-								/>{/if}
-						</span>
-						<span>{item.label()}</span>
-						<Icon name="chevron" size={17} />
-					</a>
+						<a
+							href={item.href}
+							class:active={isActive(page.url.pathname, item.href)}
+							aria-current={isActive(page.url.pathname, item.href) ? 'page' : undefined}
+							onclick={(event) => {
+								handleNavClick(event, page.url.pathname, item.href);
+								closeMenu(false);
+							}}
+						>
+							<span class="mobile-menu-item-icon nav-icon">
+								<Icon name={item.icon} size={21} />
+								{#if item.badge}<NavBadge
+										{...item.badge}
+										style={item.badge.style === 'text' ? 'dot' : item.badge.style}
+									/>{/if}
+							</span>
+							<span>{item.label()}</span>
+							<Icon name="chevron" size={17} />
+						</a>
 					{/each}
 				{/each}
 			</nav>

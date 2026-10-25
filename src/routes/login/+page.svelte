@@ -10,7 +10,7 @@
 
 	let handle = $state('');
 	let busy = $state<AuthAction | null>(null);
-	// standard.site は常に認可し、このスイッチは任意の Bluesky クロスポストだけを扱う。
+	// standard.site は常に認可し、このスイッチは任意の Bluesky 連携（クロスポストとフィード閲覧）だけを扱う。
 	let federateOptIn = $state(false);
 	onMount(() => {
 		// 前回クロスポストを有効にしていたら、スイッチの初期値も ON にして復元する。

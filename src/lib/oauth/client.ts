@@ -13,6 +13,22 @@ export const BLUESKY_PROFILE_SCOPE = `${BLUESKY_PROFILE_COLLECTION_SCOPE}?action
 // action 未指定は create/update/delete 全許可になるため、明示的に create のみへ絞る。
 export const CROSSPOST_SCOPE = `${CROSSPOST_COLLECTION_SCOPE}?action=create`;
 export const BLUEMOJI_SCOPE = 'repo:blue.moji.collection.item';
+// Bluesky のカスタムフィードをタブで読むための権限。クロスポストと同じオプトインでまとめて要求する
+// （同意の導線を増やさない）。PDS へ atproto-proxy 付きで投げるので aud は Bluesky AppView だが、
+// bare aud で照合する旧 PDS のため既存の rpc と同じく wildcard にする。
+// 真実源は nagi-lexicon の NAGI_BLUESKY_VIEW_SCOPES。
+export const BLUESKY_VIEW_RPC_SCOPES = [
+	'rpc:app.bsky.feed.getFeed',
+	// PDS は getFeed の代理リクエストで getFeedSkeleton 用の service auth を発行する
+	// （AppView がそのトークンをフィードジェネレータへ回すため）。これが無いと getFeed が通らない。
+	'rpc:app.bsky.feed.getFeedSkeleton',
+	'rpc:app.bsky.feed.getTimeline',
+	'rpc:app.bsky.feed.getFeedGenerators',
+	'rpc:app.bsky.actor.getPreferences',
+	'rpc:app.bsky.labeler.getServices',
+	'rpc:app.bsky.feed.getLikes',
+];
+export const BLUESKY_VIEW_SCOPES = BLUESKY_VIEW_RPC_SCOPES.map((scope) => `${scope}?aud=*`);
 // standard.site（長文記事の共通 lexicon）へブログの正本を保存するコレクション。
 // 記事は作成だけでなく編集(putRecord)・削除も Nagi の投稿に追従させるため、
 // crosspost と違って action は絞らない。
@@ -59,11 +75,11 @@ export type ScopeOptIns = { crosspost?: boolean; standardSite?: boolean };
  */
 export function buildScope(optIns: ScopeOptIns = {}): string {
 	const scopes = [...baseScopes];
-	if (optIns.crosspost) scopes.push(CROSSPOST_SCOPE);
+	if (optIns.crosspost) scopes.push(CROSSPOST_SCOPE, ...BLUESKY_VIEW_SCOPES);
 	return scopes.join(' ');
 }
 
-// standard.site は必須、Bluesky クロスポストだけがオプトイン。
+// standard.site は必須、Bluesky 連携（クロスポストとフィード閲覧）だけがオプトイン。
 export const BASE_SCOPE = buildScope();
 export const FULL_SCOPE = buildScope({ crosspost: true, standardSite: true });
 const scope = FULL_SCOPE;

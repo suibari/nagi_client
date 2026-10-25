@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import FeedShell from '$lib/components/FeedShell.svelte';
+	import BskyFeedShell from '$lib/components/bsky/BskyFeedShell.svelte';
 	import FeedTabs from '$lib/components/shell/FeedTabs.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { pageRefresh } from '$lib/components/shell/nav';
@@ -17,6 +18,7 @@
 
 	let homeAuthError = $state(false);
 	let shell = $state<ReturnType<typeof FeedShell>>();
+	let bskyShell = $state<ReturnType<typeof BskyFeedShell>>();
 
 	const tab = $derived(feedTabs.byId(page.url.searchParams.get('tab')) ?? feedTabs.fallback);
 	const spec = $derived(
@@ -37,7 +39,10 @@
 		const first = !started;
 		started = true;
 		lastDid = did;
-		if (!first) shell?.reset();
+		if (!first) {
+			shell?.reset();
+			bskyShell?.reset();
+		}
 	});
 
 	// ナビの「フィード」をもう一度押したときの取り直し。
@@ -46,7 +51,7 @@
 		pageRefresh.subscribe((count) => {
 			if (count === seenRefresh) return;
 			seenRefresh = count;
-			void shell?.refresh();
+			void (spec.bsky ? bskyShell?.refresh() : shell?.refresh());
 		}),
 	);
 </script>
@@ -61,5 +66,9 @@
 			<Icon name="hash" size={14} />{m.feedTabsOpenHashtag({ name: feedTabLabel(tab) })}
 		</a>
 	{/if}
-	<FeedShell bind:this={shell} {spec} {homeAuthError} />
+	{#if spec.bsky}
+		<BskyFeedShell bind:this={bskyShell} feed={spec.bsky.feed} cacheKey={spec.key} />
+	{:else}
+		<FeedShell bind:this={shell} {spec} {homeAuthError} />
+	{/if}
 {/if}

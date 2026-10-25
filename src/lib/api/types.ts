@@ -457,9 +457,10 @@ export type EmojiFavorite =
  * list / custom は「入れ物」で、どれを指すかは source が持つ（list はいまホームだけ、
  * custom はいま全肯定だけ）。将来ユーザーが定義したカスタムフィードも custom に入る。
  */
-export type FeedTabKind = 'list' | 'global' | 'custom' | 'hashtag' | 'search';
-/** list / custom が指す組み込みの中身。ユーザー定義のフィードは将来 uri で指す。 */
-export type FeedTabSource = 'home' | 'affirmation';
+export type FeedTabKind = 'list' | 'global' | 'custom' | 'hashtag' | 'search' | 'bsky';
+/** list / custom が指す組み込みの中身。 */
+/** bsky の following は Bluesky のホームタイムライン（フォロー中）で、uri の代わりにこれで指す。 */
+export type FeedTabSource = 'home' | 'affirmation' | 'following';
 /**
  * フィードのタブ1枚。種別ごとの union にせずフラットに持つのは、lexicon で
  * タグ付き union を表しづらく、将来の種別追加を optional の追加で吸収したいため。
@@ -471,7 +472,9 @@ export type FeedTab = {
 	source?: FeedTabSource;
 	/** kind==='search' は自由文の保存クエリ、kind==='hashtag' はタグ（# を除いた小文字）。 */
 	query?: string;
-	/** 表示名のスナップショット。権威は query 側で、これは初回描画用。 */
+	/** kind==='bsky' のときの app.bsky.feed.generator の AT-URI。 */
+	uri?: string;
+	/** 表示名のスナップショット。権威は query / uri 側で、これは初回描画用。 */
 	label?: string;
 };
 export type PreferencesView = {

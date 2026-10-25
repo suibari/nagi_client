@@ -60,11 +60,7 @@
 				{/if}
 			</div>
 			<div class="field-toggle">
-				<ToggleSwitch
-					checked={choice.shown}
-					label=""
-					onchange={(v) => (choice.shown = v)}
-				/>
+				<ToggleSwitch checked={choice.shown} label="" onchange={(v) => (choice.shown = v)} />
 			</div>
 		</div>
 	{/each}
@@ -85,7 +81,10 @@
 		border: 1px solid var(--line);
 		border-radius: var(--radius-s);
 		background: var(--bg-inset);
-		transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+		transition:
+			border-color 120ms ease,
+			box-shadow 120ms ease,
+			opacity 120ms ease;
 	}
 	.field-row.dragging {
 		opacity: 0.3;

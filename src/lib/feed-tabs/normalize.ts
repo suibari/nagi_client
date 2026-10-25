@@ -10,6 +10,7 @@ import {
 	type FeedTab,
 	type FeedTabKind,
 } from './types';
+import { isFeedGeneratorUri } from '$lib/bsky/links';
 import { normalizeTag } from '$lib/tags';
 
 /**
@@ -35,6 +36,14 @@ function parseTab(raw: unknown): FeedTab | undefined {
 		const query = kind === 'hashtag' ? normalizeTag(raw) : raw.trim();
 		if (!query || query.length > MAX_TAB_QUERY_LENGTH) return undefined;
 		tab.query = query;
+	}
+	// Bluesky のホームタイムラインは uri を持たず source: following で指す（AppView と同じ規則）。
+	if (kind === 'bsky' && item.source !== undefined) {
+		if (item.source !== 'following' || item.uri !== undefined) return undefined;
+		tab.source = 'following';
+	} else if (kind === 'bsky') {
+		if (typeof item.uri !== 'string' || !isFeedGeneratorUri(item.uri)) return undefined;
+		tab.uri = item.uri;
 	}
 	return tab;
 }
@@ -76,7 +85,8 @@ export function normalizeFeedTabs(raw: unknown): FeedTab[] {
 		if (identities.has(identity)) continue;
 		identities.add(identity);
 		// id が無い / 重なるものは採番し直す。?tab= で引くタブが一意に決まらないため。
-		if (!tab.id || ids.has(tab.id)) tab.id = newTabId(tab.kind === 'search' ? 'q' : 'tag');
+		if (!tab.id || ids.has(tab.id))
+			tab.id = newTabId(tab.kind === 'search' ? 'q' : tab.kind === 'bsky' ? 'bsky' : 'tag');
 		ids.add(tab.id);
 		tabs.push(tab);
 	}

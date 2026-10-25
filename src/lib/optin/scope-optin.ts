@@ -1,5 +1,6 @@
 import { get } from 'svelte/store';
 import {
+	BLUESKY_VIEW_RPC_SCOPES,
 	CROSSPOST_COLLECTION_SCOPE,
 	STANDARD_SITE_COLLECTION_SCOPES,
 	type ScopeOptIns,
@@ -65,22 +66,35 @@ export const isOptInPending = (kind: OptInKind) => read(SPECS[kind].pendingKey) 
 export const markOptInPending = (kind: OptInKind) => write(SPECS[kind].pendingKey, 'true');
 export const clearOptInPending = (kind: OptInKind) => write(SPECS[kind].pendingKey, null);
 
-/** 現在のセッションに、その機能が要求するコレクションの書き込み権限が付与されているか。 */
-export async function hasOptInScope(kind: OptInKind): Promise<boolean> {
+/**
+ * 付与済みスコープに required がすべて含まれるか。パラメータ（action / aud）は見ない。
+ * 旧セッションは action 無し（全操作許可）の広いスコープを保持しているため、
+ * 完全一致だと既存ユーザーの機能が黙って止まる。
+ */
+export function scopesCover(grantedScope: string, required: string[]): boolean {
+	const granted = grantedScope.split(' ');
+	return required.every((scope) => granted.some((s) => s === scope || s.startsWith(`${scope}?`)));
+}
+
+async function sessionCovers(required: string[]): Promise<boolean> {
 	const current = get(session);
 	if (!current) return false;
 	try {
 		const info = await current.getTokenInfo();
-		const granted = info.scope.split(' ');
-		// 旧セッションは action 無し（全操作許可）の広いスコープを保持しているため、
-		// 完全一致だと既存ユーザーの機能が黙って止まる。コレクション単位で判定する。
-		return SPECS[kind].collections.every((collection) =>
-			granted.some((s) => s === collection || s.startsWith(`${collection}?`)),
-		);
+		return scopesCover(info.scope, required);
 	} catch {
 		return false;
 	}
 }
+
+/** 現在のセッションに、その機能が要求するコレクションの書き込み権限が付与されているか。 */
+export const hasOptInScope = (kind: OptInKind) => sessionCovers(SPECS[kind].collections);
+
+/**
+ * Bluesky のフィードを読む権限があるか。クロスポストと同じ再認可で付与されるが、
+ * 閲覧権限を足す前にクロスポストだけ許可した人がいるので、判定は別に持つ。
+ */
+export const hasBlueskyViewScope = () => sessionCovers(BLUESKY_VIEW_RPC_SCOPES);
 
 /**
  * いま付与されているオプトインの一覧。再認可のとき、片方を有効化する操作で

@@ -8,17 +8,26 @@
 		markCrosspostPending,
 		setCrosspostEnabled,
 	} from '$lib/crosspost/preferences';
-	import { grantedOptIns } from '$lib/optin/scope-optin';
+	import { grantedOptIns, hasBlueskyViewScope } from '$lib/optin/scope-optin';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 
+	/**
+	 * Bluesky 連携。クロスポストとフィードの閲覧は同じオプトイン（再認可1回）で権限が付く。
+	 * スイッチは「Blueskyにも」ボタンの1つだけで、フィードはタブ設定から足す。
+	 * 閲覧の権限は後から足したので、クロスポストだけ許可済みの人には再認可を案内する。
+	 */
 	let blueskyEnabled = $state(false);
 	let blueskyGranted = $state(false);
+	let viewGranted = $state(false);
+	let checked = $state(false);
 	let blueskyBusy = $state(false);
 
 	onMount(async () => {
 		blueskyEnabled = getCrosspostEnabled();
-		blueskyGranted = await hasCrosspostScope();
+		[blueskyGranted, viewGranted] = await Promise.all([hasCrosspostScope(), hasBlueskyViewScope()]);
+		checked = true;
 	});
 
 	function toggleBluesky(next: boolean) {
@@ -43,22 +52,29 @@
 	<h1>{m.settingsExternalPublishingTitle()}</h1>
 	<p class="page-intro">{m.externalPublishingHelp()}</p>
 
+	{#if !$session && $oauthReady}
+		<SignedOutNotice message={m.crosspostSignInRequired()} />
+	{:else if $session && !checked}
+		<Spinner size="sm" />
+	{:else if $session && !(blueskyGranted && viewGranted)}
+		<div class="publishing-service">
+			<p>{m.crosspostReauthNote()}</p>
+			<button type="button" disabled={blueskyBusy} onclick={reauthorizeBluesky}>
+				{#if blueskyBusy}<Spinner inline size="sm" decorative />{/if}
+				{blueskyBusy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}
+			</button>
+		</div>
+	{/if}
+
 	<fieldset class="theme-settings publishing-service">
 		<legend>{m.blueskyPublishingTitle()}</legend>
 		<p>{m.crosspostHelp()}</p>
-		{#if !$session && $oauthReady}
-			<SignedOutNotice message={m.crosspostSignInRequired()} />
-		{:else if $session && blueskyGranted}
+		{#if $session && blueskyGranted}
 			<ToggleSwitch
 				checked={blueskyEnabled}
 				label={m.crosspostEnableLabel()}
 				onchange={toggleBluesky}
 			/>
-		{:else if $session}
-			<p>{m.crosspostReauthNote()}</p>
-			<button type="button" disabled={blueskyBusy} onclick={reauthorizeBluesky}>
-				{blueskyBusy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}
-			</button>
 		{/if}
 		<details>
 			<summary>{m.externalPublishingDetails()}</summary>
@@ -66,6 +82,14 @@
 			<p>{m.crosspostBotNote()}</p>
 			<p>{m.crosspostDeviceNote()}</p>
 		</details>
+	</fieldset>
+
+	<fieldset class="theme-settings publishing-service">
+		<legend>{m.blueskyFeedReadingTitle()}</legend>
+		<p>{m.blueskyFeedReadingHelp()}</p>
+		{#if $session && viewGranted}
+			<a href="/settings/feed-tabs">{m.blueskyFeedReadingOpenTabs()} →</a>
+		{/if}
 	</fieldset>
 </section>
 
@@ -83,6 +107,9 @@
 	.publishing-service > p,
 	.publishing-service details p {
 		margin: 0;
+	}
+	.publishing-service > a {
+		width: fit-content;
 	}
 	details summary {
 		width: fit-content;
