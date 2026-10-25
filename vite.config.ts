@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { loadEnv } from 'vite';
-import { resolveOAuthDeployment } from './src/lib/oauth/deployment';
+import { resolveOAuthDeployment } from './src/lib/oauth/deployment.ts';
 // defineConfig は vitest/config のもの（vite の型を包含し、test ブロックを足せる）。
 import { defineConfig } from 'vitest/config';
 
@@ -52,6 +52,17 @@ export default defineConfig(({ command, mode }) => {
 				adapter: adapter({ fallback: '200.html' }),
 
 				prerender: {
+					// entries() の列挙後に記事が削除されたり、プリレンダー側で AppView の
+					// 取得に失敗するとブログ記事が404になる。記事だけをスキップし、
+					// 未生成のブログは既存の /api/spa フォールバックで表示する。
+					// 他のページの404やサーバーエラーは設定ミスを隠さないよう失敗させる。
+					handleHttpError: ({ status, path, message }) => {
+						if (status === 404 && /^\/blog\/did:[^/]+\/[^/]+$/.test(path)) {
+							console.warn(`[seo] ブログ記事を生成できませんでした: ${message}`);
+							return;
+						}
+						throw new Error(message);
+					},
 					/**
 					 * ニュースのパーマリンクは、AppView から取った一覧で entries() を組み立てる。
 					 * AppView が落ちている（あるいはまだこのエンドポイントを持っていない）ビルドでは
@@ -68,7 +79,7 @@ export default defineConfig(({ command, mode }) => {
 						);
 						if (unexpected.length) throw new Error(message);
 						console.warn(
-							'[seo] 索引対象のニュースが0件でした。記事ページは生成されません（一覧は noindex になります）。',
+							`[seo] 記事ページが生成されませんでした: ${routes.join(', ')}。索引対象の取得状況を確認してください。`,
 						);
 					},
 					/**
