@@ -112,17 +112,18 @@ test('diary deep links and tabs keep the selected tab, date, and URL in sync', a
 	const moodDay = page.locator(`.mood-hit[data-date="${date}"]`);
 	await expect(moodDay).toHaveAttribute('aria-pressed', 'true');
 	await expect(page.locator('.mood')).toContainText(moodText);
-	await expect(page.locator('.mood')).toContainText(text);
+	const moodDiaryLink = page.locator('.mood').getByRole('link', { name: 'Read that day' });
+	await expect(moodDiaryLink).toHaveAttribute('href', `/diary?date=${date}`);
 
 	// Deselecting on the graph removes the date from the URL; reloading keeps the tab.
 	await moodDay.click();
 	await expect(page).toHaveURL('/diary?tab=mood');
-	await expect(page.locator('.mood')).not.toContainText(text);
+	await expect(moodDiaryLink).toHaveCount(0);
 	await moodDay.click();
 	await expect(page).toHaveURL(`/diary?tab=mood&date=${date}`);
 
 	// Clicking inside the opened day keeps it; clicking outside the graph or pressing Escape clears it.
-	await page.locator('.mood-selection').getByText(text).click();
+	await page.locator('.mood-selection .mood-chip').click();
 	await expect(page).toHaveURL(`/diary?tab=mood&date=${date}`);
 	await page.locator('.mood-about').click();
 	await expect(page).toHaveURL('/diary?tab=mood');
