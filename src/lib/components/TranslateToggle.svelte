@@ -27,6 +27,7 @@
 		onoverflowchange,
 		collapseToggle,
 		translatedText,
+		plain = false,
 	}: {
 		uri: string;
 		cid: string;
@@ -40,6 +41,8 @@
 		collapseToggle?: Snippet;
 		/** APIを使わない表示確認などで、訳文を直接描画する。 */
 		translatedText?: string;
+		/** Markdown として描画しない（ゼンカツの作者の意図など、入力がただのテキスト欄のもの）。 */
+		plain?: boolean;
 	} = $props();
 	let body = $state<HTMLElement>();
 	let originalExpanded = $derived(
@@ -122,6 +125,13 @@
 	});
 </script>
 
+{#snippet body_(value: string, valueFacets?: Facet[])}
+	{#if plain}<span class="plain">{value}</span>{:else}<RichText
+			text={value}
+			facets={valueFacets}
+		/>{/if}
+{/snippet}
+
 <div class="translation" aria-live="polite">
 	{#if busy}
 		{#if englishFallback}
@@ -133,10 +143,7 @@
 					style={clampLines ? `--clamp-lines: ${clampLines};` : undefined}
 					bind:this={body}
 				>
-					<RichText
-						text={englishFallback.text}
-						facets={englishFallback.original ? facets : undefined}
-					/>
+					{@render body_(englishFallback.text, englishFallback.original ? facets : undefined)}
 				</div>
 			</div>
 		{:else}
@@ -151,7 +158,7 @@
 				style={clampLines ? `--clamp-lines: ${clampLines};` : undefined}
 				bind:this={body}
 			>
-				<RichText text={translated} />
+				{@render body_(translated)}
 			</div>
 		</div>
 		{#if collapseToggle}{@render collapseToggle()}{/if}
@@ -166,7 +173,7 @@
 		>
 		{#if originalExpanded}
 			<div class="original separated">
-				<div class="post-text"><RichText {text} {facets} /></div>
+				<div class="post-text">{@render body_(text, facets)}</div>
 			</div>
 		{/if}
 	{:else if failed}
@@ -194,7 +201,7 @@
 				style={clampLines ? `--clamp-lines: ${clampLines};` : undefined}
 				bind:this={body}
 			>
-				<RichText {text} {facets} />
+				{@render body_(text, facets)}
 			</div>
 		</div>
 	{/if}
@@ -221,6 +228,10 @@
 	.translation .text {
 		margin-top: 0.2rem;
 		white-space: pre-wrap;
+	}
+
+	.plain {
+		white-space: pre-line;
 	}
 
 	.original-toggle {

@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { m } from '$lib/i18n/i18n.svelte';
+	import TranslateToggle from './TranslateToggle.svelte';
 
 	/**
 	 * 作者の意図。**最初は畳んでおく。** 他人の意図を先に読むと、札だけを見て自分なりに
 	 * 解釈する楽しみが消えるので、読む人が自分で開くまで本文は出さない。
+	 * 翻訳も開いてから始める（畳んだままの意図で生成枠を使わない）。
 	 */
-	let { note }: { note?: string } = $props();
+	let { uri, cid, note, langs }: { uri: string; cid: string; note?: string; langs?: string[] } =
+		$props();
 	let open = $state(false);
 	const id = $props.id();
 </script>
@@ -23,7 +26,9 @@
 			{open ? m.zenkatsuNoteHide() : m.zenkatsuNoteShow()}
 		</button>
 		{#if open}
-			<p {id} class="body" aria-label={m.zenkatsuNoteHeading()}>{note}</p>
+			<div {id} class="body" role="group" aria-label={m.zenkatsuNoteHeading()}>
+				<TranslateToggle {uri} {cid} text={note} {langs} plain />
+			</div>
 		{/if}
 	</div>
 {/if}
@@ -60,5 +65,10 @@
 		line-height: 1.7;
 		white-space: pre-line;
 		overflow-wrap: anywhere;
+	}
+	/* 訳文・原文の本文は投稿用の文字サイズを持つので、意図欄の大きさへ戻す。 */
+	.body :global(.post-text) {
+		font-size: inherit;
+		line-height: inherit;
 	}
 </style>

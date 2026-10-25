@@ -914,7 +914,8 @@ export async function createZenkatsu(
 				$type: ZENKATSU,
 				themeDate,
 				cards,
-				...(trimmedNote ? { note: trimmedNote } : {}),
+				// 言語は意図の翻訳の原文判定に使う。投稿と同じく投稿言語の設定を書く。
+				...(trimmedNote ? { note: trimmedNote, langs: [languagePreferences.postLanguage] } : {}),
 				createdAt: new Date().toISOString(),
 			},
 		}),
