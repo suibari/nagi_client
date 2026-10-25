@@ -9,6 +9,7 @@
 	import ZenkatsuMarks from './ZenkatsuMarks.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import CardBotReview from './CardBotReview.svelte';
+	import ZenkatsuNote from './ZenkatsuNote.svelte';
 
 	/**
 	 * 全肯定カードのニュース。R以上のドローと、ゼンカツのハイライトだけが並ぶ。
@@ -110,6 +111,7 @@
 								''}
 						/>
 					{/if}
+					<ZenkatsuNote note={item.note} />
 				{/if}
 				<CardItemReactions uri={item.uri} cid={item.cid} reactions={item.reactions} />
 			</li>

@@ -87,9 +87,17 @@ test('failed submission preserves selection and permits retry with reduced motio
 	await page.getByLabel('Fail submission').check();
 	await page.getByText('Open game', { exact: true }).click();
 	await page.locator('.hand-card').first().click();
+	const noteField = page.getByLabel('このカードを選んだ理由・ストーリー（任意）');
+	await noteField.fill('あ'.repeat(301));
+	await expect(page.getByText('長すぎるみたい。少し短くしてね')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'これで出す' })).toBeDisabled();
+	await noteField.fill('残しておきたい意図');
+	await expect(page.getByText('9 / 300')).toBeVisible();
 	await page.getByRole('button', { name: 'これで出す' }).click();
 	await expect(page.getByRole('alert')).toBeVisible();
 	await expect(page.locator('.selected-card')).toHaveCount(1);
+	// 提出に失敗しても、書いた意図は消さない。
+	await expect(noteField).toHaveValue('残しておきたい意図');
 	await page.getByRole('button', { name: 'やめる', exact: true }).click();
 	await page.getByLabel('Fail submission').uncheck();
 	await page.getByText('Open game', { exact: true }).click();
@@ -151,7 +159,10 @@ test('board keeps the game open while reloading after a successful submission', 
 		}),
 	);
 	const commentLanded = () => submittedAt > 0 && Date.now() - submittedAt > 3500;
+	const note = '傘を忘れたきみを、味方が迎えに来るストーリー';
+	let writtenNote: unknown;
 	await page.route('**/xrpc/com.atproto.repo.putRecord', async (route) => {
+		writtenNote = route.request().postDataJSON()?.record?.note;
 		submitted = true;
 		submittedAt = Date.now();
 		await route.fulfill({ json: { uri, cid } });
@@ -195,6 +206,7 @@ test('board keeps the game open while reloading after a successful submission', 
 								cards: [],
 								commentJa: commentLanded() ? 'きみの一歩を応援しているよ！' : undefined,
 								commentPending: !commentLanded(),
+								note,
 								author: { did: 'did:plc:zenkatsu-preview', handle: 'preview.example' },
 								createdAt: '2026-09-19T00:00:00Z',
 								indexedAt: '2026-09-19T00:00:00Z',
@@ -222,15 +234,28 @@ test('board keeps the game open while reloading after a successful submission', 
 	await expect(guide).not.toBeVisible();
 	await playButton.click();
 	await page.locator('.hand-card').first().click();
+	await page.getByLabel('このカードを選んだ理由・ストーリー（任意）').fill(`  ${note}  `);
 	await page.getByRole('button', { name: 'これで出す' }).click();
 	await expect(page.locator('.speech')).toContainText('きみの一歩を応援しているよ！');
+	// 作者の意図は前後の空白を落として、提出と同じレコードに入る。
+	expect(writtenNote).toBe(note);
 	expect(publicReviewPolls).toBeGreaterThan(0);
 	await page.locator('.finale').getByRole('button', { name: 'おわる' }).click();
 	await expect(page.getByRole('dialog')).not.toBeVisible();
-	await expect(page.getByText('今日はもう出したよ', { exact: true })).toBeVisible();
+	await expect(
+		page.getByText('今日のプレイは完了！ また明日のお題であそんでね', { exact: true }),
+	).toBeVisible();
 	// 閉じたあとの記録欄に総評が載っていること（提出直後の再取得だけだと「考えているよ…」で止まる）。
 	await expect(page.locator('.record')).toContainText('きみの一歩を応援しているよ！');
 	await expect(page.locator('.record')).not.toContainText('botたんが考えているよ');
+	// 作者の意図は最初は畳んでおき、開いたときだけ本文を出す。
+	const noteToggle = page.locator('.record').getByRole('button', { name: '作者の意図を見る' });
+	await expect(noteToggle).toHaveAttribute('aria-expanded', 'false');
+	await expect(page.locator('.record')).not.toContainText(note);
+	await noteToggle.click();
+	await expect(page.locator('.record')).toContainText(note);
+	await page.locator('.record').getByRole('button', { name: '作者の意図をとじる' }).click();
+	await expect(page.locator('.record')).not.toContainText(note);
 });
 
 test('standalone mock opens a completed three-card review without registration', async ({

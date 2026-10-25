@@ -883,6 +883,10 @@ export async function putProfile(displayName: string, description: string, draft
 	);
 }
 
+/** 作者の意図の上限。**AppView の validateRecord（300字・3000バイト）と揃えること。** */
+export const ZENKATSU_NOTE_MAX_GRAPHEMES = 300;
+export const ZENKATSU_NOTE_MAX_BYTES = 3000;
+
 /**
  * ゼンカツ！の提出。**rkey はお題の日付そのもの。**
  *
@@ -892,8 +896,14 @@ export async function putProfile(displayName: string, description: string, draft
  * 所持していない札・クールダウン中の札を書いても AppView が照合して索引しない。
  * つまりこの経路でズルはできないが、無駄弾を撃たないようクライアント側でも選択肢を絞ること。
  */
-export async function createZenkatsu(themeDate: string, cards: { volume: number; id: number }[]) {
+export async function createZenkatsu(
+	themeDate: string,
+	cards: { volume: number; id: number }[],
+	note?: string,
+) {
 	const s = current();
+	// 作者の意図は任意。空なら項目ごと書かない（AppView は note の有無で判定待ちを決める）。
+	const trimmedNote = note?.trim();
 	return indexed(
 		new Agent(s).com.atproto.repo.putRecord({
 			repo: s.did,
@@ -904,6 +914,7 @@ export async function createZenkatsu(themeDate: string, cards: { volume: number;
 				$type: ZENKATSU,
 				themeDate,
 				cards,
+				...(trimmedNote ? { note: trimmedNote } : {}),
 				createdAt: new Date().toISOString(),
 			},
 		}),

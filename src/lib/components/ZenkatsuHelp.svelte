@@ -66,6 +66,7 @@
 			<ul>
 				<li>{m.zenkatsuGuideSubmit1()}</li>
 				<li>{m.zenkatsuGuideSubmit2()}</li>
+				<li>{m.zenkatsuGuideSubmit3()}</li>
 			</ul>
 		</section>
 		<section>

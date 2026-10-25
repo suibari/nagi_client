@@ -7,6 +7,7 @@
 		ZenkatsuSubmissionView,
 	} from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { ZENKATSU_NOTE_MAX_BYTES, ZENKATSU_NOTE_MAX_GRAPHEMES } from '$lib/atproto/records';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import ZenkatsuHelp from './ZenkatsuHelp.svelte';
 	import ZenkatsuBonus from './ZenkatsuBonus.svelte';
@@ -23,7 +24,7 @@
 		hand: { p: ZenkatsuPlayableCard; card: CardView }[];
 		maxCards: number;
 		theme: ZenkatsuThemeView;
-		onsubmit: (cards: { volume: number; id: number }[]) => Promise<string>;
+		onsubmit: (cards: { volume: number; id: number }[], note?: string) => Promise<string>;
 		onclose: () => void;
 		initialSubmission?: ZenkatsuSubmissionView;
 		loadFeed?: typeof getZenkatsu;
@@ -40,6 +41,15 @@
 	let dialog: HTMLDialogElement;
 	let shell: HTMLDivElement;
 	let picked = $state<CardView[]>([]);
+	/** 作者の意図（任意）。提出に失敗して select へ戻っても消さない。 */
+	let note = $state('');
+	const noteLength = $derived(
+		[...new Intl.Segmenter(i18n.locale, { granularity: 'grapheme' }).segment(note.trim())].length,
+	);
+	const noteTooLong = $derived(
+		noteLength > ZENKATSU_NOTE_MAX_GRAPHEMES ||
+			new TextEncoder().encode(note.trim()).length > ZENKATSU_NOTE_MAX_BYTES,
+	);
 	let stage = $state<'select' | 'cutin' | 'review'>('select');
 	let busy = $state(false);
 	let error = $state('');
@@ -162,7 +172,7 @@
 		vibrate(15);
 	}
 	async function submit() {
-		if (busy || !picked.length || uri) return;
+		if (busy || !picked.length || noteTooLong || uri) return;
 		busy = true;
 		error = '';
 		animationDone = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -171,7 +181,10 @@
 		dialog.scrollTop = 0;
 		vibrate([35, 65, 35, 65, 70]);
 		try {
-			uri = await onsubmit(picked.map(({ volume, id }) => ({ volume, id })));
+			uri = await onsubmit(
+				picked.map(({ volume, id }) => ({ volume, id })),
+				note.trim() || undefined,
+			);
 		} catch {
 			error = m.zenkatsuSubmitFailed();
 			clearTimeout(receiveTimer);
@@ -279,6 +292,22 @@
 							</div>
 						{/each}
 					</div>
+					<!-- 札を並べた直後に書けるよう、スロットの真下に置く（フッターは固定なので入れない）。 -->
+					<label class="note-field">
+						<span class="note-label">{m.zenkatsuNoteLabel()}</span>
+						<textarea
+							bind:value={note}
+							rows="2"
+							placeholder={m.zenkatsuNotePlaceholder()}
+							aria-invalid={noteTooLong}
+							aria-describedby="zenkatsu-note-count"
+						></textarea>
+						<span id="zenkatsu-note-count" class="note-count" class:over={noteTooLong}
+							>{noteTooLong
+								? m.zenkatsuNoteTooLong()
+								: m.zenkatsuNoteCount({ n: noteLength, max: ZENKATSU_NOTE_MAX_GRAPHEMES })}</span
+						>
+					</label>
 				</section>
 			</div>
 			<section class="hand-area">
@@ -321,8 +350,10 @@
 			<footer class="game-actions">
 				<p>{m.zenkatsuConfirmBody()}</p>
 				<div class="action-buttons">
-					<button class="game-primary" disabled={!picked.length || busy} onclick={submit}
-						>{m.zenkatsuSubmit()} ↗</button
+					<button
+						class="game-primary"
+						disabled={!picked.length || noteTooLong || busy}
+						onclick={submit}>{m.zenkatsuSubmit()} ↗</button
 					>
 					<button
 						class="game-ghost"
@@ -720,6 +751,40 @@
 		backdrop-filter: blur(6px);
 		color: var(--text);
 		line-height: 1;
+	}
+	.note-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		margin-top: 1rem;
+	}
+	.note-label {
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: var(--text-sub);
+	}
+	.note-field textarea {
+		width: 100%;
+		min-height: 3.6rem;
+		padding: 0.6rem 0.75rem;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-md);
+		background: var(--bg-raised);
+		color: var(--text);
+		font: inherit;
+		/* 16px 未満だと iOS がフォーカス時に拡大する。 */
+		font-size: 1rem;
+		line-height: 1.6;
+		resize: vertical;
+	}
+	.note-count {
+		align-self: flex-end;
+		font-size: 0.72rem;
+		color: var(--text-faint);
+		font-variant-numeric: tabular-nums;
+	}
+	.note-count.over {
+		color: var(--danger, #c0392b);
 	}
 	.hand-area {
 		width: min(100%, 1120px);

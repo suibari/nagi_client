@@ -23,6 +23,7 @@
 	import ZenkatsuPlay from './ZenkatsuPlay.svelte';
 	import ZenkatsuDevReset from './ZenkatsuDevReset.svelte';
 	import ZenkatsuMarks from './ZenkatsuMarks.svelte';
+	import ZenkatsuNote from './ZenkatsuNote.svelte';
 	import ZenkatsuHelp from './ZenkatsuHelp.svelte';
 	import ZenkatsuFlow from './ZenkatsuFlow.svelte';
 
@@ -213,9 +214,9 @@
 			!date,
 	);
 
-	async function submit(cards: { volume: number; id: number }[]) {
+	async function submit(cards: { volume: number; id: number }[], note?: string) {
 		if (!feed) throw new Error('Missing theme');
-		const result = await createZenkatsu(feed.theme.themeDate, cards);
+		const result = await createZenkatsu(feed.theme.themeDate, cards, note);
 		markZenkatsuPlayed(feed.theme.themeDate);
 		// 提出後の再取得が失敗しても、成功した提出を再送させない。
 		if (feed.viewer) feed = { ...feed, viewer: { ...feed.viewer, submitted: true } };
@@ -350,6 +351,7 @@
 						comment={commentOf(s) || m.zenkatsuCommentPending()}
 						pending={s.commentPending}
 					/>
+					<ZenkatsuNote note={s.note} />
 					<CardItemReactions uri={s.uri} cid={s.cid} reactions={s.reactions} />
 				</li>
 			{/each}
