@@ -351,7 +351,7 @@
 						comment={commentOf(s) || m.zenkatsuCommentPending()}
 						pending={s.commentPending}
 					/>
-					<ZenkatsuNote note={s.note} />
+					<ZenkatsuNote uri={s.uri} cid={s.cid} note={s.note} langs={s.noteLangs} />
 					<CardItemReactions uri={s.uri} cid={s.cid} reactions={s.reactions} />
 				</li>
 			{/each}

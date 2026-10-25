@@ -722,6 +722,8 @@ export type ZenkatsuSubmissionView = {
 	 * 他人の解釈を先に見せないよう、最初は畳んで出す。
 	 */
 	note?: string;
+	/** note の言語（レコードの langs）。投稿の langs と同じく翻訳の要否に使う。 */
+	noteLangs?: string[];
 	/** その日の追い風に乗っていた枚数。**得点ではない**（得点は隠しで表示しない）。 */
 	tailwindCount: number;
 	/** 成立したコンボ。成立したものだけがサーバから来る（未発見のぶんは送られない）。 */
@@ -787,6 +789,8 @@ export type CardNewsItem = {
 	commentEn?: string;
 	/** type=zenkatsu のとき。作者の意図（判定済みのものだけ）。 */
 	note?: string;
+	/** type=zenkatsu のとき。note の言語。 */
+	noteLangs?: string[];
 	/**
 	 * type=zenkatsu のとき。成立したコンボ。
 	 * ニュースに出すのは、**攻略がコミュニティに伝わる道**にするため。

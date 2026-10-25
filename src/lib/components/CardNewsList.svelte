@@ -111,7 +111,7 @@
 								''}
 						/>
 					{/if}
-					<ZenkatsuNote note={item.note} />
+					<ZenkatsuNote uri={item.uri} cid={item.cid} note={item.note} langs={item.noteLangs} />
 				{/if}
 				<CardItemReactions uri={item.uri} cid={item.cid} reactions={item.reactions} />
 			</li>

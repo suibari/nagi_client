@@ -112,7 +112,10 @@ test('board keeps the game open while reloading after a successful submission', 
 	page,
 }) => {
 	await page.setViewportSize({ width: 375, height: 812 });
-	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.addInitScript(() => {
+		localStorage.setItem('nagi-locale', 'ja');
+		localStorage.setItem('nagi-post-language', 'ja');
+	});
 	let submitted = false;
 	let reloading = false;
 	/*
@@ -161,8 +164,10 @@ test('board keeps the game open while reloading after a successful submission', 
 	const commentLanded = () => submittedAt > 0 && Date.now() - submittedAt > 3500;
 	const note = '傘を忘れたきみを、味方が迎えに来るストーリー';
 	let writtenNote: unknown;
+	let writtenLangs: unknown;
 	await page.route('**/xrpc/com.atproto.repo.putRecord', async (route) => {
 		writtenNote = route.request().postDataJSON()?.record?.note;
+		writtenLangs = route.request().postDataJSON()?.record?.langs;
 		submitted = true;
 		submittedAt = Date.now();
 		await route.fulfill({ json: { uri, cid } });
@@ -239,6 +244,8 @@ test('board keeps the game open while reloading after a successful submission', 
 	await expect(page.locator('.speech')).toContainText('きみの一歩を応援しているよ！');
 	// 作者の意図は前後の空白を落として、提出と同じレコードに入る。
 	expect(writtenNote).toBe(note);
+	// 翻訳の原文判定に使うので、投稿と同じく投稿言語の設定を書く。
+	expect(writtenLangs).toEqual(['ja']);
 	expect(publicReviewPolls).toBeGreaterThan(0);
 	await page.locator('.finale').getByRole('button', { name: 'おわる' }).click();
 	await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -256,6 +263,76 @@ test('board keeps the game open while reloading after a successful submission', 
 	await expect(page.locator('.record')).toContainText(note);
 	await page.locator('.record').getByRole('button', { name: '作者の意図をとじる' }).click();
 	await expect(page.locator('.record')).not.toContainText(note);
+});
+
+test('author notes are translated only after they are opened', async ({ page }) => {
+	await page.setViewportSize({ width: 375, height: 812 });
+	await page.addInitScript(() => {
+		localStorage.setItem('nagi-locale', 'ja');
+		localStorage.setItem('nagi-translation-language', 'en');
+	});
+	const uri = 'at://did:plc:zenkatsu-preview/com.suibari.nagi.zenkatsu/2026-09-19';
+	const note = '傘を忘れたきみを、味方が迎えに来るストーリー';
+	const translated = 'A story where an ally comes to pick you up\nwhen you forgot your umbrella';
+	const requested: unknown[] = [];
+	await page.route('**/xrpc/**', (route) =>
+		route.fulfill({ json: { items: [], folders: [], uris: [], drafts: [] } }),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.translatePosts', async (route) => {
+		const body = route.request().postDataJSON();
+		requested.push(body);
+		await route.fulfill({
+			json: { translations: [{ uri, text: translated }], failures: [] },
+		});
+	});
+	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', (route) =>
+		route.fulfill({
+			json: {
+				theme: {
+					volume: 1,
+					id: 1,
+					themeDate: '2026-09-19',
+					attribute: 'wind',
+					tone: 'sunao',
+					textJa: '今日のきみに、追い風を。',
+					textEn: 'A tailwind for you today.',
+				},
+				submissions: [
+					{
+						uri,
+						cid: 'bafy-preview',
+						cards: [],
+						commentJa: 'きみの一歩を応援しているよ！',
+						commentPending: false,
+						note,
+						noteLangs: ['ja'],
+						author: { did: 'did:plc:zenkatsu-preview', handle: 'preview.example' },
+						createdAt: '2026-09-19T00:00:00Z',
+						indexedAt: '2026-09-19T00:00:00Z',
+					},
+				],
+			},
+		}),
+	);
+	await page.goto('/dev/e2e/zenkatsu?board');
+	const toggle = page.getByRole('button', { name: '作者の意図を見る' });
+	await expect(toggle).toBeVisible();
+	// 畳んだままの意図で生成枠を使わない。
+	expect(requested).toEqual([]);
+	await toggle.click();
+	const body = page.getByRole('group', { name: '作者の意図' });
+	await expect(body).toContainText('A story where an ally comes to pick you up');
+	await expect(body).not.toContainText(note);
+	expect(requested).toEqual([{ uris: [uri], targetLang: 'en' }]);
+	// 意図はただのテキスト欄なので、訳文の改行もそのまま出す。
+	expect(
+		await body
+			.locator('.plain')
+			.first()
+			.evaluate((el) => getComputedStyle(el).whiteSpace),
+	).toBe('pre-line');
+	await body.getByRole('button', { name: /原文/ }).click();
+	await expect(body).toContainText(note);
 });
 
 test('standalone mock opens a completed three-card review without registration', async ({
