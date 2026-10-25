@@ -1273,7 +1273,7 @@ export const en: Messages = {
 	trophyGuideIntro:
 		'All awards except Nagikatsu Chief are granted as soon as your play meets their conditions.',
 	trophyBottanDescription:
-		'At 4 AM Japan time the next morning, Bot-tan chooses one player from a shortlist after looking at the theme and cards played.',
+		'The next day, Bot-tan chooses one player from a shortlist after looking at the theme and cards played.',
 	trophyAdventureDescription: 'Awarded when you play at least one SR or rarer card.',
 	trophySoloDescription: 'Awarded when you answer with exactly one card.',
 	trophyTailwindDescription:
@@ -1316,7 +1316,9 @@ export const en: Messages = {
 	zenkatsuGuideSelect2: 'The same card can only be used once per play',
 	zenkatsuGuideSubmitTitle: 'Play them',
 	zenkatsuGuideSubmit1: "One play per day, and you can't change it afterwards",
-	zenkatsuGuideSubmit2: 'A new day begins at 4 AM Japan time',
+	zenkatsuGuideSubmit2: 'A new theme arrives every day',
+	zenkatsuGuideSubmit3:
+		'You can add a short note on why you chose them (optional). bot-tan reads it as a hint for the review',
 	zenkatsuGuideBonusTitle: 'Bonus',
 	zenkatsuGuideBonus1:
 		'Each day’s situation has a recommended attribute. Matching cards give you a tailwind',
@@ -1337,13 +1339,20 @@ export const en: Messages = {
 	zenkatsuEmptySlot: 'Choose a card',
 	zenkatsuReadCard: (o: { name: string }) => `Read ${o.name}`,
 	zenkatsuRemoveCard: (o: { name: string }) => `Remove ${o.name}`,
+	zenkatsuNoteLabel: 'Why these cards? Your story (optional)',
+	zenkatsuNotePlaceholder: 'What story did you have in mind?',
+	zenkatsuNoteCount: (o: { n: number; max: number }) => `${o.n} / ${o.max}`,
+	zenkatsuNoteTooLong: 'A little too long. Please shorten it',
+	zenkatsuNoteShow: "Show the author's intent",
+	zenkatsuNoteHide: "Hide the author's intent",
+	zenkatsuNoteHeading: "Author's intent",
 	zenkatsuBotReview: 'Bot-tan’s review',
 	zenkatsuFinish: 'Finish',
 	zenkatsuReviewLater:
 		'Your cards are submitted. The review needs a little more time. You can also read it later in today’s record.',
 	zenkatsuRetryReview: 'Check for the review again',
 	zenkatsuPlay: 'Play',
-	zenkatsuPlayAgainTomorrow: "You've already played today",
+	zenkatsuPlayAgainTomorrow: "You've played today! Come back for tomorrow's theme",
 	zenkatsuSignInToPlay: 'Sign in to play',
 	zenkatsuPickPrompt: (o: { max: number }) => `Pick 1 to ${o.max} cards from your collection`,
 	zenkatsuPickedCount: (o: { picked: number; max: number }) => `${o.picked} / ${o.max}`,
