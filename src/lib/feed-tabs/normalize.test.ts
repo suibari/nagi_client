@@ -15,6 +15,34 @@ describe('normalizeFeedTabs', () => {
 		]);
 	});
 
+	it('keeps Bluesky feed tabs that point at a feed generator, once per feed', () => {
+		const uri = 'at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot';
+		expect(
+			normalizeFeedTabs([
+				{ id: 'bsky_1', kind: 'bsky', uri, label: 'Discover' },
+				{ id: 'bsky_2', kind: 'bsky', uri },
+				{ id: 'bsky_3', kind: 'bsky', uri: 'at://did:plc:a/app.bsky.graph.list/1' },
+				{ id: 'bsky_4', kind: 'bsky' },
+			]),
+		).toEqual([{ id: 'bsky_1', kind: 'bsky', uri, label: 'Discover' }]);
+	});
+
+	it('keeps the Bluesky Following tab, pointed at by source instead of uri', () => {
+		expect(
+			normalizeFeedTabs([
+				{ id: 'bsky_f', kind: 'bsky', source: 'following' },
+				{ id: 'bsky_g', kind: 'bsky', source: 'following' },
+				{ id: 'bsky_h', kind: 'bsky', source: 'home' },
+				{
+					id: 'bsky_i',
+					kind: 'bsky',
+					source: 'following',
+					uri: 'at://did:plc:a/app.bsky.feed.generator/x',
+				},
+			]),
+		).toEqual([{ id: 'bsky_f', kind: 'bsky', source: 'following' }]);
+	});
+
 	it('turns the retired channel and tag-search tabs into hashtag tabs', () => {
 		expect(
 			normalizeFeedTabs([

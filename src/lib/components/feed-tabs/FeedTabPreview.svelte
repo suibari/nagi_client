@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
+	import BskyFeedShell from '$lib/components/bsky/BskyFeedShell.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
 	import { feedTabLabel, resolveFeedTab } from '$lib/feed-tabs/resolve';
 	import type { FeedTab } from '$lib/feed-tabs/types';
@@ -21,10 +22,14 @@
 	// プレビューで取得したフィードは使い回す。タブを行き来するたびに叩かない。
 	const feeds = new Map<string, Feed>();
 	let feed = $state<Feed>();
+	// Bluesky のフィードは Nagi の Feed では読まないので、プレビューも BskyFeedShell に任せる。
+	const selectedSpec = $derived(
+		selected ? resolveFeedTab(selected, { did: $session?.did }) : undefined,
+	);
 
 	$effect(() => {
 		const tab = selected;
-		if (!tab) {
+		if (!tab || selectedSpec?.bsky) {
 			feed = undefined;
 			return;
 		}
@@ -56,7 +61,13 @@
 		<span class="feed-tab-add" aria-hidden="true">＋</span>
 	</nav>
 	<div class="feed-tab-preview-body">
-		{#if !feed || (feed.loading && !feed.items.length)}
+		{#if selectedSpec?.bsky}
+			<BskyFeedShell
+				feed={selectedSpec.bsky.feed}
+				cacheKey={selectedSpec.key}
+				preview={PREVIEW_COUNT}
+			/>
+		{:else if !feed || (feed.loading && !feed.items.length)}
 			<Spinner />
 		{:else if feed.error && !feed.items.length}
 			<p class="state error">{feed.error}</p>

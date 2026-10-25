@@ -15,6 +15,7 @@ import {
 } from '$lib/feed/unread.svelte';
 import { m } from '$lib/i18n/i18n.svelte';
 import type { ReadWatermark } from '$lib/unread/watermark.svelte';
+import type { BskyFeedRef } from '$lib/bsky/agent';
 import type { FeedTab } from './types';
 
 /**
@@ -35,6 +36,11 @@ export type FeedTabSpec = {
 	handleHomeAuthError?: boolean;
 	/** ハッシュタグタブのとき、タグの投稿一覧（/search）へ渡すタグ。 */
 	tag?: string;
+	/**
+	 * Bluesky のフィードタブ。中身は BskyFeedShell が PDS 経由で読むので、
+	 * 呼び出し側はこれがあれば FeedShell ではなくそちらを描画する。
+	 */
+	bsky?: { feed: BskyFeedRef };
 };
 
 /** タブバー・設定画面・プレビューで共通の表示名。 */
@@ -50,6 +56,10 @@ export function feedTabLabel(tab: FeedTab): string {
 			return tab.query ? `#${tab.query}` : m.feedTabsKindHashtag();
 		case 'search':
 			return tab.query ?? m.feedTabsKindSearch();
+		case 'bsky':
+			return (
+				tab.label ?? (tab.source === 'following' ? m.feedTabsBskyFollowing() : m.feedTabsKindBsky())
+			);
 	}
 }
 
@@ -145,6 +155,20 @@ export function resolveFeedTab(
 				optimisticFilter: () => false,
 				// 結果の並びが安定しないため未読の意味がない（/search も渡していない）。
 				empty: m.searchExactEmpty,
+			};
+		}
+		case 'bsky': {
+			const feed: BskyFeedRef =
+				tab.source === 'following'
+					? { kind: 'timeline' }
+					: { kind: 'generator', uri: tab.uri ?? '' };
+			return {
+				key: `${scope}:bsky:${feed.kind === 'timeline' ? 'following' : feed.uri}`,
+				// 取得は BskyFeedShell が持つ。Nagi の Feed がここを叩くことはない。
+				fetcher: async () => ({ items: [], hasMore: false }),
+				optimisticFilter: () => false,
+				empty: m.bskyFeedEmpty,
+				bsky: { feed },
 			};
 		}
 	}

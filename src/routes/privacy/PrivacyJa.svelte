@@ -294,7 +294,9 @@
 			</tr>
 			<tr>
 				<td>Blueskyの公開AppView</td>
-				<td>登録時の自動分析、およびクロスポストを有効にした場合の投稿</td>
+				<td>
+					登録時の自動分析、Bluesky連携を有効にした場合の投稿、およびBlueskyフィードのタブを開いたときのフィード取得（あなたのPDS経由で、ログイン中のDIDが伝わります）
+				</td>
 			</tr>
 			<tr>
 				<td>外部の翻訳サービス（Kagi、DeepL、Google）</td>
@@ -322,7 +324,7 @@
 	>任意で有効にしたBlueskyクロスポストは<code>app.bsky.feed.post</code>を、Nagiのブログ投稿は<code
 		>site.standard.publication</code
 	>と<code>site.standard.document</code
-	>を作成します。いずれも公開レコードです。standard.siteの権限はログイン時に必須で求め、Blueskyへの投稿権限はクロスポストを有効にするときだけ追加で求めます。Nagi上で投稿を編集・削除すると対応するレコードも追従し、設定の全データ削除でも消去されます。
+	>を作成します。いずれも公開レコードです。standard.siteの権限はログイン時に必須で求め、Bluesky連携の権限（投稿と、フィードの閲覧）はBluesky連携を有効にするときだけ追加で求めます。Blueskyフィードのタブで表示する投稿はその場で取得するだけで、Nagiのサーバには保存しません。Nagi上で投稿を編集・削除すると対応するレコードも追従し、設定の全データ削除でも消去されます。
 </p>
 
 <h2 id="p7">7. 端末に保存する情報</h2>

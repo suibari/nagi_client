@@ -307,7 +307,11 @@
 	background: var(--accent);
 	transform: translateX(-50%);
 }
-/* タブを増やせるので、4本以上は等分をやめて横スクロールにする。 */
+/*
+ * タブを増やせるので、4本以上は等分をやめて横スクロールにする。
+ * 収まるうちは余白を分け合ってバーいっぱいに広げ（左に寄って右が空かないように）、
+ * 収まらなくなったときだけ文字幅のまま横へ流す。
+ */
 .feed-tabs.scrollable {
 	overflow-x: auto;
 	scrollbar-width: none;
@@ -333,6 +337,10 @@
 	justify-content: center;
 	padding: 10px 8px 12px;
 	background: var(--bg);
+}
+/* 余白で伸ばすのはタブだけ。＋ まで伸びると、右端に間延びしたボタンが残る。 */
+.feed-tabs.scrollable a:not(.feed-tab-add) {
+	flex-grow: 1;
 }
 .feed-tabs.scrollable .feed-tab-add {
 	box-shadow: -8px 0 8px -6px var(--bg);

@@ -53,26 +53,30 @@
 	 * （「グローバル / グローバル」）、代わりに中身の説明を出す。
 	 */
 	const kindLabel = (tab: FeedTab) =>
-		tab.kind === 'hashtag'
-			? m.feedTabsKindHashtag()
-			: tab.kind === 'search'
-				? m.feedTabsKindSearch()
-				: tab.kind === 'custom'
-					? m.feedTabsKindCustomHint()
-					: tab.kind === 'global'
-						? m.feedTabsKindGlobalHint()
-						: m.feedTabsKindListHint();
+		tab.kind === 'bsky'
+			? m.feedTabsKindBsky()
+			: tab.kind === 'hashtag'
+				? m.feedTabsKindHashtag()
+				: tab.kind === 'search'
+					? m.feedTabsKindSearch()
+					: tab.kind === 'custom'
+						? m.feedTabsKindCustomHint()
+						: tab.kind === 'global'
+							? m.feedTabsKindGlobalHint()
+							: m.feedTabsKindListHint();
 
 	const iconOf = (tab: FeedTab) =>
-		tab.kind === 'hashtag'
-			? 'hash'
-			: tab.kind === 'search'
-				? 'search'
-				: tab.kind === 'custom'
-					? 'heart'
-					: tab.kind === 'global'
-						? 'language'
-						: 'text';
+		tab.kind === 'bsky'
+			? 'bluesky'
+			: tab.kind === 'hashtag'
+				? 'hash'
+				: tab.kind === 'search'
+					? 'search'
+					: tab.kind === 'custom'
+						? 'heart'
+						: tab.kind === 'global'
+							? 'language'
+							: 'text';
 
 	function remove(id: string) {
 		persist(draft.filter((tab) => tab.id !== id));

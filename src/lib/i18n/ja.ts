@@ -790,9 +790,9 @@ export const ja = {
 	loginBrowse: 'ログインせずに見る',
 	// クロスポストとブログ公開の権限は入口でまとめて渡し、どちらを実際に使うかは
 	// 設定画面で切り替える。入口でスイッチを2つ並べない。
-	loginFederateLabel: 'Blueskyにも投稿する',
+	loginFederateLabel: 'Blueskyと連携する',
 	loginFederateNote:
-		'ONにするとBlueskyへの投稿権限を認可します。Blueskyへの同時投稿はあとから設定で変更できます。',
+		'ONにすると、Blueskyへの同時投稿と、Blueskyのフィードをタブで見るための権限を認可します。どちらもあとから設定で変更できます。',
 	// 未成年の保護者同意は入口で告知する。押す前に目に入る位置に置く。
 	loginAgeNotice: '18歳未満の方は保護者の同意を得てご利用ください。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
@@ -822,8 +822,8 @@ export const ja = {
 	settingsGroupPublishing: '投稿と外部連携',
 	settingsGroupNagi: 'Nagi',
 	settingsGroupAccountActions: 'アカウント操作',
-	settingsExternalPublishingTitle: '外部公開',
-	settingsExternalPublishingDescription: 'Blueskyへの同時投稿を設定する',
+	settingsExternalPublishingTitle: 'Bluesky連携',
+	settingsExternalPublishingDescription: 'Blueskyへの同時投稿と、フィードの閲覧',
 	settingsAppearanceTitle: '外観',
 	settingsAppearanceDescription: '表示テーマと配色',
 	settingsLanguageTitle: '言語',
@@ -908,6 +908,11 @@ export const ja = {
 	feedTabsOpenHashtag: (o: { name: string }) => `${o.name} のページへ`,
 	feedTabsKindSearch: '検索',
 	feedTabsKindSearchHint: '決まったことばを含む投稿',
+	feedTabsKindBsky: 'Blueskyフィード',
+	feedTabsKindBskyHint: 'Blueskyのフォロー中やカスタムフィードを眺める',
+	feedTabsBskyFollowing: 'Blueskyのフォロー中',
+	feedTabsBskyFollowingHint:
+		'Blueskyのホームタイムライン。返信やリポストはBlueskyの表示設定に従います',
 	feedTabsSearchLabel: '検索することば',
 	feedTabsSearchPlaceholder: '例：さんぽ',
 	feedTabsSearchHint: '一致するものだけを並べます。あいまい検索は検索ページからどうぞ。',
@@ -975,7 +980,8 @@ export const ja = {
 	pushRetry: 'もう一度試す',
 	pushRefreshPermissions: '権限を更新して再ログイン',
 	pushReauthPending: '認証画面へ移動しています…',
-	externalPublishingHelp: 'Blueskyへの同時投稿を設定できます。',
+	externalPublishingHelp:
+		'Blueskyへの同時投稿と、Blueskyのフィードをタブで見る機能を設定できます。',
 	blueskyPublishingTitle: 'Blueskyにも投稿',
 	externalPublishingDetails: '仕組みと注意点',
 	crosspostHelp:
@@ -986,12 +992,34 @@ export const ja = {
 	crosspostBotNote: 'クロスポストされた投稿には、Bluesky側のBotたんは返信しません。',
 	crosspostEnableLabel: '「Blueskyにも」ボタンを使う',
 	crosspostReauthNote:
-		'クロスポストにはBlueskyへの投稿権限が必要です。下のボタンから追加の権限を付与してください（Blueskyの認可画面が開きます）。',
+		'Bluesky連携には、Blueskyへの投稿とフィードの閲覧の権限が必要です。下のボタンから追加の権限を付与してください（Blueskyの認可画面が開きます）。',
 	crosspostReauthSubmit: '追加の権限を付与する',
 	crosspostReauthPending: '移動しています…',
-	crosspostSignInRequired: 'クロスポストを設定するにはログインしてください。',
+	crosspostSignInRequired: 'Bluesky連携を設定するにはログインしてください。',
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
 	crosspostPermissionMissing: 'Blueskyへの投稿権限を確認できませんでした',
+	blueskyFeedReadingTitle: 'Blueskyのフィードを見る',
+	blueskyFeedReadingHelp:
+		'フィードのタブ設定から、Blueskyのフォロー中（ホームタイムライン）やカスタムフィードをタブとして追加できます。閲覧専用で、いいねの数は表示しません。',
+	blueskyFeedReadingOpenTabs: 'フィードのタブを設定する',
+	bskyFeedEmpty: 'このフィードには投稿がありません',
+	bskyFeedLoadFailed: 'Blueskyのフィードを読み込めませんでした',
+	bskyFeedNeedsPermission:
+		'Blueskyのフィードを見るには、Bluesky連携の権限が必要です（Blueskyの認可画面が開きます）。',
+	bskyFeedSignInRequired: 'Blueskyのフィードを見るにはログインしてください。',
+	bskyFeedSavedLabel: 'Blueskyで保存しているフィード',
+	bskyFeedNoSaved: 'Blueskyで保存しているフィードはありません',
+	bskyFeedUrlLabel: 'フィードのURL',
+	bskyFeedUrlHint: 'Blueskyでフィードを開いたときのURLを貼り付けてください。',
+	bskyFeedNotFound: 'フィードが見つかりませんでした',
+	bskyOpenInBluesky: 'Blueskyで開く',
+	bskyOpenFeedInBluesky: 'このフィードをBlueskyで開く',
+	bskyRepostedBy: (p: { name: string }) => `${p.name}さんがリポスト`,
+	bskyReplyTo: (p: { name: string }) => `${p.name}さんへの返信`,
+	bskyLikedByMe: 'いいね済み',
+	bskyLikedBy: 'いいねした人',
+	bskyQuoteUnavailable: '引用元の投稿は表示できません',
+	bskyModerationWarning: 'Blueskyのラベルによる注意があります',
 	// 投稿そのものは成立しているときの補足。理由側が何に失敗したかを述べる。
 	postedWithWarning: (p: { reason: string }) => `Nagiには投稿できました。${p.reason}`,
 	// standard.site（AT Protocol 共通の長文記事 lexicon）へのブログ公開。

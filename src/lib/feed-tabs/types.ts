@@ -10,6 +10,7 @@ export const FEED_TAB_KINDS: readonly FeedTabKind[] = [
 	'custom',
 	'hashtag',
 	'search',
+	'bsky',
 ] as const;
 export const MAX_TAB_QUERY_LENGTH = 128;
 export const MAX_TAB_LABEL_LENGTH = 64;
@@ -43,6 +44,8 @@ export function tabIdentity(tab: FeedTab): string {
 			return `hashtag:${tab.query ?? ''}`;
 		case 'search':
 			return `search:${(tab.query ?? '').toLowerCase()}`;
+		case 'bsky':
+			return `bsky:${tab.uri ?? tab.source ?? ''}`;
 		default:
 			return tab.kind;
 	}
@@ -60,10 +63,10 @@ const BUILTIN_IDS: Record<string, string> = {
 export const builtinTabId = (tab: FeedTab): string | undefined => BUILTIN_IDS[tabIdentity(tab)];
 
 /**
- * hashtag / search タブの id。衝突しても normalize が採番し直すので短くてよい。
+ * hashtag / search / bsky タブの id。衝突しても normalize が採番し直すので短くてよい。
  * プリレンダ（Node）でも通るよう crypto が無ければ Math.random に落ちる。
  */
-export function newTabId(prefix: 'tag' | 'q'): string {
+export function newTabId(prefix: 'tag' | 'q' | 'bsky'): string {
 	const bytes = new Uint8Array(4);
 	if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
 	else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
