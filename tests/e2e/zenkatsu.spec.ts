@@ -537,7 +537,8 @@ for (const first of ['public', 'authenticated'] as const) {
 		);
 		let release!: () => void;
 		const pending = new Promise<void>((resolve) => (release = resolve));
-		let completed = 0;
+		// ナビの未プレイ表示もサインイン時に認証付きで取りに来るので、回数ではなく種類で数える。
+		const completed = new Set<'public' | 'authenticated'>();
 		await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', async (route) => {
 			const headers = route.request().headers();
 			const authenticated = !!(headers['atproto-proxy'] || headers['x-viewer-did']);
@@ -557,7 +558,7 @@ for (const first of ['public', 'authenticated'] as const) {
 					...(authenticated ? { viewer: { submitted: false, maxCards: 3, playable: [] } } : {}),
 				},
 			});
-			completed++;
+			completed.add(authenticated ? 'authenticated' : 'public');
 		});
 		try {
 			// 盤面がマウントされる前にログイン済みにする（ページ遷移時と同じ順序）。
@@ -567,7 +568,7 @@ for (const first of ['public', 'authenticated'] as const) {
 				await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
 			}
 			release();
-			await expect.poll(() => completed).toBe(2);
+			await expect.poll(() => completed.size).toBe(2);
 			await expect(page.getByRole('button', { name: 'プレイする', exact: true })).toBeEnabled();
 			await expect(page.locator('.theme-text')).toContainText('ページ遷移でも見えるお題');
 		} finally {
@@ -680,11 +681,12 @@ test('a slow viewer request keeps play disabled until AppView confirms eligibili
 	);
 	let release!: () => void;
 	const stalled = new Promise<void>((resolve) => (release = resolve));
-	let authenticatedCalls = 0;
 	await page.route('**/xrpc/com.suibari.nagi.getZenkatsu**', async (route) => {
 		const headers = route.request().headers();
 		const authenticated = !!(headers['atproto-proxy'] || headers['x-viewer-did']);
-		if (authenticated && ++authenticatedCalls === 1) await stalled;
+		// ナビの未プレイ表示もサインイン時に認証付きで取りに来るので、盤面の分だけを
+		// 止めようとせず、release までの認証付き取得をすべて止める。
+		if (authenticated) await stalled;
 		await route.fulfill({
 			json: {
 				theme: {

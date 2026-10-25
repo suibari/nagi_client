@@ -108,8 +108,12 @@ test('動画を添付すると変換が終わるまで投稿できず、終わ�
 	const submit = composer.locator('.submit-primary');
 	await expect(submit).toBeDisabled();
 	await expect(composer.getByText('動画の準備ができました')).toBeVisible();
-	// 動画を付けている間は、画像も2本目の動画も足せない。
-	await expect(composer.getByRole('button', { name: '画像・動画を追加' })).toBeDisabled();
+	// 動画を付けている間も画像は足せるが、2本目の動画は選べない。
+	await expect(composer.getByRole('button', { name: '画像・動画を追加' })).toBeEnabled();
+	await expect(composer.locator('.attachment-picker input[type="file"]')).not.toHaveAttribute(
+		'accept',
+		/video/,
+	);
 	await composer.getByLabel('動画の説明（任意）').fill('テスト動画');
 	await expect(submit).toBeEnabled();
 
@@ -234,7 +238,7 @@ test('以前に送った動画で PDS に残っていなければ、添付の時
 	await expect(composer.locator('.submit-primary')).toBeDisabled();
 });
 
-test('画像と動画を一緒に選ぶと、動画は付けずに理由を出す', async ({ page }) => {
+test('画像と動画を一緒に選ぶと、両方を添付する', async ({ page }) => {
 	await mockServices(page);
 	await page.goto('/dev/e2e/video');
 	await page.getByRole('button', { name: 'Open composer' }).click();
@@ -251,8 +255,9 @@ test('画像と動画を一緒に選ぶと、動画は付けずに理由を出�
 			buffer: readFileSync(new URL('thumbnail.jpg', fixtures)),
 		},
 	]);
-	await expect(composer.getByRole('alert')).toHaveText('動画は画像と一緒に添付できません');
-	await expect(composer.locator('.video-attachment')).toHaveCount(0);
+	await expect(composer.locator('.video-attachment')).toHaveCount(1);
+	await expect(composer.getByRole('button', { name: '画像・動画を追加' })).toContainText('1/4');
+	await expect(composer.locator('.attachment-error')).toHaveCount(0);
 });
 
 test('投稿の編集で、動画を外して画像ボタンから別の動画に差し替えられる', async ({ page }) => {
@@ -264,8 +269,10 @@ test('投稿の編集で、動画を外して画像ボタンから別の動画�
 	const editor = fixture.locator('.inline-edit');
 	const add = editor.getByRole('button', { name: '画像・動画を追加' });
 
-	// 動画が付いている間は、画像も動画も足せない。
-	await expect(add).toBeDisabled();
+	// 動画が付いている間も画像は足せるが、2本目の動画は選べない。
+	const fileInput = editor.locator('.post-image-editor input[type="file"]');
+	await expect(add).toBeEnabled();
+	await expect(fileInput).not.toHaveAttribute('accept', /video/);
 	await editor.getByRole('button', { name: '動画を削除' }).click();
 	await expect(add).toBeEnabled();
 
@@ -275,7 +282,7 @@ test('投稿の編集で、動画を外して画像ボタンから別の動画�
 		buffer: readFileSync(new URL('sample.webm', fixtures)),
 	});
 	await expect(editor.getByText('動画の準備ができました')).toBeVisible();
-	await expect(add).toBeDisabled();
+	await expect(fileInput).not.toHaveAttribute('accept', /video/);
 	await editor.getByRole('button', { name: '投稿する' }).click();
 	await expect(editor).toHaveCount(0);
 
