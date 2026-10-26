@@ -5,6 +5,8 @@ const read = (relativePath: string) => readFileSync(new URL(relativePath, import
 
 const feed = read('../feed/feed.svelte.ts');
 const feedShell = read('./FeedShell.svelte');
+const feedSurface = read('./FeedSurface.svelte');
+const entryMotion = read('../feed/entry-motion.svelte.ts');
 const threadUnit = read('./ThreadUnit.svelte');
 const threadPage = read('../../routes/thread/[did]/[rkey]/+page.svelte');
 const chatBubble = read('./ChatBubble.svelte');
@@ -26,16 +28,18 @@ describe('interaction motion contracts', () => {
 		expect(feedShell).toContain('entering={feed.isEntering(item)}');
 		expect(feedShell).toContain('isPostEntering={(uri) => feed.isPostEntering(uri)}');
 		expect(threadUnit).toContain('class:feed-entering={entering}');
-		expect(componentsCss).toMatch(/@keyframes feed-slide-in[\s\S]*translateY\(-42px\)/);
+		expect(componentsCss).toContain('.feed-entering .bubble');
 	});
 
 	it('offers a new-post button only for background additions away from the top', () => {
-		expect(feed).toContain('newItemsVersion = $state(0)');
-		expect(feed).toContain('if (items.length) this.newItemsVersion += 1;');
+		expect(entryMotion).toContain('version = $state(0)');
+		expect(entryMotion).toContain('if (keys.length) this.version++;');
 		expect(feed).toContain('const visuallyFresh = fresh.filter');
-		expect(feedShell).toContain("if (typeof window !== 'undefined' && window.scrollY > 24)");
-		expect(feedShell).toContain('<NewPostsButton visible={newPostsAvailable}');
-		expect(feedShell).toContain("behavior: matchMedia('(prefers-reduced-motion: reduce)').matches");
+		expect(feedSurface).toContain('if (enabled && window.scrollY > 24)');
+		expect(feedSurface).toContain('<NewPostsButton visible={newPosts}');
+		expect(feedSurface).toContain(
+			"behavior: matchMedia('(prefers-reduced-motion: reduce)').matches",
+		);
 		expect(newPostsButton).toContain('m.newPostsAvailable()');
 		expect(ja).toContain("newPostsAvailable: '新しいポストがあります'");
 		expect(en).toContain("newPostsAvailable: 'New posts are available'");
@@ -44,7 +48,7 @@ describe('interaction motion contracts', () => {
 	it('slides newly polled replies upward while post-follow tracks submitted replies', () => {
 		expect(threadUnit).toContain('isPostEntering(bubble.post.uri)');
 		expect(threadPage).toContain('class:message-entering={enteringReplyUris.has(reply.uri)}');
-		expect(componentsCss).toMatch(/@keyframes reply-slide-up[\s\S]*translateY\(52px\)/);
+		expect(componentsCss).toContain('.message-entering .bubble');
 		expect(postFollow).toContain("scrollIntoView({ behavior: scrollBehavior(), block: 'start' })");
 	});
 
@@ -58,8 +62,8 @@ describe('interaction motion contracts', () => {
 		expect(chatBubble).toContain("class:bubble-sending={post.optimisticState === 'sending'}");
 		expect(chatBubble).toContain("class:bubble-created={post.optimisticState === 'indexing'}");
 		expect(chatBubble).toMatch(/post\.optimisticState === 'indexing'[\s\S]*m\.postCreated\(\)/);
-		expect(chatBubble).toMatch(/@keyframes bubble-sprout[\s\S]*scale\(0\.28\)/);
-		expect(chatBubble).toMatch(/@keyframes bubble-settle[\s\S]*scale\(1\.025\)/);
+		expect(componentsCss).toMatch(/@keyframes bubble-sprout[\s\S]*scale\(0\.28\)/);
+		expect(componentsCss).toMatch(/@keyframes bubble-settle[\s\S]*scale\(1\.025\)/);
 	});
 
 	it('keeps the original bottom post-follow notice presentation', () => {

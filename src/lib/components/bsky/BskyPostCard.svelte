@@ -21,7 +21,11 @@
 	 * いいねは数を出さない。Nagi のリアクションと同じく、誰がいいねしたかは投稿者本人にだけ見せ、
 	 * それも最大5人まで。
 	 */
-	let { item, moderation }: { item: BskyFeedItemView; moderation: ModerationOpts } = $props();
+	let {
+		item,
+		moderation,
+		standalone = true,
+	}: { item: BskyFeedItemView; moderation: ModerationOpts; standalone?: boolean } = $props();
 
 	const LIKERS_LIMIT = 5;
 
@@ -64,7 +68,7 @@
 </script>
 
 {#if !display.hidden}
-	<article class="thread-unit bsky-post" data-bsky-uri={post.uri}>
+	<article class="bsky-post" class:thread-unit={standalone} data-bsky-uri={post.uri}>
 		{#if item.repostedBy}
 			<p class="bsky-context">
 				<Icon name="refresh" size={14} />

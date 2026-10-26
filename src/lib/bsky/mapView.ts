@@ -64,6 +64,9 @@ export type BskyFeedItemView = {
 	key: string;
 	post: BskyPostCardView;
 	repostedBy?: BskyActor;
+	/** Conversation context included by the feed API; each post retains its own moderation view. */
+	root?: BskyPostCardView;
+	parent?: BskyPostCardView;
 	replyTo?: BskyActor;
 	/**
 	 * 返信なら、その返信先の情報。フォロー中の表示設定（返信を隠す・フォロー外への返信を隠す）の
@@ -225,6 +228,14 @@ export function toFeedItem(item: AppBskyFeedDefs.FeedViewPost): BskyFeedItemView
 		post: toPostCard(item.post),
 		repostedBy: repost ? toActor(repost.by) : undefined,
 		reply: replyInfo(item),
+		root:
+			typeOf(item.reply?.root) === 'app.bsky.feed.defs#postView'
+				? toPostCard(item.reply!.root as AppBskyFeedDefs.PostView)
+				: undefined,
+		parent:
+			typeOf(parent) === 'app.bsky.feed.defs#postView'
+				? toPostCard(parent as AppBskyFeedDefs.PostView)
+				: undefined,
 		replyTo:
 			typeOf(parent) === 'app.bsky.feed.defs#postView'
 				? toActor((parent as AppBskyFeedDefs.PostView).author)

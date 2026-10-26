@@ -944,24 +944,6 @@
 	.bubble.sending {
 		border-style: dashed;
 	}
-	.bubble.bubble-sending,
-	.bubble.bubble-created {
-		--bubble-motion-x: -20px;
-		--bubble-settle-x: -7px;
-		transform-origin: -12px 18px;
-	}
-	.post-row.mine > .bubble.bubble-sending,
-	.post-row.mine > .bubble.bubble-created {
-		--bubble-motion-x: 20px;
-		--bubble-settle-x: 7px;
-		transform-origin: calc(100% + 12px) 18px;
-	}
-	.bubble.bubble-sending {
-		animation: bubble-sprout 0.48s cubic-bezier(0.16, 0.86, 0.24, 1.18);
-	}
-	.bubble.bubble-created {
-		animation: bubble-settle 0.34s cubic-bezier(0.18, 0.82, 0.24, 1.15);
-	}
 	.post-sending {
 		display: flex;
 		align-items: center;
@@ -981,32 +963,6 @@
 		height: 18px;
 		border-radius: 50%;
 		background: var(--accent-soft);
-	}
-	@keyframes bubble-sprout {
-		from {
-			opacity: 0.25;
-			transform: translate(var(--bubble-motion-x), 24px) scale(0.28);
-		}
-		68% {
-			opacity: 1;
-			transform: translate(0, -3px) scale(1.035);
-		}
-		to {
-			transform: none;
-		}
-	}
-	@keyframes bubble-settle {
-		from {
-			opacity: 0.7;
-			transform: translateX(var(--bubble-settle-x)) scale(0.9);
-		}
-		65% {
-			transform: scale(1.025);
-		}
-		to {
-			opacity: 1;
-			transform: none;
-		}
 	}
 	.edited-badge {
 		color: var(--text-mute);

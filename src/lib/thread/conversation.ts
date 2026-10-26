@@ -1,7 +1,7 @@
 import type { FeedItem, ThreadView } from '$lib/api/types';
 import { replyDepths } from './replyIndent';
 
-const VISIBLE_REPLY_COUNT = 3;
+import { threadPreview } from './preview';
 
 /** group 非対応の旧 getProfile 応答を、getThread から通常タイムライン形式へ補完する。 */
 export function threadToConversationItem(thread: ThreadView): FeedItem {
@@ -9,7 +9,7 @@ export function threadToConversationItem(thread: ThreadView): FeedItem {
 		(a, b) => a.createdAt.localeCompare(b.createdAt) || a.uri.localeCompare(b.uri),
 	);
 	const depths = replyDepths(thread.post.uri, [thread.post, ...replies]);
-	const visibleReplies = replies.slice(-VISIBLE_REPLY_COUNT);
+	const { visible: visibleReplies, hiddenCount } = threadPreview(replies);
 	const awaitingPost = [thread.post, ...replies]
 		.reverse()
 		.find(
@@ -30,7 +30,7 @@ export function threadToConversationItem(thread: ThreadView): FeedItem {
 				post,
 				depth: depths.get(post.uri) ?? 1,
 			})),
-			hiddenCount: Math.max(0, replies.length - visibleReplies.length),
+			hiddenCount,
 			totalCount: replies.length + 1,
 			...(awaitingPost?.botReplyState && awaitingPost.botReplyState !== 'posted'
 				? { awaitingBotReply: awaitingPost.botReplyState }
