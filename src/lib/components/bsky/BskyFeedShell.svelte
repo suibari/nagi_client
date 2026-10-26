@@ -26,7 +26,8 @@
 
 <script lang="ts">
 	import type { ModerationOpts } from '@atproto/api';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
+	import { startVisiblePolling } from '$lib/polling';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -89,6 +90,18 @@
 			cancelled = true;
 		};
 	});
+
+	onMount(() =>
+		startVisiblePolling(
+			() => {
+				// 入れ替え型フィードは読んでいる途中のカードを消さないよう先頭でのみ更新する。
+				if (preview || (feedRef.kind === 'generator' && window.scrollY > 24)) return;
+				void feed?.refresh();
+			},
+			30_000,
+			{ onReturn: true },
+		),
+	);
 
 	const items = $derived(feed ? (preview ? feed.items.slice(0, preview) : feed.items) : []);
 

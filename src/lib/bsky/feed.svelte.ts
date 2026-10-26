@@ -2,11 +2,7 @@ import { m } from '$lib/i18n/i18n.svelte';
 import { getBskyFeed, type BskyFeedRef } from './agent';
 import type { BskyFeedItemView } from './mapView';
 
-/**
- * Bluesky のフィード1本の読み込み状態。Nagi の Feed と違い、未読ウォーターマークも
- * ポーリングも持たない — カスタムフィードは時系列とは限らず、先頭に新着が積まれる保証が無い。
- * 取り直しは利用者の操作（ナビの再押下・再読み込みボタン）だけで行う。
- */
+/** Bluesky のフィード状態。カスタムフィードは提供元の順序・入れ替えをそのまま反映する。 */
 export class BskyFeed {
 	items = $state<BskyFeedItemView[]>([]);
 	cursor = $state<string | undefined>(undefined);
@@ -15,6 +11,7 @@ export class BskyFeed {
 	error = $state('');
 	#feed: BskyFeedRef;
 	#generation = 0;
+	#refreshing = false;
 
 	constructor(feed: BskyFeedRef) {
 		this.#feed = feed;
@@ -39,8 +36,41 @@ export class BskyFeed {
 		}
 	}
 
+	/** 先頭ページを更新する。バックグラウンドの失敗は次回に再試行する。 */
+	async refresh() {
+		if (this.loading || this.#refreshing) return;
+		const generation = this.#generation;
+		this.#refreshing = true;
+		try {
+			const page = await getBskyFeed(this.#feed);
+			if (generation !== this.#generation) return;
+			// カスタムフィードは非時系列・総入れ替えもあるため、古い結果と混ぜない。
+			// カーソルも同じ取得結果のものへ更新する。
+			if (this.#feed.kind === 'generator') {
+				this.items = dedupe(page.items);
+				this.cursor = page.cursor;
+				this.hasMore = Boolean(page.cursor);
+				this.error = '';
+				return;
+			}
+			const incoming = new Map(dedupe(page.items).map((item) => [item.key, item]));
+			const seen = new Set(this.items.map((item) => item.key));
+			const fresh = [...incoming.values()].filter((item) => !seen.has(item.key));
+			this.items = [...fresh, ...this.items.map((item) => incoming.get(item.key) ?? item)];
+			if (!this.cursor) {
+				this.cursor = page.cursor;
+				this.hasMore = Boolean(page.cursor);
+			}
+			this.error = '';
+		} catch {
+			// 表示中の投稿を残し、次のポーリングで再試行する。
+		} finally {
+			this.#refreshing = false;
+		}
+	}
+
 	async loadMore() {
-		if (this.loading || !this.cursor) return;
+		if (this.loading || this.#refreshing || !this.cursor) return;
 		const generation = this.#generation;
 		this.loading = true;
 		this.error = '';
