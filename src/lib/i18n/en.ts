@@ -968,6 +968,7 @@ export const en: Messages = {
 		'Add your Bluesky Following timeline or custom feeds as tabs from the feed tab settings. They are read-only, and like counts are not shown.',
 	blueskyFeedReadingOpenTabs: 'Set up feed tabs',
 	bskyFeedEmpty: 'There are no posts in this feed',
+	bskyThreadLoadFailed: 'Could not load replies',
 	bskyFeedLoadFailed: 'Could not load the Bluesky feed',
 	bskyFeedNeedsPermission:
 		'Reading Bluesky feeds needs the Bluesky linking permission (the Bluesky authorization screen will open).',
