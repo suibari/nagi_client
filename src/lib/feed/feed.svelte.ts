@@ -1,3 +1,4 @@
+import { EntryMotion } from './entry-motion.svelte';
 import type { ActorView, FeedItem, Page, PostView } from '$lib/api/types';
 import { m } from '$lib/i18n/i18n.svelte';
 import type { ReadWatermark, UnreadView } from '$lib/unread/watermark.svelte';
@@ -73,15 +74,15 @@ export class Feed {
 	loading = $state(false);
 	error = $state('');
 	botActor = $state<ActorView>();
-	enteringKeys = $state<Set<string>>(new Set());
-	enteringPostUris = $state<Set<string>>(new Set());
-	newItemsVersion = $state(0);
+	readonly entry = new EntryMotion();
+	get newItemsVersion() {
+		return this.entry.version;
+	}
 	#fetcher: (cursor?: string) => Promise<Page<FeedItem>>;
 	#optimisticFilter: (item: FeedItem) => boolean;
 	#unread: UnreadView | undefined;
 	#refreshing = false;
 	#loadRequest = 0;
-	#entryGeneration = 0;
 	constructor(
 		fetcher: (cursor?: string) => Promise<Page<FeedItem>>,
 		optimisticFilter: (item: FeedItem) => boolean = () => true,
@@ -157,22 +158,13 @@ export class Feed {
 		);
 	}
 	isEntering(item: FeedItem) {
-		return this.enteringKeys.has(feedKey(item));
+		return this.entry.keys.has(feedKey(item));
 	}
 	isPostEntering(uri: string) {
-		return this.enteringPostUris.has(uri);
+		return this.entry.uris.has(uri);
 	}
 	#markEntering(items: FeedItem[], postUris: string[]) {
-		if (!items.length && !postUris.length) return;
-		if (items.length) this.newItemsVersion += 1;
-		const generation = ++this.#entryGeneration;
-		this.enteringKeys = new Set(items.map(feedKey));
-		this.enteringPostUris = new Set(postUris);
-		setTimeout(() => {
-			if (generation !== this.#entryGeneration) return;
-			this.enteringKeys = new Set();
-			this.enteringPostUris = new Set();
-		}, 700);
+		this.entry.mark(items.map(feedKey), postUris);
 	}
 	async load() {
 		const request = ++this.#loadRequest;

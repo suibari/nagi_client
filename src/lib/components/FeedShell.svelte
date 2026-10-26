@@ -1,10 +1,22 @@
+<script module lang="ts">
+	import { Feed } from '$lib/feed/feed.svelte';
+	import { FeedCache } from '$lib/feed/cache';
+	import type { FeedTabSpec } from '$lib/feed-tabs/resolve';
+	const cache = new FeedCache<Feed>();
+	function feedFor(spec: FeedTabSpec) {
+		return cache.get(spec.key, () => {
+			const feed = new Feed(spec.fetcher, spec.optimisticFilter, spec.watermark);
+			void feed.load();
+			return feed;
+		});
+	}
+</script>
+
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, untrack } from 'svelte';
-	import { Feed } from '$lib/feed/feed.svelte';
 	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
-	import type { FeedTabSpec } from '$lib/feed-tabs/resolve';
 	import { startVisiblePolling } from '$lib/polling';
 	import ThreadUnit from './ThreadUnit.svelte';
 	import InfiniteScroll from './InfiniteScroll.svelte';
@@ -12,7 +24,7 @@
 	import { session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import GuestPostSection from './GuestPostSection.svelte';
-	import NewPostsButton from './NewPostsButton.svelte';
+	import FeedSurface from './FeedSurface.svelte';
 
 	/**
 	 * フィード1本の描画。タブ（ホーム/グローバル/カスタム/チャンネル/検索）はすべて
@@ -23,73 +35,20 @@
 	 */
 	let { spec, homeAuthError = false }: { spec: FeedTabSpec; homeAuthError?: boolean } = $props();
 
-	/** 抱え込む本数の上限。16タブぶんのタイムラインをメモリに置かないための LRU。 */
-	const MAX_CACHED = 8;
-	const cache = new Map<string, Feed>();
-
-	/**
-	 * spec.key ごとに1つ。取得は初回だけで、戻ってきたときはキャッシュをそのまま出す
-	 * （ポーリングが最新へ寄せるので、再取得しなくても古びない）。
-	 */
-	function feedFor(current: FeedTabSpec): Feed {
-		const existing = cache.get(current.key);
-		if (existing) {
-			// LRU: 触ったものを末尾へ回す。
-			cache.delete(current.key);
-			cache.set(current.key, existing);
-			return existing;
-		}
-		const created = new Feed(current.fetcher, current.optimisticFilter, current.watermark);
-		cache.set(current.key, created);
-		if (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value!);
-		void created.load();
-		return created;
-	}
-
 	// 生成は副作用（load を走らせる）なので $derived には置かない。
 	let feed = $state<Feed>(untrack(() => feedFor(spec)));
 	let shownKey = untrack(() => spec.key);
-	let newPostsAvailable = $state(false);
-	let seenNewItemsVersion = untrack(() => feed.newItemsVersion);
+
 	$effect(() => {
 		if (spec.key === shownKey) return;
 		shownKey = spec.key;
 		feed = feedFor(spec);
-		seenNewItemsVersion = feed.newItemsVersion;
-		newPostsAvailable = false;
 	});
-	$effect(() => {
-		const version = feed.newItemsVersion;
-		if (version === seenNewItemsVersion) return;
-		seenNewItemsVersion = version;
-		if (typeof window !== 'undefined' && window.scrollY > 24) newPostsAvailable = true;
-	});
-
-	onMount(() => {
-		// ポーラーは1組だけ。タブごとに張るとタブを開くたびに増えて必ずリークする。
-		// 実行時に現在の feed を読むので、タブを切り替えても同じ2本で足りる。
-		const base = startVisiblePolling(() => feed.refresh(), 30_000, { onReturn: true });
-		const fast = startVisiblePolling(() => feed.refresh(), 3_000, {
+	onMount(() =>
+		startVisiblePolling(() => feed.refresh(), 3_000, {
 			when: () => feed.hasOptimistic() || feed.hasRecentPostFor($session?.did),
-		});
-		const onScroll = () => {
-			if (window.scrollY <= 24) newPostsAvailable = false;
-		};
-		window.addEventListener('scroll', onScroll, { passive: true });
-		return () => {
-			base();
-			fast();
-			window.removeEventListener('scroll', onScroll);
-		};
-	});
-
-	function scrollToNewest() {
-		newPostsAvailable = false;
-		window.scrollTo({
-			top: 0,
-			behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-		});
-	}
+		}),
+	);
 
 	// 投稿直後の画面追従。楽観カード → 確定カードで DOM が入れ替わるので、
 	// 並びが変わるたびに追従先を引き直す。
@@ -120,59 +79,57 @@
 		cache.clear();
 		shownKey = spec.key;
 		feed = feedFor(spec);
-		seenNewItemsVersion = feed.newItemsVersion;
-		newPostsAvailable = false;
 	}
 </script>
 
-<NewPostsButton visible={newPostsAvailable} onclick={scrollToNewest} />
-
-{#if spec.showGuestHero && !$session}
-	<aside class="welcome">
-		<div>
-			<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
-			<a class="welcome-about" href="/about">{m.welcomeAboutLink()} →</a>
-		</div>
-		<a href="/login">{m.joinCta()}</a>
-	</aside>
-	<!-- 歓迎カードを必ずタブ直下に置き、その次に端末保存スレッドを通常フィードと同じ列で並べる。 -->
-	<GuestPostSection botActor={feed.botActor} />
-{/if}
-<section class="timeline" aria-busy={feed.loading}>
-	{#if feed.loading && !feed.visibleItems.length}
-		<Spinner label={m.feedWaiting()} />
-	{:else if feed.error && !feed.visibleItems.length}
-		<div class="state error">
-			{feed.error}<button
-				class="icon-action"
-				type="button"
-				aria-label={m.retry()}
-				title={m.retry()}
-				onclick={() => feed.load()}><Icon name="refresh" size={18} /></button
-			>
-			{#if spec.handleHomeAuthError && homeAuthError}<a class="welcome-about" href="/login"
-					>{m.homeFeedRefreshPermissions()}</a
-				>{/if}
-		</div>
-	{:else if !feed.visibleItems.length}
-		<div class="state">{spec.empty()}</div>
-	{:else}
-		{#each feed.visibleItems as item (item.conversation?.threadRootUri ?? item.uri)}
-			<ThreadUnit
-				{item}
-				entering={feed.isEntering(item)}
-				isPostEntering={(uri) => feed.isPostEntering(uri)}
-				unread={feed.isUnread(item, $session?.did)}
-				botActor={feed.botActor}
-				ondeleted={(uri) => removeEverywhere(uri)}
-				onposted={() => feed.refresh()}
-			/>
-		{/each}
-		<InfiniteScroll
-			hasMore={feed.hasMore}
-			loading={feed.loading}
-			error={feed.error}
-			onload={() => feed.loadMore()}
-		/>
+<FeedSurface activeKey={spec.key} version={feed.newItemsVersion} onrefresh={() => feed.refresh()}>
+	{#if spec.showGuestHero && !$session}
+		<aside class="welcome">
+			<div>
+				<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
+				<a class="welcome-about" href="/about">{m.welcomeAboutLink()} →</a>
+			</div>
+			<a href="/login">{m.joinCta()}</a>
+		</aside>
+		<!-- 歓迎カードを必ずタブ直下に置き、その次に端末保存スレッドを通常フィードと同じ列で並べる。 -->
+		<GuestPostSection botActor={feed.botActor} />
 	{/if}
-</section>
+	<section class="timeline" aria-busy={feed.loading}>
+		{#if feed.loading && !feed.visibleItems.length}
+			<Spinner label={m.feedWaiting()} />
+		{:else if feed.error && !feed.visibleItems.length}
+			<div class="state error">
+				{feed.error}<button
+					class="icon-action"
+					type="button"
+					aria-label={m.retry()}
+					title={m.retry()}
+					onclick={() => feed.load()}><Icon name="refresh" size={18} /></button
+				>
+				{#if spec.handleHomeAuthError && homeAuthError}<a class="welcome-about" href="/login"
+						>{m.homeFeedRefreshPermissions()}</a
+					>{/if}
+			</div>
+		{:else if !feed.visibleItems.length}
+			<div class="state">{spec.empty()}</div>
+		{:else}
+			{#each feed.visibleItems as item (item.conversation?.threadRootUri ?? item.uri)}
+				<ThreadUnit
+					{item}
+					entering={feed.isEntering(item)}
+					isPostEntering={(uri) => feed.isPostEntering(uri)}
+					unread={feed.isUnread(item, $session?.did)}
+					botActor={feed.botActor}
+					ondeleted={(uri) => removeEverywhere(uri)}
+					onposted={() => feed.refresh()}
+				/>
+			{/each}
+			<InfiniteScroll
+				hasMore={feed.hasMore}
+				loading={feed.loading}
+				error={feed.error}
+				onload={() => feed.loadMore()}
+			/>
+		{/if}
+	</section>
+</FeedSurface>

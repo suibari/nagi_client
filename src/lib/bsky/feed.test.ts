@@ -6,7 +6,11 @@ import type { BskyFeedItemView } from './mapView';
 vi.mock('./agent', () => ({ getBskyFeed: vi.fn() }));
 vi.mock('$lib/i18n/i18n.svelte', () => ({ m: { bskyFeedLoadFailed: () => 'failed' } }));
 const fetchFeed = vi.mocked(getBskyFeed);
-const item = (key: string) => ({ key }) as BskyFeedItemView;
+const item = (key: string) =>
+	({
+		key,
+		post: { uri: key, createdAt: '2026-10-26T00:00:00Z', raw: { record: {} } },
+	}) as BskyFeedItemView;
 beforeEach(() => vi.resetAllMocks());
 
 it('merges new posts without reordering existing posts or losing pagination', async () => {
@@ -80,4 +84,24 @@ it('replaces generator results in server order and resets pagination with the sn
 	expect(feed.items).toEqual([]);
 	expect(feed.hasMore).toBe(false);
 	expect(feed.cursor).toBeUndefined();
+});
+
+it('animates fresh conversations and late replies while keeping existing conversations in place', async () => {
+	const feed = new BskyFeed({ kind: 'timeline' });
+	fetchFeed.mockResolvedValueOnce({ items: [item('other'), item('root')] });
+	await feed.load();
+	expect(feed.entry.keys.size).toBe(0);
+	const reply = item('reply');
+	reply.post.raw.record = { reply: { root: { uri: 'root' }, parent: { uri: 'root' } } };
+	reply.root = item('root').post;
+	fetchFeed.mockResolvedValueOnce({ items: [reply, item('other')] });
+	await feed.refresh();
+	expect(feed.visibleItems.map((thread) => thread.key)).toEqual(['other', 'root']);
+	expect(feed.entry.keys.size).toBe(0);
+	expect(feed.entry.uris.has('reply')).toBe(true);
+	fetchFeed.mockResolvedValueOnce({ items: [item('new'), reply] });
+	await feed.refresh();
+	expect(feed.visibleItems.map((thread) => thread.key)).toEqual(['new', 'other', 'root']);
+	expect(feed.entry.keys.has('new')).toBe(true);
+	expect(feed.newItemsVersion).toBe(1);
 });

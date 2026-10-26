@@ -2,32 +2,20 @@
 	import { BskyFeed } from '$lib/bsky/feed.svelte';
 	import type { BskyFeedRef } from '$lib/bsky/agent';
 
-	/**
-	 * key（DID + フィードの uri / following）ごとに1つ。タブを行き来しても読み込み位置が残るように
-	 * コンポーネントの外に置く（FeedShell と同じ考え方の LRU）。
-	 */
-	const MAX_CACHED = 8;
-	const cache = new Map<string, BskyFeed>();
-
+	import { FeedCache } from '$lib/feed/cache';
+	const cache = new FeedCache<BskyFeed>();
 	function feedFor(key: string, ref: BskyFeedRef): BskyFeed {
-		const existing = cache.get(key);
-		if (existing) {
-			cache.delete(key);
-			cache.set(key, existing);
-			return existing;
-		}
-		const created = new BskyFeed(ref);
-		cache.set(key, created);
-		if (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value!);
-		void created.load();
-		return created;
+		return cache.get(key, () => {
+			const feed = new BskyFeed(ref);
+			void feed.load();
+			return feed;
+		});
 	}
 </script>
 
 <script lang="ts">
 	import type { ModerationOpts } from '@atproto/api';
-	import { onMount, untrack } from 'svelte';
-	import { startVisiblePolling } from '$lib/polling';
+	import { untrack } from 'svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -37,7 +25,8 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { grantedOptIns, hasBlueskyViewScope } from '$lib/optin/scope-optin';
 	import { session, signIn } from '$lib/oauth/session.svelte';
-	import BskyPostCard from './BskyPostCard.svelte';
+	import BskyThreadUnit from './BskyThreadUnit.svelte';
+	import FeedSurface from '../FeedSurface.svelte';
 
 	/**
 	 * Bluesky のフィードタブの中身。権限が無ければ Bluesky 連携の再認可へ案内する
@@ -91,19 +80,9 @@
 		};
 	});
 
-	onMount(() =>
-		startVisiblePolling(
-			() => {
-				// 入れ替え型フィードは読んでいる途中のカードを消さないよう先頭でのみ更新する。
-				if (preview || (feedRef.kind === 'generator' && window.scrollY > 24)) return;
-				void feed?.refresh();
-			},
-			30_000,
-			{ onReturn: true },
-		),
+	const items = $derived(
+		feed ? (preview ? feed.visibleItems.slice(0, preview) : feed.visibleItems) : [],
 	);
-
-	const items = $derived(feed ? (preview ? feed.items.slice(0, preview) : feed.items) : []);
 
 	async function reauthorize() {
 		if (!$session || reauthorizing) return;
@@ -118,7 +97,7 @@
 
 	/** ナビの再押下（pageRefresh）から呼ぶ。 */
 	export function refresh() {
-		return feed?.load();
+		return feed?.refresh();
 	}
 	/** アカウントが変わったらキャッシュごと捨てる。 */
 	export function reset() {
@@ -126,66 +105,80 @@
 	}
 </script>
 
-<section class="timeline" aria-busy={!feed || feed.loading}>
-	{#if !$session}
-		<div class="state">{m.bskyFeedSignInRequired()}</div>
-	{:else if granted === false}
-		<div class="state bsky-permission">
-			<p>{m.bskyFeedNeedsPermission()}</p>
-			<button type="button" disabled={reauthorizing} onclick={reauthorize}
-				>{#if reauthorizing}<Spinner inline size="sm" decorative />{/if}{reauthorizing
-					? m.crosspostReauthPending()
-					: m.crosspostReauthSubmit()}</button
-			>
-		</div>
-	{:else if moderationFailed}
-		<div class="state error">
-			{m.bskyFeedLoadFailed()}<button
-				class="icon-action"
-				type="button"
-				aria-label={m.retry()}
-				title={m.retry()}
-				onclick={() => {
-					moderationFailed = false;
-					attempt++;
-				}}><Icon name="refresh" size={18} /></button
-			>
-		</div>
-	{:else if !feed || !moderation || (feed.loading && !feed.items.length)}
-		<Spinner label={m.feedWaiting()} />
-	{:else if feed.error && !feed.items.length}
-		<div class="state error">
-			{feed.error}<button
-				class="icon-action"
-				type="button"
-				aria-label={m.retry()}
-				title={m.retry()}
-				onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
-			>
-		</div>
-	{:else if !items.length}
-		<div class="state">{m.bskyFeedEmpty()}</div>
-	{:else}
-		{#each items as item (item.key)}
-			<BskyPostCard {item} {moderation} />
-		{/each}
-		{#if !preview}
-			<InfiniteScroll
-				hasMore={feed.hasMore}
-				loading={feed.loading}
-				error={feed.error}
-				onload={() => feed?.loadMore()}
-			/>
-			{@const feedUrl =
-				feedRef.kind === 'timeline' ? 'https://bsky.app/' : bskyFeedUrl(feedRef.uri)}
-			{#if feedUrl}
-				<a class="bsky-feed-open" href={feedUrl} target="_blank" rel="noopener noreferrer"
-					><Icon name="bluesky" size={14} />{m.bskyOpenFeedInBluesky()}</a
+<FeedSurface
+	activeKey={cacheKey}
+	version={feed?.newItemsVersion ?? 0}
+	ready={Boolean(feed)}
+	enabled={!preview}
+	canAutoRefresh={() => feedRef.kind !== 'generator' || window.scrollY <= 24}
+	onrefresh={() => feed?.refresh()}
+>
+	<section class="timeline" aria-busy={!feed || feed.loading}>
+		{#if !$session}
+			<div class="state">{m.bskyFeedSignInRequired()}</div>
+		{:else if granted === false}
+			<div class="state bsky-permission">
+				<p>{m.bskyFeedNeedsPermission()}</p>
+				<button type="button" disabled={reauthorizing} onclick={reauthorize}
+					>{#if reauthorizing}<Spinner inline size="sm" decorative />{/if}{reauthorizing
+						? m.crosspostReauthPending()
+						: m.crosspostReauthSubmit()}</button
 				>
+			</div>
+		{:else if moderationFailed}
+			<div class="state error">
+				{m.bskyFeedLoadFailed()}<button
+					class="icon-action"
+					type="button"
+					aria-label={m.retry()}
+					title={m.retry()}
+					onclick={() => {
+						moderationFailed = false;
+						attempt++;
+					}}><Icon name="refresh" size={18} /></button
+				>
+			</div>
+		{:else if !feed || !moderation || (feed.loading && !feed.items.length)}
+			<Spinner label={m.feedWaiting()} />
+		{:else if feed.error && !feed.items.length}
+			<div class="state error">
+				{feed.error}<button
+					class="icon-action"
+					type="button"
+					aria-label={m.retry()}
+					title={m.retry()}
+					onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
+				>
+			</div>
+		{:else if !items.length}
+			<div class="state">{m.bskyFeedEmpty()}</div>
+		{:else}
+			{#each items as thread (thread.key)}
+				<BskyThreadUnit
+					{thread}
+					{moderation}
+					entering={feed.entry.keys.has(thread.key)}
+					isPostEntering={(uri) => feed?.entry.uris.has(uri) ?? false}
+				/>
+			{/each}
+			{#if !preview}
+				<InfiniteScroll
+					hasMore={feed.hasMore}
+					loading={feed.loading}
+					error={feed.error}
+					onload={() => feed?.loadMore()}
+				/>
+				{@const feedUrl =
+					feedRef.kind === 'timeline' ? 'https://bsky.app/' : bskyFeedUrl(feedRef.uri)}
+				{#if feedUrl}
+					<a class="bsky-feed-open" href={feedUrl} target="_blank" rel="noopener noreferrer"
+						><Icon name="bluesky" size={14} />{m.bskyOpenFeedInBluesky()}</a
+					>
+				{/if}
 			{/if}
 		{/if}
-	{/if}
-</section>
+	</section>
+</FeedSurface>
 
 <style>
 	.bsky-permission {

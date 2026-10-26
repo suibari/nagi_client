@@ -1,5 +1,3 @@
-import type { PostView } from '$lib/api/types';
-
 /** タイムラインとスレッドページで共通の、返信深度から見た目の段数への変換。 */
 export function replyIndent(depth: number): number {
 	return Math.min(Math.max(0, depth - 1), 5);
@@ -9,7 +7,10 @@ export function replyIndent(depth: number): number {
  * reply.parent をたどり、ルートからの返信ホップ数を返す。
  * 欠けた親や循環した参照があっても表示を止めず、取得できた範囲の深度を使う。
  */
-export function replyDepths(rootUri: string, posts: PostView[]): Map<string, number> {
+export function replyDepths(
+	rootUri: string,
+	posts: { uri: string; reply?: { parent: { uri: string } } }[],
+): Map<string, number> {
 	const parentByUri = new Map(posts.map((post) => [post.uri, post.reply?.parent.uri]));
 	const depths = new Map<string, number>();
 

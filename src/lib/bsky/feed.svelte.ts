@@ -1,3 +1,5 @@
+import { EntryMotion } from '$lib/feed/entry-motion.svelte';
+import { bskyConversations, conversationPosts } from './conversation';
 import { m } from '$lib/i18n/i18n.svelte';
 import { getBskyFeed, type BskyFeedRef } from './agent';
 import type { BskyFeedItemView } from './mapView';
@@ -9,6 +11,17 @@ export class BskyFeed {
 	hasMore = $state(false);
 	loading = $state(false);
 	error = $state('');
+	readonly entry = new EntryMotion();
+	get visibleItems() {
+		const threads = bskyConversations(this.items);
+		if (!this.#order.length) return threads;
+		const rank = new Map(this.#order.map((key, i) => [key, i]));
+		return threads.sort((a, b) => (rank.get(a.key) ?? Infinity) - (rank.get(b.key) ?? Infinity));
+	}
+	get newItemsVersion() {
+		return this.entry.version;
+	}
+	#order = $state<string[]>([]);
 	#feed: BskyFeedRef;
 	#generation = 0;
 	#refreshing = false;
@@ -25,6 +38,7 @@ export class BskyFeed {
 		try {
 			const page = await getBskyFeed(this.#feed);
 			if (generation !== this.#generation) return;
+			this.#order = [];
 			this.items = dedupe(page.items);
 			this.cursor = page.cursor;
 			this.hasMore = Boolean(page.cursor);
@@ -44,12 +58,14 @@ export class BskyFeed {
 		try {
 			const page = await getBskyFeed(this.#feed);
 			if (generation !== this.#generation) return;
+			const previous = this.visibleItems;
 			// カスタムフィードは非時系列・総入れ替えもあるため、古い結果と混ぜない。
 			// カーソルも同じ取得結果のものへ更新する。
 			if (this.#feed.kind === 'generator') {
 				this.items = dedupe(page.items);
 				this.cursor = page.cursor;
 				this.hasMore = Boolean(page.cursor);
+				this.#markEntering(previous);
 				this.error = '';
 				return;
 			}
@@ -57,6 +73,7 @@ export class BskyFeed {
 			const seen = new Set(this.items.map((item) => item.key));
 			const fresh = [...incoming.values()].filter((item) => !seen.has(item.key));
 			this.items = [...fresh, ...this.items.map((item) => incoming.get(item.key) ?? item)];
+			this.#markEntering(previous);
 			if (!this.cursor) {
 				this.cursor = page.cursor;
 				this.hasMore = Boolean(page.cursor);
@@ -67,6 +84,26 @@ export class BskyFeed {
 		} finally {
 			this.#refreshing = false;
 		}
+	}
+
+	#markEntering(previous: ReturnType<typeof bskyConversations>) {
+		const keys = new Set(previous.map((thread) => thread.key));
+		const uris = new Set(previous.flatMap(conversationPosts).map((post) => post.uri));
+		const current = bskyConversations(this.items);
+		if (this.#feed.kind === 'timeline') {
+			const currentKeys = new Set(current.map((thread) => thread.key));
+			this.#order = [
+				...current.filter((thread) => !keys.has(thread.key)).map((thread) => thread.key),
+				...previous.filter((thread) => currentKeys.has(thread.key)).map((thread) => thread.key),
+			];
+		}
+		this.entry.mark(
+			current.filter((thread) => !keys.has(thread.key)).map((thread) => thread.key),
+			current
+				.flatMap(conversationPosts)
+				.map((post) => post.uri)
+				.filter((uri) => !uris.has(uri)),
+		);
 	}
 
 	async loadMore() {

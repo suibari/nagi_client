@@ -88,7 +88,7 @@ export const isActive = (pathname: string, href: string) => {
 /**
  * いま開いているページのナビ項目をもう一度押したときの「開き直して」の合図。
  * SvelteKit は同一 URL への遷移を捨てるので、これが無いと最新を取り直す導線が
- * デスクトップに一つも無くなる（pull-to-refresh も無いため）。X / Instagram / Threads
+ * デスクトップに一つも無くなる。X / Instagram / Threads
  * と同じ「アクティブなタブ再タップ＝先頭へ戻って再取得」に揃える。
  * 購読するのは再取得を持っているページだけでよく、それ以外は先頭スクロールだけになる。
  */
