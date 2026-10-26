@@ -1,3 +1,4 @@
+import type { BskyThreadSnapshot } from './thread';
 import { threadPreview } from '$lib/thread/preview';
 import { replyDepths } from '$lib/thread/replyIndent';
 import type { BskyFeedItemView, BskyPostCardView } from './mapView';
@@ -36,34 +37,64 @@ export function bskyConversations(items: BskyFeedItemView[]): BskyConversation[]
 	return [...groups].map(([key, group]) => {
 		const posts = [...group.posts.values()];
 		const root = group.posts.get(group.rootUri) ?? posts.find((post) => !replyOf(post)) ?? posts[0];
-		const replies = posts
-			.filter((post) => post.uri !== root.uri)
-			.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.uri.localeCompare(b.uri));
-		const depths = replyDepths(
-			root.uri,
-			posts.map((post) => ({
-				uri: post.uri,
-				reply: replyOf(post)?.parent ? { parent: replyOf(post)!.parent! } : undefined,
-			})),
+		return previewConversation(
+			{ key, rootUri: group.rootUri, item: group.item, root },
+			posts,
+			!group.posts.has(group.rootUri),
 		);
-		const { visible, hiddenCount } = threadPreview(replies);
-		return {
-			key,
-			rootUri: group.rootUri,
-			item: group.item,
-			root,
-			replies: visible.map((post) => ({ post, depth: depths.get(post.uri) ?? 1 })),
-			hiddenCount,
-			incomplete:
-				!group.posts.has(group.rootUri) ||
-				posts.some((post) => {
-					const parent = replyOf(post)?.parent?.uri;
-					return Boolean(parent && !group.posts.has(parent));
-				}),
-		};
 	});
 }
 
 export function conversationPosts(thread: BskyConversation) {
 	return [thread.root, ...thread.replies.map((reply) => reply.post)];
+}
+
+function previewConversation(
+	base: Pick<BskyConversation, 'key' | 'rootUri' | 'item' | 'root'>,
+	posts: BskyPostCardView[],
+	incomplete: boolean,
+): BskyConversation {
+	const replies = posts
+		.filter((post) => post.uri !== base.root.uri)
+		.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.uri.localeCompare(b.uri));
+	const depths = replyDepths(
+		base.root.uri,
+		posts.map((post) => ({
+			uri: post.uri,
+			reply: replyOf(post)?.parent ? { parent: replyOf(post)!.parent! } : undefined,
+		})),
+	);
+	const { visible, hiddenCount } = threadPreview(replies);
+	const known = new Set(posts.map((post) => post.uri));
+	return {
+		...base,
+		replies: visible.map((post) => ({ post, depth: depths.get(post.uri) ?? 1 })),
+		hiddenCount,
+		incomplete:
+			incomplete ||
+			posts.some((post) => {
+				const parent = replyOf(post)?.parent?.uri;
+				return Boolean(parent && !known.has(parent));
+			}),
+	};
+}
+
+/** A feed can contain only the root; replies are supplied by getPostThread, independently of feed filtering. */
+export function expandBskyConversation(
+	thread: BskyConversation,
+	snapshot: BskyThreadSnapshot,
+): BskyConversation {
+	const unavailable = new Set(snapshot.unavailableUris);
+	const posts = new Map(
+		(snapshot.incomplete ? conversationPosts(thread) : [])
+			.filter((post) => !unavailable.has(post.uri))
+			.map((post) => [post.uri, post]),
+	);
+	for (const post of snapshot.posts) posts.set(post.uri, post);
+	const root = posts.get(thread.rootUri) ?? thread.root;
+	return previewConversation(
+		{ ...thread, root },
+		[...posts.values()],
+		snapshot.incomplete || !posts.has(thread.rootUri),
+	);
 }

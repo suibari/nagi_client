@@ -11,6 +11,7 @@ export class BskyFeed {
 	hasMore = $state(false);
 	loading = $state(false);
 	error = $state('');
+	revision = $state(0);
 	readonly entry = new EntryMotion();
 	get visibleItems() {
 		const threads = bskyConversations(this.items);
@@ -67,6 +68,7 @@ export class BskyFeed {
 				this.hasMore = Boolean(page.cursor);
 				this.#markEntering(previous);
 				this.error = '';
+				this.revision++;
 				return;
 			}
 			const incoming = new Map(dedupe(page.items).map((item) => [item.key, item]));
@@ -79,6 +81,7 @@ export class BskyFeed {
 				this.hasMore = Boolean(page.cursor);
 			}
 			this.error = '';
+			this.revision++;
 		} catch {
 			// 表示中の投稿を残し、次のポーリングで再試行する。
 		} finally {

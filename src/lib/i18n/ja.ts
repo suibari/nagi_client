@@ -1003,6 +1003,7 @@ export const ja = {
 		'フィードのタブ設定から、Blueskyのフォロー中（ホームタイムライン）やカスタムフィードをタブとして追加できます。閲覧専用で、いいねの数は表示しません。',
 	blueskyFeedReadingOpenTabs: 'フィードのタブを設定する',
 	bskyFeedEmpty: 'このフィードには投稿がありません',
+	bskyThreadLoadFailed: '返信を読み込めませんでした',
 	bskyFeedLoadFailed: 'Blueskyのフィードを読み込めませんでした',
 	bskyFeedNeedsPermission:
 		'Blueskyのフィードを見るには、Bluesky連携の権限が必要です（Blueskyの認可画面が開きます）。',

@@ -1,3 +1,4 @@
+import { BskyThreadLoader, toThreadSnapshot } from './thread';
 import { get } from 'svelte/store';
 import { Agent, type AppBskyFeedDefs, type ModerationOpts } from '@atproto/api';
 import type { OAuthSession } from '@atproto/oauth-client-browser';
@@ -31,6 +32,7 @@ type Context = {
 	session: OAuthSession;
 	agent: Agent;
 	prefs?: Promise<LoadedPrefs>;
+	threads?: BskyThreadLoader;
 };
 let context: Context | undefined;
 
@@ -70,6 +72,21 @@ function loadPrefs(ctx: Context): Promise<LoadedPrefs> {
 }
 
 export const getModerationOpts = async () => (await loadPrefs(currentContext())).moderation;
+
+/** Fetch replies through the same authenticated PDS proxy and subscribed labelers as the feed. */
+export async function getBskyThread(uri: string) {
+	const ctx = currentContext();
+	ctx.threads ??= new BskyThreadLoader(async (rootUri) => {
+		await loadPrefs(ctx);
+		const { data } = await ctx.agent.app.bsky.feed.getPostThread({
+			uri: rootUri,
+			depth: 100,
+			parentHeight: 0,
+		});
+		return toThreadSnapshot(data.thread);
+	});
+	return ctx.threads.get(uri);
+}
 
 export type BskyFeedPage = { items: BskyFeedItemView[]; cursor?: string };
 

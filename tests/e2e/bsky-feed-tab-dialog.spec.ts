@@ -13,6 +13,7 @@ const VIEW_SCOPES = [
 	'rpc:app.bsky.actor.getPreferences',
 	'rpc:app.bsky.labeler.getServices',
 	'rpc:app.bsky.feed.getLikes',
+	'rpc:app.bsky.feed.getPostThread',
 ].map((scope) => `${scope}?aud=*`);
 
 async function openBskyStep(page: Page) {

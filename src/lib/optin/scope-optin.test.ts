@@ -13,6 +13,13 @@ describe('scopesCover', () => {
 		expect(scopesCover(`atproto ${CROSSPOST_SCOPE}`, BLUESKY_VIEW_RPC_SCOPES)).toBe(false);
 	});
 
+	it('requires thread reading permission for sessions granted only the previous feed scopes', () => {
+		const previous = BLUESKY_VIEW_SCOPES.filter(
+			(scope) => !scope.startsWith('rpc:app.bsky.feed.getPostThread'),
+		);
+		expect(scopesCover(previous.join(' '), BLUESKY_VIEW_RPC_SCOPES)).toBe(false);
+	});
+
 	it('does not match a scope that merely shares a prefix', () => {
 		expect(
 			scopesCover('rpc:app.bsky.feed.getFeedGenerators?aud=*', ['rpc:app.bsky.feed.getFeed']),

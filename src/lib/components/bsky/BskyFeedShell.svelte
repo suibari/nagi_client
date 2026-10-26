@@ -19,7 +19,7 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { getModerationOpts } from '$lib/bsky/agent';
+	import { getBskyThread, getModerationOpts } from '$lib/bsky/agent';
 	import { bskyFeedUrl } from '$lib/bsky/links';
 	import { markCrosspostPending } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -157,6 +157,8 @@
 				<BskyThreadUnit
 					{thread}
 					{moderation}
+					loadThread={getBskyThread}
+					revision={feed.revision}
 					entering={feed.entry.keys.has(thread.key)}
 					isPostEntering={(uri) => feed?.entry.uris.has(uri) ?? false}
 				/>

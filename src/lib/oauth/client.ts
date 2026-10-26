@@ -27,6 +27,7 @@ export const BLUESKY_VIEW_RPC_SCOPES = [
 	'rpc:app.bsky.actor.getPreferences',
 	'rpc:app.bsky.labeler.getServices',
 	'rpc:app.bsky.feed.getLikes',
+	'rpc:app.bsky.feed.getPostThread',
 ];
 export const BLUESKY_VIEW_SCOPES = BLUESKY_VIEW_RPC_SCOPES.map((scope) => `${scope}?aud=*`);
 // standard.site（長文記事の共通 lexicon）へブログの正本を保存するコレクション。
