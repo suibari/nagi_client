@@ -31,15 +31,19 @@
 <style>
 	:global(.inline-bluemoji) {
 		display: inline-flex;
-		width: 1.25em;
+		min-width: 1.25em;
 		height: 1.25em;
 		vertical-align: -0.25em;
 	}
 
-	:global(.inline-bluemoji img),
-	:global(.inline-bluemoji canvas) {
-		width: 100%;
+	:global(.inline-bluemoji img) {
+		width: auto;
 		height: 100%;
 		object-fit: contain;
+	}
+
+	:global(.inline-bluemoji canvas) {
+		width: 1.25em;
+		height: 100%;
 	}
 </style>
