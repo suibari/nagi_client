@@ -405,7 +405,8 @@ export type ChroniclePage = {
 export type NotificationView = {
 	id: string;
 	/** 'analysis' は名刺（自動分析）の更新。actor は常に botたん、post も diary も付かない。 */
-	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis';
+	/** 'gift' はおすそわけボードに置いたカードが届いた。actor は受け取った人、cardSubject にカードが入る。 */
+	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis' | 'gift';
 	actor: ActorView;
 	post?: PostView;
 	/** type が 'diary' のときの日記本体。post は付かない。 */
@@ -426,7 +427,8 @@ export type NotificationView = {
 /** 通知が指している、全肯定カードまわりの対象。 */
 export type NotificationCardSubject = {
 	uri: string;
-	type: 'cardGet' | 'zenkatsu';
+	/** gift はおすそわけボードのカードが届いた通知。cards に届いた1枚が入る。 */
+	type: 'cardGet' | 'zenkatsu' | 'gift';
 	/** type=zenkatsu のとき。 */
 	themeJa?: string;
 	themeEn?: string;
@@ -607,6 +609,8 @@ export type CardView = {
 	duplicateCount?: number;
 	acquiredAt?: string;
 	firstOwnerDid?: string;
+	/** おすそわけボードから受け取ったカードのとき、「〜からもらった」の相手。 */
+	receivedFrom?: CardReceivedFrom;
 	/** カード面に敷く背景画像のベース名。`/card-art/{art}.webp` を引く。無ければ文字だけのカード。 */
 	art?: string;
 	/** 記念日カードなら true。図鑑とは別枠に置き、コンプ率にも数えない。 */
@@ -614,6 +618,46 @@ export type CardView = {
 	/** 記念日カードのみ。何年ぶんの1枚か。図鑑番号の代わりにこれを出す。 */
 	year?: number;
 };
+/**
+ * 「〜からもらった」の相手。kind=bot は botたんの分（ボードに無い AAR）、anonymous は提供者が退会済み。
+ * kind=user のときだけ did と名前が入る。
+ */
+export type CardReceivedFrom =
+	| { kind: 'user'; did: string; handle: string; displayName?: string }
+	| { kind: 'bot' }
+	| { kind: 'anonymous' };
+
+/** おすそわけボードのカード1種。在庫の枚数と提供者は見せない（ある／ないだけ）。 */
+export type CardBoardEntry = {
+	card: CardView;
+	/** ボードに1枚以上ある。AAR は botたんの分があるので常に true。 */
+	available: boolean;
+	/** 受け取るのに払う Ƶ。ボードに無い AAR は botたんの額（600）。 */
+	price: number;
+	/** 置いたときにもらえる Ƶ（1枚あたり）。 */
+	zenny: number;
+	/** 自分が今置ける枚数（手元に3枚を残し、ゼンカツでお休み中の在庫は除く）。 */
+	donatable: number;
+	/** 未所持で在庫があり、残高が足りる。 */
+	canTake: boolean;
+};
+export type CardBoardView = {
+	balance: number;
+	/** 今回はじめての Ƶ を配ったときだけ、その額。 */
+	welcomeGranted?: number;
+	cards: CardBoardEntry[];
+};
+export type DonatedCard = {
+	volume: number;
+	id: number;
+	rarity: CardRarity;
+	quantity: number;
+	/** このカードで受け取った Ƶ（1枚あたり × 枚数）。 */
+	zenny: number;
+};
+export type DonateCardsResult = { donated: DonatedCard[]; earned: number; balance: number };
+export type TakeBoardCardResult = { card: CardView; paid: number; balance: number };
+
 /** my_nagi と reaction は1日1回の抽選枠、anniversary は記念日に配られる特別枠。 */
 export type CardDrawSource = 'my_nagi' | 'reaction' | 'anniversary';
 /** その日が記念日で、まだ受け取っていない1枚。 */
