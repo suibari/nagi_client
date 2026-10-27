@@ -7,6 +7,7 @@
 	} from '$lib/api/types';
 	import RecordDetailModal from './RecordDetailModal.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import AvatarLink from './AvatarLink.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import ZenkatsuTrophyGuide from './ZenkatsuTrophyGuide.svelte';
 
@@ -306,9 +307,12 @@
 					<p class="combo-meta">
 						{m.deckComboFound({ date: selectedCombo.firstPlayedDate })}
 						{#if !selectedCombo.isPioneer && selectedCombo.pioneer}
-							· {m.deckComboPioneerBy({
-								name: selectedCombo.pioneer.displayName || selectedCombo.pioneer.handle,
-							})}
+							{@const parts = m.deckComboPioneerBy({ name: '\uFFFC' }).split('\uFFFC')}
+							· {parts[0]}<AvatarLink
+								actor={selectedCombo.pioneer}
+								size="small"
+								showName
+							/>{parts[1]}
 						{/if}
 					</p>
 				</article>

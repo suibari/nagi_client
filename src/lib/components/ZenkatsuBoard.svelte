@@ -333,8 +333,7 @@
 			{#each feed.submissions as s (s.uri)}
 				<li class="entry">
 					<div class="entry-author">
-						<AvatarLink actor={s.author} size="small" />
-						<p class="who">{s.author.displayName || s.author.handle}</p>
+						<AvatarLink actor={s.author} size="small" showName />
 					</div>
 					<ul class="played">
 						{#each s.cards as card (card.volume + ':' + card.id)}
@@ -574,14 +573,9 @@
 		border-radius: 14px;
 		background: var(--bg-raised);
 	}
-	.who {
-		min-width: 0;
-		margin: 0;
-		overflow-wrap: anywhere;
+	.entry-author {
 		font-size: 0.85rem;
 		font-weight: 700;
-	}
-	.entry-author {
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;

@@ -18,6 +18,7 @@
 		className = '',
 		ariaLabel = m.viewProfileAria(),
 		title,
+		showName = false,
 	}: {
 		actor: { did: string; displayName?: string; handle?: string; avatar?: string };
 		size?: 'small' | 'large';
@@ -25,6 +26,8 @@
 		className?: string;
 		ariaLabel?: string;
 		title?: string;
+		/** アバターと名前をひとつのプロフィールリンクにする。 */
+		showName?: boolean;
 	} = $props();
 
 	/** 通り過ぎるだけのカーソルで取得を走らせないための待ち時間。 */
@@ -76,9 +79,10 @@
 
 <a
 	bind:this={anchor}
+	class:with-name={showName}
 	class={`avatar-link${className ? ` ${className}` : ''}`}
 	href="/profile/{actor.did}"
-	aria-label={ariaLabel}
+	aria-label={showName ? undefined : ariaLabel}
 	{title}
 	onmouseenter={open}
 	onmouseleave={close}
@@ -87,8 +91,29 @@
 	onclick={closeNow}
 >
 	<Avatar {actor} {size} />
+	{#if showName}<span class="actor-name">{actor.displayName || actor.handle || actor.did}</span
+		>{/if}
 </a>
 
 {#if card && anchor}
 	<ActorHoverCard data={card} {anchor} onenter={() => clearTimeout(closeTimer)} onleave={close} />
 {/if}
+
+<style>
+	.with-name {
+		align-items: center;
+		gap: 0.6rem;
+		max-inline-size: 100%;
+		border-radius: var(--r-md);
+		color: inherit;
+		text-decoration: none;
+		vertical-align: middle;
+	}
+	.actor-name {
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
+	}
+	.with-name:hover .actor-name {
+		text-decoration: underline;
+	}
+</style>
