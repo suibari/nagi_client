@@ -6,6 +6,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		createBluemojiItem,
+		createBluemojiRkey,
 		deleteBluemoji,
 		displayEmojiName,
 		EMOJI_NAME_PATTERN,
@@ -26,6 +27,7 @@
 
 	type BatchItem = {
 		id: string;
+		rkey: string;
 		file: File;
 		name: string;
 		state: 'ready' | 'processing' | 'success' | 'failed';
@@ -185,6 +187,7 @@
 			return [
 				{
 					id: `${selected.webkitRelativePath || selected.name}:${selected.lastModified}:${index}`,
+					rkey: createBluemojiRkey(),
 					file: selected,
 					name: selected.name.replace(/\.[^.]+$/, '').slice(0, 32),
 					state: 'ready' as const,
@@ -239,7 +242,7 @@
 				item.state = 'processing';
 				item.error = undefined;
 				try {
-					await createBluemojiItem(item.name, await processEmojiImage(item.file));
+					await createBluemojiItem(item.name, await processEmojiImage(item.file), '', item.rkey);
 					item.state = 'success';
 					batchSucceeded += 1;
 				} catch (cause) {
@@ -252,6 +255,8 @@
 		await Promise.all([worker(), worker()]);
 		await loadEmojis().catch((cause) => (error = errorMessage(cause)));
 		status = m.emojiBatchUploaded({ count: batchSucceeded });
+		const failed = queue.filter((item) => item.state === 'failed').length;
+		if (failed) error = m.emojiBatchFailed({ count: failed });
 		busy = false;
 	}
 
@@ -409,7 +414,11 @@
 						{/each}
 					</div>
 					<button disabled={busy || !loaded || !batchReady} onclick={uploadBatch}
-						>{busy ? m.saving() : m.emojiBatchUpload()}</button
+						>{busy
+							? `${m.saving()} (${batchCompleted}/${batchTotal})`
+							: batch.some((item) => item.state === 'failed')
+								? m.emojiBatchRetry()
+								: m.emojiBatchUpload()}</button
 					>
 				{/if}
 			</div>

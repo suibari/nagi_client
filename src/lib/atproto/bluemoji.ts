@@ -50,7 +50,7 @@ const FORMATS_V0 = `${BLUEMOJI_ITEM}#formats_v0`;
  * 絵文字名を rkey にすると、同名の旧形式レコードが PDS に残っている場合に create が
  * 衝突する。Bluemoji は key:any なので、名前とは独立した十分にランダムなキーを使う。
  */
-const createBluemojiRkey = () => {
+export const createBluemojiRkey = () => {
 	const bytes = crypto.getRandomValues(new Uint8Array(16));
 	return `nagi_${[...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 };
@@ -440,7 +440,33 @@ export async function searchAvailableBluemoji(opts: {
 	};
 }
 
-export async function createBluemojiItem(name: string, blob: Blob, alt = '') {
+// 同じ操作の再試行では rkey を保持する。応答だけ失われても別の絵文字を作らない。
+export async function retryEmojiRequest<T>(request: () => Promise<T>): Promise<T> {
+	for (let attempt = 0; ; attempt++) {
+		try {
+			return await request();
+		} catch (error) {
+			const status = (error as { status?: number } | null)?.status;
+			if (
+				attempt >= 3 ||
+				!(
+					status === 1 ||
+					status === 429 ||
+					(status !== undefined && status >= 500 && status <= 599)
+				)
+			)
+				throw error;
+			await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+		}
+	}
+}
+
+export async function createBluemojiItem(
+	name: string,
+	blob: Blob,
+	alt = '',
+	rkey = createBluemojiRkey(),
+) {
 	const s = current();
 	const agent = new Agent(s);
 	let formats: Record<string, unknown>;
@@ -456,7 +482,9 @@ export async function createBluemojiItem(name: string, blob: Blob, alt = '') {
 			[blob.type === 'image/apng' ? 'apng_128' : 'lottie']: { $bytes: btoa(binary) },
 		};
 	} else {
-		const uploaded = await agent.com.atproto.repo.uploadBlob(blob, { encoding: blob.type });
+		const uploaded = await retryEmojiRequest(() =>
+			agent.com.atproto.repo.uploadBlob(blob, { encoding: blob.type }),
+		);
 		const formatKey = FORMAT_KEY[blob.type];
 		if (!formatKey && blob.type !== 'image/apng' && blob.type !== 'application/lottie+zip')
 			throw new EmojiProcessingError('Unsupported image type', 'type');
@@ -467,40 +495,55 @@ export async function createBluemojiItem(name: string, blob: Blob, alt = '') {
 	}
 	const alias = `:${name}:`;
 	const createdAt = new Date().toISOString();
-	const rkey = createBluemojiRkey();
 	const subject = `at://${s.did}/${BLUEMOJI_ITEM}/${rkey}`;
-	const response = await agent.com.atproto.repo.applyWrites({
-		repo: s.did,
-		validate: false,
-		writes: [
-			{
-				$type: 'com.atproto.repo.applyWrites#create',
-				collection: BLUEMOJI_ITEM,
-				rkey,
-				value: {
-					$type: BLUEMOJI_ITEM,
-					name: alias,
-					...(alt ? { alt } : {}),
-					adultOnly: false,
-					fallbackText: '◌',
-					createdAt,
-					formats,
+	const write = () =>
+		agent.com.atproto.repo.applyWrites({
+			repo: s.did,
+			validate: false,
+			writes: [
+				{
+					$type: 'com.atproto.repo.applyWrites#create',
+					collection: BLUEMOJI_ITEM,
+					rkey,
+					value: {
+						$type: BLUEMOJI_ITEM,
+						name: alias,
+						...(alt ? { alt } : {}),
+						adultOnly: false,
+						fallbackText: '◌',
+						createdAt,
+						formats,
+					},
 				},
-			},
-			{
-				$type: 'com.atproto.repo.applyWrites#create',
-				collection: NAGI_BLUEMOJI,
-				rkey,
-				value: {
-					$type: NAGI_BLUEMOJI,
-					subject,
-					createdAt,
+				{
+					$type: 'com.atproto.repo.applyWrites#create',
+					collection: NAGI_BLUEMOJI,
+					rkey,
+					value: {
+						$type: NAGI_BLUEMOJI,
+						subject,
+						createdAt,
+					},
 				},
-			},
-		],
+			],
+		});
+	await retryEmojiRequest(async () => {
+		try {
+			await write();
+		} catch (error) {
+			// applyWrites は原子的。本体とサイドカーが揃っていれば保存自体は成功している。
+			try {
+				await Promise.all(
+					[BLUEMOJI_ITEM, NAGI_BLUEMOJI].map((collection) =>
+						agent.com.atproto.repo.getRecord({ repo: s.did, collection, rkey }),
+					),
+				);
+			} catch {
+				throw error;
+			}
+		}
 	});
 	invalidateMyBluemojiCache();
-	return response;
 }
 
 export async function deleteBluemoji(rkey: string) {

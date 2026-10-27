@@ -632,6 +632,9 @@ export const ja = {
 	emojiBatchIgnored: (p: { count: number }) => `未対応の${p.count}ファイルを除外しました`,
 	emojiBatchDuplicate: '選択したファイル内で名前が重複しています',
 	emojiBatchUpload: '登録できる絵文字をまとめて登録',
+	emojiBatchRetry: '未登録の絵文字を再試行',
+	emojiBatchFailed: (p: { count: number }) =>
+		`${p.count}件を登録できませんでした。ファイルを選び直さず、未登録分を再試行できます。`,
 	emojiBatchUploaded: (p: { count: number }) => `${p.count}個の絵文字を登録しました`,
 	emojiBatchProgress: (p: { completed: number; total: number; succeeded: number }) =>
 		`${p.completed} / ${p.total}件を処理（登録成功 ${p.succeeded}件）`,

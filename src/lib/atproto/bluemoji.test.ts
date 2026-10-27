@@ -1,12 +1,31 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('$lib/oauth/session.svelte', () => ({ session: {} }));
+vi.mock('$lib/oauth/session.svelte', () => ({
+	session: {
+		subscribe: (run: (value: unknown) => void) => {
+			run({ did: 'did:plc:test' });
+			return () => {};
+		},
+	},
+}));
+const repo = vi.hoisted(() => ({ uploadBlob: vi.fn(), applyWrites: vi.fn(), getRecord: vi.fn() }));
+vi.mock('@atproto/api', () => ({
+	Agent: class {
+		com = { atproto: { repo } };
+	},
+}));
 vi.mock('$lib/api/appview', () => ({ APPVIEW_URL: '', searchEmojis: vi.fn() }));
 vi.mock('./pds', () => ({ listRecords: vi.fn(), resolvePdsUrl: vi.fn() }));
 const heicTo = vi.hoisted(() => vi.fn());
 vi.mock('heic-to/csp', () => ({ heicTo }));
 
-import { emojiFileType, processEmojiImage, MAX_EMOJI_INPUT_SIZE } from './bluemoji';
+import {
+	emojiFileType,
+	processEmojiImage,
+	MAX_EMOJI_INPUT_SIZE,
+	createBluemojiItem,
+	retryEmojiRequest,
+} from './bluemoji';
 
 const bitmap = () => ({ width: 640, height: 480, close: vi.fn() });
 let decoded: ReturnType<typeof bitmap>;
@@ -102,5 +121,54 @@ describe('photo emoji input', () => {
 		expect(output.type).toBe('image/apng');
 		expect(await output.text()).toBe('animation');
 		expect(createImageBitmap).not.toHaveBeenCalled();
+	});
+});
+
+describe('emoji upload recovery', () => {
+	afterEach(() => vi.useRealTimers());
+	it('backs off on temporary errors and stops after three retries', async () => {
+		vi.useFakeTimers();
+		const error = Object.assign(new Error('Internal Server Error'), { status: 500 });
+		const request = vi.fn().mockRejectedValue(error);
+		const result = expect(retryEmojiRequest(request)).rejects.toBe(error);
+		await vi.runAllTimersAsync();
+		await result;
+		expect(request).toHaveBeenCalledTimes(4);
+	});
+	it('does not retry authentication errors', async () => {
+		const error = { status: 401 };
+		const request = vi.fn().mockRejectedValue(error);
+		await expect(retryEmojiRequest(request)).rejects.toBe(error);
+		expect(request).toHaveBeenCalledOnce();
+	});
+	it('retries writes at the same keys without uploading the image again', async () => {
+		vi.useFakeTimers();
+		repo.uploadBlob.mockResolvedValue({ data: { blob: {} } });
+		repo.applyWrites.mockReset().mockRejectedValueOnce({ status: 500 }).mockResolvedValue({});
+		repo.getRecord.mockReset().mockRejectedValue({ error: 'RecordNotFound' });
+		const result = createBluemojiItem(
+			'cat',
+			new Blob(['cat'], { type: 'image/png' }),
+			'',
+			'stable-key',
+		);
+		await vi.runAllTimersAsync();
+		await result;
+		expect(repo.uploadBlob).toHaveBeenCalledOnce();
+		expect(repo.applyWrites).toHaveBeenCalledTimes(2);
+		for (const [input] of repo.applyWrites.mock.calls) {
+			expect(input.writes.map((write: { rkey: string }) => write.rkey)).toEqual([
+				'stable-key',
+				'stable-key',
+			]);
+		}
+	});
+	it('recognizes a committed write when the server returns an error after saving', async () => {
+		repo.uploadBlob.mockResolvedValue({ data: { blob: {} } });
+		repo.applyWrites.mockReset().mockRejectedValue({ status: 500 });
+		repo.getRecord.mockReset().mockResolvedValue({ data: {} });
+		await createBluemojiItem('cat', new Blob(['cat'], { type: 'image/png' }), '', 'saved-key');
+		expect(repo.applyWrites).toHaveBeenCalledOnce();
+		expect(repo.getRecord).toHaveBeenCalledTimes(2);
 	});
 });
