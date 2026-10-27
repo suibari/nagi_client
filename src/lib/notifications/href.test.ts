@@ -49,6 +49,9 @@ describe('notificationHref', () => {
 			'/profile/did:plc:viewer',
 		);
 	});
+	it('routes gift notifications to the share board tab', () => {
+		expect(notificationHref(notification({ type: 'gift' }))).toBe('/cards?tab=board');
+	});
 	it.each(['cardGet', 'zenkatsu'] as const)(
 		'routes %s reactions to cards even when subject details are unavailable',
 		(type) => {

@@ -5,6 +5,7 @@ import { postPageHref } from '$lib/feed/post-follow.svelte';
 export function notificationHref(item: NotificationView, viewerDid?: string): string {
 	if (item.type === 'diary') return `/diary${item.diary ? `?date=${item.diary.date}` : ''}`;
 	if (item.type === 'analysis') return viewerDid ? `/profile/${viewerDid}` : '/notifications';
+	if (item.type === 'gift') return '/cards?tab=board';
 	const collection = item.subjectUri.slice('at://'.length).split('/')[1];
 	if (
 		item.cardSubject ||

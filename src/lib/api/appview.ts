@@ -5,7 +5,10 @@ import { env } from '$env/dynamic/public';
 import { session } from '$lib/oauth/session.svelte';
 import type {
 	ActorView,
+	CardBoardView,
 	CardCollectionView,
+	DonateCardsResult,
+	TakeBoardCardResult,
 	CardNewsFeed,
 	BookmarkFolderView,
 	BookmarkFoldersView,
@@ -783,6 +786,38 @@ export const drawCard = (
 	call<DrawCardResult>(
 		'com.suibari.nagi.drawCard',
 		'/xrpc/com.suibari.nagi.drawCard',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
+/**
+ * おすそわけボード。図鑑のカードごとの「ある／ない」と、置ける枚数・Ƶ 残高を返す。
+ * はじめて開いたときに Ƶ が配られる（welcomeGranted）。要認証。
+ */
+export const getCardBoard = () =>
+	call<CardBoardView>(
+		'com.suibari.nagi.getCardBoard',
+		'/xrpc/com.suibari.nagi.getCardBoard',
+		undefined,
+		'required',
+	);
+/** だぶったカードをボードに置いて Ƶ を受け取る。mode=all は全部のカードを3枚まで減らす。 */
+export const donateCards = (
+	input: { mode: 'all' } | { mode: 'single'; card: { volume: number; id: number }; quantity?: number },
+) =>
+	call<DonateCardsResult>(
+		'com.suibari.nagi.donateCards',
+		'/xrpc/com.suibari.nagi.donateCards',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
+/**
+ * まだ持っていないカードを Ƶ で受け取る。price は画面に出ていた額で、
+ * それより高くなっていたら out_of_stock（ボードの AAR が取られ、botたんの額に戻った）。
+ */
+export const takeBoardCard = (input: { card: { volume: number; id: number }; price: number }) =>
+	call<TakeBoardCardResult>(
+		'com.suibari.nagi.takeBoardCard',
+		'/xrpc/com.suibari.nagi.takeBoardCard',
 		{ method: 'POST', body: JSON.stringify(input) },
 		'required',
 	);

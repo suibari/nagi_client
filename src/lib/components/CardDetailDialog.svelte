@@ -64,6 +64,14 @@
 	const ja = $derived(i18n.locale === 'ja');
 	const name = $derived(ja ? card.nameJa : card.nameEn);
 	const comment = $derived(ja ? card.commentJa : card.commentEn);
+	/** おすそわけボードで受け取ったカードの「〜からもらった」。 */
+	const receivedFromText = $derived.by(() => {
+		const from = card.receivedFrom;
+		if (!from) return undefined;
+		if (from.kind === 'bot') return m.cardReceivedFromBot();
+		if (from.kind === 'anonymous') return m.cardReceivedFromAnonymous();
+		return m.cardReceivedFrom({ name: from.displayName || `@${from.handle}` });
+	});
 	// ja/en どちらかが埋まればコメントは届いたとみなす（片方だけ生成される事故に強くする）。
 	const hasComment = $derived(!!(card.commentJa || card.commentEn));
 	// 初回の実ドローだけを祝う。当日カードの冪等再取得では演出を繰り返さない。
@@ -249,6 +257,9 @@
 				</p>
 			{:else if card.acquiredAt}
 				<p class="draw-next">{m.cardAcquiredAt({ time: formatTime(card.acquiredAt) })}</p>
+			{/if}
+			{#if receivedFromText}
+				<p class="draw-next received-from">🎁 {receivedFromText}</p>
 			{/if}
 			<div class="draw-actions">
 				<button bind:this={closeButton} type="button" class="ghost" onclick={close}>
