@@ -66,13 +66,6 @@
 	const returnTo = $derived(safeInternalReturnTo(page.url.searchParams.get('returnTo')));
 	const backHref = $derived(returnTo ?? '/settings');
 	const backLabel = $derived(returnTo ? m.emojiBackToSource() : m.backToSettings());
-	const taken = $derived(new Set(emojis.map((emoji) => displayEmojiName(emoji.name))));
-	const batchNames = $derived(
-		batch.reduce(
-			(counts, item) => counts.set(item.name, (counts.get(item.name) ?? 0) + 1),
-			new Map<string, number>(),
-		),
-	);
 	const tabs: { id: EmojiTab; label: () => string }[] = [
 		{ id: 'single', label: () => m.emojiSingleTitle() },
 		{ id: 'batch', label: () => m.emojiBatchTitle() },
@@ -96,6 +89,7 @@
 		(document.getElementById(`emoji-tab-${activeTab}`) as HTMLButtonElement)?.focus();
 	}
 	const visibleEmojis = $derived(emojis.slice(0, visibleEmojiCount));
+	// 名前は表示用。同名でもランダムな rkey / at-uri で別の絵文字として登録できる。
 	const nameValid = $derived(EMOJI_NAME_PATTERN.test(name));
 	const fileProblem = (selected: File) => {
 		const type = emojiFileType(selected);
@@ -158,7 +152,7 @@
 			location.href = '/login';
 			return;
 		}
-		if (!loaded || !file || !nameValid || taken.has(name)) return;
+		if (!loaded || !file || !nameValid) return;
 		busy = true;
 		status = '';
 		error = '';
@@ -208,8 +202,6 @@
 	function batchProblem(item: BatchItem) {
 		if (item.state === 'success') return '';
 		if (!EMOJI_NAME_PATTERN.test(item.name)) return m.emojiNameInvalid();
-		if ((batchNames.get(item.name) ?? 0) > 1) return m.emojiBatchDuplicate();
-		if (taken.has(item.name)) return m.emojiNameTaken();
 		return fileProblem(item.file);
 	}
 	const batchReady = $derived(
@@ -343,15 +335,9 @@
 					/></label
 				>
 				{#if name && !nameValid}<p class="error">{m.emojiNameInvalid()}</p>{/if}
-				{#if nameValid && taken.has(name)}<p class="error">{m.emojiNameTaken()}</p>{/if}
 				<label>{m.emojiAltLabel()}<input bind:value={alt} maxlength="100" /></label>
 				<button
-					disabled={busy ||
-						!loaded ||
-						!file ||
-						!nameValid ||
-						taken.has(name) ||
-						Boolean(singleFileProblem)}
+					disabled={busy || !loaded || !file || !nameValid || Boolean(singleFileProblem)}
 					onclick={upload}>{busy ? m.saving() : m.emojiUpload()}</button
 				>
 			</div>
