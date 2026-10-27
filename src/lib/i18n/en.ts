@@ -618,6 +618,9 @@ export const en: Messages = {
 	emojiBatchIgnored: (p: { count: number }) => `${p.count} unsupported files were ignored`,
 	emojiBatchDuplicate: 'This name is duplicated in the selected files',
 	emojiBatchUpload: 'Add all available emoji',
+	emojiBatchRetry: 'Retry remaining emoji',
+	emojiBatchFailed: (p: { count: number }) =>
+		`${p.count} emoji could not be added. Retry the remaining emoji without selecting the files again.`,
 	emojiBatchUploaded: (p: { count: number }) => `Added ${p.count} emoji`,
 	emojiBatchProgress: (p: { completed: number; total: number; succeeded: number }) =>
 		`${p.completed} / ${p.total} processed (${p.succeeded} added)`,

@@ -2,13 +2,20 @@ import { expect, test } from '@playwright/test';
 
 // 実際の設定画面を操作し、PDS との境界だけを置き換える。
 // 名前の検証・登録ボタン・一括キューは本番のコンポーネントを通す。
-for (const mode of ['single', 'batch'] as const) {
+for (const mode of ['single', 'batch', 'batch-retry'] as const) {
 	test(`${mode}: 同名の絵文字を登録でき、無効な名前は拒否する`, async ({ page }) => {
 		const created: string[] = [];
 		await page.route('**/xrpc/**', (route) =>
 			route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
 		);
-		await page.exposeFunction('recordEmojiUpload', (name: string) => created.push(name));
+		let failNext = mode === 'batch-retry';
+		await page.exposeFunction('recordEmojiUpload', (name: string) => {
+			if (failNext) {
+				failNext = false;
+				throw new Error('Internal Server Error');
+			}
+			created.push(name);
+		});
 		await page.route('**/src/lib/atproto/bluemoji.ts', (route) =>
 			route.fulfill({
 				contentType: 'application/javascript',
@@ -71,6 +78,16 @@ for (const mode of ['single', 'batch'] as const) {
 		await expect(batch.locator('.emoji-batch-item.failed')).toHaveCount(0);
 		await expect(batchUpload).toBeEnabled();
 		await batchUpload.click();
+		if (mode === 'batch-retry') {
+			await expect(batchUpload).toHaveText('未登録の絵文字を再試行');
+			await expect.poll(() => created).toEqual(['blobcat']);
+			await expect(
+				page.getByText(
+					'1件を登録できませんでした。ファイルを選び直さず、未登録分を再試行できます。',
+				),
+			).toBeVisible();
+			await batchUpload.click();
+		}
 		await expect.poll(() => created).toEqual(['blobcat', 'blobcat']);
 		await expect(batchNames.nth(0)).toBeDisabled();
 		await expect(batchNames.nth(1)).toBeDisabled();
