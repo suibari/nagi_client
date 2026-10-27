@@ -4,6 +4,7 @@
 	import type { CardView, DrawCardResult } from '$lib/api/types';
 	import { cardRevealEffect, rarityConfettiLevel } from '$lib/cards/celebration';
 	import { dateLocale, i18n, m } from '$lib/i18n/i18n.svelte';
+	import AvatarLink from './AvatarLink.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardBack from './CardBack.svelte';
 	import CardDrawEffects from './CardDrawEffects.svelte';
@@ -259,7 +260,12 @@
 				<p class="draw-next">{m.cardAcquiredAt({ time: formatTime(card.acquiredAt) })}</p>
 			{/if}
 			{#if receivedFromText}
-				<p class="draw-next received-from">🎁 {receivedFromText}</p>
+				<p class="draw-next received-from">
+					🎁 {#if card.receivedFrom?.kind === 'user'}
+						{@const parts = m.cardReceivedFrom({ name: '\uFFFC' }).split('\uFFFC')}
+						{parts[0]}<AvatarLink actor={card.receivedFrom} size="small" showName />{parts[1]}
+					{:else}{receivedFromText}{/if}
+				</p>
 			{/if}
 			<div class="draw-actions">
 				<button bind:this={closeButton} type="button" class="ghost" onclick={close}>

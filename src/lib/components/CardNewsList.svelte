@@ -77,8 +77,7 @@
 			{/if}
 			<li class="item">
 				<div class="author">
-					<AvatarLink actor={item.author} size="small" />
-					<p class="who">{item.author.displayName || item.author.handle}</p>
+					<AvatarLink actor={item.author} size="small" showName />
 				</div>
 				{#if item.type === 'cardGet' && item.card}
 					<p class="headline">
@@ -156,17 +155,12 @@
 		border-block-end: 1px solid var(--line);
 	}
 	.author {
+		font-size: 0.85rem;
+		font-weight: 700;
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
 		margin-block-end: 0.4rem;
-	}
-	.who {
-		min-width: 0;
-		margin: 0;
-		overflow-wrap: anywhere;
-		font-size: 0.85rem;
-		font-weight: 700;
 	}
 	.headline {
 		margin-block: 0.2rem;

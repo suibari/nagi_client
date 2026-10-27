@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { BusinessCardData } from '$lib/card/data';
 	import { selectProfileTags } from '$lib/profile/tags';
-	import { portal } from '$lib/actions/portal';
 	import BusinessCard from './BusinessCard.svelte';
 
 	/**
@@ -22,6 +21,12 @@
 		onenter: () => void;
 		onleave: () => void;
 	} = $props();
+
+	// モーダルの top layer 内にも表示できるよう、起点と同じダイアログへ置く。
+	function portal(node: HTMLElement) {
+		(anchor.closest('dialog') ?? document.body).append(node);
+		return { destroy: () => node.remove() };
+	}
 
 	const GAP = 8;
 	const MARGIN = 12;
