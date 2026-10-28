@@ -606,13 +606,13 @@ export const ja = {
 		'登録した絵文字はあなたのPDSにBluemoji（blue.moji.collection.item）として保存され、Nagiのみんながリアクションに使えます。',
 	emojiUploadNote:
 		'JPEG・HEIC／HEIF・PNG・WebP・GIF・APNG・Lottie（入力5MBまで）。静止画は長辺128pxに縮小し、JPEG・HEIC／HEIFはPNGに変換します。アニメーションは規格上限内のものを登録できます。',
-	emojiSingleTitle: 'ひとつ登録',
+	emojiSingleTitle: '画像から作成',
 	emojiNameLabel: '絵文字名（半角英数字、_と-）',
 	emojiAltLabel: '説明（任意）',
 	emojiUpload: '登録する',
 	emojiUploaded: '絵文字を登録しました',
 	emojiDeleted: '絵文字を削除しました',
-	emojiMineTitle: '登録した絵文字',
+	emojiMineTitle: '作成した絵文字',
 	emojiMineEmpty: 'まだ絵文字を登録していません。',
 	emojiNameInvalid: '半角英数字・アンダースコア・ハイフンで1〜32文字にしてください',
 	emojiNameTaken: 'この名前の絵文字はすでに登録されています',
@@ -624,7 +624,7 @@ export const ja = {
 	emojiDeleteFailed: '絵文字を削除できませんでした',
 	emojiLoadFailed: '絵文字を読み込めませんでした',
 	emojiDeleteConfirm: (p: { emoji: string }) => `${p.emoji} をPDSから削除しますか？`,
-	emojiBatchTitle: 'まとめて登録',
+	emojiBatchTitle: 'まとめて作成',
 	emojiBatchNote:
 		'フォルダはサブフォルダ内も読み込みます。ファイル名が絵文字名になります。登録前に名前を確認・修正できます。',
 	emojiSelectFolder: 'フォルダを選ぶ',
@@ -644,6 +644,29 @@ export const ja = {
 	emojiBatchStateProcessing: '登録中',
 	emojiBatchStateSuccess: '登録しました',
 	emojiBatchStateFailed: '登録できませんでした',
+	emojiGenerateTitle: 'AIでつくる',
+	emojiGenerateNote:
+		'ほしい絵文字を言葉で伝えると、botたんが描きます。「それな」のような短い言葉は文字の絵文字に、「ガッツポーズするペンギン」のような説明は絵になります。描きあがるまで数分かかります。その間は別のページに移動しても大丈夫です。',
+	emojiGeneratePromptLabel: '描いてほしいもの',
+	emojiGeneratePromptPlaceholder: '例：ガッツポーズするペンギン',
+	emojiGenerateSubmit: '描いてもらう',
+	emojiGenerateSubmitting: '頼んでいます…',
+	emojiGenerateAccepted: (p: { minutes: number }) =>
+		`受け付けました（目安：約${p.minutes}分）。ほかの画面に移動しても大丈夫です。描きあがったら通知でお知らせします。`,
+	emojiGenerateAlreadyActive: '描いている途中の依頼があります。描きあがってから次を頼んでください。',
+	emojiGenerateBusy: 'いまは混み合っています。しばらくしてからもう一度頼んでください。',
+	emojiGenerateInappropriate: 'この内容は描けません。',
+	emojiGenerateUnavailable: 'いまは絵文字を描けません。',
+	emojiGenerateRequestFailed: '依頼できませんでした',
+	emojiGenerateQueued: (p: { ahead: number }) =>
+		p.ahead === 0 ? '次に描きます' : `順番待ち（前に${p.ahead}件）`,
+	emojiGenerateRunning: '描いています',
+	emojiGenerateRedrawing: '描き直しています。描きあがったら差し替わります',
+	emojiGenerateFailed: '描けませんでした。言い方を変えて、もう一度頼んでみてください。',
+	emojiGenerateChoose: '気に入ったら「登録する」を押してください。気に入らなければ、もう一度描いてもらえます。',
+	emojiGenerateAgain: 'もう一度描いてもらう',
+	emojiGenerateRegisteredNotice: (p: { name: string }) => `:${p.name}: を登録しました`,
+	emojiGenerateRegistered: '登録済み',
 
 	// home
 	heroEyebrow: 'AT PROTOCOLでつながる、全肯定SNS',
@@ -682,6 +705,7 @@ export const ja = {
 	notifDiarySuffix: 'さんが今日の日記を書いてくれました',
 	notifAnalysisSuffix: 'さんがあなたの名刺を更新しました',
 	notifGiftSuffix: 'さんに、あなたがおすそわけしたカードが届きました',
+	notifEmojiSuffix: 'さんが、頼まれた絵文字を描きました',
 	notifUnreadBadgeAria: (p: { count: number }) => `未読通知 ${p.count} 件`,
 
 	// 名刺カード

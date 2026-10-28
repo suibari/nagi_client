@@ -24,6 +24,7 @@
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import EmojiInputPreview from '$lib/components/EmojiInputPreview.svelte';
+	import EmojiGeneratePanel from '$lib/components/EmojiGeneratePanel.svelte';
 
 	type BatchItem = {
 		id: string;
@@ -33,9 +34,15 @@
 		state: 'ready' | 'processing' | 'success' | 'failed';
 		error?: string;
 	};
-	type EmojiTab = 'single' | 'batch' | 'mine';
+	type EmojiTab = 'generate' | 'single' | 'batch' | 'mine';
 
-	let activeTab = $state<EmojiTab>('single');
+	// 「描きあがりました」の通知は ?tab=generate で来る（既定も「AIでつくる」）
+	const initialTab = page.url.searchParams.get('tab');
+	let activeTab = $state<EmojiTab>(
+		initialTab === 'single' || initialTab === 'batch' || initialTab === 'mine'
+			? initialTab
+			: 'generate',
+	);
 	let emojis = $state<MyEmoji[]>([]);
 	let loaded = $state(false);
 	let name = $state('');
@@ -69,6 +76,7 @@
 	const backHref = $derived(returnTo ?? '/settings');
 	const backLabel = $derived(returnTo ? m.emojiBackToSource() : m.backToSettings());
 	const tabs: { id: EmojiTab; label: () => string }[] = [
+		{ id: 'generate', label: () => m.emojiGenerateTitle() },
 		{ id: 'single', label: () => m.emojiSingleTitle() },
 		{ id: 'batch', label: () => m.emojiBatchTitle() },
 		{ id: 'mine', label: () => m.emojiMineTitle() },
@@ -342,6 +350,7 @@
 				{#if name && !nameValid}<p class="error">{m.emojiNameInvalid()}</p>{/if}
 				<label>{m.emojiAltLabel()}<input bind:value={alt} maxlength="100" /></label>
 				<button
+					class="primary"
 					disabled={busy || !loaded || !file || !nameValid || Boolean(singleFileProblem)}
 					onclick={upload}>{busy ? m.saving() : m.emojiUpload()}</button
 				>
@@ -413,7 +422,7 @@
 							</div>
 						{/each}
 					</div>
-					<button disabled={busy || !loaded || !batchReady} onclick={uploadBatch}
+					<button class="primary" disabled={busy || !loaded || !batchReady} onclick={uploadBatch}
 						>{busy
 							? `${m.saving()} (${batchCompleted}/${batchTotal})`
 							: batch.some((item) => item.state === 'failed')
@@ -421,6 +430,10 @@
 								: m.emojiBatchUpload()}</button
 					>
 				{/if}
+			</div>
+		{:else if activeTab === 'generate'}
+			<div id="emoji-panel-generate" role="tabpanel" aria-labelledby="emoji-tab-generate">
+				<EmojiGeneratePanel onregistered={loadEmojis} />
 			</div>
 		{:else}
 			<div id="emoji-panel-mine" role="tabpanel" aria-labelledby="emoji-tab-mine">

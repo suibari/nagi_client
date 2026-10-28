@@ -15,6 +15,17 @@ const notification = (overrides: Partial<NotificationView> = {}): NotificationVi
 });
 
 describe('notificationHref', () => {
+	it('sends finished emoji generations to the generated emoji tab', () => {
+		expect(
+			notificationHref(
+				notification({
+					type: 'emoji',
+					subjectUri: 'at://did:plc:me/emoji-generation/0a1b',
+					reasonUri: 'at://did:plc:me/emoji-generation/0a1b',
+				}),
+			),
+		).toBe('/settings/emoji?tab=generate');
+	});
 	it.each(['reaction', 'reply', 'mention'] as const)(
 		'routes %s subjects by collection even without an embedded post',
 		(type) => {

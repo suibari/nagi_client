@@ -48,6 +48,8 @@ for (const mode of ['single', 'batch', 'batch-retry'] as const) {
 		const png = Buffer.from(dataUrl.split(',')[1], 'base64');
 		const image = (name: string) => ({ name, mimeType: 'image/png', buffer: png });
 		if (mode === 'single') {
+			// 既定のタブは「AIでつくる」
+			await page.locator('#emoji-tab-single').click();
 			const single = page.locator('#emoji-panel-single');
 			await single.locator('input[type=file]').setInputFiles(image('blobcat.png'));
 			const name = single.locator('input[maxlength="32"]');
