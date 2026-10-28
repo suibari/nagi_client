@@ -406,7 +406,8 @@ export type NotificationView = {
 	id: string;
 	/** 'analysis' は名刺（自動分析）の更新。actor は常に botたん、post も diary も付かない。 */
 	/** 'gift' はおすそわけボードに置いたカードが届いた。actor は受け取った人、cardSubject にカードが入る。 */
-	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis' | 'gift';
+	/** 'emoji' は依頼した絵文字の生成が終わった（失敗も含む）。actor は常に botたん。 */
+	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis' | 'gift' | 'emoji';
 	actor: ActorView;
 	post?: PostView;
 	/** type が 'diary' のときの日記本体。post は付かない。 */
@@ -905,4 +906,25 @@ export type ZenkatsuDeckView = {
 	/** 未発見ぶんの伏せ札。図鑑番号順。伏せ札を返さない古い AppView では無い。 */
 	hints?: ZenkatsuComboHint[];
 	trophies: ZenkatsuTrophyView[];
+};
+
+/** botたんに頼んだ絵文字の生成。候補は透過 PNG の data URL で、1日で消える。 */
+export type EmojiGenerationView = {
+	id: string;
+	prompt: string;
+	/** 絵文字に書く文字（botたんの解釈）。 */
+	lettering?: string;
+	/** 登録名と説明の案（botたんが付ける）。そのまま登録に使う。絵文字名は重複してよい。 */
+	name: string;
+	description: string;
+	aspect: 'square' | 'wide' | 'long';
+	state: 'queued' | 'running' | 'done' | 'failed';
+	/** queued のときだけ。自分より前にある依頼の数。 */
+	queuePosition?: number;
+	candidates: { image: string; width: number; height: number }[];
+	total: number;
+	error?: string;
+	createdAt: string;
+	finishedAt?: string;
+	expiresAt: string;
 };

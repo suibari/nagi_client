@@ -592,7 +592,7 @@ export const en: Messages = {
 		'Your emoji are stored in your own PDS as Bluemoji (blue.moji.collection.item), and everyone on Nagi can react with them.',
 	emojiUploadNote:
 		'JPEG, HEIC/HEIF, PNG, WebP, GIF, APNG, or Lottie (up to 5MB input). Still images are resized to 128px; JPEG and HEIC/HEIF are converted to PNG; animations must fit the Bluemoji limits.',
-	emojiSingleTitle: 'Add one emoji',
+	emojiSingleTitle: 'From an image',
 	emojiNameLabel: 'Emoji name (letters, numbers, _ and -)',
 	emojiAltLabel: 'Description (optional)',
 	emojiUpload: 'Add emoji',
@@ -610,7 +610,7 @@ export const en: Messages = {
 	emojiDeleteFailed: 'Could not delete the emoji',
 	emojiLoadFailed: 'Could not load your emoji',
 	emojiDeleteConfirm: (p: { emoji: string }) => `Delete ${p.emoji} from your PDS?`,
-	emojiBatchTitle: 'Add multiple emoji',
+	emojiBatchTitle: 'Make in bulk',
 	emojiBatchNote:
 		'Folders include their subfolders. File names become emoji names and can be reviewed before adding.',
 	emojiSelectFolder: 'Choose folder',
@@ -630,6 +630,29 @@ export const en: Messages = {
 	emojiBatchStateProcessing: 'Adding',
 	emojiBatchStateSuccess: 'Added',
 	emojiBatchStateFailed: 'Could not add',
+	emojiGenerateTitle: 'Make with AI',
+	emojiGenerateNote:
+		'Describe the emoji you want and bot-tan draws it. A short word like “LGTM” becomes a lettering emoji, and a description like “a penguin doing a fist pump” becomes a picture. Drawing takes a few minutes, and you can move to other pages in the meantime.',
+	emojiGeneratePromptLabel: 'What should bot-tan draw?',
+	emojiGeneratePromptPlaceholder: 'e.g. a penguin doing a fist pump',
+	emojiGenerateSubmit: 'Ask to draw',
+	emojiGenerateSubmitting: 'Asking…',
+	emojiGenerateAccepted: (p: { minutes: number }) =>
+		`Got it (about ${p.minutes} min). You can leave this page — we'll notify you when it's ready.`,
+	emojiGenerateAlreadyActive: 'bot-tan is still drawing your last request. Try again once it is done.',
+	emojiGenerateBusy: 'Busy right now. Please try again in a little while.',
+	emojiGenerateInappropriate: 'bot-tan can’t draw that.',
+	emojiGenerateUnavailable: 'Emoji drawing is not available right now.',
+	emojiGenerateRequestFailed: 'Could not send the request',
+	emojiGenerateQueued: (p: { ahead: number }) =>
+		p.ahead === 0 ? 'Up next' : `Waiting (${p.ahead} ahead)`,
+	emojiGenerateRunning: 'Drawing',
+	emojiGenerateRedrawing: 'Drawing again — it will replace this one when done',
+	emojiGenerateFailed: 'bot-tan couldn’t draw this one. Try asking in a different way.',
+	emojiGenerateChoose: 'Press “Add emoji” if you like it, or ask bot-tan to draw it again.',
+	emojiGenerateAgain: 'Draw it again',
+	emojiGenerateRegisteredNotice: (p: { name: string }) => `Added :${p.name}:`,
+	emojiGenerateRegistered: 'Added',
 
 	heroEyebrow: 'An all-affirming social network powered by the AT Protocol',
 	heroTitle: 'A calm place for gentle words',
@@ -661,6 +684,7 @@ export const en: Messages = {
 	notifDiarySuffix: ' wrote your diary for today',
 	notifAnalysisSuffix: ' updated your card',
 	notifGiftSuffix: ' received a card you shared',
+	notifEmojiSuffix: ' finished drawing your emoji',
 	notifUnreadBadgeAria: (p: { count: number }) => `${p.count} unread notifications`,
 
 	nameCardTitle: 'Card',

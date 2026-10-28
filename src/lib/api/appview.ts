@@ -19,6 +19,7 @@ import type {
 	DraftView,
 	DiaryPage,
 	DrawCardResult,
+	EmojiGenerationView,
 	GuestCardDrawResult,
 	EmojiView,
 	LinkCardView,
@@ -819,6 +820,24 @@ export const takeBoardCard = (input: { card: { volume: number; id: number }; pri
 		'com.suibari.nagi.takeBoardCard',
 		'/xrpc/com.suibari.nagi.takeBoardCard',
 		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
+/**
+ * botたんに絵文字を描いてもらう。描き終えると通知が届くので、待たずに画面を離れてよい。
+ * 未完了の依頼は1人1件で、重なると already_active。
+ */
+export const createEmojiGeneration = (prompt: string) =>
+	call<{ generation: EmojiGenerationView; estimatedWaitSeconds: number }>(
+		'com.suibari.nagi.createEmojiGeneration',
+		'/xrpc/com.suibari.nagi.createEmojiGeneration',
+		{ method: 'POST', body: JSON.stringify({ prompt }) },
+		'required',
+	);
+export const getEmojiGenerations = () =>
+	call<{ generations: EmojiGenerationView[] }>(
+		'com.suibari.nagi.getEmojiGenerations',
+		'/xrpc/com.suibari.nagi.getEmojiGenerations',
+		undefined,
 		'required',
 	);
 /**

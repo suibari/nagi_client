@@ -461,11 +461,16 @@ export async function retryEmojiRequest<T>(request: () => Promise<T>): Promise<T
 	}
 }
 
+/**
+ * options.aiGenerated は botたん（画像生成）が描いた絵文字。投稿と同じ ai-generated セルフラベルを付ける
+ * （blue.moji.collection.item の labels）。
+ */
 export async function createBluemojiItem(
 	name: string,
 	blob: Blob,
 	alt = '',
 	rkey = createBluemojiRkey(),
+	options: { aiGenerated?: boolean } = {},
 ) {
 	const s = current();
 	const agent = new Agent(s);
@@ -510,6 +515,14 @@ export async function createBluemojiItem(
 						name: alias,
 						...(alt ? { alt } : {}),
 						adultOnly: false,
+						...(options.aiGenerated
+							? {
+									labels: {
+										$type: 'com.atproto.label.defs#selfLabels',
+										values: [{ val: 'ai-generated' }],
+									},
+								}
+							: {}),
 						fallbackText: '◌',
 						createdAt,
 						formats,

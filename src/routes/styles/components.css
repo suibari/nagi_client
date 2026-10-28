@@ -2544,6 +2544,80 @@ button.emoji-return {
 .emoji-settings-item:focus-within .emoji-sort-remove {
 	opacity: 1;
 }
+.emoji-generate-form {
+	display: grid;
+	gap: 10px;
+	margin: 16px 0;
+}
+.emoji-generate-form label {
+	min-width: 0;
+	margin: 0;
+}
+.emoji-generate-item {
+	display: grid;
+	gap: 8px;
+	padding: 10px;
+	border-radius: var(--radius-m);
+	background: var(--bg-inset);
+}
+.emoji-generate-item.failed {
+	opacity: 0.75;
+}
+.emoji-generate-head {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+.emoji-generate-head strong {
+	overflow-wrap: anywhere;
+	color: var(--text-strong);
+}
+.emoji-generate-head small {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--text-muted);
+}
+/* 透過したまま、縦横比どおりに出す（横長の絵文字も縮めない） */
+.emoji-generate-candidate {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	min-height: 72px;
+}
+.emoji-generate-preview {
+	position: relative;
+	display: grid;
+	place-items: center;
+	min-width: 72px;
+	min-height: 64px;
+}
+.emoji-generate-preview.busy img {
+	opacity: 0.35;
+}
+.emoji-generate-spinner {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+}
+.emoji-generate-candidate img {
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 64px;
+}
+/* 「画像から作成」の登録ボタンと同じく、横いっぱいに伸ばさない */
+.emoji-generate-item > button {
+	justify-self: start;
+}
+.emoji-generate-item label {
+	margin: 4px 0 0;
+}
+.emoji-generate-item .error {
+	margin: 0;
+}
 .emoji-batch-actions {
 	display: flex;
 	flex-wrap: wrap;
