@@ -638,7 +638,7 @@ export const en: Messages = {
 	emojiGenerateSubmit: 'Ask to draw',
 	emojiGenerateSubmitting: 'Asking…',
 	emojiGenerateAccepted: (p: { minutes: number }) =>
-		`Got it (about ${p.minutes} min). You can leave this page — we'll notify you when it's ready.`,
+		`Got it (about ${p.minutes} min). You can leave this page and return here to see the result.`,
 	emojiGenerateAlreadyActive: 'bot-tan is still drawing your last request. Try again once it is done.',
 	emojiGenerateBusy: 'Busy right now. Please try again in a little while.',
 	emojiGenerateInappropriate: 'bot-tan can’t draw that.',

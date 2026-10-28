@@ -652,7 +652,7 @@ export const ja = {
 	emojiGenerateSubmit: '描いてもらう',
 	emojiGenerateSubmitting: '頼んでいます…',
 	emojiGenerateAccepted: (p: { minutes: number }) =>
-		`受け付けました（目安：約${p.minutes}分）。ほかの画面に移動しても大丈夫です。描きあがったら通知でお知らせします。`,
+		`受け付けました（目安：約${p.minutes}分）。ほかの画面に移動しても大丈夫です。結果はこの画面で確認できます。`,
 	emojiGenerateAlreadyActive: '描いている途中の依頼があります。描きあがってから次を頼んでください。',
 	emojiGenerateBusy: 'いまは混み合っています。しばらくしてからもう一度頼んでください。',
 	emojiGenerateInappropriate: 'この内容は描けません。',

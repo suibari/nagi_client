@@ -36,7 +36,7 @@
 	};
 	type EmojiTab = 'generate' | 'single' | 'batch' | 'mine';
 
-	// 「描きあがりました」の通知は ?tab=generate で来る（既定も「AIでつくる」）
+	// 既定は「AIでつくる」。クエリでほかのタブも直接開ける。
 	const initialTab = page.url.searchParams.get('tab');
 	let activeTab = $state<EmojiTab>(
 		initialTab === 'single' || initialTab === 'batch' || initialTab === 'mine'

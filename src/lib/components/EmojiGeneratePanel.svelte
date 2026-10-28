@@ -92,7 +92,7 @@
 	$effect(() => {
 		void load();
 	});
-	// 描いている途中のあいだだけ見に行く。描きあがった通知でここに来たときは1回読めば足りる
+	// 描いている途中のあいだだけ見に行く。完了後に画面を開いたときは1回読めば足りる
 	$effect(() => {
 		if (!active) return;
 		const timer = setInterval(() => void load(), POLL_MS);
