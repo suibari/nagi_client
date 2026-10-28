@@ -29,7 +29,9 @@ export function detectComposerSuggestionToken(
 			query: tag[3],
 			marker: tag[2] as '#' | '＃',
 		};
-	const emoji = /(^|[\s(\[{]):([A-Za-z0-9_-]+)$/.exec(before);
+	// 絵文字は意味でも探すので、名前に使えない日本語（:ねこ）も検索語として受ける。
+	// 記号は受けない（顔文字の :) や URL の途中を候補にしない）。
+	const emoji = /(^|[\s(\[{]):([\p{L}\p{N}_-]+)$/u.exec(before);
 	if (emoji?.[2])
 		return {
 			kind: 'emoji',
@@ -39,16 +41,18 @@ export function detectComposerSuggestionToken(
 		};
 }
 
+/** カスタム絵文字は :name: に、Unicode 絵文字はその文字に置き換える。 */
 export function replaceEmojiSuggestion(
 	value: string,
 	token: Extract<ComposerSuggestionToken, { kind: 'emoji' }>,
-	emoji: EmojiView,
+	emoji: EmojiView | string,
 ) {
-	const text = `${value.slice(0, token.start)}${emoji.name}${value.slice(token.end)}`;
+	const inserted = typeof emoji === 'string' ? emoji.normalize('NFC') : emoji.name;
+	const text = `${value.slice(0, token.start)}${inserted}${value.slice(token.end)}`;
 	return {
 		text,
 		start: token.start,
-		end: token.start + emoji.name.length,
-		delta: emoji.name.length - (token.end - token.start),
+		end: token.start + inserted.length,
+		delta: inserted.length - (token.end - token.start),
 	};
 }

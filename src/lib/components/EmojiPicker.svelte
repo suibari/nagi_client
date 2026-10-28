@@ -15,11 +15,7 @@
 		searchAvailableBluemoji,
 		type AvailableEmojiCursor,
 	} from '$lib/atproto/bluemoji';
-	import {
-		loadUnicodeEmojiIndex,
-		searchUnicodeEmojis,
-		type UnicodeEmoji,
-	} from '$lib/emoji/unicodeSearch';
+	import { searchEmojiSuggestions, type EmojiSearchResult } from '$lib/emoji/emojiSearch';
 	import type { EmojiView } from '$lib/api/types';
 	import { reactionChoiceKey, type ReactionChoice } from '$lib/emoji/reactionUsage';
 	import { loadFavorites, saveFavorites } from '$lib/emoji/favorites';
@@ -75,18 +71,16 @@
 	let customMoreError = $state(false);
 	let customRequestId = 0;
 	let unicodeInput = $state<HTMLInputElement>();
-	let unicodeQuery = $state('');
-	let unicodeIndex = $state<UnicodeEmoji[]>([]);
-	let unicodeLoading = $state(false);
-	let unicodeError = $state(false);
-	let unicodeRequested = false;
+	let results = $state<EmojiSearchResult>({ custom: [], unicode: [] });
+	let resultsLoading = $state(false);
+	let resultsError = $state(false);
+	let resultsRequestId = 0;
 	/** Web Component のクリック直前に控えた Shift 状態（連続選択の判定用）。 */
 	let pickerShift = false;
 
-	const unicodeSearching = $derived(unicodeQuery.trim().length > 0);
-	const unicodeResults = $derived(
-		unicodeSearching ? searchUnicodeEmojis(unicodeIndex, unicodeQuery, 60) : [],
-	);
+	// 検索欄は Unicode とカスタムのタブで共有し、語があればどちらのタブでも同じ結果を出す。
+	const searching = $derived(query.trim().length > 0);
+	const resultsEmpty = $derived(!results.custom.length && !results.unicode.length);
 	const returnTo = $derived(encodeURIComponent(`${page.url.pathname}${page.url.search}`));
 	const addCustomHref = $derived(`/emoji?returnTo=${returnTo}`);
 	const favoritesSettingsHref = $derived(`/emoji?returnTo=${returnTo}#favorites`);
@@ -94,33 +88,48 @@
 	const persistFavorites = (items: FavoriteItem[]) =>
 		saveFavorites(items.map((item) => item.choice));
 
-	// 検索データ（ja+en）は初回入力時にだけ取りに行く。以降はメモリ上で絞り込む。
-	async function ensureUnicodeIndex() {
-		if (unicodeRequested) return;
-		unicodeRequested = true;
-		unicodeLoading = true;
-		try {
-			unicodeIndex = await loadUnicodeEmojiIndex(i18n.locale);
-			unicodeError = false;
-		} catch {
-			unicodeRequested = false;
-			unicodeError = true;
-		} finally {
-			unicodeLoading = false;
-		}
-	}
-
 	const VIEWPORT_MARGIN = 16;
 	const ANCHOR_GAP = 8;
 	const DESKTOP_BREAKPOINT = 768;
 	const PICKER_WIDTH = 352;
 	const PICKER_HEIGHT = 440;
 
-	// 本人分はPDSキャッシュ、他ユーザー分はAppView検索。打鍵ごとに叩かないよう少し待つ。
+	// 打鍵ごとに叩かないよう少し待つ。
 	const SEARCH_DEBOUNCE_MS = 250;
+	// 検索: 名前と意味で探し、カスタム絵文字を Unicode 絵文字より上に並べる。
 	$effect(() => {
-		if (tab !== 'custom') return;
 		const q = query.trim();
+		if (tab === 'favorites' || !q) return;
+		const requestId = ++resultsRequestId;
+		const controller = new AbortController();
+		resultsLoading = true;
+		const timer = setTimeout(async () => {
+			try {
+				const result = await searchEmojiSuggestions({
+					q,
+					limit: 60,
+					includeUnicode: true,
+					locale: i18n.locale,
+					signal: controller.signal,
+				});
+				if (requestId !== resultsRequestId) return;
+				results = result;
+				resultsError = false;
+			} catch {
+				if (requestId === resultsRequestId && !controller.signal.aborted) resultsError = true;
+			} finally {
+				if (requestId === resultsRequestId) resultsLoading = false;
+			}
+		}, SEARCH_DEBOUNCE_MS);
+		return () => {
+			controller.abort();
+			clearTimeout(timer);
+		};
+	});
+
+	// 一覧: 検索語が無いときのカスタムタブ。本人分はPDSキャッシュ、他ユーザー分はAppView。
+	$effect(() => {
+		if (tab !== 'custom' || searching) return;
 		const requestId = ++customRequestId;
 		let cancelled = false;
 		customLoading = true;
@@ -129,7 +138,7 @@
 		customMoreError = false;
 		const timer = setTimeout(async () => {
 			try {
-				const result = await searchAvailableBluemoji({ q: q || undefined, limit: 60 });
+				const result = await searchAvailableBluemoji({ limit: 60 });
 				if (!cancelled && requestId === customRequestId) {
 					customEmojis = result.emojis;
 					customCursor = result.cursor;
@@ -154,8 +163,7 @@
 		customLoadingMore = true;
 		customMoreError = false;
 		try {
-			const q = query.trim();
-			const result = await searchAvailableBluemoji({ q: q || undefined, limit: 60, cursor });
+			const result = await searchAvailableBluemoji({ limit: 60, cursor });
 			if (requestId !== customRequestId) return;
 			const known = new Set(customEmojis.map((emoji) => emoji.uri));
 			customEmojis = [...customEmojis, ...result.emojis.filter((emoji) => !known.has(emoji.uri))];
@@ -336,40 +344,53 @@
 			<a class="emoji-custom-add" href={favoritesSettingsHref}>{m.emojiFavoriteAdd()}</a>
 		</div>
 	{/if}
+	{#snippet searchResults()}
+		<div class="emoji-unicode-results">
+			{#if resultsError}
+				<p class="emoji-custom-empty">{m.emojiSearchFailed()}</p>
+			{:else if resultsLoading && resultsEmpty}
+				<Spinner />
+			{:else if resultsEmpty}
+				<p class="emoji-custom-empty">{m.emojiUnicodeEmpty()}</p>
+			{:else}
+				<!-- カスタム絵文字を常に先に並べる。それぞれの中は名前の一致 → 意味の近さの順。 -->
+				<div class="emoji-custom-grid">
+					{#each results.custom as emoji (emoji.uri)}
+						<button
+							class="emoji-custom-item"
+							title={displayEmojiName(emoji.name)}
+							aria-label={choiceAriaLabel(displayEmojiName(emoji.name))}
+							onclick={(event) => select(emoji, event.shiftKey)}
+						>
+							<BluemojiMedia {emoji} />
+						</button>
+					{/each}
+					{#each results.unicode as emoji (emoji.emoji)}
+						<button
+							class="emoji-custom-item emoji-unicode-item"
+							title={emoji.label}
+							aria-label={choiceAriaLabel(emoji.label)}
+							onclick={(event) => select(emoji.emoji, event.shiftKey)}
+						>
+							{emoji.emoji}
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	{/snippet}
 	<div class="emoji-panel emoji-unicode" hidden={tab !== 'unicode'}>
 		<input
 			class="emoji-search"
 			type="search"
 			bind:this={unicodeInput}
-			bind:value={unicodeQuery}
-			oninput={ensureUnicodeIndex}
+			bind:value={query}
 			placeholder={m.emojiSearchLabel()}
 			aria-label={m.emojiSearchLabel()}
 		/>
-		<div class="emoji-unicode-host" bind:this={unicodeHost} hidden={unicodeSearching}></div>
-		{#if unicodeSearching}
-			<div class="emoji-unicode-results">
-				{#if unicodeError}
-					<p class="emoji-custom-empty">{m.emojiSearchFailed()}</p>
-				{:else if unicodeLoading && !unicodeIndex.length}
-					<Spinner />
-				{:else if !unicodeResults.length}
-					<p class="emoji-custom-empty">{m.emojiUnicodeEmpty()}</p>
-				{:else}
-					<div class="emoji-custom-grid">
-						{#each unicodeResults as emoji (emoji.emoji)}
-							<button
-								class="emoji-custom-item emoji-unicode-item"
-								title={emoji.label}
-								aria-label={choiceAriaLabel(emoji.label)}
-								onclick={(event) => select(emoji.emoji, event.shiftKey)}
-							>
-								{emoji.emoji}
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</div>
+		<div class="emoji-unicode-host" bind:this={unicodeHost} hidden={searching}></div>
+		{#if searching && tab === 'unicode'}
+			{@render searchResults()}
 		{/if}
 	</div>
 	{#if tab === 'custom'}
@@ -381,7 +402,9 @@
 				placeholder={m.emojiSearchLabel()}
 				aria-label={m.emojiSearchLabel()}
 			/>
-			{#if customError}
+			{#if searching}
+				{@render searchResults()}
+			{:else if customError}
 				<p class="emoji-custom-empty">{m.emojiSearchFailed()}</p>
 			{:else if customLoading && !customEmojis.length}
 				<Spinner />

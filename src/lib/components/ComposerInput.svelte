@@ -3,13 +3,13 @@
 	import { createTypeaheadSearch } from '$lib/api/useTypeaheadSearch.svelte';
 	import type { ActorView, EmojiView, TagSuggestionView } from '$lib/api/types';
 	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
-	import { m } from '$lib/i18n/i18n.svelte';
+	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { portal } from '$lib/actions/portal';
 	import ActorSuggestionList from './ActorSuggestionList.svelte';
 	import EmojiSuggestionList from './EmojiSuggestionList.svelte';
 	import TagSuggestionList from './TagSuggestionList.svelte';
 	import type { MarkdownFormat } from './MarkdownPalette.svelte';
-	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
+	import { searchEmojiSuggestions, type EmojiSuggestion } from '$lib/emoji/emojiSearch';
 	import {
 		detectComposerSuggestionToken,
 		replaceEmojiSuggestion,
@@ -84,15 +84,26 @@
 				(actor.displayName?.toLowerCase().includes(query) ?? false),
 		},
 	);
-	const emojiSuggest = createTypeaheadSearch<EmojiView>(
+	const EMOJI_SUGGESTION_CUSTOM_LIMIT = 10;
+	const EMOJI_SUGGESTION_UNICODE_LIMIT = 5;
+	// 名前と意味で探し、カスタム絵文字の後ろに Unicode 絵文字を続ける。
+	// 意味で当たった候補は名前に検索語を含まないので、応答待ちの絞り込み（matches）は使わない
+	// （使うと打鍵のたびに候補が消える）。前回の候補を出したまま応答を待つ。
+	const emojiSuggest = createTypeaheadSearch<EmojiSuggestion>(
 		(query, signal) =>
-			searchAvailableBluemoji({ q: query, limit: 10, signal }).then((result) => result.emojis),
-		{
-			debounceMs: 80,
-			leading: true,
-			matches: (emoji, query) =>
-				displayEmojiName(emoji.name).toLowerCase().includes(query.toLowerCase()),
-		},
+			searchEmojiSuggestions({
+				q: query,
+				limit: EMOJI_SUGGESTION_CUSTOM_LIMIT,
+				includeUnicode: true,
+				locale: i18n.locale,
+				signal,
+			}).then((result) => [
+				...result.custom.map((emoji) => ({ kind: 'custom' as const, emoji })),
+				...result.unicode
+					.slice(0, EMOJI_SUGGESTION_UNICODE_LIMIT)
+					.map((emoji) => ({ kind: 'unicode' as const, ...emoji })),
+			]),
+		{ debounceMs: 80, leading: true },
 	);
 	const tagSuggest = createTypeaheadSearch<TagSuggestionView>(
 		(query, signal) => searchTags(query, 10, signal).then((result) => result.tags),
@@ -630,15 +641,20 @@
 		focusEditor();
 	}
 
-	function chooseEmoji(emoji: EmojiView) {
+	function chooseEmoji(suggestion: EmojiSuggestion) {
 		if (!token || token.kind !== 'emoji') return;
-		const replacement = replaceEmojiSuggestion(value, token, emoji);
+		const replacement = replaceEmojiSuggestion(value, token, suggestion.emoji);
 		value = replacement.text;
 		mentions = shiftedSelections(mentions, token.start, token.end, replacement.delta);
-		emojis = [
-			...shiftedSelections(emojis, token.start, token.end, replacement.delta),
-			{ start: replacement.start, end: replacement.end, emoji },
-		].sort((a, b) => a.start - b.start);
+		const shifted = shiftedSelections(emojis, token.start, token.end, replacement.delta);
+		// Unicode 絵文字は文字そのものなので、参照範囲として追跡しない。
+		emojis =
+			suggestion.kind === 'custom'
+				? [
+						...shifted,
+						{ start: replacement.start, end: replacement.end, emoji: suggestion.emoji },
+					].sort((a, b) => a.start - b.start)
+				: shifted;
 		const caret = replacement.end;
 		setText(value, caret);
 		close();

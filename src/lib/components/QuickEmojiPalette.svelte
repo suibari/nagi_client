@@ -4,7 +4,8 @@
 	import { untrack } from 'svelte';
 	import { portal } from '$lib/actions/portal';
 	import type { EmojiView } from '$lib/api/types';
-	import { displayEmojiName, searchAvailableBluemoji } from '$lib/atproto/bluemoji';
+	import { displayEmojiName } from '$lib/atproto/bluemoji';
+	import { searchEmojiSuggestions, type EmojiSearchResult } from '$lib/emoji/emojiSearch';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import {
@@ -58,7 +59,8 @@
 	let favorites = $state<ReactionChoice[]>([]);
 	let recentItems = $state<ReactionChoice[]>([]);
 	let quickQuery = $state('');
-	let quickCustomResults = $state<EmojiView[]>([]);
+	/** サーバーの検索結果（名前 + 意味）。どの検索語に対する結果かも持つ。 */
+	let quickSearchResult = $state<{ q: string; result: EmojiSearchResult }>();
 	let quickSearchRequestId = 0;
 	let unicodeIndex = $state<UnicodeEmoji[]>([]);
 	let unicodeRequested = false;
@@ -73,34 +75,45 @@
 	const QUICK_MIN_COLUMNS = 3;
 	const QUICK_MAX_FAVORITE_ROWS = 3;
 	const quickSearching = $derived(quickQuery.trim().length > 0);
+	// カスタム絵文字を常に先に並べる。それぞれの中は名前の一致 → 意味の近さの順（AppView が決める）。
+	// 応答待ちの間は、手元の Unicode 検索（名前の一致だけ）を即座に出しておく。
 	const quickResults = $derived.by(() => {
 		const q = quickQuery.trim();
 		if (!q) return [] as ReactionChoice[];
-		const custom: ReactionChoice[] = quickCustomResults
+		const remote = quickSearchResult?.q === q ? quickSearchResult.result : undefined;
+		const custom: ReactionChoice[] = (remote?.custom ?? [])
 			.filter((emoji) => !failedCustomUris.includes(emoji.uri))
 			.slice(0, 12)
 			.map((emoji) => ({ kind: 'custom', emoji }));
-		const unicode: ReactionChoice[] = searchUnicodeEmojis(unicodeIndex, q, 24).map((item) => ({
-			kind: 'unicode',
-			emoji: item.emoji,
-		}));
+		const unicode: ReactionChoice[] = (
+			remote?.unicode ?? searchUnicodeEmojis(unicodeIndex, q, 24)
+		).map((item) => ({ kind: 'unicode', emoji: item.emoji }));
 		return [...custom, ...unicode];
 	});
 
 	$effect(() => {
 		const q = quickQuery.trim();
 		const requestId = ++quickSearchRequestId;
-		quickCustomResults = [];
 		if (!q) return;
+		const controller = new AbortController();
 		const timer = setTimeout(async () => {
 			try {
-				const result = await searchAvailableBluemoji({ q, limit: 12 });
-				if (requestId === quickSearchRequestId) quickCustomResults = result.emojis;
+				const result = await searchEmojiSuggestions({
+					q,
+					limit: 24,
+					includeUnicode: true,
+					locale: i18n.locale,
+					signal: controller.signal,
+				});
+				if (requestId === quickSearchRequestId) quickSearchResult = { q, result };
 			} catch {
-				// Unicode検索は継続する。次の入力でBluemoji検索を再試行する。
+				// 手元の Unicode 検索を出したままにする。次の入力で再試行する。
 			}
 		}, 250);
-		return () => clearTimeout(timer);
+		return () => {
+			controller.abort();
+			clearTimeout(timer);
+		};
 	});
 
 	async function ensureUnicodeIndex() {
