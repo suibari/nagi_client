@@ -8,6 +8,8 @@ export type BlogDirectoryItem = IndexableBlog & {
 	description: string;
 	tags: string[];
 	headerImage?: string;
+	optimisticKey?: string;
+	optimisticState?: 'sending' | 'indexing';
 };
 
 const normalize = (value: string) => value.trim().toLocaleLowerCase();
@@ -77,8 +79,11 @@ export function blogMatches(item: BlogDirectoryItem, query: string): boolean {
 let memo: Promise<BlogDirectoryItem[]> | undefined;
 
 /** 公開ブログ一覧に、各 standard.site document が持つタグと概要を付ける。 */
-export function fetchBlogDirectory(): Promise<BlogDirectoryItem[]> {
-	return (memo ??= fetchIndexableBlogs().then((posts) =>
+export function fetchBlogDirectory(
+	options: { refresh?: boolean } = {},
+): Promise<BlogDirectoryItem[]> {
+	if (options.refresh) memo = undefined;
+	return (memo ??= fetchIndexableBlogs(options).then((posts) =>
 		Promise.all(
 			posts.map(async (post) => {
 				const location = blogDocumentLocation(post.uri);

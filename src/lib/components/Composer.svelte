@@ -515,6 +515,9 @@
 			...(replyPost && { replyParent: replyPost }),
 			...(quotedPost && { quote: quotedPost }),
 			threadKossori: kossori,
+			...(article && {
+				articleTags: [...new Set([...tagsFromFacets(draft.facets), ...articleTags])],
+			}),
 		});
 		// 表示中のフィードに楽観カードが出たらそこへ、確定したらその投稿へ画面を寄せる。
 		// 出せないフィード（検索タブなど）や投稿できない画面では導線へ切り替わる。

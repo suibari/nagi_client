@@ -1,4 +1,5 @@
 import type { ActorView, FeedItem, PostVideoView, PostView } from '$lib/api/types';
+import { buildBlogDirectoryItem, type BlogDirectoryItem } from '$lib/blog/directory';
 import type { PostDraft } from '$lib/atproto/records';
 import { blueskyVideoUrls } from '$lib/video';
 
@@ -18,6 +19,9 @@ function optimisticVideo(did: string, video: PostDraft['video']): PostVideoView 
 
 class OptimisticPosts {
 	entries = $state<Entry[]>([]);
+	blogs = $state<
+		(BlogDirectoryItem & { optimisticKey: string; optimisticState: 'sending' | 'indexing' })[]
+	>([]);
 	#actors = new Map<string, ActorView>();
 
 	get items(): FeedItem[] {
@@ -42,6 +46,7 @@ class OptimisticPosts {
 			replyParent?: PostView;
 			quote?: PostView;
 			threadKossori?: boolean;
+			articleTags?: string[];
 		} = {},
 	) {
 		const id = crypto.randomUUID();
@@ -95,10 +100,23 @@ class OptimisticPosts {
 			optimisticKey: id,
 		};
 		this.entries = [{ id, item, objectUrls }, ...this.entries];
+		if (draft.article) {
+			this.blogs = [
+				{
+					...buildBlogDirectoryItem(item, { tags: context.articleTags ?? [] }),
+					optimisticKey: id,
+					optimisticState: 'sending',
+				},
+				...this.blogs,
+			];
+		}
 		return id;
 	}
 
 	markCreated(id: string, result: { uri: string; cid: string }) {
+		this.blogs = this.blogs.map((item) =>
+			item.optimisticKey === id ? { ...item, uri: result.uri, optimisticState: 'indexing' } : item,
+		);
 		this.entries = this.entries.map((entry) =>
 			entry.id === id
 				? { ...entry, item: { ...entry.item, ...result, optimisticState: 'indexing' } }
@@ -116,6 +134,7 @@ class OptimisticPosts {
 	}
 
 	remove(id: string) {
+		this.blogs = this.blogs.filter((item) => item.optimisticKey !== id);
 		const entry = this.entries.find((candidate) => candidate.id === id);
 		entry?.objectUrls.forEach(URL.revokeObjectURL);
 		this.entries = this.entries.filter((candidate) => candidate.id !== id);
