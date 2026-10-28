@@ -88,8 +88,8 @@
 		unicodeSearching ? searchUnicodeEmojis(unicodeIndex, unicodeQuery, 60) : [],
 	);
 	const returnTo = $derived(encodeURIComponent(`${page.url.pathname}${page.url.search}`));
-	const addCustomHref = $derived(`/settings/emoji?returnTo=${returnTo}`);
-	const favoritesSettingsHref = $derived(`/settings/emoji-favorites?returnTo=${returnTo}`);
+	const addCustomHref = $derived(`/emoji?returnTo=${returnTo}`);
+	const favoritesSettingsHref = $derived(`/emoji?returnTo=${returnTo}#favorites`);
 
 	const persistFavorites = (items: FavoriteItem[]) =>
 		saveFavorites(items.map((item) => item.choice));

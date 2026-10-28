@@ -37,6 +37,10 @@
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
 		{
+			"source": "/emoji",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+		},
+		{
 			"source": "/feed",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
@@ -85,6 +89,7 @@
 		}
 	],
 	"rewrites": [
+		{ "source": "/emoji", "destination": "/200.html" },
 		{
 			"source": "/profile/:did",
 			"destination": "/api/spa?did=:did"

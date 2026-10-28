@@ -93,24 +93,6 @@
 			</div>
 		</section>
 
-		<section class="settings-group" aria-labelledby="settings-emoji-heading">
-			<h2 id="settings-emoji-heading">{m.settingsGroupEmoji()}</h2>
-			<div class="settings-categories">
-				<SettingsCategoryCard
-					href="/settings/emoji-favorites"
-					icon="heart"
-					title={m.emojiFavoritesSettingsTitle()}
-					description={m.emojiFavoritesSettingsDescription()}
-				/>
-				<SettingsCategoryCard
-					href="/settings/emoji"
-					icon="emoji"
-					title={m.emojiSettingsTitle()}
-					description={m.emojiSettingsDescription()}
-				/>
-			</div>
-		</section>
-
 		<section class="settings-group" aria-labelledby="settings-publishing-heading">
 			<h2 id="settings-publishing-heading">{m.settingsGroupPublishing()}</h2>
 			<div class="settings-categories">

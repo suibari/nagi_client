@@ -53,13 +53,14 @@ const radio: NavItem = {
 	icon: 'music',
 	badge: { unread: radioUnread, style: 'dot', aria: () => m.radioUnreadBadgeAria() },
 };
+const emoji: NavItem = { href: '/emoji', label: m.emojiSettingsTitle, icon: 'emoji' };
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
 
 /** PC の区切りも含めた表示順。グループを足せば区切り線も自動で増える。 */
 export const desktopNavGroups: NavItem[][] = [
 	[myNagi, feed, notifications],
 	[blog, news],
-	[diary, cards, radio],
+	[diary, cards, radio, emoji],
 	[settings],
 ];
 
@@ -67,7 +68,11 @@ export const desktopNavGroups: NavItem[][] = [
 export const mobilePrimaryItems: NavItem[] = [myNagi, feed, notifications];
 
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
-export const mobileMenuGroups: NavItem[][] = [[blog, news], [diary, cards, radio], [settings]];
+export const mobileMenuGroups: NavItem[][] = [
+	[blog, news],
+	[diary, cards, radio, emoji],
+	[settings],
+];
 export const mobileMenuItems: NavItem[] = mobileMenuGroups.flat();
 /** カード未プレイ・ラジオ未読・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
 export const mobileMenuNotice = derived(

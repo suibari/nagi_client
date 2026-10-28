@@ -65,7 +65,7 @@
 					icon: 'emojiPlus',
 					title: m.aboutCustomEmojiTitle,
 					body: m.aboutCustomEmojiBody,
-					href: '/settings/emoji',
+					href: '/emoji',
 				},
 				{
 					icon: 'language',
