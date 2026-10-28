@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
+	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
+	import { startVisiblePolling } from '$lib/polling';
+	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { afterNavigate } from '$app/navigation';
 	import BlogCard from '$lib/components/BlogCard.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
@@ -19,22 +22,31 @@
 	afterNavigate(({ to }) => {
 		selectedTag = (to?.url.searchParams.get('tag') ?? '').trim().replace(/^[#＃]+/, '');
 	});
+	let mergedItems = $derived([
+		...optimisticPosts.blogs.filter((pending) => !items.some((item) => item.uri === pending.uri)),
+		...items,
+	]);
+	$effect(() => {
+		if (postedSignal.count) untrack(() => void load(true));
+	});
 	let tags = $derived(
-		[...new Set(items.flatMap((item) => item.tags))].sort((a, b) => a.localeCompare(b)),
+		[...new Set(mergedItems.flatMap((item) => item.tags))].sort((a, b) => a.localeCompare(b)),
 	);
 	let visibleItems = $derived(
 		selectedTag
-			? items.filter((item) =>
+			? mergedItems.filter((item) =>
 					item.tags.some((tag) => tag.toLowerCase() === selectedTag.toLowerCase()),
 				)
-			: items,
+			: mergedItems,
 	);
 
-	async function load() {
-		loading = true;
+	async function load(refresh = false) {
+		loading = !mergedItems.length;
 		error = '';
 		try {
-			items = await fetchBlogDirectory();
+			items = await fetchBlogDirectory({ refresh });
+			const indexed = new Set(items.map((item) => item.uri));
+			optimisticPosts.blogs = optimisticPosts.blogs.filter((item) => !indexed.has(item.uri));
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : m.loadFailed();
 		} finally {
@@ -42,7 +54,12 @@
 		}
 	}
 
-	onMount(() => void load());
+	onMount(() => {
+		void load();
+		return startVisiblePolling(() => void load(true), 10_000, {
+			when: () => optimisticPosts.blogs.some((item) => item.optimisticState === 'indexing'),
+		});
+	});
 
 	function openBlogComposer() {
 		if (!$session) {
@@ -74,19 +91,22 @@
 		</nav>
 	{/if}
 
-	{#if loading}
+	{#if loading && !visibleItems.length}
 		<Spinner label={m.feedWaiting()} />
-	{:else if error}
+	{:else if error && !visibleItems.length}
 		<div class="state error">
-			{error}<button class="icon-action" aria-label={m.retry()} title={m.retry()} onclick={load}
-				><Icon name="refresh" size={18} /></button
+			{error}<button
+				class="icon-action"
+				aria-label={m.retry()}
+				title={m.retry()}
+				onclick={() => void load(true)}><Icon name="refresh" size={18} /></button
 			>
 		</div>
 	{:else if !visibleItems.length}
 		<div class="state">{selectedTag ? m.blogTagEmpty({ tag: selectedTag }) : m.blogEmpty()}</div>
 	{:else}
 		<div class="blog-list">
-			{#each visibleItems as item (item.uri)}
+			{#each visibleItems as item (item.optimisticKey ?? item.uri)}
 				<BlogCard {item} />
 			{/each}
 		</div>

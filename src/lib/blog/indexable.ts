@@ -2,7 +2,10 @@ import { listIndexableBlogs } from '$lib/api/appview';
 import type { IndexableBlog } from '$lib/api/types';
 
 export function blogPath(uri: string): string {
-	const match = /^at:\/\/(did:[^/]+)\/(?:com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(uri);
+	const match =
+		/^at:\/\/(did:[^/]+)\/(?:com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(
+			uri,
+		);
 	if (!match) throw new Error(`Invalid blog URI: ${uri}`);
 	return `/blog/${match[1]}/${match[2]}`;
 }
@@ -25,7 +28,8 @@ export async function collectIndexableBlogs(
 }
 
 let memo: Promise<IndexableBlog[]> | undefined;
-export function fetchIndexableBlogs(): Promise<IndexableBlog[]> {
+export function fetchIndexableBlogs(options: { refresh?: boolean } = {}): Promise<IndexableBlog[]> {
+	if (options.refresh) memo = undefined;
 	return (memo ??= collectIndexableBlogs(listIndexableBlogs).catch((error) => {
 		console.warn('[seo] 索引対象ブログを取得できませんでした:', error);
 		return [];

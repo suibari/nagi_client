@@ -609,6 +609,9 @@
 		class:bubble-created={post.optimisticState === 'indexing'}
 	>
 		{#if !managementOnly}
+			{#if post.article || post.uri.includes('/site.standard.document/')}
+				<span class="post-blog-label"><Icon name="newspaper" size={14} />{m.blogTitle()}</span>
+			{/if}
 			{#if articleHeader}
 				<div class="post-article-cover">
 					<ContentWarningMask
@@ -911,6 +914,19 @@
 {/if}
 
 <style>
+	.post-blog-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 8px;
+		margin-bottom: 8px;
+		border-radius: 6px;
+		background: var(--surface-2);
+		color: var(--text-muted);
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
 	.post-row.management-only {
 		display: block;
 		margin: 16px 0;

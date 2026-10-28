@@ -11,15 +11,26 @@
 	const resolve = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 </script>
 
-<article class="blog-card">
+<article class="blog-card" data-post-uri={item.uri} data-optimistic-key={item.optimisticKey}>
 	{#if item.headerImage}
-		<a class="blog-card-cover" href={blogPath(item.uri)} tabindex="-1" aria-hidden="true">
+		<a
+			class="blog-card-cover"
+			href={item.optimisticState === 'sending' ? undefined : blogPath(item.uri)}
+			tabindex="-1"
+			aria-hidden="true"
+		>
 			<img src={resolve(item.headerImage)} alt="" loading="lazy" />
 		</a>
 	{/if}
 	<div class="blog-card-content">
-		<a class="blog-card-main" href={blogPath(item.uri)}>
+		<a
+			class="blog-card-main"
+			href={item.optimisticState === 'sending' ? undefined : blogPath(item.uri)}
+		>
 			<h2>{item.title}</h2>
+			{#if item.optimisticState}<span class="post-sending" role="status"
+					>{item.optimisticState === 'sending' ? m.postSending() : m.postCreated()}</span
+				>{/if}
 			<p>{item.description}</p>
 			<span class="blog-card-byline">
 				{item.author.displayName ?? item.author.handle}
