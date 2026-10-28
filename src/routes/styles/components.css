@@ -1844,14 +1844,14 @@
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 auto;
-	min-width: 36px;
-	height: 36px;
+	min-width: 42px;
+	height: 42px;
 	border: 1px solid var(--line);
 	background: var(--surface-2);
 	border-radius: var(--r-md);
 	padding: 0 10px;
 	color: var(--text-sub);
-	font-size: 20px;
+	font-size: 28px;
 	line-height: 1;
 	transition: transform 0.1s ease;
 }
@@ -2389,8 +2389,8 @@ button.reaction-emoji:active {
 .reaction-image {
 	display: inline-flex;
 	width: auto;
-	height: 26px;
-	min-width: 26px;
+	height: 32px;
+	min-width: 32px;
 	max-width: 8em;
 	object-fit: contain;
 	vertical-align: -0.3em;
