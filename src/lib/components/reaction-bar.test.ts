@@ -23,15 +23,15 @@ describe('reaction bar presentation', () => {
 
 	it('keeps reaction chips large enough for expressive emoji', () => {
 		const emoji = cssRule('reaction-emoji');
-		expect(emoji).toMatch(/min-width:\s*36px;/);
-		expect(emoji).toMatch(/height:\s*36px;/);
+		expect(emoji).toMatch(/min-width:\s*42px;/);
+		expect(emoji).toMatch(/height:\s*42px;/);
 		expect(emoji).toMatch(/padding:\s*0 10px;/);
-		expect(emoji).toMatch(/font-size:\s*20px;/);
+		expect(emoji).toMatch(/font-size:\s*28px;/);
 		expect(emoji).toMatch(/background:\s*var\(--surface-2\);/);
 
 		const image = cssRule('reaction-image');
-		expect(image).toMatch(/height:\s*26px;/);
-		expect(image).toMatch(/min-width:\s*26px;/);
+		expect(image).toMatch(/height:\s*32px;/);
+		expect(image).toMatch(/min-width:\s*32px;/);
 	});
 
 	it('animates a reaction chip only while the button is pressed', () => {

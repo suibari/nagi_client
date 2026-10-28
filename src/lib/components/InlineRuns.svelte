@@ -29,15 +29,12 @@
 		>{:else}{@render formatted()}{/if}{/each}
 
 <style>
-	/*
-		高さは文字の選択ハイライト（フォントの ascent + descent、Noto Sans JP で約1.45em）に合わせる。
-		1.25em だと選択したときに絵文字だけ低く見えた。行の高さ（1.8〜2）の内側に収まる。
-	*/
+	/* 本文の絵文字は文字サイズの2倍に揃え、横長画像の比率も保つ。 */
 	:global(.inline-bluemoji) {
 		display: inline-flex;
-		min-width: 1.5em;
-		height: 1.5em;
-		vertical-align: -0.375em;
+		min-width: 2em;
+		height: 2em;
+		vertical-align: -0.5em;
 	}
 
 	:global(.inline-bluemoji img) {
@@ -47,7 +44,7 @@
 	}
 
 	:global(.inline-bluemoji canvas) {
-		width: 1.5em;
+		width: 2em;
 		height: 100%;
 	}
 </style>
