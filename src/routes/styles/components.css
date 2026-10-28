@@ -5499,3 +5499,54 @@ a.about-feature:focus-visible {
 	overflow: hidden;
 	mask-image: linear-gradient(to bottom, #000 70%, transparent);
 }
+
+/* Emoji is a full center-pane page, with the palette above creation and management. */
+.emoji-page {
+	min-width: 0;
+	padding: 0 16px 32px;
+}
+.emoji-favorites-section {
+	display: grid;
+	gap: 16px;
+	padding: 20px 0 24px;
+	border-bottom: 1px solid var(--line);
+	scroll-margin-top: 72px;
+}
+.emoji-page h2 {
+	margin: 0;
+	font-size: 17px;
+	color: var(--text-strong);
+}
+.emoji-page p {
+	margin: 0;
+	font-size: 14px;
+}
+.emoji-favorites-section .emoji-favorite-add {
+	justify-self: start;
+	padding: 9px 14px;
+}
+.emoji-custom-section {
+	min-width: 0;
+	padding-top: 24px;
+}
+.emoji-custom-section [role='tabpanel'] {
+	padding: 12px 0;
+	min-width: 0;
+}
+.emoji-page label input {
+	min-width: 0;
+	width: 100%;
+}
+.emoji-page .emoji-settings-tabs {
+	margin-top: 20px;
+}
+.emoji-page .emoji-settings-tabs button {
+	flex: 1 0 auto;
+}
+
+.emoji-page-title p {
+	margin: 10px 0 0;
+	color: var(--text-muted);
+	font-size: 14px;
+	line-height: 1.7;
+}

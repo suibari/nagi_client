@@ -31,7 +31,7 @@ for (const mode of ['single', 'batch', 'batch-retry'] as const) {
 			}),
 		);
 		await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
-		await page.goto('/settings/emoji');
+		await page.goto('/emoji');
 		await page.evaluate(async () => {
 			// @ts-expect-error Vite がブラウザ向けに解決するモジュール。
 			const { session } = await import('/src/lib/oauth/session.svelte.ts');

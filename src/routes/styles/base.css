@@ -188,11 +188,11 @@ img.mark {
 .auth-card h1 {
 	color: var(--text-strong);
 }
-.auth-card p {
+:is(.auth-card, .emoji-page) p {
 	color: var(--text-muted);
 	line-height: 1.7;
 }
-.auth-card label {
+:is(.auth-card, .emoji-page) label {
 	display: grid;
 	gap: 7px;
 	text-align: left;
@@ -201,8 +201,8 @@ img.mark {
 	font-size: 13px;
 	font-weight: 700;
 }
-.auth-card input,
-.auth-card textarea {
+:is(.auth-card, .emoji-page) input,
+:is(.auth-card, .emoji-page) textarea {
 	border: 1px solid var(--line-strong);
 	border-radius: var(--r-md);
 	padding: 13px;
@@ -211,8 +211,8 @@ img.mark {
 	color: var(--text);
 	resize: vertical;
 }
-.auth-card input:focus,
-.auth-card textarea:focus {
+:is(.auth-card, .emoji-page) input:focus,
+:is(.auth-card, .emoji-page) textarea:focus {
 	border-color: var(--accent);
 }
 .auth-card > button {
@@ -225,7 +225,7 @@ img.mark {
 	color: var(--accent-strong);
 	font-size: 13px;
 }
-.auth-card button:disabled {
+:is(.auth-card, .emoji-page) button:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
 }

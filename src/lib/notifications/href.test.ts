@@ -24,7 +24,7 @@ describe('notificationHref', () => {
 					reasonUri: 'at://did:plc:me/emoji-generation/0a1b',
 				}),
 			),
-		).toBe('/settings/emoji?tab=generate');
+		).toBe('/emoji?tab=generate');
 	});
 	it.each(['reaction', 'reply', 'mention'] as const)(
 		'routes %s subjects by collection even without an embedded post',
