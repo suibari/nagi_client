@@ -83,6 +83,17 @@ export class ApiRequestError extends Error {
 	}
 }
 
+/** 既存セッションの権限更新で回復できる認証・認可エラー。サービス未設定とは区別する。 */
+export function isAuthorizationError(error: unknown): boolean {
+	return (
+		error instanceof Error &&
+		'status' in error &&
+		(error.status === 401 ||
+			error.status === 403 ||
+			(error.status === 400 && /scope|permission/i.test(error.message)))
+	);
+}
+
 // セッションがあり認証を要する呼び出しは PDS 経由プロキシ、それ以外は appview 直 fetch。
 async function request(
 	path: string,
@@ -141,13 +152,7 @@ async function withPublicFallback<T>(
 	try {
 		return await call<T>(lxm, path, options);
 	} catch (error) {
-		if (
-			get(session) &&
-			error instanceof ApiRequestError &&
-			(error.status === 401 ||
-				error.status === 403 ||
-				(error.status === 400 && /scope|permission/i.test(error.message)))
-		) {
+		if (get(session) && isAuthorizationError(error)) {
 			return call<T>(lxm, path, options, 'none');
 		}
 		throw error;

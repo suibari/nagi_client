@@ -656,6 +656,7 @@ export const ja = {
 	emojiGenerateAlreadyActive: '描いている途中の依頼があります。描きあがってから次を頼んでください。',
 	emojiGenerateBusy: 'いまは混み合っています。しばらくしてからもう一度頼んでください。',
 	emojiGenerateInappropriate: 'この内容は描けません。',
+	emojiGeneratePermissionRequired: '絵文字をつくるにはログイン権限の更新が必要です。',
 	emojiGenerateUnavailable: 'いまは絵文字を描けません。',
 	emojiGenerateRequestFailed: '依頼できませんでした',
 	emojiGenerateQueued: (p: { ahead: number }) =>
