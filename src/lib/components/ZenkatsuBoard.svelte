@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { untrack } from 'svelte';
-	import { ApiRequestError, getZenkatsu } from '$lib/api/appview';
+	import { isAuthorizationError, getZenkatsu } from '$lib/api/appview';
 	import type {
 		CardAttribute,
 		CardView,
@@ -120,11 +120,7 @@
 			} catch (cause) {
 				if (!publicOnly && signedIn && version === loadVersion) {
 					viewerFailed = true;
-					needsAuthorization =
-						cause instanceof ApiRequestError &&
-						(cause.status === 401 ||
-							cause.status === 403 ||
-							(cause.status === 400 && /scope|permission/i.test(cause.message)));
+					needsAuthorization = isAuthorizationError(cause);
 				}
 				throw cause;
 			} finally {
