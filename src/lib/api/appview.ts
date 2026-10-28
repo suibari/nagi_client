@@ -22,6 +22,7 @@ import type {
 	EmojiGenerationView,
 	GuestCardDrawResult,
 	EmojiView,
+	UnicodeEmojiView,
 	LinkCardView,
 	MuteSubjectType,
 	MutesView,
@@ -526,6 +527,12 @@ export const searchActorsTypeahead = async (
 export const searchEmojis = (
 	opts: {
 		q?: string;
+		/** 名前に加えて意味でも探す。q が必要。1ページだけ返す（cursor は無い）。 */
+		semantic?: boolean;
+		/** semantic のとき、Unicode 絵文字も unicode に入れて返す。 */
+		includeUnicode?: boolean;
+		/** semantic のとき、名前の一致度が同じならこのリポジトリの絵文字を先に並べる。 */
+		preferRepo?: string;
 		repo?: string;
 		excludeRepo?: string;
 		limit?: number;
@@ -535,11 +542,14 @@ export const searchEmojis = (
 ) => {
 	const params = new URLSearchParams();
 	if (opts.q) params.set('q', opts.q);
+	if (opts.semantic) params.set('semantic', 'true');
+	if (opts.includeUnicode) params.set('includeUnicode', 'true');
+	if (opts.preferRepo) params.set('preferRepo', opts.preferRepo);
 	if (opts.repo) params.set('repo', opts.repo);
 	if (opts.excludeRepo) params.set('excludeRepo', opts.excludeRepo);
 	params.set('limit', String(Math.min(100, Math.max(1, opts.limit ?? 50))));
 	if (opts.cursor) params.set('cursor', opts.cursor);
-	return call<{ emojis: EmojiView[]; cursor?: string }>(
+	return call<{ emojis: EmojiView[]; unicode?: UnicodeEmojiView[]; cursor?: string }>(
 		'com.suibari.nagi.searchEmojis',
 		`/xrpc/com.suibari.nagi.searchEmojis?${params}`,
 		{ signal: opts.signal },

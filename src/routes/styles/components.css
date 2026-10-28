@@ -611,6 +611,10 @@
 	height: 30px;
 	object-fit: contain;
 }
+.emoji-suggestions .emoji-suggestion-unicode {
+	font-size: 24px;
+	line-height: 1;
+}
 .emoji-suggestions .emoji-suggestion-copy {
 	display: block;
 	min-width: 0;
@@ -2197,6 +2201,10 @@ button.reaction-emoji:active {
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
+}
+/* カスタムタブはパネル自体に余白があるので、検索結果側の余白を重ねない */
+.emoji-custom .emoji-unicode-results {
+	padding: 0;
 }
 .emoji-unicode-item {
 	font-size: 24px;

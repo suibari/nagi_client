@@ -15,12 +15,23 @@ describe('detectComposerSuggestionToken', () => {
 		expect(detectComposerSuggestionToken('hello :party_hat', 16, options)?.kind).toBe('emoji');
 	});
 
+	it('accepts a Japanese query because emoji are also searched by meaning', () => {
+		expect(detectComposerSuggestionToken(':ねこ', 3, options)).toEqual({
+			kind: 'emoji',
+			start: 0,
+			end: 3,
+			query: 'ねこ',
+		});
+		expect(detectComposerSuggestionToken('今日は :お疲れ', 8, options)?.kind).toBe('emoji');
+	});
+
 	it('does not treat punctuation, URLs, times, or an empty colon as an emoji query', () => {
 		expect(detectComposerSuggestionToken(':', 1, options)).toBeUndefined();
 		expect(detectComposerSuggestionToken('12:30', 5, options)).toBeUndefined();
 		expect(detectComposerSuggestionToken('https://example.com', 19, options)).toBeUndefined();
 		expect(detectComposerSuggestionToken('word:cat', 8, options)).toBeUndefined();
-		expect(detectComposerSuggestionToken(':猫', 2, options)).toBeUndefined();
+		expect(detectComposerSuggestionToken('時刻:猫', 4, options)).toBeUndefined();
+		expect(detectComposerSuggestionToken(':)', 2, options)).toBeUndefined();
 	});
 
 	it('detects mentions', () => {
@@ -66,5 +77,14 @@ describe('replaceEmojiSuggestion', () => {
 			end: 17,
 			delta: 7,
 		});
+	});
+
+	it('replaces the query with the character itself for a Unicode emoji', () => {
+		const result = replaceEmojiSuggestion(
+			'hello :ねこ world',
+			{ kind: 'emoji', start: 6, end: 9, query: 'ねこ' },
+			'🐱',
+		);
+		expect(result).toEqual({ text: 'hello 🐱 world', start: 6, end: 8, delta: -1 });
 	});
 });

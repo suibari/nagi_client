@@ -40,6 +40,12 @@ export type EmojiView = {
 	/** 他クライアントでも本文内Bluemojiを描画できる、公式richtext facet用スナップショット。 */
 	formats?: BluemojiFacetFormats;
 };
+/** 絵文字の意味検索（searchEmojis の semantic + includeUnicode）が返す Unicode 絵文字。 */
+export type UnicodeEmojiView = {
+	emoji: string;
+	labelJa: string;
+	labelEn: string;
+};
 export type ReactionView = {
 	emoji: string;
 	bluemoji?: EmojiView;
