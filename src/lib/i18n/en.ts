@@ -642,6 +642,7 @@ export const en: Messages = {
 	emojiGenerateAlreadyActive: 'bot-tan is still drawing your last request. Try again once it is done.',
 	emojiGenerateBusy: 'Busy right now. Please try again in a little while.',
 	emojiGenerateInappropriate: 'bot-tan can’t draw that.',
+	emojiGeneratePermissionRequired: 'Update your login permissions to create emoji.',
 	emojiGenerateUnavailable: 'Emoji drawing is not available right now.',
 	emojiGenerateRequestFailed: 'Could not send the request',
 	emojiGenerateQueued: (p: { ahead: number }) =>

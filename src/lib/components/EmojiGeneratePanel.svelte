@@ -1,8 +1,10 @@
 <script lang="ts">
+	import PermissionRefreshButton from '$lib/components/PermissionRefreshButton.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
 		ApiRequestError,
+		isAuthorizationError,
 		createEmojiGeneration,
 		getEmojiGenerations,
 	} from '$lib/api/appview';
@@ -42,6 +44,7 @@
 	let submitting = $state(false);
 	let notice = $state('');
 	let error = $state('');
+	let needsAuthorization = $state(false);
 	/** 登録中・登録済みの生成の id。候補は登録しても1日残るので、二重登録を防ぐ。 */
 	let registering = $state<string>();
 	let registered = $state(new Set<string>());
@@ -97,18 +100,14 @@
 	});
 
 	function requestErrorMessage(cause: unknown) {
+		needsAuthorization = false;
 		if (!(cause instanceof ApiRequestError)) return m.emojiGenerateRequestFailed();
 		if (cause.code === 'already_active') return m.emojiGenerateAlreadyActive();
 		if (cause.code === 'busy') return m.emojiGenerateBusy();
 		if (cause.code === 'inappropriate') return m.emojiGenerateInappropriate();
-		// 未設定のほか、権限セットの更新が行き渡る前（認可サーバのキャッシュは最大24時間）もここに来る
-		if (
-			cause.code === 'not_configured' ||
-			cause.status === 401 ||
-			cause.status === 403 ||
-			(cause.status === 400 && /scope|permission/i.test(cause.message))
-		)
-			return m.emojiGenerateUnavailable();
+		needsAuthorization = isAuthorizationError(cause);
+		if (needsAuthorization) return m.emojiGeneratePermissionRequired();
+		if (cause.code === 'not_configured') return m.emojiGenerateUnavailable();
 		return m.emojiGenerateRequestFailed();
 	}
 
@@ -165,7 +164,12 @@
 			notice = m.emojiGenerateRegisteredNotice({ name: form.name });
 			await onregistered();
 		} catch (cause) {
-			error = cause instanceof Error ? cause.message : m.emojiUploadFailed();
+			needsAuthorization = isAuthorizationError(cause);
+			error = needsAuthorization
+				? m.emojiGeneratePermissionRequired()
+				: cause instanceof Error
+					? cause.message
+					: m.emojiUploadFailed();
 		} finally {
 			registering = undefined;
 		}
@@ -213,7 +217,10 @@
 		>
 	</form>
 	{#if notice}<p role="status">{notice}</p>{/if}
-	{#if error}<p class="error" role="alert">{error}</p>{/if}
+	{#if error}
+		<p class="error" role="alert">{error}</p>
+		{#if needsAuthorization}<PermissionRefreshButton />{/if}
+	{/if}
 
 	{#if !loaded}
 		<Spinner />
@@ -243,7 +250,11 @@
 			{#if done}
 				{@const form = forms[done.id]}
 				<label
-					>{m.emojiNameLabel()}<input bind:value={form.name} maxlength="32" placeholder="blobcat" /></label
+					>{m.emojiNameLabel()}<input
+						bind:value={form.name}
+						maxlength="32"
+						placeholder="blobcat"
+					/></label
 				>
 				{#if !EMOJI_NAME_PATTERN.test(form.name)}<p class="error">{m.emojiNameInvalid()}</p>{/if}
 				<label>{m.emojiAltLabel()}<input bind:value={form.description} maxlength="100" /></label>
