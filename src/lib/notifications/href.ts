@@ -7,6 +7,7 @@ export function notificationHref(item: NotificationView, viewerDid?: string): st
 	if (item.type === 'analysis') return viewerDid ? `/profile/${viewerDid}` : '/notifications';
 	if (item.type === 'gift') return '/cards?tab=board';
 	if (item.type === 'emoji') return '/emoji?tab=generate';
+	if (item.type === 'chronicle') return '/diary?tab=chronicle';
 	const collection = item.subjectUri.slice('at://'.length).split('/')[1];
 	if (
 		item.cardSubject ||

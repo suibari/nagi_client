@@ -19,4 +19,5 @@
 
 {#if ready}
 	<a href="/diary?date=2020-02-29&tab=chronicle">Open diary deep link</a>
+	<a href="/diary?tab=mood&date=2020-02-29">Open old mood link</a>
 {/if}

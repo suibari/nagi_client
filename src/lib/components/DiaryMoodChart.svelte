@@ -10,21 +10,25 @@
 		MOOD_ZOOM_LEVELS,
 		summarizeMoodDays,
 	} from '$lib/diary/mood';
-	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
-	import PostModerationGuard from './PostModerationGuard.svelte';
+	import MoodDayPosts from './MoodDayPosts.svelte';
 
 	/**
 	 * 日記ページの「感情グラフ」タブ。投稿ごとの気分（-5〜+5）を、日ごとの中央50%の帯と
 	 * 中央値の線で見せる。日付を押すと、その日の点（投稿）と日記へのリンクを表示する。
 	 * selected と anchorDate の役割は DiaryCalendar と同じ（選択はタブ間で共有する）。
+	 *
+	 * 月間アクティビティに埋め込むときは、取得済みの data と表示する日 days を親から受け取る。
+	 * そのときは横幅いっぱいに収めて（ズームなし）、日ごとの投稿一覧は親の詳細欄に任せる。
 	 */
 	let {
 		did,
 		anchorDate,
 		selected = $bindable(),
 		preview,
+		data,
+		days: daysOverride,
 	}: {
 		did: string;
 		anchorDate?: string;
@@ -34,7 +38,17 @@
 		 * 投稿の行はリンクにせず、日記への導線も出さない（どちらも実在しない）。
 		 */
 		preview?: { moods: DiaryMoodView[]; entries?: DiaryView[] };
+		data?: {
+			moods: DiaryMoodView[];
+			entries: DiaryView[];
+			pending: number;
+			loading: boolean;
+			error: string;
+		};
+		days?: string[];
 	} = $props();
+
+	const embedded = $derived(data !== undefined);
 
 	const uid = $props.id();
 	const gradientId = `mood-scale-${uid}`;
@@ -46,10 +60,11 @@
 
 	const graph = $derived(buildDiaryGraphForDate(anchorDate));
 	const days = $derived(
-		graph.weeks
-			.flat()
-			.filter((day) => !day.future)
-			.map((day) => day.date),
+		daysOverride ??
+			graph.weeks
+				.flat()
+				.filter((day) => !day.future)
+				.map((day) => day.date),
 	);
 	let moods = $state<DiaryMoodView[]>([]);
 	let entries = $state<DiaryView[]>([]);
@@ -59,6 +74,7 @@
 	let hovered = $state<string | undefined>();
 	let zoom = $state(MOOD_DEFAULT_ZOOM);
 	let scroller = $state<HTMLDivElement>();
+	let scrollerWidth = $state(0);
 	let loadVersion = 0;
 	let scrolledKey = '';
 	const cache = new Map<
@@ -66,7 +82,12 @@
 		{ moods: DiaryMoodView[]; entries: DiaryView[]; pending: number }
 	>();
 
-	const px = $derived(MOOD_ZOOM_LEVELS[zoom]);
+	// 埋め込み（1か月）は横幅いっぱいに割り付ける。測れるまでは既定の段で描く。
+	const px = $derived(
+		embedded && scrollerWidth > 0 && days.length
+			? Math.max(MOOD_ZOOM_LEVELS[0], (scrollerWidth - PAD_END) / days.length)
+			: MOOD_ZOOM_LEVELS[zoom],
+	);
 	const width = $derived(days.length * px + PAD_END);
 	const y = (value: number) => PAD_TOP + ((5 - value) / 10) * (HEIGHT - PAD_TOP - PAD_BOTTOM);
 	/**
@@ -116,9 +137,18 @@
 	);
 
 	$effect(() => {
+		if (!data) return;
+		moods = data.moods;
+		entries = data.entries;
+		pending = data.pending;
+		loading = data.loading;
+		error = data.error;
+	});
+
+	$effect(() => {
 		const actor = did;
 		const { from, to } = graph;
-		if (!actor) return;
+		if (!actor || data) return;
 		const key = `${actor}:${from}:${to}`;
 		const version = ++loadVersion;
 		const apply = (value: { moods: DiaryMoodView[]; entries: DiaryView[]; pending: number }) => {
@@ -191,7 +221,7 @@
 	// ページのズームを止めるには passive: false で preventDefault する必要がある。
 	$effect(() => {
 		const element = scroller;
-		if (!element) return;
+		if (!element || embedded) return;
 		let accumulated = 0;
 		const onWheel = (event: WheelEvent) => {
 			if (!event.ctrlKey && !event.metaKey) return;
@@ -210,9 +240,10 @@
 	 * グラフの外を押したら選択を外す。開いている投稿一覧と日記リンクの中（本文を選んだり
 	 * リンクを押したりする場所）、ズーム、タブは除く。タブを除かないと、日記タブへ
 	 * 切り替えた瞬間に選択が消えて日付を引き継げない。Esc でも外せる。
+	 * 埋め込みのときは親（月間アクティビティ）が同じことをする。
 	 */
 	$effect(() => {
-		if (!selected) return;
+		if (!selected || embedded) return;
 		const onClick = (event: MouseEvent) => {
 			const target = event.target;
 			if (!(target instanceof Element) || !target.isConnected) return;
@@ -242,38 +273,39 @@
 		});
 	const monthLabel = (date: string) =>
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { month: 'short' });
-	const timeLabel = (iso: string) =>
-		new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+	const shortDate = (date: string) =>
+		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), { day: 'numeric' });
 	const medianLabel = (value: number) => formatValence(Math.round(value * 10) / 10);
-	const tone = (value: number) => (value > 0 ? 'positive' : 'negative');
 </script>
 
-<section class="mood card">
+<section class="mood card" class:mood--embedded={embedded}>
 	<header class="mood-head">
 		<div>
 			<h2>{m.moodTitle()}</h2>
-			<p>{longDate(graph.from)} – {longDate(graph.to)}</p>
+			{#if !embedded}
+				<p>{longDate(graph.from)} – {longDate(graph.to)}</p>
+			{/if}
 		</div>
-		<div
-			class="mood-zoom"
-			data-mood-keep
-			role="group"
-			aria-label={m.moodZoomHint()}
-			title={m.moodZoomHint()}
-		>
-			<button
-				type="button"
-				aria-label={m.moodZoomOut()}
-				disabled={zoom === 0}
-				onclick={() => setZoom(zoom - 1)}>−</button
+		{#if !embedded}<div
+				class="mood-zoom"
+				data-mood-keep
+				role="group"
+				aria-label={m.moodZoomHint()}
+				title={m.moodZoomHint()}
 			>
-			<button
-				type="button"
-				aria-label={m.moodZoomIn()}
-				disabled={zoom === MOOD_ZOOM_LEVELS.length - 1}
-				onclick={() => setZoom(zoom + 1)}>+</button
-			>
-		</div>
+				<button
+					type="button"
+					aria-label={m.moodZoomOut()}
+					disabled={zoom === 0}
+					onclick={() => setZoom(zoom - 1)}>−</button
+				>
+				<button
+					type="button"
+					aria-label={m.moodZoomIn()}
+					disabled={zoom === MOOD_ZOOM_LEVELS.length - 1}
+					onclick={() => setZoom(zoom + 1)}>+</button
+				>
+			</div>{/if}
 	</header>
 
 	{#if error}
@@ -285,7 +317,13 @@
 					<text x="22" y={y(value) + 3} text-anchor="end">{formatValence(value)}</text>
 				{/each}
 			</svg>
-			<div class="mood-scroll" data-mood-keep bind:this={scroller} aria-busy={loading}>
+			<div
+				class="mood-scroll"
+				data-mood-keep
+				bind:this={scroller}
+				bind:clientWidth={scrollerWidth}
+				aria-busy={loading}
+			>
 				<svg
 					{width}
 					height={HEIGHT}
@@ -315,16 +353,28 @@
 						<line class="mood-grid" x1="0" x2={width} y1={y(value)} y2={y(value)} />
 					{/each}
 					<line class="mood-zero" x1="0" x2={width} y1={y(0)} y2={y(0)} />
-					{#each monthTicks as month (month.date)}
-						<line
-							class="mood-grid"
-							x1={month.x}
-							x2={month.x}
-							y1={PAD_TOP}
-							y2={HEIGHT - PAD_BOTTOM}
-						/>
-						<text class="mood-month" x={month.x + 2} y={HEIGHT - 6}>{monthLabel(month.date)}</text>
-					{/each}
+					{#if embedded}
+						<!-- 1か月だけなので、月の目盛りの代わりに 1・8・15・22・29 日を置く。 -->
+						{#each days as date, index (date)}
+							{#if index % 7 === 0}
+								<text class="mood-month" x={index * px + px / 2} y={HEIGHT - 6} text-anchor="middle"
+									>{shortDate(date)}</text
+								>
+							{/if}
+						{/each}
+					{:else}
+						{#each monthTicks as month (month.date)}
+							<line
+								class="mood-grid"
+								x1={month.x}
+								x2={month.x}
+								y1={PAD_TOP}
+								y2={HEIGHT - PAD_BOTTOM}
+							/>
+							<text class="mood-month" x={month.x + 2} y={HEIGHT - 6}>{monthLabel(month.date)}</text
+							>
+						{/each}
+					{/if}
 
 					{#if selected && days.includes(selected)}
 						<rect
@@ -414,36 +464,9 @@
 			<p class="mood-pending">{m.moodPending({ count: pending })}</p>
 		{/if}
 
-		{#if selected && !loading}
+		{#if selected && !loading && !embedded}
 			<div class="mood-selection" data-mood-keep>
-				<section class="mood-day" aria-label={longDate(selected)}>
-					{#if selectedDay}
-						<ol>
-							{#each selectedDay.points as point (point.uri)}
-								<li>
-									<span class={`mood-chip mood-chip--${tone(point.valence)}`}
-										>{formatValence(point.valence)}</span
-									>
-									{#if preview}
-										<span class="mood-post">
-											<time datetime={point.createdAt}>{timeLabel(point.createdAt)}</time>
-											<span class="mood-text">{point.text}</span>
-										</span>
-									{:else}
-										<a class="mood-post" href={postPageHref(point)}>
-											<time datetime={point.createdAt}>{timeLabel(point.createdAt)}</time>
-											<PostModerationGuard post={point}>
-												<span class="mood-text">{point.text}</span>
-											</PostModerationGuard>
-										</a>
-									{/if}
-								</li>
-							{/each}
-						</ol>
-					{:else}
-						<p class="mood-hint">{m.moodDayNoPosts()}</p>
-					{/if}
-				</section>
+				<MoodDayPosts date={selected} day={selectedDay} preview={Boolean(preview)} />
 				{#if selectedDiary && !preview}
 					<a class="mood-diary-link" href={`/diary?date=${selectedDiary.date}`}>
 						{m.chronicleOpenDiary()} →
@@ -451,7 +474,9 @@
 				{/if}
 			</div>
 		{/if}
-		<p class="mood-about">{m.moodAbout()}</p>
+		{#if !embedded}
+			<p class="mood-about">{m.moodAbout()}</p>
+		{/if}
 	{/if}
 </section>
 
@@ -462,6 +487,9 @@
 		color: var(--accent-strong);
 	}
 
+	.mood--embedded .mood-scroll {
+		overflow-x: hidden;
+	}
 	.mood {
 		padding: 16px;
 		display: grid;
@@ -588,7 +616,6 @@
 	}
 	.mood-status,
 	.mood-pending,
-	.mood-hint,
 	.mood-about {
 		font-size: 12px;
 		color: var(--text-faint);
@@ -596,65 +623,8 @@
 	.mood-status strong {
 		color: var(--text-strong);
 	}
-	.mood-day ol {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: grid;
-	}
-	.mood-day li {
-		display: grid;
-		grid-template-columns: 38px 1fr;
-		gap: 10px;
-		align-items: start;
-		padding: 8px 0;
-		border-top: 1px solid var(--line);
-	}
-	.mood-day li:first-child {
-		border-top: 0;
-	}
-	.mood-post {
-		display: grid;
-		gap: 2px;
-		min-inline-size: 0;
-		color: inherit;
-		text-decoration: none;
-	}
-	a.mood-post:hover .mood-text {
-		text-decoration: underline;
-	}
-	.mood-day time {
-		font-size: 11px;
-		color: var(--text-faint);
-	}
-	.mood-text {
-		font-size: 13px;
-		color: var(--text);
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-		display: -webkit-box;
-		-webkit-line-clamp: 3;
-		line-clamp: 3;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
 	.mood-selection {
 		display: grid;
 		gap: 12px;
-	}
-	.mood-chip {
-		text-align: center;
-		font-size: 12px;
-		font-weight: 800;
-		font-variant-numeric: tabular-nums;
-		border: 1.5px solid currentColor;
-		border-radius: var(--radius-pill);
-		padding: 1px 0;
-	}
-	.mood-chip--positive {
-		color: var(--mood-positive);
-	}
-	.mood-chip--negative {
-		color: var(--mood-negative);
 	}
 </style>

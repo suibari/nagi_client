@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildDiaryGraph,
 	buildDiaryGraphForDate,
+	buildDiaryGraphForMonth,
+	buildMonthGrid,
 	diaryActivityIntensity,
 	diaryMonthLabels,
+	isMonthKey,
+	monthLastDate,
+	shiftMonth,
 } from './calendar';
 
 describe('buildDiaryGraph', () => {
@@ -42,5 +47,56 @@ describe('buildDiaryGraphForDate', () => {
 		for (const date of [undefined, '2026-09-01', 'invalid', '2020-02-30', '2030-01-01']) {
 			expect(buildDiaryGraphForDate(date, today)).toEqual(buildDiaryGraph(today));
 		}
+	});
+});
+
+describe('month helpers', () => {
+	it('shifts across year boundaries', () => {
+		expect(shiftMonth('2026-12', 1)).toBe('2027-01');
+		expect(shiftMonth('2026-01', -1)).toBe('2025-12');
+	});
+	it('finds the last day, including leap years', () => {
+		expect(monthLastDate('2028-02')).toBe('2028-02-29');
+		expect(monthLastDate('2026-02')).toBe('2026-02-28');
+		expect(monthLastDate('2026-10')).toBe('2026-10-31');
+	});
+	it('validates month keys', () => {
+		expect(isMonthKey('2026-10')).toBe(true);
+		expect(isMonthKey('2026-13')).toBe(false);
+		expect(isMonthKey('2026-10-01')).toBe(false);
+		expect(isMonthKey(null)).toBe(false);
+	});
+});
+
+describe('buildMonthGrid', () => {
+	const today = new Date(2026, 9, 29, 12);
+	it('starts on Sunday and pads with neighbouring months', () => {
+		const weeks = buildMonthGrid('2026-10', today);
+		expect(weeks[0][0]).toEqual({ date: '2026-09-27', inMonth: false, future: false });
+		expect(weeks[0][4]).toEqual({ date: '2026-10-01', inMonth: true, future: false });
+		expect(weeks.at(-1)?.at(-1)).toEqual({ date: '2026-10-31', inMonth: true, future: true });
+		expect(buildMonthGrid('2026-11', today)[0][0].date).toBe('2026-11-01');
+		expect(weeks.flat().find((day) => day.date === '2026-10-30')?.future).toBe(true);
+		expect(weeks.every((week) => week.length === 7)).toBe(true);
+	});
+	it('covers leap day', () => {
+		const days = buildMonthGrid('2028-02', today)
+			.flat()
+			.filter((day) => day.inMonth);
+		expect(days).toHaveLength(29);
+		expect(days.at(-1)?.date).toBe('2028-02-29');
+	});
+});
+
+describe('buildDiaryGraphForMonth', () => {
+	const today = new Date(2026, 9, 29, 12);
+	it('keeps the current year for recent months', () => {
+		expect(buildDiaryGraphForMonth('2026-10', today)).toEqual(buildDiaryGraph(today));
+		expect(buildDiaryGraphForMonth('2025-11', today)).toEqual(buildDiaryGraph(today));
+	});
+	it('ends at the month end for older months so the whole month is fetched', () => {
+		const graph = buildDiaryGraphForMonth('2025-10', today);
+		expect(graph.to).toBe('2025-10-31');
+		expect(graph.from <= '2025-10-01').toBe(true);
 	});
 });

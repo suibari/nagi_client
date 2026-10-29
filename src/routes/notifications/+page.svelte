@@ -170,7 +170,7 @@
 			<strong>{item.actor.displayName ?? item.actor.handle}</strong
 			>{#if item.type === 'reaction' && item.reaction}{m.notifReactedWithPrefix()}{@render reactionEmoji(
 					item.reaction,
-				)}{reactedWithSuffix}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{reactedSuffix}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else if item.type === 'gift'}{m.notifGiftSuffix()}{:else if item.type === 'emoji'}{m.notifEmojiSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
+				)}{reactedWithSuffix}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{reactedSuffix}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else if item.type === 'gift'}{m.notifGiftSuffix()}{:else if item.type === 'emoji'}{m.notifEmojiSuffix()}{:else if item.type === 'chronicle'}{m.notifChronicleSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
 		</span>
 		<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
 	</div>

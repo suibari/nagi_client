@@ -54,7 +54,7 @@ describe('chronicle motion contracts', () => {
 
 	it('?date= のディープリンクは年表を開かない', () => {
 		// 通知からの /diary?date=YYYY-MM-DD はその日の日記を開く導線。
-		// 日付を持てる年間アクティビティと感情グラフだけが ?date= と両立する。
+		// 日付を持てる月間アクティビティだけが ?date= と両立する。
 		expect(diaryPage).toMatch(/requested === 'chronicle' && !urlDate/);
 	});
 
@@ -62,7 +62,10 @@ describe('chronicle motion contracts', () => {
 		for (const key of [
 			'diaryTabActivity',
 			'diaryTabChronicle',
-			'diaryTabMood',
+			'activityMonthPrev',
+			'activityMonthSummary',
+			'activityLegendMedian',
+			'notifChronicleSuffix',
 			'diaryTabsAria',
 			'chronicleTitle',
 			'chronicleAbout',

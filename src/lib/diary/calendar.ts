@@ -60,3 +60,65 @@ export function diaryActivityIntensity(
 	if (postCount === undefined || maximum <= 0) return undefined;
 	return postCount / maximum;
 }
+
+const MONTH = /^\d{4}-\d{2}$/;
+
+/** その日を含む月。"YYYY-MM"。 */
+export const monthOf = (date: string) => date.slice(0, 7);
+
+/** 今日の月。 */
+export const currentMonth = (today = new Date()) => monthOf(dateKey(localDay(today, 0)));
+
+export function isMonthKey(value: string | null | undefined): value is string {
+	if (!value || !MONTH.test(value)) return false;
+	const month = Number(value.slice(5));
+	return month >= 1 && month <= 12;
+}
+
+/** 月を delta だけずらす。 */
+export function shiftMonth(month: string, delta: number): string {
+	const [year, mon] = month.split('-').map(Number);
+	const date = new Date(year, mon - 1 + delta, 1, 12);
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** 月の最終日 "YYYY-MM-DD"。 */
+export function monthLastDate(month: string): string {
+	const [year, mon] = month.split('-').map(Number);
+	return dateKey(new Date(year, mon, 0, 12));
+}
+
+/**
+ * 月間アクティビティで取得する1年の範囲。表示月がまるごと入るように選ぶ。
+ * 今年の範囲に月初が入っていればそのまま、外れていれば月末を右端にした1年にする。
+ */
+export function buildDiaryGraphForMonth(month: string, today = new Date()): DiaryGraph {
+	const graph = buildDiaryGraph(today);
+	if (`${month}-01` >= graph.from) return graph;
+	return buildDiaryGraph(new Date(`${monthLastDate(month)}T12:00:00`));
+}
+
+export type MonthGridDay = { date: string; inMonth: boolean; future: boolean };
+
+/**
+ * 月カレンダーのマス。日曜始まりで、前後の月のはみ出しを含めて7日ずつの週に切る
+ * （コミットグラフと同じ曜日の並び）。
+ */
+export function buildMonthGrid(month: string, today = new Date()): MonthGridDay[][] {
+	const [year, mon] = month.split('-').map(Number);
+	const first = new Date(year, mon - 1, 1, 12);
+	const last = new Date(year, mon, 0, 12);
+	const start = localDay(first, -first.getDay());
+	const end = localDay(last, 6 - last.getDay());
+	const todayKey = dateKey(localDay(today, 0));
+	const weeks: MonthGridDay[][] = [];
+	for (let day = start; day <= end; day = localDay(day, 7)) {
+		weeks.push(
+			Array.from({ length: 7 }, (_, index) => {
+				const date = dateKey(localDay(day, index));
+				return { date, inMonth: monthOf(date) === month, future: date > todayKey };
+			}),
+		);
+	}
+	return weeks;
+}

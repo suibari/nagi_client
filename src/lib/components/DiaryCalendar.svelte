@@ -6,29 +6,42 @@
 		buildDiaryGraphForDate,
 		diaryActivityIntensity,
 		diaryMonthLabels,
+		monthOf,
+		type DiaryGraph,
 	} from '$lib/diary/calendar';
 	import { i18n, m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
 	import DiaryDayDetail from './DiaryDayDetail.svelte';
 
 	/**
-	 * selected は日記ページが持ち、URL の ?date= と感情グラフのタブで共有する。
+	 * 年間のコミットグラフ（日記を書いた日の草）。
+	 * selected は日記ページが持ち、URL の ?date= と月カレンダー・感情グラフで共有する。
 	 * anchorDate はページを開いたときの日付で、表示する1年の範囲だけを決める
 	 * （選択を外しても範囲が今年へ飛ばないように、選択とは分けてある）。
+	 *
+	 * 月間アクティビティに埋め込むときは、取得済みの data と範囲 graph を親から受け取り、
+	 * 詳細表示は親に任せる。highlightMonth の月を枠で示す。
 	 */
 	let {
 		did,
 		anchorDate,
 		selected = $bindable(),
 		botActor,
+		graph: graphOverride,
+		data,
+		highlightMonth,
 	}: {
 		did: string;
 		anchorDate?: string;
 		selected?: string;
 		botActor?: ActorView;
+		graph?: DiaryGraph;
+		data?: { entries: DiaryView[]; loading: boolean; error: string };
+		highlightMonth?: string;
 	} = $props();
 
-	const graph = $derived(buildDiaryGraphForDate(anchorDate));
+	const embedded = $derived(data !== undefined);
+	const graph = $derived(graphOverride ?? buildDiaryGraphForDate(anchorDate));
 	const monthLabels = $derived(diaryMonthLabels(graph.weeks));
 	let hovered = $state<string | undefined>();
 	let entries = $state<DiaryView[]>([]);
@@ -40,29 +53,50 @@
 	const cache = new Map<string, DiaryView[]>();
 
 	$effect(() => {
+		if (!data) return;
+		entries = data.entries;
+		loading = data.loading;
+		error = data.error;
+		const key = `${did}:${graph.from}:${graph.to}`;
+		if (!loading) void finish(key);
+	});
+
+	async function finish(key: string) {
+		await tick();
+		if (!graphScroll || scrolledKey === key) return;
+		scrolledKey = key;
+		const target = untrack(() => selected ?? (highlightMonth ? `${highlightMonth}-01` : undefined));
+		if (target && target >= graph.from && target <= graph.to) {
+			graphScroll
+				.querySelector<HTMLElement>(`[data-day="${target}"]`)
+				?.scrollIntoView({ block: 'nearest', inline: 'center' });
+		} else {
+			graphScroll.scrollLeft = graphScroll.scrollWidth;
+		}
+	}
+
+	// 表示月を変えたら、その月が見える位置まで送る。
+	let lastHighlight = untrack(() => highlightMonth);
+	$effect(() => {
+		const month = highlightMonth;
+		if (!month || month === lastHighlight || !graphScroll) return;
+		lastHighlight = month;
+		graphScroll
+			.querySelector<HTMLElement>(`[data-day="${month}-01"]`)
+			?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+	});
+
+	$effect(() => {
 		const actor = did;
-		if (!actor) return;
+		if (!actor || data) return;
 		const key = `${actor}:${graph.from}:${graph.to}`;
 		const version = ++loadVersion;
-		const finish = async () => {
-			await tick();
-			if (!graphScroll || scrolledKey === key) return;
-			scrolledKey = key;
-			const target = untrack(() => selected);
-			if (target && target >= graph.from && target <= graph.to) {
-				graphScroll
-					.querySelector<HTMLElement>(`[data-date="${target}"]`)
-					?.scrollIntoView({ block: 'nearest', inline: 'center' });
-			} else {
-				graphScroll.scrollLeft = graphScroll.scrollWidth;
-			}
-		};
 		const cached = cache.get(key);
 		if (cached) {
 			entries = cached;
 			loading = false;
 			error = '';
-			void finish();
+			void finish(key);
 			return;
 		}
 		loading = true;
@@ -81,7 +115,7 @@
 			.finally(() => {
 				if (version !== loadVersion) return;
 				loading = false;
-				void finish();
+				void finish(key);
 			});
 	});
 
@@ -109,10 +143,10 @@
 		i18n.locale === 'ja' ? (entry.titleJa ?? entry.titleEn) : (entry.titleEn ?? entry.titleJa);
 </script>
 
-<section class="diary card">
+<section class="diary card" class:diary--embedded={embedded}>
 	<header class="diary-head">
 		<div>
-			<h2>{m.diaryTabActivity()}</h2>
+			<h2>{embedded ? m.diaryAnnualActivity() : m.diaryTabActivity()}</h2>
 			<p>{longDate(graph.from)} – {longDate(graph.to)}</p>
 		</div>
 	</header>
@@ -143,12 +177,15 @@
 							<div class="diary-week">
 								{#each week as day (day.date)}
 									{@const entry = byDate.get(day.date)}
+									{@const inMonth =
+										highlightMonth !== undefined && monthOf(day.date) === highlightMonth}
 									{@const intensity = entry
 										? diaryActivityIntensity(entry.postCount, maxPostCount)
 										: undefined}
 									{#if entry && !day.future}
 										<button
 											class="diary-day diary-day--has"
+											class:diary-day--month={inMonth}
 											class:selected={selected === day.date}
 											class:diary-day--activity={intensity !== undefined}
 											style={intensity === undefined
@@ -156,6 +193,7 @@
 												: `--diary-activity-percent: ${12 + intensity * 88}%`}
 											type="button"
 											data-date={day.date}
+											data-day={day.date}
 											title={longDate(day.date)}
 											aria-pressed={selected === day.date}
 											aria-label={m.diaryDayAria({
@@ -172,6 +210,8 @@
 									{:else}
 										<span
 											class="diary-day"
+											class:diary-day--month={inMonth}
+											data-day={day.date}
 											class:diary-day--future={day.future}
 											title={!day.future ? longDate(day.date) : undefined}
 										></span>
@@ -184,7 +224,9 @@
 			</div>
 		</div>
 
-		{#if loading}
+		{#if embedded}
+			<p class="diary-hint">{m.activityHeatmapHint()}</p>
+		{:else if loading}
 			<Spinner />
 		{:else if detail}
 			<DiaryDayDetail summary={detail} />
@@ -194,10 +236,12 @@
 			<p class="diary-hint">{m.diaryEmptyYear()}</p>
 		{/if}
 
-		{#if !loading && current}
-			<DiaryDayDetail entry={current} {botActor} />
+		{#if !embedded}
+			{#if !loading && current}
+				<DiaryDayDetail entry={current} {botActor} />
+			{/if}
+			<p class="diary-about">{m.diaryAbout()}</p>
 		{/if}
-		<p class="diary-about">{m.diaryAbout()}</p>
 	{/if}
 </section>
 
@@ -295,6 +339,11 @@
 	}
 	.diary-day--future {
 		background: transparent;
+	}
+	/* 月間アクティビティで表示中の月。草の色は変えず、外側の線だけで示す。 */
+	.diary-day--month:not(.diary-day--future) {
+		outline: 1px solid color-mix(in srgb, var(--accent-strong), transparent 45%);
+		outline-offset: 0;
 	}
 	.diary-day--has {
 		padding: 0;
