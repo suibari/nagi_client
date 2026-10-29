@@ -653,7 +653,8 @@ export const ja = {
 	emojiGenerateSubmitting: '頼んでいます…',
 	emojiGenerateAccepted: (p: { minutes: number }) =>
 		`受け付けました（目安：約${p.minutes}分）。ほかの画面に移動しても大丈夫です。結果はこの画面で確認できます。`,
-	emojiGenerateAlreadyActive: '描いている途中の依頼があります。描きあがってから次を頼んでください。',
+	emojiGenerateAlreadyActive:
+		'描いている途中の依頼があります。描きあがってから次を頼んでください。',
 	emojiGenerateBusy: 'いまは混み合っています。しばらくしてからもう一度頼んでください。',
 	emojiGenerateInappropriate: 'この内容は描けません。',
 	emojiGeneratePermissionRequired: '絵文字をつくるにはログイン権限の更新が必要です。',
@@ -664,7 +665,8 @@ export const ja = {
 	emojiGenerateRunning: '描いています',
 	emojiGenerateRedrawing: '描き直しています。描きあがったら差し替わります',
 	emojiGenerateFailed: '描けませんでした。言い方を変えて、もう一度頼んでみてください。',
-	emojiGenerateChoose: '気に入ったら「登録する」を押してください。気に入らなければ、もう一度描いてもらえます。',
+	emojiGenerateChoose:
+		'気に入ったら「登録する」を押してください。気に入らなければ、もう一度描いてもらえます。',
 	emojiGenerateAgain: 'もう一度描いてもらう',
 	emojiGenerateRegisteredNotice: (p: { name: string }) => `:${p.name}: を登録しました`,
 	emojiGenerateRegistered: '登録済み',
@@ -707,6 +709,7 @@ export const ja = {
 	notifAnalysisSuffix: 'さんがあなたの名刺を更新しました',
 	notifGiftSuffix: 'さんに、あなたがおすそわけしたカードが届きました',
 	notifEmojiSuffix: 'さんが、頼まれた絵文字を描きました',
+	notifChronicleSuffix: 'さんがあなたの年表を更新しました',
 	notifUnreadBadgeAria: (p: { count: number }) => `未読通知 ${p.count} 件`,
 
 	// 名刺カード
@@ -759,8 +762,28 @@ export const ja = {
 			.join('、'),
 	diaryAbout: 'botたんが、その日の投稿をもとに書いてくれた日記です。',
 
+	// 月間アクティビティ（カレンダー・感情グラフ・コミットグラフ・日記を1画面に）。
+	// 回数の多い少ないを評価する言い方はしない（docs/chronicle.md と同じ方針）。
+	activityMonthPrev: '前の月',
+	activityMonthNext: '次の月',
+	activityThisMonth: '今月',
+	activityMonthSummary: (p: { diaries: number; posts: number }) =>
+		`日記 ${p.diaries}日 · 気分が読み取れた投稿 ${p.posts}件`,
+	activityCalendarAria: '月の気分カレンダー',
+	activityHasDiary: '日記あり',
+	activityLegendMedian: '色はその日の気分の中央値',
+	activityLegendDiary: '日記がある日',
+	activitySelectHint: 'カレンダーやグラフの日付を押すと、その日の日記と投稿の気分が見られます。',
+	activityLatestDiary: 'この月のいちばん新しい日記',
+	activityNoDiary: 'この日の日記はありません。',
+	activityDayPosts: (p: { count: number }) => `この日の投稿の気分（${p.count}件）`,
+	activityHeatmapHint:
+		'日記を書いた日の1年ぶんです。押すとその日を開きます。枠で囲んだのが表示中の月です。',
+	activityEmptyMonth: 'この月の日記と気分の記録はまだありません。',
+	activityAbout:
+		'日記は botたんがその日の投稿をもとに書いたもの、色は投稿ごとに読み取った明るい（+5）〜沈んだ（-5）気分です。あなただけが見られます。',
+
 	// mood（感情グラフ）。数値の評価語（「よい」「悪い」）は避け、明るい／沈んだで言う。
-	diaryTabMood: '感情グラフ',
 	moodTitle: '感情グラフ',
 	moodGraphAria: '過去1年間の、日ごとの気分の幅',
 	moodZoomIn: '拡大',
@@ -782,9 +805,9 @@ export const ja = {
 
 	// chronicle（自分年表）
 	// 「連続」「今年は少ない」の類は**書かない**。数えた瞬間に義務になる（docs/chronicle.md）。
-	diaryTabActivity: '日記',
-	diaryTabChronicle: '年表',
-	diaryTabsAria: '日記の表示',
+	diaryTabActivity: '月間アクティビティ',
+	diaryTabChronicle: 'あなたの年表',
+	diaryTabsAria: 'アクティビティの表示',
 	// 年表は「自分のもの」として読ませたいので、見出しに本人の名前を入れる。
 	chronicleTitle: (p: { name: string }) => `${p.name}の年表`,
 	chronicleAbout: 'Nagi で過ごしてきた日々の節目と、そのころの出来事です。',
@@ -1422,7 +1445,8 @@ export const ja = {
 	boardHelpDonate3: 'おすそわけしたカードは取り消せません。記念日カードはおすそわけできません。',
 	boardHelpGetTitle: 'ゲットする',
 	boardHelpGet1: 'ゲットできるのは、まだ持っていないカードだけです。1種類につき1枚です。',
-	boardHelpGet2: 'ボードの「あり」は早いもの勝ち。何枚あるか、だれがおすそわけしたかは表示されません。',
+	boardHelpGet2:
+		'ボードの「あり」は早いもの勝ち。何枚あるか、だれがおすそわけしたかは表示されません。',
 	boardHelpGet3:
 		'ゲットしたカードには「〜さんからもらった」がつきます。おすそわけした人が何人かいるときは、その中からランダムに選ばれます。',
 	boardHelpGet4: 'あなたがおすそわけしたカードがだれかに届くと、通知でお知らせします。',

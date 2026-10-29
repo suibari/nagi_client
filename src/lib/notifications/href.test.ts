@@ -60,6 +60,9 @@ describe('notificationHref', () => {
 			'/profile/did:plc:viewer',
 		);
 	});
+	it('routes chronicle notifications to the chronicle tab', () => {
+		expect(notificationHref(notification({ type: 'chronicle' }))).toBe('/diary?tab=chronicle');
+	});
 	it('routes gift notifications to the share board tab', () => {
 		expect(notificationHref(notification({ type: 'gift' }))).toBe('/cards?tab=board');
 	});

@@ -413,7 +413,8 @@ export type NotificationView = {
 	/** 'analysis' は名刺（自動分析）の更新。actor は常に botたん、post も diary も付かない。 */
 	/** 'gift' はおすそわけボードに置いたカードが届いた。actor は受け取った人、cardSubject にカードが入る。 */
 	/** 'emoji' は依頼した絵文字の生成が終わった（失敗も含む）。actor は常に botたん。 */
-	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis' | 'gift' | 'emoji';
+	/** 'chronicle' は年表に週のトピックが載った。actor は常に botたん、post も diary も付かない。 */
+	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis' | 'gift' | 'emoji' | 'chronicle';
 	actor: ActorView;
 	post?: PostView;
 	/** type が 'diary' のときの日記本体。post は付かない。 */

@@ -52,3 +52,20 @@ export function clampMoodZoom(level: number): number {
 }
 
 export const formatValence = (value: number) => (value > 0 ? `+${value}` : String(value));
+
+/**
+ * 中央値の色。感情グラフの帯と同じ5段の色（-5 → +5 を 0/.25/.5/.75/1 に置いた
+ * --mood-scale-1..5）の間を線形に混ぜる。CSS では
+ * `color-mix(in srgb, var(--mood-scale-{from}), var(--mood-scale-{to}) {percent}%)` にする。
+ */
+export function moodColorMix(median: number): { from: number; to: number; percent: number } {
+	const t = Math.min(1, Math.max(0, (median + 5) / 10)) * 4;
+	const from = Math.min(3, Math.floor(t));
+	const percent = Math.round((t - from) * 100);
+	return { from: from + 1, to: from + 2, percent };
+}
+
+export function moodColor(median: number): string {
+	const { from, to, percent } = moodColorMix(median);
+	return `color-mix(in srgb, var(--mood-scale-${from}), var(--mood-scale-${to}) ${percent}%)`;
+}

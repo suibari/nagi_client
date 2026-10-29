@@ -639,7 +639,8 @@ export const en: Messages = {
 	emojiGenerateSubmitting: 'Asking…',
 	emojiGenerateAccepted: (p: { minutes: number }) =>
 		`Got it (about ${p.minutes} min). You can leave this page and return here to see the result.`,
-	emojiGenerateAlreadyActive: 'bot-tan is still drawing your last request. Try again once it is done.',
+	emojiGenerateAlreadyActive:
+		'bot-tan is still drawing your last request. Try again once it is done.',
 	emojiGenerateBusy: 'Busy right now. Please try again in a little while.',
 	emojiGenerateInappropriate: 'bot-tan can’t draw that.',
 	emojiGeneratePermissionRequired: 'Update your login permissions to create emoji.',
@@ -686,6 +687,7 @@ export const en: Messages = {
 	notifAnalysisSuffix: ' updated your card',
 	notifGiftSuffix: ' received a card you shared',
 	notifEmojiSuffix: ' finished drawing your emoji',
+	notifChronicleSuffix: ' updated your chronicle',
 	notifUnreadBadgeAria: (p: { count: number }) => `${p.count} unread notifications`,
 
 	nameCardTitle: 'Card',
@@ -737,7 +739,24 @@ export const en: Messages = {
 	diaryAbout: "Bot-tan writes these entries from that day's posts.",
 
 	// mood
-	diaryTabMood: 'Mood',
+	activityMonthPrev: 'Previous month',
+	activityMonthNext: 'Next month',
+	activityThisMonth: 'This month',
+	activityMonthSummary: (p: { diaries: number; posts: number }) =>
+		`${p.diaries} diary ${p.diaries === 1 ? 'day' : 'days'} · ${p.posts} ${p.posts === 1 ? 'post' : 'posts'} with a mood`,
+	activityCalendarAria: 'Monthly mood calendar',
+	activityHasDiary: 'Has a diary',
+	activityLegendMedian: 'Color shows the median mood of the day',
+	activityLegendDiary: 'Diary written',
+	activitySelectHint: 'Pick a day on the calendar or graphs to see its diary and post moods.',
+	activityLatestDiary: 'Latest diary this month',
+	activityNoDiary: 'No diary for this day.',
+	activityDayPosts: (p: { count: number }) => `Post moods this day (${p.count})`,
+	activityHeatmapHint:
+		'A year of diary days. Tap one to open it. The outlined days are the month shown above.',
+	activityEmptyMonth: 'No diary or mood records for this month yet.',
+	activityAbout:
+		'Diaries are written by bot-tan from your posts that day; colors are the mood read from each post, from bright (+5) to low (-5). Only you can see this.',
 	moodTitle: 'Mood graph',
 	moodGraphAria: 'Daily mood range over the past year',
 	moodZoomIn: 'Zoom in',
@@ -759,9 +778,9 @@ export const en: Messages = {
 		'Bot-tan reads the mood of each post, from brighter (+5) to lower (-5), and shows the daily range. Announcements and plain updates without a readable mood are left out. Only you can see this.',
 
 	// chronicle
-	diaryTabActivity: 'Diary',
-	diaryTabChronicle: 'Chronicle',
-	diaryTabsAria: 'Diary view',
+	diaryTabActivity: 'Monthly activity',
+	diaryTabChronicle: 'Your chronicle',
+	diaryTabsAria: 'Activity view',
 	chronicleTitle: (p: { name: string }) => `${p.name}'s chronicle`,
 	chronicleAbout: 'Milestones from your time on Nagi, and what was happening back then.',
 	chronicleEmpty: 'Your chronicle will grow from here.',
@@ -1361,7 +1380,7 @@ export const en: Messages = {
 	cardsTabZenkatsu: 'Play',
 	cardsTabBoard: 'Share Board',
 	boardIntro:
-		'Share your extra cards (from the 4th copy) to earn Zenny. Use Zenny to get cards you don\'t have yet.',
+		"Share your extra cards (from the 4th copy) to earn Zenny. Use Zenny to get cards you don't have yet.",
 	boardBalanceLabel: 'Balance',
 	boardUnit: 'Zenny',
 	boardWelcome: (p) => `Here are your first ${p.amount} Zenny`,
@@ -1390,7 +1409,8 @@ export const en: Messages = {
 	boardHelpDonate3: "Sharing can't be undone. Anniversary cards can't be shared.",
 	boardHelpGetTitle: 'Get',
 	boardHelpGet1: "You can only get cards you don't have yet, one of each.",
-	boardHelpGet2: "Cards marked “In stock” are first come, first served. How many there are and who shared them aren't shown.",
+	boardHelpGet2:
+		"Cards marked “In stock” are first come, first served. How many there are and who shared them aren't shown.",
 	boardHelpGet3:
 		'Cards you get show “Received from …”. If several people shared the same card, one of them is picked at random.',
 	boardHelpGet4: "When a card you shared reaches someone, you'll get a notification.",
