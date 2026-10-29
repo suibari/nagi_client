@@ -389,6 +389,7 @@
 			{:else}{#each feed.visibleItems as item (feedKey(item))}<ThreadUnit
 						{item}
 						botActor={feed.botActor}
+						collapseBotReplies={!(tab === 'replies' && profile?.isBot)}
 						ondeleted={postDeleted}
 						onposted={() => feed?.refresh()}
 					/>{/each}<InfiniteScroll

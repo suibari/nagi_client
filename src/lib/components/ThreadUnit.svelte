@@ -23,6 +23,7 @@
 		unread = false,
 		entering = false,
 		isPostEntering = () => false,
+		collapseBotReplies = true,
 	}: {
 		item: FeedItem;
 		botActor?: ActorView;
@@ -36,12 +37,16 @@
 		entering?: boolean;
 		/** 既存スレッドへ後着した返信を発言単位で登場させる。 */
 		isPostEntering?: (uri: string) => boolean;
+		/** false なら botたんの返信を折りたたまない（botたんのプロフィールの返信タブなど）。 */
+		collapseBotReplies?: boolean;
 	} = $props();
 
 	let expandedUris = $state<Set<string>>(new Set());
 	let checkedUris = $state<Set<string>>(new Set());
 	let knownPosts = $derived(itemPosts(item));
-	let candidates = $derived(collapsibleBotReplies(knownPosts, $session?.did, true));
+	let candidates = $derived(
+		collapseBotReplies ? collapsibleBotReplies(knownPosts, $session?.did, true) : new Set<string>(),
+	);
 	let ready = $derived(Boolean($session || $oauthReady || !hadRecentSession()));
 	let collapseUris = $derived(
 		ready ? new Set([...candidates].filter((uri) => checkedUris.has(uri))) : new Set<string>(),

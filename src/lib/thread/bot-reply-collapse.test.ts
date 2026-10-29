@@ -43,6 +43,13 @@ describe('bot reply collapse policy', () => {
 		).toBe(0);
 		expect([...collapsibleBotReplies([root, bot, { ...human, deleted: true }])]).toEqual([bot.uri]);
 	});
+	it('keeps bot replies with media visible', () => {
+		const withImage: PostView = { ...bot, images: [{ url: 'u', alt: '' }] };
+		expect(collapsibleBotReplies([root, withImage]).size).toBe(0);
+		expect(collapsibleBotReplies([withImage], undefined, true).size).toBe(0);
+		const withVideo = { ...bot, video: {} } as PostView;
+		expect(collapsibleBotReplies([root, withVideo]).size).toBe(0);
+	});
 	it('requires the root before confirming a collapse, but can identify missing-root candidates', () => {
 		expect(collapsibleBotReplies([bot]).size).toBe(0);
 		expect([...collapsibleBotReplies([bot], undefined, true)]).toEqual([bot.uri]);

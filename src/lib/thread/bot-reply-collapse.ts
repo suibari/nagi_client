@@ -6,7 +6,7 @@ export function itemPosts(item: FeedItem): PostView[] {
 		: [item.replyParent, item, item.botReply].filter((post): post is PostView => Boolean(post));
 }
 
-/** Only direct bot replies to another person's top-level post are candidates. */
+/** Only direct bot replies to another person's top-level post are candidates. Replies with media stay visible. */
 export function collapsibleBotReplies(
 	posts: PostView[],
 	viewerDid?: string,
@@ -21,7 +21,9 @@ export function collapsibleBotReplies(
 	return new Set(
 		[...byUri.values()]
 			.filter((post) => {
-				if (!post.isBot || !post.reply || post.deleted || repliedTo.has(post.uri)) return false;
+				if (!post.isBot || !post.reply || post.deleted || post.images?.length || post.video)
+					return false;
+				if (repliedTo.has(post.uri)) return false;
 				const root = byUri.get(post.reply.root.uri);
 				if (!root) return allowUnknownRoot && post.reply.parent.uri === post.reply.root.uri;
 				return Boolean(
