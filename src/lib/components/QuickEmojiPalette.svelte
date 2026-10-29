@@ -73,7 +73,6 @@
 	let favoritesDirty = false;
 	const QUICK_COLUMNS = 6;
 	const QUICK_MIN_COLUMNS = 3;
-	const QUICK_MAX_FAVORITE_ROWS = 3;
 	const quickSearching = $derived(quickQuery.trim().length > 0);
 	// カスタム絵文字を常に先に並べる。それぞれの中は名前の一致 → 意味の近さの順（AppView が決める）。
 	// 応答待ちの間は、手元の Unicode 検索（名前の一致だけ）を即座に出しておく。
@@ -139,8 +138,11 @@
 		const did = $session?.did;
 		const preparedPool = did ? getPreparedCustomSuggestionPool(did) : undefined;
 		const favoriteKeys = new Set(favoriteSnapshot.map(reactionChoiceKey));
-		const localRecent = recentReactionChoices(usageSnapshot, QUICK_COLUMNS, failedSnapshot).filter(
-			(item) => !favoriteKeys.has(reactionChoiceKey(item)),
+		const localRecent = recentReactionChoices(
+			usageSnapshot,
+			QUICK_COLUMNS,
+			failedSnapshot,
+			favoriteKeys,
 		);
 		quickQuery = '';
 		favorites = favoriteSnapshot;
@@ -182,9 +184,7 @@
 	const QUICK_HINT = 21;
 	const QUICK_RESULTS_MAX = QUICK_CELL * 3;
 	function estimateQuickHeight(columns: number) {
-		const favoriteRows = favorites.length
-			? Math.min(Math.ceil(favorites.length / columns), QUICK_MAX_FAVORITE_ROWS)
-			: 0;
+		const favoriteRows = favorites.length ? Math.ceil(favorites.length / columns) : 0;
 		const recentCount = recentItems.length || quickItems.length;
 		const recentRows = recentCount ? Math.ceil(recentCount / columns) : 0;
 		const labels = (favoriteRows ? QUICK_LABEL : 0) + (recentItems.length ? QUICK_LABEL : 0);
@@ -206,7 +206,8 @@
 			const left = Math.min(Math.max(margin, rect.left), window.innerWidth - margin - width);
 			const estimatedHeight = estimateQuickHeight(columns);
 			const openAbove = rect.top > estimatedHeight + margin;
-			const top = openAbove ? rect.top - estimatedHeight - 8 : rect.bottom + 8;
+			const desiredTop = openAbove ? rect.top - estimatedHeight - 8 : rect.bottom + 8;
+			const top = Math.min(desiredTop, window.innerHeight - margin - estimatedHeight);
 			quickPickerStyle = `top:${Math.max(margin, top)}px;left:${left}px;width:${width}px;--quick-columns:${columns};`;
 		};
 		const handleKeydown = (event: KeyboardEvent) => {

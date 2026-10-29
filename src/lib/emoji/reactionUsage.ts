@@ -137,8 +137,20 @@ export async function refreshReactionUsage(usage: ReactionUsage[]): Promise<Reac
 			}),
 		)
 	).filter((item): item is ReactionUsage => item !== undefined);
-	saveUsage(refreshed);
-	return refreshed;
+	// 検証を待つ間に選ばれた絵文字や使用回数を古いスナップショットで巻き戻さない。
+	const current = loadReactionUsage();
+	const original = new Map(usage.map((item) => [reactionChoiceKey(item), item]));
+	const resolved = new Map(refreshed.map((item) => [reactionChoiceKey(item), item]));
+	const merged = current.flatMap((item) => {
+		const key = reactionChoiceKey(item);
+		const previous = original.get(key);
+		if (!previous || previous.count !== item.count || previous.lastUsedAt !== item.lastUsedAt)
+			return [item];
+		const updated = resolved.get(key);
+		return updated ? [updated] : [];
+	});
+	saveUsage(merged);
+	return merged;
 }
 
 export function loadReactionUsage(): ReactionUsage[] {
@@ -221,9 +233,14 @@ export function recentReactionChoices(
 	usage: ReactionUsage[],
 	limit: number,
 	failedCustomUris: string[] = [],
+	excludedKeys: ReadonlySet<string> = new Set(),
 ): ReactionChoice[] {
 	return usage
-		.filter((item) => item.kind === 'unicode' || !failedCustomUris.includes(item.emoji.uri))
+		.filter(
+			(item) =>
+				!excludedKeys.has(reactionChoiceKey(item)) &&
+				(item.kind === 'unicode' || !failedCustomUris.includes(item.emoji.uri)),
+		)
 		.sort((a, b) => b.lastUsedAt - a.lastUsedAt)
 		.slice(0, limit)
 		.map((item) =>

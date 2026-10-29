@@ -1943,11 +1943,6 @@ button.reaction-emoji:active {
 	font-size: 11px;
 	font-weight: 700;
 }
-/* お気に入りは3行まで見せて、あふれた分はスクロールで届かせる。 */
-.reaction-quick-favorites {
-	max-height: 126px;
-	overflow-y: auto;
-}
 .reaction-quick-results {
 	max-height: 126px;
 	overflow-y: auto;
