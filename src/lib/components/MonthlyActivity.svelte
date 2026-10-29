@@ -201,27 +201,7 @@
 
 		<DiaryMoodChart {did} bind:selected days={monthDays} data={{ ...loaded, loading, error }} />
 
-		{#if focusDate && !loading}
-			<a
-				class="diary-jump"
-				href="#activity-diary"
-				data-activity-keep
-				onclick={(event) => {
-					event.preventDefault();
-					const detail = document.getElementById('activity-diary');
-					detail?.focus({ preventScroll: true });
-					detail?.scrollIntoView({ block: 'start', behavior: 'instant' });
-				}}>{m.activityOpenDiary()}</a
-			>
-		{/if}
-
-		<section
-			id="activity-diary"
-			class="detail card"
-			data-activity-keep
-			aria-live="polite"
-			tabindex="-1"
-		>
+		<section id="activity-diary" class="detail card" data-activity-keep aria-live="polite">
 			{#if loading}
 				<Spinner />
 			{:else if focusDate}
@@ -338,13 +318,6 @@
 		box-sizing: border-box;
 		justify-self: center;
 	}
-	.diary-jump {
-		justify-self: start;
-		color: var(--accent-strong);
-		font-size: 13px;
-		font-weight: 700;
-		text-underline-offset: 3px;
-	}
 	.detail-stats {
 		display: flex;
 		flex-wrap: wrap;
@@ -353,7 +326,6 @@
 		color: var(--text-muted);
 	}
 	.detail {
-		scroll-margin-block-start: calc(var(--mobile-header-h, 0px) + 16px);
 		display: grid;
 		gap: 12px;
 		align-content: start;

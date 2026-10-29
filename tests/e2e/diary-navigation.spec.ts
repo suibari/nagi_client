@@ -216,7 +216,8 @@ for (const width of [375, 768, 1280]) {
 			await page.getByRole('link', { name: 'Open diary deep link' }).click();
 			const day = page.locator(`.mood-calendar [data-date="${date}"]`);
 			await expect(day).toHaveAttribute('aria-label', /12 posts/);
-			await expect(day).toHaveCSS('--cell-percent', '80%');
+			await expect(day.locator('.post-count')).toHaveText('12');
+			await expect(page.locator('.diary-dot')).toHaveCount(0);
 			await expect(page.locator('.detail-stats')).toContainText('12 posts');
 			await expect(page.locator('.detail')).toContainText(text);
 			const calendar = await page.locator('.calendar-card').boundingBox();
@@ -229,8 +230,7 @@ for (const width of [375, 768, 1280]) {
 			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
 				true,
 			);
-			await page.getByRole('link', { name: 'Go to the selected day’s diary' }).click();
-			await expect(page.locator('#activity-diary')).toBeFocused();
+			await expect(page.locator('.diary-jump')).toHaveCount(0);
 			await expect(page).toHaveURL(`/diary?date=${date}&tab=chronicle`);
 			await page.screenshot({
 				path: `/tmp/monthly-activity-${width}-${theme}.png`,
@@ -251,17 +251,22 @@ test('calendar distinguishes missing counts, unscored moods, and days without di
 		'aria-label',
 		/Mood unavailable · 0 posts · Has a diary/,
 	);
-	await expect(day('2020-02-02')).toHaveCSS('--cell-percent', '20%');
+	await expect(day('2020-02-02').locator('.post-count')).toHaveText('0');
 	await day('2020-02-02').click();
 	await expect(page.locator('.detail-stats')).toContainText('0 posts');
 	await expect(page.locator('.detail-stats')).toContainText('Mood unavailable');
 	await day('2020-02-11').click();
-	await expect(day('2020-02-11')).toHaveCSS('--cell-percent', '60%');
+	await expect(day('2020-02-11').locator('.post-count')).toHaveText('—');
 	await expect(page.locator('.detail-stats')).toContainText('Post count unknown');
 	await day('2020-02-12').click();
-	await expect(day('2020-02-12').locator('.diary-dot')).toHaveCount(0);
+	await expect(day('2020-02-12').locator('.post-count')).toHaveText('—');
 	await expect(page.locator('.detail')).toContainText('No diary for this day.');
 	await expect(page.locator('.detail-posts')).toHaveAttribute('open', '');
+	await expect(day('2020-02-01').locator('.post-count')).toHaveCount(0);
+	await expect(day('2020-02-08')).toHaveCSS(
+		'background-color',
+		await day('2020-02-03').evaluate((el) => getComputedStyle(el).backgroundColor),
+	);
 	await day('2020-02-01').click();
 	await expect(page.locator('.detail')).toContainText('No diary for this day.');
 	await expect(page.locator('.detail-stats')).toContainText('Mood unavailable');
