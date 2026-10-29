@@ -34,6 +34,7 @@ vi.mock('$lib/api/appview', async (importOriginal) => ({
 
 import {
 	createPost,
+	ensureOwnNagiProfile,
 	deleteAllNagiRecords,
 	NAGI_ACCOUNT_DATA_COLLECTIONS,
 	preparePostDraft,
@@ -528,5 +529,53 @@ describe('deleteAllNagiRecords', () => {
 		expect(deleteRecord.mock.calls.map(([call]) => call.collection)).toEqual([
 			...NAGI_ACCOUNT_DATA_COLLECTIONS,
 		]);
+	});
+});
+
+describe('initial Nagi profile', () => {
+	beforeEach(() => {
+		getRecord.mockReset();
+		putRecord.mockReset();
+		ensureRecord.mockReset();
+		ensureRecord.mockResolvedValue({});
+	});
+	it('creates an empty profile only when absent and requests indexing', async () => {
+		getRecord.mockRejectedValue({ error: 'RecordNotFound' });
+		putRecord.mockResolvedValue({
+			data: { uri: `at://${did}/com.suibari.nagi.profile/self`, cid: 'new' },
+		});
+		const profile = await ensureOwnNagiProfile();
+		expect(putRecord).toHaveBeenCalledWith(
+			expect.objectContaining({
+				repo: did,
+				collection: 'com.suibari.nagi.profile',
+				rkey: 'self',
+				swapRecord: null,
+				record: { $type: 'com.suibari.nagi.profile', ...profile },
+			}),
+		);
+		expect(profile.displayName).toBe('');
+		expect(profile.description).toBe('');
+		expect(Number.isNaN(Date.parse(profile.createdAt!))).toBe(false);
+		expect(ensureRecord).toHaveBeenCalled();
+	});
+	it('keeps existing profiles without writing', async () => {
+		getRecord.mockResolvedValue({
+			data: { value: { displayName: 'Existing', createdAt: '2026-01-01T00:00:00Z' } },
+		});
+		expect((await ensureOwnNagiProfile()).displayName).toBe('Existing');
+		expect(putRecord).not.toHaveBeenCalled();
+	});
+	it('preserves a profile saved concurrently', async () => {
+		getRecord
+			.mockRejectedValueOnce({ error: 'RecordNotFound' })
+			.mockResolvedValueOnce({ data: { value: { displayName: 'Other tab' } } });
+		putRecord.mockRejectedValue({ error: 'InvalidSwap' });
+		expect((await ensureOwnNagiProfile()).displayName).toBe('Other tab');
+	});
+	it('does not create a profile when the initial read fails', async () => {
+		getRecord.mockRejectedValue(new Error('offline'));
+		await expect(ensureOwnNagiProfile()).rejects.toThrow('offline');
+		expect(putRecord).not.toHaveBeenCalled();
 	});
 });

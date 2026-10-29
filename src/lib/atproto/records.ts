@@ -298,6 +298,32 @@ export async function getOwnNagiProfile(): Promise<ProfileDraft | null> {
 	}
 }
 
+/** Create the initial profile without overwriting another tab's saved profile. */
+export async function ensureOwnNagiProfile(): Promise<ProfileDraft> {
+	const existing = await getOwnNagiProfile();
+	if (existing) return existing;
+	const s = current();
+	const profile = { displayName: '', description: '', createdAt: new Date().toISOString() };
+	try {
+		await indexed(
+			new Agent(s).com.atproto.repo.putRecord({
+				repo: s.did,
+				collection: PROFILE,
+				rkey: 'self',
+				swapRecord: null,
+				validate: false,
+				record: { $type: PROFILE, ...profile },
+			}),
+		);
+		return profile;
+	} catch (error) {
+		// A concurrent tab may have created it after our read.
+		const concurrent = await getOwnNagiProfile();
+		if (concurrent) return concurrent;
+		throw error;
+	}
+}
+
 export async function getBlueskyProfileDraft(): Promise<ProfileDraft> {
 	const s = current();
 	const agent = new Agent(s);

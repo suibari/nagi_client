@@ -3,6 +3,7 @@
 		getBlueskyProfileDraft,
 		getOwnBlueskyWebsite,
 		getOwnNagiProfile,
+		ensureOwnNagiProfile,
 		hasBlueskyProfileScope,
 		normalizeProfileWebsite,
 		putProfile,
@@ -52,7 +53,11 @@
 		const did = $session?.did;
 		if (!did || loaded) return;
 		const profilePromise = getOwnNagiProfile().then(async (profile) => {
-			if (!profile) return getBlueskyProfileDraft();
+			if (!profile) {
+				const initial = await ensureOwnNagiProfile();
+				if (initial.displayName || initial.description || initial.avatar) return initial;
+				return { ...(await getBlueskyProfileDraft()), createdAt: initial.createdAt };
+			}
 			try {
 				const currentProfile = await getProfile(did, { limit: 1, lang: i18n.locale });
 				const avatar = currentProfile.profile.avatar;
