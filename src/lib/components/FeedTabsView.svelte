@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Spinner from '$lib/components/Spinner.svelte';
-	// フィードの唯一の画面。どのタブを出すかは `?tab=<id>` だけで決まる。
+	// フィードの唯一の画面（TOP の `/` に置く）。どのタブを出すかは `?tab=<id>` だけで決まる。
 	// タブ構成はユーザー設定（$lib/feed-tabs）で、/settings/feed-tabs から編集する。
 	// `/global` と `/affirmation` は昔の URL の互換として残してあり、中身はここと同じ。
+	// `page.url.searchParams` はプリレンダ中に読めないので、親が $oauthReady の後でだけ描く。
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import FeedShell from '$lib/components/FeedShell.svelte';
@@ -15,6 +15,9 @@
 	import { hashtagHref } from '$lib/tags';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
+
+	/** TOP のヒーローが出ているときは、FeedShell の歓迎カードを重ねて出さない。 */
+	let { hideWelcome = false }: { hideWelcome?: boolean } = $props();
 
 	let homeAuthError = $state(false);
 	let shell = $state<ReturnType<typeof FeedShell>>();
@@ -56,19 +59,15 @@
 	);
 </script>
 
-{#if !$oauthReady}
-	<Spinner />
+<FeedTabs activeId={tab.id} />
+{#if spec.tag}
+	<!-- ハッシュタグタブは閲覧専用。ミュートなどの操作はタグのページ側に置く。 -->
+	<a class="feed-tab-hashtag-link" href={hashtagHref(spec.tag)}>
+		<Icon name="hash" size={14} />{m.feedTabsOpenHashtag({ name: feedTabLabel(tab) })}
+	</a>
+{/if}
+{#if spec.bsky}
+	<BskyFeedShell bind:this={bskyShell} feed={spec.bsky.feed} cacheKey={spec.key} />
 {:else}
-	<FeedTabs activeId={tab.id} />
-	{#if spec.tag}
-		<!-- ハッシュタグタブは閲覧専用。ミュートなどの操作はタグのページ側に置く。 -->
-		<a class="feed-tab-hashtag-link" href={hashtagHref(spec.tag)}>
-			<Icon name="hash" size={14} />{m.feedTabsOpenHashtag({ name: feedTabLabel(tab) })}
-		</a>
-	{/if}
-	{#if spec.bsky}
-		<BskyFeedShell bind:this={bskyShell} feed={spec.bsky.feed} cacheKey={spec.key} />
-	{:else}
-		<FeedShell bind:this={shell} {spec} {homeAuthError} />
-	{/if}
+	<FeedShell bind:this={shell} {spec} {homeAuthError} {hideWelcome} />
 {/if}

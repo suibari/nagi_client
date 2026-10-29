@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import { newsBotPost, safeNewsUrl } from '$lib/news/bot-post';
+	import { quoteNews, shareNews } from '$lib/news/actions';
 	import { safeNewsImageUrl } from '$lib/news/image';
 	import { NewsQuote } from '$lib/news/quote.svelte';
 	import { m, dateLocale, localeReady, stableDateTime } from '$lib/i18n/i18n.svelte';
@@ -70,24 +71,13 @@
 			: '',
 	);
 	async function share() {
-		if (!safeUrl) return;
 		try {
-			if (navigator.share) await navigator.share({ title: news.title, url: safeUrl });
-			else {
-				await navigator.clipboard.writeText(safeUrl);
-				shared = true;
-				setTimeout(() => (shared = false), 2000);
-			}
-		} catch (e) {
-			if ((e as DOMException)?.name !== 'AbortError') shareError = m.newsShareFailed();
+			if (!(await shareNews(news))) return;
+			shared = true;
+			setTimeout(() => (shared = false), 2000);
+		} catch {
+			shareError = m.newsShareFailed();
 		}
-	}
-	function toggleQuote() {
-		if (!$session) {
-			location.href = '/login';
-			return;
-		}
-		composerHost.openQuoteNews(news);
 	}
 	function toggleReactionPicker() {
 		if (!$session) {
@@ -167,7 +157,7 @@
 					class="primary news-comment"
 					class:active={composerHost.open && composerHost.quoteTarget?.news?.uri === news.uri}
 					type="button"
-					onclick={toggleQuote}><Icon name="quote" size={16} />{m.newsComment()}</button
+					onclick={() => quoteNews(news)}><Icon name="quote" size={16} />{m.newsComment()}</button
 				>
 				<button
 					bind:this={reactionButton}

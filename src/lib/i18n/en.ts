@@ -44,7 +44,6 @@ export const en: Messages = {
 	dateYesterday: 'Yesterday',
 	dateWithWeekday: (p) => `${p.date} (${p.weekday})`,
 
-	navMyNagi: 'my Nagi',
 	navFeed: 'Feed',
 	navHome: 'Home',
 	navGlobal: 'Global',
@@ -70,8 +69,6 @@ export const en: Messages = {
 	newsCategorySports: 'Sports',
 	newsCategoryTechnology: 'Science & tech',
 	newsRecommendedEmpty: 'There are no recommended news stories for you yet.',
-	myNagiBotUnreadAria: 'A new bot-tan update is available',
-	myNagiListUnreadAria: 'A new post from your list is available',
 	newsEmpty: 'There are no bright news stories to show right now.',
 	newsRecommendedHeading: 'Close to you',
 	newsRecommendedReason: (p: { genre: string }) => `Why: ${p.genre}`,
@@ -114,16 +111,8 @@ export const en: Messages = {
 	newsDeleteFailed: 'Could not delete the news story',
 	newsUnavailable: 'This news story is no longer available',
 
-	myNagiMore: 'See more',
-	myNagiEmpty: 'Nothing here yet',
-	myNagiNoText: '(no text)',
-	myNagiBotTitle: 'Bot-tan now',
-	myNagiNewsTitle: 'Fully Affirming News',
-	myNagiListTitle: 'People in your list',
-	myNagiListEmpty: 'You have not chosen anyone to see on Home yet.',
-	myNagiListEmptyCta: 'Choose who to see',
-	myNagiGuestTitle: 'Sign in to make my Nagi yours',
-	myNagiGuestBody: 'Posts from people in your list will appear here.',
+	sidebarNewsTitle: 'Bot-tan News',
+	sidebarNewsMore: 'See more',
 
 	aboutBeforeLink: 'No likes, no follows. Whatever you write, ',
 	aboutLinkText: 'the fully affirming Bot-tan',
@@ -639,7 +628,8 @@ export const en: Messages = {
 	emojiGenerateSubmitting: 'Asking…',
 	emojiGenerateAccepted: (p: { minutes: number }) =>
 		`Got it (about ${p.minutes} min). You can leave this page and return here to see the result.`,
-	emojiGenerateAlreadyActive: 'bot-tan is still drawing your last request. Try again once it is done.',
+	emojiGenerateAlreadyActive:
+		'bot-tan is still drawing your last request. Try again once it is done.',
 	emojiGenerateBusy: 'Busy right now. Please try again in a little while.',
 	emojiGenerateInappropriate: 'bot-tan can’t draw that.',
 	emojiGeneratePermissionRequired: 'Update your login permissions to create emoji.',
@@ -1361,7 +1351,7 @@ export const en: Messages = {
 	cardsTabZenkatsu: 'Play',
 	cardsTabBoard: 'Share Board',
 	boardIntro:
-		'Share your extra cards (from the 4th copy) to earn Zenny. Use Zenny to get cards you don\'t have yet.',
+		"Share your extra cards (from the 4th copy) to earn Zenny. Use Zenny to get cards you don't have yet.",
 	boardBalanceLabel: 'Balance',
 	boardUnit: 'Zenny',
 	boardWelcome: (p) => `Here are your first ${p.amount} Zenny`,
@@ -1390,7 +1380,8 @@ export const en: Messages = {
 	boardHelpDonate3: "Sharing can't be undone. Anniversary cards can't be shared.",
 	boardHelpGetTitle: 'Get',
 	boardHelpGet1: "You can only get cards you don't have yet, one of each.",
-	boardHelpGet2: "Cards marked “In stock” are first come, first served. How many there are and who shared them aren't shown.",
+	boardHelpGet2:
+		"Cards marked “In stock” are first come, first served. How many there are and who shared them aren't shown.",
 	boardHelpGet3:
 		'Cards you get show “Received from …”. If several people shared the same card, one of them is picked at random.',
 	boardHelpGet4: "When a card you shared reaches someone, you'll get a notification.",

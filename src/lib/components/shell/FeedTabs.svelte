@@ -28,7 +28,7 @@
 
 	// ホームは本人のリストなので、未ログインではサインインへ送る（従来どおり）。
 	const href = (tab: FeedTab) =>
-		tab.kind === 'list' && !$session ? '/login' : `/feed?tab=${encodeURIComponent(tab.id)}`;
+		tab.kind === 'list' && !$session ? '/login' : `/?tab=${encodeURIComponent(tab.id)}`;
 
 	// 4本以上でスクロールに切り替える。3本以下は今までどおり等分幅のまま。
 	const scrollable = $derived(tabs.length > 3);

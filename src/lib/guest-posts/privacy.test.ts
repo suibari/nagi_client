@@ -24,8 +24,11 @@ const chatBubble = readFileSync(
 	new URL('../components/ChatBubble.svelte', import.meta.url),
 	'utf8',
 );
-const myNagiPage = readFileSync(new URL('../../routes/+page.svelte', import.meta.url), 'utf8');
-const feedPage = readFileSync(new URL('../../routes/feed/+page.svelte', import.meta.url), 'utf8');
+const topPage = readFileSync(new URL('../../routes/+page.svelte', import.meta.url), 'utf8');
+const feedPage = readFileSync(
+	new URL('../components/FeedTabsView.svelte', import.meta.url),
+	'utf8',
+);
 
 describe('guest post privacy boundary', () => {
 	it('uses only dedicated unauthenticated affirmation procedures', () => {
@@ -58,7 +61,7 @@ describe('guest post privacy boundary', () => {
 	});
 
 	it('shows the standard post-created notice and links it to the local post in the feed', () => {
-		expect(guestModal).toContain('postFollowNotice.show(`/feed#guest-post-${id}`)');
+		expect(guestModal).toContain('postFollowNotice.show(`/#guest-post-${id}`)');
 		expect(section).toContain('id={`guest-post-${entry.id}`}');
 		expect(feedPage).not.toContain('GuestPostSection');
 		expect(feedShell).toContain('<GuestPostSection botActor={feed.botActor} />');
@@ -68,7 +71,7 @@ describe('guest post privacy boundary', () => {
 		expect(feedShell.indexOf('<GuestPostSection botActor={feed.botActor} />')).toBeLessThan(
 			feedShell.indexOf('<section class="timeline"'),
 		);
-		expect(myNagiPage).not.toContain('GuestPostSection');
+		expect(topPage).not.toContain('GuestPostSection');
 	});
 
 	it('uses only a device-storage label above otherwise unframed local bubbles', () => {
@@ -88,16 +91,16 @@ describe('guest post privacy boundary', () => {
 		expect(accountCard).not.toContain('{m.loginHint()}');
 	});
 
-	it('shows the guest hero below the my Nagi header and above the bot section', () => {
-		expect(myNagiPage).toContain('<section class="hero">');
-		expect(myNagiPage).toContain('{m.heroTitle()}');
-		expect(myNagiPage).toContain('<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>');
-		expect(myNagiPage).toContain('<a class="hero-join" href="/login">{m.joinCta()}</a>');
-		expect(myNagiPage.indexOf('class="my-nagi-heading"')).toBeLessThan(
-			myNagiPage.indexOf('<section class="hero">'),
+	it('shows the guest hero below the top header and above the feed', () => {
+		expect(topPage).toContain('<section class="hero">');
+		expect(topPage).toContain('{m.heroTitle()}');
+		expect(topPage).toContain('<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>');
+		expect(topPage).toContain('<a class="hero-join" href="/login">{m.joinCta()}</a>');
+		expect(topPage.indexOf('class="feed-heading"')).toBeLessThan(
+			topPage.indexOf('<section class="hero">'),
 		);
-		expect(myNagiPage.indexOf('<section class="hero">')).toBeLessThan(
-			myNagiPage.indexOf('title={m.myNagiBotTitle()}'),
+		expect(topPage.indexOf('<section class="hero">')).toBeLessThan(
+			topPage.indexOf('<FeedTabsView'),
 		);
 		expect(feedShell).not.toContain('<section class="hero">');
 		expect(feedShell).not.toContain('{m.heroTitle()}');

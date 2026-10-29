@@ -6,20 +6,23 @@ import { byNewestFirst } from './order';
 export const recommendedReason = (news: NewsView | RecommendedNewsView) =>
 	'reason' in news ? (news.reason?.genre ?? news.reason?.keyword) : undefined;
 
-/** my Nagi の候補にする期間。最新の候補からこの幅に入るものだけを比べる。 */
-const PICK_WINDOW_MS = 72 * 60 * 60 * 1000;
+/**
+ * 右サイドバーの候補にする期間。ニュースは6時間ごとのスロットでまとめて公開されるので、
+ * 最新の候補からこの幅に入るもの（＝最新スロットぶん）だけを比べる。
+ */
+const PICK_WINDOW_MS = 6 * 60 * 60 * 1000;
 
 const newsTime = (news: Pick<NewsView, 'createdAt' | 'indexedAt'>) =>
 	Date.parse(news.createdAt || news.indexedAt) || 0;
 
 /**
- * my Nagi に出すニュースを1件だけ選ぶ。
+ * 右サイドバーに出すニュースを、最新スロットから1件だけ選ぶ。
  *
  * 読んだ人が自分の話としてコメントしやすい記事（talkScore が高い記事）を最優先にし、
  * 同点なら未読 → 関心ジャンルのおすすめ → 新しい順で決める。古い高得点記事が居座らないよう、
- * 最新の候補から72時間以内に絞って比べる。talkScore の無い記事（導入前の承認）は最下位。
+ * 最新の候補から6時間以内に絞って比べる。talkScore の無い記事（導入前の承認）は最下位。
  */
-export function pickMyNagiNews(
+export function pickSidebarNews(
 	page: NewsPage,
 	view: UnreadView | undefined,
 ): NewsView | RecommendedNewsView | undefined {

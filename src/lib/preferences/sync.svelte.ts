@@ -30,7 +30,6 @@ import {
 	loadStoredFeedTabs,
 	setFeedTabsScope,
 } from '$lib/feed-tabs/feed-tabs.svelte';
-import { myNagiStorageKey, type MyNagiUnreadSection } from '$lib/my-nagi/unread.svelte';
 import { newsStorageKey } from '$lib/news/unread.svelte';
 import { session } from '$lib/oauth/session.svelte';
 import {
@@ -257,7 +256,13 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 	return syncing;
 }
 
-const MY_NAGI_SECTIONS: MyNagiUnreadSection[] = ['bot', 'community', 'list', 'channels'];
+/**
+ * 廃止した my Nagi の既読位置キー。もう読み書きしないが、使っていた端末には残っているので
+ * 全データ削除ではこれも消す。
+ */
+const MY_NAGI_SECTIONS = ['bot', 'community', 'list', 'channels'];
+const myNagiStorageKey = (section: string, viewerDid?: string) =>
+	`nagi.my-nagi-read-state.v1.${section}.${encodeURIComponent(viewerDid ?? 'guest')}`;
 /**
  * DID スコープへ移行する前に使っていたキー。移行前から使っている端末には
  * まだ残っているので、全データ削除ではこれらも消す。

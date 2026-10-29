@@ -46,7 +46,6 @@ export const ja = {
 	dateWithWeekday: (p: { date: string; weekday: string }) => `${p.date}(${p.weekday})`,
 
 	// nav
-	navMyNagi: 'my Nagi',
 	navFeed: 'フィード',
 	navHome: 'ホーム',
 	navGlobal: 'グローバル',
@@ -72,8 +71,6 @@ export const ja = {
 	newsCategorySports: 'スポーツ',
 	newsCategoryTechnology: '科学・技術',
 	newsRecommendedEmpty: 'あなたにおすすめのニュースはまだありません。',
-	myNagiBotUnreadAria: 'botたんの新しい近況があります',
-	myNagiListUnreadAria: 'リストに新しい投稿があります',
 	newsEmpty: 'いま掲載できる明るいニュースはありません。',
 	newsRecommendedHeading: 'あなたに近いかも',
 	newsRecommendedReason: (p: { genre: string }) => `おすすめの理由：${p.genre}`,
@@ -118,16 +115,8 @@ export const ja = {
 	newsUnavailable: 'このニュースは掲載終了しました',
 
 	// my Nagi
-	myNagiMore: 'もっと見る',
-	myNagiEmpty: 'まだ何もありません',
-	myNagiNoText: '（本文なし）',
-	myNagiBotTitle: 'botたんのいま',
-	myNagiNewsTitle: '全肯定ニュース',
-	myNagiListTitle: 'リストのみんな',
-	myNagiListEmpty: 'ホームで見る人がまだいません。',
-	myNagiListEmptyCta: '見る人を選ぶ',
-	myNagiGuestTitle: 'サインインすると、もっとあなたらしい my Nagi に',
-	myNagiGuestBody: 'リストのみんなの投稿が、ここに並びます。',
+	sidebarNewsTitle: 'botたんニュース',
+	sidebarNewsMore: 'もっと見る',
 
 	// sidebar footer / about page hero（本文中にキャラ紹介ページへのリンクを挟むため3分割）
 	aboutBeforeLink: 'いいねもフォローもありません。書いた言葉は、',
@@ -653,7 +642,8 @@ export const ja = {
 	emojiGenerateSubmitting: '頼んでいます…',
 	emojiGenerateAccepted: (p: { minutes: number }) =>
 		`受け付けました（目安：約${p.minutes}分）。ほかの画面に移動しても大丈夫です。結果はこの画面で確認できます。`,
-	emojiGenerateAlreadyActive: '描いている途中の依頼があります。描きあがってから次を頼んでください。',
+	emojiGenerateAlreadyActive:
+		'描いている途中の依頼があります。描きあがってから次を頼んでください。',
 	emojiGenerateBusy: 'いまは混み合っています。しばらくしてからもう一度頼んでください。',
 	emojiGenerateInappropriate: 'この内容は描けません。',
 	emojiGeneratePermissionRequired: '絵文字をつくるにはログイン権限の更新が必要です。',
@@ -664,7 +654,8 @@ export const ja = {
 	emojiGenerateRunning: '描いています',
 	emojiGenerateRedrawing: '描き直しています。描きあがったら差し替わります',
 	emojiGenerateFailed: '描けませんでした。言い方を変えて、もう一度頼んでみてください。',
-	emojiGenerateChoose: '気に入ったら「登録する」を押してください。気に入らなければ、もう一度描いてもらえます。',
+	emojiGenerateChoose:
+		'気に入ったら「登録する」を押してください。気に入らなければ、もう一度描いてもらえます。',
 	emojiGenerateAgain: 'もう一度描いてもらう',
 	emojiGenerateRegisteredNotice: (p: { name: string }) => `:${p.name}: を登録しました`,
 	emojiGenerateRegistered: '登録済み',
@@ -1422,7 +1413,8 @@ export const ja = {
 	boardHelpDonate3: 'おすそわけしたカードは取り消せません。記念日カードはおすそわけできません。',
 	boardHelpGetTitle: 'ゲットする',
 	boardHelpGet1: 'ゲットできるのは、まだ持っていないカードだけです。1種類につき1枚です。',
-	boardHelpGet2: 'ボードの「あり」は早いもの勝ち。何枚あるか、だれがおすそわけしたかは表示されません。',
+	boardHelpGet2:
+		'ボードの「あり」は早いもの勝ち。何枚あるか、だれがおすそわけしたかは表示されません。',
 	boardHelpGet3:
 		'ゲットしたカードには「〜さんからもらった」がつきます。おすそわけした人が何人かいるときは、その中からランダムに選ばれます。',
 	boardHelpGet4: 'あなたがおすそわけしたカードがだれかに届くと、通知でお知らせします。',
