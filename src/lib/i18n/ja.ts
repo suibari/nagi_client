@@ -75,7 +75,7 @@ export const ja = {
 	newsRecommendedHeading: 'あなたに近いかも',
 	newsRecommendedReason: (p: { genre: string }) => `おすすめの理由：${p.genre}`,
 	newsBackToList: '← 全肯定ニュースの一覧へ',
-	newsComment: 'コメントする',
+	newsComment: 'コメント',
 	newsQuotesHeading: 'みんなのコメント',
 	newsQuotesEmpty: 'まだコメントはありません。最初のひとことを書いてみませんか？',
 	newsSimilarHeading: '似ているニュース',
