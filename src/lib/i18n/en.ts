@@ -736,6 +736,17 @@ export const en: Messages = {
 	activityCalendarAria: 'Monthly mood calendar',
 	activityHasDiary: 'Has a diary',
 	activityLegendMedian: 'Color shows the median mood of the day',
+	activityLegendVolume: 'Shade shows post count',
+	activityPostCount: (p: { count: number }) => `${p.count} ${p.count === 1 ? 'post' : 'posts'}`,
+	activityPostsUnknown: 'Post count unknown',
+	activityMoodUnknown: 'Mood unavailable',
+	activityOpenDiary: 'Go to the selected day’s diary ↓',
+	activityVolumeBand: (p: { count: number }) =>
+		p.count === 0
+			? '0 posts'
+			: p.count === 20
+				? '20+ posts'
+				: `${p.count}–${p.count === 1 ? 4 : p.count === 5 ? 9 : 19} posts`,
 	activityLegendDiary: 'Diary written',
 	activitySelectHint: 'Pick a day on the calendar or graphs to see its diary and post moods.',
 	activityLatestDiary: 'Latest diary this month',
