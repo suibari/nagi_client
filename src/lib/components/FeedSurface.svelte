@@ -73,7 +73,7 @@
 		const next = index < 0 ? undefined : feedTabs.tabs[index + direction];
 		if (!next) return;
 		void goto(
-			next.kind === 'list' && !$session ? '/login' : `/feed?tab=${encodeURIComponent(next.id)}`,
+			next.kind === 'list' && !$session ? '/login' : `/?tab=${encodeURIComponent(next.id)}`,
 		);
 	}
 	function newest() {

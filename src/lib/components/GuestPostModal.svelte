@@ -59,7 +59,7 @@
 			emojis = [];
 			mode = resetComposerMode();
 			onclose();
-			postFollowNotice.show(`/feed#guest-post-${id}`);
+			postFollowNotice.show(`/#guest-post-${id}`);
 		} catch {
 			error = m.guestPostSaveFailed();
 		} finally {

@@ -4,8 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const read = (relativePath: string) => readFileSync(new URL(relativePath, import.meta.url), 'utf8');
 
-const myNagiSection = read('../components/MyNagiSection.svelte');
-const myNagiPage = read('../../routes/+page.svelte');
+const topPage = read('../../routes/+page.svelte');
 const baseCss = read('../../routes/styles/base.css');
 const shellCss = read('../../routes/styles/shell.css');
 const componentsCss = read('../../routes/styles/components.css');
@@ -39,15 +38,9 @@ function cssRules(source: string, selector: string): string[] {
 }
 
 describe('mobile overflow layout contracts', () => {
-	it('keeps every my Nagi section within the main column', () => {
-		expect(myNagiSection).toMatch(
-			/\.my-nagi-section\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
-		);
-		expect(myNagiSection).toMatch(
-			/\.my-nagi-section-body\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
-		);
-		expect(myNagiPage).toMatch(
-			/\.my-nagi-heading\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
+	it('keeps the top page heading within the main column', () => {
+		expect(topPage).toMatch(
+			/\.feed-heading\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
 		);
 	});
 

@@ -17,8 +17,7 @@ import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 /**
  * ニュースを引用して投稿するときの状態。
  *
- * ニュース一覧と my Nagi の横スクロールカードが同じ
- * 引用機能を持つので、状態と送信をここに集約する。ボタンと入力欄は DOM 上で
+ * 引用機能を持つ画面が複数あるので、状態と送信をここに集約する。ボタンと入力欄は DOM 上で
  * 離れた位置に出るため、コンポーネントではなくクラスとして切り出している。
  */
 export class NewsQuote {

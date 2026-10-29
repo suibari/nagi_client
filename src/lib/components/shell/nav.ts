@@ -19,8 +19,8 @@ export type NavBadge = {
 export type NavItem = { href: string; label: () => string; icon: string; badge?: NavBadge };
 /** 未読バッジの表示テキスト。3桁以上は "99+" に丸める。 */
 export const formatUnread = (count: number) => (count > 99 ? '99+' : String(count));
-const myNagi: NavItem = { href: '/', label: m.navMyNagi, icon: 'home' };
-const feed: NavItem = { href: '/feed', label: m.navFeed, icon: 'text' };
+// TOP（`/`）がフィード。my Nagi は廃止した。
+const feed: NavItem = { href: '/', label: m.navFeed, icon: 'home' };
 const notifications: NavItem = {
 	href: '/notifications',
 	label: m.navNotifications,
@@ -58,14 +58,14 @@ const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'sett
 
 /** PC の区切りも含めた表示順。グループを足せば区切り線も自動で増える。 */
 export const desktopNavGroups: NavItem[][] = [
-	[myNagi, feed, notifications],
+	[feed, notifications],
 	[blog, news],
 	[diary, cards, radio, emoji],
 	[settings],
 ];
 
 /** スマホで常に見せる、利用頻度の高い入口。 */
-export const mobilePrimaryItems: NavItem[] = [myNagi, feed, notifications];
+export const mobilePrimaryItems: NavItem[] = [feed, notifications];
 
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
 export const mobileMenuGroups: NavItem[][] = [
@@ -79,14 +79,13 @@ export const mobileMenuNotice = derived(
 	[unplayedToday, radioUnread, chronicleUnread],
 	([$cards, $radio, $chronicle]) => ($cards > 0 || $radio > 0 || $chronicle > 0 ? 1 : 0),
 );
-/** フィードの3タブ（ホーム/グローバル/全肯定）はどれもフィード扱いにする。 */
+/** 旧フィード URL（`/feed` はリダイレクト、`/global` `/affirmation` は互換ルート）もフィード扱い。 */
 const FEED_PATHS = ['/feed', '/global', '/affirmation'];
 /**
- * my Nagi（`/`）は完全一致のときだけ。前方一致にすると全ページで active になってしまう。
+ * フィード（`/`）は完全一致か旧フィード URL のときだけ。前方一致にすると全ページで active になってしまう。
  */
 export const isActive = (pathname: string, href: string) => {
-	if (href === '/') return pathname === '/';
-	if (href === '/feed') return FEED_PATHS.some((path) => pathname.startsWith(path));
+	if (href === '/') return pathname === '/' || FEED_PATHS.some((path) => pathname.startsWith(path));
 	return pathname === href || pathname.startsWith(`${href}/`);
 };
 

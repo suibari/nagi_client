@@ -92,7 +92,7 @@ export type NewsView = {
 	unavailable?: boolean;
 	/**
 	 * 話しやすさ 0〜4（専門知識なしで話せる・経験や好みにつながる・成功体験がなくても
-	 * 答えられる・意見の正しさを争いにくい、の該当数）。my Nagi の1件選定に使う。
+	 * 答えられる・意見の正しさを争いにくい、の該当数）。右サイドバーの1件選定に使う。
 	 */
 	talkScore?: number;
 };
@@ -194,12 +194,6 @@ export type FeedItem = PostView & {
 	conversation?: ConversationView;
 };
 export type Page<T> = { items: T[]; cursor?: string; hasMore: boolean; botActor?: ActorView };
-/**
- * my Nagi の「リスト動向」。1人につき最新1件しか来ないので、
- * 活発な相手が枠を埋め尽くさない。ページングは無く、続きは既存のTLへ送る。
- */
-export type MyNagiListUser = { actor: ActorView; post: FeedItem };
-export type MyNagiView = { listUsers: MyNagiListUser[] };
 export type TimelinePage = Page<FeedItem>;
 /** 本人だけが取得できる、ホームに表示するユーザーの非公開一覧。 */
 export type PrivateListView = { members: ActorView[]; limit: 200 };
@@ -455,7 +449,10 @@ export type MutesView = { actors: ActorView[]; tags: string[] };
 // ---------------------------------------------------------------------------
 // 端末をまたいで同期する設定（既読位置・お気に入り絵文字）
 // ---------------------------------------------------------------------------
-/** my Nagi のドットを持つセクション。既読位置はセクションごとに1つ。 */
+/**
+ * 既読位置を同期するセクション。既読位置はセクションごとに1つ。
+ * bot / community / list / channels は廃止した my Nagi のもので、サーバー互換のため型に残す。
+ */
 export type ReadPositionSection = 'bot' | 'community' | 'list' | 'channels' | 'news';
 /** 「ここまで読んだ」位置。新旧は (indexedAt, uri) の辞書順で比較する。 */
 export type RemoteReadPosition = { section: ReadPositionSection; indexedAt: string; uri: string };

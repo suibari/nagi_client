@@ -26,9 +26,12 @@
 	 * 「フィードに戻る」で知らない場所へ飛ぶ）。
 	 */
 	const FEED_PATHS = ['/feed', '/global', '/affirmation'];
+	// TOP（`/`）がフィード。前方一致だと全 URL が通るので、`/` と `/?…` だけを許す。
+	const isFeedPath = (path: string) =>
+		path === '/' || path.startsWith('/?') || FEED_PATHS.some((feed) => path.startsWith(feed));
 	const returnTo = $derived.by(() => {
 		const path = toInternalPath(page.url.searchParams.get('returnTo'));
-		return path && FEED_PATHS.some((feed) => path.startsWith(feed)) ? path : undefined;
+		return path && isFeedPath(path) ? path : undefined;
 	});
 	const backHref = $derived(returnTo ?? '/settings');
 	const backLabel = $derived(returnTo ? m.feedTabsBackToFeed() : m.backToSettings());

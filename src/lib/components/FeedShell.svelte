@@ -33,7 +33,11 @@
 	 * spec.key ごとに Feed インスタンスをキャッシュするので、タブを行き来しても
 	 * 読み込み位置とスクロール位置が残る（profile ページと同じ作り）。
 	 */
-	let { spec, homeAuthError = false }: { spec: FeedTabSpec; homeAuthError?: boolean } = $props();
+	let {
+		spec,
+		homeAuthError = false,
+		hideWelcome = false,
+	}: { spec: FeedTabSpec; homeAuthError?: boolean; hideWelcome?: boolean } = $props();
 
 	// 生成は副作用（load を走らせる）なので $derived には置かない。
 	let feed = $state<Feed>(untrack(() => feedFor(spec)));
@@ -84,13 +88,15 @@
 
 <FeedSurface activeKey={spec.key} version={feed.newItemsVersion} onrefresh={() => feed.refresh()}>
 	{#if spec.showGuestHero && !$session}
-		<aside class="welcome">
-			<div>
-				<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
-				<a class="welcome-about" href="/about">{m.welcomeAboutLink()} →</a>
-			</div>
-			<a href="/login">{m.joinCta()}</a>
-		</aside>
+		{#if !hideWelcome}
+			<aside class="welcome">
+				<div>
+					<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
+					<a class="welcome-about" href="/about">{m.welcomeAboutLink()} →</a>
+				</div>
+				<a href="/login">{m.joinCta()}</a>
+			</aside>
+		{/if}
 		<!-- 歓迎カードを必ずタブ直下に置き、その次に端末保存スレッドを通常フィードと同じ列で並べる。 -->
 		<GuestPostSection botActor={feed.botActor} />
 	{/if}

@@ -46,7 +46,6 @@ export const ja = {
 	dateWithWeekday: (p: { date: string; weekday: string }) => `${p.date}(${p.weekday})`,
 
 	// nav
-	navMyNagi: 'my Nagi',
 	navFeed: 'フィード',
 	navHome: 'ホーム',
 	navGlobal: 'グローバル',
@@ -72,8 +71,6 @@ export const ja = {
 	newsCategorySports: 'スポーツ',
 	newsCategoryTechnology: '科学・技術',
 	newsRecommendedEmpty: 'あなたにおすすめのニュースはまだありません。',
-	myNagiBotUnreadAria: 'botたんの新しい近況があります',
-	myNagiListUnreadAria: 'リストに新しい投稿があります',
 	newsEmpty: 'いま掲載できる明るいニュースはありません。',
 	newsRecommendedHeading: 'あなたに近いかも',
 	newsRecommendedReason: (p: { genre: string }) => `おすすめの理由：${p.genre}`,
@@ -118,16 +115,8 @@ export const ja = {
 	newsUnavailable: 'このニュースは掲載終了しました',
 
 	// my Nagi
-	myNagiMore: 'もっと見る',
-	myNagiEmpty: 'まだ何もありません',
-	myNagiNoText: '（本文なし）',
-	myNagiBotTitle: 'botたんのいま',
-	myNagiNewsTitle: '全肯定ニュース',
-	myNagiListTitle: 'リストのみんな',
-	myNagiListEmpty: 'ホームで見る人がまだいません。',
-	myNagiListEmptyCta: '見る人を選ぶ',
-	myNagiGuestTitle: 'サインインすると、もっとあなたらしい my Nagi に',
-	myNagiGuestBody: 'リストのみんなの投稿が、ここに並びます。',
+	sidebarNewsTitle: 'botたんニュース',
+	sidebarNewsMore: 'もっと見る',
 
 	// sidebar footer / about page hero（本文中にキャラ紹介ページへのリンクを挟むため3分割）
 	aboutBeforeLink: 'いいねもフォローもありません。書いた言葉は、',

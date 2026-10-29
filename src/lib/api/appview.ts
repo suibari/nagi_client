@@ -37,7 +37,6 @@ import type {
 	ProfileReactionPage,
 	RadioTrackResponse,
 	RadioHistoryResponse,
-	MyNagiView,
 	PreferencesView,
 	PrivateListView,
 	PutPreferencesInput,
@@ -698,14 +697,6 @@ export const generatePostAssist = (
 		{ method: 'POST', body: JSON.stringify(input), signal },
 		'required',
 	);
-/** my Nagi の「リスト動向」。本人のリストそのものなので認証必須。 */
-export const getMyNagi = (limit = 6) =>
-	call<MyNagiView>(
-		'com.suibari.nagi.getMyNagi',
-		`/xrpc/com.suibari.nagi.getMyNagi?limit=${limit}`,
-		{},
-		'required',
-	);
 
 // カードの所持状況は公開情報。自分の drawStatus と未反映の控えだけ認証付きで返る。
 // 図鑑は publicOnly で先に出し、本人向け情報は requireViewer であとから補う。
@@ -818,7 +809,8 @@ export const getCardBoard = () =>
 	);
 /** だぶったカードをボードに置いて Ƶ を受け取る。mode=all は全部のカードを3枚まで減らす。 */
 export const donateCards = (
-	input: { mode: 'all' } | { mode: 'single'; card: { volume: number; id: number }; quantity?: number },
+	input:
+		{ mode: 'all' } | { mode: 'single'; card: { volume: number; id: number }; quantity?: number },
 ) =>
 	call<DonateCardsResult>(
 		'com.suibari.nagi.donateCards',
