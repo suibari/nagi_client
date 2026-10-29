@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-	activityBackgroundPercent,
 	buildDiaryGraph,
 	buildDiaryGraphForDate,
 	buildDiaryGraphForMonth,
@@ -99,24 +98,5 @@ describe('buildDiaryGraphForMonth', () => {
 		const graph = buildDiaryGraphForMonth('2025-10', today);
 		expect(graph.to).toBe('2025-10-31');
 		expect(graph.from <= '2025-10-01').toBe(true);
-	});
-});
-
-describe('activityBackgroundPercent', () => {
-	it.each([
-		[0, 20],
-		[1, 40],
-		[4, 40],
-		[5, 60],
-		[9, 60],
-		[10, 80],
-		[19, 80],
-		[20, 100],
-		[200, 100],
-		[undefined, 60],
-		[-1, 60],
-		[NaN, 60],
-	])('keeps a fixed scale for %s posts', (count, percent) => {
-		expect(activityBackgroundPercent(count)).toBe(percent);
 	});
 });

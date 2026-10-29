@@ -761,18 +761,12 @@ export const ja = {
 	activityCalendarAria: '月の気分カレンダー',
 	activityHasDiary: '日記あり',
 	activityLegendMedian: '色はその日の気分の中央値',
-	activityLegendVolume: '濃さは投稿数',
+	activityLegendCount: '右下は投稿数',
+	activityCalendarCount: (p: { count: number }) => `${p.count}件`,
 	activityPostCount: (p: { count: number }) => `投稿 ${p.count}件`,
 	activityPostsUnknown: '投稿数不明',
 	activityMoodUnknown: '気分未判定',
-	activityOpenDiary: '選択した日の日記へ ↓',
-	activityVolumeBand: (p: { count: number }) =>
-		p.count === 0
-			? '0件'
-			: p.count === 20
-				? '20件以上'
-				: `${p.count}〜${p.count === 1 ? 4 : p.count === 5 ? 9 : 19}件`,
-	activityLegendDiary: '日記がある日',
+
 	activitySelectHint: 'カレンダーやグラフの日付を押すと、その日の日記と投稿の気分が見られます。',
 	activityLatestDiary: 'この月のいちばん新しい日記',
 	activityNoDiary: 'この日の日記はありません。',

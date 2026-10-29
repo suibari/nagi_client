@@ -122,13 +122,3 @@ export function buildMonthGrid(month: string, today = new Date()): MonthGridDay[
 	}
 	return weeks;
 }
-
-/** 月をまたいでも同じ投稿数を同じ濃さで表示する。未集計は中間の濃さ。 */
-export function activityBackgroundPercent(postCount: number | undefined): number {
-	if (postCount === undefined || !Number.isFinite(postCount) || postCount < 0) return 60;
-	if (postCount === 0) return 20;
-	if (postCount < 5) return 40;
-	if (postCount < 10) return 60;
-	if (postCount < 20) return 80;
-	return 100;
-}

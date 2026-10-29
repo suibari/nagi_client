@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { DiaryView } from '$lib/api/types';
-	import { activityBackgroundPercent, buildMonthGrid } from '$lib/diary/calendar';
+	import { buildMonthGrid } from '$lib/diary/calendar';
 	import { formatValence, moodColor, type MoodDay } from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 
 	/**
-	 * 月間アクティビティの月カレンダー。色相は気分の中央値、背景の濃淡は日記の投稿数。
-	 * 日記がある日は右下に小さな点。気分のない日はアクセント色を使い、
+	 * 月間アクティビティの月カレンダー。背景色は気分の中央値、右下の数字は投稿数。
+	 * 気分のない日は無地にし、
 	 * 選んだ日は感情グラフと共有する。
 	 */
 	let {
@@ -72,7 +72,7 @@
 			<div class="week" role="row">
 				{#each week as day (day.date)}
 					{@const mood = summary.get(day.date)}
-					{@const hasDiary = diaryByDate.has(day.date)}
+					{@const entry = diaryByDate.get(day.date)}
 					{#if !day.inMonth}
 						<span class="cell cell--outside" role="gridcell" aria-hidden="true"></span>
 					{:else if day.future}
@@ -84,9 +84,9 @@
 							<button
 								type="button"
 								class="cell"
-								class:cell--activity={Boolean(mood || hasDiary)}
+								class:cell--mood={Boolean(mood)}
 								class:selected={selected === day.date}
-								style={`--cell-color: ${mood ? moodColor(mood.median) : 'var(--accent-strong)'}; --cell-percent: ${activityBackgroundPercent(diaryByDate.get(day.date)?.postCount)}%`}
+								style={mood ? `--cell-color: ${moodColor(mood.median)}` : undefined}
 								data-date={day.date}
 								aria-pressed={selected === day.date}
 								aria-label={dayLabel(day.date)}
@@ -94,7 +94,13 @@
 								onclick={() => select(day.date)}
 							>
 								<span class="num">{Number(day.date.slice(8))}</span>
-								{#if hasDiary}<span class="diary-dot" aria-hidden="true"></span>{/if}
+								{#if entry || mood}
+									<span class="post-count" aria-hidden="true"
+										>{entry?.postCount === undefined
+											? '—'
+											: m.activityCalendarCount({ count: entry.postCount })}</span
+									>
+								{/if}
 							</button>
 						</span>
 					{/if}
@@ -109,20 +115,7 @@
 			<span>{formatValence(5)}</span>
 		</span>
 		<span>{m.activityLegendMedian()}</span>
-		<span class="legend-activity">
-			<span>{m.activityLegendVolume()}</span>
-			<span class="volume-scale">
-				{#each [0, 1, 5, 10, 20] as count (count)}
-					<i
-						style={`--cell-percent: ${activityBackgroundPercent(count)}%`}
-						title={m.activityVolumeBand({ count })}
-						aria-label={m.activityVolumeBand({ count })}
-						role="img"
-					></i>
-				{/each}
-			</span>
-		</span>
-		<span class="legend-diary"><i aria-hidden="true"></i>{m.activityLegendDiary()}</span>
+		<span>{m.activityLegendCount()}</span>
 	</div>
 </div>
 
@@ -181,8 +174,8 @@
 		color: var(--text-faint);
 		cursor: default;
 	}
-	.cell--activity {
-		background: color-mix(in srgb, var(--cell-color) var(--cell-percent), var(--bg-raised));
+	.cell--mood {
+		background: var(--cell-color);
 	}
 	.cell:not(.cell--outside, .cell--future):hover,
 	.cell:not(.cell--outside, .cell--future):focus-visible {
@@ -214,16 +207,21 @@
 		background: transparent;
 		color: var(--text-faint);
 	}
-	.diary-dot {
+	.post-count {
 		position: absolute;
-		inset-block-end: 5px;
-		inset-inline-end: 5px;
-		inline-size: 6px;
-		block-size: 6px;
-		border-radius: 50%;
-		background: var(--text-strong);
-		box-shadow: 0 0 0 2px var(--bg-raised);
+		inset-block-end: 3px;
+		inset-inline-end: 3px;
+		max-inline-size: calc(100% - 6px);
+		padding: 2px 3px;
+		border-radius: var(--radius-s);
+		background: var(--bg-raised);
+		color: var(--text-strong);
+		font-size: 10px;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
 	}
+
 	.legend {
 		display: flex;
 		flex-wrap: wrap;
@@ -252,27 +250,5 @@
 			var(--mood-scale-4),
 			var(--mood-scale-5)
 		);
-	}
-	.legend-activity,
-	.volume-scale {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-	}
-	.volume-scale i {
-		inline-size: 12px;
-		block-size: 12px;
-		border-radius: 3px;
-		border: 1px solid var(--line);
-		background: color-mix(in srgb, var(--accent-strong) var(--cell-percent), var(--bg-raised));
-	}
-	.legend-diary i {
-		display: inline-block;
-		inline-size: 6px;
-		block-size: 6px;
-		margin-inline-end: 5px;
-		border-radius: 50%;
-		background: var(--accent-strong);
-		vertical-align: middle;
 	}
 </style>
