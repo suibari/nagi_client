@@ -11,7 +11,6 @@
 	import { formatValence, moodColor, summarizeMoodDays } from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { untrack } from 'svelte';
-	import DiaryCalendar from './DiaryCalendar.svelte';
 	import DiaryDayDetail from './DiaryDayDetail.svelte';
 	import DiaryMoodChart from './DiaryMoodChart.svelte';
 	import MoodCalendar from './MoodCalendar.svelte';
@@ -20,11 +19,11 @@
 	import Icon from './shell/Icon.svelte';
 
 	/**
-	 * 月間アクティビティ。月カレンダー（気分の中央値で塗る）・その月の感情グラフ・
-	 * 1年ぶんのコミットグラフを1画面に並べ、どれで日付を選んでも同じ日を指す。
+	 * 月間アクティビティ。月カレンダー（色相は気分、濃淡は投稿量）と、その月の感情グラフを
+	 * 日記の上に並べ、どちらで日付を選んでも同じ日を指す。
 	 * 選んだ日の botたんの日記と、その日の投稿の気分を詳細欄に出す。
 	 *
-	 * データは1年ぶんを1回だけ取って3つで共有する（コミットグラフが1年を要るため）。
+	 * データの取得範囲は従来どおり1年ぶんを共有する。
 	 * month と selected は日記ページが持ち、URL の ?month= / ?date= に書き戻す。
 	 */
 	let {
@@ -84,7 +83,7 @@
 			});
 	});
 
-	// 別の月の日（コミットグラフや URL から）を選んだら、その月へ移る。
+	// 別の月の日（URL から）を選んだら、その月へ移る。
 	$effect(() => {
 		const date = selected;
 		if (date && monthOf(date) !== untrack(() => month)) month = monthOf(date);
@@ -196,64 +195,79 @@
 	{#if error}
 		<div class="state error card">{error}</div>
 	{:else}
-		<div class="month-main">
-			<section class="calendar-card card" data-activity-keep>
-				<MoodCalendar {month} {summary} {diaryByDate} {loading} bind:selected />
-			</section>
+		<section class="calendar-card card" data-activity-keep>
+			<MoodCalendar {month} {summary} {diaryByDate} {loading} bind:selected />
+		</section>
 
-			<section class="detail card" data-activity-keep aria-live="polite">
-				{#if loading}
-					<Spinner />
-				{:else if focusDate}
-					<header class="detail-head">
-						{#if !selected}<p class="detail-eyebrow">{m.activityLatestDiary()}</p>{/if}
-						<!-- 日記がある日は DiaryDayDetail の見出しが日付と称号を出す。 -->
-						{#if focusDiary}
-							<DiaryDayDetail summary={focusDiary} />
-						{:else}
-							<h3>{longDate(focusDate)}</h3>
-						{/if}
+		<DiaryMoodChart {did} bind:selected days={monthDays} data={{ ...loaded, loading, error }} />
+
+		{#if focusDate && !loading}
+			<a
+				class="diary-jump"
+				href="#activity-diary"
+				data-activity-keep
+				onclick={(event) => {
+					event.preventDefault();
+					const detail = document.getElementById('activity-diary');
+					detail?.focus({ preventScroll: true });
+					detail?.scrollIntoView({ block: 'start', behavior: 'instant' });
+				}}>{m.activityOpenDiary()}</a
+			>
+		{/if}
+
+		<section
+			id="activity-diary"
+			class="detail card"
+			data-activity-keep
+			aria-live="polite"
+			tabindex="-1"
+		>
+			{#if loading}
+				<Spinner />
+			{:else if focusDate}
+				<header class="detail-head">
+					{#if !selected}<p class="detail-eyebrow">{m.activityLatestDiary()}</p>{/if}
+					<!-- 日記がある日は DiaryDayDetail の見出しが日付と称号を出す。 -->
+					{#if focusDiary}
+						<DiaryDayDetail summary={focusDiary} />
+					{:else}
+						<h3>{longDate(focusDate)}</h3>
+					{/if}
+					<div class="detail-stats">
 						{#if focusMood}
 							<p class="detail-mood">
 								<i style={`background: ${moodColor(focusMood.median)}`} aria-hidden="true"></i>
 								{m.moodMedian({ value: medianLabel(focusMood.median) })}
 							</p>
+						{:else}
+							<p>{m.activityMoodUnknown()}</p>
 						{/if}
-					</header>
-					{#if focusDiary}
-						<DiaryDayDetail entry={focusDiary} {botActor} />
-					{:else}
-						<p class="detail-hint">{m.activityNoDiary()}</p>
-					{/if}
-					{#if focusMood}
-						<details class="detail-posts" open={!focusDiary}>
-							<summary>{m.activityDayPosts({ count: focusMood.points.length })}</summary>
-							<MoodDayPosts date={focusDate} day={focusMood} />
-						</details>
-					{:else if selected}
-						<p class="detail-hint">{m.moodDayNoPosts()}</p>
-					{/if}
-				{:else if monthEntries.length || monthMoods.length}
-					<p class="detail-hint">{m.activitySelectHint()}</p>
+						<p>
+							{focusDiary?.postCount === undefined
+								? m.activityPostsUnknown()
+								: m.activityPostCount({ count: focusDiary.postCount })}
+						</p>
+					</div>
+				</header>
+				{#if focusDiary}
+					<DiaryDayDetail entry={focusDiary} {botActor} />
 				{:else}
-					<p class="detail-hint">{m.activityEmptyMonth()}</p>
+					<p class="detail-hint">{m.activityNoDiary()}</p>
 				{/if}
-			</section>
-		</div>
-
-		<DiaryMoodChart {did} bind:selected days={monthDays} data={{ ...loaded, loading, error }} />
-
-		<div data-activity-keep>
-			<DiaryCalendar
-				{did}
-				{graph}
-				{botActor}
-				bind:selected
-				highlightMonth={month}
-				data={{ entries: loaded.entries, loading, error }}
-			/>
-		</div>
-
+				{#if focusMood}
+					<details class="detail-posts" open={!focusDiary}>
+						<summary>{m.activityDayPosts({ count: focusMood.points.length })}</summary>
+						<MoodDayPosts date={focusDate} day={focusMood} />
+					</details>
+				{:else if selected}
+					<p class="detail-hint">{m.moodDayNoPosts()}</p>
+				{/if}
+			{:else if monthEntries.length || monthMoods.length}
+				<p class="detail-hint">{m.activitySelectHint()}</p>
+			{:else}
+				<p class="detail-hint">{m.activityEmptyMonth()}</p>
+			{/if}
+		</section>
 		<p class="activity-about">{m.activityAbout()}</p>
 	{/if}
 </div>
@@ -313,23 +327,33 @@
 		font-size: 12px;
 		font-weight: 700;
 	}
-	.month-main {
-		display: grid;
-		gap: 12px;
-		min-inline-size: 0;
-	}
-	@media (min-width: 760px) {
-		.month-main {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-			align-items: start;
-		}
-	}
 	.calendar-card,
 	.detail {
 		padding: 14px;
 		min-inline-size: 0;
 	}
+	.calendar-card {
+		inline-size: 100%;
+		max-inline-size: 388px;
+		box-sizing: border-box;
+		justify-self: center;
+	}
+	.diary-jump {
+		justify-self: start;
+		color: var(--accent-strong);
+		font-size: 13px;
+		font-weight: 700;
+		text-underline-offset: 3px;
+	}
+	.detail-stats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 16px;
+		font-size: 12px;
+		color: var(--text-muted);
+	}
 	.detail {
+		scroll-margin-block-start: calc(var(--mobile-header-h, 0px) + 16px);
 		display: grid;
 		gap: 12px;
 		align-content: start;

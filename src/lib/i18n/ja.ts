@@ -751,7 +751,7 @@ export const ja = {
 			.join('、'),
 	diaryAbout: 'botたんが、その日の投稿をもとに書いてくれた日記です。',
 
-	// 月間アクティビティ（カレンダー・感情グラフ・コミットグラフ・日記を1画面に）。
+	// 月間アクティビティ（カレンダー・感情グラフ・日記を1画面に）。
 	// 回数の多い少ないを評価する言い方はしない（docs/chronicle.md と同じ方針）。
 	activityMonthPrev: '前の月',
 	activityMonthNext: '次の月',
@@ -761,6 +761,17 @@ export const ja = {
 	activityCalendarAria: '月の気分カレンダー',
 	activityHasDiary: '日記あり',
 	activityLegendMedian: '色はその日の気分の中央値',
+	activityLegendVolume: '濃さは投稿数',
+	activityPostCount: (p: { count: number }) => `投稿 ${p.count}件`,
+	activityPostsUnknown: '投稿数不明',
+	activityMoodUnknown: '気分未判定',
+	activityOpenDiary: '選択した日の日記へ ↓',
+	activityVolumeBand: (p: { count: number }) =>
+		p.count === 0
+			? '0件'
+			: p.count === 20
+				? '20件以上'
+				: `${p.count}〜${p.count === 1 ? 4 : p.count === 5 ? 9 : 19}件`,
 	activityLegendDiary: '日記がある日',
 	activitySelectHint: 'カレンダーやグラフの日付を押すと、その日の日記と投稿の気分が見られます。',
 	activityLatestDiary: 'この月のいちばん新しい日記',

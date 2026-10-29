@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { DiaryView } from '$lib/api/types';
-	import { buildMonthGrid } from '$lib/diary/calendar';
+	import { activityBackgroundPercent, buildMonthGrid } from '$lib/diary/calendar';
 	import { formatValence, moodColor, type MoodDay } from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 
 	/**
-	 * 月間アクティビティの月カレンダー。日ごとのマスを、その日の感情の中央値の色で塗る。
-	 * 投稿の無い日は無地、日記がある日は右下に小さな点。選んだ日は月間アクティビティ全体
-	 * （感情グラフ・コミットグラフ）と共有する。
+	 * 月間アクティビティの月カレンダー。色相は気分の中央値、背景の濃淡は日記の投稿数。
+	 * 日記がある日は右下に小さな点。気分のない日はアクセント色を使い、
+	 * 選んだ日は感情グラフと共有する。
 	 */
 	let {
 		month,
@@ -45,11 +45,16 @@
 				m.moodDayPosts({ count: day.points.length }),
 				m.moodMedian({ value: medianLabel(day.median) }),
 			);
-		if (diaryByDate.has(date)) parts.push(m.activityHasDiary());
+		else parts.push(m.activityMoodUnknown());
+		const entry = diaryByDate.get(date);
+		parts.push(
+			entry?.postCount === undefined
+				? m.activityPostsUnknown()
+				: m.activityPostCount({ count: entry.postCount }),
+		);
+		if (entry) parts.push(m.activityHasDiary());
 		return parts.join(' · ');
 	};
-	/** 日付の数字の色。黄色の帯（+1.5〜+4 あたり）だけ濃い文字、それ以外の濃い色は白で読む。 */
-	const ink = (median: number) => (median >= 1.25 && median <= 4.25 ? 'dark' : 'light');
 
 	function select(date: string) {
 		selected = selected === date ? undefined : date;
@@ -79,10 +84,9 @@
 							<button
 								type="button"
 								class="cell"
-								class:cell--mood={mood}
-								class:cell--ink-light={mood && ink(mood.median) === 'light'}
+								class:cell--activity={Boolean(mood || hasDiary)}
 								class:selected={selected === day.date}
-								style={mood ? `--cell-color: ${moodColor(mood.median)}` : undefined}
+								style={`--cell-color: ${mood ? moodColor(mood.median) : 'var(--accent-strong)'}; --cell-percent: ${activityBackgroundPercent(diaryByDate.get(day.date)?.postCount)}%`}
 								data-date={day.date}
 								aria-pressed={selected === day.date}
 								aria-label={dayLabel(day.date)}
@@ -105,6 +109,19 @@
 			<span>{formatValence(5)}</span>
 		</span>
 		<span>{m.activityLegendMedian()}</span>
+		<span class="legend-activity">
+			<span>{m.activityLegendVolume()}</span>
+			<span class="volume-scale">
+				{#each [0, 1, 5, 10, 20] as count (count)}
+					<i
+						style={`--cell-percent: ${activityBackgroundPercent(count)}%`}
+						title={m.activityVolumeBand({ count })}
+						aria-label={m.activityVolumeBand({ count })}
+						role="img"
+					></i>
+				{/each}
+			</span>
+		</span>
 		<span class="legend-diary"><i aria-hidden="true"></i>{m.activityLegendDiary()}</span>
 	</div>
 </div>
@@ -164,13 +181,8 @@
 		color: var(--text-faint);
 		cursor: default;
 	}
-	.cell--mood {
-		border-color: color-mix(in srgb, var(--cell-color), var(--text-strong) 12%);
-		background: var(--cell-color);
-		color: #1d1a24;
-	}
-	.cell--ink-light {
-		color: #fff;
+	.cell--activity {
+		background: color-mix(in srgb, var(--cell-color) var(--cell-percent), var(--bg-raised));
 	}
 	.cell:not(.cell--outside, .cell--future):hover,
 	.cell:not(.cell--outside, .cell--future):focus-visible {
@@ -184,12 +196,23 @@
 	}
 	.num {
 		position: absolute;
-		inset-block-start: 4px;
-		inset-inline-start: 6px;
+		inset-block-start: 3px;
+		inset-inline-start: 3px;
+		min-inline-size: 20px;
+		padding: 3px;
+		box-sizing: border-box;
+		border-radius: var(--radius-s);
+		background: var(--bg-raised);
+		color: var(--text-strong);
+		text-align: center;
 		font-size: 12px;
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 		line-height: 1;
+	}
+	.cell--future .num {
+		background: transparent;
+		color: var(--text-faint);
 	}
 	.diary-dot {
 		position: absolute;
@@ -198,11 +221,8 @@
 		inline-size: 6px;
 		block-size: 6px;
 		border-radius: 50%;
-		background: currentColor;
-		box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--surface), transparent 30%);
-	}
-	.cell:not(.cell--mood) .diary-dot {
-		background: var(--accent-strong);
+		background: var(--text-strong);
+		box-shadow: 0 0 0 2px var(--bg-raised);
 	}
 	.legend {
 		display: flex;
@@ -232,6 +252,19 @@
 			var(--mood-scale-4),
 			var(--mood-scale-5)
 		);
+	}
+	.legend-activity,
+	.volume-scale {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.volume-scale i {
+		inline-size: 12px;
+		block-size: 12px;
+		border-radius: 3px;
+		border: 1px solid var(--line);
+		background: color-mix(in srgb, var(--accent-strong) var(--cell-percent), var(--bg-raised));
 	}
 	.legend-diary i {
 		display: inline-block;

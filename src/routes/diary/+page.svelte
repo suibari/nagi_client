@@ -19,7 +19,7 @@
 		return isMonthKey(value) ? value : undefined;
 	});
 	/**
-	 * 選択中の日。月カレンダー・感情グラフ・コミットグラフで共有し、?date= に書き戻す
+	 * 選択中の日。月カレンダー・感情グラフで共有し、?date= に書き戻す
 	 * （タブを切り替えても同じ日を開いたまま・再読込や共有にも耐える）。
 	 */
 	let selectedDate = $state<string | undefined>(untrack(() => urlDate));
@@ -108,6 +108,8 @@
 		untrack(() => {
 			if (tab === 'chronicle' || (next === urlDate && nextMonth === urlMonth)) return;
 			const url = new URL(page.url);
+			// 日付付きの年表リンクから開いた後も、月や日付の操作は月間画面に留める。
+			if (url.searchParams.get('tab') === 'chronicle') url.searchParams.delete('tab');
 			if (next) url.searchParams.set('date', next);
 			else url.searchParams.delete('date');
 			if (nextMonth) url.searchParams.set('month', nextMonth);

@@ -6,7 +6,7 @@
 
 	/**
 	 * 日記1日ぶんの見出し（日付・称号・関わった人）と、botたんの日記の吹き出し。
-	 * 日記タブの年間アクティビティで使う。
+	 * 月間アクティビティと年間アクティビティで使う。
 	 * summary はホバー中の日も含めた見出し用、entry は選択中の日で吹き出しに出す。
 	 */
 	let {
@@ -91,9 +91,9 @@
 <style>
 	.diary-day-detail {
 		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 18px;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 10px;
 		padding: 12px;
 		border-radius: var(--radius-m);
 		background: var(--surface-soft);
@@ -120,17 +120,20 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		white-space: nowrap;
+		flex-wrap: wrap;
+		min-inline-size: 0;
 		font-size: 11px;
 		font-weight: 700;
 		color: var(--text-muted);
 	}
+	.diary-connections :global(.reaction-actors) {
+		flex-wrap: wrap;
+		max-inline-size: 100%;
+	}
+	.diary-entry :global(.bubble) {
+		max-inline-size: none;
+	}
 	.diary-entry {
 		min-inline-size: 0;
-	}
-	@media (max-width: 560px) {
-		.diary-day-detail {
-			flex-direction: column;
-		}
 	}
 </style>
