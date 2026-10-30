@@ -1135,6 +1135,8 @@
 	box-shadow: none;
 	padding: 12px;
 	display: grid;
+	/* Long author names must not set the minimum width of the conversation track. */
+	grid-template-columns: minmax(0, 1fr);
 	gap: 0;
 }
 /* New arrivals speak from the avatar. Both feed sources and optimistic posts share this motion. */
@@ -1724,6 +1726,7 @@
 }
 
 .thread-reply {
+	min-inline-size: 0;
 	margin-top: 7px;
 	/* Reddit風の深さインデント。--reply-indent 段(直リプ=0段)ぶん左に寄せる。既存箇所は未設定=0。 */
 	padding-inline-start: calc(var(--reply-indent, 0) * 18px);

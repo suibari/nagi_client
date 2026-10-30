@@ -66,6 +66,71 @@ test('a left swipe selects the next feed tab', async ({ page }) => {
 	await expect(page).toHaveURL(/\/feed\?tab=affirmation$/);
 });
 
+test('long author names stay inside mobile posts and nested replies in both feeds', async ({
+	page,
+}) => {
+	for (const width of [320, 390]) {
+		await page.setViewportSize({ width, height: 844 });
+		for (const source of ['nagi', 'bsky']) {
+			if (source === 'bsky') {
+				await page.getByRole('button', { name: '表示切替' }).click();
+				await expect(page.locator('.bsky-post')).toHaveCount(4);
+			}
+			await page.locator('.meta-author-line > a').evaluateAll((authors) => {
+				for (const author of authors) {
+					author.textContent = 'ひろえもん⚡長い表示名 / ChrySys 💗 long display name '.repeat(5);
+				}
+			});
+			const layout = await page.getByTestId('feed-content').evaluate((feed) => {
+				const bounds = feed.getBoundingClientRect();
+				return {
+					fits: Array.from(feed.querySelectorAll('.bubble, .meta-time')).every((element) => {
+						const rect = element.getBoundingClientRect();
+						return rect.left >= bounds.left && rect.right <= bounds.right + 1;
+					}),
+					overflow: feed.scrollWidth - feed.clientWidth,
+					truncated: Array.from(feed.querySelectorAll('.meta-author-line > a')).every(
+						(element) => element.scrollWidth > element.clientWidth,
+					),
+				};
+			});
+			expect(layout).toEqual({ fits: true, overflow: 0, truncated: true });
+		}
+		await page.getByRole('button', { name: '表示切替' }).click();
+	}
+});
+
+test('a long name in a Nagi reply does not widen the root post or conversation', async ({
+	page,
+}) => {
+	await page.goto('/dev/e2e/bot-reply-collapse');
+	for (const width of [320, 390]) {
+		await page.setViewportSize({ width, height: 844 });
+		// Exercise both grouped conversations and the legacy parent/reply layout.
+		for (const kind of ['bot-root', 'human']) {
+			const conversation = page.getByTestId(kind);
+			const replyAuthor = conversation.locator('.thread-reply .meta-author-line > a');
+			await expect(replyAuthor).toHaveCount(1);
+			await replyAuthor.evaluate((author) => {
+				author.textContent = 'ひろえもん⚡非公式のド根性お絵かき芸人＠長い名前'.repeat(5);
+			});
+			const layout = await conversation.evaluate((element) => {
+				const bounds = element.getBoundingClientRect();
+				const author = element.querySelector('.thread-reply .meta-author-line > a')!;
+				return {
+					fits: Array.from(element.querySelectorAll('.bubble, .meta-time')).every((bubble) => {
+						const rect = bubble.getBoundingClientRect();
+						return rect.left >= bounds.left && rect.right <= bounds.right + 1;
+					}),
+					overflow: element.scrollWidth - element.clientWidth,
+					truncated: author.scrollWidth > author.clientWidth,
+				};
+			});
+			expect(layout).toEqual({ fits: true, overflow: 0, truncated: true });
+		}
+	}
+});
+
 test('nested media gestures and short pulls do not reload or change tabs', async ({ page }) => {
 	await drag(page, '[data-testid="gesture-area"]', 0, 65);
 	await expect(page.getByTestId('refresh-count')).toHaveText('1');

@@ -162,6 +162,9 @@
 {/if}
 
 <style>
+	.bsky-post {
+		min-inline-size: 0;
+	}
 	.bsky-context {
 		display: flex;
 		align-items: center;
