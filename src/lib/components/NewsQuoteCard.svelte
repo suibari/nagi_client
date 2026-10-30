@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { safeNewsUrl } from '$lib/news/bot-post';
 	import { safeNewsImageUrl } from '$lib/news/image';
+	import LinkCard from './LinkCard.svelte';
 	import QuoteFrame from './QuoteFrame.svelte';
 	let { news, botActor }: { news: NewsView; botActor?: ActorView } = $props();
-	let safeUrl = $derived(safeNewsUrl(news.url));
-	let safeImage = $derived(safeNewsImageUrl(news.image));
-	let failedImage = $state<string>();
+	let card = $derived({
+		uri: news.url,
+		title: news.title,
+		description: news.sourceName,
+		thumb: safeNewsImageUrl(news.image),
+	});
 </script>
 
 {#if news.unavailable}
@@ -25,20 +28,7 @@
 			話し手と時刻は QuoteFrame のヘッダーが出しているので重複させない。
 		-->
 		{#if news.botComment}<p class="bubble bot-comment">{news.botComment}</p>{/if}
-		<a class="news-quote" href={safeUrl} target="_blank" rel="noopener noreferrer">
-			<small>{news.sourceName ?? m.newsSourceUnknown()}</small><strong>{news.title}</strong>
-			{#if safeImage && safeImage !== failedImage}
-				<img
-					class="news-image"
-					src={safeImage}
-					alt=""
-					loading="lazy"
-					decoding="async"
-					referrerpolicy="no-referrer"
-					onerror={(event) => (failedImage = event.currentTarget.getAttribute('src') ?? undefined)}
-				/>
-			{/if}
-		</a>
+		<LinkCard {card} />
 	</QuoteFrame>
 {/if}
 
@@ -49,7 +39,7 @@
 		overflow-wrap: anywhere;
 		white-space: pre-wrap;
 	}
-	.news-quote {
+	.unavailable {
 		display: flex;
 		flex-direction: column;
 		gap: 0.3rem;
@@ -58,29 +48,7 @@
 		padding: 0.75rem;
 		border: 1px solid var(--line);
 		border-radius: 0.8rem;
-		color: inherit;
-		text-decoration: none;
-	}
-	.news-quote strong,
-	.news-quote small {
-		overflow-wrap: anywhere;
-	}
-	.news-image {
-		display: block;
-		inline-size: 100%;
-		aspect-ratio: 1.91 / 1;
-		margin-top: 0.3rem;
-		border-radius: var(--r-md);
-		object-fit: cover;
-	}
-	.news-quote:hover {
-		background: var(--bg-hover);
-	}
-	.news-quote small,
-	.unavailable {
 		color: var(--text-muted);
-	}
-	.unavailable {
 		margin-top: 0.6rem;
 	}
 </style>
