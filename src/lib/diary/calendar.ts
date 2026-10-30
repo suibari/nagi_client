@@ -61,6 +61,34 @@ export function diaryActivityIntensity(
 	return postCount / maximum;
 }
 
+/** 投稿量のドット段階。0 は投稿なし、1〜3 は少・中・多。 */
+export type PostVolumeLevel = 0 | 1 | 2 | 3;
+
+/**
+ * 投稿のあった日の件数を3等分する境目 [少の上限, 中の上限]。
+ * 人によって投稿の多さが違うので、固定の件数ではなくその人の分布で区切る。
+ */
+export function postVolumeThresholds(counts: Iterable<number | undefined>): [number, number] {
+	const sorted = [...counts]
+		.filter((count): count is number => count !== undefined && count > 0)
+		.sort((a, b) => a - b);
+	if (!sorted.length) return [0, 0];
+	const at = (ratio: number) => sorted[Math.ceil(sorted.length * ratio) - 1];
+	return [at(1 / 3), at(2 / 3)];
+}
+
+/** 件数をドット段階に変える。件数が分からない日は undefined。 */
+export function postVolumeLevel(
+	postCount: number | undefined,
+	[low, middle]: [number, number],
+): PostVolumeLevel | undefined {
+	if (postCount === undefined) return undefined;
+	if (postCount <= 0) return 0;
+	if (postCount <= low) return 1;
+	if (postCount <= middle) return 2;
+	return 3;
+}
+
 const MONTH = /^\d{4}-\d{2}$/;
 
 /** その日を含む月。"YYYY-MM"。 */
