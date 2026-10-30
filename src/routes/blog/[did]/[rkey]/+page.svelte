@@ -11,9 +11,10 @@
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import ImageGallery from '$lib/components/ImageGallery.svelte';
 	import LinkCard from '$lib/components/LinkCard.svelte';
+	import GuestHero from '$lib/components/GuestHero.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
-	import { session } from '$lib/oauth/session.svelte';
+	import { hadRecentSession, session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
@@ -21,6 +22,9 @@
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 
 	let { data } = $props();
+	// ホームのヒーローと同じ判定。プリレンダ結果（共有リンクから来た人・クローラ）には出し、
+	// 戻ってきた利用者には OAuth の復元を待たずに最初から出さない。
+	const showHero = $derived(!$session && !hadRecentSession());
 	// svelte-ignore state_referenced_locally -- prerender snapshot; onMount refreshes viewer-specific state
 	let thread = $state<ThreadView | undefined>(data.thread);
 	let error = $state('');
@@ -133,6 +137,10 @@
 		};
 	});
 </script>
+
+{#if showHero}
+	<GuestHero />
+{/if}
 
 <article class="blog-article">
 	{#if cover}

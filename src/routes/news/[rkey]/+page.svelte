@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getNewsQuotes, getSimilarNews } from '$lib/api/appview';
 	import type { ActorView, FeedItem, NewsView } from '$lib/api/types';
+	import GuestHero from '$lib/components/GuestHero.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
@@ -8,7 +9,7 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { safeNewsImageUrl } from '$lib/news/image';
 	import { newsRkey } from '$lib/news/indexable';
-	import { oauthReady } from '$lib/oauth/session.svelte';
+	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
@@ -74,6 +75,10 @@
 		void loadSimilar(uri);
 	});
 
+	// ホームのヒーローと同じ判定。プリレンダ結果（共有リンクから来た人・クローラ）には出し、
+	// 戻ってきた利用者には OAuth の復元を待たずに最初から出さない。
+	const showHero = $derived(!$session && !hadRecentSession());
+
 	// ここからコメントしたら、その場で一覧に出す。
 	let seenPosted = untrack(() => postedSignal.count);
 	$effect(() => {
@@ -84,6 +89,9 @@
 </script>
 
 <a class="news-back" href="/news">{m.newsBackToList()}</a>
+{#if showHero}
+	<GuestHero />
+{/if}
 <article class="news-permalink">
 	<NewsCard news={data.news} botActor={data.botActor} showImage clampTitle={false} />
 </article>

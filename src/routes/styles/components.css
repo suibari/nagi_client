@@ -3564,21 +3564,6 @@ a.notification-main::before {
 	color: var(--text-muted);
 	margin: 0;
 }
-/* ブログ・ニュースの冒頭に置く版。一覧の上に載るので、面を立ててカードに見せる。 */
-.hero.is-compact {
-	margin-block-end: 16px;
-	padding: 18px 16px;
-	background: var(--accent-softer);
-	border-radius: var(--r-md);
-}
-.hero.is-compact .eyebrow {
-	margin: 0;
-	font-size: 11px;
-}
-.hero.is-compact .hero-title {
-	margin: 4px 0 0;
-	font-size: clamp(19px, 3.6vw, 24px);
-}
 /* 4本柱。アイコン + 見出し + 1行。狭幅は1列、広がれば2列。 */
 .hero-points {
 	display: grid;
@@ -3589,9 +3574,6 @@ a.notification-main::before {
 	padding: 0;
 	list-style: none;
 	text-align: start;
-}
-.hero.is-compact .hero-points {
-	margin-block-start: 14px;
 }
 .hero-points li {
 	display: flex;

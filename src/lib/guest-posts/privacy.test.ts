@@ -26,8 +26,16 @@ const chatBubble = readFileSync(
 );
 const topPage = readFileSync(new URL('../../routes/+page.svelte', import.meta.url), 'utf8');
 const guestHero = readFileSync(new URL('../components/GuestHero.svelte', import.meta.url), 'utf8');
-const blogPage = readFileSync(new URL('../../routes/blog/+page.svelte', import.meta.url), 'utf8');
-const newsPage = readFileSync(new URL('../../routes/news/+page.svelte', import.meta.url), 'utf8');
+const blogList = readFileSync(new URL('../../routes/blog/+page.svelte', import.meta.url), 'utf8');
+const newsList = readFileSync(new URL('../../routes/news/+page.svelte', import.meta.url), 'utf8');
+const blogArticle = readFileSync(
+	new URL('../../routes/blog/[did]/[rkey]/+page.svelte', import.meta.url),
+	'utf8',
+);
+const newsArticle = readFileSync(
+	new URL('../../routes/news/[rkey]/+page.svelte', import.meta.url),
+	'utf8',
+);
 const feedPage = readFileSync(
 	new URL('../components/FeedTabsView.svelte', import.meta.url),
 	'utf8',
@@ -105,10 +113,16 @@ describe('guest post privacy boundary', () => {
 		expect(feedShell).not.toContain('{m.heroTitle()}');
 	});
 
-	it('puts the compact guest hero at the top of blog and news for signed-out visitors', () => {
-		for (const page of [blogPage, newsPage]) {
-			expect(page).toContain('<GuestHero compact />');
+	it('puts the guest hero above blog and news articles, not on their list pages', () => {
+		for (const [page, article] of [
+			[blogArticle, '<article class="blog-article">'],
+			[newsArticle, '<article class="news-permalink">'],
+		]) {
 			expect(page).toContain('const showHero = $derived(!$session && !hadRecentSession());');
+			expect(page.indexOf('<GuestHero />')).toBeGreaterThan(-1);
+			expect(page.indexOf('<GuestHero />')).toBeLessThan(page.indexOf(article));
 		}
+		expect(blogList).not.toContain('GuestHero');
+		expect(newsList).not.toContain('GuestHero');
 	});
 });

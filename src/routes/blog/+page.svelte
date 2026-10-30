@@ -6,11 +6,10 @@
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { afterNavigate } from '$app/navigation';
 	import BlogCard from '$lib/components/BlogCard.svelte';
-	import GuestHero from '$lib/components/GuestHero.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { fetchBlogDirectory, type BlogDirectoryItem } from '$lib/blog/directory';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { hadRecentSession, session } from '$lib/oauth/session.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { setComposerMode } from '$lib/post/composer-mode';
 
@@ -62,10 +61,6 @@
 		});
 	});
 
-	// ホームのヒーローと同じ判定。プリレンダ結果（初回訪問者・クローラ）には出し、
-	// 戻ってきた利用者には OAuth の復元を待たずに最初から出さない。
-	const showHero = $derived(!$session && !hadRecentSession());
-
 	function openBlogComposer() {
 		if (!$session) {
 			location.href = '/login';
@@ -81,10 +76,6 @@
 	<h1>{m.blogTitle()}</h1>
 	<button type="button" class="primary" onclick={openBlogComposer}>{m.blogWrite()}</button>
 </section>
-
-{#if showHero}
-	<GuestHero compact />
-{/if}
 
 <section class="blog-directory">
 	<p class="blog-intro">{m.blogIntro()}</p>

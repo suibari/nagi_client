@@ -1,13 +1,10 @@
 <script lang="ts">
 	/**
-	 * 未ログインの人に見せる紹介カード。ホームでは本文つきで大きく、
-	 * ブログ・ニュースでは本文を押し下げすぎないよう小さくして冒頭に置く。
-	 * どちらも「Nagiのことを知る」と「参加する」への導線を持つ。
+	 * 未ログインの人に見せる紹介。フィードの冒頭と、ブログ・ニュースの個別記事の上に同じ形で置き、
+	 * 「Nagiのことを知る」と「参加する」への導線を持つ。
 	 */
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-
-	let { compact = false }: { compact?: boolean } = $props();
 
 	// /about の「なぜNagiなのか」と同じ4本柱。見出しは共有し、本文だけカード用に短くする。
 	const points = [
@@ -18,13 +15,11 @@
 	];
 </script>
 
-<section class="hero" class:is-compact={compact}>
+<section class="hero">
 	<p class="eyebrow">{m.heroEyebrow()}</p>
-	<!-- ホームでは見出しそのもの。ブログ・ニュースにはページの h1 があるので h2 にする。 -->
-	<svelte:element this={compact ? 'h2' : 'h1'} class="hero-title">{m.heroTitle()}</svelte:element>
-	{#if !compact}
-		<p class="hero-body">{m.heroBody()}</p>
-	{/if}
+	<!-- 置き先のページはどれも自前の h1（フィード見出し・記事タイトル）を持つので h2 にする。 -->
+	<h2 class="hero-title">{m.heroTitle()}</h2>
+	<p class="hero-body">{m.heroBody()}</p>
 	<ul class="hero-points">
 		{#each points as point (point.icon)}
 			<li>
