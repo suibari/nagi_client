@@ -3553,7 +3553,7 @@ a.notification-main::before {
 	text-align: center;
 	padding: 28px 10px 22px;
 }
-.hero h1 {
+.hero-title {
 	font-size: clamp(26px, 5vw, 38px);
 	line-height: 1.2;
 	letter-spacing: 0.04em;
@@ -3563,6 +3563,176 @@ a.notification-main::before {
 .hero-body {
 	color: var(--text-muted);
 	margin: 0;
+}
+/* ブログ・ニュースの冒頭に置く版。一覧の上に載るので、面を立ててカードに見せる。 */
+.hero.is-compact {
+	margin-block-end: 16px;
+	padding: 18px 16px;
+	background: var(--accent-softer);
+	border-radius: var(--r-md);
+}
+.hero.is-compact .eyebrow {
+	margin: 0;
+	font-size: 11px;
+}
+.hero.is-compact .hero-title {
+	margin: 4px 0 0;
+	font-size: clamp(19px, 3.6vw, 24px);
+}
+/* 4本柱。アイコン + 見出し + 1行。狭幅は1列、広がれば2列。 */
+.hero-points {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 10px 18px;
+	max-inline-size: 36rem;
+	margin: 20px auto 0;
+	padding: 0;
+	list-style: none;
+	text-align: start;
+}
+.hero.is-compact .hero-points {
+	margin-block-start: 14px;
+}
+.hero-points li {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	min-inline-size: 0;
+}
+.hero-point-icon {
+	display: grid;
+	flex: 0 0 auto;
+	place-items: center;
+	inline-size: 34px;
+	block-size: 34px;
+	color: var(--accent-strong);
+	background: var(--accent-soft);
+	border-radius: 50%;
+}
+.hero-point-text {
+	display: grid;
+	gap: 1px;
+	min-inline-size: 0;
+	font-size: 0.82rem;
+	line-height: 1.55;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+.hero-point-text strong {
+	font-size: 0.92rem;
+	color: var(--text-strong);
+}
+@media (min-width: 480px) {
+	.hero-points {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+.hero-ai-note {
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	gap: 6px;
+	max-inline-size: 36rem;
+	margin: 16px auto 0;
+	font-size: 0.75rem;
+	line-height: 1.6;
+	color: var(--text-faint);
+	text-align: start;
+	overflow-wrap: anywhere;
+}
+.hero-ai-note > :first-child {
+	flex: 0 0 auto;
+	margin-block-start: 3px;
+}
+.hero-ai-note a {
+	color: var(--accent-strong);
+	white-space: nowrap;
+}
+
+/* --- Nagi でのやりとりの見本（/about） --- */
+.moment-sample {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	min-inline-size: 0;
+	text-align: start;
+}
+.moment-post {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	min-inline-size: 0;
+}
+.moment-post.is-reply {
+	padding-inline-start: 28px;
+}
+.moment-avatar {
+	display: grid;
+	flex: 0 0 auto;
+	place-items: center;
+	inline-size: 36px;
+	block-size: 36px;
+	border-radius: 50%;
+	background: var(--surface-1);
+	object-fit: cover;
+}
+.moment-avatar.is-bot {
+	color: var(--accent-strong);
+	background: var(--accent-soft);
+}
+.moment-bubble {
+	display: grid;
+	gap: 4px;
+	min-inline-size: 0;
+	padding: 10px 14px;
+	background: var(--surface-1);
+	border-radius: 4px 16px 16px 16px;
+	box-shadow:
+		0 1px 2px rgb(0 0 0 / 0.04),
+		0 12px 28px -16px rgb(0 40 50 / 0.22);
+}
+.moment-post.is-reply .moment-bubble {
+	background: var(--accent-softer);
+}
+.moment-bubble strong {
+	font-size: 0.8rem;
+	color: var(--text-strong);
+}
+.moment-bubble p {
+	margin: 0;
+	font-size: 0.88rem;
+	line-height: 1.7;
+	color: var(--text);
+	overflow-wrap: anywhere;
+}
+.moment-reactions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 4px 0 0;
+	padding: 0;
+	list-style: none;
+}
+.moment-reactions li {
+	display: grid;
+	place-items: center;
+	min-inline-size: 32px;
+	block-size: 26px;
+	padding: 0 6px;
+	font-size: 0.95rem;
+	background: var(--accent-softer);
+	border-radius: 999px;
+}
+.moment-sample .about-sample-badge {
+	color: var(--accent-strong);
+}
+.moment-sample figcaption {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	font-size: 0.75rem;
+	color: var(--text-faint);
 }
 .hero-actions {
 	display: flex;
@@ -4322,7 +4492,7 @@ button.settings-category {
 }
 
 /* --- 選ばれる理由 --- */
-/* 枠なしで3列。アイコンを淡い円に載せ、それだけを色の置き場にする。 */
+/* 枠なしで4列（中幅は2列）。アイコンを淡い円に載せ、それだけを色の置き場にする。 */
 .about-reasons {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
@@ -4362,10 +4532,65 @@ button.settings-category {
 	color: var(--text-muted);
 	overflow-wrap: anywhere;
 }
-@container about (min-width: 560px) {
+@container about (min-width: 480px) {
 	.about-reasons {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 24px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 32px 24px;
+	}
+}
+@container about (min-width: 820px) {
+	.about-reasons {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+/* --- Nagiでのひととき --- */
+/* やりとりの見本と、それを読む順番（書く → 受け止められる → 絵文字 → 振り返る）を並べる。 */
+.about-moment {
+	display: grid;
+	gap: 28px;
+	align-items: center;
+	min-inline-size: 0;
+}
+.about-moment-sample {
+	display: grid;
+	gap: 4px;
+	min-inline-size: 0;
+}
+.about-moment-steps {
+	display: grid;
+	gap: 18px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.about-moment-steps li {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	min-inline-size: 0;
+}
+.about-moment-steps li > span:last-child {
+	display: grid;
+	gap: 2px;
+	min-inline-size: 0;
+	font-size: 0.88rem;
+	line-height: 1.7;
+	color: var(--text-muted);
+	overflow-wrap: anywhere;
+}
+.about-moment-steps strong {
+	font-size: 1rem;
+	color: var(--text-strong);
+}
+.about-moment-steps .about-step-num {
+	flex: 0 0 auto;
+	margin: 0;
+}
+@container about (min-width: 680px) {
+	.about-moment {
+		grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+		gap: 48px;
 	}
 }
 

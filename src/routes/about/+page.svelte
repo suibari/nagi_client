@@ -9,6 +9,7 @@
 	import BusinessCard from '$lib/components/BusinessCard.svelte';
 	import ChronicleTimeline from '$lib/components/ChronicleTimeline.svelte';
 	import DiaryMoodChart from '$lib/components/DiaryMoodChart.svelte';
+	import MomentSample from '$lib/components/MomentSample.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
@@ -34,10 +35,19 @@
 	type CompareRow = { label: () => string; old: () => string; nagi: () => string };
 
 	// 「選ばれる理由」。ここで語ったものは下の機能一覧には重ねない。
+	// ゲスト向けカード（GuestHero）も同じ4本柱を短くして並べる。
 	const reasons: Reason[] = [
 		{ icon: 'bot', title: m.aboutBotTitle, body: m.aboutBotBody },
 		{ icon: 'heart', title: m.aboutNoLikesTitle, body: m.aboutNoLikesBody },
-		{ icon: 'text', title: m.aboutLongPostTitle, body: m.aboutLongPostBody },
+		{ icon: 'emoji', title: m.aboutEmojiTitle, body: m.aboutEmojiBody },
+		{ icon: 'sun', title: m.aboutGraphTitle, body: m.aboutGraphBody },
+	];
+	// 「Nagiでのひととき」。見本のやりとりを、書く → 受け止められる → 絵文字 → 振り返る の順に読ませる。
+	const moments: Step[] = [
+		{ title: m.aboutMomentWriteTitle, body: m.aboutMomentWriteBody },
+		{ title: m.aboutMomentReplyTitle, body: m.aboutMomentReplyBody },
+		{ title: m.aboutMomentEmojiTitle, body: m.aboutMomentEmojiBody },
+		{ title: m.aboutMomentLookBackTitle, body: m.aboutMomentLookBackBody },
 	];
 	const steps: Step[] = [
 		{ title: m.aboutStep1Title, body: m.aboutStep1Body },
@@ -59,7 +69,6 @@
 					body: m.aboutHashtagsBody,
 					href: '/settings/feed-tabs',
 				},
-				{ icon: 'emoji', title: m.aboutReactionTitle, body: m.aboutReactionBody },
 				{ icon: 'newspaper', title: m.aboutNewsTitle, body: m.aboutNewsBody, href: '/news' },
 				{
 					icon: 'emojiPlus',
@@ -79,6 +88,7 @@
 			category: 'keep',
 			label: m.aboutCategoryKeep,
 			items: [
+				{ icon: 'blog', title: m.aboutLongPostTitle, body: m.aboutLongPostBody, href: '/blog' },
 				{ icon: 'markdown', title: m.aboutMarkdownTitle, body: m.aboutMarkdownBody },
 				{ icon: 'edit', title: m.aboutEditTitle, body: m.aboutEditBody },
 			],
@@ -99,6 +109,12 @@
 					title: m.aboutDataTitle,
 					body: m.aboutDataBody,
 					href: '/settings/delete-data',
+				},
+				{
+					icon: 'bot',
+					title: m.aboutLocalAiTitle,
+					body: m.aboutLocalAiBody,
+					href: '/privacy#p5',
 				},
 			],
 		},
@@ -194,7 +210,7 @@
 </script>
 
 <!--
-	構成は「ヒーロー → 理由 → 見本（サンプル付き） → 機能一覧 → はじめかた → AT Protocol → 締め」。
+	構成は「ヒーロー → 理由 → ひととき → 見本（サンプル付き） → 機能一覧 → はじめかた → AT Protocol → 締め」。
 	枠（罫線で囲んだカード）はほぼ使わない。まとまりは余白と見出しで作り、色は面ではなく
 	アイコンと小見出しに置く。囲むのは「画面の見本」を本文と見分けるためのサンプルだけ。
 -->
@@ -247,6 +263,33 @@
 				</li>
 			{/each}
 		</ul>
+	</section>
+
+	<section class="about-section">
+		<header class="about-section-head">
+			<h2>{m.aboutMomentHeading()}</h2>
+			<p>{m.aboutMomentLead()}</p>
+		</header>
+		<div class="about-moment">
+			<div class="about-moment-sample">
+				<MomentSample />
+				<p class="hero-ai-note">
+					<Icon name="shield" size={14} />
+					<span>{m.heroLocalAi()} <a href="/privacy#p5">{m.heroLocalAiLink()}</a></span>
+				</p>
+			</div>
+			<ol class="about-moment-steps">
+				{#each moments as moment, i (i)}
+					<li>
+						<span class="about-step-num" aria-hidden="true">{i + 1}</span>
+						<span>
+							<strong>{moment.title()}</strong>
+							<span>{moment.body()}</span>
+						</span>
+					</li>
+				{/each}
+			</ol>
+		</div>
 	</section>
 
 	<section class="about-section">

@@ -6,6 +6,7 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import CardDrawEntry from '$lib/components/CardDrawEntry.svelte';
 	import FeedTabsView from '$lib/components/FeedTabsView.svelte';
+	import GuestHero from '$lib/components/GuestHero.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
 
@@ -24,15 +25,7 @@
 </div>
 
 {#if showHero}
-	<section class="hero">
-		<p class="eyebrow">{m.heroEyebrow()}</p>
-		<h1>{m.heroTitle()}</h1>
-		<p class="hero-body">{m.heroBody()}</p>
-		<div class="hero-actions">
-			<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>
-			<a class="hero-join" href="/login">{m.joinCta()}</a>
-		</div>
-	</section>
+	<GuestHero />
 {/if}
 
 {#if !$oauthReady}

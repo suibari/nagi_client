@@ -197,3 +197,35 @@ export function sampleMoods(
 	}
 	return { moods, selected };
 }
+
+export type SampleMoment = {
+	displayName: string;
+	avatar: string;
+	post: string;
+	reply: string;
+	/** 読んだ人からの絵文字。数は出さない（数を追わせない見せ方に合わせる）。 */
+	reactions: string[];
+};
+
+/** /about で「Nagi でのやりとり」を一場面だけ見せる。 */
+export function sampleMoment(locale: Locale): SampleMoment {
+	return {
+		displayName: pick(NAME, locale),
+		avatar: '/nagi_icon_trans.png',
+		post: pick(
+			{
+				ja: '帰り道、ちょっと遠回りしたら夕焼けがきれいだった。それだけで、今日はいい日かも。',
+				en: 'Took the long way home and caught a beautiful sunset. That alone might make today a good day.',
+			},
+			locale,
+		),
+		reply: pick(
+			{
+				ja: '遠回りして夕焼けに出会えたの、すてき！小さな景色で元気をもらえるそらさん、とってもえらいよ〜！',
+				en: 'Taking the long way and finding a sunset — how lovely! You know how to get energy from little views, Sora. That’s wonderful!',
+			},
+			locale,
+		),
+		reactions: ['🌇', '🫶', '✨'],
+	};
+}

@@ -5,6 +5,7 @@
 	import NewsCard from '$lib/components/NewsCard.svelte';
 	import NewsSubmissionDialog from '$lib/components/NewsSubmissionDialog.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
+	import GuestHero from '$lib/components/GuestHero.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import {
 		i18n,
@@ -18,7 +19,7 @@
 	import { byNewestFirst } from '$lib/news/order';
 	import { recommendedReason } from '$lib/news/selection';
 	import { openNewsUnreadView } from '$lib/news/unread.svelte';
-	import { oauthReady, session } from '$lib/oauth/session.svelte';
+	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
 	import { syncPreferences } from '$lib/preferences/sync.svelte';
 	import type { UnreadView } from '$lib/unread/watermark.svelte';
 	import { newsRkey } from '$lib/news/indexable';
@@ -137,6 +138,9 @@
 			return { news, heading: ready ? dayHeading(iso) : stableDayHeading(iso) };
 		});
 	});
+	// ホームのヒーローと同じ判定。プリレンダ結果（初回訪問者・クローラ）には出し、
+	// 戻ってきた利用者には OAuth の復元を待たずに最初から出さない。
+	const showHero = $derived(!$session && !hadRecentSession());
 	function openSubmission() {
 		if (!$session) {
 			location.href = '/login';
@@ -150,6 +154,7 @@
 	<h1>{m.navNews()}</h1>
 	<button type="button" class="primary" onclick={openSubmission}>{m.newsAdd()}</button>
 </section>
+{#if showHero}<GuestHero compact />{/if}
 <p class="news-intro">{m.newsIntro()}</p>
 <div class="news-category-tabs" role="tablist" aria-label={m.newsCategoriesAria()}>
 	{#each categories as category (category.id)}

@@ -25,6 +25,9 @@ const chatBubble = readFileSync(
 	'utf8',
 );
 const topPage = readFileSync(new URL('../../routes/+page.svelte', import.meta.url), 'utf8');
+const guestHero = readFileSync(new URL('../components/GuestHero.svelte', import.meta.url), 'utf8');
+const blogPage = readFileSync(new URL('../../routes/blog/+page.svelte', import.meta.url), 'utf8');
+const newsPage = readFileSync(new URL('../../routes/news/+page.svelte', import.meta.url), 'utf8');
 const feedPage = readFileSync(
 	new URL('../components/FeedTabsView.svelte', import.meta.url),
 	'utf8',
@@ -92,17 +95,20 @@ describe('guest post privacy boundary', () => {
 	});
 
 	it('shows the guest hero below the top header and above the feed', () => {
-		expect(topPage).toContain('<section class="hero">');
-		expect(topPage).toContain('{m.heroTitle()}');
-		expect(topPage).toContain('<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>');
-		expect(topPage).toContain('<a class="hero-join" href="/login">{m.joinCta()}</a>');
-		expect(topPage.indexOf('class="feed-heading"')).toBeLessThan(
-			topPage.indexOf('<section class="hero">'),
-		);
-		expect(topPage.indexOf('<section class="hero">')).toBeLessThan(
-			topPage.indexOf('<FeedTabsView'),
-		);
-		expect(feedShell).not.toContain('<section class="hero">');
+		expect(guestHero).toContain('{m.heroTitle()}');
+		expect(guestHero).toContain('<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>');
+		expect(guestHero).toContain('<a class="hero-join" href="/login">{m.joinCta()}</a>');
+		expect(topPage).toContain('<GuestHero />');
+		expect(topPage.indexOf('class="feed-heading"')).toBeLessThan(topPage.indexOf('<GuestHero'));
+		expect(topPage.indexOf('<GuestHero')).toBeLessThan(topPage.indexOf('<FeedTabsView'));
+		expect(feedShell).not.toContain('<GuestHero');
 		expect(feedShell).not.toContain('{m.heroTitle()}');
+	});
+
+	it('puts the compact guest hero at the top of blog and news for signed-out visitors', () => {
+		for (const page of [blogPage, newsPage]) {
+			expect(page).toContain('<GuestHero compact />');
+			expect(page).toContain('const showHero = $derived(!$session && !hadRecentSession());');
+		}
 	});
 });

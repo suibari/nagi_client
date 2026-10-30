@@ -140,8 +140,24 @@ export const ja = {
 	aboutBotBody: '投稿すれば、全肯定botたんが必ず返信します。反応がゼロで終わりません。',
 	aboutNoLikesTitle: '数に追われない',
 	aboutNoLikesBody: 'いいねもフォローもありません。「伸びなかった」が起きない場所です。',
-	aboutLongPostTitle: '長く書ける',
-	aboutLongPostBody: 'ブログなら文字数を気にせずMarkdownで。あとから書き直すこともできます。',
+	aboutEmojiTitle: '絵文字でゆるくつながる',
+	aboutEmojiBody:
+		'言葉を返さなくても、絵文字ひとつで「読んだよ」が届きます。フォローしなくても、近くにいられます。',
+	aboutGraphTitle: 'グラフで振り返れる',
+	aboutGraphBody:
+		'書いた日々は、botたんが日記と感情グラフにしてくれます。あとから自分をたどれます。',
+
+	// about page — Nagi での体験のイメージ（架空の投稿とやりとりのサンプル）
+	aboutMomentHeading: 'Nagiでのひととき',
+	aboutMomentLead: 'たとえば、ある日の帰り道。こんなふうに過ごせます。',
+	aboutMomentWriteTitle: '書く',
+	aboutMomentWriteBody: '思ったことを、そのまま。一言でも、長いブログでも。',
+	aboutMomentReplyTitle: '受け止められる',
+	aboutMomentReplyBody: 'botたんが返信します。どんな日の言葉も、肯定から始まります。',
+	aboutMomentEmojiTitle: '絵文字が届く',
+	aboutMomentEmojiBody: '読んだ人から、言葉のかわりに絵文字がそっと届きます。',
+	aboutMomentLookBackTitle: '振り返る',
+	aboutMomentLookBackBody: 'その日の言葉は、日記と感情グラフに残ります。',
 
 	// about page — 使い方のイメージ（3ステップ）。各1文。
 	aboutStepsHeading: 'はじめかた',
@@ -183,13 +199,13 @@ export const ja = {
 	aboutKossoriBody: '公開範囲は投稿ごとに選べます。自分とbotたんだけ、にもできます',
 	aboutHashtagsTitle: 'ハッシュタグ',
 	aboutHashtagsBody: '#タグで同じ話題の投稿を追えます。タブにも並べられます',
-	aboutReactionTitle: '絵文字リアクション',
-	aboutReactionBody: '好きな絵文字で反応できます',
 	aboutNewsTitle: '全肯定ニュース',
 	aboutNewsBody: 'botたんが選んだ明るいニュース。見つけた記事を持ち寄ることも',
 	aboutCustomEmojiTitle: 'カスタム絵文字',
 	aboutCustomEmojiBody: '自分だけの絵文字を登録できます',
 	aboutCustomEmojiLink: 'カスタム絵文字を登録する',
+	aboutLongPostTitle: 'ブログで長く書く',
+	aboutLongPostBody: '文字数を気にせず書けます',
 	aboutMarkdownTitle: 'Markdown記法',
 	aboutMarkdownBody: '見出し・箇条書き・引用が使えます',
 	aboutEditTitle: '後から編集',
@@ -209,6 +225,8 @@ export const ja = {
 	aboutDataTitle: 'データはあなたのもの',
 	aboutDataBody: '投稿はあなた自身のPDSに残ります（こっそり投稿を除く）',
 	aboutDataLink: '全データを削除する',
+	aboutLocalAiTitle: 'AIは自宅のローカルモデル',
+	aboutLocalAiBody: 'botたんの言葉は、運営者が自宅で動かすAIが書きます',
 
 	// about page — なぜ AT Protocol なのか（従来のSNSとの比較）
 	aboutAtprotoHeading: 'なぜAT Protocolなのか',
@@ -669,6 +687,15 @@ export const ja = {
 	welcomeBody: 'タイムラインは誰でも読めます。参加すると投稿やリアクションができます。',
 	joinCta: '参加する',
 	welcomeAboutLink: 'Nagiのことを知る',
+	heroBotBody: '投稿すれば、全肯定botたんが必ず返信します',
+	heroNoLikesBody: 'いいね数もフォロワー数もありません',
+	heroEmojiBody: '絵文字ひとつで「読んだよ」が届きます',
+	heroGraphBody: '日々の気分が、日記とグラフに残ります',
+	heroLocalAi:
+		'botたんの返信は、運営者が自宅で動かすローカルAIが書いています。返信のために、投稿が外部のAI事業者へ送られることはありません。',
+	heroLocalAiLink: 'くわしく',
+	heroSampleLabel: 'Nagiでのやりとりの例',
+	heroSampleBotName: '全肯定botたん',
 	feedWaiting: '波が届くのを待っています…',
 	feedEmpty: 'まだ静かな海です。最初の言葉を待っています。',
 	homeFeedEmpty: 'ホームはまだ静かです。投稿するか、ホームで見る人を追加してみましょう。',
