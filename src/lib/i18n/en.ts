@@ -639,7 +639,7 @@ export const en: Messages = {
 	emojiBatchStateFailed: 'Could not add',
 	emojiGenerateTitle: 'Make with AI',
 	emojiGenerateNote:
-		'Describe the emoji you want and bot-tan draws it. A short word like “LGTM” becomes a lettering emoji, and a description like “a penguin doing a fist pump” becomes a picture. Drawing takes a few minutes, and you can move to other pages in the meantime.',
+		'Describe the emoji you want and bot-tan draws it. A short word like “LGTM” becomes a lettering emoji, and a description like “a penguin doing a fist pump” becomes a picture. Keep the text on the emoji to 12 characters or fewer (punctuation such as “!” and “?” is not counted). Longer text is left out and only the picture is drawn. Drawing takes a few minutes, and you can move to other pages in the meantime.',
 	emojiGeneratePromptLabel: 'What should bot-tan draw?',
 	emojiGeneratePromptPlaceholder: 'e.g. a penguin doing a fist pump',
 	emojiGenerateSubmit: 'Ask to draw',
