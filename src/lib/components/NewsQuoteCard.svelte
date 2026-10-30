@@ -1,16 +1,13 @@
 <script lang="ts">
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { safeNewsUrl } from '$lib/news/bot-post';
+	import { safeNewsImageUrl } from '$lib/news/image';
 	import QuoteFrame from './QuoteFrame.svelte';
 	let { news, botActor }: { news: NewsView; botActor?: ActorView } = $props();
-	let safeUrl = $derived.by(() => {
-		try {
-			const u = new URL(news.url);
-			return ['http:', 'https:'].includes(u.protocol) ? u.href : undefined;
-		} catch {
-			return undefined;
-		}
-	});
+	let safeUrl = $derived(safeNewsUrl(news.url));
+	let safeImage = $derived(safeNewsImageUrl(news.image));
+	let failedImage = $state<string>();
 </script>
 
 {#if news.unavailable}
@@ -30,6 +27,17 @@
 		{#if news.botComment}<p class="bubble bot-comment">{news.botComment}</p>{/if}
 		<a class="news-quote" href={safeUrl} target="_blank" rel="noopener noreferrer">
 			<small>{news.sourceName ?? m.newsSourceUnknown()}</small><strong>{news.title}</strong>
+			{#if safeImage && safeImage !== failedImage}
+				<img
+					class="news-image"
+					src={safeImage}
+					alt=""
+					loading="lazy"
+					decoding="async"
+					referrerpolicy="no-referrer"
+					onerror={(event) => (failedImage = event.currentTarget.getAttribute('src') ?? undefined)}
+				/>
+			{/if}
 		</a>
 	</QuoteFrame>
 {/if}
@@ -56,6 +64,14 @@
 	.news-quote strong,
 	.news-quote small {
 		overflow-wrap: anywhere;
+	}
+	.news-image {
+		display: block;
+		inline-size: 100%;
+		aspect-ratio: 1.91 / 1;
+		margin-top: 0.3rem;
+		border-radius: var(--r-md);
+		object-fit: cover;
 	}
 	.news-quote:hover {
 		background: var(--bg-hover);
