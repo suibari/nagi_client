@@ -8,6 +8,8 @@ import {
 	diaryMonthLabels,
 	isMonthKey,
 	monthLastDate,
+	postVolumeLevel,
+	postVolumeThresholds,
 	shiftMonth,
 } from './calendar';
 
@@ -98,5 +100,27 @@ describe('buildDiaryGraphForMonth', () => {
 		const graph = buildDiaryGraphForMonth('2025-10', today);
 		expect(graph.to).toBe('2025-10-31');
 		expect(graph.from <= '2025-10-01').toBe(true);
+	});
+});
+
+describe('postVolumeLevel', () => {
+	it('splits days with posts into thirds of the given distribution', () => {
+		const thresholds = postVolumeThresholds([0, 1, 4, 5, 9, 10, 12, 19, 20, 32, undefined]);
+		expect(thresholds).toEqual([5, 12]);
+		expect(postVolumeLevel(undefined, thresholds)).toBeUndefined();
+		expect(postVolumeLevel(0, thresholds)).toBe(0);
+		expect(postVolumeLevel(1, thresholds)).toBe(1);
+		expect(postVolumeLevel(5, thresholds)).toBe(1);
+		expect(postVolumeLevel(9, thresholds)).toBe(2);
+		expect(postVolumeLevel(12, thresholds)).toBe(2);
+		expect(postVolumeLevel(13, thresholds)).toBe(3);
+	});
+
+	it('keeps sparse histories usable', () => {
+		expect(postVolumeThresholds([])).toEqual([0, 0]);
+		expect(postVolumeLevel(3, postVolumeThresholds([]))).toBe(3);
+		const single = postVolumeThresholds([7]);
+		expect(single).toEqual([7, 7]);
+		expect(postVolumeLevel(7, single)).toBe(1);
 	});
 });

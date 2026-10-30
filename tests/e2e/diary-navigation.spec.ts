@@ -216,7 +216,8 @@ for (const width of [375, 768, 1280]) {
 			await page.getByRole('link', { name: 'Open diary deep link' }).click();
 			const day = page.locator(`.mood-calendar [data-date="${date}"]`);
 			await expect(day).toHaveAttribute('aria-label', /12 posts/);
-			await expect(day.locator('.post-count')).toHaveText('12');
+			// 1年の投稿数 [1,4,5,9,10,12,19,20,32] を3等分すると 12件は「中」。
+			await expect(day.locator('.post-dots i')).toHaveCount(2);
 			await expect(page.locator('.diary-dot')).toHaveCount(0);
 			await expect(page.locator('.detail-stats')).toContainText('12 posts');
 			await expect(page.locator('.detail')).toContainText(text);
@@ -251,18 +252,20 @@ test('calendar distinguishes missing counts, unscored moods, and days without di
 		'aria-label',
 		/Mood unavailable · 0 posts · Has a diary/,
 	);
-	await expect(day('2020-02-02').locator('.post-count')).toHaveText('0');
+	await expect(day('2020-02-02').locator('.post-dots')).toHaveCount(0);
+	await expect(day('2020-02-03').locator('.post-dots i')).toHaveCount(1);
+	await expect(day('2020-02-10').locator('.post-dots i')).toHaveCount(3);
 	await day('2020-02-02').click();
 	await expect(page.locator('.detail-stats')).toContainText('0 posts');
 	await expect(page.locator('.detail-stats')).toContainText('Mood unavailable');
 	await day('2020-02-11').click();
-	await expect(day('2020-02-11').locator('.post-count')).toHaveText('—');
+	await expect(day('2020-02-11').locator('.post-dots i.unknown')).toHaveCount(1);
 	await expect(page.locator('.detail-stats')).toContainText('Post count unknown');
 	await day('2020-02-12').click();
-	await expect(day('2020-02-12').locator('.post-count')).toHaveText('—');
+	await expect(day('2020-02-12').locator('.post-dots i.unknown')).toHaveCount(1);
 	await expect(page.locator('.detail')).toContainText('No diary for this day.');
 	await expect(page.locator('.detail-posts')).toHaveAttribute('open', '');
-	await expect(day('2020-02-01').locator('.post-count')).toHaveCount(0);
+	await expect(day('2020-02-01').locator('.post-dots')).toHaveCount(0);
 	await expect(day('2020-02-08')).toHaveCSS(
 		'background-color',
 		await day('2020-02-03').evaluate((el) => getComputedStyle(el).backgroundColor),

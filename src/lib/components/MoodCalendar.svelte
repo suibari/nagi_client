@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { DiaryView } from '$lib/api/types';
-	import { buildMonthGrid } from '$lib/diary/calendar';
+	import { buildMonthGrid, postVolumeLevel, postVolumeThresholds } from '$lib/diary/calendar';
 	import { formatValence, moodColor, type MoodDay } from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
+	import Spinner from './Spinner.svelte';
 
 	/**
-	 * 月間アクティビティの月カレンダー。背景色は気分の中央値、右下の数字は投稿数。
+	 * 月間アクティビティの月カレンダー。背景色は気分の中央値、右下のドットは投稿量（0〜3個）。
+	 * ドットの段階は、受け取った日記（1年ぶん）の投稿数を3等分して決める。正確な件数はラベルと詳細欄に出す。
 	 * 気分のない日は無地にし、
 	 * 選んだ日は感情グラフと共有する。
+	 * 読み込み中は格子を薄めてスピナーを重ね、取得中であることを示す。
 	 */
 	let {
 		month,
@@ -24,6 +27,9 @@
 	} = $props();
 
 	const weeks = $derived(buildMonthGrid(month));
+	const thresholds = $derived(
+		postVolumeThresholds(Array.from(diaryByDate.values(), (entry) => entry.postCount)),
+	);
 	const weekdays = $derived.by(() => {
 		const formatter = new Intl.DateTimeFormat(dateLocale(), { weekday: 'short' });
 		return Array.from({ length: 7 }, (_, index) =>
@@ -67,46 +73,59 @@
 			<span class:weekend={index === 0 || index === 6}>{weekday}</span>
 		{/each}
 	</div>
-	<div class="grid" role="grid" aria-label={m.activityCalendarAria()}>
-		{#each weeks as week (week[0].date)}
-			<div class="week" role="row">
-				{#each week as day (day.date)}
-					{@const mood = summary.get(day.date)}
-					{@const entry = diaryByDate.get(day.date)}
-					{#if !day.inMonth}
-						<span class="cell cell--outside" role="gridcell" aria-hidden="true"></span>
-					{:else if day.future}
-						<span class="cell cell--future" role="gridcell">
-							<span class="num">{Number(day.date.slice(8))}</span>
-						</span>
-					{:else}
-						<span role="gridcell" class="cell-wrap">
-							<button
-								type="button"
-								class="cell"
-								class:cell--mood={Boolean(mood)}
-								class:selected={selected === day.date}
-								style={mood ? `--cell-color: ${moodColor(mood.median)}` : undefined}
-								data-date={day.date}
-								aria-pressed={selected === day.date}
-								aria-label={dayLabel(day.date)}
-								title={dayLabel(day.date)}
-								onclick={() => select(day.date)}
-							>
+	<div class="grid-frame">
+		<div
+			class="grid"
+			class:grid--loading={loading}
+			role="grid"
+			aria-label={m.activityCalendarAria()}
+		>
+			{#each weeks as week (week[0].date)}
+				<div class="week" role="row">
+					{#each week as day (day.date)}
+						{@const mood = summary.get(day.date)}
+						{@const entry = diaryByDate.get(day.date)}
+						{#if !day.inMonth}
+							<span class="cell cell--outside" role="gridcell" aria-hidden="true"></span>
+						{:else if day.future}
+							<span class="cell cell--future" role="gridcell">
 								<span class="num">{Number(day.date.slice(8))}</span>
-								{#if entry || mood}
-									<span class="post-count" aria-hidden="true"
-										>{entry?.postCount === undefined
-											? '—'
-											: m.activityCalendarCount({ count: entry.postCount })}</span
-									>
-								{/if}
-							</button>
-						</span>
-					{/if}
-				{/each}
-			</div>
-		{/each}
+							</span>
+						{:else}
+							<span role="gridcell" class="cell-wrap">
+								<button
+									type="button"
+									class="cell"
+									class:cell--mood={Boolean(mood)}
+									class:selected={selected === day.date}
+									style={mood ? `--cell-color: ${moodColor(mood.median)}` : undefined}
+									data-date={day.date}
+									aria-pressed={selected === day.date}
+									aria-label={dayLabel(day.date)}
+									title={dayLabel(day.date)}
+									onclick={() => select(day.date)}
+								>
+									<span class="num">{Number(day.date.slice(8))}</span>
+									{#if entry || mood}
+										{@const level = postVolumeLevel(entry?.postCount, thresholds)}
+										{#if level === undefined}
+											<span class="post-dots" aria-hidden="true"><i class="unknown"></i></span>
+										{:else if level > 0}
+											<span class="post-dots" aria-hidden="true">
+												{#each { length: level }, index (index)}<i></i>{/each}
+											</span>
+										{/if}
+									{/if}
+								</button>
+							</span>
+						{/if}
+					{/each}
+				</div>
+			{/each}
+		</div>
+		{#if loading}
+			<div class="grid-loading"><Spinner /></div>
+		{/if}
 	</div>
 	<div class="legend">
 		<span class="legend-scale">
@@ -115,7 +134,13 @@
 			<span>{formatValence(5)}</span>
 		</span>
 		<span>{m.activityLegendMedian()}</span>
-		<span>{m.activityLegendCount()}</span>
+		<span class="legend-dots">
+			<span>{m.activityLegendCount()}</span>
+			<span class="post-dots" aria-hidden="true"><i></i></span>
+			<span>{m.activityLegendFew()}</span>
+			<span class="post-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span>{m.activityLegendMany()}</span>
+		</span>
 	</div>
 </div>
 
@@ -131,9 +156,22 @@
 		grid-template-columns: repeat(7, minmax(0, 1fr));
 		gap: 4px;
 	}
+	.grid-frame {
+		position: relative;
+	}
 	.grid {
 		display: grid;
 		gap: 4px;
+	}
+	.grid--loading {
+		opacity: 0.35;
+		pointer-events: none;
+	}
+	.grid-loading {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
 	}
 	.weekdays span {
 		font-size: 11px;
@@ -207,19 +245,30 @@
 		background: transparent;
 		color: var(--text-faint);
 	}
-	.post-count {
+	.post-dots {
+		display: inline-flex;
+		gap: 2px;
+		padding: 3px;
+		border-radius: var(--radius-pill);
+		background: var(--bg-raised);
+		line-height: 0;
+	}
+	.cell .post-dots {
 		position: absolute;
 		inset-block-end: 3px;
 		inset-inline-end: 3px;
-		max-inline-size: calc(100% - 6px);
-		padding: 2px 3px;
-		border-radius: var(--radius-s);
-		background: var(--bg-raised);
-		color: var(--text-strong);
-		font-size: 10px;
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-		line-height: 1;
+	}
+	.post-dots i {
+		inline-size: 5px;
+		block-size: 5px;
+		box-sizing: border-box;
+		border-radius: 50%;
+		background: var(--text-strong);
+	}
+	/* 件数が分からない日は白抜きにして、投稿なし（ドットなし）と区別する。 */
+	.post-dots i.unknown {
+		border: 1px solid var(--text-muted);
+		background: transparent;
 	}
 
 	.legend {
@@ -236,6 +285,11 @@
 		align-items: center;
 		gap: 5px;
 		font-variant-numeric: tabular-nums;
+	}
+	.legend-dots {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
 	}
 	.legend-scale i {
 		display: inline-block;
