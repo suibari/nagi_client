@@ -12,7 +12,7 @@
   "lang": "ja",
   "icons": [
     {
-      "src": "/nagi_icon.png",
+      "src": "/nagi_icon_512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
