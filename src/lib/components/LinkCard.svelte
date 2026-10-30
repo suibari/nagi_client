@@ -8,6 +8,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	let { card }: { card: LinkCardView } = $props();
 	let playing = $state(false);
+	let failedThumb = $state<string>();
 	let playingUri: string | undefined;
 	$effect(() => {
 		if (card.uri === playingUri) return;
@@ -29,6 +30,10 @@
 		}
 	});
 	const resolve = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
+	let thumb = $derived(card.thumb ? resolve(card.thumb) : undefined);
+	function hideFailedThumb(event: Event) {
+		failedThumb = (event.currentTarget as HTMLImageElement).getAttribute('src') ?? undefined;
+	}
 </script>
 
 {#if videoSrc}
@@ -49,7 +54,14 @@
 					aria-label={m.youtubePlay({ title: card.title || 'YouTube' })}
 					onclick={() => (playing = true)}
 				>
-					{#if card.thumb}<img src={resolve(card.thumb)} alt="" />{/if}
+					{#if thumb && thumb !== failedThumb}<img
+							src={thumb}
+							alt=""
+							loading="lazy"
+							decoding="async"
+							referrerpolicy="no-referrer"
+							onerror={hideFailedThumb}
+						/>{/if}
 					<span class="youtube-play" aria-hidden="true"></span>
 				</button>
 			{/if}
@@ -68,7 +80,14 @@
 		target={safeHref && !isInternal ? '_blank' : undefined}
 		rel={safeHref && !isInternal ? 'noopener noreferrer' : undefined}
 	>
-		{#if card.thumb}<img src={resolve(card.thumb)} alt="" />{/if}
+		{#if thumb && thumb !== failedThumb}<img
+				src={thumb}
+				alt=""
+				loading="lazy"
+				decoding="async"
+				referrerpolicy="no-referrer"
+				onerror={hideFailedThumb}
+			/>{/if}
 		<span class="link-card-copy">
 			<strong>{card.title}</strong>
 			{#if card.description}<span>{card.description}</span>{/if}
