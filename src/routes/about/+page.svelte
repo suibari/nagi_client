@@ -427,8 +427,10 @@
 		<section class="about-final">
 			<h2>{m.aboutFinalHeading()}</h2>
 			<p>{m.aboutFinalBody()}</p>
+			<p>{m.loginSignupBody()}</p>
 			<div class="about-cta">
-				<a class="primary" href="/login">{m.aboutHeroCta()}</a>
+				<a class="primary" href="/login#signup">{m.loginSignupSubmit()}</a>
+				<a class="about-text-link" href="/login">{m.loginSubmit()}</a>
 				<a class="about-text-link" href="/">{m.loginBrowse()}</a>
 			</div>
 		</section>
