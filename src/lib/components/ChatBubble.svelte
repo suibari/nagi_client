@@ -5,6 +5,7 @@
 	import ReactionBar from './ReactionBar.svelte';
 	import AvatarLink from './AvatarLink.svelte';
 	import { session } from '$lib/oauth/session.svelte';
+	import { privateList } from '$lib/private-list/private-list.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import TranslateToggle from './TranslateToggle.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -585,6 +586,7 @@
 	class:article={post.article}
 	class:mine
 	class:bot={post.isBot}
+	class:list-member={!mine && !post.isBot && privateList.has(post.author.did)}
 	class:moderation-hidden={moderationDisplay.hidden}
 	data-post-uri={post.uri}
 	bind:this={postRow}

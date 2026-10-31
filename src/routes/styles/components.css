@@ -1321,11 +1321,18 @@
 .mine .post-actions {
 	justify-content: flex-end;
 }
-.bot > .bubble {
+.list-member > .bubble {
+	--bubble-current-bg: var(--bubble-list-bg);
+	border-color: var(--bubble-list-border);
+}
+.list-member > .bubble::before {
+	border-right-color: var(--bubble-list-border);
+}
+.bot:not(.mine) > .bubble {
 	--bubble-current-bg: var(--bubble-bot-bg);
 	border-color: var(--bubble-bot-border);
 }
-.bot > .bubble::before {
+.bot:not(.mine) > .bubble::before {
 	border-right-color: var(--bubble-bot-border);
 }
 .meta {
