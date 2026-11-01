@@ -46,6 +46,10 @@
 	 */
 
 	let feed = $state<ZenkatsuFeed | undefined>();
+	// 知らない属性の値でも盤面ごと落とさず、おすすめ属性の行だけ出さない。
+	const recommendedAttribute = $derived(
+		feed ? ATTRIBUTE_LABEL[feed.theme.attribute as CardAttribute]?.() : undefined,
+	);
 	let loading = $state(true);
 	let error = $state('');
 	/** 見ている日付。undefined なら今日。 */
@@ -131,6 +135,8 @@
 				}
 			}
 
+			// お題の無い応答は取得失敗として扱う。盤面はお題を前提に描くので、受け取ると描画ごと落ちる。
+			if (!result?.theme) throw new Error('Zenkatsu feed has no theme');
 			// 日付・セッションが変わったあとの古い応答や、viewer を消す遅い公開応答は使わない。
 			if (version !== loadVersion || (publicOnly && authenticated)) return;
 			authenticated = !publicOnly;
@@ -268,9 +274,11 @@
 			{i18n.locale === 'ja' ? feed.theme.textJa : feed.theme.textEn}
 			<span class="theme-question">{m.zenkatsuThemeQuestion()}</span>
 		</p>
-		<p class="recommended-attribute">
-			{m.zenkatsuRecommendedAttribute({ attribute: ATTRIBUTE_LABEL[feed.theme.attribute]() })}
-		</p>
+		{#if recommendedAttribute}
+			<p class="recommended-attribute">
+				{m.zenkatsuRecommendedAttribute({ attribute: recommendedAttribute })}
+			</p>
+		{/if}
 	</section>
 
 	<section class="play">
