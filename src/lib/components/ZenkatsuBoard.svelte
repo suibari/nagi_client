@@ -289,19 +289,24 @@
 		{/if}
 		<div class="play-controls">
 			{#if $session && !date && !feed.viewer?.submitted && !picking}
-				<button class="play-button" disabled={!canPlay} onclick={() => (picking = true)}>
+				<Button
+					variant="primary"
+					class="play-button"
+					disabled={!canPlay}
+					onclick={() => (picking = true)}
+				>
 					{#if viewerLoading && !feed.viewer}<span class="play-spinner" aria-hidden="true"
 							><Spinner inline size="sm" decorative /></span
 						>{/if}
 					{m.zenkatsuPlay()}
-				</button>
+				</Button>
 			{/if}
-			<button
-				class="guide-button"
+			<Button
+				variant="secondary"
 				aria-expanded={showGuide}
 				aria-haspopup="dialog"
 				aria-controls="zenkatsu-guide"
-				onclick={() => (showGuide = !showGuide)}>{m.zenkatsuHowToPlay()}</button
+				onclick={() => (showGuide = !showGuide)}>{m.zenkatsuHowToPlay()}</Button
 			>
 		</div>
 		{#if $session && !date}
@@ -505,23 +510,8 @@
 		gap: 0.6rem;
 		padding: 1.2rem 1rem;
 	}
-	.play-button {
+	.play-controls :global(.play-button) {
 		position: relative;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 10px 18px;
-		border: 0;
-		border-radius: var(--r-md);
-		background: var(--accent-strong);
-		color: #fff;
-		font-size: 1rem;
-		font-weight: 700;
-		min-height: 44px;
-		letter-spacing: 0.02em;
-	}
-	.play-button:disabled {
-		opacity: 0.5;
 	}
 	.play-spinner {
 		position: absolute;
@@ -541,18 +531,8 @@
 		gap: 0.75rem;
 		inline-size: min(100%, 420px);
 	}
-	.play-controls button {
+	.play-controls :global(.btn) {
 		flex: 1 1 auto;
-	}
-	.guide-button {
-		min-height: 44px;
-		padding: 10px 18px;
-		border: 1px solid var(--line-strong);
-		border-radius: var(--r-md);
-		background: var(--bg-raised);
-		color: var(--text);
-		font-weight: 700;
-		letter-spacing: 0.02em;
 	}
 	.record {
 		padding: 0 1rem 2rem;
