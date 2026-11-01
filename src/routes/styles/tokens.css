@@ -62,6 +62,9 @@
 	--accent-softer: #e5fbfb;
 	--accent-border: #68dfe1;
 	--accent-weak: rgba(0, 123, 126, 0.1);
+	/* 塗りボタンのホバー。accent-strong は明るいテーマで暗くなり文字が沈むので、
+	   どのテーマでもアクセントを白へ寄せて明るくする（文字とのコントラストも上がる）。 */
+	--accent-hover: color-mix(in srgb, var(--accent) 60%, #fff);
 	--secondary-soft: #d9f7fd;
 	--decorative-accent: var(--color-accent);
 	--decorative-accent-soft: #ffebfc;
@@ -105,19 +108,12 @@
 	--mood-scale-4: #e0a100;
 	--mood-scale-5: #f0652f;
 
-	/* about の機能カードのカテゴリ色。羅列に見えないよう4系統に色分けする。
-	   Nagi の落ち着いた調子を壊さないよう彩度は低めに揃える。fg はページ背景と
-	   チップ背景の両方に載るので、どちらでもコントラストが立つ値にしている。 */
+	/* about の機能カードのカテゴリ色。列見出しの小さな点にだけ使い、4系統を見分けさせる。
+	   Nagi の落ち着いた調子を壊さないよう彩度は低めに揃える。 */
 	--about-cat-connect-fg: #00767a;
-	--about-cat-connect-bg: #dcf5f5;
 	--about-cat-keep-fg: #2f7a4a;
-	--about-cat-keep-bg: #e2f4e7;
-	--about-showcase-fg: #a3456b;
-	--about-showcase-bg: #fbe7ef;
 	--about-cat-own-fg: #6a5aa8;
-	--about-cat-own-bg: #ecebfa;
 	--about-cat-reach-fg: #8a5a1f;
-	--about-cat-reach-bg: #fcefdc;
 
 	/* bubbles: 自分は青、リスト内はミント、botたんは水色。枠線は共通にする。 */
 	--bubble-bg: transparent;
@@ -268,15 +264,9 @@
 	--mood-scale-5: #ff7a45;
 
 	--about-cat-connect-fg: #6fd8dd;
-	--about-cat-connect-bg: #123437;
 	--about-cat-keep-fg: #84d3a4;
-	--about-cat-keep-bg: #153026;
-	--about-showcase-fg: #eca5c2;
-	--about-showcase-bg: #3a1f2b;
 	--about-cat-own-fg: #b3aae8;
-	--about-cat-own-bg: #232145;
 	--about-cat-reach-fg: #e8bd85;
-	--about-cat-reach-bg: #33261a;
 
 	--bubble-bg: transparent;
 	--bubble-border: var(--line);
@@ -396,15 +386,9 @@
 		--mood-scale-5: #ff7a45;
 
 		--about-cat-connect-fg: #6fd8dd;
-		--about-cat-connect-bg: #123437;
 		--about-cat-keep-fg: #84d3a4;
-		--about-cat-keep-bg: #153026;
-		--about-showcase-fg: #eca5c2;
-		--about-showcase-bg: #3a1f2b;
 		--about-cat-own-fg: #b3aae8;
-		--about-cat-own-bg: #232145;
 		--about-cat-reach-fg: #e8bd85;
-		--about-cat-reach-bg: #33261a;
 
 		--bubble-bg: transparent;
 		--bubble-border: var(--line);

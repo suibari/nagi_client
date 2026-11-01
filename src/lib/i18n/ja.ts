@@ -127,7 +127,7 @@ export const ja = {
 	aboutLink: 'Nagiについて',
 
 	// about page — ヒーロー
-	aboutHeroEyebrow: 'AT PROTOCOL上の全肯定SNS',
+	aboutHeroEyebrow: 'AT Protocol上の全肯定SNS',
 	aboutHeroTitle: 'もっと書きたくなる場所',
 	aboutHeroCta: 'Nagiをはじめる',
 	aboutHeroCtaNote: '無料。投稿はあなた自身のPDSへ。',
@@ -679,7 +679,7 @@ export const ja = {
 	emojiGenerateRegistered: '登録済み',
 
 	// home
-	heroEyebrow: 'AT PROTOCOLでつながる、全肯定SNS',
+	heroEyebrow: 'AT Protocolでつながる全肯定SNS',
 	heroTitle: 'やさしい言葉が凪ぐ場所',
 	heroBody:
 		'いいねの数も、フォロー関係もありません。他人の目を気にせず、自由にアウトプットできるSNSです。',
@@ -687,10 +687,6 @@ export const ja = {
 	welcomeBody: 'タイムラインは誰でも読めます。参加すると投稿やリアクションができます。',
 	joinCta: '参加する',
 	welcomeAboutLink: 'Nagiのことを知る',
-	heroBotBody: '投稿すれば、全肯定botたんが必ず返信します',
-	heroNoLikesBody: 'いいね数もフォロワー数もありません',
-	heroEmojiBody: '絵文字ひとつで「読んだよ」が届きます',
-	heroGraphBody: '日々の気分が、日記とグラフに残ります',
 	heroLocalAi:
 		'botたんの返信は、運営者が自宅で動かすローカルAIが書いています。返信のために、投稿が外部のAI事業者へ送られることはありません。',
 	heroLocalAiLink: 'くわしく',

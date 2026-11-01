@@ -3556,71 +3556,48 @@ a.notification-main::before {
 }
 
 /* --- hero (logged-out landing) --- */
+/* 水面の色の面に載せる。ブランドの色はこの面と、アイコン・「参加する」にだけ置く。 */
 .hero {
 	text-align: center;
-	padding: 28px 10px 22px;
+	padding: 32px 16px 24px;
+	margin-block-end: 16px;
+	background: var(--accent-softer);
+	border-radius: 20px;
+}
+/* 共通の .eyebrow は大文字・広い字間の飾りラベル。ここでは文として読ませる。 */
+.hero .eyebrow {
+	margin: 0;
+	font-size: 0.8rem;
+	font-weight: 500;
+	letter-spacing: 0;
+	text-transform: none;
 }
 .hero-title {
 	font-size: clamp(26px, 5vw, 38px);
+	font-weight: 500;
 	line-height: 1.2;
 	letter-spacing: 0.04em;
-	margin: 8px 0 10px;
+	margin: 8px 0 12px;
 	color: var(--text-strong);
 }
 .hero-body {
 	color: var(--text-muted);
 	margin: 0;
 }
-/* 4本柱。アイコン + 見出し + 1行。狭幅は1列、広がれば2列。 */
-.hero-points {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: 10px 18px;
-	max-inline-size: 36rem;
-	margin: 20px auto 0;
-	padding: 0;
-	list-style: none;
-	text-align: start;
+/* やりとりの見本。面の上で白い吹き出しが浮くよう、返信の吹き出しだけ一段濃くする。 */
+.hero-moment {
+	max-inline-size: 32rem;
+	margin: 24px auto 0;
 }
-.hero-points li {
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
-	min-inline-size: 0;
-}
-.hero-point-icon {
-	display: grid;
-	flex: 0 0 auto;
-	place-items: center;
-	inline-size: 34px;
-	block-size: 34px;
-	color: var(--accent-strong);
+.hero .moment-post.is-reply .moment-bubble {
 	background: var(--accent-soft);
-	border-radius: 50%;
 }
-.hero-point-text {
-	display: grid;
-	gap: 1px;
-	min-inline-size: 0;
-	font-size: 0.82rem;
-	line-height: 1.55;
-	color: var(--text-muted);
-	overflow-wrap: anywhere;
-}
-.hero-point-text strong {
-	font-size: 0.92rem;
-	color: var(--text-strong);
-}
-@media (min-width: 480px) {
-	.hero-points {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
+
 .hero-ai-note {
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
-	gap: 6px;
+	gap: 8px;
 	max-inline-size: 36rem;
 	margin: 16px auto 0;
 	font-size: 0.75rem;
@@ -3712,9 +3689,6 @@ a.notification-main::before {
 	background: var(--accent-softer);
 	border-radius: 999px;
 }
-.moment-sample .about-sample-badge {
-	color: var(--accent-strong);
-}
 .moment-sample figcaption {
 	display: flex;
 	align-items: center;
@@ -3723,38 +3697,225 @@ a.notification-main::before {
 	font-size: 0.75rem;
 	color: var(--text-faint);
 }
+/* --- やりとりの見本の再生（GuestHero・/about 共通） ---
+ * 投稿が生える → botたんが入力中 → 返信が生える → 絵文字がスタンプで届く、を一度だけ流す。
+ * 動きはフィードの bubble-sprout と ReactionStamp に合わせる。画面に入るまでは一時停止で
+ * 待たせ（from の状態＝見えない）、.is-playing で動き出す。opacity: 0 は from にだけ書き、
+ * 演出を切った人（animation: none）には最後の状態が見えるようにする。 */
+.moment-sample {
+	--moment-post-at: 0.2s;
+	--moment-typing-at: 1s;
+	--moment-reply-at: 2.5s;
+	--moment-reaction-at: 3.4s;
+}
+.moment-sample:not(.is-playing) *,
+.moment-sample:not(.is-playing) *::before {
+	animation-play-state: paused !important;
+}
+.moment-reply-slot {
+	display: grid;
+	min-inline-size: 0;
+}
+.moment-reply-slot > * {
+	grid-area: 1 / 1;
+}
+.moment-sample .moment-bubble {
+	transform-origin: -32px 20px;
+}
+.moment-sample > .moment-post > * {
+	animation: moment-sprout 0.48s cubic-bezier(0.16, 0.86, 0.24, 1.18) var(--moment-post-at)
+		backwards;
+}
+.moment-sample .moment-reply-slot > .moment-post:not(.moment-typing) > * {
+	animation: moment-sprout 0.48s cubic-bezier(0.16, 0.86, 0.24, 1.18) var(--moment-reply-at)
+		backwards;
+}
+.moment-typing {
+	align-self: start;
+	animation: moment-typing 1.5s ease var(--moment-typing-at) both;
+}
+.moment-typing .moment-bubble {
+	padding-block: 14px;
+}
+.moment-sample .moment-reactions li {
+	position: relative;
+	animation: moment-chip 0.42s cubic-bezier(0.16, 0.86, 0.24, 1.18)
+		calc(var(--moment-reaction-at) + var(--moment-reaction-index) * 0.4s) backwards;
+}
+.moment-stamp {
+	position: absolute;
+	inset: 50% auto auto 50%;
+	z-index: 1;
+	display: grid;
+	place-items: center;
+	inline-size: 48px;
+	block-size: 48px;
+	margin: -24px 0 0 -24px;
+	pointer-events: none;
+	animation: moment-stamp-fade 0.72s linear
+		calc(var(--moment-reaction-at) + var(--moment-reaction-index) * 0.4s) both;
+}
+.moment-stamp-mark {
+	position: relative;
+	z-index: 1;
+	font-size: 36px;
+	line-height: 1;
+	filter: drop-shadow(0 6px 6px color-mix(in srgb, #000 22%, transparent));
+	animation: moment-stamp-grow 0.72s cubic-bezier(0.16, 0.8, 0.2, 1)
+		calc(var(--moment-reaction-at) + var(--moment-reaction-index) * 0.4s) both;
+}
+.moment-sparks,
+.moment-sparks i {
+	position: absolute;
+	inset: 50% auto auto 50%;
+}
+.moment-sparks i {
+	inline-size: 4px;
+	block-size: 10px;
+	margin: -5px 0 0 -2px;
+	border-radius: var(--r-full);
+	background: hsl(var(--spark-hue) 92% 62%);
+	animation: moment-spark 0.72s cubic-bezier(0.12, 0.62, 0.24, 1)
+		calc(var(--moment-reaction-at) + var(--moment-reaction-index) * 0.4s) both;
+}
+@keyframes moment-sprout {
+	from {
+		opacity: 0;
+		transform: translate(-20px, 24px) scale(0.28);
+	}
+	68% {
+		opacity: 1;
+		transform: translate(0, -3px) scale(1.035);
+	}
+	to {
+		transform: none;
+	}
+}
+@keyframes moment-typing {
+	0% {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	16%,
+	84% {
+		opacity: 1;
+		transform: none;
+	}
+	100% {
+		opacity: 0;
+		transform: none;
+	}
+}
+@keyframes moment-chip {
+	from {
+		opacity: 0;
+		transform: scale(0.4);
+	}
+	60% {
+		opacity: 1;
+		transform: scale(1.2);
+	}
+	to {
+		transform: none;
+	}
+}
+@keyframes moment-stamp-fade {
+	0% {
+		opacity: 0;
+	}
+	14%,
+	34% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+@keyframes moment-stamp-grow {
+	0% {
+		transform: translateY(8px) scale(0.58) rotate(-7deg);
+	}
+	24% {
+		transform: translateY(0) scale(1) rotate(2deg);
+	}
+	52% {
+		transform: translateY(-3px) scale(1.12);
+	}
+	100% {
+		transform: translateY(-16px) scale(1.4);
+	}
+}
+@keyframes moment-spark {
+	0% {
+		opacity: 0;
+		transform: rotate(var(--spark-angle)) translateY(0) scale(0.25, 0.5);
+	}
+	15% {
+		opacity: 1;
+	}
+	72% {
+		opacity: 0.9;
+		transform: rotate(var(--spark-angle)) translateY(var(--spark-distance)) scale(0.8, 1.7);
+	}
+	100% {
+		opacity: 0;
+		transform: rotate(var(--spark-angle)) translateY(calc(var(--spark-distance) - 8px))
+			scale(0.25, 0.7);
+	}
+}
+/* JS が動かないと再生が始まらないので、最後の状態で止めておく。 */
+@media (scripting: none) {
+	.moment-sample * {
+		animation: none !important;
+	}
+	.moment-typing,
+	.moment-stamp {
+		display: none;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	/* 共通の animation: none で入力中とスタンプが出しっぱなしにならないよう消す。 */
+	.moment-typing,
+	.moment-stamp {
+		display: none;
+	}
+}
+
 .hero-actions {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 10px;
-	margin-top: 20px;
+	gap: 8px;
+	margin-top: 24px;
 }
 .hero-actions a {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 42px;
-	padding: 8px 16px;
-	border: 1px solid var(--accent);
+	min-height: 44px;
+	padding: 8px 20px;
 	border-radius: var(--r-md);
-	font-weight: 700;
+	font-weight: 600;
 	text-decoration: none;
+	transition: background-color 0.15s ease;
 }
+/* 主な操作は「参加する」だけ。知る方は面と罫線だけの控えめなボタンにする。 */
 .hero-about {
-	background: transparent;
-	color: var(--accent-strong);
+	background: var(--surface-1);
+	border: 1px solid var(--line);
+	color: var(--text);
 }
 .hero-join {
 	background: var(--accent);
+	border: 1px solid transparent;
 	color: var(--text-on-accent);
 }
 @media (hover: hover) and (pointer: fine) {
 	.hero-about:hover {
-		background: var(--accent-soft);
+		background: var(--bg-inset);
 	}
 	.hero-join:hover {
-		background: var(--accent-strong);
+		background: var(--accent-hover);
 	}
 }
 
@@ -4279,17 +4440,16 @@ button.settings-category {
 .about-eyebrow {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	margin: 0;
 	font-size: 0.8rem;
-	font-weight: 700;
-	letter-spacing: 0.06em;
+	font-weight: 500;
 	color: var(--accent-strong);
 }
 .about-text-link {
 	justify-self: start;
 	font-size: 0.88rem;
-	font-weight: 700;
+	font-weight: 600;
 	color: var(--accent-strong);
 }
 .about-text-link:hover {
@@ -4298,7 +4458,7 @@ button.settings-category {
 }
 
 /* --- hero --- */
-/* 枠は付けず、やわらかいグラデーションの地だけで区切る。 */
+/* 枠は付けず、凪いだ水面のような淡いティールの面だけで区切る。グラデーションは重ねない。 */
 .about-hero {
 	position: relative;
 	isolation: isolate;
@@ -4310,14 +4470,13 @@ button.settings-category {
 	gap: 8px 40px;
 	padding: 40px 20px 32px;
 	text-align: center;
-	background:
-		radial-gradient(60% 70% at 15% 20%, var(--accent-softer), transparent 70%),
-		radial-gradient(55% 60% at 90% 85%, var(--decorative-accent-soft), transparent 70%),
-		radial-gradient(50% 50% at 80% 10%, var(--secondary-soft), transparent 70%);
-	border-radius: 28px;
+	background: var(--accent-softer);
+	border-radius: 20px;
 	min-inline-size: 0;
 }
-/* 「凪」らしいやわらかさを出す泡。装飾のみで、内容には一切かからない。 */
+/* 水面から上がってくる泡。Nagi の目印として、ヒーローと締めの面にだけ置く。
+   色はブランドの1色、塗りと輪の2種類だけ。面の端で切れないよう内側に置き、
+   読み込み時に一度だけ浮かび上がって、あとは止まっている。装飾なので内容にはかけない。 */
 .about-bubbles {
 	position: absolute;
 	inset: 0;
@@ -4326,72 +4485,26 @@ button.settings-category {
 }
 .about-bubble {
 	position: absolute;
+	inline-size: var(--bubble-size);
+	block-size: var(--bubble-size);
 	border-radius: 50%;
 	background: var(--accent-soft);
-	opacity: 0.5;
-	animation: about-float 11s ease-in-out infinite;
+	animation: about-bubble-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1)
+		calc(0.2s + var(--bubble-index) * 0.08s) backwards;
 }
-.about-bubble.b1 {
-	inline-size: 96px;
-	block-size: 96px;
-	inset-inline-start: -18px;
-	inset-block-start: 8%;
+.about-bubble.is-ring {
+	background: transparent;
+	border: 1.5px solid var(--accent-border);
 }
-.about-bubble.b2 {
-	inline-size: 52px;
-	block-size: 52px;
-	inset-inline-start: 26%;
-	inset-block-start: -14px;
-	background: var(--decorative-accent-soft);
-	animation-delay: -2.5s;
-}
-.about-bubble.b3 {
-	inline-size: 130px;
-	block-size: 130px;
-	inset-inline-end: -34px;
-	inset-block-start: 4%;
-	background: var(--secondary-soft);
-	animation-delay: -5s;
-}
-.about-bubble.b4 {
-	inline-size: 40px;
-	block-size: 40px;
-	inset-inline-end: 42%;
-	inset-block-end: 10%;
-	animation-delay: -1.5s;
-}
-.about-bubble.b5 {
-	inline-size: 72px;
-	block-size: 72px;
-	inset-inline-start: 30%;
-	inset-block-end: -26px;
-	background: var(--decorative-accent-soft);
-	animation-delay: -7s;
-}
-.about-bubble.b6 {
-	inline-size: 30px;
-	block-size: 30px;
-	inset-inline-start: 8%;
-	inset-block-end: 22%;
-	background: var(--secondary-soft);
-	animation-delay: -4s;
-}
-@keyframes about-float {
-	0%,
-	100% {
-		transform: translateY(0);
-	}
-	50% {
-		transform: translateY(-18px);
+@container about (max-width: 679px) {
+	.about-bubble.is-wide {
+		display: none;
 	}
 }
-@keyframes about-bob {
-	0%,
-	100% {
-		transform: translateY(0);
-	}
-	50% {
-		transform: translateY(-10px);
+@keyframes about-bubble-rise {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
 	}
 }
 .about-hero-copy {
@@ -4402,6 +4515,7 @@ button.settings-category {
 }
 .about-hero h1 {
 	margin: 0;
+	font-weight: 500;
 	text-wrap: balance;
 	font-size: clamp(28px, 6cqi, 46px);
 	line-height: 1.22;
@@ -4437,24 +4551,24 @@ button.settings-category {
 		linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
 	-webkit-mask-composite: source-in;
 	mask-composite: intersect;
-	animation: about-bob 7s ease-in-out infinite;
 }
 .about-cta {
 	display: grid;
 	justify-items: center;
-	gap: 10px;
-	margin-top: 6px;
+	gap: 12px;
+	margin-top: 8px;
 }
 .about-cta a.primary {
-	display: inline-block;
-	padding: 14px 40px;
+	display: inline-flex;
+	align-items: center;
+	min-height: 48px;
+	padding: 12px 32px;
 	font-size: 1rem;
-	border-radius: var(--r-full);
+	font-weight: 600;
+	letter-spacing: 0;
+	border-radius: var(--r-md);
 	box-shadow: none;
-	transition: transform 0.15s ease;
-}
-.about-cta a.primary:hover {
-	transform: translateY(-2px);
+	transition: background-color 0.15s ease;
 }
 .about-cta-note {
 	margin: 0;
@@ -4481,7 +4595,7 @@ button.settings-category {
 }
 
 /* --- 選ばれる理由 --- */
-/* 枠なしで4列（中幅は2列）。アイコンを淡い円に載せ、それだけを色の置き場にする。 */
+/* 枠なしで4列（中幅は2列）。アイコンは丸に載せず、ブランド色の線だけで置く。 */
 .about-reasons {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
@@ -4494,19 +4608,16 @@ button.settings-category {
 	display: grid;
 	justify-items: center;
 	align-content: start;
-	gap: 10px;
+	gap: 8px;
 	text-align: center;
 	min-inline-size: 0;
 }
 .about-reason-icon {
 	display: grid;
 	place-items: center;
-	inline-size: 60px;
-	block-size: 60px;
-	margin-block-end: 4px;
+	inline-size: 32px;
+	block-size: 32px;
 	color: var(--accent-strong);
-	background: var(--accent-softer);
-	border-radius: 50%;
 }
 .about-reason h3 {
 	margin: 0;
@@ -4548,7 +4659,7 @@ button.settings-category {
 }
 .about-moment-steps {
 	display: grid;
-	gap: 18px;
+	gap: 16px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -4603,9 +4714,6 @@ button.settings-category {
 	align-content: center;
 	min-inline-size: 0;
 }
-.about-showcase .about-eyebrow {
-	color: var(--about-showcase-fg);
-}
 .about-showcase-copy h3 {
 	margin: 0;
 	font-size: clamp(1.15rem, 2.8cqi, 1.4rem);
@@ -4647,9 +4755,8 @@ button.settings-category {
 	color: var(--text-faint);
 }
 .about-sample-badge {
-	font-weight: 700;
-	letter-spacing: 0.06em;
-	color: var(--about-showcase-fg);
+	font-weight: 600;
+	color: var(--text-muted);
 }
 .about-sample-placeholder {
 	block-size: 340px;
@@ -4680,7 +4787,7 @@ button.settings-category {
 
 /* --- 機能一覧 --- */
 /* 十数個を平らに並べると「羅列」に見えるので、カテゴリごとの列に分ける。
-   各項目はアイコン + 見出し + 1行で、罫線では囲まない。カテゴリ色はアイコンと列見出しにだけ使う。 */
+   各項目はアイコン + 見出し + 1行で、罫線では囲まない。カテゴリ色は列見出しの点とアイコンにだけ使う。 */
 .about-feature-groups {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
@@ -4699,32 +4806,27 @@ button.settings-category {
 	gap: 8px;
 	margin: 0 0 4px;
 	font-size: 0.8rem;
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	color: var(--about-cat-fg);
+	font-weight: 600;
+	color: var(--text-muted);
 }
 .about-feature-group-label::before {
 	content: '';
-	inline-size: 18px;
-	block-size: 3px;
-	border-radius: 999px;
-	background: currentColor;
+	inline-size: 8px;
+	block-size: 8px;
+	border-radius: 50%;
+	background: var(--about-cat-fg);
 }
 .about-feature-group[data-category='connect'] {
 	--about-cat-fg: var(--about-cat-connect-fg);
-	--about-cat-bg: var(--about-cat-connect-bg);
 }
 .about-feature-group[data-category='keep'] {
 	--about-cat-fg: var(--about-cat-keep-fg);
-	--about-cat-bg: var(--about-cat-keep-bg);
 }
 .about-feature-group[data-category='own'] {
 	--about-cat-fg: var(--about-cat-own-fg);
-	--about-cat-bg: var(--about-cat-own-bg);
 }
 .about-feature-group[data-category='reach'] {
 	--about-cat-fg: var(--about-cat-reach-fg);
-	--about-cat-bg: var(--about-cat-reach-bg);
 }
 .about-features {
 	display: grid;
@@ -4747,7 +4849,7 @@ button.settings-category {
 	color: var(--text);
 	border-radius: var(--r-md);
 	min-inline-size: 0;
-	transition: background 0.15s ease;
+	transition: background-color 0.15s ease;
 }
 a.about-feature:hover {
 	background: var(--bg-inset);
@@ -4759,11 +4861,9 @@ a.about-feature:focus-visible {
 .about-feature-icon {
 	display: grid;
 	place-items: center;
-	inline-size: 34px;
-	block-size: 34px;
+	inline-size: 24px;
+	block-size: 24px;
 	color: var(--about-cat-fg);
-	background: var(--about-cat-bg);
-	border-radius: 50%;
 }
 .about-feature-text {
 	display: grid;
@@ -4792,7 +4892,7 @@ a.about-feature:focus-visible {
 .about-band {
 	padding: 48px 24px;
 	background: var(--bg-inset);
-	border-radius: 28px;
+	border-radius: 20px;
 }
 .about-steps {
 	display: grid;
@@ -4815,8 +4915,9 @@ a.about-feature:focus-visible {
 	place-items: center;
 	inline-size: 40px;
 	block-size: 40px;
-	margin-block-end: 6px;
-	font-weight: 800;
+	margin-block-end: 4px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
 	color: var(--text-on-accent);
 	background: var(--accent);
 	border-radius: 50%;
@@ -4860,8 +4961,8 @@ a.about-feature:focus-visible {
 .about-compare-col {
 	display: grid;
 	align-content: start;
-	gap: 14px;
-	padding-inline-start: 18px;
+	gap: 12px;
+	padding-inline-start: 16px;
 	border-inline-start: 3px solid var(--line);
 	min-inline-size: 0;
 }
@@ -4896,7 +4997,7 @@ a.about-feature:focus-visible {
 	overflow-wrap: anywhere;
 }
 .about-compare-col.is-nagi dd {
-	font-weight: 700;
+	font-weight: 600;
 	color: var(--text-strong);
 }
 .about-note {
@@ -4918,13 +5019,50 @@ a.about-feature:focus-visible {
 }
 
 /* --- 締め --- */
+/* ヒーローと同じ水面の面と泡で、ページの最初と最後を揃える。
+   「botたんが待っています」を言葉だけにしないよう、入力補助と同じ座ったbotたんを置く。 */
 .about-final {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
 	display: grid;
 	justify-items: center;
 	gap: 12px;
-	padding: 24px 16px;
+	padding: 40px 24px 48px;
 	text-align: center;
-	background: radial-gradient(50% 80% at 50% 50%, var(--accent-softer), transparent 75%);
+	background: var(--accent-softer);
+	border-radius: 20px;
+}
+.about-final .about-text-link {
+	justify-self: center;
+}
+.about-final-bot {
+	display: grid;
+	/* 元絵 264px の 1/3。ドット絵は整数分の1で縮めないと線がにじむ。 */
+	inline-size: 88px;
+	margin-block-end: 4px;
+}
+.about-final-bot img {
+	grid-area: 1 / 1;
+	display: block;
+	inline-size: 100%;
+	block-size: auto;
+	image-rendering: pixelated;
+}
+.about-final-bot img:last-child,
+.about-final-bot.is-happy img:first-child {
+	visibility: hidden;
+}
+.about-final-bot.is-happy img:last-child {
+	visibility: visible;
+}
+.about-final-bot.is-hopping {
+	animation: about-bot-hop 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes about-bot-hop {
+	40% {
+		transform: translateY(-12px) scale(1.04);
+	}
 }
 .about-final h2 {
 	margin: 0;
@@ -4974,15 +5112,11 @@ a.about-feature:focus-visible {
 	}
 	.about-band {
 		padding: 36px 16px;
-		border-radius: 22px;
+		border-radius: 16px;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.about-bubble,
-	.about-hero-figure img {
-		animation: none;
-	}
 	.about-cta a.primary,
 	a.about-feature,
 	.about-suibari-brand {

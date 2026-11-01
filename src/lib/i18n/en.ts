@@ -121,7 +121,7 @@ export const en: Messages = {
 	privacyLink: 'Privacy Policy',
 	aboutLink: 'About Nagi',
 
-	aboutHeroEyebrow: 'A FULLY AFFIRMING SOCIAL NETWORK ON THE AT PROTOCOL',
+	aboutHeroEyebrow: 'A fully affirming social network on the AT Protocol',
 	aboutHeroTitle: 'A place that makes you want to write more',
 	aboutHeroCta: 'Get started',
 	aboutHeroCtaNote: 'Free. Your posts live in your own PDS.',
@@ -671,10 +671,6 @@ export const en: Messages = {
 	welcomeBody: 'Anyone can read the timeline. Join to post and react.',
 	joinCta: 'Join',
 	welcomeAboutLink: 'Get to know Nagi',
-	heroBotBody: 'Post anything and Bot-tan always replies',
-	heroNoLikesBody: 'No like counts, no follower counts',
-	heroEmojiBody: 'A single emoji says “I read it”',
-	heroGraphBody: 'Your moods stay on in a diary and a graph',
 	heroLocalAi:
 		'Bot-tan’s replies are written by a local AI the operator runs at home. Your posts are never sent to an outside AI provider to write them.',
 	heroLocalAiLink: 'Learn more',

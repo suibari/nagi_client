@@ -91,7 +91,7 @@ img.mark {
 .login:hover,
 .composer .submit:hover,
 .auth-card > button:hover {
-	background: var(--accent-strong);
+	background: var(--accent-hover);
 }
 .ghost {
 	border: 0;
