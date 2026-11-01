@@ -36,8 +36,9 @@ class PrivateList {
 		try {
 			const view = await getPrivateList();
 			if (request !== this.#loadRequest || get(session)?.did !== ownerDid) return;
-			this.members = view.members;
-			this.limit = view.limit;
+			// 吹き出しごとに has() で引くので、想定外の応答でも配列以外を入れない（描画ごと止まる）。
+			this.members = Array.isArray(view.members) ? view.members : [];
+			this.limit = view.limit ?? this.limit;
 			this.loaded = true;
 		} catch {
 			if (request !== this.#loadRequest || get(session)?.did !== ownerDid) return;

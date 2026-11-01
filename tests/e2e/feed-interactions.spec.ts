@@ -63,7 +63,7 @@ test('other people speak from their avatar in both sources', async ({ page }) =>
 
 test('a left swipe selects the next feed tab', async ({ page }) => {
 	await drag(page, '[data-testid="gesture-area"]', -110, 4);
-	await expect(page).toHaveURL(/\/feed\?tab=affirmation$/);
+	await expect(page).toHaveURL(/\/\?tab=affirmation$/);
 });
 
 test('long author names stay inside mobile posts and nested replies in both feeds', async ({
@@ -150,7 +150,7 @@ test('a right swipe selects the previous feed tab', async ({ page }) => {
 	await page.goto('/dev/e2e/feed-interactions?tab=affirmation');
 	await expect(page.getByTestId('refresh-count')).toHaveText('1');
 	await drag(page, '[data-testid="gesture-area"]', 110, 3);
-	await expect(page).toHaveURL(/\/feed\?tab=global$/);
+	await expect(page).toHaveURL(/\/\?tab=global$/);
 });
 
 test('a pull that starts while reading lower in the feed does not refresh', async ({ page }) => {
