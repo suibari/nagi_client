@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { signIn, signUp, oauthError } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { getCrosspostEnabled, markCrosspostPending } from '$lib/crosspost/preferences';
@@ -63,14 +64,25 @@
 		/>
 		<p class="hint">{m.loginFederateNote()}</p>
 	</div>
-	<button disabled={busy !== null || !handle.trim()} onclick={() => void submit('login')}
-		>{busy === 'login' ? m.loginRedirecting() : m.loginSubmit()}</button
+	<Button
+		variant="primary"
+		size="lg"
+		block
+		disabled={busy !== null || !handle.trim()}
+		onclick={() => void submit('login')}
+		>{busy === 'login' ? m.loginRedirecting() : m.loginSubmit()}</Button
 	>
 	<section class="signup-section" id="signup">
 		<h2>{m.loginSignupTitle()}</h2>
 		<p>{m.loginSignupBody()}</p>
-		<button class="signup-button" disabled={busy !== null} onclick={() => void submit('signup')}
-			>{busy === 'signup' ? m.loginSignupRedirecting() : m.loginSignupSubmit()}</button
+		<Button
+			variant="secondary"
+			size="lg"
+			block
+			class="signup-button"
+			disabled={busy !== null}
+			onclick={() => void submit('signup')}
+			>{busy === 'signup' ? m.loginSignupRedirecting() : m.loginSignupSubmit()}</Button
 		>
 	</section>
 	{#if $oauthError}<p class="error">{$oauthError}</p>{/if}
@@ -109,22 +121,6 @@
 	.signup-section p {
 		margin: 8px 0 16px;
 		font-size: 13px;
-	}
-	.signup-button {
-		width: 100%;
-		padding: 12px 18px;
-		border: 1px solid var(--accent);
-		border-radius: var(--r-md);
-		background: transparent;
-		color: var(--accent-strong);
-		font-weight: 700;
-	}
-	.signup-button:hover {
-		background: var(--bg-inset);
-	}
-	.signup-button:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
 	}
 	/* 年齢要件の告知と規約同意。両方の入口の直下に置いて、押す前に目に入るようにする。 */
 	.legal-note {

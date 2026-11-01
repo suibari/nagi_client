@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
@@ -17,8 +18,8 @@
 		oncancel: () => void;
 	} = $props();
 
-	let cancelButton: HTMLButtonElement;
-	onMount(() => cancelButton.focus());
+	let cancelButton = $state<HTMLElement>();
+	onMount(() => cancelButton?.focus());
 
 	function keydown(event: KeyboardEvent) {
 		if (event.key === 'Escape' && !busy) oncancel();
@@ -36,12 +37,18 @@
 		<p class="private-note">{m.ageBirthDatePrivate()}</p>
 		{#if error}<p class="delete-error" role="alert">{error}</p>{/if}
 		<div class="delete-actions">
-			<button bind:this={cancelButton} type="button" disabled={busy} onclick={oncancel}>
+			<Button
+				variant="secondary"
+				bind:ref={cancelButton}
+				type="button"
+				disabled={busy}
+				onclick={oncancel}
+			>
 				{m.cancel()}
-			</button>
-			<button type="button" class="danger" disabled={busy} onclick={onconfirm}>
+			</Button>
+			<Button variant="danger" type="button" disabled={busy} onclick={onconfirm}>
 				{m.ageConfirmSubmit()}
-			</button>
+			</Button>
 		</div>
 	</div>
 </div>

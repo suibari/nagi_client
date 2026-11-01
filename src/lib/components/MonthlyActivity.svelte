@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { getDiaries } from '$lib/api/appview';
 	import type { ActorView, DiaryMoodView, DiaryView } from '$lib/api/types';
 	import {
@@ -186,9 +187,15 @@
 			<Icon name="chevron" size={18} />
 		</button>
 		{#if month !== thisMonth}
-			<button type="button" class="month-today" onclick={() => goMonth(thisMonth)}>
+			<Button
+				variant="secondary"
+				size="sm"
+				type="button"
+				class="month-today"
+				onclick={() => goMonth(thisMonth)}
+			>
 				{m.activityThisMonth()}
-			</button>
+			</Button>
 		{/if}
 	</header>
 
@@ -297,15 +304,8 @@
 	.month-step:disabled {
 		opacity: 0.4;
 	}
-	.month-today {
+	:global(.btn.month-today) {
 		flex: 0 0 auto;
-		padding: 6px 12px;
-		border: 1px solid var(--accent-border);
-		border-radius: var(--radius-pill);
-		background: var(--accent-softer);
-		color: var(--accent-strong);
-		font-size: 12px;
-		font-weight: 700;
 	}
 	.calendar-card,
 	.detail {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onDestroy } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session, signIn } from '$lib/oauth/session.svelte';
@@ -119,9 +120,13 @@
 						><Icon name="warning" size={14} />{errorMessages[video.error]()}</span
 					>
 					{#if video.error === 'scope'}
-						<button type="button" onclick={() => void reauthorize()}>{m.videoReauthorize()}</button>
+						<Button variant="secondary" size="sm" type="button" onclick={() => void reauthorize()}
+							>{m.videoReauthorize()}</Button
+						>
 					{:else if retryable}
-						<button type="button" {disabled} onclick={retry}>{m.videoRetry()}</button>
+						<Button variant="secondary" size="sm" type="button" {disabled} onclick={retry}
+							>{m.videoRetry()}</Button
+						>
 					{/if}
 				</div>
 			{:else}
@@ -222,14 +227,8 @@
 		height: 4px;
 		accent-color: var(--accent);
 	}
-	.video-attachment-status button {
+	.video-attachment-status :global(.btn) {
 		justify-self: start;
-		padding: 3px 9px;
-		border: 1px solid rgb(255 255 255 / 70%);
-		border-radius: 999px;
-		background: transparent;
-		color: white;
-		font-size: 12px;
 	}
 	.video-attachment label {
 		display: grid;

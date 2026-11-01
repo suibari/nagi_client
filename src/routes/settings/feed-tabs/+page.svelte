@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import AddFeedTabDialog from '$lib/components/feed-tabs/AddFeedTabDialog.svelte';
@@ -97,14 +98,15 @@
 	<p>{m.feedTabsHelp()}</p>
 	<PreferencesSyncNotice />
 
-	<button
+	<Button
+		variant="primary"
 		type="button"
-		class="primary feed-tab-add-button"
+		class="feed-tab-add-button"
 		disabled={full}
 		onclick={() => (addOpen = true)}
 	>
 		<Icon name="plus" size={16} />{m.feedTabsAdd()}
-	</button>
+	</Button>
 	{#if full}<p class="error">{m.feedTabsFull()}</p>{/if}
 
 	<FeedTabSortList bind:items={draft} onreorder={(next) => persist(next as FeedTab[])}>

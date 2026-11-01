@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { setOAuthReturnTo } from '$lib/oauth/session.svelte';
@@ -18,7 +19,7 @@
 
 {#snippet body()}
 	<p>{message}</p>
-	<a class="login" href="/login" onclick={rememberReturnTo}>{m.login()}</a>
+	<Button variant="primary" block href="/login" onclick={rememberReturnTo}>{m.login()}</Button>
 {/snippet}
 
 {#if legend}
@@ -36,12 +37,7 @@
 	.signed-out-notice p {
 		margin: 0.35rem 0 0;
 	}
-	/* .auth-card 直下ではないので .auth-card > a のブロック表示は効かない。
-	   どこに置いても同じボタンに見えるよう、この中で完結させる。 */
-	.signed-out-notice .login {
-		display: block;
+	.signed-out-notice :global(.btn) {
 		margin-top: 20px;
-		font-size: 13px;
-		text-align: center;
 	}
 </style>

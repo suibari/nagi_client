@@ -14,6 +14,7 @@
 </script>
 
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import type { ModerationOpts } from '@atproto/api';
 	import { untrack } from 'svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
@@ -119,10 +120,10 @@
 		{:else if granted === false}
 			<div class="state bsky-permission">
 				<p>{m.bskyFeedNeedsPermission()}</p>
-				<button type="button" disabled={reauthorizing} onclick={reauthorize}
+				<Button variant="secondary" type="button" disabled={reauthorizing} onclick={reauthorize}
 					>{#if reauthorizing}<Spinner inline size="sm" decorative />{/if}{reauthorizing
 						? m.crosspostReauthPending()
-						: m.crosspostReauthSubmit()}</button
+						: m.crosspostReauthSubmit()}</Button
 				>
 			</div>
 		{:else if moderationFailed}

@@ -1,12 +1,8 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { tick } from 'svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
-	import {
-		ApiRequestError,
-		donateCards,
-		getCardBoard,
-		takeBoardCard,
-	} from '$lib/api/appview';
+	import { ApiRequestError, donateCards, getCardBoard, takeBoardCard } from '$lib/api/appview';
 	import type { CardBoardEntry, CardBoardView, CardView, DonatedCard } from '$lib/api/types';
 	import { donateFlightPlan, donateVibration } from '$lib/cards/share-board';
 	import { cardCollections } from '$lib/cards/collection.svelte';
@@ -43,9 +39,7 @@
 	let timers: ReturnType<typeof setTimeout>[] = [];
 	let finishFlight: (() => void) | undefined;
 
-	const donatableTotal = $derived(
-		board?.cards.reduce((sum, e) => sum + e.donatable, 0) ?? 0,
-	);
+	const donatableTotal = $derived(board?.cards.reduce((sum, e) => sum + e.donatable, 0) ?? 0);
 	const donatableZenny = $derived(
 		board?.cards.reduce((sum, e) => sum + e.donatable * e.zenny, 0) ?? 0,
 	);
@@ -79,8 +73,7 @@
 	}
 
 	const reduceMotion = () =>
-		typeof window !== 'undefined' &&
-		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	const touchDevice = () =>
 		navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
 
@@ -225,7 +218,9 @@
 			{/if}
 		</div>
 		{#if entry.donatable}
-			<button
+			<Button
+				variant="secondary"
+				size="sm"
 				type="button"
 				class="donate-one tile-action"
 				disabled={busy}
@@ -234,18 +229,20 @@
 					donate({ mode: 'single', card: { volume: entry.card.volume, id: entry.card.id } })}
 			>
 				{m.boardDonateOne({ zenny: entry.zenny })}
-			</button>
+			</Button>
 		{/if}
 		{#if !entry.card.owned && entry.available}
-			<button
+			<Button
+				variant="primary"
+				size="sm"
 				type="button"
-				class="primary tile-action"
+				class="tile-action"
 				disabled={busy || !entry.canTake}
 				aria-label="{cardName(entry.card)}: {m.boardTake({ price: entry.price })}"
 				onclick={() => take(entry)}
 			>
 				{m.boardTake({ price: entry.price })}
-			</button>
+			</Button>
 		{/if}
 	</li>
 {/snippet}
@@ -281,25 +278,31 @@
 
 	{#if loadError}
 		<p class="error" role="alert">{loadError}</p>
-		<button type="button" class="ghost" onclick={load}>{m.retry()}</button>
+		<Button variant="secondary" type="button" onclick={load}>{m.retry()}</Button>
 	{:else if !board}
 		<Spinner />
 	{:else}
 		<div class="bulk">
 			{#if flying}
-				<button type="button" class="ghost" onclick={() => finishFlight?.()}>{m.boardSkip()}</button>
+				<Button variant="secondary" type="button" onclick={() => finishFlight?.()}
+					>{m.boardSkip()}</Button
+				>
 			{:else if donatableTotal}
-				<button
+				<Button
+					variant="primary"
 					type="button"
-					class="primary"
 					disabled={busy}
 					onclick={() => donate({ mode: 'all' })}
 				>
-					{#if busy}<Spinner size="sm" inline decorative />{m.boardDonating()}{:else}{m.boardDonateAll({
+					{#if busy}<Spinner
+							size="sm"
+							inline
+							decorative
+						/>{m.boardDonating()}{:else}{m.boardDonateAll({
 							count: donatableTotal,
 							amount: donatableZenny,
 						})}{/if}
-				</button>
+				</Button>
 			{:else}
 				<p class="hint">{m.boardDonateAllNone()}</p>
 			{/if}
@@ -317,10 +320,14 @@
 <div class="flight-layer" bind:this={layer} aria-hidden="true"></div>
 
 {#if received}
-	<CardDetailDialog initial={received} actor={did} onclose={(final) => {
-		received = undefined;
-		cardCollections.applyCard(did, final);
-	}} />
+	<CardDetailDialog
+		initial={received}
+		actor={did}
+		onclose={(final) => {
+			received = undefined;
+			cardCollections.applyCard(did, final);
+		}}
+	/>
 {/if}
 {#if showHelp}
 	<CardShareHelp id="card-share-help" onclose={() => (showHelp = false)} />
@@ -414,12 +421,6 @@
 		display: grid;
 		gap: 0.4rem;
 	}
-	.bulk .primary {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.4rem;
-	}
 	.grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -463,30 +464,9 @@
 	.spare {
 		color: var(--text-muted);
 	}
-	.tile-action {
+	/* 受け取る（primary）と寄付（secondary）は、タイルの幅いっぱいに並べる。 */
+	:global(.tile-action) {
 		inline-size: 100%;
-		font-size: 0.8rem;
-	}
-	/* 受け取る（primary）と並んでも主従が分かるよう、枠線のボタンにする。 */
-	.donate-one {
-		min-block-size: 36px;
-		padding: 6px 10px;
-		border: 1.5px solid var(--accent);
-		border-radius: var(--r-md);
-		background: transparent;
-		color: var(--accent-strong);
-		font-weight: 700;
-	}
-	.donate-one:active:not(:disabled) {
-		background: color-mix(in srgb, var(--accent) 14%, transparent);
-	}
-	@media (hover: hover) and (pointer: fine) {
-		.donate-one:hover:not(:disabled) {
-			background: color-mix(in srgb, var(--accent) 10%, transparent);
-		}
-	}
-	.donate-one:disabled {
-		opacity: 0.5;
 	}
 	.flight-layer {
 		position: fixed;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session, signIn } from '$lib/oauth/session.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
@@ -59,10 +60,10 @@
 	{:else if $session && !(blueskyGranted && viewGranted)}
 		<div class="publishing-service">
 			<p>{m.crosspostReauthNote()}</p>
-			<button type="button" disabled={blueskyBusy} onclick={reauthorizeBluesky}>
+			<Button variant="primary" type="button" disabled={blueskyBusy} onclick={reauthorizeBluesky}>
 				{#if blueskyBusy}<Spinner inline size="sm" decorative />{/if}
 				{blueskyBusy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}
-			</button>
+			</Button>
 		</div>
 	{/if}
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { goto } from '$app/navigation';
 	import { deleteAccountData, prepareDeleteAccountData } from '$lib/api/appview';
 	import { deleteAllNagiRecords } from '$lib/atproto/records';
@@ -69,17 +70,24 @@
 				autocomplete="off"
 			/></label
 		>
-		<button
+		<Button
+			variant="danger"
+			size="lg"
+			block
 			class="danger-button"
 			disabled={!matches || busy}
 			onclick={() => {
 				error = '';
 				dialogOpen = true;
-			}}>{m.deleteDataButton()}</button
+			}}>{m.deleteDataButton()}</Button
 		>
 		{#if error}<p class="error" role="alert">{error}</p>
-			<button class="retry-delete" disabled={busy} onclick={() => (dialogOpen = true)}
-				>{m.retry()}</button
+			<Button
+				variant="secondary"
+				block
+				class="retry-delete"
+				disabled={busy}
+				onclick={() => (dialogOpen = true)}>{m.retry()}</Button
 			>{/if}
 	{/if}
 </section>

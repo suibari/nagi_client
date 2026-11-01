@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import {
 		sampleAvatar,
 		sampleChronicle,
@@ -313,7 +314,7 @@
 			</p>
 			{#if showJoin}
 				<div class="about-cta">
-					<a class="primary" href="/login">{m.aboutHeroCta()}</a>
+					<Button variant="primary" size="lg" href="/login">{m.aboutHeroCta()}</Button>
 					<p class="about-cta-note">{m.aboutHeroCtaNote()}</p>
 				</div>
 			{/if}
@@ -509,14 +510,15 @@
 			<p>{m.aboutFinalBody()}</p>
 			<p>{m.loginSignupBody()}</p>
 			<div class="about-cta">
-				<a
-					class="primary"
+				<Button
+					variant="primary"
+					size="lg"
 					href="/login#signup"
 					onclick={onJoinClick}
 					onmouseenter={() => (botHappy = true)}
 					onmouseleave={onJoinLeave}
 					onfocus={() => (botHappy = true)}
-					onblur={onJoinLeave}>{m.loginSignupSubmit()}</a
+					onblur={onJoinLeave}>{m.loginSignupSubmit()}</Button
 				>
 				<a class="about-text-link" href="/login">{m.loginSubmit()}</a>
 			</div>

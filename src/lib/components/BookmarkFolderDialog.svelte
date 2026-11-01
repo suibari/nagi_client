@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount, tick } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
@@ -52,8 +53,10 @@
 			</label>
 			{#if error}<p class="folder-dialog-error" role="alert">{error}</p>{/if}
 			<div class="folder-dialog-actions">
-				<button type="button" disabled={busy} onclick={oncancel}>{m.cancel()}</button>
-				<button class="primary" type="submit" disabled={busy || !name.trim()}>{m.save()}</button>
+				<Button variant="secondary" type="button" disabled={busy} onclick={oncancel}
+					>{m.cancel()}</Button
+				>
+				<Button variant="primary" type="submit" disabled={busy || !name.trim()}>{m.save()}</Button>
 			</div>
 		</form>
 	</div>

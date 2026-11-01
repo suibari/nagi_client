@@ -68,7 +68,8 @@ describe('guest post privacy boundary', () => {
 		);
 		expect(guestModal).toContain('if (busy || !canSubmit) return;');
 		expect(guestModal).toContain('disabled={busy || !canSubmit}');
-		expect(guestModal).toContain('class:requirements-missing={!busy && !canSubmit}');
+		// 条件が揃うまでは送信ボタンを控えめな見た目にして、押せない理由が伝わるようにする。
+		expect(guestModal).toContain("variant={!busy && !canSubmit ? 'secondary' : 'primary'}");
 	});
 
 	it('shows the standard post-created notice and links it to the local post in the feed', () => {
@@ -104,8 +105,8 @@ describe('guest post privacy boundary', () => {
 
 	it('shows the guest hero below the top header and above the feed', () => {
 		expect(guestHero).toContain('{m.heroTitle()}');
-		expect(guestHero).toContain('<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>');
-		expect(guestHero).toContain('<a class="hero-join" href="/login">{m.joinCta()}</a>');
+		expect(guestHero).toMatch(/class="hero-about" href="\/about"\s*>\{m\.welcomeAboutLink\(\)\}/);
+		expect(guestHero).toContain('class="hero-join" href="/login">{m.joinCta()}</Button>');
 		expect(topPage).toContain('<GuestHero />');
 		expect(topPage.indexOf('class="feed-heading"')).toBeLessThan(topPage.indexOf('<GuestHero'));
 		expect(topPage.indexOf('<GuestHero')).toBeLessThan(topPage.indexOf('<FeedTabsView'));

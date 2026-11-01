@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	/**
 	 * 未ログインの人に見せる紹介。フィードの冒頭と、ブログ・ニュースの個別記事の上に同じ形で置き、
 	 * 「Nagiのことを知る」と「参加する」への導線を持つ。
@@ -23,7 +24,9 @@
 		<span>{m.heroLocalAi()} <a href="/privacy#p5">{m.heroLocalAiLink()}</a></span>
 	</p>
 	<div class="hero-actions">
-		<a class="hero-about" href="/about">{m.welcomeAboutLink()}</a>
-		<a class="hero-join" href="/login">{m.joinCta()}</a>
+		<Button variant="secondary" size="lg" class="hero-about" href="/about"
+			>{m.welcomeAboutLink()}</Button
+		>
+		<Button variant="primary" size="lg" class="hero-join" href="/login">{m.joinCta()}</Button>
 	</div>
 </section>

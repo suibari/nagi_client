@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import type { NewsView } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import LinkCard from '$lib/components/LinkCard.svelte';
@@ -77,11 +78,12 @@
 		pickerAnchor={reactionButton}
 	/>
 	<div class="news-actions">
-		<button
-			class="primary news-quote"
-			class:active={composerHost.open && composerHost.quoteTarget?.news?.uri === news.uri}
+		<Button
+			variant="primary"
+			size="sm"
+			class="news-quote"
 			type="button"
-			onclick={() => quoteNews(news)}><Icon name="quote" size={15} />{m.newsComment()}</button
+			onclick={() => quoteNews(news)}><Icon name="quote" size={15} />{m.newsComment()}</Button
 		>
 		<button
 			bind:this={reactionButton}
@@ -182,14 +184,8 @@
 		margin-top: 8px;
 		min-width: 0;
 	}
-	.news-actions .news-quote {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		min-height: 32px;
+	.news-actions :global(.news-quote) {
 		margin-right: 4px;
-		padding: 0.35rem 0.75rem;
-		font-size: 12px;
 	}
 	.news-actions .icon-action {
 		width: 32px;

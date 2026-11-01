@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Confetti from './Confetti.svelte';
 
@@ -12,7 +13,7 @@
 		onclose: () => void;
 	} = $props();
 
-	let closeButton: HTMLButtonElement;
+	let closeButton = $state<HTMLElement>();
 	$effect(() => closeButton?.focus());
 
 	function keydown(event: KeyboardEvent) {
@@ -32,9 +33,9 @@
 		<p>{percent === 100 ? m.cardMilestoneComplete() : m.cardMilestoneBody()}</p>
 		<div class="milestone-track" aria-hidden="true"><i style={`inline-size:${percent}%`}></i></div>
 		<div class="milestone-actions">
-			<button bind:this={closeButton} type="button" class="primary" onclick={onclose}>
+			<Button variant="primary" bind:ref={closeButton} type="button" onclick={onclose}>
 				{m.cardMilestoneClose()}
-			</button>
+			</Button>
 			{#if collectionHref}
 				<a href={collectionHref} onclick={onclose}>{m.cardViewCollection()} →</a>
 			{/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	let {
 		busy,
@@ -22,10 +23,12 @@
 		<p>{m.deleteDataDialogBody()}</p>
 		{#if error}<p class="delete-error" role="alert">{error}</p>{/if}
 		<div class="delete-actions">
-			<button type="button" onclick={oncancel} disabled={busy}>{m.cancel()}</button>
-			<button type="button" class="danger" onclick={onconfirm} disabled={busy}>
+			<Button variant="secondary" type="button" onclick={oncancel} disabled={busy}
+				>{m.cancel()}</Button
+			>
+			<Button variant="danger" type="button" onclick={onconfirm} disabled={busy}>
 				{busy ? m.deleteDataDeleting() : m.deleteDataConfirm()}
-			</button>
+			</Button>
 		</div>
 	</div>
 </div>

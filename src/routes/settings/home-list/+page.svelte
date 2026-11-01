@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
@@ -70,11 +71,12 @@
 								<span class="muted">@{member.handle}</span>
 							</span>
 						</a>
-						<button
+						<Button
+							variant="secondary"
+							size="sm"
 							type="button"
-							class="ghost"
 							disabled={privateList.isPending(member.did)}
-							onclick={() => void remove(member)}>{m.homeListRemove()}</button
+							onclick={() => void remove(member)}>{m.homeListRemove()}</Button
 						>
 					</li>
 				{/each}
@@ -114,8 +116,7 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	.home-list button {
+	.home-list :global(.btn) {
 		flex: 0 0 auto;
-		padding: 7px 10px;
 	}
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import PermissionRefreshButton from '$lib/components/PermissionRefreshButton.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -185,11 +186,13 @@
 </script>
 
 {#snippet again(item: EmojiGenerationView)}
-	<button
+	<Button
+		variant="secondary"
+		size="sm"
 		type="button"
 		class="avatar-select"
 		disabled={submitting || active}
-		onclick={() => submit(item.prompt)}>{m.emojiGenerateAgain()}</button
+		onclick={() => submit(item.prompt)}>{m.emojiGenerateAgain()}</Button
 	>
 {/snippet}
 
@@ -210,10 +213,11 @@
 				disabled={submitting}
 			/></label
 		>
-		<button
-			class="primary"
+		<Button
+			variant="primary"
+			type="submit"
 			disabled={submitting || active || !prompt.trim() || promptLength > PROMPT_MAX}
-			>{submitting ? m.emojiGenerateSubmitting() : m.emojiGenerateSubmit()}</button
+			>{submitting ? m.emojiGenerateSubmitting() : m.emojiGenerateSubmit()}</Button
 		>
 	</form>
 	{#if notice}<p role="status">{notice}</p>{/if}
@@ -258,8 +262,8 @@
 				>
 				{#if !EMOJI_NAME_PATTERN.test(form.name)}<p class="error">{m.emojiNameInvalid()}</p>{/if}
 				<label>{m.emojiAltLabel()}<input bind:value={form.description} maxlength="100" /></label>
-				<button
-					class="primary"
+				<Button
+					variant="primary"
 					disabled={Boolean(registering) ||
 						registered.has(done.id) ||
 						!EMOJI_NAME_PATTERN.test(form.name)}
@@ -268,7 +272,7 @@
 						? m.emojiGenerateRegistered()
 						: registering === done.id
 							? m.saving()
-							: m.emojiUpload()}</button
+							: m.emojiUpload()}</Button
 				>
 			{:else if latest?.state === 'failed' && !pending}
 				<!-- 描けなかったときは絵が無いので、ボタンだけを出す -->

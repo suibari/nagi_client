@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -93,14 +94,15 @@
 									<span class="muted">@{actor.handle}</span>
 								</span>
 							</a>
-							<button
+							<Button
+								variant="secondary"
+								size="sm"
 								type="button"
-								class="ghost"
 								disabled={mutes.isPending(actor.did)}
 								onclick={() => void unmuteActor(actor)}
 							>
 								{m.unmuteUser()}
-							</button>
+							</Button>
 						</li>
 					{/each}
 				</ul>
@@ -116,9 +118,9 @@
 					placeholder={m.muteTagPlaceholder()}
 					aria-label={m.muteTagAdd()}
 				/>
-				<button type="submit" class="ghost" disabled={!newTag || mutes.isPending(newTag)}>
+				<Button variant="primary" type="submit" disabled={!newTag || mutes.isPending(newTag)}>
 					{m.muteTagAdd()}
-				</button>
+				</Button>
 			</form>
 			{#if loading && !mutes.loaded}
 				<Spinner />
@@ -131,14 +133,15 @@
 							<a class="mute-subject" href={hashtagHref(tag)}>
 								<span class="mute-names"><strong>#{tag}</strong></span>
 							</a>
-							<button
+							<Button
+								variant="secondary"
+								size="sm"
 								type="button"
-								class="ghost"
 								disabled={mutes.isPending(tag)}
 								onclick={() => void setTagMute(tag, false)}
 							>
 								{m.unmuteTag()}
-							</button>
+							</Button>
 						</li>
 					{/each}
 				</ul>

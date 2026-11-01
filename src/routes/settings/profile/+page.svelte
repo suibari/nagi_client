@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import {
 		getBlueskyProfileDraft,
 		getOwnBlueskyWebsite,
@@ -210,11 +211,19 @@
 					class="visually-hidden"
 					onchange={selectAvatar}
 				/>
-				<button type="button" class="avatar-select" onclick={() => avatarInput?.click()}
-					>{m.selectImage()}</button
+				<Button
+					variant="secondary"
+					size="sm"
+					type="button"
+					class="avatar-select"
+					onclick={() => avatarInput?.click()}>{m.selectImage()}</Button
 				>
-				{#if avatarPreview}<button type="button" class="ghost avatar-remove" onclick={removeAvatar}
-						>{m.remove()}</button
+				{#if avatarPreview}<Button
+						variant="secondary"
+						size="sm"
+						type="button"
+						class="avatar-remove"
+						onclick={removeAvatar}>{m.remove()}</Button
 					>{/if}
 				<small>{m.avatarNote()}</small>
 			</div>
@@ -236,9 +245,14 @@
 		{#if $session && !websiteGranted}
 			<div class="profile-website-permission">
 				<p>{m.profileWebsitePermissionNote()}</p>
-				<button type="button" disabled={websiteReauthBusy} onclick={reauthorizeWebsite}>
+				<Button
+					variant="secondary"
+					type="button"
+					disabled={websiteReauthBusy}
+					onclick={reauthorizeWebsite}
+				>
 					{websiteReauthBusy ? m.profileWebsiteReauthPending() : m.profileWebsiteReauthSubmit()}
-				</button>
+				</Button>
 			</div>
 		{/if}
 		{#if onboarding}
@@ -252,7 +266,9 @@
 				<AgeAssuranceForm />
 			</section>
 		{/if}
-		<button disabled={busy || !loaded} onclick={save}>{busy ? m.saving() : m.save()}</button>
+		<Button variant="primary" size="lg" block disabled={busy || !loaded} onclick={save}
+			>{busy ? m.saving() : m.save()}</Button
+		>
 		{#if status}<p>{status}</p>{/if}
 		{#if syncWarning}<p class="error" role="status">{syncWarning}</p>{/if}
 		{#if websiteWarning}<p class="error" role="status">{websiteWarning}</p>{/if}

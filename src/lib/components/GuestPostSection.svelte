@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import type { ActorView, PostView } from '$lib/api/types';
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -55,11 +56,12 @@
 					</p>
 				{/if}
 				<div class="thread-actions">
-					<button
-						class="ghost delete"
+					<Button
+						variant="ghost"
+						size="sm"
 						type="button"
 						onclick={() => void guestPosts.remove(entry.id)}
-						><Icon name="trash" size={15} />{m.guestPostDelete()}</button
+						><Icon name="trash" size={15} />{m.guestPostDelete()}</Button
 					>
 				</div>
 			</article>
@@ -109,13 +111,6 @@
 	}
 	.thread-actions {
 		justify-content: flex-end;
-	}
-	.delete {
-		display: flex;
-		gap: 5px;
-		align-items: center;
-		color: var(--text-muted);
-		font-size: 0.75rem;
 	}
 	.signup-prompt {
 		justify-content: space-between;

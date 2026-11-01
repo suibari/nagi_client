@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
@@ -69,9 +70,9 @@
 </script>
 
 {#snippet mobileSubmit()}
-	<button
+	<Button
+		variant={!busy && !canSubmit ? 'secondary' : 'primary'}
 		class="submit-primary post-modal-mobile-submit"
-		class:requirements-missing={!busy && !canSubmit}
 		type="button"
 		disabled={busy || !canSubmit}
 		aria-label={busy ? m.guestPostSaving() : m.guestPostSubmit()}
@@ -81,7 +82,7 @@
 		{#if busy}<Spinner inline size="sm" decorative />
 		{:else}<Icon name="send" size={18} />{/if}
 		<span>{busy ? m.guestPostSaving() : m.guestPostSubmit()}</span>
-	</button>
+	</Button>
 {/snippet}
 
 <PostModalShell
@@ -131,9 +132,9 @@
 			</button>
 			<div class="composer-status"><span>{graphemes} / 3000</span></div>
 			<div class="composer-submit-actions">
-				<button
+				<Button
+					variant={!busy && !canSubmit ? 'secondary' : 'primary'}
 					class="submit-primary"
-					class:requirements-missing={!busy && !canSubmit}
 					type="button"
 					disabled={busy || !canSubmit}
 					aria-label={busy ? m.guestPostSaving() : m.guestPostSubmit()}
@@ -143,7 +144,7 @@
 					{#if busy}<Spinner inline size="sm" decorative />
 					{:else}<Icon name="send" size={18} />{/if}
 					<span>{busy ? m.guestPostSaving() : m.guestPostSubmit()}</span>
-				</button>
+				</Button>
 			</div>
 		</div>
 		<p class="guest-scope-detail"><Icon name="info" size={14} />{m.guestPostScopeDetail()}</p>
@@ -176,12 +177,6 @@
 	.guest-scope:disabled {
 		opacity: 1;
 		cursor: default;
-	}
-	.submit-primary.requirements-missing {
-		border-color: var(--line-strong);
-		background: var(--surface-2);
-		color: var(--text-faint);
-		opacity: 1;
 	}
 	.guest-scope-detail {
 		display: flex;

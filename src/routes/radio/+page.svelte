@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getRadioHistory } from '$lib/api/appview';
 	import type { RadioTrack } from '$lib/api/types';
@@ -72,9 +73,13 @@
 		{#if loading && tracks.length === 0}<Spinner />{/if}
 		{#if error}
 			<p class="state">{m.radioHistoryError()}</p>
-			<button class="more" onclick={() => load(tracks.length === 0)}>{m.retry()}</button>
+			<Button variant="secondary" class="more" onclick={() => load(tracks.length === 0)}
+				>{m.retry()}</Button
+			>
 		{:else if cursor}
-			<button class="more" disabled={loading} onclick={() => load()}>{m.radioHistoryMore()}</button>
+			<Button variant="secondary" class="more" disabled={loading} onclick={() => load()}
+				>{m.radioHistoryMore()}</Button
+			>
 		{/if}
 	</div>
 {/if}
@@ -96,13 +101,7 @@
 		color: var(--text-muted);
 		text-align: center;
 	}
-	.more {
+	:global(.btn.more) {
 		justify-self: center;
-		padding: 9px 18px;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		background: var(--bg);
-		color: var(--text);
-		cursor: pointer;
 	}
 </style>

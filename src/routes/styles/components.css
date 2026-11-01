@@ -680,7 +680,7 @@
 	align-items: center;
 	gap: 7px;
 }
-.composer-submit-actions button {
+.composer-submit-actions button:not(.btn) {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -692,22 +692,16 @@
 	letter-spacing: 0.02em;
 	white-space: nowrap;
 }
+/* 色と形は Button。隣の 44px の丸ボタンと高さだけ揃える。 */
 .submit-primary {
-	padding: 0 16px;
-	border: 1px solid var(--accent);
-	background: var(--accent);
-	color: var(--text-on-accent);
+	min-block-size: 44px;
+	white-space: nowrap;
 }
-.composer-submit-actions button:disabled {
+.composer-submit-actions button:not(.btn):disabled {
 	cursor: not-allowed;
 	opacity: 0.45;
 }
-@media (hover: hover) and (pointer: fine) {
-	.submit-primary:not(:disabled):hover {
-		background: var(--accent-strong);
-	}
-}
-.composer-submit-actions button:not(:disabled):active {
+.composer-submit-actions button:not(.btn):not(:disabled):active {
 	transform: translateY(1px);
 }
 /* 狭い画面では文字数を落として、投稿範囲と送信の対だけを残す。 */
@@ -813,23 +807,6 @@
 	background: var(--surface-1);
 	box-shadow: var(--shadow-pop);
 }
-.draft-save-current {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 7px;
-	min-height: 38px;
-	padding: 7px 12px;
-	border: 1px solid var(--accent);
-	border-radius: var(--r-sm);
-	background: var(--accent);
-	color: var(--text-on-accent);
-	font-weight: 700;
-}
-.draft-save-current:disabled {
-	cursor: not-allowed;
-	opacity: 0.45;
-}
 .draft-confirm {
 	width: min(100%, 380px);
 	display: grid;
@@ -897,13 +874,6 @@
 	align-items: center;
 	gap: 6px;
 	flex-shrink: 0;
-}
-.draft-item-actions button {
-	padding: 6px 10px;
-}
-.draft-delete.confirming {
-	color: var(--danger);
-	font-weight: 700;
 }
 .draft-empty,
 .draft-note {
@@ -2370,12 +2340,7 @@ button.reaction-emoji:active {
 	gap: 6px;
 }
 .emoji-favorite-add {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 6px;
 	align-self: flex-start;
-	width: auto;
 }
 /* 正方形セルは崩さず、その中でアスペクト比を保つ（横長は縦が縮む）。 */
 .emoji-custom-item img {
@@ -2622,7 +2587,7 @@ button.emoji-return {
 	max-height: 64px;
 }
 /* 「画像から作成」の登録ボタンと同じく、横いっぱいに伸ばさない */
-.emoji-generate-item > button {
+.emoji-generate-item > .btn {
 	justify-self: start;
 }
 .emoji-generate-item label {
@@ -3169,12 +3134,6 @@ button.emoji-return {
 	margin-left: auto;
 	align-self: flex-start;
 	white-space: nowrap;
-	border: 1px solid var(--accent);
-	color: var(--accent-strong);
-	border-radius: var(--r-md);
-	padding: 7px 15px;
-	font-size: 13px;
-	font-weight: 700;
 }
 .profile-header .profile-actions {
 	display: flex;
@@ -3185,16 +3144,6 @@ button.emoji-return {
 }
 .profile-header .profile-actions .edit {
 	margin-left: 0;
-}
-/* .edit は自分のときの編集リンクと、他人のときのミュートボタンで共用する。
-   button 既定の背景とカーソルだけ揃える。 */
-.profile-header button.edit {
-	background: none;
-	cursor: pointer;
-}
-.profile-header button.edit:disabled {
-	opacity: 0.6;
-	cursor: default;
 }
 .profile-header .mute-error {
 	margin: 0;
@@ -3249,31 +3198,6 @@ button.emoji-return {
 .avatar-controls small {
 	width: 100%;
 	color: var(--text-muted);
-}
-.avatar-select {
-	display: inline-flex;
-	align-items: center;
-	border: 1px solid var(--accent);
-	color: var(--accent-strong);
-	border-radius: var(--r-md);
-	padding: 8px 14px;
-	font-size: 13px;
-	font-weight: 700;
-	cursor: pointer;
-	background: transparent;
-	font-family: inherit;
-	line-height: inherit;
-}
-.avatar-select input {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	overflow: hidden;
-	clip-path: inset(50%);
-}
-.avatar-remove {
-	padding: 8px 10px;
-	color: var(--danger);
 }
 .cropper-backdrop {
 	position: fixed;
@@ -3337,9 +3261,6 @@ button.emoji-return {
 	justify-content: flex-end;
 	gap: 10px;
 }
-.cropper-actions button {
-	padding: 9px 16px;
-}
 .delete-backdrop {
 	position: fixed;
 	inset: 0;
@@ -3370,20 +3291,6 @@ button.emoji-return {
 	display: flex;
 	justify-content: flex-end;
 	gap: 10px;
-}
-.delete-actions button {
-	padding: 9px 16px;
-}
-.delete-actions .danger {
-	border: 0;
-	border-radius: var(--r-md);
-	background: var(--danger);
-	color: white;
-	font-weight: 700;
-}
-.delete-actions .danger:disabled {
-	cursor: wait;
-	opacity: 0.65;
 }
 @media (max-width: 380px) {
 	.cropper-backdrop {
@@ -3887,36 +3794,6 @@ a.notification-main::before {
 	justify-content: center;
 	gap: 8px;
 	margin-top: 24px;
-}
-.hero-actions a {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 44px;
-	padding: 8px 20px;
-	border-radius: var(--r-md);
-	font-weight: 600;
-	text-decoration: none;
-	transition: background-color 0.15s ease;
-}
-/* 主な操作は「参加する」だけ。知る方は面と罫線だけの控えめなボタンにする。 */
-.hero-about {
-	background: var(--surface-1);
-	border: 1px solid var(--line);
-	color: var(--text);
-}
-.hero-join {
-	background: var(--accent);
-	border: 1px solid transparent;
-	color: var(--text-on-accent);
-}
-@media (hover: hover) and (pointer: fine) {
-	.hero-about:hover {
-		background: var(--bg-inset);
-	}
-	.hero-join:hover {
-		background: var(--accent-hover);
-	}
 }
 
 /* --- small screens --- */
@@ -4558,18 +4435,6 @@ button.settings-category {
 	gap: 12px;
 	margin-top: 8px;
 }
-.about-cta a.primary {
-	display: inline-flex;
-	align-items: center;
-	min-height: 48px;
-	padding: 12px 32px;
-	font-size: 1rem;
-	font-weight: 600;
-	letter-spacing: 0;
-	border-radius: var(--r-md);
-	box-shadow: none;
-	transition: background-color 0.15s ease;
-}
 .about-cta-note {
 	margin: 0;
 	font-size: 0.8rem;
@@ -5117,7 +4982,6 @@ a.about-feature:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.about-cta a.primary,
 	a.about-feature,
 	.about-suibari-brand {
 		transition: none;
@@ -5142,11 +5006,6 @@ a.about-feature:focus-visible {
 	gap: 8px;
 }
 /* 解除は破壊的だが取り返しがつく（表示名に戻るだけ）ので、danger ではなく控えめに。 */
-.bot-name-page .bot-name-clear {
-	background: transparent;
-	border: 1px solid var(--line);
-	color: var(--text-muted);
-}
 .bot-name-page .bot-name-saved {
 	color: var(--text-muted);
 }
@@ -5207,15 +5066,9 @@ a.about-feature:focus-visible {
 	color: var(--text-muted);
 	font-size: 0.92em;
 }
-.auth-card > button.danger-button,
-.auth-card > button.retry-delete {
+.auth-card > .btn.danger-button,
+.auth-card > .btn.retry-delete {
 	margin-top: 0;
-}
-.auth-card > button.danger-button {
-	background: var(--danger, #c43d4d);
-}
-.auth-card > button.danger-button:hover {
-	filter: brightness(0.94);
 }
 
 /* ---- チャンネル機能 ---- */
@@ -5347,10 +5200,6 @@ a.about-feature:focus-visible {
 .draft-dialog .field small {
 	color: var(--text-muted);
 	font-size: 0.75rem;
-}
-/* ファイル選択はボタン風のラベル（.avatar-select）。列内で幅いっぱいに伸びないよう内容幅に。 */
-.draft-dialog .field .avatar-select {
-	align-self: start;
 }
 
 /* ---------------------------------------------------------------
@@ -5621,16 +5470,7 @@ a.about-feature:focus-visible {
 	gap: 8px;
 	margin-top: 14px;
 }
-/* テキストだけだと押せると分からないので、アイコンを添えてボタンらしくする。 */
-.card-actions button {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 9px 16px;
-	border-radius: var(--radius-pill);
-	font-weight: 600;
-}
-.card-actions button svg {
+.card-actions .btn svg {
 	flex: none;
 }
 /*
@@ -5664,9 +5504,6 @@ a.about-feature:focus-visible {
 
 /* ---- フィードのタブ設定（/settings/feed-tabs） ---- */
 .feed-tab-add-button {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
 	margin: 12px 0;
 }
 .feed-tab-sort {
@@ -5877,7 +5714,6 @@ a.about-feature:focus-visible {
 }
 .emoji-favorites-section .emoji-favorite-add {
 	justify-self: start;
-	padding: 9px 14px;
 }
 .emoji-custom-section {
 	min-width: 0;

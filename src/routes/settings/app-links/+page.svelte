@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, tick } from 'svelte';
 	import { page } from '$app/state';
@@ -432,13 +433,14 @@
 									<span>{m.appLinksAppUriLabel()}</span>
 									<span class="with-button">
 										<input type="url" placeholder="https://" bind:value={editor.appUri} />
-										<button
+										<Button
+											variant="secondary"
 											type="button"
 											disabled={!editor.appUri.trim()}
 											onclick={() => refetchIcon(editor)}
 										>
 											{m.appLinksResolveIcon()}
-										</button>
+										</Button>
 									</span>
 								</label>
 
@@ -474,8 +476,12 @@
 									<AppLinkChoiceList bind:choices={editor.choices} />
 								{/if}
 
-								<button type="button" class="remove" onclick={() => removeLink(i)}
-									>{m.appLinksRemove()}</button
+								<Button
+									variant="ghost"
+									size="sm"
+									type="button"
+									class="remove"
+									onclick={() => removeLink(i)}>{m.appLinksRemove()}</Button
 								>
 							</div>
 						{/if}
@@ -501,9 +507,9 @@
 			{/if}
 
 			<div class="actions">
-				<button type="button" class="primary save" disabled={saving} onclick={save}>
+				<Button variant="primary" type="button" class="save" disabled={saving} onclick={save}>
 					{saving ? m.appLinksSaving() : m.appLinksSave()}
-				</button>
+				</Button>
 			</div>
 			{#if editors.length === 0}<p class="muted">{m.appLinksEmpty()}</p>{/if}
 			{#if saveState === 'saved'}<p class="ok">{m.appLinksSaved()}</p>{/if}
@@ -649,15 +655,8 @@
 		flex: 1;
 		min-inline-size: 0;
 	}
-	.remove {
+	:global(.btn.remove) {
 		align-self: flex-start;
-		background: none;
-		border: 0;
-		color: var(--text-muted);
-		text-decoration: underline;
-		cursor: pointer;
-		padding: 0;
-		font-size: 0.8rem;
 	}
 	.add-row {
 		margin-block-start: 0.8rem;
@@ -680,16 +679,9 @@
 	.actions {
 		margin-block-start: 0.8rem;
 	}
-	/* 他の設定画面の保存ボタン（.auth-card > button）と同じ全幅プライマリに揃える。 */
-	.save {
+	/* 他の設定画面の保存ボタンと同じ全幅にする。 */
+	:global(.btn.save) {
 		inline-size: 100%;
-		padding: 13px;
-		border-radius: var(--r-md);
-		font-weight: 700;
-	}
-	.save:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
 	}
 	.ok {
 		color: var(--accent);

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { getNewsQuotes, getSimilarNews } from '$lib/api/appview';
 	import type { ActorView, FeedItem, NewsView } from '$lib/api/types';
 	import GuestHero from '$lib/components/GuestHero.svelte';
@@ -118,10 +119,11 @@
 	{:else if !quotes.length}
 		<p class="news-related-state">{m.newsQuotesEmpty()}</p>
 	{:else if quotesHasMore}
-		<button
-			class="ghost news-quotes-more"
+		<Button
+			variant="secondary"
+			class="news-quotes-more"
 			type="button"
-			onclick={() => loadQuotes(data.news.uri, true)}>{m.loadMore()}</button
+			onclick={() => loadQuotes(data.news.uri, true)}>{m.loadMore()}</Button
 		>
 	{/if}
 </section>
@@ -205,8 +207,8 @@
 		background: transparent;
 		border-radius: 0;
 	}
-	.news-quotes-more {
-		display: block;
+	:global(.news-quotes-more) {
+		display: flex;
 		margin: 8px auto 0;
 	}
 	.news-similar {

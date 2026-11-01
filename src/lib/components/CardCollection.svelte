@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { drawCard } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
@@ -130,13 +131,13 @@
 	{#if isSelf}
 		<div class="cards-draw">
 			{#if cardCollections.canDrawMyNagi}
-				<button type="button" class="primary" disabled={drawing} onclick={draw}>
+				<Button variant="primary" type="button" disabled={drawing} onclick={draw}>
 					{drawing ? m.cardDrawing() : m.cardDrawButton()}
-				</button>
+				</Button>
 			{:else if cardCollections.canDrawWithReaction}
-				<button type="button" class="primary" onclick={() => (guideOpen = true)}>
+				<Button variant="primary" type="button" onclick={() => (guideOpen = true)}>
 					{m.cardReactionNextLabel()}
-				</button>
+				</Button>
 			{:else if status}
 				<p class="cards-next">{m.cardNextDrawAt({ time: formatTime(status.nextDrawAt) })}</p>
 			{/if}

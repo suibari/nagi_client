@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { reactionCardReward } from '$lib/cards/reaction-reward.svelte';
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import type { CardView } from '$lib/api/types';
@@ -40,13 +41,15 @@
 {#if reactionCardReward.error}
 	<div class="reaction-card-error" role="alert">
 		<span>{m.cardReactionRewardFailed()}</span>
-		<button
+		<Button
+			variant="secondary"
+			size="sm"
 			type="button"
 			onclick={() => reactionCardReward.retry()}
 			disabled={reactionCardReward.busy}
 		>
 			{m.retry()}
-		</button>
+		</Button>
 		<button
 			type="button"
 			class="ghost"

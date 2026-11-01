@@ -74,10 +74,8 @@ img.mark {
 	border-radius: 19px;
 	font-size: 27px;
 }
-.primary,
-.login,
-.composer .submit,
-.auth-card > button {
+/* アイコンだけの塗りボタン（.icon-action.primary-icon）用。文字付きのボタンは Button を使う。 */
+.primary {
 	color: var(--text-on-accent) !important;
 	background: var(--accent);
 	border: 0;
@@ -87,11 +85,93 @@ img.mark {
 	font-weight: 700;
 	letter-spacing: 0.02em;
 }
-.primary:hover,
-.login:hover,
-.composer .submit:hover,
-.auth-card > button:hover {
+.primary:hover {
 	background: var(--accent-hover);
+}
+/* --- Button（lib/components/Button.svelte）---
+ * 文字付きの操作ボタンの見た目はここだけに持つ。置き場所ごとの差は余白・幅だけにして、
+ * 色・形・ホバーは各所で上書きしない。 */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-block-size: 40px;
+	padding: 8px 16px;
+	border: 1px solid transparent;
+	border-radius: var(--r-md);
+	font: inherit;
+	font-size: 0.9rem;
+	font-weight: 600;
+	line-height: 1.3;
+	text-align: center;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease,
+		color 0.15s ease,
+		transform 0.12s ease;
+}
+.btn-sm {
+	min-block-size: 32px;
+	padding: 4px 12px;
+	font-size: 0.82rem;
+}
+.btn-lg {
+	min-block-size: 48px;
+	padding: 12px 24px;
+	font-size: 1rem;
+}
+.btn-block {
+	display: flex;
+	inline-size: 100%;
+}
+.btn:active:not(:disabled) {
+	transform: scale(0.98);
+}
+.btn:disabled,
+.btn[aria-disabled='true'] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+.btn-primary {
+	background: var(--accent);
+	color: var(--text-on-accent);
+}
+.btn-secondary {
+	background: var(--surface-1);
+	border-color: var(--line);
+	color: var(--text);
+}
+.btn-ghost {
+	background: transparent;
+	color: var(--text-muted);
+}
+.btn-danger {
+	background: var(--danger);
+	color: var(--text-on-danger);
+}
+@media (hover: hover) and (pointer: fine) {
+	.btn-primary:hover:not(:disabled) {
+		background: var(--accent-hover);
+	}
+	.btn-secondary:hover:not(:disabled) {
+		background: var(--bg-inset);
+		border-color: var(--line-strong);
+	}
+	.btn-ghost:hover:not(:disabled) {
+		background: var(--bg-inset);
+		color: var(--text);
+	}
+	.btn-danger:hover:not(:disabled) {
+		background: var(--danger-hover);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.btn {
+		transition: none;
+	}
 }
 .ghost {
 	border: 0;
@@ -134,8 +214,12 @@ img.mark {
 	color: var(--text-muted);
 	box-shadow: none;
 }
-.state button {
+.state button:not(.btn) {
 	display: block;
+	margin: 12px auto 0;
+}
+.state .btn {
+	display: flex;
 	margin: 12px auto 0;
 }
 .error {
@@ -143,7 +227,7 @@ img.mark {
 	overflow-wrap: anywhere;
 	color: var(--danger);
 }
-.more {
+.more:not(.btn) {
 	justify-self: center;
 	border: 1px solid var(--line-strong);
 	background: var(--bg-raised);
@@ -151,7 +235,7 @@ img.mark {
 	border-radius: var(--r-md);
 	padding: 10px 22px;
 }
-.more:hover {
+.more:not(.btn):hover {
 	border-color: var(--accent-border);
 	background: var(--accent-softer);
 }
@@ -215,17 +299,19 @@ img.mark {
 :is(.auth-card, .emoji-page) textarea:focus {
 	border-color: var(--accent);
 }
-.auth-card > button {
+.auth-card > .btn {
 	width: 100%;
-	padding: 13px;
 }
-.auth-card > a {
+.auth-card > a.btn {
+	margin-top: 20px;
+}
+.auth-card > a:not(.btn) {
 	display: block;
 	margin-top: 20px;
 	color: var(--accent-strong);
 	font-size: 13px;
 }
-:is(.auth-card, .emoji-page) button:disabled {
+:is(.auth-card, .emoji-page) button:not(.btn):disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
 }

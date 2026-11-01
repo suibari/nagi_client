@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { signIn } from '$lib/oauth/session.svelte';
@@ -115,8 +116,8 @@
 						}}
 					>
 						<label>{m.bookmarkFolderName()}<input bind:value={folderName} maxlength="80" /></label>
-						<button class="primary" type="submit" disabled={!folderName.trim()}
-							>{m.bookmarkCreateAndSave()}</button
+						<Button variant="primary" size="sm" type="submit" disabled={!folderName.trim()}
+							>{m.bookmarkCreateAndSave()}</Button
 						>
 					</form>
 				{/if}

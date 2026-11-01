@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { getPreferences, putPreferences } from '$lib/api/appview';
@@ -82,16 +83,22 @@
 			>
 			{#if tooLong}<p class="error" role="alert">{m.botNameTooLong({ max: MAX_LENGTH })}</p>{/if}
 			<div class="bot-name-actions">
-				<button
+				<Button
+					variant="primary"
 					disabled={!dirty || tooLong || !trimmed || saving}
 					onclick={() => void save(trimmed)}
 				>
 					{saving ? m.botNameSaving() : m.save()}
-				</button>
+				</Button>
 				{#if current}
-					<button class="bot-name-clear" disabled={saving} onclick={() => void save('')}>
+					<Button
+						variant="secondary"
+						class="bot-name-clear"
+						disabled={saving}
+						onclick={() => void save('')}
+					>
 						{m.botNameClear()}
-					</button>
+					</Button>
 				{/if}
 			</div>
 			{#if saved && !dirty}<p class="bot-name-saved" role="status">{m.botNameSaved()}</p>{/if}

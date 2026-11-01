@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
@@ -74,7 +75,7 @@
 
 <section class="page-title blog-title">
 	<h1>{m.blogTitle()}</h1>
-	<button type="button" class="primary" onclick={openBlogComposer}>{m.blogWrite()}</button>
+	<Button variant="primary" type="button" onclick={openBlogComposer}>{m.blogWrite()}</Button>
 </section>
 
 <section class="blog-directory">

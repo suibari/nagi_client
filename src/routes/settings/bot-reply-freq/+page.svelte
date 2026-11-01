@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { getPreferences, putPreferences } from '$lib/api/appview';
@@ -85,9 +86,9 @@
 					</div>
 				</div>
 				<div class="bot-reply-freq-actions">
-					<button disabled={!dirty || saving} onclick={() => void save()}>
+					<Button variant="primary" disabled={!dirty || saving} onclick={() => void save()}>
 						{saving ? m.botReplyFreqSaving() : m.save()}
-					</button>
+					</Button>
 				</div>
 				{#if saved && !dirty}
 					<p class="bot-reply-freq-saved" role="status">{m.botReplyFreqSaved()}</p>

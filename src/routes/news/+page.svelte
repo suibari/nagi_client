@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getPositiveNews, searchNewsByQuery } from '$lib/api/appview';
 	import type { ActorView, NewsView, RecommendedNewsView } from '$lib/api/types';
@@ -148,7 +149,7 @@
 
 <section class="page-title news-title">
 	<h1>{m.navNews()}</h1>
-	<button type="button" class="primary" onclick={openSubmission}>{m.newsAdd()}</button>
+	<Button variant="primary" type="button" onclick={openSubmission}>{m.newsAdd()}</Button>
 </section>
 <p class="news-intro">{m.newsIntro()}</p>
 <div class="news-category-tabs" role="tablist" aria-label={m.newsCategoriesAria()}>

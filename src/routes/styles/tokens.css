@@ -96,6 +96,10 @@
 	--warning-soft: #fff3d6;
 	--danger: #b4233c;
 	--danger-soft: #fde8ec;
+	--text-on-danger: #ffffff;
+	/* 危険ボタンのホバー。濃い文字色へ少し寄せる（明るいテーマでは暗く、暗いテーマでは明るくなり、
+	   どちらでも文字とのコントラストが上がる）。 */
+	--danger-hover: color-mix(in srgb, var(--danger) 84%, var(--text-strong));
 
 	/* 日記の感情グラフ。明るい気分は暖色、落ち込みは寒色、帯と中央値は無彩色。 */
 	--mood-positive: #d9622b;
@@ -252,6 +256,7 @@
 	--warning-soft: #493a20;
 	--danger: #ff9baa;
 	--danger-soft: #4a2931;
+	--text-on-danger: #3a0d16;
 
 	/* 日記の感情グラフ。明るい気分は暖色、落ち込みは寒色、帯と中央値は無彩色。 */
 	--mood-positive: #d95926;
@@ -374,6 +379,7 @@
 		--warning-soft: #493a20;
 		--danger: #ff9baa;
 		--danger-soft: #4a2931;
+		--text-on-danger: #3a0d16;
 
 		/* 日記の感情グラフ。明るい気分は暖色、落ち込みは寒色、帯と中央値は無彩色。 */
 		--mood-positive: #d95926;

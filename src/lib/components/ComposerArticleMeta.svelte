@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import {
@@ -174,10 +175,17 @@
 						placeholder={m.postImageAltPlaceholder()}
 					/>
 				</label>
-				<button type="button" class="ghost article-cover-remove" {disabled} onclick={removeHeader}>
+				<Button
+					variant="ghost"
+					size="sm"
+					type="button"
+					class="article-cover-remove"
+					{disabled}
+					onclick={removeHeader}
+				>
 					<Icon name="close" size={14} />
 					<span>{m.articleHeaderImageRemove()}</span>
-				</button>
+				</Button>
 			{/if}
 			{#if error}<p class="error" role="alert">{error}</p>{/if}
 		</section>
@@ -322,13 +330,8 @@
 		min-width: 0;
 		width: 100%;
 	}
-	.article-cover-remove {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
+	:global(.article-cover-remove) {
 		width: fit-content;
-		padding: 4px 8px;
-		font-size: 11px;
 	}
 	.article-tags {
 		display: flex;

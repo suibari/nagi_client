@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
@@ -85,14 +86,15 @@
 				<div class="push-error" role="alert">
 					<p>{errorMessage(pushState.error)}</p>
 					{#if pushState.error === 'auth-required'}
-						<button type="button" disabled={reauthBusy} onclick={reauthorize}>
+						<Button variant="primary" type="button" disabled={reauthBusy} onclick={reauthorize}>
 							{reauthBusy ? m.pushReauthPending() : m.pushRefreshPermissions()}
-						</button>
+						</Button>
 					{:else if pushState.error !== 'permission-denied'}
-						<button
+						<Button
+							variant="secondary"
 							type="button"
 							disabled={pushState.busy}
-							onclick={() => void refreshPushState({ force: true })}>{m.pushRetry()}</button
+							onclick={() => void refreshPushState({ force: true })}>{m.pushRetry()}</Button
 						>
 					{/if}
 				</div>

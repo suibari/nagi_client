@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { session, signIn } from '$lib/oauth/session.svelte';
@@ -28,8 +29,8 @@
 {#if preferences.unauthorized && $session}
 	<p class="sync-notice">
 		{m.preferencesSyncUnavailable()}
-		<button type="button" disabled={busy} onclick={reauthorize}
-			>{m.preferencesSyncReauthorize()}</button
+		<Button variant="secondary" size="sm" type="button" disabled={busy} onclick={reauthorize}
+			>{m.preferencesSyncReauthorize()}</Button
 		>
 	</p>
 {:else if $session && (preferences.loading || preferences.loadFailed)}
@@ -37,8 +38,8 @@
 		{preferences.loading ? m.preferencesSyncLoading() : m.preferencesSyncFailed()}
 		{#if !preferences.loading}
 			{#if preferences.retryable}{m.preferencesSyncRetrying()}{/if}
-			<button type="button" onclick={() => void retryPreferences()}
-				>{m.preferencesSyncRetry()}</button
+			<Button variant="secondary" size="sm" type="button" onclick={() => void retryPreferences()}
+				>{m.preferencesSyncRetry()}</Button
 			>
 		{/if}
 	</p>
@@ -54,19 +55,8 @@
 		font-size: 0.85rem;
 		line-height: 1.6;
 	}
-	.sync-notice button {
-		display: block;
+	.sync-notice :global(.btn) {
+		display: flex;
 		margin-top: 0.5rem;
-		padding: 0;
-		border: 0;
-		background: none;
-		color: var(--accent, inherit);
-		font: inherit;
-		text-decoration: underline;
-		cursor: pointer;
-	}
-	.sync-notice button:disabled {
-		opacity: 0.6;
-		cursor: default;
 	}
 </style>

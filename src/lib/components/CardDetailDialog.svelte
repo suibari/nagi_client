@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount, tick } from 'svelte';
 	import { getCards } from '$lib/api/appview';
 	import type { CardView, DrawCardResult } from '$lib/api/types';
@@ -58,8 +59,8 @@
 	let card = $state<CardView>(initial);
 	// 待っても届かなかった状態。「…」のまま放置せず、その旨を出す。
 	let commentTimedOut = $state(false);
-	let closeButton = $state<HTMLButtonElement>();
-	let skipButton = $state<HTMLButtonElement>();
+	let closeButton = $state<HTMLElement>();
+	let skipButton = $state<HTMLElement>();
 	let revealTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const ja = $derived(i18n.locale === 'ja');
@@ -172,9 +173,15 @@
 	<CardDrawEffects rarity={card.rarity} {revealed} active={shouldAnimate && !skipped} />
 	<div class="draw-dialog" role="dialog" aria-modal="true" aria-labelledby="draw-title">
 		{#if shouldAnimate && !revealed}
-			<button bind:this={skipButton} type="button" class="draw-skip ghost" onclick={skipReveal}>
+			<Button
+				variant="secondary"
+				bind:ref={skipButton}
+				type="button"
+				class="draw-skip"
+				onclick={skipReveal}
+			>
 				{m.cardDrawSkip()}
-			</button>
+			</Button>
 		{/if}
 		<h2 id="draw-title" class="draw-title" class:visually-hidden={showNewCardArt}>
 			{#if shouldAnimate && !revealed}
@@ -268,9 +275,9 @@
 				</p>
 			{/if}
 			<div class="draw-actions">
-				<button bind:this={closeButton} type="button" class="ghost" onclick={close}>
+				<Button variant="secondary" bind:ref={closeButton} type="button" onclick={close}>
 					{m.cardClose()}
-				</button>
+				</Button>
 				{#if collectionHref}
 					<a class="draw-collection" href={collectionHref} onclick={close}
 						>{m.cardViewCollection()} →</a
@@ -311,7 +318,8 @@
 	.draw-dialog::-webkit-scrollbar {
 		display: none;
 	}
-	.draw-skip {
+	/* 演出中の暗い幕の上に浮かべるので、ここだけ幕に合わせた半透明の配色にする。 */
+	:global(.btn.draw-skip) {
 		position: fixed;
 		z-index: 160;
 		inset-block-start: max(14px, env(safe-area-inset-top));

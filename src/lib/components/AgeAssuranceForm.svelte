@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -99,7 +100,9 @@
 					/>
 				{/if}
 				{#if error && !confirming}<p class="error" role="alert">{error}</p>{/if}
-				<button class="login" type="submit" disabled={busy || !birthDate}>{m.ageSubmit()}</button>
+				<Button variant="primary" size="lg" block type="submit" disabled={busy || !birthDate}
+					>{m.ageSubmit()}</Button
+				>
 			</form>
 		{/if}
 	</div>

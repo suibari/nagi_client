@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
@@ -22,8 +23,8 @@
 </script>
 
 {#if $session}
-	<button type="button" disabled={busy} onclick={reauthorize}>
+	<Button variant="secondary" type="button" disabled={busy} onclick={reauthorize}>
 		{busy ? m.standardSiteReauthPending() : m.bookmarkRefreshPermissions()}
-	</button>
+	</Button>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 {/if}

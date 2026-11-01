@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import EmojiFavoritesEditor from '$lib/components/EmojiFavoritesEditor.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { page } from '$app/state';
@@ -337,8 +338,11 @@
 							class="visually-hidden"
 							onchange={selectFile}
 						/>
-						<button type="button" class="avatar-select" onclick={() => singleFileInput?.click()}
-							>{m.selectImage()}</button
+						<Button
+							variant="secondary"
+							type="button"
+							class="avatar-select"
+							onclick={() => singleFileInput?.click()}>{m.selectImage()}</Button
 						>
 						<small>{m.emojiUploadNote()}</small>
 						{#if singleFileProblem}<p class="error">{singleFileProblem}</p>{/if}
@@ -352,10 +356,10 @@
 					>
 					{#if name && !nameValid}<p class="error">{m.emojiNameInvalid()}</p>{/if}
 					<label>{m.emojiAltLabel()}<input bind:value={alt} maxlength="100" /></label>
-					<button
-						class="primary"
+					<Button
+						variant="primary"
 						disabled={busy || !loaded || !file || !nameValid || Boolean(singleFileProblem)}
-						onclick={upload}>{busy ? m.saving() : m.emojiUpload()}</button
+						onclick={upload}>{busy ? m.saving() : m.emojiUpload()}</Button
 					>
 				</div>
 			{:else if activeTab === 'batch'}
@@ -371,11 +375,12 @@
 							class="visually-hidden"
 							onchange={selectBatch}
 						/>
-						<button
+						<Button
+							variant="secondary"
 							type="button"
 							class="avatar-select"
 							disabled={busy}
-							onclick={() => folderInput?.click()}>{m.emojiSelectFolder()}</button
+							onclick={() => folderInput?.click()}>{m.emojiSelectFolder()}</Button
 						>
 						<input
 							bind:this={batchFileInput}
@@ -385,11 +390,12 @@
 							class="visually-hidden"
 							onchange={selectBatch}
 						/>
-						<button
+						<Button
+							variant="secondary"
 							type="button"
 							class="avatar-select"
 							disabled={busy}
-							onclick={() => batchFileInput?.click()}>{m.emojiSelectFiles()}</button
+							onclick={() => batchFileInput?.click()}>{m.emojiSelectFiles()}</Button
 						>
 					</div>
 					{#if ignoredFiles}<p class="muted">{m.emojiBatchIgnored({ count: ignoredFiles })}</p>{/if}
@@ -425,12 +431,15 @@
 								</div>
 							{/each}
 						</div>
-						<button class="primary" disabled={busy || !loaded || !batchReady} onclick={uploadBatch}
+						<Button
+							variant="primary"
+							disabled={busy || !loaded || !batchReady}
+							onclick={uploadBatch}
 							>{busy
 								? `${m.saving()} (${batchCompleted}/${batchTotal})`
 								: batch.some((item) => item.state === 'failed')
 									? m.emojiBatchRetry()
-									: m.emojiBatchUpload()}</button
+									: m.emojiBatchUpload()}</Button
 						>
 					{/if}
 				</div>
