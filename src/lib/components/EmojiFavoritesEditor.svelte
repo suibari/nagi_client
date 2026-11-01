@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { preferences } from '$lib/preferences/preferences.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -16,7 +17,7 @@
 
 	let items = $state<FavoriteItem[]>([]);
 	let pickerOpen = $state(false);
-	let addButton = $state<HTMLButtonElement>();
+	let addButton = $state<HTMLElement>();
 	const full = $derived(favoritesFull(items.map((item) => item.choice)));
 
 	const toItems = (favorites: ReactionChoice[]) =>
@@ -54,16 +55,17 @@
 	<p>{m.emojiFavoritesSettingsNote()}</p>
 	<PreferencesSyncNotice />
 
-	<button
+	<Button
+		variant="secondary"
 		type="button"
 		class="emoji-favorite-add"
-		bind:this={addButton}
+		bind:ref={addButton}
 		disabled={full}
 		onclick={() => (pickerOpen = true)}
 	>
 		<Icon name="emojiPlus" size={17} />
 		<span>{m.emojiFavoriteAdd()}</span>
-	</button>
+	</Button>
 	{#if full}<p class="error">{m.emojiFavoritesFull()}</p>{/if}
 
 	{#if items.length}

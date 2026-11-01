@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
@@ -70,7 +71,8 @@
 </script>
 
 {#snippet mobileSubmit()}
-	<button
+	<Button
+		variant="primary"
 		class="submit-primary post-modal-mobile-submit"
 		type="button"
 		disabled={!submittable}
@@ -81,7 +83,7 @@
 		{#if sending}<Spinner inline size="sm" decorative />
 		{:else}<Icon name="send" size={18} />{/if}
 		<span>{sending ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
-	</button>
+	</Button>
 {/snippet}
 
 <PostModalShell

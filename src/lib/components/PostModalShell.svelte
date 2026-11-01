@@ -243,15 +243,6 @@
 			margin-inline-start: 0;
 		}
 		.post-modal-header-action :global(.post-modal-mobile-submit) {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			gap: 5px;
-			height: 38px;
-			padding: 0 12px;
-			border-radius: var(--r-md);
-			font-size: 14px;
-			font-weight: 700;
 			white-space: nowrap;
 		}
 		.post-modal.has-header-action :global(.composer-foot .submit-primary) {

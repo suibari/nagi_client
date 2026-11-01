@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import {
 		builtinTabId,
 		DEFAULT_SOURCE,
@@ -238,10 +239,14 @@
 				<Spinner />
 			{:else if !bskyGranted}
 				<p>{m.bskyFeedNeedsPermission()}</p>
-				<button type="button" disabled={bskyReauthorizing} onclick={reauthorizeBsky}
+				<Button
+					variant="secondary"
+					type="button"
+					disabled={bskyReauthorizing}
+					onclick={reauthorizeBsky}
 					>{#if bskyReauthorizing}<Spinner inline size="sm" decorative />{/if}{bskyReauthorizing
 						? m.crosspostReauthPending()
-						: m.crosspostReauthSubmit()}</button
+						: m.crosspostReauthSubmit()}</Button
 				>
 			{:else}
 				<ul class="feed-tab-kinds bsky-following">
@@ -319,26 +324,26 @@
 		{/if}
 
 		<div class="delete-actions">
-			<button type="button" class="ghost" onclick={onclose}>{m.cancel()}</button>
+			<Button variant="secondary" type="button" onclick={onclose}>{m.cancel()}</Button>
 			{#if step === 'hashtag'}
-				<button type="button" class="primary" disabled={!tag || tagDuplicate} onclick={addHashtag}
-					>{m.feedTabsAdd()}</button
+				<Button variant="primary" type="button" disabled={!tag || tagDuplicate} onclick={addHashtag}
+					>{m.feedTabsAdd()}</Button
 				>
 			{:else if step === 'bsky' && bskyGranted}
-				<button
+				<Button
+					variant="primary"
 					type="button"
-					class="primary"
 					disabled={!feedInput.trim() || lookingUp}
 					aria-busy={lookingUp}
 					onclick={addFromInput}
-					>{#if lookingUp}<Spinner inline size="sm" decorative />{/if}{m.feedTabsAdd()}</button
+					>{#if lookingUp}<Spinner inline size="sm" decorative />{/if}{m.feedTabsAdd()}</Button
 				>
 			{:else if step === 'search'}
-				<button
+				<Button
+					variant="primary"
 					type="button"
-					class="primary"
 					disabled={!trimmedQuery || searchDuplicate}
-					onclick={addSearch}>{m.feedTabsAdd()}</button
+					onclick={addSearch}>{m.feedTabsAdd()}</Button
 				>
 			{/if}
 		</div>

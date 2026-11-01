@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { chronicleUnread } from '$lib/chronicle/notice';
 	import NavBadge from '$lib/components/shell/NavBadge.svelte';
 	import { goto } from '$app/navigation';
@@ -142,7 +143,7 @@
 	});
 </script>
 
-<section class="page-title"><h1>{m.navActivity()}</h1></section>
+<PageHeader title={m.navActivity()} />
 {#if $session}
 	<div class="tabs" role="tablist" aria-label={m.diaryTabsAria()}>
 		{#each tabs as t (t.id)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { untrack } from 'svelte';
 	import { isAuthorizationError, getZenkatsu } from '$lib/api/appview';
@@ -45,6 +46,10 @@
 	 */
 
 	let feed = $state<ZenkatsuFeed | undefined>();
+	// 知らない属性の値でも盤面ごと落とさず、おすすめ属性の行だけ出さない。
+	const recommendedAttribute = $derived(
+		feed ? ATTRIBUTE_LABEL[feed.theme.attribute as CardAttribute]?.() : undefined,
+	);
 	let loading = $state(true);
 	let error = $state('');
 	/** 見ている日付。undefined なら今日。 */
@@ -130,6 +135,8 @@
 				}
 			}
 
+			// お題の無い応答は取得失敗として扱う。盤面はお題を前提に描くので、受け取ると描画ごと落ちる。
+			if (!result?.theme) throw new Error('Zenkatsu feed has no theme');
 			// 日付・セッションが変わったあとの古い応答や、viewer を消す遅い公開応答は使わない。
 			if (version !== loadVersion || (publicOnly && authenticated)) return;
 			authenticated = !publicOnly;
@@ -267,9 +274,11 @@
 			{i18n.locale === 'ja' ? feed.theme.textJa : feed.theme.textEn}
 			<span class="theme-question">{m.zenkatsuThemeQuestion()}</span>
 		</p>
-		<p class="recommended-attribute">
-			{m.zenkatsuRecommendedAttribute({ attribute: ATTRIBUTE_LABEL[feed.theme.attribute]() })}
-		</p>
+		{#if recommendedAttribute}
+			<p class="recommended-attribute">
+				{m.zenkatsuRecommendedAttribute({ attribute: recommendedAttribute })}
+			</p>
+		{/if}
 	</section>
 
 	<section class="play">
@@ -301,18 +310,22 @@
 					{viewerSlow ? m.zenkatsuViewerSlow() : m.zenkatsuViewerLoading()}
 				</p>
 				{#if viewerSlow}
-					<button class="ghost" onclick={() => void load(undefined, true)}>{m.retry()}</button>
+					<Button variant="secondary" size="sm" onclick={() => void load(undefined, true)}
+						>{m.retry()}</Button
+					>
 				{/if}
 			{:else if viewerFailed}
 				<p class="note" role="status">
 					{needsAuthorization ? m.zenkatsuAuthorizationNeeded() : m.zenkatsuViewerFailed()}
 				</p>
 				{#if needsAuthorization}
-					<button class="ghost" onclick={reauthorize} disabled={reauthBusy}
-						>{m.zenkatsuReauthorize()}</button
+					<Button variant="secondary" size="sm" onclick={reauthorize} disabled={reauthBusy}
+						>{m.zenkatsuReauthorize()}</Button
 					>
 				{:else}
-					<button class="ghost" onclick={() => void load(undefined, true)}>{m.retry()}</button>
+					<Button variant="secondary" size="sm" onclick={() => void load(undefined, true)}
+						>{m.retry()}</Button
+					>
 				{/if}
 			{/if}
 		{/if}
@@ -352,18 +365,24 @@
 			{/each}
 		</ul>
 		{#if feed.cursor}
-			<button
-				class="ghost more"
+			<Button
+				variant="secondary"
+				class="more"
 				disabled={loadingMore}
-				onclick={() => ((loadingMore = true), load(feed?.cursor))}>{m.zenkatsuLoadMore()}</button
+				onclick={() => ((loadingMore = true), load(feed?.cursor))}>{m.zenkatsuLoadMore()}</Button
 			>
 		{/if}
 		<nav class="days">
-			<button class="ghost" onclick={() => (date = shiftDate(feed?.theme.themeDate ?? '', -1))}
-				>‹ {m.zenkatsuPrevDay()}</button
+			<Button
+				variant="ghost"
+				size="sm"
+				onclick={() => (date = shiftDate(feed?.theme.themeDate ?? '', -1))}
+				>‹ {m.zenkatsuPrevDay()}</Button
 			>
 			{#if date}
-				<button class="ghost" onclick={() => (date = undefined)}>{m.zenkatsuNextDay()} ›</button>
+				<Button variant="ghost" size="sm" onclick={() => (date = undefined)}
+					>{m.zenkatsuNextDay()} ›</Button
+				>
 			{/if}
 		</nav>
 	</section>
@@ -535,16 +554,6 @@
 		font-weight: 700;
 		letter-spacing: 0.02em;
 	}
-	.ghost {
-		padding: 10px 18px;
-		border: 1px solid var(--line);
-		border-radius: var(--r-md);
-		background: none;
-		color: var(--text-faint);
-		font-weight: 600;
-		min-height: 44px;
-		letter-spacing: 0.02em;
-	}
 	.record {
 		padding: 0 1rem 2rem;
 	}
@@ -598,8 +607,8 @@
 		text-align: start;
 		cursor: pointer;
 	}
-	.more {
-		display: block;
+	:global(.btn.more) {
+		display: flex;
 		margin: 1rem auto 0;
 	}
 	.days {
@@ -607,7 +616,7 @@
 		gap: 0.6rem;
 		margin-block-start: 1.2rem;
 	}
-	.days .ghost {
+	.days :global(.btn) {
 		flex: 1;
 	}
 </style>

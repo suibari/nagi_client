@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -249,11 +250,15 @@
 						<span class="handle">@{profile?.handle ?? did}</span>
 					</div>
 					{#if $session?.did === did}
-						<a class="edit" href="/settings/profile">{m.profileEdit()}</a>
+						<Button variant="secondary" size="sm" class="edit" href="/settings/profile"
+							>{m.profileEdit()}</Button
+						>
 					{:else if $session && profile}
 						<div class="profile-actions">
 							{#if privateList.loaded && !profile.isBot}
-								<button
+								<Button
+									variant="secondary"
+									size="sm"
 									type="button"
 									class="edit"
 									disabled={privateList.isPending(did) ||
@@ -261,18 +266,20 @@
 									onclick={() => void toggleHomeList()}
 								>
 									{privateList.has(did) ? m.homeListRemove() : m.homeListAdd()}
-								</button>
+								</Button>
 							{/if}
 							<!-- ミュートしても、このプロフィールの投稿は今までどおり見える（自分で開いたので）。
 							     効くのはTL・検索・通知のほう。 -->
-							<button
+							<Button
+								variant="secondary"
+								size="sm"
 								type="button"
 								class="edit"
 								disabled={mutes.isPending(did)}
 								onclick={() => void toggleMute()}
 							>
 								{mutes.hasActor(did) ? m.unmuteUser() : m.muteUser()}
-							</button>
+							</Button>
 						</div>
 					{/if}
 				</div>

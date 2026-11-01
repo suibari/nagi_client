@@ -1,4 +1,7 @@
 <script lang="ts">
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import AddFeedTabDialog from '$lib/components/feed-tabs/AddFeedTabDialog.svelte';
@@ -91,43 +94,42 @@
 	}
 </script>
 
-<section class="auth-card settings-detail">
-	<a class="settings-back" href={backHref}>← {backLabel}</a>
-	<h1>{m.settingsFeedTabsTitle()}</h1>
-	<p>{m.feedTabsHelp()}</p>
+<SettingsPage
+	title={m.settingsFeedTabsTitle()}
+	description={m.feedTabsHelp()}
+	back={{ href: backHref, label: backLabel }}
+>
+	{#snippet actions()}
+		<Button variant="primary" type="button" disabled={full} onclick={() => (addOpen = true)}>
+			<Icon name="plus" size={16} />{m.feedTabsAdd()}
+		</Button>
+	{/snippet}
 	<PreferencesSyncNotice />
+	{#if full}<p class="settings-error">{m.feedTabsFull()}</p>{/if}
 
-	<button
-		type="button"
-		class="primary feed-tab-add-button"
-		disabled={full}
-		onclick={() => (addOpen = true)}
-	>
-		<Icon name="plus" size={16} />{m.feedTabsAdd()}
-	</button>
-	{#if full}<p class="error">{m.feedTabsFull()}</p>{/if}
-
-	<FeedTabSortList bind:items={draft} onreorder={(next) => persist(next as FeedTab[])}>
-		{#snippet children(item)}
-			{@const tab = item as FeedTab}
-			<Icon name={iconOf(tab)} size={16} />
-			<span class="feed-tab-row-text">
-				<strong>{feedTabLabel(tab)}</strong>
-				<small>{kindLabel(tab)}</small>
-			</span>
-			<button
-				type="button"
-				class="icon-action"
-				aria-label={m.feedTabsRemove({ name: feedTabLabel(tab) })}
-				title={m.feedTabsRemove({ name: feedTabLabel(tab) })}
-				disabled={draft.length <= 1}
-				onclick={() => remove(tab.id)}><Icon name="trash" size={16} /></button
-			>
-		{/snippet}
-	</FeedTabSortList>
+	<SettingsSection plain>
+		<FeedTabSortList bind:items={draft} onreorder={(next) => persist(next as FeedTab[])}>
+			{#snippet children(item)}
+				{@const tab = item as FeedTab}
+				<Icon name={iconOf(tab)} size={16} />
+				<span class="feed-tab-row-text">
+					<strong>{feedTabLabel(tab)}</strong>
+					<small>{kindLabel(tab)}</small>
+				</span>
+				<button
+					type="button"
+					class="icon-action"
+					aria-label={m.feedTabsRemove({ name: feedTabLabel(tab) })}
+					title={m.feedTabsRemove({ name: feedTabLabel(tab) })}
+					disabled={draft.length <= 1}
+					onclick={() => remove(tab.id)}><Icon name="trash" size={16} /></button
+				>
+			{/snippet}
+		</FeedTabSortList>
+	</SettingsSection>
 
 	<FeedTabPreview tabs={draft} />
-</section>
+</SettingsPage>
 
 {#if addOpen}
 	<AddFeedTabDialog existing={draft} onadd={add} onclose={() => (addOpen = false)} />

@@ -2,11 +2,16 @@
 	let {
 		checked,
 		label,
+		labelledby,
+		describedby,
 		disabled = false,
 		onchange,
 	}: {
 		checked: boolean;
-		label: string;
+		/** 見える項目名。設定の行（SettingRow）では行の項目名を labelledby で指して省く。 */
+		label?: string;
+		labelledby?: string;
+		describedby?: string;
 		disabled?: boolean;
 		onchange: (checked: boolean) => void;
 	} = $props();
@@ -17,10 +22,13 @@
 	type="button"
 	role="switch"
 	aria-checked={checked}
+	aria-labelledby={labelledby}
+	aria-describedby={describedby}
+	class:bare={!label}
 	{disabled}
 	onclick={() => onchange(!checked)}
 >
-	<span class="label">{label}</span>
+	{#if label}<span class="label">{label}</span>{/if}
 	<span class="track" aria-hidden="true"><span class="thumb"></span></span>
 </button>
 
@@ -39,6 +47,11 @@
 		color: var(--text);
 		text-align: start;
 		cursor: pointer;
+	}
+
+	.toggle-switch.bare {
+		inline-size: auto;
+		min-height: 0;
 	}
 
 	.toggle-switch:disabled {

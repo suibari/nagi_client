@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getRadioHistory } from '$lib/api/appview';
 	import type { RadioTrack } from '$lib/api/types';
@@ -59,7 +61,7 @@
 	});
 </script>
 
-<section class="page-title"><h1>{m.radioTitle()}</h1></section>
+<PageHeader title={m.radioTitle()} />
 {#if $session}
 	<div class="radio-history">
 		<p class="radio-description">{m.radioDescription()}</p>
@@ -72,9 +74,13 @@
 		{#if loading && tracks.length === 0}<Spinner />{/if}
 		{#if error}
 			<p class="state">{m.radioHistoryError()}</p>
-			<button class="more" onclick={() => load(tracks.length === 0)}>{m.retry()}</button>
+			<Button variant="secondary" class="more" onclick={() => load(tracks.length === 0)}
+				>{m.retry()}</Button
+			>
 		{:else if cursor}
-			<button class="more" disabled={loading} onclick={() => load()}>{m.radioHistoryMore()}</button>
+			<Button variant="secondary" class="more" disabled={loading} onclick={() => load()}
+				>{m.radioHistoryMore()}</Button
+			>
 		{/if}
 	</div>
 {/if}
@@ -96,13 +102,7 @@
 		color: var(--text-muted);
 		text-align: center;
 	}
-	.more {
+	:global(.btn.more) {
 		justify-self: center;
-		padding: 9px 18px;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		background: var(--bg);
-		color: var(--text);
-		cursor: pointer;
 	}
 </style>

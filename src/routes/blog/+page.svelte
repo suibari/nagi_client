@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
@@ -72,13 +74,13 @@
 	}
 </script>
 
-<section class="page-title blog-title">
-	<h1>{m.blogTitle()}</h1>
-	<button type="button" class="primary" onclick={openBlogComposer}>{m.blogWrite()}</button>
-</section>
+<PageHeader title={m.blogTitle()} description={m.blogIntro()}>
+	{#snippet actions()}
+		<Button variant="primary" type="button" onclick={openBlogComposer}>{m.blogWrite()}</Button>
+	{/snippet}
+</PageHeader>
 
 <section class="blog-directory">
-	<p class="blog-intro">{m.blogIntro()}</p>
 	{#if tags.length}
 		<nav class="blog-tags" aria-label={m.blogTags()}>
 			<a href="/blog" class:active={!selectedTag}>{m.blogAll()}</a>
@@ -112,12 +114,3 @@
 		</div>
 	{/if}
 </section>
-
-<style>
-	.blog-title {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-</style>

@@ -50,7 +50,8 @@
 	const name = $derived(ja ? card.nameJa : card.nameEn);
 	const race = $derived(ja ? card.raceJa : card.raceEn);
 	const text = $derived(ja ? card.textJa : card.textEn);
-	const attributeLabel = $derived(ATTRIBUTE_LABEL[card.attribute]());
+	// 知らない属性のカードでも描画を止めない（アイコンと同じく空で出す）。
+	const attributeLabel = $derived(ATTRIBUTE_LABEL[card.attribute]?.() ?? '');
 	/*
 	 * 図鑑番号。段内の通し番号がそのままコレクションでの配置位置なので、
 	 * この番号を見れば「何番目の枠のカードか」が分かる。

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { POST_SCOPES, type PostScope } from '$lib/post/scope';
@@ -129,7 +130,7 @@
 		{/if}
 
 		<div class="scope-actions">
-			<button type="button" class="primary" onclick={onclose}>{m.postScopeDone()}</button>
+			<Button variant="primary" type="button" onclick={onclose}>{m.postScopeDone()}</Button>
 		</div>
 	</div>
 </div>

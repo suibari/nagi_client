@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import Avatar from './Avatar.svelte';
@@ -771,14 +772,15 @@
 					-->
 					<div class="composer-article-permission">
 						<p>{m.standardSiteReauthNote()}</p>
-						<button
+						<Button
+							variant="secondary"
+							size="sm"
 							type="button"
-							class="ghost"
 							disabled={reauthorizingArticle}
 							onclick={authorizeArticle}
 						>
 							{reauthorizingArticle ? m.standardSiteReauthPending() : m.standardSiteReauthSubmit()}
-						</button>
+						</Button>
 					</div>
 				{/if}
 			{/if}
@@ -889,7 +891,8 @@
 					<Icon name="bot-off" size={18} />
 				</button>
 			{/if}
-			<button
+			<Button
+				variant="primary"
 				class="submit-primary"
 				type="button"
 				disabled={busy ||
@@ -911,7 +914,7 @@
 				{#if busy}<Spinner inline size="sm" decorative />
 				{:else}<Icon name="send" size={18} />{/if}
 				<span>{busy ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
-			</button>
+			</Button>
 		</div>
 	</div>
 	<!-- Bluesky には画像と動画を混ぜる embed が無いので、動画だけを送る（crosspost/bluesky.ts の buildEmbed）。 -->
@@ -961,10 +964,10 @@
 		<div class="draft-dialog draft-confirm" role="dialog" aria-modal="true">
 			<p>{m.draftRestoreOverwrite()}</p>
 			<div class="delete-actions">
-				<button type="button" class="ghost" onclick={() => (pendingRestoreId = null)}
-					>{m.cancel()}</button
+				<Button variant="secondary" type="button" onclick={() => (pendingRestoreId = null)}
+					>{m.cancel()}</Button
 				>
-				<button type="button" class="danger" onclick={confirmRestore}>{m.draftRestore()}</button>
+				<Button variant="danger" type="button" onclick={confirmRestore}>{m.draftRestore()}</Button>
 			</div>
 		</div>
 	</div>

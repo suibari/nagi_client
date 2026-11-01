@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getCardNews } from '$lib/api/appview';
 	import type { CardNewsFeed, CardNewsItem, CardView } from '$lib/api/types';
@@ -120,10 +121,11 @@
 		<CardDetailDialog initial={opened} onclose={() => (opened = undefined)} />
 	{/if}
 	{#if feed.cursor}
-		<button
+		<Button
+			variant="secondary"
 			class="more"
 			disabled={loadingMore}
-			onclick={() => ((loadingMore = true), load(feed?.cursor))}>{m.zenkatsuLoadMore()}</button
+			onclick={() => ((loadingMore = true), load(feed?.cursor))}>{m.zenkatsuLoadMore()}</Button
 		>
 	{/if}
 {/if}
@@ -201,14 +203,8 @@
 	.played li {
 		inline-size: 84px;
 	}
-	.more {
-		display: block;
+	:global(.btn.more) {
+		display: flex;
 		margin: 1rem auto;
-		padding: 0.5rem 1rem;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		background: none;
-		color: var(--text-faint);
-		font-weight: 600;
 	}
 </style>

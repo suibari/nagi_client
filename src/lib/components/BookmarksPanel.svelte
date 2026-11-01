@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getBookmarks } from '$lib/api/appview';
 	import type {
@@ -190,8 +191,8 @@
 					>
 				</div>
 				{#if !selectedFolderView.isDefault}
-					<button class="danger" onclick={() => void removeFolder(selectedFolderView)}
-						>{m.bookmarkDeleteFolder()}</button
+					<Button variant="danger" onclick={() => void removeFolder(selectedFolderView)}
+						>{m.bookmarkDeleteFolder()}</Button
 					>
 				{/if}
 			</div>
@@ -203,12 +204,13 @@
 		{#if loading && !items.length}<Spinner />
 		{:else if error && !items.length}<div class="state error">
 				{bookmarks.unauthorized ? m.bookmarkPermissionRequired() : error}
-				<button
-					class="ghost"
+				<Button
+					variant="secondary"
+					size="sm"
 					onclick={() => void (bookmarks.unauthorized ? reauthorize() : load(true))}
 				>
 					{bookmarks.unauthorized ? m.bookmarkRefreshPermissions() : m.retry()}
-				</button>
+				</Button>
 			</div>
 		{:else if !visibleItems.length}<div class="state">{m.bookmarkEmpty()}</div>
 		{:else}
@@ -230,8 +232,10 @@
 				{:else}
 					<article class="bookmark-item bookmark-unavailable">
 						<p>{m.bookmarkUnavailable()}</p>
-						<button class="ghost" onclick={() => void removeUnavailable(item.subjectUri)}
-							>{m.bookmarkRemove()}</button
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={() => void removeUnavailable(item.subjectUri)}>{m.bookmarkRemove()}</Button
 						>
 					</article>
 				{/if}
@@ -381,12 +385,11 @@
 		margin: 0;
 		min-inline-size: 0;
 	}
-	.error,
-	.danger {
+	.error {
 		color: var(--danger);
 	}
 	@media (max-width: 600px) {
-		.folder-management > .danger {
+		.folder-management > :global(.btn-danger) {
 			flex: 0 0 auto;
 		}
 	}

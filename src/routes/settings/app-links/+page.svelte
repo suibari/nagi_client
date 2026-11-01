@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, tick } from 'svelte';
 	import { page } from '$app/state';
@@ -354,14 +356,13 @@
 	}
 </script>
 
-<section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings/profile">← {m.backToProfileSettings()}</a>
-	<h1>{m.settingsAppLinksTitle()}</h1>
-	<fieldset class="theme-settings">
-		<legend>{m.appLinksLegend()}</legend>
-		<p>{m.appLinksHelp()}</p>
-		<p class="muted">{m.appLinksPublicNote()}</p>
-
+<SettingsPage
+	title={m.settingsAppLinksTitle()}
+	description={m.appLinksHelp()}
+	back={{ href: '/settings/profile', label: m.backToProfileSettings() }}
+>
+	<p class="settings-section-description">{m.appLinksPublicNote()}</p>
+	<div class="app-links-editor">
 		{#if !$session && $oauthReady}
 			<SignedOutNotice message={m.appLinksSignInRequired()} />
 		{:else if $session && !loaded}
@@ -432,13 +433,14 @@
 									<span>{m.appLinksAppUriLabel()}</span>
 									<span class="with-button">
 										<input type="url" placeholder="https://" bind:value={editor.appUri} />
-										<button
+										<Button
+											variant="secondary"
 											type="button"
 											disabled={!editor.appUri.trim()}
 											onclick={() => refetchIcon(editor)}
 										>
 											{m.appLinksResolveIcon()}
-										</button>
+										</Button>
 									</span>
 								</label>
 
@@ -474,8 +476,12 @@
 									<AppLinkChoiceList bind:choices={editor.choices} />
 								{/if}
 
-								<button type="button" class="remove" onclick={() => removeLink(i)}
-									>{m.appLinksRemove()}</button
+								<Button
+									variant="ghost"
+									size="sm"
+									type="button"
+									class="remove"
+									onclick={() => removeLink(i)}>{m.appLinksRemove()}</Button
 								>
 							</div>
 						{/if}
@@ -500,26 +506,28 @@
 				</div>
 			{/if}
 
-			<div class="actions">
-				<button type="button" class="primary save" disabled={saving} onclick={save}>
-					{saving ? m.appLinksSaving() : m.appLinksSave()}
-				</button>
-			</div>
 			{#if editors.length === 0}<p class="muted">{m.appLinksEmpty()}</p>{/if}
-			{#if saveState === 'saved'}<p class="ok">{m.appLinksSaved()}</p>{/if}
-			{#if saveState === 'failed'}<p class="error-text">{m.appLinksSaveFailed()}</p>{/if}
+			<div class="settings-actions">
+				<Button variant="primary" type="button" disabled={saving} onclick={save}>
+					{saving ? m.appLinksSaving() : m.appLinksSave()}
+				</Button>
+				{#if saveState === 'saved'}<p class="settings-status" role="status">
+						{m.appLinksSaved()}
+					</p>{/if}
+			</div>
+			{#if saveState === 'failed'}<p class="settings-error">{m.appLinksSaveFailed()}</p>{/if}
 		{/if}
-	</fieldset>
-</section>
+	</div>
+</SettingsPage>
 
 <style>
-	/* フォーム単体で使われても左揃えを保つ。 */
-	.theme-settings {
-		text-align: left;
-		/* .settings-detail は display:grid で、この fieldset はグリッドアイテム。既定の
-		   min-width:auto だと、折り返せない長い URL の min-content 幅がカード(450px)を突き破る。
-		   0 に下げて内側の flex 省略(ellipsis)を効かせる。 */
+	/* .settings-detail は display:grid で、この枠はグリッドアイテム。既定の min-width:auto だと、
+	   折り返せない長い URL の min-content 幅が列を突き破る。0 に下げて内側の省略(ellipsis)を効かせる。 */
+	.app-links-editor {
+		display: grid;
+		gap: 12px;
 		min-inline-size: 0;
+		text-align: left;
 	}
 	.editor-list {
 		display: flex;
@@ -649,15 +657,8 @@
 		flex: 1;
 		min-inline-size: 0;
 	}
-	.remove {
+	:global(.btn.remove) {
 		align-self: flex-start;
-		background: none;
-		border: 0;
-		color: var(--text-muted);
-		text-decoration: underline;
-		cursor: pointer;
-		padding: 0;
-		font-size: 0.8rem;
 	}
 	.add-row {
 		margin-block-start: 0.8rem;
@@ -676,27 +677,5 @@
 	.add-select option {
 		background: var(--bg);
 		color: var(--text);
-	}
-	.actions {
-		margin-block-start: 0.8rem;
-	}
-	/* 他の設定画面の保存ボタン（.auth-card > button）と同じ全幅プライマリに揃える。 */
-	.save {
-		inline-size: 100%;
-		padding: 13px;
-		border-radius: var(--r-md);
-		font-weight: 700;
-	}
-	.save:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
-	}
-	.ok {
-		color: var(--accent);
-		font-size: 0.85rem;
-	}
-	.error-text {
-		color: var(--danger, crimson);
-		font-size: 0.85rem;
 	}
 </style>

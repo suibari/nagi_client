@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import type { ActorView, PostView } from '$lib/api/types';
 	import type { BusinessCardData } from '$lib/card/data';
@@ -149,14 +150,14 @@
 		{/if}
 
 		<div class="card-actions">
-			<button type="button" class="primary" disabled={busy} onclick={() => void save()}>
+			<Button variant="primary" type="button" disabled={busy} onclick={() => void save()}>
 				<Icon name="download" size={18} />
 				{m.nameCardSaveImage()}
-			</button>
-			<button type="button" class="ghost" disabled={busy} onclick={() => void share()}>
+			</Button>
+			<Button variant="secondary" type="button" disabled={busy} onclick={() => void share()}>
 				<Icon name="share" size={18} />
 				{copied ? m.nameCardCopied() : m.nameCardShare()}
-			</button>
+			</Button>
 		</div>
 
 		{#if error}<p class="state error" role="alert">{error}</p>{/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import ArticleTitleInput from '$lib/components/ArticleTitleInput.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
@@ -32,7 +33,7 @@
 	let editTitle = $state('');
 	let editBusy = $state(false);
 	let bottomPickerOpen = $state(false);
-	let bottomReactionButton = $state<HTMLButtonElement>();
+	let bottomReactionButton = $state<HTMLElement>();
 	let reactionHoldUntil = 0;
 	let refreshVersion = 0;
 	let labels = $derived(
@@ -208,17 +209,19 @@
 				pickerAnchor={bottomReactionButton}
 			/>
 			<div class="blog-action-buttons">
-				<button
+				<Button
+					variant="secondary"
+					size="sm"
 					type="button"
-					bind:this={bottomReactionButton}
+					bind:ref={bottomReactionButton}
 					aria-label={m.addReactionAria()}
 					aria-expanded={bottomPickerOpen}
 					onclick={() => (bottomPickerOpen = !bottomPickerOpen)}
 				>
 					<Icon name="emojiPlus" size={19} /> <span>{labels.reactions}</span>
-				</button>
-				<button type="button" onclick={reply}
-					><Icon name="reply" size={18} /> <span>{labels.comment}</span></button
+				</Button>
+				<Button variant="secondary" size="sm" type="button" onclick={reply}
+					><Icon name="reply" size={18} /> <span>{labels.comment}</span></Button
 				>
 			</div>
 		</div>
@@ -227,7 +230,9 @@
 	<section class="blog-comments" id="comments" aria-labelledby="comments-title">
 		<div class="comments-heading">
 			<h2 id="comments-title">{labels.comments} <span>{replies.length}</span></h2>
-			{#if post}<button type="button" onclick={reply}>{labels.write}</button>{/if}
+			{#if post}<Button variant="secondary" size="sm" type="button" onclick={reply}
+					>{labels.write}</Button
+				>{/if}
 		</div>
 		{#if error && !thread}<p class="state error" role="alert">{labels.loadError} {error}</p>
 		{:else if !thread}<Spinner />
@@ -350,26 +355,6 @@
 		flex-wrap: wrap;
 		gap: 8px;
 		margin-top: 12px;
-	}
-	.blog-action-buttons button,
-	.comments-heading button {
-		display: inline-flex;
-		align-items: center;
-		gap: 7px;
-		padding: 8px 13px;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		background: var(--bg-inset);
-		color: var(--text);
-		font: inherit;
-		font-size: 13px;
-		font-weight: 700;
-		cursor: pointer;
-	}
-	.blog-action-buttons button:hover,
-	.comments-heading button:hover {
-		border-color: var(--accent-strong);
-		color: var(--accent-strong);
 	}
 	.blog-body {
 		margin: 34px 0;

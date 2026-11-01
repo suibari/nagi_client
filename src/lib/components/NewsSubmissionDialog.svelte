@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import {
 		ApiRequestError,
@@ -237,8 +238,8 @@
 					required
 					disabled={busy}
 				/>
-				<button type="submit" disabled={busy || !url.trim()}
-					>{busy && !preview ? m.newsPreviewing() : m.newsPreview()}</button
+				<Button variant="secondary" type="submit" disabled={busy || !url.trim()}
+					>{busy && !preview ? m.newsPreviewing() : m.newsPreview()}</Button
 				>
 			</div>
 		</form>
@@ -252,22 +253,29 @@
 						>{/if}
 				</div>
 			</article>
-			<button
-				class="primary submit-review"
+			<Button
+				variant="primary"
+				class="submit-review"
 				type="button"
 				disabled={busy}
-				onclick={() => void submit()}>{busy ? m.newsSubmitting() : m.newsSubmit()}</button
+				onclick={() => void submit()}>{busy ? m.newsSubmitting() : m.newsSubmit()}</Button
 			>
 		{/if}
-		{#if pendingRef}<button type="button" disabled={busy} onclick={() => void retryPending()}
-				>{m.retry()}</button
+		{#if pendingRef}<Button
+				variant="secondary"
+				size="sm"
+				type="button"
+				disabled={busy}
+				onclick={() => void retryPending()}>{m.retry()}</Button
 			>{/if}
 		{#if error}<div class="message error" role="alert">
 				<p>{error}</p>
-				{#if permissionError}<button
+				{#if permissionError}<Button
+						variant="secondary"
+						size="sm"
 						type="button"
 						disabled={busy}
-						onclick={() => void reauthorize()}>{m.newsRefreshPermissions()}</button
+						onclick={() => void reauthorize()}>{m.newsRefreshPermissions()}</Button
 					>{/if}
 			</div>{/if}
 		{#if notice}<p class="message success" role="status">{notice}</p>{/if}
@@ -378,7 +386,7 @@
 		color: var(--text-muted);
 		font-size: 0.78rem;
 	}
-	.submit-review {
+	:global(.submit-review) {
 		margin-top: 12px;
 	}
 	.message {

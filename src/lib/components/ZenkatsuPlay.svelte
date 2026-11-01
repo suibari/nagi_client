@@ -243,9 +243,11 @@
 				<span class="theme-question">{m.zenkatsuThemeQuestion()}</span>
 			</h1>
 			<!-- おすすめ属性はここ1箇所にまとめる。お題のすぐ下なら、選ぶ前に必ず目に入る。 -->
-			<p class="recommended-attribute">
-				{m.zenkatsuRecommendedAttribute({ attribute: attributeLabels[theme.attribute]() })}
-			</p>
+			{#if attributeLabels[theme.attribute]}
+				<p class="recommended-attribute">
+					{m.zenkatsuRecommendedAttribute({ attribute: attributeLabels[theme.attribute]() })}
+				</p>
+			{/if}
 		</section>
 		{#if stage === 'select'}
 			<div class="selection-area">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
@@ -157,10 +158,10 @@
 		</label>
 		{#if error}<p class="error">{error}</p>{/if}
 		<div class="cropper-actions">
-			<button type="button" class="ghost" onclick={oncancel}>{m.cancel()}</button>
-			<button type="button" class="primary" disabled={processing || !imageWidth} onclick={crop}>
+			<Button variant="secondary" type="button" onclick={oncancel}>{m.cancel()}</Button>
+			<Button variant="primary" type="button" disabled={processing || !imageWidth} onclick={crop}>
 				{processing ? m.processing() : m.confirm()}
-			</button>
+			</Button>
 		</div>
 	</div>
 </div>

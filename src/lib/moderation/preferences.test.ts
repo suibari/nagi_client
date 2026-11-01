@@ -87,8 +87,9 @@ describe('moderation settings layout', () => {
 			(match) => match[1],
 		);
 		expect(keys).toEqual(['selfNsfw', 'selfAi', 'automatic']);
-		expect(page.indexOf('id="content-display-heading"')).toBeLessThan(
-			page.indexOf('id="age-assurance-heading"'),
+		expect(page.indexOf('title={m.moderationSectionTitle()}')).toBeGreaterThan(-1);
+		expect(page.indexOf('title={m.moderationSectionTitle()}')).toBeLessThan(
+			page.indexOf('title={m.ageSectionTitle()}'),
 		);
 	});
 });

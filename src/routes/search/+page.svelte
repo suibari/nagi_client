@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
@@ -343,24 +345,24 @@
 {/snippet}
 
 {#if q}
-	<section class="page-title"><h1>{q}</h1></section>
+	<PageHeader title={q} />
 {:else if tag}
-	<section class="page-title tag-title">
-		<h1 aria-label={m.searchTagAria({ tag })}>{m.searchTagTitle({ tag })}</h1>
-		{#if $session}
-			<button
-				class="tag-mute"
-				class:active={tagMuted}
-				type="button"
-				aria-pressed={tagMuted}
-				disabled={mutes.isPending(tag)}
-				onclick={() => void toggleTagMute()}
-			>
-				<Icon name="hide" size={16} />
-				<span>{tagMuted ? m.unmuteTag() : m.muteTag()}</span>
-			</button>
-		{/if}
-	</section>
+	<PageHeader title={m.searchTagTitle({ tag })} titleLabel={m.searchTagAria({ tag })}>
+		{#snippet actions()}{#if $session}
+				<Button
+					variant={tagMuted ? 'primary' : 'secondary'}
+					size="sm"
+					class="tag-mute"
+					type="button"
+					aria-pressed={tagMuted}
+					disabled={mutes.isPending(tag)}
+					onclick={() => void toggleTagMute()}
+				>
+					<Icon name="hide" size={16} />
+					<span>{tagMuted ? m.unmuteTag() : m.muteTag()}</span>
+				</Button>
+			{/if}{/snippet}
+	</PageHeader>
 	{#if tagMuteError}<p class="error">{tagMuteError}</p>{/if}
 {/if}
 
@@ -403,11 +405,13 @@
 				{/if}
 				<!-- 下の気まぐれセクションに到達できなくなるので無限スクロールにしない。 -->
 				{#if postsExact.hasMore}
-					<button
+					<Button
+						variant="ghost"
+						block
 						class="search-more"
 						type="button"
 						disabled={postsExact.loading}
-						onclick={() => postsExact?.loadMore()}>{m.searchLoadMore()}</button
+						onclick={() => postsExact?.loadMore()}>{m.searchLoadMore()}</Button
 					>
 				{/if}
 			{/if}
@@ -483,8 +487,11 @@
 				<Spinner label={m.feedWaiting()} />
 			{:else if bookmarkError && !bookmarkItems.length}
 				<div class="state error">
-					{bookmarkError}<button class="search-more" onclick={() => location.reload()}
-						>{m.retry()}</button
+					{bookmarkError}<Button
+						variant="ghost"
+						block
+						class="search-more"
+						onclick={() => location.reload()}>{m.retry()}</Button
 					>
 				</div>
 			{:else if !bookmarkItems.length}
@@ -497,10 +504,12 @@
 				/>
 				{#if bookmarkError}<div class="state error">{bookmarkError}</div>{/if}
 				{#if bookmarkHasMore}
-					<button
+					<Button
+						variant="ghost"
+						block
 						class="search-more"
 						disabled={bookmarkLoadingMore}
-						onclick={() => void loadMoreBookmarks()}>{m.searchLoadMore()}</button
+						onclick={() => void loadMoreBookmarks()}>{m.searchLoadMore()}</Button
 					>
 				{/if}
 			{/if}
@@ -538,43 +547,9 @@
 {/if}
 
 <style>
-	.tag-title {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px 12px;
-		min-inline-size: 0;
-	}
-	.tag-title h1 {
-		min-inline-size: 0;
-		overflow-wrap: anywhere;
-	}
-	.tag-mute {
-		display: inline-flex;
+	:global(.btn.tag-mute) {
 		flex: 0 0 auto;
-		align-items: center;
-		gap: 5px;
-		block-size: 34px;
-		padding: 0 13px;
-		border: 1px solid var(--line-strong);
-		border-radius: var(--radius-pill);
-		background: var(--bg-raised);
-		color: var(--text);
-		font-size: 12px;
-		font-weight: 800;
 		white-space: nowrap;
-	}
-	.tag-mute:hover:not(:disabled) {
-		border-color: var(--accent-border);
-	}
-	.tag-mute.active {
-		border-color: transparent;
-		background: var(--accent-soft);
-		color: var(--accent-strong);
-	}
-	.tag-mute:disabled {
-		opacity: 0.6;
 	}
 	.search-tabs {
 		display: flex;
@@ -636,22 +611,9 @@
 		padding: 0.5rem 1rem;
 		margin: 0;
 	}
-	.search-more {
-		display: block;
-		width: 100%;
-		padding: 0.7rem 1rem;
-		border: 0;
-		background: none;
-		color: var(--accent-strong);
-		font-size: 0.9rem;
-		font-weight: 700;
-	}
-	.search-more:hover:not(:disabled) {
-		background: color-mix(in srgb, currentColor 6%, transparent);
-	}
-	.search-more:disabled {
-		opacity: 0.5;
-		cursor: default;
+	/* 結果リストの続き。行と同じ幅で、枠を持たない軽い操作にする。 */
+	:global(.btn.search-more) {
+		border-radius: 0;
 	}
 	.actor-list {
 		display: flex;

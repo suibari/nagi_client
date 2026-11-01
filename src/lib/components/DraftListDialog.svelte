@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { drafts } from '$lib/drafts/drafts.svelte';
@@ -92,10 +93,16 @@
 				onclick={onclose}><Icon name="close" size={18} /></button
 			>
 		</header>
-		<button class="draft-save-current" type="button" disabled={!cansave} onclick={onsavecurrent}>
+		<Button
+			variant="primary"
+			class="draft-save-current"
+			type="button"
+			disabled={!cansave}
+			onclick={onsavecurrent}
+		>
 			<Icon name="draft" size={17} />
 			<span>{m.draftSaveCurrent()}</span>
-		</button>
+		</Button>
 		{#if !drafts.entries.length}
 			<p class="draft-empty">{m.draftListEmpty()}</p>
 		{:else}
@@ -112,13 +119,18 @@
 							>
 						</div>
 						<div class="draft-item-actions">
-							<button type="button" class="ghost" onclick={() => onrestore(draft.id)}
-								>{m.draftRestore()}</button
-							>
-							<button
+							<Button
+								variant="secondary"
+								size="sm"
 								type="button"
-								class="ghost draft-delete"
-								class:confirming={confirmingId === draft.id}
+								onclick={() => onrestore(draft.id)}>{m.draftRestore()}</Button
+							>
+							<!-- 1回目はゴミ箱、押すと「削除する？」に変わって2回目で消す。確認中だけ危険の色にする。 -->
+							<Button
+								variant={confirmingId === draft.id ? 'danger' : 'ghost'}
+								size="sm"
+								type="button"
+								class="draft-delete"
 								aria-label={m.draftDelete()}
 								title={confirmingId === draft.id ? m.draftDeleteConfirm() : m.draftDelete()}
 								onclick={() => remove(draft.id)}
@@ -128,7 +140,7 @@
 										name="trash"
 										size={16}
 									/>{/if}
-							</button>
+							</Button>
 						</div>
 					</li>
 				{/each}

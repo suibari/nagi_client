@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getPositiveNews, searchNewsByQuery } from '$lib/api/appview';
 	import type { ActorView, NewsView, RecommendedNewsView } from '$lib/api/types';
@@ -146,11 +148,11 @@
 	}
 </script>
 
-<section class="page-title news-title">
-	<h1>{m.navNews()}</h1>
-	<button type="button" class="primary" onclick={openSubmission}>{m.newsAdd()}</button>
-</section>
-<p class="news-intro">{m.newsIntro()}</p>
+<PageHeader title={m.navNews()} description={m.newsIntro()}>
+	{#snippet actions()}
+		<Button variant="primary" type="button" onclick={openSubmission}>{m.newsAdd()}</Button>
+	{/snippet}
+</PageHeader>
 <div class="news-category-tabs" role="tablist" aria-label={m.newsCategoriesAria()}>
 	{#each categories as category (category.id)}
 		<button
@@ -200,18 +202,6 @@
 	/>{/if}
 
 <style>
-	.news-title {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-	.news-intro {
-		margin: 0 0 14px;
-		color: var(--text-muted);
-		font-size: 0.85rem;
-		line-height: 1.7;
-	}
 	.news-category-tabs {
 		display: flex;
 		overflow-x: auto;

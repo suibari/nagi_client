@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -87,7 +88,14 @@
 			<form onsubmit={requestConfirm}>
 				<label class="field">
 					<span>{m.ageBirthDateLabel()}</span>
-					<input type="date" bind:value={birthDate} max={today} required disabled={busy} />
+					<input
+						class="settings-input"
+						type="date"
+						bind:value={birthDate}
+						max={today}
+						required
+						disabled={busy}
+					/>
 				</label>
 				<p class="note once">{m.ageOnceOnlyNote()}</p>
 				{#if needsConsent}
@@ -99,7 +107,9 @@
 					/>
 				{/if}
 				{#if error && !confirming}<p class="error" role="alert">{error}</p>{/if}
-				<button class="login" type="submit" disabled={busy || !birthDate}>{m.ageSubmit()}</button>
+				<Button variant="primary" size="lg" block type="submit" disabled={busy || !birthDate}
+					>{m.ageSubmit()}</Button
+				>
 			</form>
 		{/if}
 	</div>
@@ -122,8 +132,10 @@
 		gap: 0.5rem;
 	}
 	.note {
+		margin: 0;
 		color: var(--text-muted);
-		font-size: 0.9rem;
+		font-size: 0.875rem;
+		line-height: 1.6;
 	}
 	.once {
 		font-size: 0.8rem;
@@ -141,7 +153,7 @@
 	}
 	.declared dd {
 		margin: 0;
-		font-weight: 700;
+		font-weight: 500;
 	}
 	form {
 		display: flex;

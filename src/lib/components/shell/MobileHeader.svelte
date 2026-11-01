@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Avatar from '../Avatar.svelte';
@@ -15,6 +16,6 @@
 			><Avatar actor={me} size="small" /></a
 		>
 	{:else if $oauthReady}
-		<a class="login" href="/login">{m.login()}</a>
+		<Button variant="primary" size="sm" href="/login">{m.login()}</Button>
 	{/if}
 </header>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 </script>
 
@@ -6,5 +7,7 @@
 	<img class="mark large" src="/nagi_icon.png" alt="" />
 	<h1>{m.welcomeTitle()}</h1>
 	<p>{m.onboardingBody()}</p>
-	<a class="login" href="/settings/profile?onboarding=1">{m.onboardingSetupProfile()}</a>
+	<Button variant="primary" size="lg" block href="/settings/profile?onboarding=1"
+		>{m.onboardingSetupProfile()}</Button
+	>
 </section>

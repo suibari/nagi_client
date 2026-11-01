@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import type { ActorView, NewsView } from '$lib/api/types';
 	import { newsBotPost, safeNewsUrl } from '$lib/news/bot-post';
 	import { quoteNews, shareNews } from '$lib/news/actions';
@@ -153,11 +154,12 @@
 			/>
 			<div class="news-actions">
 				<!-- 主要アクションは「読む」ではなく、自分の話を書く「コメントする」（ニュースの引用投稿）。 -->
-				<button
-					class="primary news-comment"
-					class:active={composerHost.open && composerHost.quoteTarget?.news?.uri === news.uri}
+				<Button
+					variant="primary"
+					size="sm"
+					class="news-comment"
 					type="button"
-					onclick={() => quoteNews(news)}><Icon name="quote" size={16} />{m.newsComment()}</button
+					onclick={() => quoteNews(news)}><Icon name="quote" size={16} />{m.newsComment()}</Button
 				>
 				<button
 					bind:this={reactionButton}
@@ -333,13 +335,6 @@
 		gap: 0.4rem;
 		flex-wrap: wrap;
 		margin-top: 0.5rem;
-	}
-	.news-actions .news-comment {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		min-height: 36px;
-		padding: 0.45rem 0.9rem;
 	}
 	.news-actions .icon-action {
 		width: 36px;

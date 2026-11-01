@@ -1,8 +1,12 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { privateList } from '$lib/private-list/private-list.svelte';
@@ -38,84 +42,62 @@
 	}
 </script>
 
-<section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsHomeListTitle()}</h1>
-
+<SettingsPage title={m.settingsHomeListTitle()} description={m.homeListHelp()}>
 	{#if !$session && $oauthReady}
-		<SignedOutNotice message={m.homeListSignInRequired()} legend={m.settingsHomeListTitle()} />
+		<SignedOutNotice message={m.homeListSignInRequired()} />
 	{:else if $session}
-		<fieldset class="theme-settings">
-			<legend>{m.settingsHomeListTitle()}</legend>
-			<p>{m.homeListHelp()}</p>
-			<p class="muted">{m.homeListPrivateNote()}</p>
-			<p class="muted">
-				{m.homeListCount({ count: privateList.members.length, limit: privateList.limit })}
-			</p>
-		</fieldset>
-
-		{#if error}<p class="mute-error" role="alert">{error}</p>{/if}
-		{#if loading && !privateList.loaded}
-			<Spinner />
-		{:else if !privateList.members.length}
-			<p class="muted">{m.homeListEmpty()}</p>
-		{:else}
-			<ul class="home-list">
+		{#if error}<p class="settings-error" role="alert">{error}</p>{/if}
+		<SettingsSection
+			title={m.homeListCount({ count: privateList.members.length, limit: privateList.limit })}
+			description={m.homeListPrivateNote()}
+		>
+			{#if loading && !privateList.loaded}
+				<SettingRow><Spinner /></SettingRow>
+			{:else if !privateList.members.length}
+				<SettingRow description={m.homeListEmpty()} />
+			{:else}
 				{#each privateList.members as member (member.did)}
-					<li>
-						<a href={`/profile/${member.did}`}>
+					<div class="setting-row has-control">
+						<a class="member" href={`/profile/${member.did}`}>
 							<Avatar actor={member} size="small" />
 							<span>
 								<strong>{member.displayName ?? member.handle}</strong>
 								<span class="muted">@{member.handle}</span>
 							</span>
 						</a>
-						<button
+						<Button
+							variant="secondary"
+							size="sm"
 							type="button"
-							class="ghost"
 							disabled={privateList.isPending(member.did)}
-							onclick={() => void remove(member)}>{m.homeListRemove()}</button
+							onclick={() => void remove(member)}>{m.homeListRemove()}</Button
 						>
-					</li>
+					</div>
 				{/each}
-			</ul>
-		{/if}
+			{/if}
+		</SettingsSection>
 	{/if}
-</section>
+</SettingsPage>
 
 <style>
-	.home-list {
-		display: grid;
-		gap: 0.5rem;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-	.home-list li,
-	.home-list a {
+	.member {
 		display: flex;
 		align-items: center;
-	}
-	.home-list li {
-		justify-content: space-between;
-		gap: 0.75rem;
-	}
-	.home-list a {
+		gap: 12px;
 		min-width: 0;
-		gap: 0.65rem;
 		color: inherit;
 		text-decoration: none;
 	}
-	.home-list a > span {
+	.member > span {
 		display: grid;
 		min-width: 0;
 	}
-	.home-list a span span {
+	.member strong {
+		font-weight: 500;
+	}
+	.member span span {
 		overflow: hidden;
 		text-overflow: ellipsis;
-	}
-	.home-list button {
-		flex: 0 0 auto;
-		padding: 7px 10px;
+		font-size: 0.8rem;
 	}
 </style>

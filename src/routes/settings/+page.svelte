@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { goto } from '$app/navigation';
 	import SettingsCategoryCard from '$lib/components/SettingsCategoryCard.svelte';
 	import PreferencesSyncNotice from '$lib/components/PreferencesSyncNotice.svelte';
@@ -12,7 +13,7 @@
 </script>
 
 <section class="settings-page">
-	<h1>{m.navSettings()}</h1>
+	<PageHeader title={m.navSettings()} />
 	<PreferencesSyncNotice />
 	<div class="settings-groups">
 		<section class="settings-group" aria-labelledby="settings-account-heading">

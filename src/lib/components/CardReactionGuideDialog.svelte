@@ -1,9 +1,10 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
 	let { onclose }: { onclose: () => void } = $props();
-	let closeButton: HTMLButtonElement;
+	let closeButton = $state<HTMLElement>();
 	onMount(() => closeButton?.focus());
 
 	function keydown(event: KeyboardEvent) {
@@ -22,9 +23,15 @@
 		<h2 id="card-guide-title">{m.cardReactionGuideTitle()}</h2>
 		<p>{m.cardReactionGuideBody()}</p>
 		<p class="card-guide-note">{m.cardReactionGuideNote()}</p>
-		<button bind:this={closeButton} type="button" class="primary" onclick={onclose}>
+		<Button
+			variant="primary"
+			class="card-guide-close"
+			bind:ref={closeButton}
+			type="button"
+			onclick={onclose}
+		>
 			{m.cardReactionGuideClose()}
-		</button>
+		</Button>
 	</div>
 </div>
 
@@ -67,7 +74,7 @@
 		color: var(--text-muted);
 		font-size: 0.85rem;
 	}
-	button {
+	:global(.card-guide-close) {
 		min-inline-size: 9rem;
 	}
 </style>
