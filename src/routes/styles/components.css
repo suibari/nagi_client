@@ -5075,12 +5075,6 @@ a.about-feature:focus-visible {
 .blog-directory {
 	padding: 0 1rem 1rem;
 }
-.blog-intro {
-	margin: 0 0 14px;
-	color: var(--text-muted);
-	font-size: 0.85rem;
-	line-height: 1.7;
-}
 .blog-tags {
 	display: flex;
 	gap: 7px;
@@ -5732,11 +5726,4 @@ a.about-feature:focus-visible {
 }
 .emoji-page .emoji-settings-tabs button {
 	flex: 1 0 auto;
-}
-
-.emoji-page-title p {
-	margin: 10px 0 0;
-	color: var(--text-muted);
-	font-size: 14px;
-	line-height: 1.7;
 }

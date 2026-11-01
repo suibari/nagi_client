@@ -108,7 +108,7 @@ describe('guest post privacy boundary', () => {
 		expect(guestHero).toMatch(/class="hero-about" href="\/about"\s*>\{m\.welcomeAboutLink\(\)\}/);
 		expect(guestHero).toContain('class="hero-join" href="/login">{m.joinCta()}</Button>');
 		expect(topPage).toContain('<GuestHero />');
-		expect(topPage.indexOf('class="feed-heading"')).toBeLessThan(topPage.indexOf('<GuestHero'));
+		expect(topPage.indexOf('<PageHeader')).toBeLessThan(topPage.indexOf('<GuestHero'));
 		expect(topPage.indexOf('<GuestHero')).toBeLessThan(topPage.indexOf('<FeedTabsView'));
 		expect(feedShell).not.toContain('<GuestHero');
 		expect(feedShell).not.toContain('{m.heroTitle()}');

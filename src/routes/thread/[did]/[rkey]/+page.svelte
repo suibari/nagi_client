@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -95,10 +96,7 @@
 	});
 </script>
 
-<section class="page-title">
-	<p class="eyebrow">{m.threadEyebrow()}</p>
-	<h1>{m.threadTitle()}</h1>
-</section>
+<PageHeader eyebrow={m.threadEyebrow()} title={m.threadTitle()} />
 <section class="timeline">
 	{#if error}<div class="state error">{error}</div>
 	{:else if !thread}<Spinner />

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { getNotifications, getProfile, APPVIEW_URL } from '$lib/api/appview';
@@ -212,7 +213,7 @@
 		</div>{/if}
 {/snippet}
 
-<section class="page-title"><h1>{m.navNotifications()}</h1></section>
+<PageHeader title={m.navNotifications()} />
 <section class="timeline">
 	{#if error}<div class="state error">{error}</div>
 	{:else if loading}<Spinner />

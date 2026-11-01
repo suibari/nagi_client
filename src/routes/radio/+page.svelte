@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { getRadioHistory } from '$lib/api/appview';
@@ -60,7 +61,7 @@
 	});
 </script>
 
-<section class="page-title"><h1>{m.radioTitle()}</h1></section>
+<PageHeader title={m.radioTitle()} />
 {#if $session}
 	<div class="radio-history">
 		<p class="radio-description">{m.radioDescription()}</p>

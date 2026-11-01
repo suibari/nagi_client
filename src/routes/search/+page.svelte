@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
@@ -344,25 +345,24 @@
 {/snippet}
 
 {#if q}
-	<section class="page-title"><h1>{q}</h1></section>
+	<PageHeader title={q} />
 {:else if tag}
-	<section class="page-title tag-title">
-		<h1 aria-label={m.searchTagAria({ tag })}>{m.searchTagTitle({ tag })}</h1>
-		{#if $session}
-			<Button
-				variant={tagMuted ? 'primary' : 'secondary'}
-				size="sm"
-				class="tag-mute"
-				type="button"
-				aria-pressed={tagMuted}
-				disabled={mutes.isPending(tag)}
-				onclick={() => void toggleTagMute()}
-			>
-				<Icon name="hide" size={16} />
-				<span>{tagMuted ? m.unmuteTag() : m.muteTag()}</span>
-			</Button>
-		{/if}
-	</section>
+	<PageHeader title={m.searchTagTitle({ tag })} titleLabel={m.searchTagAria({ tag })}>
+		{#snippet actions()}{#if $session}
+				<Button
+					variant={tagMuted ? 'primary' : 'secondary'}
+					size="sm"
+					class="tag-mute"
+					type="button"
+					aria-pressed={tagMuted}
+					disabled={mutes.isPending(tag)}
+					onclick={() => void toggleTagMute()}
+				>
+					<Icon name="hide" size={16} />
+					<span>{tagMuted ? m.unmuteTag() : m.muteTag()}</span>
+				</Button>
+			{/if}{/snippet}
+	</PageHeader>
 	{#if tagMuteError}<p class="error">{tagMuteError}</p>{/if}
 {/if}
 
@@ -547,18 +547,6 @@
 {/if}
 
 <style>
-	.tag-title {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px 12px;
-		min-inline-size: 0;
-	}
-	.tag-title h1 {
-		min-inline-size: 0;
-		overflow-wrap: anywhere;
-	}
 	:global(.btn.tag-mute) {
 		flex: 0 0 auto;
 		white-space: nowrap;

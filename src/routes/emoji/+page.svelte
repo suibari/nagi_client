@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import EmojiFavoritesEditor from '$lib/components/EmojiFavoritesEditor.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
@@ -285,10 +286,7 @@
 	}
 </script>
 
-<section class="page-title emoji-page-title">
-	<h1>{m.emojiSettingsTitle()}</h1>
-	<p>{m.emojiSettingsNote()}</p>
-</section>
+<PageHeader title={m.emojiSettingsTitle()} description={m.emojiSettingsNote()} />
 <div class="emoji-page">
 	{#if returnTo}<a class="settings-back" href={returnTo}>← {m.emojiBackToSource()}</a>{/if}
 	<EmojiFavoritesEditor />

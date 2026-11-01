@@ -239,6 +239,64 @@ img.mark {
 	border-color: var(--accent-border);
 	background: var(--accent-softer);
 }
+/* --- PageHeader（lib/components/PageHeader.svelte）---
+ * どのページも同じ大きさ・余白の見出しで始める。右の操作は見出しの行の中央に揃える。 */
+.page-header {
+	display: grid;
+	gap: 4px;
+	inline-size: 100%;
+	min-inline-size: 0;
+	max-inline-size: 100%;
+	padding: 20px 0 16px;
+}
+.page-header-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 12px;
+	min-inline-size: 0;
+}
+.page-header h1 {
+	min-inline-size: 0;
+	margin: 0;
+	font-size: 22px;
+	font-weight: 500;
+	line-height: 1.35;
+	color: var(--text-strong);
+	overflow-wrap: anywhere;
+}
+.page-header-actions {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 8px;
+}
+.page-header-description {
+	margin: 0;
+	max-inline-size: 40em;
+	font-size: 0.875rem;
+	line-height: 1.7;
+	color: var(--text-muted);
+}
+.page-header-eyebrow {
+	margin: 0;
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: var(--accent-strong);
+}
+.page-header-back {
+	justify-self: start;
+	margin-block-end: 8px;
+	font-size: 0.85rem;
+	color: var(--accent-strong);
+	text-decoration: none;
+}
+.page-header-back:hover {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+/* 開発用ページの簡易見出し。本番のページは PageHeader を使う。 */
 .page-title {
 	padding: 20px 0 16px;
 }
