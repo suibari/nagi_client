@@ -8,6 +8,9 @@
 	import { clearLanguagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { oauthReady, session, signOut } from '$lib/oauth/session.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import { clearThemePreference } from '$lib/theme';
 	import { clearModerationPreferences } from '$lib/moderation/preferences.svelte';
 	import { drafts } from '$lib/drafts/drafts.svelte';
@@ -55,42 +58,41 @@
 	}
 </script>
 
-<section class="auth-card settings-detail delete-data-page">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsDeleteTitle()}</h1>
-	<p>{m.deleteDataWarning()}</p>
-	<p>{m.draftsClearedNote()}</p>
-	<p class="delete-data-kept">{m.deleteDataKeptNote()}</p>
+<SettingsPage title={m.settingsDeleteTitle()} description={m.deleteDataWarning()}>
+	<SettingsSection>
+		<SettingRow description={m.draftsClearedNote()} />
+		<!-- 「残るもの」の注記。警告と役割が逆（消えない範囲の説明）なので、赤ではなく同じ面の行にする。 -->
+		<SettingRow description={m.deleteDataKeptNote()} />
+	</SettingsSection>
 	{#if !$session && $oauthReady}
 		<SignedOutNotice message={m.deleteDataLoginRequired()} />
 	{:else if $session}
-		<label
-			>{m.deleteDataInstruction()}<strong>{m.deleteDataPhrase()}</strong><input
-				bind:value={confirmation}
-				autocomplete="off"
-			/></label
-		>
-		<Button
-			variant="danger"
-			size="lg"
-			block
-			class="danger-button"
-			disabled={!matches || busy}
-			onclick={() => {
-				error = '';
-				dialogOpen = true;
-			}}>{m.deleteDataButton()}</Button
-		>
-		{#if error}<p class="error" role="alert">{error}</p>
+		<SettingsSection>
+			<SettingRow label={m.deleteDataPhrase()} description={m.deleteDataInstruction()}>
+				<input
+					class="settings-input"
+					bind:value={confirmation}
+					autocomplete="off"
+					aria-label={m.deleteDataInstruction()}
+				/>
+			</SettingRow>
+		</SettingsSection>
+		<div class="settings-actions">
 			<Button
-				variant="secondary"
-				block
-				class="retry-delete"
-				disabled={busy}
-				onclick={() => (dialogOpen = true)}>{m.retry()}</Button
-			>{/if}
+				variant="danger"
+				disabled={!matches || busy}
+				onclick={() => {
+					error = '';
+					dialogOpen = true;
+				}}>{m.deleteDataButton()}</Button
+			>
+			{#if error}<Button variant="secondary" disabled={busy} onclick={() => (dialogOpen = true)}
+					>{m.retry()}</Button
+				>{/if}
+		</div>
+		{#if error}<p class="settings-error" role="alert">{error}</p>{/if}
 	{/if}
-</section>
+</SettingsPage>
 
 {#if dialogOpen}<DeleteAccountDataDialog
 		{busy}

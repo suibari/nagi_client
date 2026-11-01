@@ -6,6 +6,9 @@
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import {
 		pushState,
 		refreshPushState,
@@ -61,63 +64,69 @@
 	}
 </script>
 
-<section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsNotificationsTitle()}</h1>
-	<fieldset class="theme-settings">
-		<legend>{m.pushLegend()}</legend>
-		<p>{m.pushHelp()}</p>
-		{#if !$session && $oauthReady}
-			<SignedOutNotice message={m.pushSignInRequired()} />
-		{:else if $session && needsStandalone}
-			<p>{m.pushIosInstallNote()}</p>
-		{:else if $session && !pushState.supported}
-			<p>{m.pushUnsupported()}</p>
-		{:else if $session && pushState.permission === 'denied'}
-			<p>{m.pushBlocked()}</p>
-		{:else if $session}
-			<ToggleSwitch
-				checked={pushState.browserSubscribed}
-				label={m.pushEnableLabel()}
-				disabled={pushState.busy || reauthBusy}
-				onchange={toggle}
-			/>
-			{#if pushState.error}
-				<div class="push-error" role="alert">
-					<p>{errorMessage(pushState.error)}</p>
-					{#if pushState.error === 'auth-required'}
-						<Button variant="primary" type="button" disabled={reauthBusy} onclick={reauthorize}>
-							{reauthBusy ? m.pushReauthPending() : m.pushRefreshPermissions()}
-						</Button>
-					{:else if pushState.error !== 'permission-denied'}
-						<Button
-							variant="secondary"
-							type="button"
-							disabled={pushState.busy}
-							onclick={() => void refreshPushState({ force: true })}>{m.pushRetry()}</Button
-						>
-					{/if}
-				</div>
+<SettingsPage title={m.settingsNotificationsTitle()}>
+	{#if !$session && $oauthReady}
+		<SignedOutNotice message={m.pushSignInRequired()} />
+	{:else if $session}
+		<SettingsSection title={m.pushLegend()} description={m.pushHelp()}>
+			{#if needsStandalone}
+				<SettingRow description={m.pushIosInstallNote()} />
+			{:else if !pushState.supported}
+				<SettingRow description={m.pushUnsupported()} />
+			{:else if pushState.permission === 'denied'}
+				<SettingRow description={m.pushBlocked()} />
+			{:else}
+				<SettingRow label={m.pushEnableLabel()} description={m.pushDeviceNote()}>
+					{#snippet control({ labelId, descriptionId })}
+						<ToggleSwitch
+							checked={pushState.browserSubscribed}
+							labelledby={labelId}
+							describedby={descriptionId}
+							disabled={pushState.busy || reauthBusy}
+							onchange={toggle}
+						/>
+					{/snippet}
+				</SettingRow>
+				{#if pushState.error}
+					<SettingRow>
+						<div class="push-error" role="alert">
+							<p>{errorMessage(pushState.error)}</p>
+							{#if pushState.error === 'auth-required'}
+								<Button
+									variant="primary"
+									size="sm"
+									type="button"
+									disabled={reauthBusy}
+									onclick={reauthorize}
+								>
+									{reauthBusy ? m.pushReauthPending() : m.pushRefreshPermissions()}
+								</Button>
+							{:else if pushState.error !== 'permission-denied'}
+								<Button
+									variant="secondary"
+									size="sm"
+									type="button"
+									disabled={pushState.busy}
+									onclick={() => void refreshPushState({ force: true })}>{m.pushRetry()}</Button
+								>
+							{/if}
+						</div>
+					</SettingRow>
+				{/if}
 			{/if}
-			<p class="push-device-note">{m.pushDeviceNote()}</p>
-		{/if}
-	</fieldset>
-</section>
+		</SettingsSection>
+	{/if}
+</SettingsPage>
 
 <style>
-	.push-device-note {
-		font-size: 0.85em;
-		opacity: 0.75;
-	}
-
 	.push-error {
-		margin-top: 0.75rem;
-		padding: 0.75rem;
-		border: 1px solid var(--danger);
-		border-radius: var(--radius-s);
+		display: grid;
+		justify-items: start;
+		gap: 8px;
 	}
-
 	.push-error p {
-		margin-top: 0;
+		margin: 0;
+		color: var(--danger);
+		font-size: 0.875rem;
 	}
 </style>

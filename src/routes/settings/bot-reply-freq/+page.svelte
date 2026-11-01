@@ -6,6 +6,9 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 
 	let loading = $state(true);
 	let saving = $state(false);
@@ -52,52 +55,48 @@
 	}
 </script>
 
-<section class="auth-card settings-detail bot-reply-freq-page">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsBotReplyFreqTitle()}</h1>
-	<p>{m.botReplyFreqHelp()}</p>
-
+<SettingsPage title={m.settingsBotReplyFreqTitle()}>
 	{#if !$session && $oauthReady}
 		<SignedOutNotice message={m.botReplyFreqLoginRequired()} />
 	{:else if $session}
 		{#if loading}
 			<Spinner />
 		{:else}
-			<div class="bot-reply-freq-container">
-				<p class="bot-reply-freq-current">
-					{m.botReplyFreqCurrent({ freq: draftFreq })}
-				</p>
-				<div class="bot-reply-freq-slider-wrapper">
-					<label for="bot-reply-freq-range" class="sr-only">{m.botReplyFreqLabel()}</label>
+			<SettingsSection description={m.botReplyFreqHelp()}>
+				<SettingRow label={m.botReplyFreqLabel()}>
+					{#snippet control()}
+						<output class="bot-reply-freq-value" for="bot-reply-freq-range">{draftFreq}%</output>
+					{/snippet}
 					<input
 						id="bot-reply-freq-range"
 						type="range"
 						min="0"
 						max="100"
 						step="1"
+						aria-label={m.botReplyFreqLabel()}
 						bind:value={draftFreq}
 						disabled={saving}
 						class="bot-reply-freq-slider"
 					/>
-					<div class="bot-reply-freq-labels">
+					<div class="bot-reply-freq-labels" aria-hidden="true">
 						<span>0%</span>
 						<span>50%</span>
 						<span>100%</span>
 					</div>
-				</div>
-				<div class="bot-reply-freq-actions">
-					<Button variant="primary" disabled={!dirty || saving} onclick={() => void save()}>
-						{saving ? m.botReplyFreqSaving() : m.save()}
-					</Button>
-				</div>
+				</SettingRow>
+			</SettingsSection>
+			<div class="settings-actions">
+				<Button variant="primary" disabled={!dirty || saving} onclick={() => void save()}>
+					{saving ? m.botReplyFreqSaving() : m.save()}
+				</Button>
 				{#if saved && !dirty}
-					<p class="bot-reply-freq-saved" role="status">{m.botReplyFreqSaved()}</p>
+					<p class="settings-status" role="status">{m.botReplyFreqSaved()}</p>
 				{/if}
 			</div>
 		{/if}
 	{/if}
 
 	{#if error}
-		<p class="error" role="alert">{error}</p>
+		<p class="settings-error" role="alert">{error}</p>
 	{/if}
-</section>
+</SettingsPage>

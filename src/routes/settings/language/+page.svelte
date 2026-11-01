@@ -11,6 +11,10 @@
 		type LanguagePreference,
 	} from '$lib/i18n/languagePreferences.svelte';
 	import { TRANSLATION_PROVIDERS, type TranslationProvider } from '$lib/i18n/translationProviders';
+	import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import ToggleSwitch from '$lib/components/ToggleSwitch.svelte';
 	import { onMount } from 'svelte';
 	let localePref = $state<LocalePreference>('system');
@@ -19,88 +23,96 @@
 		localePref = preference;
 		setLocalePreference(preference);
 	}
+	const locales = $derived([
+		{ value: 'system' as const, label: m.optionSystem() },
+		{ value: 'ja' as const, label: m.localeJa() },
+		{ value: 'en' as const, label: m.localeEn() },
+	]);
 </script>
 
-<section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsLanguageTitle()}</h1>
-	<fieldset class="theme-settings">
-		<legend>{m.languageLegend()}</legend>
-		<p>{m.languageHelp()}</p>
-		<div class="theme-options">
-			{#each [{ value: 'system', label: m.optionSystem() }, { value: 'ja', label: m.localeJa() }, { value: 'en', label: m.localeEn() }] as option (option.value)}
-				<label class:checked={localePref === option.value}>
-					<input
-						type="radio"
-						name="locale"
-						value={option.value}
-						checked={localePref === option.value}
-						onchange={() => changeLocale(option.value as LocalePreference)}
-					/>
-					<span>{option.label}</span>
-				</label>
-			{/each}
-		</div>
-	</fieldset>
-	{#each [{ legend: m.postLanguageLegend(), help: m.postLanguageHelp(), label: m.postLanguageLabel(), value: languagePreferences.postPreference, change: setPostLanguagePreference }, { legend: m.translationLanguageLegend(), help: m.translationLanguageHelp(), label: m.translationLanguageLabel(), value: languagePreferences.translationPreference, change: setTranslationLanguagePreference }] as setting (setting.legend)}
-		<fieldset class="theme-settings language-settings">
-			<legend>{setting.legend}</legend>
-			<p>{setting.help}</p>
-			<label
-				><span>{setting.label}</span><select
-					value={setting.value}
-					onchange={(event) =>
-						setting.change((event.currentTarget as HTMLSelectElement).value as LanguagePreference)}
-				>
-					<option value="browser">{m.optionBrowser()}</option>
-					{#each SUPPORTED_LANGUAGES as language}<option value={language}
-							>{languageName(language, i18n.locale)}</option
-						>{/each}
-				</select></label
-			>
-		</fieldset>
-	{/each}
-	<fieldset class="theme-settings language-settings">
-		<legend>{m.autoTranslateLegend()}</legend>
-		<p>{m.autoTranslateHelp()}</p>
-		<ToggleSwitch
-			checked={languagePreferences.autoTranslate}
-			label={m.autoTranslateLabel()}
-			onchange={setAutoTranslatePreference}
-		/>
-	</fieldset>
-	<fieldset class="theme-settings language-settings">
-		<legend>{m.translationProviderLegend()}</legend>
-		<p>{m.translationProviderHelp()}</p>
-		<label
-			><span>{m.translationProviderLabel()}</span><select
-				value={languagePreferences.translationProvider}
-				onchange={(event) =>
-					setTranslationProviderPreference(
-						(event.currentTarget as HTMLSelectElement).value as TranslationProvider,
-					)}
-			>
-				{#each TRANSLATION_PROVIDERS as provider}<option value={provider.id}>{provider.name}</option
-					>{/each}
-			</select></label
-		>
-	</fieldset>
-</section>
+{#snippet languageSelect(
+	value: LanguagePreference,
+	change: (value: LanguagePreference) => void,
+	labelledby: string,
+	describedby: string | undefined,
+)}
+	<select
+		class="settings-select"
+		{value}
+		aria-labelledby={labelledby}
+		aria-describedby={describedby}
+		onchange={(event) =>
+			change((event.currentTarget as HTMLSelectElement).value as LanguagePreference)}
+	>
+		<option value="browser">{m.optionBrowser()}</option>
+		{#each SUPPORTED_LANGUAGES as language (language)}<option value={language}
+				>{languageName(language, i18n.locale)}</option
+			>{/each}
+	</select>
+{/snippet}
 
-<style>
-	.language-settings label {
-		margin: 0;
-	}
-	.language-settings select {
-		width: 100%;
-		border: 1px solid var(--line-strong);
-		border-radius: 12px;
-		padding: 13px;
-		outline: none;
-		background: var(--bg-inset);
-		color: var(--text);
-	}
-	.language-settings select:focus {
-		border-color: var(--accent);
-	}
-</style>
+<SettingsPage title={m.settingsLanguageTitle()}>
+	<SettingsSection>
+		<SettingRow label={m.languageLegend()} description={m.languageHelp()}>
+			{#snippet control({ labelId, descriptionId })}
+				<SegmentedControl
+					options={locales}
+					value={localePref}
+					onchange={changeLocale}
+					labelledby={labelId}
+					describedby={descriptionId}
+				/>
+			{/snippet}
+		</SettingRow>
+		<SettingRow label={m.postLanguageLegend()} description={m.postLanguageHelp()}>
+			{#snippet control({ labelId, descriptionId })}
+				{@render languageSelect(
+					languagePreferences.postPreference,
+					setPostLanguagePreference,
+					labelId,
+					descriptionId,
+				)}
+			{/snippet}
+		</SettingRow>
+	</SettingsSection>
+	<SettingsSection>
+		<SettingRow label={m.translationLanguageLegend()} description={m.translationLanguageHelp()}>
+			{#snippet control({ labelId, descriptionId })}
+				{@render languageSelect(
+					languagePreferences.translationPreference,
+					setTranslationLanguagePreference,
+					labelId,
+					descriptionId,
+				)}
+			{/snippet}
+		</SettingRow>
+		<SettingRow label={m.autoTranslateLegend()} description={m.autoTranslateHelp()}>
+			{#snippet control({ labelId, descriptionId })}
+				<ToggleSwitch
+					checked={languagePreferences.autoTranslate}
+					labelledby={labelId}
+					describedby={descriptionId}
+					onchange={setAutoTranslatePreference}
+				/>
+			{/snippet}
+		</SettingRow>
+		<SettingRow label={m.translationProviderLegend()} description={m.translationProviderHelp()}>
+			{#snippet control({ labelId, descriptionId })}
+				<select
+					class="settings-select"
+					value={languagePreferences.translationProvider}
+					aria-labelledby={labelId}
+					aria-describedby={descriptionId}
+					onchange={(event) =>
+						setTranslationProviderPreference(
+							(event.currentTarget as HTMLSelectElement).value as TranslationProvider,
+						)}
+				>
+					{#each TRANSLATION_PROVIDERS as provider (provider.id)}<option value={provider.id}
+							>{provider.name}</option
+						>{/each}
+				</select>
+			{/snippet}
+		</SettingRow>
+	</SettingsSection>
+</SettingsPage>

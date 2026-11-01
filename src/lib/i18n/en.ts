@@ -1144,7 +1144,7 @@ export const en: Messages = {
 	postLanguageLabel: 'Choose post language',
 	translationLanguageLegend: 'Translation language',
 	translationLanguageHelp:
-		'Post and translation settings sync to your account. Browser uses each device’s browser language.',
+		'The language posts are translated into. “Browser language” follows each device’s browser. Post and translation settings sync to your account.',
 	translationLanguageLabel: 'Choose translation language',
 	autoTranslateLegend: 'Automatic translation',
 	autoTranslateHelp: 'Posts in other languages are translated automatically when you open them.',
@@ -1206,7 +1206,6 @@ export const en: Messages = {
 	botReplyFreqHelp:
 		'Set the probability of Bot-tan replying to your posts. Setting it to 0% disables automatic replies. (Shared with Bluesky freq setting)',
 	botReplyFreqLabel: 'Reply frequency',
-	botReplyFreqCurrent: (p: { freq: number }) => `Current setting: ${p.freq}%`,
 	botReplyFreqSaving: 'Saving…',
 	botReplyFreqSaved: 'Saved.',
 	botReplyFreqLoadFailed: 'Could not load reply frequency',

@@ -88,7 +88,14 @@
 			<form onsubmit={requestConfirm}>
 				<label class="field">
 					<span>{m.ageBirthDateLabel()}</span>
-					<input type="date" bind:value={birthDate} max={today} required disabled={busy} />
+					<input
+						class="settings-input"
+						type="date"
+						bind:value={birthDate}
+						max={today}
+						required
+						disabled={busy}
+					/>
 				</label>
 				<p class="note once">{m.ageOnceOnlyNote()}</p>
 				{#if needsConsent}
@@ -125,8 +132,10 @@
 		gap: 0.5rem;
 	}
 	.note {
+		margin: 0;
 		color: var(--text-muted);
-		font-size: 0.9rem;
+		font-size: 0.875rem;
+		line-height: 1.6;
 	}
 	.once {
 		font-size: 0.8rem;
@@ -144,7 +153,7 @@
 	}
 	.declared dd {
 		margin: 0;
-		font-weight: 700;
+		font-weight: 500;
 	}
 	form {
 		display: flex;

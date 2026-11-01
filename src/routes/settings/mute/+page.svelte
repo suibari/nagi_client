@@ -6,6 +6,9 @@
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import type { ActorView } from '$lib/api/types';
 	import { hashtagHref, normalizeTag } from '$lib/tags';
@@ -60,117 +63,103 @@
 	}
 </script>
 
-<section class="auth-card settings-detail">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsMuteTitle()}</h1>
-
+<SettingsPage title={m.settingsMuteTitle()} description={m.muteHelp()}>
 	{#if !$session && $oauthReady}
-		<SignedOutNotice message={m.muteSignInRequired()} legend={m.settingsMuteTitle()} />
+		<SignedOutNotice message={m.muteSignInRequired()} />
 	{:else if $session}
-		<fieldset class="theme-settings">
-			<legend>{m.settingsMuteTitle()}</legend>
-			<p>{m.muteHelp()}</p>
-			<p class="muted">{m.mutePrivateNote()}</p>
-			<p class="muted">{m.muteThreadNote()}</p>
-			<p class="muted">{m.muteVisibleNote()}</p>
-		</fieldset>
+		<ul class="mute-notes">
+			<li>{m.mutePrivateNote()}</li>
+			<li>{m.muteThreadNote()}</li>
+			<li>{m.muteVisibleNote()}</li>
+		</ul>
 
-		{#if error}<p class="mute-error" role="alert">{error}</p>{/if}
+		{#if error}<p class="settings-error" role="alert">{error}</p>{/if}
 
-		<fieldset class="theme-settings">
-			<legend>{m.muteUsersLegend()}</legend>
+		<SettingsSection title={m.muteUsersLegend()}>
 			{#if loading && !mutes.loaded}
-				<Spinner />
+				<SettingRow><Spinner /></SettingRow>
 			{:else if !mutes.actors.length}
-				<p class="muted">{m.muteUsersEmpty()}</p>
+				<SettingRow description={m.muteUsersEmpty()} />
 			{:else}
-				<ul class="mute-list">
-					{#each mutes.actors as actor (actor.did)}
-						<li class="mute-item">
-							<a class="mute-subject" href="/profile/{actor.did}">
-								<Avatar {actor} size="small" />
-								<span class="mute-names">
-									<strong>{actor.displayName ?? actor.handle}</strong>
-									<span class="muted">@{actor.handle}</span>
-								</span>
-							</a>
-							<Button
-								variant="secondary"
-								size="sm"
-								type="button"
-								disabled={mutes.isPending(actor.did)}
-								onclick={() => void unmuteActor(actor)}
-							>
-								{m.unmuteUser()}
-							</Button>
-						</li>
-					{/each}
-				</ul>
+				{#each mutes.actors as actor (actor.did)}
+					<div class="setting-row has-control">
+						<a class="mute-subject" href="/profile/{actor.did}">
+							<Avatar {actor} size="small" />
+							<span class="mute-names">
+								<strong>{actor.displayName ?? actor.handle}</strong>
+								<span class="muted">@{actor.handle}</span>
+							</span>
+						</a>
+						<Button
+							variant="secondary"
+							size="sm"
+							type="button"
+							disabled={mutes.isPending(actor.did)}
+							onclick={() => void unmuteActor(actor)}
+						>
+							{m.unmuteUser()}
+						</Button>
+					</div>
+				{/each}
 			{/if}
-		</fieldset>
+		</SettingsSection>
 
-		<fieldset class="theme-settings">
-			<legend>{m.muteTagsLegend()}</legend>
-			<form class="mute-tag-form" onsubmit={addTagMute}>
-				<input
-					bind:value={tagInput}
-					maxlength="128"
-					placeholder={m.muteTagPlaceholder()}
-					aria-label={m.muteTagAdd()}
-				/>
-				<Button variant="primary" type="submit" disabled={!newTag || mutes.isPending(newTag)}>
-					{m.muteTagAdd()}
-				</Button>
-			</form>
+		<SettingsSection title={m.muteTagsLegend()}>
+			<SettingRow>
+				<form class="mute-tag-form" onsubmit={addTagMute}>
+					<input
+						class="settings-input"
+						bind:value={tagInput}
+						maxlength="128"
+						placeholder={m.muteTagPlaceholder()}
+						aria-label={m.muteTagAdd()}
+					/>
+					<Button variant="primary" type="submit" disabled={!newTag || mutes.isPending(newTag)}>
+						{m.muteTagAdd()}
+					</Button>
+				</form>
+			</SettingRow>
 			{#if loading && !mutes.loaded}
-				<Spinner />
+				<SettingRow><Spinner /></SettingRow>
 			{:else if !mutes.tags.length}
-				<p class="muted">{m.muteTagsEmpty()}</p>
+				<SettingRow description={m.muteTagsEmpty()} />
 			{:else}
-				<ul class="mute-list">
-					{#each mutes.tags as tag (tag)}
-						<li class="mute-item">
-							<a class="mute-subject" href={hashtagHref(tag)}>
-								<span class="mute-names"><strong>#{tag}</strong></span>
-							</a>
-							<Button
-								variant="secondary"
-								size="sm"
-								type="button"
-								disabled={mutes.isPending(tag)}
-								onclick={() => void setTagMute(tag, false)}
-							>
-								{m.unmuteTag()}
-							</Button>
-						</li>
-					{/each}
-				</ul>
+				{#each mutes.tags as tag (tag)}
+					<div class="setting-row has-control">
+						<a class="mute-subject" href={hashtagHref(tag)}>
+							<span class="mute-names"><strong>#{tag}</strong></span>
+						</a>
+						<Button
+							variant="secondary"
+							size="sm"
+							type="button"
+							disabled={mutes.isPending(tag)}
+							onclick={() => void setTagMute(tag, false)}
+						>
+							{m.unmuteTag()}
+						</Button>
+					</div>
+				{/each}
 			{/if}
-		</fieldset>
+		</SettingsSection>
 	{/if}
-</section>
+</SettingsPage>
 
 <style>
-	.mute-list {
-		list-style: none;
+	.mute-notes {
+		display: grid;
+		gap: 4px;
 		margin: 0;
-		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-	.mute-item {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		justify-content: space-between;
+		padding-inline-start: 1.25em;
+		color: var(--text-muted);
+		font-size: 0.8rem;
+		line-height: 1.6;
 	}
 	.mute-subject {
 		display: flex;
 		align-items: center;
-		gap: 0.6rem;
+		gap: 12px;
 		min-width: 0;
-		flex: 1;
 		color: inherit;
 		text-decoration: none;
 	}
@@ -179,22 +168,24 @@
 		flex-direction: column;
 		min-width: 0;
 	}
+	.mute-names strong {
+		font-weight: 500;
+	}
 	.mute-names > * {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+	.mute-names .muted {
+		font-size: 0.8rem;
+	}
 	.mute-tag-form {
 		display: flex;
-		gap: 0.5rem;
-		margin-block-end: 0.75rem;
+		gap: 8px;
 		min-width: 0;
 	}
 	.mute-tag-form input {
 		flex: 1;
 		min-width: 0;
-	}
-	.mute-error {
-		color: var(--danger, #c0392b);
 	}
 </style>

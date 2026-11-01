@@ -1185,7 +1185,7 @@ export const ja = {
 	postLanguageLabel: '投稿言語を選択',
 	translationLanguageLegend: '翻訳言語',
 	translationLanguageHelp:
-		'投稿・翻訳の設定はアカウントに同期されます。browser選択時は各端末のブラウザ言語を使います。',
+		'翻訳先の言語です。「ブラウザの設定」では端末ごとのブラウザの言語を使います。投稿・翻訳の設定はアカウントに同期されます。',
 	translationLanguageLabel: '翻訳言語を選択',
 	autoTranslateLegend: '自動翻訳',
 	autoTranslateHelp: 'ほかの言語の投稿を、開いたときに自動で翻訳して表示します。',
@@ -1247,7 +1247,6 @@ export const ja = {
 	botReplyFreqHelp:
 		'botたんがあなたの投稿に返信する確率を設定できます。0%にすると自動返信を行わなくなります（Bluesky側のfreq設定と共用されます）。',
 	botReplyFreqLabel: '返信の確率',
-	botReplyFreqCurrent: (p: { freq: number }) => `現在の設定: ${p.freq}%`,
 	botReplyFreqSaving: '保存中…',
 	botReplyFreqSaved: '保存しました。',
 	botReplyFreqLoadFailed: '返信確率を読み込めませんでした',

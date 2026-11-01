@@ -1,4 +1,8 @@
 <script lang="ts">
+	import Icon from '$lib/components/shell/Icon.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import {
 		getBlueskyProfileDraft,
@@ -189,99 +193,120 @@
 	}
 </script>
 
-<section class="auth-card settings-detail">
-	{#if !onboarding}<a class="settings-back" href="/settings">← {m.backToSettings()}</a>{/if}
-	<h1>{m.profileSettingsTitle()}</h1>
-	<p>{m.profileSettingsNote()}</p>
-	{#if onboarding}<p>{m.onboardingLoadedNote()}</p>{/if}
+<SettingsPage
+	title={m.profileSettingsTitle()}
+	description={m.profileSettingsNote()}
+	back={onboarding ? null : undefined}
+>
+	{#if onboarding}<p class="settings-section-description">{m.onboardingLoadedNote()}</p>{/if}
 	{#if !$session && $oauthReady}
 		<SignedOutNotice message={m.loginRequired()} />
 	{:else if $session}
-		<div class="avatar-setting">
-			{#if avatarPreview}<img
-					class="avatar-preview"
-					src={avatarPreview}
-					alt={m.currentAvatarAlt()}
-				/>{:else}<span class="avatar large">{name.slice(0, 1) || '○'}</span>{/if}
-			<div class="avatar-controls">
+		<SettingsSection>
+			<SettingRow>
+				<div class="avatar-setting">
+					{#if avatarPreview}<img
+							class="avatar-preview"
+							src={avatarPreview}
+							alt={m.currentAvatarAlt()}
+						/>{:else}<span class="avatar large">{name.slice(0, 1) || '○'}</span>{/if}
+					<div class="avatar-controls">
+						<input
+							bind:this={avatarInput}
+							type="file"
+							accept="image/jpeg,image/png,image/webp"
+							class="visually-hidden"
+							onchange={selectAvatar}
+						/>
+						<Button variant="secondary" size="sm" type="button" onclick={() => avatarInput?.click()}
+							>{m.selectImage()}</Button
+						>
+						{#if avatarPreview}<Button
+								variant="ghost"
+								size="sm"
+								type="button"
+								onclick={removeAvatar}>{m.remove()}</Button
+							>{/if}
+						<small>{m.avatarNote()}</small>
+					</div>
+				</div>
+			</SettingRow>
+			<SettingRow label={m.displayNameLabel()}>
 				<input
-					bind:this={avatarInput}
-					type="file"
-					accept="image/jpeg,image/png,image/webp"
-					class="visually-hidden"
-					onchange={selectAvatar}
+					class="settings-input"
+					aria-label={m.displayNameLabel()}
+					bind:value={name}
+					maxlength="640"
 				/>
-				<Button
-					variant="secondary"
-					size="sm"
-					type="button"
-					class="avatar-select"
-					onclick={() => avatarInput?.click()}>{m.selectImage()}</Button
-				>
-				{#if avatarPreview}<Button
-						variant="secondary"
-						size="sm"
-						type="button"
-						class="avatar-remove"
-						onclick={removeAvatar}>{m.remove()}</Button
-					>{/if}
-				<small>{m.avatarNote()}</small>
-			</div>
-		</div>
-		<label>{m.displayNameLabel()}<input bind:value={name} maxlength="640" /></label>
-		<label
-			>{m.bioLabel()}<textarea bind:value={description} maxlength="2560" rows="4"></textarea></label
-		>
-		<label
-			>{m.profileWebsiteLabel()}<input
-				type="url"
-				inputmode="url"
-				placeholder="https://example.com"
-				bind:value={website}
-				readonly={!websiteGranted || !websiteLoaded}
-			/></label
-		>
-		<small class="profile-website-help">{m.profileWebsiteHelp()}</small>
-		{#if $session && !websiteGranted}
-			<div class="profile-website-permission">
-				<p>{m.profileWebsitePermissionNote()}</p>
-				<Button
-					variant="secondary"
-					type="button"
-					disabled={websiteReauthBusy}
-					onclick={reauthorizeWebsite}
-				>
-					{websiteReauthBusy ? m.profileWebsiteReauthPending() : m.profileWebsiteReauthSubmit()}
-				</Button>
-			</div>
-		{/if}
+			</SettingRow>
+			<SettingRow label={m.bioLabel()}>
+				<textarea
+					class="settings-input"
+					aria-label={m.bioLabel()}
+					bind:value={description}
+					maxlength="2560"
+					rows="4"
+				></textarea>
+			</SettingRow>
+			<SettingRow label={m.profileWebsiteLabel()} description={m.profileWebsiteHelp()}>
+				<input
+					class="settings-input"
+					aria-label={m.profileWebsiteLabel()}
+					type="url"
+					inputmode="url"
+					placeholder="https://example.com"
+					bind:value={website}
+					readonly={!websiteGranted || !websiteLoaded}
+				/>
+				{#if !websiteGranted}
+					<div class="profile-website-permission">
+						<p>{m.profileWebsitePermissionNote()}</p>
+						<Button
+							variant="secondary"
+							size="sm"
+							type="button"
+							disabled={websiteReauthBusy}
+							onclick={reauthorizeWebsite}
+						>
+							{websiteReauthBusy ? m.profileWebsiteReauthPending() : m.profileWebsiteReauthSubmit()}
+						</Button>
+					</div>
+				{/if}
+			</SettingRow>
+		</SettingsSection>
 		{#if onboarding}
 			<!--
 				初回登録でだけ年齢を訊く。任意なので、入力せず「保存」で先へ進める
 				（その場合は18歳未満として扱われ、あとから設定→コンテンツ表示で
 				1度だけ登録できる）。
 			-->
-			<section class="onboarding-age">
-				<p class="onboarding-age-intro">{m.onboardingAgeIntro()}</p>
-				<AgeAssuranceForm />
-			</section>
+			<SettingsSection description={m.onboardingAgeIntro()}>
+				<SettingRow><AgeAssuranceForm /></SettingRow>
+			</SettingsSection>
 		{/if}
-		<Button variant="primary" size="lg" block disabled={busy || !loaded} onclick={save}
-			>{busy ? m.saving() : m.save()}</Button
-		>
-		{#if status}<p>{status}</p>{/if}
-		{#if syncWarning}<p class="error" role="status">{syncWarning}</p>{/if}
-		{#if websiteWarning}<p class="error" role="status">{websiteWarning}</p>{/if}
-		{#if error}<p class="error">{error}</p>{/if}
+		<div class="settings-actions">
+			<Button variant="primary" disabled={busy || !loaded} onclick={save}
+				>{busy ? m.saving() : m.save()}</Button
+			>
+			{#if status}<p class="settings-status" role="status">{status}</p>{/if}
+		</div>
+		{#if syncWarning}<p class="settings-error" role="status">{syncWarning}</p>{/if}
+		{#if websiteWarning}<p class="settings-error" role="status">{websiteWarning}</p>{/if}
+		{#if error}<p class="settings-error">{error}</p>{/if}
 
-		<section class="profile-card-settings" aria-labelledby="profile-card-settings-heading">
-			<h2 id="profile-card-settings-heading">{m.profileCardsSettingsTitle()}</h2>
-			<p>{m.profileCardsSettingsHelp()}</p>
-			<ProfileAppLinks did={$session?.did} />
-			<a class="profile-cards-manage" href="/settings/app-links">{m.profileCardsManage()}</a>
-		</section>
+		<SettingsSection
+			title={m.profileCardsSettingsTitle()}
+			description={m.profileCardsSettingsHelp()}
+		>
+			<SettingRow><ProfileAppLinks did={$session?.did} /></SettingRow>
+			<a class="settings-category" href="/settings/app-links">
+				<span class="settings-category-icon"><Icon name="link" size={20} /></span>
+				<span class="settings-category-copy"><strong>{m.profileCardsManage()}</strong></span>
+				<Icon name="chevron" size={18} />
+			</a>
+		</SettingsSection>
 	{/if}
-</section>
+</SettingsPage>
 
 {#if cropFile}<AvatarCropper
 		file={cropFile}
@@ -290,47 +315,18 @@
 	/>{/if}
 
 <style>
-	.onboarding-age {
-		display: grid;
-		gap: 0.5rem;
-		margin-top: 0.5rem;
-		padding-top: 1.25rem;
-		border-top: 1px solid var(--line);
-		text-align: left;
-	}
-	.onboarding-age-intro {
-		margin: 0;
-		color: var(--text-muted);
-		font-size: 0.9rem;
-	}
-	.profile-card-settings {
-		display: grid;
-		gap: 0.75rem;
-		margin-top: 0.5rem;
-		padding-top: 1.25rem;
-		border-top: 1px solid var(--line);
-		text-align: left;
-	}
-	.profile-card-settings h2,
-	.profile-card-settings p {
-		margin: 0;
-	}
-	.profile-cards-manage {
-		width: fit-content;
-		font-weight: 700;
-	}
-	.profile-website-help {
-		margin-top: -0.5rem;
-		color: var(--text-muted);
-		text-align: left;
-	}
 	.profile-website-permission {
-		padding: 0.75rem;
-		border: 1px solid var(--line);
-		border-radius: var(--radius-m);
-		text-align: left;
+		display: grid;
+		justify-items: start;
+		gap: 8px;
+		padding: 12px;
+		background: var(--bg-inset);
+		border-radius: var(--r-md);
 	}
 	.profile-website-permission p {
-		margin-top: 0;
+		margin: 0;
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		line-height: 1.6;
 	}
 </style>

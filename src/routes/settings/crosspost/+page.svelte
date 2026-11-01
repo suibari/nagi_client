@@ -3,6 +3,10 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session, signIn } from '$lib/oauth/session.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
+	import Icon from '$lib/components/shell/Icon.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import {
 		getCrosspostEnabled,
 		hasCrosspostScope,
@@ -48,77 +52,75 @@
 	}
 </script>
 
-<section class="auth-card settings-detail external-publishing-settings">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsExternalPublishingTitle()}</h1>
-	<p class="page-intro">{m.externalPublishingHelp()}</p>
-
+<SettingsPage title={m.settingsExternalPublishingTitle()} description={m.externalPublishingHelp()}>
 	{#if !$session && $oauthReady}
 		<SignedOutNotice message={m.crosspostSignInRequired()} />
 	{:else if $session && !checked}
 		<Spinner size="sm" />
 	{:else if $session && !(blueskyGranted && viewGranted)}
-		<div class="publishing-service">
-			<p>{m.crosspostReauthNote()}</p>
-			<Button variant="primary" type="button" disabled={blueskyBusy} onclick={reauthorizeBluesky}>
-				{#if blueskyBusy}<Spinner inline size="sm" decorative />{/if}
-				{blueskyBusy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}
-			</Button>
-		</div>
+		<SettingsSection>
+			<SettingRow description={m.crosspostReauthNote()}>
+				{#snippet control()}
+					<Button
+						variant="primary"
+						type="button"
+						disabled={blueskyBusy}
+						onclick={reauthorizeBluesky}
+					>
+						{#if blueskyBusy}<Spinner inline size="sm" decorative />{/if}
+						{blueskyBusy ? m.crosspostReauthPending() : m.crosspostReauthSubmit()}
+					</Button>
+				{/snippet}
+			</SettingRow>
+		</SettingsSection>
 	{/if}
 
-	<fieldset class="theme-settings publishing-service">
-		<legend>{m.blueskyPublishingTitle()}</legend>
-		<p>{m.crosspostHelp()}</p>
+	<SettingsSection title={m.blueskyPublishingTitle()} description={m.crosspostHelp()}>
 		{#if $session && blueskyGranted}
-			<ToggleSwitch
-				checked={blueskyEnabled}
-				label={m.crosspostEnableLabel()}
-				onchange={toggleBluesky}
-			/>
+			<SettingRow label={m.crosspostEnableLabel()}>
+				{#snippet control({ labelId })}
+					<ToggleSwitch checked={blueskyEnabled} labelledby={labelId} onchange={toggleBluesky} />
+				{/snippet}
+			</SettingRow>
 		{/if}
-		<details>
-			<summary>{m.externalPublishingDetails()}</summary>
-			<p>{m.crosspostSplitNote()}</p>
-			<p>{m.crosspostBotNote()}</p>
-			<p>{m.crosspostDeviceNote()}</p>
-		</details>
-	</fieldset>
+		<SettingRow>
+			<details>
+				<summary>{m.externalPublishingDetails()}</summary>
+				<p>{m.crosspostSplitNote()}</p>
+				<p>{m.crosspostBotNote()}</p>
+				<p>{m.crosspostDeviceNote()}</p>
+			</details>
+		</SettingRow>
+	</SettingsSection>
 
-	<fieldset class="theme-settings publishing-service">
-		<legend>{m.blueskyFeedReadingTitle()}</legend>
-		<p>{m.blueskyFeedReadingHelp()}</p>
+	<!-- 使える状態になるまでは説明だけ出し、中身の無い空の面を置かない。 -->
+	<SettingsSection
+		title={m.blueskyFeedReadingTitle()}
+		description={m.blueskyFeedReadingHelp()}
+		plain={!($session && viewGranted)}
+	>
 		{#if $session && viewGranted}
-			<a href="/settings/feed-tabs">{m.blueskyFeedReadingOpenTabs()} →</a>
+			<a class="settings-category" href="/settings/feed-tabs">
+				<span class="settings-category-icon"><Icon name="text" size={20} /></span>
+				<span class="settings-category-copy"><strong>{m.blueskyFeedReadingOpenTabs()}</strong></span
+				>
+				<Icon name="chevron" size={18} />
+			</a>
 		{/if}
-	</fieldset>
-</section>
+	</SettingsSection>
+</SettingsPage>
 
 <style>
-	.page-intro {
-		margin: 0;
-		color: var(--text-muted);
-	}
-	.publishing-service {
-		display: grid;
-		gap: 0.75rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--line);
-	}
-	.publishing-service > p,
-	.publishing-service details p {
-		margin: 0;
-	}
-	.publishing-service > a {
-		width: fit-content;
-	}
 	details summary {
 		width: fit-content;
 		cursor: pointer;
 		color: var(--text-muted);
-		font-size: 0.88rem;
+		font-size: 0.85rem;
 	}
-	details[open] summary {
-		margin-bottom: 0.6rem;
+	details p {
+		margin: 8px 0 0;
+		color: var(--text-muted);
+		font-size: 0.85rem;
+		line-height: 1.6;
 	}
 </style>

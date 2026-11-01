@@ -6,6 +6,9 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
+	import SettingRow from '$lib/components/SettingRow.svelte';
+	import SettingsPage from '$lib/components/SettingsPage.svelte';
+	import SettingsSection from '$lib/components/SettingsSection.svelte';
 
 	/** lexicon の maxGraphemes と揃えること（サーバ側も同じ値で弾く）。 */
 	const MAX_LENGTH = 40;
@@ -57,32 +60,33 @@
 	}
 </script>
 
-<section class="auth-card settings-detail bot-name-page">
-	<a class="settings-back" href="/settings">← {m.backToSettings()}</a>
-	<h1>{m.settingsBotNameTitle()}</h1>
-	<p>{m.botNameHelp()}</p>
-
+<SettingsPage title={m.settingsBotNameTitle()}>
 	{#if !$session && $oauthReady}
 		<SignedOutNotice message={m.botNameLoginRequired()} />
 	{:else if $session}
 		{#if loading}
 			<Spinner />
 		{:else}
-			<p class="bot-name-current">
-				{current ? m.botNameCurrent({ name: current }) : m.botNameUnset()}
-			</p>
-			<label
-				><span>{m.botNameLabel()}</span>
-				<input
-					bind:value={draft}
-					maxlength={MAX_LENGTH * 3}
-					autocomplete="off"
-					placeholder={m.botNamePlaceholder()}
-					disabled={saving}
-				/></label
-			>
-			{#if tooLong}<p class="error" role="alert">{m.botNameTooLong({ max: MAX_LENGTH })}</p>{/if}
-			<div class="bot-name-actions">
+			<SettingsSection description={m.botNameHelp()}>
+				<SettingRow
+					label={m.botNameLabel()}
+					description={current ? m.botNameCurrent({ name: current }) : m.botNameUnset()}
+				>
+					<input
+						class="settings-input"
+						bind:value={draft}
+						maxlength={MAX_LENGTH * 3}
+						autocomplete="off"
+						aria-label={m.botNameLabel()}
+						placeholder={m.botNamePlaceholder()}
+						disabled={saving}
+					/>
+					{#if tooLong}<p class="settings-error" role="alert">
+							{m.botNameTooLong({ max: MAX_LENGTH })}
+						</p>{/if}
+				</SettingRow>
+			</SettingsSection>
+			<div class="settings-actions">
 				<Button
 					variant="primary"
 					disabled={!dirty || tooLong || !trimmed || saving}
@@ -90,20 +94,16 @@
 				>
 					{saving ? m.botNameSaving() : m.save()}
 				</Button>
+				<!-- 解除は取り返しがつく（表示名に戻るだけ）ので、danger ではなく控えめに。 -->
 				{#if current}
-					<Button
-						variant="secondary"
-						class="bot-name-clear"
-						disabled={saving}
-						onclick={() => void save('')}
-					>
+					<Button variant="secondary" disabled={saving} onclick={() => void save('')}>
 						{m.botNameClear()}
 					</Button>
 				{/if}
+				{#if saved && !dirty}<p class="settings-status" role="status">{m.botNameSaved()}</p>{/if}
 			</div>
-			{#if saved && !dirty}<p class="bot-name-saved" role="status">{m.botNameSaved()}</p>{/if}
 		{/if}
 	{/if}
 
-	{#if error}<p class="error" role="alert">{error}</p>{/if}
-</section>
+	{#if error}<p class="settings-error" role="alert">{error}</p>{/if}
+</SettingsPage>
