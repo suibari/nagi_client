@@ -43,7 +43,7 @@ for (const phase of ['list', 'create']) {
 			const panel = page.locator('#emoji-panel-generate');
 			if (phase === 'create') {
 				await panel.locator('input').first().fill('ねこ');
-				await panel.locator('button.primary').click();
+				await panel.locator('button.btn-primary').click();
 			}
 			const refresh = panel.getByRole('button', { name: 'ログイン権限を更新' });
 			await expect(panel.getByRole('alert')).toBeVisible();
