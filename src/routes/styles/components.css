@@ -1228,7 +1228,10 @@
 	min-width: 0;
 	flex: 1;
 	max-width: 34em;
-	padding: 12px 14px;
+	/* カバー画像など吹き出しの縁まで広げる要素が同じ値で打ち消せるよう、余白は変数で持つ。 */
+	--bubble-pad-y: 12px;
+	--bubble-pad-x: 16px;
+	padding: var(--bubble-pad-y) var(--bubble-pad-x);
 	background: var(--bubble-current-bg);
 	border: 1px solid var(--bubble-border);
 	border-radius: var(--r-sm) var(--r-bubble) var(--r-bubble) var(--r-bubble);
@@ -1648,7 +1651,7 @@
 	先頭が見出しなだけの通常投稿は post.article を持たないので、ここには入らない。
 */
 .post-row.article .post-article-cover {
-	margin: -12px -14px 12px;
+	margin: calc(var(--bubble-pad-y) * -1) calc(var(--bubble-pad-x) * -1) 12px;
 	overflow: hidden;
 	border-radius: calc(var(--r-sm) - 1px) calc(var(--r-bubble) - 1px) 0 0;
 }
@@ -3820,7 +3823,8 @@ a.notification-main::before {
 		--emoji-size: 1.5rem;
 	}
 	.bubble {
-		padding: 10px 12px;
+		--bubble-pad-y: 12px;
+		--bubble-pad-x: 12px;
 	}
 	.welcome {
 		align-items: flex-start;
