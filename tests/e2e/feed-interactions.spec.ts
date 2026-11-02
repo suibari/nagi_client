@@ -2,7 +2,13 @@ import { expect, test, type Page } from '@playwright/test';
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
-async function drag(page: Page, selector: string, dx: number, dy: number) {
+async function drag(
+	page: Page,
+	selector: string,
+	dx: number,
+	dy: number,
+	{ release = true, stepDelay = 0 }: { release?: boolean; stepDelay?: number } = {},
+) {
 	const box = await page.locator(selector).first().boundingBox();
 	if (!box) throw new Error(`Missing ${selector}`);
 	const x = box.x + Math.min(180, box.width / 2);
@@ -14,8 +20,9 @@ async function drag(page: Page, selector: string, dx: number, dy: number) {
 			type: 'touchMove',
 			touchPoints: [{ x: x + (dx * i) / 8, y: y + (dy * i) / 8 }],
 		});
+		if (stepDelay) await page.waitForTimeout(stepDelay);
 	}
-	await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	if (release) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 	await cdp.detach();
 }
 
@@ -59,6 +66,34 @@ test('other people speak from their avatar in both sources', async ({ page }) =>
 	await expect(page.locator('.thread-gap')).toContainText('2');
 	await expect(page.locator('.feed-entering')).toHaveCount(0);
 	await page.screenshot({ path: '/tmp/nagi-feed-mobile.png', fullPage: true });
+});
+
+test('dragging slides the feed and reveals the neighbouring tab', async ({ page }) => {
+	await drag(page, '[data-testid="gesture-area"]', -120, 2, { release: false });
+	await expect(page.getByTestId('feed-peek')).toBeVisible();
+	await expect(page.getByTestId('peek-tab')).toHaveText('affirmation');
+	const shift = await page
+		.locator('.feed-track')
+		.evaluate((track) => new DOMMatrix(getComputedStyle(track).transform).m41);
+	expect(shift).toBeLessThan(-100);
+});
+
+test('a slow, short drag snaps back without changing tabs', async ({ page }) => {
+	await drag(page, '[data-testid="gesture-area"]', -90, 2, { stepDelay: 80 });
+	await expect(page.getByTestId('feed-peek')).toHaveCount(0);
+	await expect(page).toHaveURL(/\/dev\/e2e\/feed-interactions$/);
+	await expect(page.locator('.feed-track')).toHaveCSS('transform', 'none');
+});
+
+test('dragging past the last tab resists and shows no preview', async ({ page }) => {
+	await page.goto('/dev/e2e/feed-interactions?tab=affirmation');
+	await expect(page.getByTestId('refresh-count')).toHaveText('1');
+	await drag(page, '[data-testid="gesture-area"]', -120, 2, { release: false });
+	await expect(page.getByTestId('feed-peek')).toHaveCount(0);
+	const shift = await page
+		.locator('.feed-track')
+		.evaluate((track) => new DOMMatrix(getComputedStyle(track).transform).m41);
+	expect(shift).toBeGreaterThan(-60);
 });
 
 test('a left swipe selects the next feed tab', async ({ page }) => {

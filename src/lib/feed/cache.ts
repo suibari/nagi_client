@@ -10,6 +10,10 @@ export class FeedCache<T> {
 		if (this.#items.size > this.limit) this.#items.delete(this.#items.keys().next().value!);
 		return value;
 	}
+	/** Read without creating or touching recency (swipe previews must not evict the shown feed). */
+	peek(key: string): T | undefined {
+		return this.#items.get(key);
+	}
 	values() {
 		return this.#items.values();
 	}
