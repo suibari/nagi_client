@@ -185,7 +185,7 @@ export type PostDraft = {
 	/** video.bsky.app で変換済みの動画。画像と併用できる（引用なしなら #gallery で書く）。 */
 	video?: PostVideoRecord;
 	linkCards: LinkCardDraft[];
-	/** こっそりモード。true のトップレベル投稿はグローバル/全肯定TLに出さない。 */
+	/** こっそりモード。共有フィードには表示せず、本人のプロフィールや検索で確認できる。 */
 	kossori?: boolean;
 	/** 作成時からCW運用であり、外部コピーを永久に作らない投稿。 */
 	cwRestricted?: boolean;

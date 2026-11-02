@@ -55,6 +55,7 @@
 	import {
 		restorePostScope,
 		scopeAfterExternalEligibility,
+		scopeForPublicReply,
 		setLastPostScope,
 		type PostScope,
 	} from '$lib/post/scope';
@@ -147,7 +148,8 @@
 			!articleTitleMissing &&
 			contentWarningValid &&
 			articleReady &&
-			!articleBlockedReason;
+			!articleBlockedReason &&
+			!kossoriReplyBlockedReason;
 	});
 
 	// --- 外部への同時投稿 ---------------------------------------------------------
@@ -265,6 +267,25 @@
 	$effect(() => {
 		if (kossoriThread && scope !== 'kossori') scope = 'kossori';
 	});
+	/**
+	 * こっそりではないスレッドへの返信か。AppView はこっそりスレッドの外にこっそり投稿を
+	 * 置かせない（createKossoriPost が 400 "Reply root is not a kossori post" を返す）。
+	 *
+	 * 前回値や画面既定でこっそりが選ばれたまま公開投稿へ返信すると、送信してから
+	 * 「通信状態を確認」と出て失敗していた。返信先が付いた時点でまだ何も書いていなければ
+	 * フィードへ切り替え、書きかけなら黙って公開範囲を広げず送信を止めて理由を出す。
+	 */
+	const publicReply = $derived(Boolean(composerHost.replyTarget) && !kossoriThread);
+	$effect(() => {
+		if (!publicReply) return;
+		untrack(() => {
+			const next = scopeForPublicReply(scope, !empty);
+			if (next !== scope) scope = next;
+		});
+	});
+	const kossoriReplyBlockedReason = $derived(
+		kossori && publicReply ? m.postScopeKossoriPublicReply() : '',
+	);
 	// ブログは公開レコードとして外から読まれるので、こっそりにはできない
 	// （standardsite/preferences.ts の isArticleCandidate と同じ線引き）。
 	$effect(() => {
@@ -468,7 +489,8 @@
 			articleTitleMissing ||
 			!contentWarningValid ||
 			!articleReady ||
-			articleBlockedReason
+			articleBlockedReason ||
+			kossoriReplyBlockedReason
 		)
 			return;
 		const wantsCrosspost = scope === 'external' && externalEligible;
@@ -597,7 +619,9 @@
 					},
 				);
 			}
-			setLastPostScope(scope);
+			// 返信の範囲はスレッドで決まる（こっそりスレッドは固定、公開スレッドはこっそり不可）ので、
+			// 次の新規投稿の既定として残さない。
+			if (!composerHost.replyTarget) setLastPostScope(scope);
 			// 投稿開始前から進行中だった自動保存を待ち、その保存分も確実に片付ける。
 			await finishDraftSaves();
 			const savedDraftId = activeDraftTarget?.id;
@@ -902,7 +926,8 @@
 					articleTitleMissing ||
 					!contentWarningValid ||
 					!articleReady ||
-					Boolean(articleBlockedReason)}
+					Boolean(articleBlockedReason) ||
+					Boolean(kossoriReplyBlockedReason)}
 				aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
 				title={busy
 					? m.composerSubmitting()
@@ -924,6 +949,9 @@
 	{#if attachments.length}<p class="draft-image-note">
 			{m.draftImagesUnsupported()}
 		</p>{/if}
+	{#if kossoriReplyBlockedReason}<p class="error" role="status">
+			{kossoriReplyBlockedReason}
+		</p>{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}{#if draftError}<p class="error">
 			{draftError}
 		</p>{/if}{#if warning}<p class="error">
@@ -935,8 +963,12 @@
 		{scope}
 		{externalEligible}
 		{externalDisabledReason}
-		kossoriDisabled={blog}
-		kossoriDisabledReason={blog ? m.postScopeKossoriArticle() : ''}
+		kossoriDisabled={blog || publicReply}
+		kossoriDisabledReason={blog
+			? m.postScopeKossoriArticle()
+			: publicReply
+				? m.postScopeKossoriPublicReply()
+				: ''}
 		onselect={(next) => {
 			scope = next;
 			setLastPostScope(next);

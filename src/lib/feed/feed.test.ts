@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FeedItem } from '$lib/api/types';
 import { Feed } from './feed.svelte';
+import { optimisticPosts } from './optimistic-posts.svelte';
 
 vi.mock('$lib/i18n/postTranslations.svelte', () => ({
 	postTranslations: { prepare: vi.fn() },
@@ -66,5 +67,69 @@ describe('feed reaction polling', () => {
 		await feed.refresh();
 		expect(feed.items.map((item) => item.uri)).toEqual(['first', 'second']);
 		expect(feed.items[1].reactions).toEqual(reactions);
+	});
+});
+
+describe('profile kossori optimistic display', () => {
+	afterEach(() => {
+		for (const entry of optimisticPosts.entries) optimisticPosts.remove(entry.id);
+	});
+
+	it('shows a new kossori post immediately in the author posts feed', () => {
+		const feed = new Feed(
+			async () => ({ items: [], hasMore: false }),
+			(item) => item.author.did === did && !item.reply,
+		);
+		optimisticPosts.add(
+			{
+				text: 'こっそり',
+				facets: [],
+				langs: ['ja'],
+				kossori: true,
+				createdAt: new Date().toISOString(),
+				attachments: [],
+				linkCards: [],
+			},
+			did,
+		);
+		expect(feed.visibleItems).toHaveLength(1);
+		expect(feed.visibleItems[0]).toMatchObject({ kossori: true, optimisticState: 'sending' });
+	});
+
+	it('adds a kossori reply to the visible profile conversation immediately', () => {
+		const root = { ...post('root'), kossori: true, threadKossori: true };
+		const feed = new Feed(
+			async () => ({ items: [], hasMore: false }),
+			(item) => item.author.did === did && !item.reply,
+		);
+		feed.items = [
+			{
+				...root,
+				conversation: {
+					threadRootUri: root.uri,
+					root,
+					bubbles: [],
+					totalCount: 1,
+					hiddenCount: 0,
+				},
+			},
+		];
+		optimisticPosts.add(
+			{
+				text: '返信',
+				facets: [],
+				langs: ['ja'],
+				kossori: true,
+				createdAt: new Date().toISOString(),
+				attachments: [],
+				linkCards: [],
+				reply: { root: { uri: root.uri, cid: root.cid }, parent: { uri: root.uri, cid: root.cid } },
+			},
+			did,
+			{ replyParent: root, threadKossori: true },
+		);
+		expect(feed.visibleItems).toHaveLength(1);
+		expect(feed.visibleItems[0].conversation?.bubbles).toHaveLength(1);
+		expect(feed.visibleItems[0].conversation?.bubbles[0].post.optimisticState).toBe('sending');
 	});
 });
