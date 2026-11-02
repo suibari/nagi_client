@@ -80,6 +80,9 @@
 <button onclick={() => void refresh()}>新着を再現</button>
 <output data-testid="refresh-count">{refreshes}</output>
 <FeedSurface activeKey={source} version={entry.version} onrefresh={refresh}>
+	{#snippet preview(tab)}
+		<p data-testid="peek-tab">{tab.id}</p>
+	{/snippet}
 	<div data-testid="gesture-area" class="gesture-area">
 		<p>フィード操作のテスト領域</p>
 	</div>

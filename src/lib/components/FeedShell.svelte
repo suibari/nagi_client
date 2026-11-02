@@ -1,18 +1,7 @@
-<script module lang="ts">
-	import { Feed } from '$lib/feed/feed.svelte';
-	import { FeedCache } from '$lib/feed/cache';
-	import type { FeedTabSpec } from '$lib/feed-tabs/resolve';
-	const cache = new FeedCache<Feed>();
-	function feedFor(spec: FeedTabSpec) {
-		return cache.get(spec.key, () => {
-			const feed = new Feed(spec.fetcher, spec.optimisticFilter, spec.watermark);
-			void feed.load();
-			return feed;
-		});
-	}
-</script>
-
 <script lang="ts">
+	import type { Feed } from '$lib/feed/feed.svelte';
+	import type { FeedTabSpec } from '$lib/feed-tabs/resolve';
+	import { nagiFeedFor as feedFor, nagiFeeds as cache } from '$lib/feed/feed-caches';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { followPostedScroll } from '$lib/feed/post-follow.svelte';

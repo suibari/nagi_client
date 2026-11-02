@@ -1,19 +1,7 @@
-<script module lang="ts">
-	import { BskyFeed } from '$lib/bsky/feed.svelte';
-	import type { BskyFeedRef } from '$lib/bsky/agent';
-
-	import { FeedCache } from '$lib/feed/cache';
-	const cache = new FeedCache<BskyFeed>();
-	function feedFor(key: string, ref: BskyFeedRef): BskyFeed {
-		return cache.get(key, () => {
-			const feed = new BskyFeed(ref);
-			void feed.load();
-			return feed;
-		});
-	}
-</script>
-
 <script lang="ts">
+	import type { BskyFeed } from '$lib/bsky/feed.svelte';
+	import type { BskyFeedRef } from '$lib/bsky/agent';
+	import { bskyFeedFor as feedFor, bskyFeeds as cache } from '$lib/feed/feed-caches';
 	import Button from '$lib/components/Button.svelte';
 	import type { ModerationOpts } from '@atproto/api';
 	import { untrack } from 'svelte';
