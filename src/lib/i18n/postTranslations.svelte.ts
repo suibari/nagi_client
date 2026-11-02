@@ -22,7 +22,9 @@ const MAX_CONCURRENT_TRANSLATIONS = 2;
 const MAX_EXPANDED_ORIGINALS = 100;
 // ゼンカツ提出は本文ではなく作者の意図（note）を訳す。AppView の translatePosts が
 // 提出の URI を受け取り、判定済みの意図だけを訳す（キャッシュと生成枠は投稿と共通）。
-const POST_URI = /^at:\/\/did:(?:plc|web):[^/]+\/com\.suibari\.nagi\.(?:post|zenkatsu)\/[^/]+$/;
+// ブログ記事（site.standard.document）も AppView が投稿と同じく英訳を事前生成している。
+const POST_URI =
+	/^at:\/\/did:(?:plc|web):[^/]+\/(?:com\.suibari\.nagi\.(?:post|zenkatsu)|site\.standard\.document)\/[^/]+$/;
 const keyOf = (uri: string, cid: string, target: SupportedLanguage) => `${uri}\n${cid}\n${target}`;
 
 export function isTranslationCandidate(post: TranslationPost, target: SupportedLanguage) {

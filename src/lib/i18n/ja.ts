@@ -533,6 +533,8 @@ export const ja = {
 	translationLabel: '自動翻訳',
 	showOriginalText: '原文を表示',
 	hideOriginalText: '原文を閉じる',
+	showingOriginalArticle: '原文を表示中',
+	showTranslatedArticle: '翻訳を表示',
 	translationFailed: '翻訳を表示できませんでした',
 	translationRetry: '再試行',
 	translateExternally: '選んだ翻訳サービスで開く',

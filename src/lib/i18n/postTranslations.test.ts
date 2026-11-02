@@ -50,9 +50,21 @@ describe('translation candidates', () => {
 		expect(isTranslationCandidate(post(uri), 'en')).toBe(false);
 	});
 
+	it('translates blog articles stored as standard.site documents', () => {
+		const uri = 'at://did:plc:alice/site.standard.document/3mblog';
+		expect(isTranslationCandidate(post(uri, ['ja']), 'en')).toBe(true);
+		expect(isTranslationCandidate(post(uri, ['ja']), 'ja')).toBe(false);
+	});
+
 	it('does not send other record types to the translation API', () => {
 		expect(
 			isTranslationCandidate(post('at://did:plc:alice/com.suibari.nagi.cardGet/3m', ['ja']), 'en'),
+		).toBe(false);
+		expect(
+			isTranslationCandidate(
+				post('at://did:plc:alice/site.standard.publication/self', ['ja']),
+				'en',
+			),
 		).toBe(false);
 	});
 });
