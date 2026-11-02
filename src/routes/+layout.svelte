@@ -42,6 +42,9 @@
 	import { startRadioNotice } from '$lib/radio/radio.svelte';
 
 	let { children } = $props();
+	$effect(() => {
+		if ($oauthReady) document.documentElement.removeAttribute('data-oauth-pending');
+	});
 	const seo = $derived(page.data.seo);
 	// サインインの動線そのものを塞がないページでは投稿ボタンを出さない。
 	const NO_FAB = ['/login', '/onboarding', '/oauth'];

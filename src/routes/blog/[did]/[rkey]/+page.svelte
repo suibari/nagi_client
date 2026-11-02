@@ -17,7 +17,7 @@
 	import { splitArticleText } from '$lib/blog/articleText';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { languageName, languagePreferences } from '$lib/i18n/languagePreferences.svelte';
-	import { hadRecentSession, session } from '$lib/oauth/session.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
@@ -25,9 +25,8 @@
 	import { m, dateLocale, i18n } from '$lib/i18n/i18n.svelte';
 
 	let { data } = $props();
-	// ホームのヒーローと同じ判定。プリレンダ結果（共有リンクから来た人・クローラ）には出し、
-	// 戻ってきた利用者には OAuth の復元を待たずに最初から出さない。
-	const showHero = $derived(!$session && !hadRecentSession());
+	// プリレンダHTMLには紹介を残し、認証確認中は GuestHero の CSS で隠す。
+	const showHero = $derived(!$session);
 	// svelte-ignore state_referenced_locally -- prerender snapshot; onMount refreshes viewer-specific state
 	let thread = $state<ThreadView | undefined>(data.thread);
 	let error = $state('');

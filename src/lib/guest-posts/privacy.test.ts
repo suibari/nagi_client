@@ -119,7 +119,7 @@ describe('guest post privacy boundary', () => {
 			[blogArticle, '<article class="blog-article">'],
 			[newsArticle, '<article class="news-permalink">'],
 		]) {
-			expect(page).toContain('const showHero = $derived(!$session && !hadRecentSession());');
+			expect(page).toContain('const showHero = $derived(!$session);');
 			expect(page.indexOf('<GuestHero />')).toBeGreaterThan(-1);
 			expect(page.indexOf('<GuestHero />')).toBeLessThan(page.indexOf(article));
 		}

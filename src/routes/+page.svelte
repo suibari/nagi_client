@@ -9,11 +9,10 @@
 	import FeedTabsView from '$lib/components/FeedTabsView.svelte';
 	import GuestHero from '$lib/components/GuestHero.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
 
-	// プリレンダ時は $session も目印も無いのでヒーローが出る（＝クローラと初回訪問者が見る形）。
-	// 戻ってきた利用者には、OAuth 復元を待たずに最初の描画から出さない。
-	const showHero = $derived(!$session && !hadRecentSession());
+	// プリレンダHTMLには紹介を残し、認証確認中は GuestHero の CSS で隠す。
+	const showHero = $derived(!$session);
 </script>
 
 <!-- 見出しとヒーローは $oauthReady のゲートの外に置く。ゲートの中だとプリレンダ結果が
