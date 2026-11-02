@@ -165,6 +165,7 @@
 	 * 先頭が見出しなだけの通常投稿と取り違えないよう、判定は post.article だけを見る。
 	 */
 	let articleHeader = $derived(post.article && !editing ? post.images?.[0] : undefined);
+	let isBlogPost = $derived(post.article || post.uri.includes('/site.standard.document/'));
 	// ヘッダーに出した1枚は本文下のギャラリーから外す（同じ画像を二度出さない）。
 	let bodyImages = $derived(articleHeader ? post.images?.slice(1) : post.images);
 	const resolveAsset = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
@@ -611,9 +612,6 @@
 		class:bubble-created={post.optimisticState === 'indexing'}
 	>
 		{#if !managementOnly}
-			{#if post.article || post.uri.includes('/site.standard.document/')}
-				<span class="post-blog-label"><Icon name="newspaper" size={14} />{m.blogTitle()}</span>
-			{/if}
 			{#if articleHeader}
 				<div class="post-article-cover">
 					<ContentWarningMask
@@ -644,8 +642,12 @@
 						<div class="meta-badges"><ActorBadges actor={post.author} /></div>
 					{/if}
 				</div>
-				{#if !hideTimestamp || post.edited}
+				{#if !hideTimestamp || post.edited || isBlogPost}
 					<div class="meta-time">
+						<!-- ブログの印は日時と同じ控えめな行に置く。カバー画像の上に札を重ねない。 -->
+						{#if isBlogPost}<span class="post-blog-label"
+								><Icon name="newspaper" size={14} />{m.blogTitle()}</span
+							>{/if}
 						{#if !hideTimestamp}
 							<time>
 								{#if displayOnly}{new Date(post.createdAt).toLocaleString(dateLocale(), {
@@ -920,13 +922,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		padding: 3px 8px;
-		margin-bottom: 8px;
-		border-radius: 6px;
-		background: var(--surface-2);
 		color: var(--text-muted);
-		font-size: 0.75rem;
-		font-weight: 600;
 	}
 
 	.post-row.management-only {
