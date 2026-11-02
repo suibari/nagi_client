@@ -30,3 +30,10 @@
 		<Button variant="primary" size="lg" class="hero-join" href="/login">{m.joinCta()}</Button>
 	</div>
 </section>
+
+<style>
+	/* ハイドレーションより前にも適用し、事前生成HTMLのちらつきを防ぐ。 */
+	:global(html[data-oauth-pending]) .hero {
+		display: none;
+	}
+</style>

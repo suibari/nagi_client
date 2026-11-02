@@ -10,7 +10,7 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { safeNewsImageUrl } from '$lib/news/image';
 	import { newsRkey } from '$lib/news/indexable';
-	import { hadRecentSession, oauthReady, session } from '$lib/oauth/session.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
@@ -76,9 +76,8 @@
 		void loadSimilar(uri);
 	});
 
-	// ホームのヒーローと同じ判定。プリレンダ結果（共有リンクから来た人・クローラ）には出し、
-	// 戻ってきた利用者には OAuth の復元を待たずに最初から出さない。
-	const showHero = $derived(!$session && !hadRecentSession());
+	// プリレンダHTMLには紹介を残し、認証確認中は GuestHero の CSS で隠す。
+	const showHero = $derived(!$session);
 
 	// ここからコメントしたら、その場で一覧に出す。
 	let seenPosted = untrack(() => postedSignal.count);
