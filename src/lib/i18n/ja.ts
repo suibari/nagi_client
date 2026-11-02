@@ -404,7 +404,7 @@ export const ja = {
 	postScopeKossori: 'こっそり',
 	postScopeKossoriShort: 'こっそり',
 	postScopeKossoriDetail:
-		'自分とbotたんだけが読める投稿です。ここから続く返信もすべてこっそりになります。途中で選んでも、それまでの投稿は変わりません。',
+		'自分とbotたんだけが読める投稿です。共有フィードには表示されず、自分のプロフィールや検索で確認できます。ここから続く返信もすべてこっそりになります。途中で選んでも、それまでの投稿は変わりません。',
 	postScopeFeed: 'このフィード',
 	postScopeFeedShort: 'みんなに',
 	postScopeFeedDetail:

@@ -388,7 +388,7 @@ export const en: Messages = {
 	postScopeKossori: 'Limited',
 	postScopeKossoriShort: 'Limited',
 	postScopeKossoriDetail:
-		'Only you and bot-tan can read this post. All replies that follow are also limited. Choosing Limited partway through a thread does not change earlier posts.',
+		'Only you and bot-tan can read this post. It stays out of shared feeds. You can find it on your own profile or through search. All replies that follow are also limited. Choosing Limited partway through a thread does not change earlier posts.',
 	postScopeFeed: 'This feed',
 	postScopeFeedShort: 'Everyone',
 	postScopeFeedDetail:

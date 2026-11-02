@@ -99,7 +99,7 @@ export function resolveFeedTab(
 				return {
 					key: `${scope}:global`,
 					fetcher: getTimeline,
-					optimisticFilter: (item) => !item.threadKossori,
+					optimisticFilter: (item) => !(item.threadKossori ?? item.kossori),
 					watermark: globalFeedRead,
 					empty: m.feedEmpty,
 					showGuestHero: true,
@@ -107,7 +107,7 @@ export function resolveFeedTab(
 			return {
 				key: `${scope}:home`,
 				fetcher: homeFetcher(ctx.onAuthError ?? noop),
-				optimisticFilter: (item) => !item.reply,
+				optimisticFilter: (item) => !item.reply && !(item.threadKossori ?? item.kossori),
 				watermark: homeFeedRead,
 				empty: m.homeFeedEmpty,
 				handleHomeAuthError: true,
@@ -117,7 +117,7 @@ export function resolveFeedTab(
 			return {
 				key: `${scope}:global`,
 				fetcher: getTimeline,
-				optimisticFilter: (item) => !item.threadKossori,
+				optimisticFilter: (item) => !(item.threadKossori ?? item.kossori),
 				watermark: globalFeedRead,
 				empty: m.feedEmpty,
 				showGuestHero: true,
@@ -127,7 +127,8 @@ export function resolveFeedTab(
 			return {
 				key: `${scope}:affirmation`,
 				fetcher: getAffirmation,
-				optimisticFilter: (item) => Boolean(item.isAffirmation) && !item.threadKossori,
+				optimisticFilter: (item) =>
+					Boolean(item.isAffirmation) && !(item.threadKossori ?? item.kossori),
 				watermark: affirmationFeedRead,
 				empty: m.affirmationEmpty,
 			};
