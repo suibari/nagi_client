@@ -14,7 +14,9 @@
 	import LinkCard from '$lib/components/LinkCard.svelte';
 	import GuestHero from '$lib/components/GuestHero.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { extractTitle } from '$lib/atproto/markdown';
+	import { splitArticleText } from '$lib/blog/articleText';
+	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
+	import { languageName, languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { hadRecentSession, session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
@@ -61,22 +63,59 @@
 	);
 	let post = $derived(thread?.post);
 	let text = $derived(post?.text ?? data.post.text);
-	let title = $derived(extractTitle(text) ?? text.slice(0, 80));
-	let titlePrefix = $derived(text.match(/^# [^\n]+\n*\s*/)?.[0] ?? '');
-	let body = $derived(text.slice(titlePrefix.length));
+	let original = $derived(splitArticleText(text));
+
+	// 記事本文の自動翻訳。プリレンダの HTML は原文のまま残し（検索・OGP 用）、
+	// AppView のスレッドが読めて langs と cid が揃ってから訳文へ差し替える。
+	// AppView は日本語などの記事を取り込み時に英訳しているので、英語ならキャッシュから返る。
+	let translationTarget = $derived(languagePreferences.translationLanguage);
+	let translationEligible = $derived(
+		Boolean(
+			post &&
+			!editing &&
+			languagePreferences.autoTranslate &&
+			isTranslationCandidate(post, translationTarget),
+		),
+	);
+	let translation = $derived(
+		post && translationEligible
+			? postTranslations.entry(post.uri, post.cid, translationTarget)
+			: undefined,
+	);
+	let translating = $derived(
+		translationEligible && (!translation || translation.status === 'loading'),
+	);
+	let translationFailed = $derived(translation?.status === 'failed');
+	let translatedText = $derived(translation?.status === 'translated' ? translation.text : '');
+	let showOriginal = $state(false);
+	let showingTranslation = $derived(Boolean(translatedText) && !showOriginal);
+	let translated = $derived(
+		translatedText ? splitArticleText(translatedText, Boolean(original.prefix)) : undefined,
+	);
+	let targetLanguageName = $derived(languageName(translationTarget, i18n.locale));
+	$effect(() => {
+		if (post && translationEligible && !translation) postTranslations.ensure(post);
+	});
+
+	let title = $derived(showingTranslation && translated ? translated.title : original.title);
+	let titlePrefix = $derived(original.prefix);
+	let body = $derived(showingTranslation && translated ? translated.body : original.body);
 	let bodyFacets = $derived(
-		post?.facets
-			?.filter((facet) => facet.index.byteStart >= new TextEncoder().encode(titlePrefix).length)
-			.map((facet) => {
-				const offset = new TextEncoder().encode(titlePrefix).length;
-				return {
-					...facet,
-					index: {
-						byteStart: facet.index.byteStart - offset,
-						byteEnd: facet.index.byteEnd - offset,
-					},
-				};
-			}),
+		// facet のバイト位置は原文のもの。訳文には当てない。
+		showingTranslation
+			? undefined
+			: post?.facets
+					?.filter((facet) => facet.index.byteStart >= new TextEncoder().encode(titlePrefix).length)
+					.map((facet) => {
+						const offset = new TextEncoder().encode(titlePrefix).length;
+						return {
+							...facet,
+							index: {
+								byteStart: facet.index.byteStart - offset,
+								byteEnd: facet.index.byteEnd - offset,
+							},
+						};
+					}),
 	);
 	let author = $derived(post?.author ?? data.post.author);
 	let cover = $derived(post?.images?.[0]);
@@ -191,7 +230,31 @@
 		/>
 	{/if}
 
-	<div class="blog-body post-text"><RichText text={body} facets={bodyFacets} /></div>
+	{#if translating}
+		<p class="blog-translation" aria-live="polite">
+			<Spinner size="sm" inline decorative />
+			<span>{m.translatingTo({ language: targetLanguageName })}</span>
+		</p>
+	{:else if translatedText}
+		<p class="blog-translation" aria-live="polite">
+			<Icon name="language" size={15} />
+			<span>{showOriginal ? m.showingOriginalArticle() : m.translationLabel()}</span>
+			<button type="button" onclick={() => (showOriginal = !showOriginal)}
+				>{showOriginal ? m.showTranslatedArticle() : m.showOriginalText()}</button
+			>
+		</p>
+	{:else if translationFailed && post}
+		<p class="blog-translation" aria-live="polite">
+			<span>{m.translationFailed()}</span>
+			<button type="button" onclick={() => post && void postTranslations.retry(post)}
+				>{m.translationRetry()}</button
+			>
+		</p>
+	{/if}
+
+	<div class="blog-body post-text" lang={showingTranslation ? translationTarget : undefined}>
+		<RichText text={body} facets={bodyFacets} />
+	</div>
 	{#if bodyImages.length}<div class="blog-media"><ImageGallery images={bodyImages} /></div>{/if}
 	{#if post?.linkCards?.length}<div class="blog-links">
 			{#each post.linkCards as card}<LinkCard {card} />{/each}
@@ -291,6 +354,25 @@
 		color: var(--accent-strong);
 		font-size: 13px;
 		font-weight: 700;
+	}
+	.blog-translation {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 8px;
+		margin: 18px 0 0;
+		color: var(--text-muted);
+		font-size: 13px;
+	}
+	.blog-translation button {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--accent-strong);
+		font-size: inherit;
+	}
+	.blog-translation button:hover {
+		text-decoration: underline;
 	}
 	h1 {
 		margin: 0 0 24px;

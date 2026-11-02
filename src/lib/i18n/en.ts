@@ -521,6 +521,8 @@ export const en: Messages = {
 	translationLabel: 'Automatic translation',
 	showOriginalText: 'Show original',
 	hideOriginalText: 'Hide original',
+	showingOriginalArticle: 'Showing original',
+	showTranslatedArticle: 'Show translation',
 	translationFailed: 'Translation is unavailable',
 	translationRetry: 'Retry',
 	translateExternally: 'Open in your chosen translator',
