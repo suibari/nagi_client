@@ -286,6 +286,7 @@ export const en: Messages = {
 	postLinkCardUploadFailed:
 		'Could not upload the link card image. Check your connection and try again.',
 	postRecordCreateFailed: 'Could not save the post. Check your connection and try again.',
+	postRecordRejected: 'The post was not accepted. Check its audience and reply target.',
 	postImageAdd: 'Add images',
 	postMediaAdd: 'Add images or a video',
 	videoOnlyOne: 'You can attach only one video',
@@ -398,6 +399,8 @@ export const en: Messages = {
 		'Posts to Bluesky as well as Nagi. Posts written on the Blog tab can also appear in search engines.',
 	postScopeExternalUnavailable: 'Enable Bluesky cross-posting in settings to use this',
 	postScopeKossoriArticle: 'A blog post cannot be limited',
+	postScopeKossoriPublicReply:
+		'A reply to a public post cannot be limited. Switch the audience to Feed.',
 	guestPostTitle: 'Post only on this device',
 	guestPostScope: 'Private on this device',
 	guestPostScopeDetail: 'Saved on this device only. It will not appear in feeds.',

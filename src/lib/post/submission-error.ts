@@ -19,5 +19,23 @@ export function postSubmissionErrorMessage(error: unknown): string {
 	if (!(error instanceof PostSubmissionError)) return m.postFailedRetry();
 	if (error.stage === 'image-upload') return m.postImageUploadFailed();
 	if (error.stage === 'link-card-upload') return m.postLinkCardUploadFailed();
+	if (isRejectedByServer(error.cause)) return m.postRecordRejected();
 	return m.postRecordCreateFailed();
+}
+
+/**
+ * サーバが内容を見て断った失敗か。AppView の ApiRequestError も @atproto の XRPCError も
+ * `status` を持つ。再送しても同じ結果になるので「通信状態を確認」とは出さない。
+ * 401（セッション切れ）・408・429 は時間を置けば通りうるので、通信系の扱いに残す。
+ */
+function isRejectedByServer(cause: unknown): boolean {
+	const status = (cause as { status?: unknown } | null)?.status;
+	return (
+		typeof status === 'number' &&
+		status >= 400 &&
+		status < 500 &&
+		status !== 401 &&
+		status !== 408 &&
+		status !== 429
+	);
 }

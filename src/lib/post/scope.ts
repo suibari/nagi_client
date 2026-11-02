@@ -71,3 +71,14 @@ export function scopeAfterExternalEligibility(
 export function defaultScopeForPath(pathname: string): PostScope {
 	return restorePostScope(HOME_LIKE.has(pathname) ? 'kossori' : 'feed');
 }
+
+/**
+ * こっそりではないスレッドへ返信するときの投稿範囲。AppView はこっそりスレッドの外に
+ * こっそり投稿を置かせないので、こっそりのままでは送れない。
+ *
+ * まだ何も書いていなければフィードへ切り替える。書きかけの本文があるときは、
+ * こっそりのつもりで書いた内容を黙って公開しないよう、そのまま残して呼び出し側で送信を止める。
+ */
+export function scopeForPublicReply(scope: PostScope, hasContent: boolean): PostScope {
+	return scope === 'kossori' && !hasContent ? 'feed' : scope;
+}

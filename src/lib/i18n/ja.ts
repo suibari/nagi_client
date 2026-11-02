@@ -301,6 +301,7 @@ export const ja = {
 		'リンクカードの画像をアップロードできませんでした。通信状態を確認して、もう一度投稿してください。',
 	postRecordCreateFailed:
 		'投稿を保存できませんでした。通信状態を確認して、もう一度投稿してください。',
+	postRecordRejected: '投稿を受け付けてもらえませんでした。投稿範囲や返信先を確認してください。',
 	postImageAdd: '画像を追加',
 	postMediaAdd: '画像・動画を追加',
 	videoOnlyOne: '動画は1本まで添付できます',
@@ -414,6 +415,8 @@ export const ja = {
 		'Nagiに加えて、Blueskyにも投稿します。ブログタブで書いた投稿は検索エンジンにも公開されます。',
 	postScopeExternalUnavailable: 'Blueskyへの同時投稿は設定から有効にできます',
 	postScopeKossoriArticle: 'ブログはこっそりにはできません',
+	postScopeKossoriPublicReply:
+		'公開の投稿にはこっそりで返信できません。投稿範囲をフィードに切り替えてください。',
 	guestPostTitle: 'この端末だけに投稿',
 	guestPostScope: 'この端末のこっそり',
 	guestPostScopeDetail: '投稿はこの端末に保存され、タイムラインには出ません',
