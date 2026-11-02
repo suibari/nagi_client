@@ -121,10 +121,9 @@
 
 	const summary = $derived(summarizeMoodDays(loaded.moods));
 	const diaryByDate = $derived(new Map(loaded.entries.map((entry) => [entry.date, entry])));
-	const today = $derived(graph.to);
+	// 月途中でも月末までの枠を確保し、各日の横位置を固定する。
 	const monthDays = $derived.by(() => {
-		const last = monthLastDate(month);
-		const end = last < today ? last : today;
+		const end = monthLastDate(month);
 		const days: string[] = [];
 		for (let day = 1; ; day++) {
 			const date = `${month}-${String(day).padStart(2, '0')}`;
