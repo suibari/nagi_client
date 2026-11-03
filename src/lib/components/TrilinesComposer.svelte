@@ -227,6 +227,14 @@
 		}
 	}
 
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.isComposing || event.keyCode === 229) return;
+		if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.altKey) {
+			event.preventDefault();
+			if (active) void submit();
+		}
+	}
+
 	export async function submit() {
 		if (!canSubmit) return;
 		busy = true;
@@ -337,6 +345,7 @@
 						class="trilines-input"
 						type="text"
 						bind:value={line.text}
+						onkeydown={handleKeydown}
 						placeholder={m.trilinesLinePlaceholder({ n: index + 1 })}
 						disabled={busy}
 						autocomplete="off"
@@ -376,6 +385,7 @@
 							class="trilines-alt"
 							type="text"
 							bind:value={line.alt}
+							onkeydown={handleKeydown}
 							maxlength={1000}
 							placeholder={m.trilinesAltPlaceholder()}
 							disabled={busy}

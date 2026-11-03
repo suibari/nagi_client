@@ -120,8 +120,43 @@ test('しっかりとブログの間の3行日記タブで、botたんが空い�
 	expect(created.record.authorDid).toBeUndefined();
 });
 
+for (const modifier of ['Control', 'Meta']) {
+	test(`3行日記を${modifier}+Enterで投稿でき、通常のEnterやIME変換中は投稿しない`, async ({
+		page,
+	}) => {
+		const recorded = await mockXrpc(page);
+		await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+		await page.goto('/dev/e2e/trilines');
+		await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
+		await page.getByRole('tab', { name: '3行日記' }).click();
+
+		const inputs = page.locator('.trilines-input');
+		await inputs.nth(0).fill('朝ごはん');
+		await inputs.nth(0).press(`${modifier}+Enter`);
+		await inputs.nth(1).fill('猫');
+		await inputs.nth(2).fill('早寝');
+		await inputs.nth(2).press('Enter');
+		await inputs.nth(2).dispatchEvent('keydown', {
+			key: 'Enter',
+			ctrlKey: modifier === 'Control',
+			metaKey: modifier === 'Meta',
+			isComposing: true,
+		});
+		expect(recorded.created).toHaveLength(0);
+
+		await inputs.nth(2).press(`${modifier}+Enter`);
+		await expect.poll(() => recorded.created.length).toBe(1);
+		expect(recorded.created[0].record.lines).toEqual([
+			{ text: '朝ごはん' },
+			{ text: '猫' },
+			{ text: '早寝' },
+		]);
+		await expect(page.locator('.post-modal')).toBeHidden();
+	});
+}
+
 test('3行日記の権限が無い旧ログインでは、再ログインを案内して投稿させない', async ({ page }) => {
-	await mockXrpc(page);
+	const recorded = await mockXrpc(page);
 	await page.clock.setFixedTime(NOW);
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.goto('/dev/e2e/trilines?noscope=1');
@@ -134,4 +169,6 @@ test('3行日記の権限が無い旧ログインでは、再ログインを案�
 	for (const [index, text] of ['朝ごはん', '猫', '早寝'].entries())
 		await inputs.nth(index).fill(text);
 	await expect(page.locator('.trilines-composer .submit-primary')).toBeDisabled();
+	await inputs.nth(2).press('Control+Enter');
+	expect(recorded.created).toHaveLength(0);
 });
