@@ -7,11 +7,13 @@
 	import PostModerationGuard from './PostModerationGuard.svelte';
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import { untrack } from 'svelte';
-	import { createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
+	import { blobRefCid, createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
+	import { computeBlobCid } from '$lib/atproto/cid';
+	import { imageMarkdown, inlineImageUrl, pruneInlineImages } from '$lib/blog/inlineImages';
 	import { crosspostArticleToBluesky, crosspostToBluesky } from '$lib/crosspost/bluesky';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import type { ImageAttachment } from '$lib/images';
+	import { MAX_IMAGE_COUNT, type ImageAttachment } from '$lib/images';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageAttachmentPicker from './ImageAttachmentPicker.svelte';
 	import VideoAttachmentEditor from './VideoAttachmentEditor.svelte';
@@ -36,7 +38,7 @@
 		type DraftSaveTarget,
 	} from '$lib/drafts/drafts.svelte';
 	import DraftListDialog from './DraftListDialog.svelte';
-	import { extractTitle } from '$lib/atproto/markdown';
+	import { extractTitle, IMAGE_LINE } from '$lib/atproto/markdown';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { signIn } from '$lib/oauth/session.svelte';
@@ -114,6 +116,42 @@
 	let pendingAutoSave = false;
 	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
 	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
+	let composerEditor = $state<{ insertBlock: (text: string) => void }>();
+	/**
+	 * ブログ本文に差し込んだ画像の CID（添付の id ごと）。本文の URL に CID が要るが、
+	 * アップロードは投稿時なので手元で計算しておき、投稿時に PDS の値と照合する。
+	 */
+	let inlineCids = $state<Record<string, string>>({});
+	let seenAttachmentIds = new Set<string>();
+	// ブログでは、ピッカーで足した画像をキャレット位置へ `![](url)` として差し込む。
+	// 外した画像は本文の行も消す（行だけ残ると、投稿時に参照先の無い画像になる）。
+	$effect(() => {
+		const current = attachments;
+		const ids = new Set(current.map((image) => image.id));
+		const did = $session?.did;
+		for (const id of seenAttachmentIds) {
+			if (ids.has(id) || !inlineCids[id] || !did) continue;
+			const url = inlineImageUrl(did, inlineCids[id]);
+			text = untrack(() => text)
+				.split('\n')
+				.filter((line) => !(IMAGE_LINE.exec(line)?.[2] === url))
+				.join('\n');
+			const { [id]: _removed, ...rest } = inlineCids;
+			inlineCids = rest;
+		}
+		const added = current.filter((image) => !seenAttachmentIds.has(image.id));
+		seenAttachmentIds = ids;
+		if (!untrack(() => blog) || !did) return;
+		for (const image of added) {
+			if (image.header) continue;
+			void computeBlobCid(image.blob).then((cid) => {
+				// 計算中に外された画像は差し込まない。
+				if (!attachments.some((item) => item.id === image.id)) return;
+				inlineCids = { ...inlineCids, [image.id]: cid };
+				composerEditor?.insertBlock(imageMarkdown(image.alt, inlineImageUrl(did, cid)));
+			});
+		}
+	});
 
 	let empty = $derived(!text.trim() && !attachments.length && !video && !linkCards.length);
 	/** 動画の変換が終わるまでは投稿させない（blob がまだ無い）。 */
@@ -131,7 +169,7 @@
 	);
 	let hasEmbeds = $derived(
 		Boolean(
-			attachments.length - (mode === 'blog' && attachments.length ? 1 : 0) ||
+			attachments.filter((image) => !(mode === 'blog' && image.header)).length ||
 			video ||
 			linkCards.length ||
 			quotePick.pending ||
@@ -499,7 +537,14 @@
 		// ブログのタイトルは本文の先頭見出しとして保存する。こうしておくと Nagi の
 		// タイムラインでも記事のタイトルが見出しとして読めるし、編集で本文を直せば
 		// 記事側のタイトルも extractTitle でそのまま追従する。
-		const body = `${articleHeading}${text}`;
+		// 下書きから戻した本文などで、添付の無い Nagi の画像行が残っていたら落とす
+		// （書き出すと、他のリーダーでは存在しない blob を指す壊れた画像になる）。
+		const knownInline = new Set(
+			attachments.flatMap((image) =>
+				inlineCids[image.id] ? [`${$session.did}/${inlineCids[image.id]}`] : [],
+			),
+		);
+		const body = `${articleHeading}${blog ? pruneInlineImages(text, knownInline) : text}`;
 		// メンション・チャンネル・絵文字の選択は text 上の文字オフセットなので、
 		// 先頭へ見出しを差し込んだぶんだけずらしてから facet 化させる。
 		const shift = <T extends { start: number; end: number }>(list: T[]) =>
@@ -554,8 +599,19 @@
 		draftError = '';
 		try {
 			const assets = await uploadPostAssets(draft);
-			const cover = assets.images[0]?.image;
-			if (article && cover && !usableAsCoverImage(cover)) throw new Error(m.articleCoverTooLarge());
+			// 本文に書いた URL の CID が、PDS の付けた CID と一致するか確かめる。
+			// 食い違うと本文の画像が存在しない blob を指すので、公開前に止める。
+			if (article) {
+				const uploaded = new Set(assets.images.map((image) => blobRefCid(image.image)));
+				for (const key of knownInline) {
+					if (!uploaded.has(key.slice(key.lastIndexOf('/') + 1)))
+						throw new Error(m.articleInlineImageMismatch());
+				}
+			}
+			// coverImage は lexicon で 1MB 未満。ヘッダーは圧縮済みだが、本文の画像が先頭の
+			// ときは超えうるので、そのときはカバーを付けない（記事自体は出す）。
+			const firstImage = assets.images[0]?.image;
+			const cover = firstImage && usableAsCoverImage(firstImage) ? firstImage : undefined;
 			const created = article
 				? await publishStandardSiteDocument({
 						title: article.title,
@@ -670,11 +726,13 @@
 		<!-- こっそりは画像を持てない。セルフラベルも統合CWメニュー側で無効にする。 -->
 		{#if !kossori}
 			<!-- 画像ボタンから動画も選べる。ブログには動画を載せる場所が無いので画像だけ。 -->
+			<!-- ブログは standard.site の document に枚数の上限が無いので、Nagi でも絞らない。 -->
 			<ImageAttachmentPicker
 				bind:this={imagePicker}
 				bind:attachments
 				bind:video
 				allowVideo={!blog}
+				maxCount={blog ? Infinity : MAX_IMAGE_COUNT}
 				disabled={busy}
 			/>
 		{/if}
@@ -809,6 +867,7 @@
 				{/if}
 			{/if}
 			<ComposerEditor
+				bind:this={composerEditor}
 				{ontextinput}
 				{oncompositionchange}
 				bind:value={text}
@@ -839,7 +898,11 @@
 				hidden={!hasEmbeds}
 			>
 				{#if !kossori}
-					<ImageAttachmentEditor bind:attachments disabled={busy} hideFirst={blog} />
+					<ImageAttachmentEditor
+						bind:attachments
+						disabled={busy}
+						hideFirst={blog && Boolean(attachments[0]?.header)}
+					/>
 					<VideoAttachmentEditor bind:video disabled={busy} />
 					<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
 				{/if}

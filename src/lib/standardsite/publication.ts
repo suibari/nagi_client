@@ -3,11 +3,16 @@ import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
 import { getOwnNagiProfile } from '$lib/atproto/records';
 import { forgetPublicationCache, readPublicationCache, writePublicationCache } from './cache';
-import { findNagiPublication, type ExistingPublication } from './repo';
+import {
+	findNagiPublication,
+	hasLegacyPublicationUrl,
+	migrateNagiDocuments,
+	type ExistingPublication,
+} from './repo';
 import {
 	hasNagiTheme,
 	NAGI_BASIC_THEME,
-	NAGI_PUBLIC_ORIGIN,
+	nagiPublicationUrl,
 	PUBLICATION,
 	type StandardSitePreferences,
 } from './types';
@@ -43,6 +48,11 @@ export async function ensurePublication(options: { fallbackName?: string } = {})
 
 	const existing = await findNagiPublication();
 	if (existing) {
+		if (hasLegacyPublicationUrl(existing.value)) {
+			await migrateLegacyPublication(existing, options);
+			writePublicationCache(s.did, existing.uri);
+			return existing.uri;
+		}
 		// Nagi では記事として公開する選択自体を発見フィードへの掲載同意として扱う。
 		// 過去の設定が false / 未設定でも、次に記事を公開するときに ON へ揃える。
 		// 配色も同じ機会に Nagi の既定へ揃える（Bluesky の記事カードのボタン色になる）。
@@ -64,7 +74,7 @@ export async function ensurePublication(options: { fallbackName?: string } = {})
 		validate: false,
 		record: {
 			$type: PUBLICATION,
-			url: NAGI_PUBLIC_ORIGIN,
+			url: nagiPublicationUrl(s.did),
 			...fields,
 			basicTheme: NAGI_BASIC_THEME,
 			preferences: { showInDiscover: true },
@@ -95,7 +105,7 @@ export async function updatePublication(
 	const record: Record<string, unknown> = {
 		...(existing.value as unknown as Record<string, unknown>),
 		$type: PUBLICATION,
-		url: NAGI_PUBLIC_ORIGIN,
+		url: nagiPublicationUrl(s.did),
 		...fields,
 		basicTheme: NAGI_BASIC_THEME,
 		...(prefs
@@ -115,6 +125,48 @@ export async function updatePublication(
 		record,
 	});
 	writePublicationCache(s.did, existing.uri);
+}
+
+/**
+ * 共通 url（移行前）の publication をユーザーごとの url へ移す。
+ * document の path は url からの相対なので、先に document を直してから url を変える。
+ * document の途中で失敗したら url は古いまま残り、次の呼び出しでやり直せる。
+ */
+async function migrateLegacyPublication(
+	existing: ExistingPublication,
+	options: { fallbackName?: string } = {},
+): Promise<void> {
+	await migrateNagiDocuments(existing.uri);
+	await updatePublication({ showInDiscover: true }, options);
+}
+
+const MIGRATED_KEY = 'nagi-standardsite-migrated.v1';
+
+function migratedFlag(did: string, value?: true): boolean {
+	try {
+		const raw = window.localStorage.getItem(MIGRATED_KEY);
+		const parsed = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+		if (value) {
+			parsed[did] = true;
+			window.localStorage.setItem(MIGRATED_KEY, JSON.stringify(parsed));
+		}
+		return parsed[did] === true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * サインイン時に一度だけ、移行前の publication と記事を今の形へ直す。
+ * 次に記事を書くまで待つと、それまで standard.site の検証が通らないままになるため。
+ * 権限不足などで失敗したら印を付けず、次回のサインインでやり直す。
+ */
+export async function migrateLegacyStandardSite(): Promise<void> {
+	const s = current();
+	if (migratedFlag(s.did)) return;
+	const existing = await findNagiPublication();
+	if (existing && hasLegacyPublicationUrl(existing.value)) await migrateLegacyPublication(existing);
+	migratedFlag(s.did, true);
 }
 
 /**

@@ -15,6 +15,7 @@
 	import GuestHero from '$lib/components/GuestHero.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { splitArticleText } from '$lib/blog/articleText';
+	import { blobKey, inlineImageKeys } from '$lib/blog/inlineImages';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { languageName, languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -117,8 +118,19 @@
 					}),
 	);
 	let author = $derived(post?.author ?? data.post.author);
-	let cover = $derived(post?.images?.[0]);
-	let bodyImages = $derived(post?.images?.slice(1) ?? []);
+	// 本文に `![alt](url)` で置いた画像はその位置に出す。残りのうち先頭はヘッダー、
+	// それ以外は従来どおり本文の後ろにまとめる（本文内画像に対応する前の記事との互換）。
+	let images = $derived(post?.images ?? []);
+	let inlineKeys = $derived(inlineImageKeys(text));
+	let appViewOrigins = $derived([new URL(APPVIEW_URL, 'http://localhost').origin]);
+	let looseImages = $derived(
+		images.filter((image) => {
+			const key = blobKey(image.url, appViewOrigins);
+			return !key || !inlineKeys.has(key);
+		}),
+	);
+	let cover = $derived(images[0] && looseImages[0] === images[0] ? images[0] : undefined);
+	let bodyImages = $derived(cover ? looseImages.slice(1) : looseImages);
 	let reactions = $derived(post?.reactions ?? []);
 	let replies = $derived([
 		...(thread?.replies ?? []).filter(
@@ -176,6 +188,13 @@
 		};
 	});
 </script>
+
+<svelte:head>
+	<!-- standard.site の document 検証。プリレンダの記事は SPA 関数（og/html.ts）を通らないので、ここでも出す。 -->
+	{#if data.post.uri.includes('/site.standard.document/')}
+		<link rel="site.standard.document" href={data.post.uri} />
+	{/if}
+</svelte:head>
 
 {#if showHero}
 	<GuestHero />
@@ -252,7 +271,7 @@
 	{/if}
 
 	<div class="blog-body post-text" lang={showingTranslation ? translationTarget : undefined}>
-		<RichText text={body} facets={bodyFacets} />
+		<RichText text={body} facets={bodyFacets} {images} />
 	</div>
 	{#if bodyImages.length}<div class="blog-media"><ImageGallery images={bodyImages} /></div>{/if}
 	{#if post?.linkCards?.length}<div class="blog-links">

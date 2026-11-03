@@ -507,7 +507,8 @@ export type PostVideoEdit =
 	| { kind: 'new'; record: PostVideoRecord; contentWarning?: boolean }
 	| { kind: 'remove' };
 
-function blobCid(blob: unknown): string | undefined {
+/** BlobRef（JSON の $link でも CID オブジェクトでも）から CID 文字列を取り出す。 */
+export function blobRefCid(blob: unknown): string | undefined {
 	if (!blob || typeof blob !== 'object') return undefined;
 	const ref = (blob as { ref?: unknown }).ref;
 	if (typeof ref === 'object' && ref !== null && '$link' in ref) {
@@ -577,7 +578,7 @@ export async function updatePost(
 			next = opts.video.record;
 		}
 		media.video = next;
-		const cid = next ? blobCid(next.video) : undefined;
+		const cid = next ? blobRefCid(next.video) : undefined;
 		videoView = cid
 			? {
 					...blueskyVideoUrls(s.did, cid),
@@ -589,7 +590,8 @@ export async function updatePost(
 	}
 	let imageViews: PostImage[] | undefined;
 	if (media && images !== undefined) {
-		if (images.length > 4) throw new Error('A post can contain at most four images');
+		if (collection !== DOCUMENT && images.length > 4)
+			throw new Error('A post can contain at most four images');
 		const storedImages = media.images;
 		const existingIndexes = images
 			.filter(
@@ -613,7 +615,7 @@ export async function updatePost(
 					const response = await agent.com.atproto.repo.uploadBlob(image.blob, {
 						encoding: image.blob.type,
 					});
-					const cid = blobCid(response.data.blob);
+					const cid = blobRefCid(response.data.blob);
 					if (!cid) throw new Error('Could not resolve the uploaded image');
 					uploaded.set(image.id, {
 						stored: {
@@ -690,7 +692,7 @@ export async function updatePost(
 			const response = await agent.com.atproto.repo.uploadBlob(card.thumbnail, {
 				encoding: card.thumbnail.type,
 			});
-			const cid = blobCid(response.data.blob);
+			const cid = blobRefCid(response.data.blob);
 			if (!cid) throw new Error('Could not resolve the uploaded link card thumbnail');
 			return { blob: response.data.blob, cid };
 		}),
@@ -707,7 +709,7 @@ export async function updatePost(
 	});
 	const linkCardViews: LinkCardView[] = draft.linkCards.map((card, index) => {
 		const existing = card.sourceIndex === undefined ? undefined : storedLinkCards[card.sourceIndex];
-		const storedCid = blobCid(existing?.thumb);
+		const storedCid = blobRefCid(existing?.thumb);
 		const thumb = uploadedCardThumbs[index]
 			? `/api/blob/${encodeURIComponent(s.did)}/${encodeURIComponent(uploadedCardThumbs[index].cid)}`
 			: card.previewUrl ||
@@ -751,7 +753,6 @@ export async function updatePost(
 					...(cover ? { coverImage: cover } : {}),
 				},
 				site,
-				s.did,
 			),
 			updatedAt: new Date().toISOString(),
 		};

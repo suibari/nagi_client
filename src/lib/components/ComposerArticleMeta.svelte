@@ -14,9 +14,10 @@
 	/**
 	 * ブログモードの記事メタ欄。
 	 *
-	 * ヘッダー画像は独立した state を持たず、添付画像の先頭をそのまま使う。
+	 * ヘッダー画像は独立した state を持たず、header の印を付けた添付画像を先頭に置く。
 	 * standard.site の coverImage が「1枚目の画像」なので、ここで別枠に持つと
 	 * 投稿本文の添付と二重管理になり、順番を入れ替えたときに食い違う。
+	 * 本文に差し込んだ画像（印なし）が先頭にあっても、それはヘッダーとして扱わない。
 	 * ただし記事のカバーは lexicon で 1MB 未満と決まっているため、
 	 * 通常の添付（2MB）より強い上限で圧縮し直して先頭へ入れる。
 	 */
@@ -53,8 +54,11 @@
 		return () => media.removeEventListener('change', update);
 	});
 
-	const header = $derived(attachments[0]);
+	// 先頭がヘッダーの印を持つときだけヘッダーとして扱う。本文に差し込んだ画像が
+	// 先頭に来ても、それはヘッダーではない。
+	const header = $derived(attachments[0]?.header ? attachments[0] : undefined);
 	function setHeaderAlt(alt: string) {
+		if (!header) return;
 		const limited = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(alt)]
 			.slice(0, 1000)
 			.map((segment) => segment.segment)
@@ -69,11 +73,16 @@
 		error = '';
 		processing = true;
 		try {
-			const next = await processImage(file, undefined, MAX_COVER_IMAGE_BLOB_SIZE);
-			const [previous, ...rest] = attachments;
-			attachments = [next, ...rest];
-			// 差し替えで画面から外れた画像の Object URL は、ここで解放しておく。
-			if (previous) releaseImage(previous);
+			const next = {
+				...(await processImage(file, undefined, MAX_COVER_IMAGE_BLOB_SIZE)),
+				header: true,
+			};
+			if (header) {
+				const [previous, ...rest] = attachments;
+				attachments = [next, ...rest];
+				// 差し替えで画面から外れた画像の Object URL は、ここで解放しておく。
+				releaseImage(previous);
+			} else attachments = [next, ...attachments];
 		} catch (cause) {
 			error =
 				cause instanceof ImageProcessingError && cause.code === 'type'
@@ -87,8 +96,8 @@
 	}
 
 	function removeHeader() {
+		if (!header) return;
 		const [previous, ...rest] = attachments;
-		if (!previous) return;
 		attachments = rest;
 		releaseImage(previous);
 	}

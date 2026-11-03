@@ -6,7 +6,8 @@
 // v3: Nagi の記事公開では showInDiscover=true を保証する方針へ変えたため、既存キャッシュを
 // 一度捨てて publication を再確認し、過去の false / 未設定レコードを次回公開時に補正する。
 // v4: basicTheme（Nagi の配色）を既存 publication へ補うため、もう一度確認し直す。
-const CACHE_KEY = 'nagi-standardsite-publication.v4';
+// v5: publication.url をユーザーごとの /blog/<did> へ移すため、既存の publication を確認し直す。
+const CACHE_KEY = 'nagi-standardsite-publication.v5';
 
 export function readPublicationCache(did: string): string | undefined {
 	if (typeof window === 'undefined') return undefined;

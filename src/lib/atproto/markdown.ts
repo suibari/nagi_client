@@ -1,5 +1,5 @@
 import type { BluemojiFacetFormats, EmojiView, Facet } from '$lib/api/types';
-import { httpUrl } from './facets';
+import { httpUrl, IMAGE_LINE } from './facets';
 import { decorateSiblingUrl } from '$lib/sso/links';
 import { isInternalUrl, toInternalPath } from '$lib/utils/url';
 
@@ -18,6 +18,15 @@ export type Block = { gap?: number } & (
 	| { type: 'p' | 'h1' | 'h2' | 'h3' | 'quote'; runs: InlineRun[] }
 	| { type: 'ul'; items: InlineRun[][] }
 	| { type: 'ol'; items: InlineRun[][]; start: number }
+	/** フェンス（``` / ~~~）で囲んだコード。中身は記法もリンクも解釈しない。 */
+	| { type: 'code'; text: string; lang?: string }
+	/** 水平線。data-block^='h' の見出し用 CSS に掛からないよう hr ではなく rule と呼ぶ。 */
+	| { type: 'rule' }
+	/**
+	 * 1行だけの画像（`![alt](https://…)`）。描画側が投稿の添付画像と照合して出すので、
+	 * ここでは URL を検証せず受け取るだけにする。
+	 */
+	| { type: 'image'; alt: string; url: string }
 );
 
 type FacetRange = {
@@ -39,7 +48,7 @@ const isWord = (value: string | undefined) => value !== undefined && /[\p{L}\p{N
  * facet のバイト範囲を文字インデックスへ変換する。RichText が持っていた検証をそのまま踏襲し、
  * 重なり・範囲外を捨て、http(s) 以外の URI はリンクにしない（javascript: の実行を防ぐ）。
  */
-function facetRanges(text: string, facets: Facet[]): FacetRange[] {
+function facetRanges(text: string, facets: Facet[], absoluteOrigin?: string): FacetRange[] {
 	const bytes = new TextEncoder().encode(text);
 	const ranges: FacetRange[] = [];
 	let offset = 0;
@@ -76,6 +85,27 @@ function facetRanges(text: string, facets: Facet[]): FacetRange[] {
 			typeof bluemoji.mediaType === 'string';
 		if ((!feature && !validBluemoji) || start < offset || end <= start || end > bytes.length)
 			continue;
+		if (absoluteOrigin) {
+			// 外へ書き出す用。閲覧者ごとの装飾も内部パス化もせず、公開オリジンの絶対 URL にする。
+			const href =
+				feature?.$type === 'app.bsky.richtext.facet#mention' && feature.did
+					? `${absoluteOrigin}/profile/${encodeURIComponent(feature.did)}`
+					: feature?.$type === 'app.bsky.richtext.facet#tag' && feature.tag
+						? `${absoluteOrigin}/search?tag=${encodeURIComponent(feature.tag.toLowerCase())}`
+						: feature?.uri
+							? httpUrl(feature.uri)
+							: undefined;
+			// カスタム絵文字は書き出し先で描けないので、元の文字列（:name:）のまま残す。
+			if (!href) continue;
+			ranges.push({
+				start: decoder.decode(bytes.slice(0, start)).length,
+				end: decoder.decode(bytes.slice(0, end)).length,
+				href,
+				external: true,
+			});
+			offset = end;
+			continue;
+		}
 		const rawHref =
 			feature?.$type === 'app.bsky.richtext.facet#mention' && feature.did
 				? `/profile/${encodeURIComponent(feature.did)}`
@@ -298,6 +328,19 @@ const HEADING = /^(#{1,3})[ \t]+(?=\S)/;
 const QUOTE = /^>[ \t]?/;
 const BULLET = /^[-*][ \t]+(?=\S)/;
 const ORDERED = /^(\d{1,9})[.)][ \t]+(?=\S)/;
+const FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*([^`\s]*)[ \t]*$/;
+const RULE = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/;
+export { IMAGE_LINE };
+
+/** 段落を打ち切って新しいブロックを始める行か。 */
+const startsBlock = (text: string) =>
+	HEADING.test(text) ||
+	QUOTE.test(text) ||
+	RULE.test(text) ||
+	BULLET.test(text) ||
+	ORDERED.test(text) ||
+	FENCE.test(text) ||
+	IMAGE_LINE.test(text);
 
 type LineRange = { start: number; end: number };
 /**
@@ -308,6 +351,11 @@ type SourceBlock = { gap: number } & (
 	| { type: 'p' | 'h1' | 'h2' | 'h3' | 'quote'; body: LineRange[] }
 	| { type: 'ul'; items: LineRange[] }
 	| { type: 'ol'; items: LineRange[]; start: number }
+	/** fences は開き・閉じのフェンス行（閉じが無ければ開きだけ）。 */
+	| { type: 'code'; body: LineRange[]; fences: LineRange[]; lang?: string }
+	| { type: 'rule'; line: LineRange }
+	/** alt は ![ と ] の間の範囲。 */
+	| { type: 'image'; line: LineRange; alt: LineRange; url: string }
 );
 
 const isBlank = (line: string) => !line.trim();
@@ -333,6 +381,51 @@ function splitBlocks(source: string): SourceBlock[] {
 
 		if (isBlank(raw)) {
 			gap++;
+			index++;
+			continue;
+		}
+
+		const fence = FENCE.exec(raw);
+		if (fence) {
+			// CommonMark と同じく、閉じフェンスが無ければ文書の終わりまでをコードにする。
+			const marker = fence[1];
+			const close = new RegExp(
+				`^ {0,3}${marker[0] === '`' ? '`' : '~'}{${marker.length},}[ \\t]*$`,
+			);
+			const body: LineRange[] = [];
+			const fences: LineRange[] = [line];
+			index++;
+			while (index < lines.length) {
+				const current = lines[index];
+				index++;
+				if (close.test(source.slice(current.start, current.end))) {
+					fences.push(current);
+					break;
+				}
+				body.push(current);
+			}
+			blocks.push({ type: 'code', body, fences, ...(fence[2] ? { lang: fence[2] } : {}), gap });
+			gap = 0;
+			continue;
+		}
+
+		if (RULE.test(raw)) {
+			blocks.push({ type: 'rule', line, gap });
+			gap = 0;
+			index++;
+			continue;
+		}
+
+		const image = IMAGE_LINE.exec(raw);
+		if (image) {
+			blocks.push({
+				type: 'image',
+				line,
+				alt: { start: line.start + 2, end: line.start + 2 + image[1].length },
+				url: image[2],
+				gap,
+			});
+			gap = 0;
 			index++;
 			continue;
 		}
@@ -386,11 +479,7 @@ function splitBlocks(source: string): SourceBlock[] {
 		while (index < lines.length) {
 			const current = lines[index];
 			const text = source.slice(current.start, current.end);
-			if (
-				body.length &&
-				(HEADING.test(text) || QUOTE.test(text) || BULLET.test(text) || ORDERED.test(text))
-			)
-				break;
+			if (body.length && startsBlock(text)) break;
 			body.push(current);
 			index++;
 		}
@@ -410,8 +499,12 @@ export function parseRichText(
 	source: string,
 	facets: Facet[] = [],
 	contentWarning?: { start: number; end: number },
+	options: {
+		/** 指定すると、リンクをこのオリジン基準の装飾なし絶対 URL で返す（commonmark 書き出し用）。 */
+		absoluteOrigin?: string;
+	} = {},
 ): Block[] {
-	const ranges = facetRanges(source, facets);
+	const ranges = facetRanges(source, facets, options.absoluteOrigin);
 	const runs = (list: LineRange[]) => inlineRuns(toPiece(source, list), ranges, contentWarning);
 
 	const blocks: Block[] = [];
@@ -424,8 +517,22 @@ export function parseRichText(
 				? { type: 'ul', items: block.items.map((item) => runs([item])) }
 				: block.type === 'ol'
 					? { type: 'ol', items: block.items.map((item) => runs([item])), start: block.start }
-					: { type: block.type, runs: runs(block.body) };
-		if ('runs' in parsed ? !parsed.runs.length : !parsed.items.length) {
+					: block.type === 'code'
+						? {
+								type: 'code',
+								text: block.body.map((line) => source.slice(line.start, line.end)).join('\n'),
+								...(block.lang ? { lang: block.lang } : {}),
+							}
+						: block.type === 'rule'
+							? { type: 'rule' }
+							: block.type === 'image'
+								? {
+										type: 'image',
+										alt: source.slice(block.alt.start, block.alt.end),
+										url: block.url,
+									}
+								: { type: block.type, runs: runs(block.body) };
+		if ('runs' in parsed ? !parsed.runs.length : 'items' in parsed && !parsed.items.length) {
 			carried = gap;
 			continue;
 		}
@@ -437,7 +544,7 @@ export function parseRichText(
 
 	let foundWarning = false;
 	for (const block of blocks) {
-		const lists = 'runs' in block ? [block.runs] : block.items;
+		const lists = 'runs' in block ? [block.runs] : 'items' in block ? block.items : [];
 		for (const list of lists) {
 			for (const run of list) {
 				if (!run.contentWarning) continue;
@@ -470,6 +577,20 @@ export function annotateMarkdownSource(source: string): MarkdownSourceAnnotation
 	}
 	const lines: Array<Block['type'] | undefined> = new Array(lineCount).fill(undefined);
 	for (const block of splitBlocks(source)) {
+		if (block.type === 'code') {
+			// フェンス行は記法、中身はコードとして色を付ける。
+			for (const range of [...block.fences, ...block.body])
+				lines[lineOf[range.start] ?? lineCount - 1] = 'code';
+			for (const range of block.body)
+				for (let i = range.start; i < range.end; i++) marks[i] = ['code'];
+			continue;
+		}
+		if (block.type === 'rule' || block.type === 'image') {
+			lines[lineOf[block.line.start] ?? lineCount - 1] = block.type;
+			if (block.type === 'image')
+				for (let i = block.alt.start; i < block.alt.end; i++) marks[i] = [];
+			continue;
+		}
 		const groups = 'body' in block ? [block.body] : block.items.map((item) => [item]);
 		for (const group of groups) {
 			for (const range of group) lines[lineOf[range.start] ?? lineCount - 1] = block.type;
@@ -501,7 +622,15 @@ export function extractTitle(source: string): string | undefined {
 export function stripMarkdown(source: string): string {
 	const flatten = (runs: InlineRun[]) => runs.map((run) => run.text).join('');
 	return parseRichText(source)
-		.map((block) => ('runs' in block ? flatten(block.runs) : block.items.map(flatten).join(' ')))
+		.map((block) =>
+			'runs' in block
+				? flatten(block.runs)
+				: 'items' in block
+					? block.items.map(flatten).join(' ')
+					: block.type === 'code'
+						? block.text
+						: '',
+		)
 		.join(' ')
 		.replace(/\s+/g, ' ')
 		.trim();

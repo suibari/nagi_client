@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { Agent } from '@atproto/api';
 import { session } from '$lib/oauth/session.svelte';
-import type { Facet } from '$lib/atproto/facets';
+import { IMAGE_LINE, type Facet } from '$lib/atproto/facets';
 import type { PostAssets, PostDraft } from '$lib/atproto/records';
 import type { StrongRef } from '$lib/api/types';
 
@@ -241,6 +241,41 @@ export function stripLeadingHeading(text: string, facets: Facet[] = []) {
 }
 
 /**
+ * 記事本文に置いた画像の行（`![alt](url)`）を落とす。Bluesky の抜粋では記法のまま
+ * 見えてしまうため。画像行は facet を持たないので、後ろの facet をずらすだけでよい。
+ */
+export function stripImageLines(text: string, facets: Facet[] = []) {
+	const lines = text.split('\n');
+	if (!lines.some((line) => IMAGE_LINE.test(line))) return { text, facets };
+	let out = '';
+	let byte = 0;
+	// 落とした行（直後の改行ごと）の元のバイト位置と、そこまでに落とした累計バイト数。
+	const removed: Array<{ end: number; total: number }> = [];
+	let total = 0;
+	for (const [index, line] of lines.entries()) {
+		const chunk = index < lines.length - 1 ? `${line}\n` : line;
+		const bytes = encoder.encode(chunk).length;
+		if (IMAGE_LINE.test(line)) {
+			total += bytes;
+			removed.push({ end: byte + bytes, total });
+		} else out += chunk;
+		byte += bytes;
+	}
+	const shift = (at: number) =>
+		removed.reduce((value, item) => (item.end <= at ? item.total : value), 0);
+	return {
+		text: out,
+		facets: facets.map((facet) => ({
+			...facet,
+			index: {
+				byteStart: facet.index.byteStart - shift(facet.index.byteStart),
+				byteEnd: facet.index.byteEnd - shift(facet.index.byteStart),
+			},
+		})),
+	};
+}
+
+/**
  * ティーザー本文（抜粋＋誘導文）と、その facet を組み立てる。
  * 誘導文は呼び出し元が翻訳済みの1行で渡す（URL を含む）ので、
  * このモジュールは i18n を知らないままでいられる。
@@ -249,7 +284,8 @@ export function buildArticleTeaser(
 	draft: Pick<PostDraft, 'text' | 'facets'>,
 	article: { url: string; teaser: string },
 ): CrosspostChunk & { excerpt: string } {
-	const body = stripLeadingHeading(draft.text, draft.facets as Facet[]);
+	const heading = stripLeadingHeading(draft.text, draft.facets as Facet[]);
+	const body = stripImageLines(heading.text, heading.facets);
 	const suffix = `\n\n${article.teaser}`;
 	// 抜粋を切り詰めたときに足す「…」のぶんも先に席を取っておく。
 	const reserved = {

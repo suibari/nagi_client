@@ -48,7 +48,9 @@ export function tagsFromFacets(facets: readonly { features?: unknown }[] = []): 
  * document の rkey には元の Nagi 投稿の rkey をそのまま使う（どちらも key: tid）。
  * これで対応表を持たずに編集・削除を追従できる。
  */
-export async function publishStandardSiteDocument(input: Omit<ArticleInput, 'rkey'> & { rkey?: string }): Promise<{ uri: string; cid: string }> {
+export async function publishStandardSiteDocument(
+	input: Omit<ArticleInput, 'rkey'> & { rkey?: string },
+): Promise<{ uri: string; cid: string }> {
 	const s = current();
 	const site = await ensurePublication();
 	const rkey = input.rkey ?? TID.nextStr();
@@ -57,7 +59,7 @@ export async function publishStandardSiteDocument(input: Omit<ArticleInput, 'rke
 		collection: DOCUMENT,
 		rkey,
 		validate: false,
-		record: buildRecord({ ...input, rkey }, site, s.did),
+		record: buildRecord({ ...input, rkey }, site),
 	});
 	await ensureRecord(response.data.uri, response.data.cid).catch(() => undefined);
 	return response.data;
@@ -94,7 +96,14 @@ export async function updateStandardSiteDocument(
 	const title =
 		input.title ?? (typeof existing.title === 'string' ? existing.title : undefined) ?? '';
 	if (!title) return false;
-	const next = buildRecord({ ...input, title, rkey, publishedAt }, site, s.did);
+	// nagi を渡さない呼び出しでも、既存の facet・添付を引き継いでから組み立てる
+	// （content の書き出しは facet を使い、nagi は丸ごと上書きされるため）。
+	const existingNagi =
+		existing.nagi && typeof existing.nagi === 'object'
+			? (existing.nagi as NonNullable<ArticleInput['nagi']>)
+			: undefined;
+	const nagi = existingNagi || input.nagi ? { ...existingNagi, ...input.nagi } : undefined;
+	const next = buildRecord({ ...input, ...(nagi ? { nagi } : {}), title, rkey, publishedAt }, site);
 	const record: Record<string, unknown> = {
 		...existing,
 		...next,

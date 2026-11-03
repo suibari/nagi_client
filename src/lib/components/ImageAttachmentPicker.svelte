@@ -22,8 +22,11 @@
 		video = $bindable(),
 		allowVideo = false,
 		disabled = false,
+		maxCount = MAX_IMAGE_COUNT,
 	}: {
 		attachments: ImageAttachment[];
+		/** 画像の上限。ブログは standard.site に上限が無いので Infinity を渡す。 */
+		maxCount?: number;
 		/** allowVideo のとき、選んだ動画（1本まで）をここへ入れる。画像と併用できる。 */
 		video?: VideoAttachment;
 		allowVideo?: boolean;
@@ -31,7 +34,7 @@
 	} = $props();
 	const accept = $derived(allowVideo && !video ? MEDIA_ACCEPT : IMAGE_ACCEPT);
 	/** 画像が上限で、動画もこれ以上足せないときだけボタンを止める。 */
-	const full = $derived(attachments.length >= MAX_IMAGE_COUNT && (!allowVideo || Boolean(video)));
+	const full = $derived(attachments.length >= maxCount && (!allowVideo || Boolean(video)));
 	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
 	let processing = $state(false);
 	let compressionProgress = $state<GifCompressionProgress | null>(null);
@@ -65,7 +68,7 @@
 		}
 		files = selection.images;
 		if (!files.length) return;
-		const available = MAX_IMAGE_COUNT - attachments.length;
+		const available = maxCount - attachments.length;
 		if (files.length > available) errors = [m.postImageCountError()];
 		if (available <= 0) return;
 		processing = true;
@@ -126,7 +129,11 @@
 			<span>{processingLabel}</span>
 		{:else}
 			<Icon name={allowVideo ? 'media' : 'image'} size={18} />
-			<span>{attachments.length}/{MAX_IMAGE_COUNT}</span>
+			<span
+				>{Number.isFinite(maxCount)
+					? `${attachments.length}/${maxCount}`
+					: attachments.length || ''}</span
+			>
 		{/if}
 	</button>
 	<span class="visually-hidden" aria-live="polite">{processing ? processingLabel : ''}</span>

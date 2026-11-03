@@ -420,6 +420,14 @@
 	border-left: 2px solid var(--line-strong);
 	color: var(--text-sub);
 }
+.mention-textarea .composer-input .cm-line[data-block='code'] {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.9em;
+	background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+}
+.mention-textarea .composer-input .cm-line[data-block='image'] {
+	color: var(--text-sub);
+}
 /* 投稿の ul/ol と同じ字下げ。マーカーは左の余白へぶら下げる。 */
 .mention-textarea .composer-input .cm-line[data-block='ul'],
 .mention-textarea .composer-input .cm-line[data-block='ol'] {
@@ -1696,6 +1704,28 @@
 	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	font-size: 0.9em;
 	overflow-wrap: anywhere;
+}
+.post-text pre {
+	margin: 0;
+	padding: 8px 10px;
+	border-radius: var(--r-sm);
+	background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+	overflow-x: auto;
+	white-space: pre;
+	line-height: 1.5;
+}
+.post-text pre code {
+	padding: 0;
+	background: none;
+	overflow-wrap: normal;
+}
+.post-text hr {
+	margin: 0.6em 0;
+	border: 0;
+	border-top: 1px solid var(--line-strong);
+}
+.post-text .post-inline-image {
+	margin: 0.4em 0;
 }
 .read {
 	border: 0;

@@ -12,6 +12,11 @@ export const MAX_COVER_IMAGE_BLOB_SIZE = 900_000;
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 export type ImageAttachment = {
+	/**
+	 * ブログのヘッダー画像。記事では先頭（attachments[0]）にだけ置き、本文には差し込まない。
+	 * standard.site の coverImage は「1枚目の画像」なので、位置と印の両方で表す。
+	 */
+	header?: boolean;
 	id: string;
 	blob: Blob;
 	previewUrl: string;

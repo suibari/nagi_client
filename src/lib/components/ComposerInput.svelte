@@ -563,6 +563,19 @@
 		insertText([{ at: start, text }], start + text.length, start + text.length);
 	}
 
+	/**
+	 * キャレット位置に1行のブロック（記事本文の画像など）を差し込む。前後の文と
+	 * 同じ行にならないよう、必要なら改行を足す。
+	 */
+	export function insertBlock(text: string) {
+		if (disabled || !text) return;
+		const at = selectionEnd();
+		const prefix = at > 0 && value[at - 1] !== '\n' ? '\n' : '';
+		const suffix = value[at] === '\n' ? '' : '\n';
+		const inserted = `${prefix}${text}${suffix}`;
+		insertText([{ at, text: inserted }], at + inserted.length, at + inserted.length);
+	}
+
 	/** Unicode は文字として、Bluemoji は :name: と追跡可能な参照範囲として挿入する。 */
 	export function insertEmoji(emoji: string | EmojiView) {
 		if (typeof emoji === 'string') {

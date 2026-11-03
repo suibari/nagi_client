@@ -1,11 +1,37 @@
 <script lang="ts">
-	import type { Facet } from '$lib/api/types';
+	import type { Facet, PostImage } from '$lib/api/types';
 	import { parseRichText } from '$lib/atproto/markdown';
 	import { contentWarningDisplay } from '$lib/atproto/contentWarning';
+	import { APPVIEW_URL } from '$lib/api/appview';
+	import { blobKey } from '$lib/blog/inlineImages';
 	import InlineRuns from './InlineRuns.svelte';
-	let { text, facets = [] }: { text: string; facets?: Facet[] } = $props();
+	import ImageGallery from './ImageGallery.svelte';
+	/**
+	 * images は本文の `![alt](url)` を差し込むための添付画像。本文に書かれた URL が
+	 * この投稿の添付と同じ blob を指すときだけ表示する（任意の外部画像は読み込まない）。
+	 * 渡されなければ画像行は何も出さない（タイムラインでは添付はギャラリー側に出る）。
+	 */
+	let {
+		text,
+		facets = [],
+		images = [],
+	}: { text: string; facets?: Facet[]; images?: PostImage[] } = $props();
 	let display = $derived(contentWarningDisplay(text, facets as Facet[]));
 	let blocks = $derived(parseRichText(display.text, display.facets, display.range));
+	let imagesByKey = $derived.by(() => {
+		const origins = [new URL(APPVIEW_URL, 'http://localhost').origin];
+		const map = new Map<string, PostImage>();
+		for (const image of images) {
+			const key = blobKey(image.url, origins);
+			if (key && !map.has(key)) map.set(key, image);
+		}
+		return map;
+	});
+	const inlineImage = (url: string, alt: string): PostImage | undefined => {
+		const key = blobKey(url);
+		const image = key ? imagesByKey.get(key) : undefined;
+		return image && { ...image, alt: alt || image.alt };
+	};
 	let warningState = $state({ revealed: false });
 	let warningText: string | undefined;
 	$effect(() => {
@@ -39,6 +65,15 @@
 		<ol data-block="ol" start={block.start}>
 			{#each block.items as item}<li><InlineRuns runs={item} {warningState} /></li>{/each}
 		</ol>
+	{:else if block.type === 'code'}
+		<pre data-block="code"><code>{block.text}</code></pre>
+	{:else if block.type === 'rule'}
+		<hr data-block="rule" />
+	{:else if block.type === 'image'}
+		{@const image = inlineImage(block.url, block.alt)}
+		{#if image}<div class="post-inline-image" data-block="image">
+				<ImageGallery images={[image]} />
+			</div>{/if}
 	{:else}
 		<p data-block="p"><InlineRuns runs={block.runs} {warningState} /></p>
 	{/if}

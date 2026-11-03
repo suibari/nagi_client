@@ -17,7 +17,7 @@
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
 	import VideoPlayer from './VideoPlayer.svelte';
-	import type { ImageAttachment, PostEditImage } from '$lib/images';
+	import { MAX_IMAGE_COUNT, type ImageAttachment, type PostEditImage } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCard from './LinkCard.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
@@ -36,7 +36,14 @@
 		normalizeSupportedLanguage,
 	} from '$lib/i18n/languagePreferences.svelte';
 	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
+	import { computeBlobCid } from '$lib/atproto/cid';
+	import {
+		blobKey,
+		imageMarkdown,
+		inlineImageUrl,
+		pruneInlineImages,
+	} from '$lib/blog/inlineImages';
 	import {
 		postFollow,
 		postHref,
@@ -48,7 +55,7 @@
 	import type { VideoAttachment } from '$lib/video-attachment.svelte';
 	import type { PostVideoEdit } from '$lib/atproto/records';
 	import LinkCardEditor from './LinkCardEditor.svelte';
-	import { extractTitle } from '$lib/atproto/markdown';
+	import { extractTitle, IMAGE_LINE } from '$lib/atproto/markdown';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import {
 		deleteStandardSiteDocument,
@@ -154,6 +161,40 @@
 	let editImageProcessing = $state(false);
 	let editError = $state('');
 	let editImageEditor = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
+	let editComposer = $state<{ insertBlock: (text: string) => void }>();
+	/**
+	 * 記事の編集で、画像（id ごと）が本文に書かれるときの URL。既存の画像は AppView の
+	 * URL から、足した画像は手元で計算した CID から作る。外した画像の行を本文から消すのと、
+	 * 保存前に添付の無い画像行を落とすのに使う。
+	 */
+	let editImageUrls: Record<string, string> = {};
+	let editSeenImageIds = new Set<string>();
+	$effect(() => {
+		const current = editImages;
+		const ids = new Set(current.map((image) => image.id));
+		const removed = [...editSeenImageIds].filter((id) => !ids.has(id));
+		const added = current.filter((image) => !editSeenImageIds.has(image.id));
+		editSeenImageIds = ids;
+		if (!untrack(() => editing && editingArticle)) return;
+		for (const id of removed) {
+			const url = editImageUrls[id];
+			if (!url) continue;
+			editText = untrack(() => editText)
+				.split('\n')
+				.filter((line) => IMAGE_LINE.exec(line)?.[2] !== url)
+				.join('\n');
+		}
+		const did = post.author.did;
+		for (const image of added) {
+			if (image.kind !== 'new') continue;
+			void computeBlobCid(image.blob).then((cid) => {
+				if (!editImages.some((item) => item.id === image.id)) return;
+				const url = inlineImageUrl(did, cid);
+				editImageUrls[image.id] = url;
+				editComposer?.insertBlock(imageMarkdown(image.alt, url));
+			});
+		}
+	});
 	let reactionPickerOpen = $state(false);
 	let contentRevealed = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
@@ -305,6 +346,17 @@
 		editMentions = restored.mentions;
 		editEmojis = restored.emojis;
 		editImageProcessing = false;
+		const appViewOrigins = [new URL(APPVIEW_URL, 'http://localhost').origin];
+		editImageUrls = {};
+		for (const [sourceIndex, image] of (post.images ?? []).entries()) {
+			const key = blobKey(image.url, appViewOrigins);
+			if (!key) continue;
+			const slash = key.lastIndexOf('/');
+			editImageUrls[`${post.cid}-${sourceIndex}`] = inlineImageUrl(
+				key.slice(0, slash),
+				key.slice(slash + 1),
+			);
+		}
 		editImages = (post.images ?? []).map((image, sourceIndex) => ({
 			kind: 'existing',
 			id: `${post.cid}-${sourceIndex}`,
@@ -410,8 +462,16 @@
 				start: item.start + heading.length,
 				end: item.end + heading.length,
 			}));
+		// 添付に無い Nagi の画像行は保存しない（存在しない blob を指す画像になる）。
+		const knownImages = new Set(
+			editImages.flatMap((image) => {
+				const key = editImageUrls[image.id] && blobKey(editImageUrls[image.id]);
+				return key ? [key] : [];
+			}),
+		);
+		const editBody = editingArticle ? pruneInlineImages(editText, knownImages) : editText;
 		const draft = preparePostDraft(
-			heading + editText,
+			heading + editBody,
 			undefined,
 			undefined,
 			[],
@@ -687,6 +747,7 @@
 							bind:images={editImages}
 							bind:video={editNewVideo}
 							allowVideo={!editingArticle && !isAppviewOwnedUri(post.uri)}
+							maxCount={editingArticle ? Infinity : MAX_IMAGE_COUNT}
 							hasVideo={Boolean(editExistingVideo || editNewVideo)}
 							bind:processing={editImageProcessing}
 							disabled={editBusy}
@@ -697,6 +758,7 @@
 						<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
 					{/if}
 					<ComposerEditor
+						bind:this={editComposer}
 						mode={editingArticle ? 'blog' : 'rich'}
 						id={`edit-${post.cid}`}
 						bind:value={editText}
