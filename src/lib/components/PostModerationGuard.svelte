@@ -9,7 +9,7 @@
 		post,
 		children,
 	}: {
-		post: Pick<PostView, 'uri' | 'selfLabels' | 'moderationLabels'>;
+		post: Pick<PostView, 'uri' | 'selfLabels' | 'moderationLabels' | 'images' | 'video'>;
 		children: Snippet;
 	} = $props();
 	let display = $derived(contentModerationDisplay(post));

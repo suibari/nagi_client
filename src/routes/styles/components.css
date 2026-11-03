@@ -2784,18 +2784,6 @@ button.emoji-return {
 	width: 100%;
 	height: 100%;
 }
-.attachment-cw {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	margin-top: 6px;
-	padding: 3px 7px;
-	font-size: 11px;
-}
-.attachment-cw.active {
-	background: var(--accent-soft);
-	color: var(--accent-strong);
-}
 .attachment-remove {
 	position: absolute;
 	top: 5px;

@@ -24,6 +24,9 @@
 		contentWarningEnabled = true,
 		contentWarningLabelsEnabled = false,
 		selfLabels = $bindable<string[]>([]),
+		mediaWarningEnabled = false,
+		mediaWarning = $bindable(false),
+		hasMedia = false,
 		mode = 'rich',
 		onsubmit,
 		onpaste,
@@ -43,6 +46,10 @@
 		contentWarningEnabled?: boolean;
 		contentWarningLabelsEnabled?: boolean;
 		selfLabels?: string[];
+		/** CWメニューに「画像・動画をぼかす」を出すか。画像ごとのCWボタンは持たない。 */
+		mediaWarningEnabled?: boolean;
+		mediaWarning?: boolean;
+		hasMedia?: boolean;
 		/**
 		 * 入力欄はどのモードでも記法をその場で装飾して見せる（プレビュー欄は持たない）。
 		 * simple（あっさり）は文字装飾のボタンだけを畳み、本文・画像・CW に絞る。
@@ -73,6 +80,8 @@
 	let contentWarningPickerOpen = $state(false);
 	let contentWarningButton = $state<HTMLButtonElement>();
 	let hasSelection = $state(false);
+	/** ラベルか画像のぼかしを選べるときはメニューを開く。本文だけなら選択範囲へ直接掛ける。 */
+	const contentWarningMenu = $derived(contentWarningLabelsEnabled || mediaWarningEnabled);
 	let contentWarning = $derived(parseContentWarning(value));
 	let contentWarningError = $derived(
 		contentWarning.status === 'invalid'
@@ -122,20 +131,19 @@
 			{#if contentWarningEnabled}<button
 					bind:this={contentWarningButton}
 					class="icon-action content-warning-tool"
-					class:active={contentWarning.status === 'valid' || selfLabels.length > 0}
+					class:active={contentWarning.status === 'valid' ||
+						(contentWarningLabelsEnabled && selfLabels.length > 0) ||
+						(mediaWarningEnabled && mediaWarning)}
 					type="button"
 					disabled={disabled ||
-						(!contentWarningLabelsEnabled &&
-							(!hasSelection || contentWarning.status === 'invalid'))}
-					aria-label={contentWarningLabelsEnabled
-						? m.contentWarningMenuTitle()
-						: m.contentWarningSet()}
-					title={contentWarningLabelsEnabled ? m.contentWarningMenuTitle() : m.contentWarningSet()}
-					aria-haspopup={contentWarningLabelsEnabled ? 'menu' : undefined}
-					aria-expanded={contentWarningLabelsEnabled ? contentWarningPickerOpen : undefined}
+						(!contentWarningMenu && (!hasSelection || contentWarning.status === 'invalid'))}
+					aria-label={contentWarningMenu ? m.contentWarningMenuTitle() : m.contentWarningSet()}
+					title={contentWarningMenu ? m.contentWarningMenuTitle() : m.contentWarningSet()}
+					aria-haspopup={contentWarningMenu ? 'menu' : undefined}
+					aria-expanded={contentWarningMenu ? contentWarningPickerOpen : undefined}
 					onmousedown={(event) => event.preventDefault()}
 					onclick={() => {
-						if (contentWarningLabelsEnabled) contentWarningPickerOpen = !contentWarningPickerOpen;
+						if (contentWarningMenu) contentWarningPickerOpen = !contentWarningPickerOpen;
 						else editor?.applyContentWarning();
 					}}><Icon name="warning" size={17} /></button
 				>{/if}
@@ -152,10 +160,14 @@
 		ariaLabel={m.insertEmojiPickerAria()}
 		choiceAriaLabel={(emoji) => m.insertEmojiChoiceAria({ emoji })}
 	/>{/if}
-{#if contentWarningEnabled && contentWarningLabelsEnabled}<ContentWarningPicker
+{#if contentWarningEnabled && contentWarningMenu}<ContentWarningPicker
 		bind:open={contentWarningPickerOpen}
 		anchor={contentWarningButton}
 		bind:selectedLabels={selfLabels}
+		labelsEnabled={contentWarningLabelsEnabled}
+		bind:mediaWarning
+		{mediaWarningEnabled}
+		{hasMedia}
 		{hasSelection}
 		textWarningDisabled={contentWarning.status === 'invalid'}
 		{disabled}

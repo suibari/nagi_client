@@ -10,7 +10,12 @@
 	import { blobRefCid, createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
 	import { computeBlobCid } from '$lib/atproto/cid';
 	import { imageMarkdown, inlineImageUrl, pruneInlineImages } from '$lib/blog/inlineImages';
-	import { crosspostArticleToBluesky, crosspostToBluesky } from '$lib/crosspost/bluesky';
+	import {
+		crosspostArticleToBluesky,
+		crosspostDraftBlock,
+		crosspostToBluesky,
+	} from '$lib/crosspost/bluesky';
+	import { crosspostContentWarningBlock } from '$lib/crosspost/content-warning';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { MAX_IMAGE_COUNT, type ImageAttachment } from '$lib/images';
@@ -110,6 +115,11 @@
 	let botSilent = $state(false);
 	let silentReply = $state(false);
 	let selfLabels = $state<string[]>([]);
+	/**
+	 * 添付した画像・動画をまとめてぼかすか。CWメニューの1項目で切り替える。
+	 * レコードは従来どおり画像・動画ごとの contentWarning なので、下の $effect で全件へ揃える。
+	 */
+	let mediaWarning = $state(false);
 	let publishingLoadVersion = 0;
 	let draftSaveInFlight = false;
 	let draftSaveTask: Promise<boolean> | undefined;
@@ -214,6 +224,18 @@
 	$effect(() => {
 		if (blog && video) video = undefined;
 	});
+	const hasMedia = $derived(Boolean(attachments.length || video));
+	// 後から足した画像・動画にも同じ設定を効かせる。添付が無くなったら設定も戻す。
+	$effect(() => {
+		if (!hasMedia) {
+			if (mediaWarning) mediaWarning = false;
+			return;
+		}
+		const flag = mediaWarning;
+		if (attachments.some((image) => Boolean(image.contentWarning) !== flag))
+			attachments = attachments.map((image) => ({ ...image, contentWarning: flag || undefined }));
+		if (video && video.contentWarning !== flag) video.contentWarning = flag;
+	});
 	const hasContentWarningSetting = $derived(
 		hasContentWarning(text) ||
 			attachments.some((image) => image.contentWarning) ||
@@ -221,15 +243,28 @@
 	);
 	const contentWarningValid = $derived(validContentWarningSyntax(text));
 	/**
+	 * CW が Bluesky への投稿を止めるか。画像のぼかしは、Bluesky でもぼかされるラベルが
+	 * 付いていれば通す（判定は crosspost/content-warning.ts の1か所）。
+	 */
+	const crosspostCwBlock = $derived(
+		crosspostContentWarningBlock({
+			text,
+			mediaWarning:
+				attachments.some((image) => image.contentWarning) || Boolean(video?.contentWarning),
+			labels: selfLabels,
+		}),
+	);
+	/**
 	 * Bluesky にも出せる条件。
 	 *
 	 * 引用付きは外部へ出せない。Bluesky の embed には Nagi のレコードを載せられず
 	 * （crosspost/bluesky.ts の buildEmbed は images / external のみ）、参照が黙って消える。
 	 * 記事化にも同じ条件が要る（引用は記事本文に現れない）ので、判定は1本のまま使う。
+	 * CW 付きの記事は articleBlockedReason が別に止める。
 	 */
 	const externalEligible = $derived(
 		crosspostReady &&
-			!hasContentWarningSetting &&
+			!crosspostCwBlock &&
 			!quotePick.active &&
 			!composerHost.replyTarget &&
 			!composerHost.quoteTarget,
@@ -237,11 +272,13 @@
 	const externalDisabledReason = $derived(
 		!crosspostReady
 			? m.postScopeExternalUnavailable()
-			: hasContentWarningSetting
-				? m.crosspostDisabledContentWarning()
-				: quotePick.active
-					? m.quoteExternalDisabled()
-					: '',
+			: crosspostCwBlock === 'text'
+				? m.crosspostDisabledTextWarning()
+				: crosspostCwBlock === 'media'
+					? m.crosspostDisabledMediaWarning()
+					: quotePick.active
+						? m.quoteExternalDisabled()
+						: '',
 	);
 	/**
 	 * 本文先頭の「# 見出し」はタイトルそのもの。タイトルの真実源は常に本文側に置き、
@@ -398,6 +435,7 @@
 		botSilent = false;
 		silentReply = false;
 		selfLabels = [];
+		mediaWarning = false;
 		activeDraftTarget = undefined;
 		lastSavedDraftKey = '';
 		draftSaveStatus = 'idle';
@@ -501,6 +539,8 @@
 			...image,
 			previewUrl: URL.createObjectURL(image.blob),
 		}));
+		// 画像ごとにCWを選べた頃の下書きは、1枚でも付いていれば全件をぼかす側へ寄せる。
+		mediaWarning = draft.images.some((image) => image.contentWarning);
 		linkCards = draft.linkCards.map((card) => ({
 			...card,
 			previewUrl: card.thumbnail ? URL.createObjectURL(card.thumbnail) : undefined,
@@ -643,7 +683,12 @@
 			// 引用はNagi内のレコードを参照するため、Blueskyへはクロスポストしない
 			// （返信・引用の既存方針と同じ）。scope 側でも外部を選べなくしてある。
 			let bskyPostRef: { uri: string; cid: string } | undefined;
-			if (wantsCrosspost && !draft.kossori && !draft.cwRestricted && !draft.quote) {
+			if (
+				wantsCrosspost &&
+				!draft.kossori &&
+				!(article ? draft.cwRestricted : crosspostDraftBlock(draft)) &&
+				!draft.quote
+			) {
 				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
 					warning = m.crosspostPermissionMissing();
 				else
@@ -878,6 +923,9 @@
 				disabled={busy}
 				contentWarningLabelsEnabled={!kossori}
 				bind:selfLabels
+				mediaWarningEnabled={!kossori}
+				bind:mediaWarning
+				{hasMedia}
 				{mode}
 				onsubmit={() => submit()}
 				onpaste={(event) => {

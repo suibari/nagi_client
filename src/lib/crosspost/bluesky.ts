@@ -4,6 +4,7 @@ import { session } from '$lib/oauth/session.svelte';
 import { IMAGE_LINE, type Facet } from '$lib/atproto/facets';
 import type { PostAssets, PostDraft } from '$lib/atproto/records';
 import type { StrongRef } from '$lib/api/types';
+import { BLUESKY_MEDIA_BLUR_LABELS, crosspostContentWarningBlock } from './content-warning';
 
 const BSKY_POST = 'app.bsky.feed.post';
 /** Bluesky の投稿上限。app.bsky.feed.post#text の maxGraphemes / maxLength。 */
@@ -20,7 +21,7 @@ export type CrosspostChunk = { text: string; facets: Facet[] };
 
 export function getCrosspostSelfLabels(draft: Pick<PostDraft, 'labels'>) {
 	return draft.labels?.values.filter((label) =>
-		['porn', 'sexual', 'nudity', 'graphic-media'].includes(label.val),
+		(BLUESKY_MEDIA_BLUR_LABELS as readonly string[]).includes(label.val),
 	);
 }
 
@@ -165,6 +166,19 @@ export function prepareCrosspostContent(draft: PostDraft, assets: PostAssets) {
 	return { chunks, embed };
 }
 
+/** 組み立て済みの下書きについて、CW がクロスポストを止めるか。 */
+export function crosspostDraftBlock(
+	draft: Pick<PostDraft, 'text' | 'attachments' | 'video' | 'labels'>,
+) {
+	return crosspostContentWarningBlock({
+		text: draft.text,
+		mediaWarning: Boolean(
+			draft.attachments.some((image) => image.contentWarning) || draft.video?.contentWarning,
+		),
+		labels: draft.labels?.values.map((label) => label.val) ?? [],
+	});
+}
+
 /**
  * Nagi のトップレベル投稿を Bluesky にも投稿する。
  * 300 文字を超える場合は分割し、2件目以降は直前の投稿へのリプライで芋づるに繋ぐ。
@@ -174,8 +188,8 @@ export async function crosspostToBluesky(
 	draft: PostDraft,
 	assets: PostAssets,
 ): Promise<StrongRef | undefined> {
-	// こっそり投稿は Bluesky にクロスポストしない。
-	if (draft.kossori || draft.cwRestricted) return;
+	// こっそり投稿と、Bluesky では伏せられない CW を含む投稿はクロスポストしない。
+	if (draft.kossori || crosspostDraftBlock(draft)) return;
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);
@@ -360,6 +374,8 @@ export async function crosspostArticleToBluesky(
 	assets: PostAssets,
 	article: ArticleTeaserTarget,
 ): Promise<StrongRef | undefined> {
+	// CW 付きはブログにできない（記事のリーダーではぼかしもラベルも効く保証が無い）ので、
+	// ティーザーも cwRestricted で一律に止める。
 	if (draft.kossori || draft.cwRestricted) return;
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');

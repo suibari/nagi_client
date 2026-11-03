@@ -158,6 +158,18 @@
 	let editExistingVideo = $state<ExistingVideoEdit>();
 	let editNewVideo = $state<VideoAttachment>();
 	const editVideoPending = $derived(Boolean(editNewVideo && !editNewVideo.ready));
+	/** 編集中の画像・動画をまとめてぼかすか。CWメニューの1項目で、全件へ揃えて保存する。 */
+	let editMediaWarning = $state(false);
+	const editHasMedia = $derived(Boolean(editImages.length || editExistingVideo || editNewVideo));
+	$effect(() => {
+		if (!editing) return;
+		const flag = editMediaWarning;
+		if (editImages.some((image) => Boolean(image.contentWarning) !== flag))
+			editImages = editImages.map((image) => ({ ...image, contentWarning: flag || undefined }));
+		if (editExistingVideo && Boolean(editExistingVideo.contentWarning) !== flag)
+			editExistingVideo = { ...editExistingVideo, contentWarning: flag || undefined };
+		if (editNewVideo && editNewVideo.contentWarning !== flag) editNewVideo.contentWarning = flag;
+	});
 	let editLinkCards = $state<LinkCardDraft[]>([]);
 	let editDismissedUrls = $state<string[]>([]);
 	let editImageProcessing = $state(false);
@@ -386,6 +398,10 @@
 				}
 			: undefined;
 		editNewVideo = undefined;
+		// 画像ごとにCWを選べた頃の投稿は、1枚でも付いていれば全件をぼかす側へ寄せる。
+		editMediaWarning = Boolean(
+			post.images?.some((image) => image.contentWarning) || post.video?.contentWarning,
+		);
 		editDismissedUrls = [];
 		editing = true;
 	}
@@ -765,7 +781,6 @@
 							hasVideo={Boolean(editExistingVideo || editNewVideo)}
 							bind:processing={editImageProcessing}
 							disabled={editBusy}
-							contentWarningEnabled={Boolean(post.cwRestricted)}
 						/>
 					{/snippet}
 					{#if editingArticle && !externalTitleEditor}
@@ -781,6 +796,9 @@
 						placeholder={m.editPlaceholder()}
 						disabled={editBusy}
 						contentWarningEnabled={Boolean(post.cwRestricted)}
+						mediaWarningEnabled
+						bind:mediaWarning={editMediaWarning}
+						hasMedia={editHasMedia}
 						onsubmit={() => void submitEdit()}
 						onpaste={(event) => editImageEditor?.handlePaste(event)}
 						tools={editTools}
@@ -789,7 +807,6 @@
 						bind:existing={editExistingVideo}
 						bind:video={editNewVideo}
 						disabled={editBusy}
-						contentWarningEnabled={Boolean(post.cwRestricted)}
 					/>
 					<LinkCardEditor
 						text={editText}

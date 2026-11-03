@@ -34,12 +34,6 @@
 		attachments = attachments.map((item) => (item.id === id ? { ...item, alt: limited } : item));
 	}
 
-	function toggleContentWarning(id: string) {
-		attachments = attachments.map((item) =>
-			item.id === id ? { ...item, contentWarning: !item.contentWarning || undefined } : item,
-		);
-	}
-
 	onDestroy(() => tracked.forEach(releaseImage));
 </script>
 
@@ -67,15 +61,6 @@
 						onclick={() => remove(attachment.id)}><Icon name="close" size={16} /></button
 					>
 				</div>
-				<button
-					class="ghost attachment-cw"
-					class:active={attachment.contentWarning}
-					type="button"
-					aria-pressed={Boolean(attachment.contentWarning)}
-					{disabled}
-					onclick={() => toggleContentWarning(attachment.id)}
-					><Icon name="warning" size={16} /><span>{m.contentWarningImage()}</span></button
-				>
 				<label>
 					<span>{m.postImageAltLabel()}</span>
 					<input
