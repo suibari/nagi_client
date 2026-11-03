@@ -38,7 +38,7 @@ export const load = async ({
 			title: `${item.news.title} — 全肯定ニュース | Nagi（ナギ）`,
 			// botたんのひとことは120〜240字の書き下ろしで、承認時に固定される。
 			// meta description にそのまま使える唯一のテキスト（記事本文は保持していない）。
-			description: item.news.botComment,
+			description: item.news.botComment || item.news.title,
 			canonical: absolute(`/news/${params.rkey}`),
 		},
 	};

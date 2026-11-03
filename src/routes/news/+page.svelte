@@ -197,6 +197,7 @@
 			/>{/each}<InfiniteScroll {hasMore} {loading} {error} onload={() => load()} />{/if}
 </section>
 {#if submissionOpen}<NewsSubmissionDialog
+		{botActor}
 		onclose={() => (submissionOpen = false)}
 		onapproved={() => void load(true)}
 	/>{/if}
@@ -205,7 +206,7 @@
 	.news-category-tabs {
 		display: flex;
 		overflow-x: auto;
-		margin-block-end: 14px;
+		margin-block-end: 16px;
 		border-block-end: 1px solid var(--line);
 		scrollbar-width: none;
 		-ms-overflow-style: none;
@@ -216,13 +217,14 @@
 	.news-category-tabs button {
 		position: relative;
 		flex: 0 0 auto;
-		padding: 10px;
+		padding: 12px;
 		border: 0;
 		background: transparent;
 		color: var(--text-muted);
 		font: inherit;
-		font-size: 0.86rem;
-		font-weight: 700;
+		font-size: 14px;
+		font-weight: 500;
+		transition: color 120ms ease-out;
 		white-space: nowrap;
 		cursor: pointer;
 	}
@@ -231,10 +233,13 @@
 	.news-category-tabs button.active {
 		color: var(--accent-strong);
 	}
+	.news-category-tabs button.active {
+		font-weight: 600;
+	}
 	.news-category-tabs button.active::after {
 		content: '';
 		position: absolute;
-		inset-inline: 8px;
+		inset-inline: 12px;
 		inset-block-end: -1px;
 		block-size: 3px;
 		border-radius: 3px 3px 0 0;
@@ -242,12 +247,15 @@
 	}
 	.news-feed {
 		display: grid;
-		gap: 14px;
+		gap: 12px;
 	}
 	.news-date {
-		margin: 6px 2px -4px;
+		margin: 12px 0 0;
 		font-size: 13px;
-		font-weight: 700;
+		font-weight: 500;
 		color: var(--text-muted);
+	}
+	.news-date:first-child {
+		margin-block-start: 0;
 	}
 </style>

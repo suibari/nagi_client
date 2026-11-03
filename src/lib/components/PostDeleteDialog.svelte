@@ -6,11 +6,16 @@
 	let {
 		busy = false,
 		error = '',
+		title,
+		message,
 		onconfirm,
 		oncancel,
 	}: {
 		busy?: boolean;
 		error?: string;
+		/** 投稿以外（ニュースなど）を消すときの見出しと説明。省略時は投稿用の文言。 */
+		title?: string;
+		message?: string;
 		onconfirm: () => void;
 		oncancel: () => void;
 	} = $props();
@@ -29,8 +34,8 @@
 <svelte:window onkeydown={keydown} />
 <div class="delete-backdrop" role="presentation" onclick={backdropClick}>
 	<div class="delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
-		<h2 id="delete-title">{m.deletePostTitle()}</h2>
-		<p>{m.deletePostConfirmation()}</p>
+		<h2 id="delete-title">{title ?? m.deletePostTitle()}</h2>
+		<p>{message ?? m.deletePostConfirmation()}</p>
 		{#if error}<p class="delete-error" role="alert">{error}</p>{/if}
 		<div class="delete-actions">
 			<Button
