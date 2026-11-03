@@ -13,6 +13,9 @@
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import ReactionBar from './ReactionBar.svelte';
 	import BookmarkActions from './BookmarkActions.svelte';
+	import ContentWarningMask from './ContentWarningMask.svelte';
+	import PostDeleteDialog from './PostDeleteDialog.svelte';
+	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
 	let {
 		news,
 		botActor,
@@ -51,11 +54,19 @@
 	let reactionPickerOpen = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
 	let deleting = $state(false);
+	let confirmingDelete = $state(false);
+	let deleteError = $state('');
 	let deleted = $state(false);
 	let safeUrl = $derived(safeNewsUrl(news.url));
 	let safeImage = $derived(safeNewsImageUrl(news.image));
 	let imageFailed = $state(false);
 	let botPost = $derived(newsBotPost(news, botActor));
+	// コメントは登録後にワーカーが付けるので、付くまでは吹き出しを出さない。
+	let hasBotComment = $derived(Boolean(news.botComment?.trim()));
+	// ユーザーが追加したニュースは審査なしで即時掲載する。自動モデレーションで札が
+	// 付いたものは、投稿と同じ表示設定に従ってカード全体を伏せる（または出さない）。
+	let moderation = $derived(contentModerationDisplay({ moderationLabels: news.moderationLabels }));
+	let moderationTitle = $derived(m.moderationAutomaticWarning());
 	// プリレンダとハイドレーション直後は JST・日本語で固定し、マウント後に閲覧者の
 	// ロケールとタイムゾーンへ切り替える。固定しないとビルド(UTC)と閲覧者(JST)で
 	// 時刻表示が9時間ずれ、全カードが静かに描き変わる。
@@ -88,111 +99,121 @@
 		reactionPickerOpen = !reactionPickerOpen;
 	}
 	async function removeNews() {
-		if (deleting || !confirm(m.newsDeleteConfirm())) return;
+		if (deleting) return;
 		deleting = true;
-		shareError = '';
+		deleteError = '';
 		try {
 			await deleteOwnNews(news.uri);
+			confirmingDelete = false;
 			deleted = true;
 		} catch {
-			shareError = m.newsDeleteFailed();
+			deleteError = m.newsDeleteFailed();
 		} finally {
 			deleting = false;
 		}
 	}
 </script>
 
-{#if !deleted}<article class="news-card" class:unread class:embedded>
-		{#if reasonGenre}<p class="news-reason">
-				<Icon name="heart" size={13} /><span>{m.newsRecommendedReason({ genre: reasonGenre })}</span
-				>
-			</p>{/if}
-		<!-- 「記事を読む」ボタンは置かない。記事へはサムネイルから飛べるので、
+{#if !deleted && !moderation.hidden}<article class="news-card" class:unread class:embedded>
+		<ContentWarningMask kind="content" active={moderation.warn} title={moderationTitle}>
+			{#if reasonGenre}<p class="news-reason">
+					<Icon name="heart" size={14} /><span
+						>{m.newsRecommendedReason({ genre: reasonGenre })}</span
+					>
+				</p>{/if}
+			<!-- 「記事を読む」ボタンは置かない。記事へはサムネイルから飛べるので、
 		     サムネイルを出さない一覧（検索・プロフィールなど）のために配信元名を記事リンクにする。 -->
-		<div class="news-meta">
-			{#if safeUrl}<a class="news-source" href={safeUrl} target="_blank" rel="noopener noreferrer"
-					>{news.sourceName ?? m.newsSourceUnknown()}</a
-				>{:else}<span>{news.sourceName ?? m.newsSourceUnknown()}</span
-				>{/if}{#if news.publishedAt}<time datetime={news.publishedAt}>{publishedLabel}</time>{/if}
-		</div>
-		<h3
-			class:clamped={clampTitle}
-			class:has-submitter={Boolean(news.submittedBy)}
-			title={news.title}
-		>
-			{#if permalink}<a class="news-permalink-link" href={permalink}>{news.title}</a
-				>{:else}{news.title}{/if}
-		</h3>
-		{#if showImage && safeImage && safeUrl && !imageFailed}<a
-				class="news-image"
-				href={safeUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				><img
-					src={safeImage}
-					alt=""
-					loading="lazy"
-					decoding="async"
-					referrerpolicy="no-referrer"
-					onerror={() => (imageFailed = true)}
-				/></a
-			>{/if}
-		{#if news.submittedBy}<a class="news-submitter" href={`/profile/${news.submittedBy.did}`}
-				>{m.newsSubmittedBy({
-					name: news.submittedBy.displayName ?? news.submittedBy.handle,
-				})}</a
-			>{/if}
-		<ChatBubble post={botPost} displayOnly />
-		<div class="news-footer">
-			<ReactionBar
-				uri={news.uri}
-				cid={news.cid}
-				reactions={news.reactions}
-				showReactors={false}
-				bind:pickerOpen={reactionPickerOpen}
-				pickerAnchor={reactionButton}
-			/>
-			<div class="news-actions">
-				<!-- 主要アクションは「読む」ではなく、自分の話を書く「コメントする」（ニュースの引用投稿）。 -->
-				<Button
-					variant="primary"
-					size="sm"
-					class="news-comment"
-					type="button"
-					onclick={() => quoteNews(news)}><Icon name="quote" size={16} />{m.newsComment()}</Button
-				>
-				<button
-					bind:this={reactionButton}
-					class="ghost icon-action timeline-action"
-					class:active={reactionPickerOpen}
-					type="button"
-					aria-label={m.addReactionAria()}
-					title={m.addReactionAria()}
-					aria-expanded={reactionPickerOpen}
-					onclick={toggleReactionPicker}
-				>
-					<Icon name="emojiPlus" size={18} />
-				</button>
-				<BookmarkActions subject={{ kind: 'news', uri: news.uri }} />
-				{#if $session && news.submittedBy?.did === $session.did}<button
+			<div class="news-meta">
+				{#if safeUrl}<a class="news-source" href={safeUrl} target="_blank" rel="noopener noreferrer"
+						>{news.sourceName ?? m.newsSourceUnknown()}</a
+					>{:else}<span>{news.sourceName ?? m.newsSourceUnknown()}</span
+					>{/if}{#if news.submittedBy}<a
+						class="news-submitter"
+						href={`/profile/${news.submittedBy.did}`}
+						>{m.newsSubmittedBy({
+							name: news.submittedBy.displayName ?? news.submittedBy.handle,
+						})}</a
+					>{/if}{#if news.publishedAt}<time datetime={news.publishedAt}>{publishedLabel}</time>{/if}
+			</div>
+			<h3 class:clamped={clampTitle} title={news.title}>
+				{#if permalink}<a class="news-permalink-link" href={permalink}>{news.title}</a
+					>{:else}{news.title}{/if}
+			</h3>
+			{#if showImage && safeImage && safeUrl && !imageFailed}<a
+					class="news-image"
+					href={safeUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					><img
+						src={safeImage}
+						alt=""
+						loading="lazy"
+						decoding="async"
+						referrerpolicy="no-referrer"
+						onerror={() => (imageFailed = true)}
+					/></a
+				>{/if}
+			{#if hasBotComment}<ChatBubble post={botPost} displayOnly />{/if}
+			<div class="news-footer">
+				<ReactionBar
+					uri={news.uri}
+					cid={news.cid}
+					reactions={news.reactions}
+					showReactors={false}
+					bind:pickerOpen={reactionPickerOpen}
+					pickerAnchor={reactionButton}
+				/>
+				<div class="news-actions">
+					<!-- 主要アクションは「読む」ではなく、自分の話を書く「コメントする」（ニュースの引用投稿）。 -->
+					<Button
+						variant="primary"
+						size="sm"
+						class="news-comment"
+						type="button"
+						onclick={() => quoteNews(news)}><Icon name="quote" size={16} />{m.newsComment()}</Button
+					>
+					<button
+						bind:this={reactionButton}
+						class="ghost icon-action timeline-action"
+						class:active={reactionPickerOpen}
+						type="button"
+						aria-label={m.addReactionAria()}
+						title={m.addReactionAria()}
+						aria-expanded={reactionPickerOpen}
+						onclick={toggleReactionPicker}
+					>
+						<Icon name="emojiPlus" size={18} />
+					</button>
+					<BookmarkActions subject={{ kind: 'news', uri: news.uri }} />
+					{#if $session && news.submittedBy?.did === $session.did}<button
+							class="ghost icon-action timeline-action"
+							type="button"
+							disabled={deleting}
+							onclick={() => (confirmingDelete = true)}
+							aria-label={m.newsDelete()}
+							title={m.newsDelete()}><Icon name="trash" size={18} /></button
+						>{/if}
+					<button
 						class="ghost icon-action timeline-action"
 						type="button"
-						disabled={deleting}
-						onclick={() => void removeNews()}
-						aria-label={m.newsDelete()}
-						title={m.newsDelete()}><Icon name="trash" size={18} /></button
-					>{/if}
-				<button
-					class="ghost icon-action timeline-action"
-					type="button"
-					onclick={share}
-					aria-label={shared ? m.newsCopied() : m.newsShare()}
-					title={shared ? m.newsCopied() : m.newsShare()}><Icon name="share" size={18} /></button
-				>
+						onclick={share}
+						aria-label={shared ? m.newsCopied() : m.newsShare()}
+						title={shared ? m.newsCopied() : m.newsShare()}><Icon name="share" size={18} /></button
+					>
+				</div>
 			</div>
-		</div>
-		{#if shareError}<p class="error" role="alert">{shareError}</p>{/if}
+			{#if shareError}<p class="error" role="alert">{shareError}</p>{/if}
+		</ContentWarningMask>
 	</article>{/if}
+
+{#if confirmingDelete}<PostDeleteDialog
+		busy={deleting}
+		error={deleteError}
+		title={m.newsDelete()}
+		message={m.newsDeleteConfirm()}
+		onconfirm={() => void removeNews()}
+		oncancel={() => (confirmingDelete = false)}
+	/>{/if}
 
 <style>
 	.news-card {
@@ -206,22 +227,20 @@
 		background: transparent;
 		box-shadow: none;
 	}
-	/* おすすめの理由は、通常カードと見分けられるようアクセント色のピルで出す。 */
+	/* おすすめの理由は、カードの頭に添える小さな注記。色はアイコンだけに留める。 */
 	.news-reason {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
 		align-self: flex-start;
 		max-inline-size: 100%;
-		margin: 0 0 6px;
-		padding: 2px 10px 2px 8px;
-		border: 1px solid var(--accent-border);
-		border-radius: 999px;
-		background: var(--accent-soft);
-		color: var(--accent-strong);
+		margin: 0 0 8px;
+		color: var(--text-muted);
 		font-size: 12px;
-		font-weight: 700;
 		line-height: 1.5;
+	}
+	.news-reason :global(svg) {
+		color: var(--accent-strong);
 	}
 	.news-reason span {
 		min-inline-size: 0;
@@ -231,6 +250,17 @@
 		flex: none;
 	}
 	/* 外枠を復活させず、未読だけ左のアクセントバーで示す。 */
+	/* CWの包みを挟んでも、フッターを下端へ寄せる縦並びを保つ（カルーセルの高さ揃え）。 */
+	.news-card > :global(.cw-mask),
+	.news-card > :global(.cw-mask > .cw-content) {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-inline-size: 0;
+	}
+	.news-card > :global(.cw-mask.concealed) {
+		border-radius: var(--r-md);
+	}
 	.news-card.unread {
 		padding-inline-start: 12px;
 		background: transparent;
@@ -251,45 +281,35 @@
 	}
 	.news-meta {
 		display: flex;
-		gap: 0.65rem;
+		flex-wrap: wrap;
+		align-items: baseline;
+		column-gap: 12px;
+		row-gap: 4px;
 		min-inline-size: 0;
 		color: var(--text-muted);
-		font-size: 0.78rem;
-	}
-	.news-submitter {
-		display: inline-block;
-		align-self: flex-end;
-		margin: 0 0 0.75rem;
-		color: var(--text-muted);
-		font-size: 0.8rem;
-		font-weight: 650;
-		text-decoration: none;
-	}
-	.news-submitter:hover {
-		text-decoration: underline;
+		font-size: 12px;
 	}
 	.news-meta > span,
-	.news-meta > .news-source {
+	.news-meta > a {
 		min-inline-size: 0;
 		overflow-wrap: anywhere;
-	}
-	.news-meta > .news-source {
 		color: inherit;
 		text-decoration: none;
 	}
-	.news-meta > .news-source:hover,
-	.news-meta > .news-source:focus-visible {
+	.news-meta > a:hover,
+	.news-meta > a:focus-visible {
 		color: var(--accent-strong);
 		text-decoration: underline;
 	}
 	.news-meta time {
-		margin-left: auto;
+		margin-inline-start: auto;
+		font-variant-numeric: tabular-nums;
 	}
 	.news-image {
 		display: block;
 		inline-size: 100%;
 		aspect-ratio: 1.91 / 1;
-		margin-block: 8px 12px;
+		margin-block: 0 12px;
 		overflow: hidden;
 		border: 1px solid var(--line);
 		border-radius: var(--r-md);
@@ -302,9 +322,10 @@
 		object-fit: cover;
 	}
 	h3 {
-		margin: 0.45rem 0 0.75rem;
-		font-size: 1.08rem;
-		line-height: 1.55;
+		margin: 8px 0 12px;
+		font-size: 17px;
+		font-weight: 600;
+		line-height: 1.6;
 		overflow-wrap: anywhere;
 	}
 	.news-card h3 :global(a.news-permalink-link) {
@@ -320,11 +341,8 @@
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
-		min-block-size: 3.35rem;
+		min-block-size: 3.2em;
 		overflow: hidden;
-	}
-	h3.has-submitter {
-		margin-bottom: 0.2rem;
 	}
 	.news-footer {
 		margin-top: auto;
@@ -332,9 +350,9 @@
 	.news-actions {
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
+		gap: 4px;
 		flex-wrap: wrap;
-		margin-top: 0.5rem;
+		margin-top: 8px;
 	}
 	.news-actions .icon-action {
 		width: 36px;

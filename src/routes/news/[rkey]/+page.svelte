@@ -5,6 +5,7 @@
 	import GuestHero from '$lib/components/GuestHero.svelte';
 	import NewsCard from '$lib/components/NewsCard.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
+	import Icon from '$lib/components/shell/Icon.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
 	import { postedSignal } from '$lib/feed/posted-signal.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
@@ -88,7 +89,10 @@
 	});
 </script>
 
-<a class="news-back" href="/news">{m.newsBackToList()}</a>
+<a class="news-back" href="/news"
+	><span class="news-back-icon" aria-hidden="true"><Icon name="chevron" size={16} /></span
+	>{m.newsBackToList()}</a
+>
 {#if showHero}
 	<GuestHero />
 {/if}
@@ -157,20 +161,24 @@
 	.news-back {
 		display: inline-flex;
 		align-items: center;
-		gap: 2px;
+		gap: 4px;
 		margin-block-end: 12px;
 		color: var(--text-muted);
-		font-size: 0.86rem;
-		font-weight: 700;
+		font-size: 14px;
+		font-weight: 500;
 		text-decoration: none;
 	}
 	.news-back:hover,
 	.news-back:focus-visible {
 		color: var(--accent-strong);
 	}
+	.news-back-icon {
+		display: inline-grid;
+		transform: rotate(180deg);
+	}
 	.news-permalink {
 		display: grid;
-		gap: 14px;
+		gap: 12px;
 	}
 	.news-related {
 		margin-block-start: 24px;

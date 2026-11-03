@@ -83,7 +83,10 @@ export type NewsView = {
 	/** OGP画像の配信元URL。画像本体はAppViewを経由せず直接読み込む。 */
 	image?: string;
 	publishedAt?: string;
+	/** botたんのひとこと。ユーザーが追加した直後はまだ無く、空文字で届く。 */
 	botComment: string;
+	/** 自動モデレーションの札。付いていればカード全体を CW で伏せる。 */
+	moderationLabels?: string[];
 	lang: 'ja' | 'en';
 	createdAt: string;
 	indexedAt: string;
