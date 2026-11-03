@@ -39,33 +39,25 @@ function withPendingBubbles(item: FeedItem, pending: FeedItem[]): FeedItem {
 	};
 }
 
-/**
- * サーバーが返した並びに合わせて1件だけ挿し直す。ポーリングでの並べ替えは画面が飛ぶので
- * 普段はしない（no-jump）が、自分が今書き込んだスレッドだけは「最新へ動く」ことが
- * 期待されるので例外にする。ページ1に居ないスレッドには触らない。
- */
-function repositionFollowed(
-	list: FeedItem[],
-	page: FeedItem[],
-	key: string | undefined,
-): FeedItem[] {
-	if (!key) return list;
+/** 新着リプライ・自分の投稿があるスレッドを、サーバーが返した位置へ挿し直す。 */
+function repositionThreads(list: FeedItem[], page: FeedItem[], keys: Set<string>): FeedItem[] {
 	const rank = new Map(page.map((item, index) => [feedKey(item), index]));
-	const target = rank.get(key);
-	if (target === undefined) return list;
-	const moving = list.find((item) => feedKey(item) === key);
-	if (!moving) return list;
-	const rest = list.filter((item) => feedKey(item) !== key);
-	// loadMore で足したアイテムはページ1に居ない＝より古いので、後ろ扱いにする。
-	const at = rest.findIndex((item) => (rank.get(feedKey(item)) ?? Infinity) > target);
-	return at < 0 ? [...rest, moving] : [...rest.slice(0, at), moving, ...rest.slice(at)];
+	const moving = page.filter((item) => keys.has(feedKey(item)));
+	const result = list.filter((item) => !keys.has(feedKey(item)));
+	// 後ろから挿すことで、移動するスレッド同士もサーバー順になる。
+	for (const item of moving.reverse()) {
+		const target = rank.get(feedKey(item))!;
+		// loadMore で足したアイテムはページ1に居ない＝より古いので、後ろ扱いにする。
+		const at = result.findIndex((entry) => (rank.get(feedKey(entry)) ?? Infinity) > target);
+		result.splice(at < 0 ? result.length : at, 0, item);
+	}
+	return result;
 }
 
 /**
  * Shared feed state for timeline/affirmation/profile tabs.
- * refresh() merges page 1 by thread key (updates botReplyState/reactions in place,
- * prepends genuinely new items) so polling never makes the list jump. The one
- * exception is the thread the viewer just posted into: that one follows the server order.
+ * refresh() merges page 1 by thread key, moving threads with new replies to the
+ * server order while updating reactions and bot replies in place.
  */
 export class Feed {
 	items = $state<FeedItem[]>([]);
@@ -219,12 +211,16 @@ export class Feed {
 			// 確定URIへ更新済みの楽観投稿は既に登場演出を済ませているため、再演出しない。
 			const optimisticUris = new Set(optimisticPosts.items.map((item) => item.uri));
 			optimisticPosts.reconcile(page.items.flatMap(feedPosts));
-			// スレッドキーでマージ。新リプライで代表 uri が変わっても同スレッドは in-place 更新され、
-			// 二重表示されない。既存スレッドは位置固定（no-jump）、新規スレッドだけ prepend。
-			// 例外は自分が今投稿したスレッドで、そこだけサーバーが返した位置へ動かす。
+			// スレッドキーでマージし、代表（最新の人間投稿）が変わったスレッドは
+			// サーバー順へ移動する。リアクションやbot返信だけの更新では位置を変えない。
 			const incoming = new Map(page.items.map((i) => [feedKey(i), i]));
-			const seen = new Set(this.items.map(feedKey));
-			const fresh = page.items.filter((i) => !seen.has(feedKey(i)));
+			const previous = new Map(this.items.map((item) => [feedKey(item), item]));
+			const fresh = page.items.filter((item) => !previous.has(feedKey(item)));
+			const moving = new Set(
+				page.items.filter((item) => previous.get(feedKey(item))?.uri !== item.uri).map(feedKey),
+			);
+			const followedKey = postFollow.current?.threadRootUri;
+			if (followedKey && incoming.has(followedKey)) moving.add(followedKey);
 			const visuallyFresh = fresh.filter(
 				(item) => !feedUris(item).some((uri) => optimisticUris.has(uri)),
 			);
@@ -232,10 +228,10 @@ export class Feed {
 				.flatMap(feedPosts)
 				.map((post) => post.uri)
 				.filter((uri) => !previousPostUris.has(uri) && !optimisticUris.has(uri));
-			this.items = repositionFollowed(
+			this.items = repositionThreads(
 				[...fresh, ...this.items.map((i) => incoming.get(feedKey(i)) ?? i)],
 				page.items,
-				postFollow.current?.threadRootUri,
+				moving,
 			);
 			this.#markEntering(visuallyFresh, freshPostUris);
 			this.#unread?.advance(page.items[0]);

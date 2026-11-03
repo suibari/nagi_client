@@ -19,7 +19,7 @@ type FollowTarget = {
 	uri?: string;
 	/** 追従先を出せなかったときに見せる導線。 */
 	href?: string;
-	/** 会話グループのマージキー。Feed.refresh がこのスレッドだけサーバー順へ戻す。 */
+	/** 会話グループのマージキー。Feed.refresh でサーバー順へ戻す対象にする。 */
 	threadRootUri?: string;
 };
 
