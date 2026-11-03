@@ -11,8 +11,28 @@ vi.mock('$lib/oauth/client', () => ({
 }));
 vi.mock('$lib/crosspost/bluesky', () => ({ VIA: 'Nagi' }));
 
-const { buildTrilinesLines, emptyTrilinesLines, trilinesEntryUrl, trilinesSubmittable } =
-	await import('./records');
+const {
+	TRILINES_HUB_URI,
+	buildTrilinesLines,
+	emptyTrilinesLines,
+	newTrilinesRecord,
+	trilinesEntryUrl,
+	trilinesSubmittable,
+} = await import('./records');
+
+describe('newTrilinesRecord', () => {
+	it('Nagi から書いた日記は Nagi への公開と TriLinesAt の全体フィードの両方に印を付ける', () => {
+		const record = newTrilinesRecord([{ text: 'a' }], ['ja'], new Date('2026-11-03T00:00:00Z'));
+		expect(record).toEqual({
+			$type: 'com.suibari.trilinesat.diary',
+			lines: [{ text: 'a' }],
+			langs: ['ja'],
+			createdAt: '2026-11-03T00:00:00.000Z',
+			hubRef: TRILINES_HUB_URI,
+			shareToNagi: true,
+		});
+	});
+});
 const { buildTrilinesShareText } = await import('./share');
 
 describe('3行日記のレコード', () => {

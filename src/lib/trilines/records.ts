@@ -37,6 +37,8 @@ export type TrilinesRecord = {
 	langs?: string[];
 	createdAt: string;
 	hubRef?: string;
+	/** Nagi に投稿として出すか。TriLinesAt からはオプトイン、Nagi から書いた日記は常に true。 */
+	shareToNagi?: boolean;
 	sharedPost?: { uri: string; cid: string };
 };
 
@@ -101,6 +103,25 @@ async function uploadLineImages(agent: Agent, lines: readonly TrilinesLineDraft[
 	);
 }
 
+/**
+ * Nagi から書く日記のレコード。Nagi で書いた時点で Nagi に公開するので shareToNagi を必ず付ける
+ * （AppView は印の無い日記を取り込まない）。TriLinesAt の「みんなの日記」にも載るよう hubRef も付ける。
+ */
+export function newTrilinesRecord(
+	lines: TrilinesRecordLine[],
+	langs: readonly string[],
+	now: Date = new Date(),
+): TrilinesRecord {
+	return {
+		$type: TRILINES_DIARY,
+		lines,
+		...(langs.length ? { langs: [...langs] } : {}),
+		createdAt: now.toISOString(),
+		hubRef: TRILINES_HUB_URI,
+		shareToNagi: true,
+	};
+}
+
 export async function createTrilinesDiary(
 	lines: readonly TrilinesLineDraft[],
 	langs: string[],
@@ -108,13 +129,7 @@ export async function createTrilinesDiary(
 	const s = current();
 	const agent = new Agent(s);
 	const blobs = await uploadLineImages(agent, lines);
-	const record: TrilinesRecord = {
-		$type: TRILINES_DIARY,
-		lines: buildTrilinesLines(lines, blobs),
-		...(langs.length ? { langs } : {}),
-		createdAt: new Date().toISOString(),
-		hubRef: TRILINES_HUB_URI,
-	};
+	const record = newTrilinesRecord(buildTrilinesLines(lines, blobs), langs);
 	const { data } = await agent.com.atproto.repo.createRecord({
 		repo: s.did,
 		collection: TRILINES_DIARY,
