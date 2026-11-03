@@ -40,6 +40,7 @@
 	import { startChronicleNotice } from '$lib/chronicle/notice';
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
 	import { startRadioNotice } from '$lib/radio/radio.svelte';
+	import { migrateLegacyStandardSite } from '$lib/standardsite/publication';
 
 	let { children } = $props();
 	$effect(() => {
@@ -218,6 +219,12 @@
 			.then((profile) => {
 				if (!profile && page.url.pathname !== '/settings/profile')
 					void goto('/settings/profile?onboarding=1');
+				// 移行前の standard.site 記事を、検証できる形（ユーザーごとの url）へ直す。
+				// 端末ごとに一度だけ。失敗しても次のサインインでやり直すので握りつぶす。
+				if (profile)
+					void migrateLegacyStandardSite().catch((error) =>
+						console.warn('Failed to migrate standard.site records:', error),
+					);
 			})
 			.catch((error) => {
 				checkedDid = undefined;

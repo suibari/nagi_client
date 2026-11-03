@@ -1,5 +1,8 @@
 import type { BluemojiFacetFormats, EmojiView } from '$lib/api/types';
 
+/** 本文に置く1行の画像。URL は http(s) に限る（javascript: などを描画側へ渡さない）。 */
+export const IMAGE_LINE = /^!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)[ \t]*$/;
+
 export type BluemojiFacetFeature = {
 	$type: 'blue.moji.richtext.facet';
 	did: string;
@@ -308,6 +311,21 @@ export function parsePostText(
 					index += 1 + body.length;
 					continue;
 				}
+			}
+		}
+		if (
+			source[index] === '!' &&
+			source[index + 1] === '[' &&
+			(index === 0 || source[index - 1] === '\n')
+		) {
+			// 1行だけの画像（記事本文の `![alt](https://…)`）は名前付きリンクにせず、
+			// 記法のまま本文へ残す。描画側（parseRichText）が画像ブロックとして読む。
+			const lineEnd = source.indexOf('\n', index);
+			const line = source.slice(index, lineEnd === -1 ? source.length : lineEnd);
+			if (IMAGE_LINE.test(line)) {
+				append(line, index);
+				index += line.length;
+				continue;
 			}
 		}
 		if (source[index] === '[') {

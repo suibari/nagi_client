@@ -86,9 +86,22 @@
 			"source": "/settings/about",
 			"destination": "/about",
 			"permanent": true
+		},
+		{
+			"source": "/blog/:did",
+			"destination": "/profile/:did",
+			"permanent": false
 		}
 	],
 	"rewrites": [
+		{
+			"source": "/.well-known/site.standard.publication/blog/:did",
+			"destination": "https://nagi-api.suibari.com/api/standard-site/publication/:did"
+		},
+		{
+			"source": "/api/blob/:did/:cid",
+			"destination": "https://nagi-api.suibari.com/api/blob/:did/:cid"
+		},
 		{ "source": "/emoji", "destination": "/200.html" },
 		{
 			"source": "/profile/:did",

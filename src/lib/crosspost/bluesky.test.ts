@@ -309,3 +309,21 @@ function byteRange(text: string, facet: Facet): [number, number] {
 		decoder.decode(all.slice(0, facet.index.byteEnd)).length,
 	];
 }
+
+describe('stripImageLines', () => {
+	it('drops article image lines and shifts later facets', async () => {
+		const { stripImageLines } = await import('./bluesky');
+		const image = '![猫](https://nagi.suibari.com/api/blob/did:plc:a/bafkrei)';
+		const text = `前\n${image}\nリンク`;
+		const start = new TextEncoder().encode(`前\n${image}\n`).length;
+		const result = stripImageLines(text, [
+			{
+				index: { byteStart: start, byteEnd: start + 9 },
+				features: [{ $type: 'app.bsky.richtext.facet#link', uri: 'https://e.com' }],
+			},
+		]);
+		expect(result.text).toBe('前\nリンク');
+		const offset = new TextEncoder().encode('前\n').length;
+		expect(result.facets[0].index).toEqual({ byteStart: offset, byteEnd: offset + 9 });
+	});
+});

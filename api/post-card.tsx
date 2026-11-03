@@ -90,7 +90,8 @@ function postBody(text: string, limit = 140, maxLines = POST_LINES) {
 	const lines = plain(text)
 		.split('\n')
 		.map((line) => line.replace(/\s+/g, ' ').trim())
-		.filter(Boolean);
+		// 記事本文の画像行（![alt](url)）はカードに文字として出さない。
+		.filter((line) => line && !/^!\[[^\]]*\]\(https?:\/\/[^\s)]+\)$/.test(line));
 	// lineClamp が改行位置で切ると改行が欠け字形で描かれるので、行数はここで先に揃える。
 	const body = lines.slice(0, maxLines).join('\n');
 	if (body.length > limit) return `${body.slice(0, limit)}…`;

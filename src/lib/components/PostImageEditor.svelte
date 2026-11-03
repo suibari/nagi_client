@@ -30,8 +30,11 @@
 		disabled = false,
 		contentWarningEnabled = true,
 		processing = $bindable(false),
+		maxCount = MAX_IMAGE_COUNT,
 	}: {
 		images: PostEditImage[];
+		/** 画像の上限。記事は standard.site に上限が無いので Infinity を渡す。 */
+		maxCount?: number;
 		/** allowVideo のとき、選んだ動画（1本まで）をここへ入れる。画像と併用できる。 */
 		video?: VideoAttachment;
 		allowVideo?: boolean;
@@ -43,7 +46,7 @@
 	} = $props();
 	const accept = $derived(allowVideo && !hasVideo ? MEDIA_ACCEPT : IMAGE_ACCEPT);
 	/** 画像が上限で、動画もこれ以上足せないときだけボタンを止める。 */
-	const full = $derived(images.length >= MAX_IMAGE_COUNT && (!allowVideo || hasVideo));
+	const full = $derived(images.length >= maxCount && (!allowVideo || hasVideo));
 	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
 
 	let errors = $state<string[]>([]);
@@ -93,7 +96,7 @@
 		}
 		files = selection.images;
 		if (!files.length) return;
-		const available = MAX_IMAGE_COUNT - images.length;
+		const available = maxCount - images.length;
 		if (files.length > available) errors = [m.postImageCountError()];
 		if (available <= 0) return;
 		processing = true;
@@ -182,7 +185,8 @@
 			<span>{processingLabel}</span>
 		{:else}
 			<Icon name={allowVideo ? 'media' : 'image'} size={18} />
-			<span>{images.length}/{MAX_IMAGE_COUNT}</span>
+			<span>{Number.isFinite(maxCount) ? `${images.length}/${maxCount}` : images.length || ''}</span
+			>
 		{/if}
 	</button>
 	<span class="visually-hidden" aria-live="polite">{processing ? processingLabel : ''}</span>

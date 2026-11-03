@@ -438,8 +438,8 @@ export const en: Messages = {
 	articleTitleRequired: 'A blog post needs a title',
 	articleContentWarningDisabled: 'A post with a content warning cannot be a blog post',
 	articleQuoteDisabled: 'A post with a quote or reply cannot be a blog post',
-	articleCoverTooLarge:
-		'The header image was too large to attach to the article (it must be under 1MB).',
+	articleInlineImageMismatch:
+		'An image in the article body did not upload correctly. Please remove it and add it again.',
 	articleTeaserSuffix: (p: { url: string }) => `Read the rest on Nagi: ${p.url}`,
 	articleCrosspostTeaserNote:
 		'When crossposting to Bluesky, only the opening excerpt and a link back to Nagi are posted, as a single post (the full text is not split into a thread).',

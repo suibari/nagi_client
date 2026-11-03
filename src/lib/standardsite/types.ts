@@ -12,6 +12,19 @@ export const MARKDOWN_TEXT = 'at.markpub.text';
  */
 export const NAGI_PUBLIC_ORIGIN = 'https://nagi.suibari.com';
 
+/**
+ * ユーザーごとの publication.url。standard.site の検証は url の
+ * `/.well-known/site.standard.publication`（パス付きならその後ろにパス）を引くので、
+ * 全員で同じ url を共有すると1件しか答えられない。ユーザーごとのパスにして、
+ * `/.well-known/site.standard.publication/blog/<did>` で各自の publication を返す。
+ * document.path はこの url からの相対（`/<rkey>`）になり、canonical URL は従来と同じ
+ * `/blog/<did>/<rkey>` のまま変わらない。
+ */
+export const nagiPublicationUrl = (did: string) => `${NAGI_PUBLIC_ORIGIN}/blog/${did}`;
+
+/** 移行前の publication.url（全員共通のオリジン）。読み取りでは引き続き Nagi のものと認める。 */
+export const LEGACY_PUBLICATION_URL = NAGI_PUBLIC_ORIGIN;
+
 export type StandardSitePreferences = { showInDiscover?: boolean };
 
 const rgb = (r: number, g: number, b: number) => ({
@@ -79,7 +92,10 @@ export type StandardSiteDocument = {
 
 /** 投稿1件を standard.site の記事として書き出すための入力。 */
 export type ArticleInput = {
-	/** Nagi のリッチテキスト・添付。正本の文書内に保存する。 */
+	/**
+	 * Nagi のリッチテキスト・添付。正本の文書内に保存する。
+	 * 原文の text は buildRecord が markdown から入れる（facet の位置はこの原文が基準）。
+	 */
 	nagi?: {
 		facets?: unknown;
 		langs?: string[];

@@ -161,3 +161,52 @@ describe('annotateMarkdownSource', () => {
 		expect(annotateMarkdownSource('a\n\n- b').lines).toEqual(['p', undefined, 'ul']);
 	});
 });
+
+describe('article blocks', () => {
+	const image = '![猫](https://nagi.suibari.com/api/blob/did:plc:a/bafkrei)';
+
+	it('parses fenced code without interpreting its contents', () => {
+		expect(parseRichText('before\n```js\n**not bold**\n\n#x\n```\nafter')).toEqual([
+			{ type: 'p', runs: [{ text: 'before', marks: [], href: undefined, external: undefined }] },
+			{ type: 'code', text: '**not bold**\n\n#x', lang: 'js' },
+			{ type: 'p', runs: [{ text: 'after', marks: [], href: undefined, external: undefined }] },
+		]);
+		// 閉じフェンスが無ければ最後までコード。
+		expect(parseRichText('```\na\nb')).toEqual([{ type: 'code', text: 'a\nb' }]);
+	});
+
+	it('parses thematic breaks and single-line images', () => {
+		expect(parseRichText(`a\n---\n${image}\n* * *`).map((block) => block.type)).toEqual([
+			'p',
+			'rule',
+			'image',
+			'rule',
+		]);
+		expect(parseRichText(image)[0]).toEqual({
+			type: 'image',
+			alt: '猫',
+			url: 'https://nagi.suibari.com/api/blob/did:plc:a/bafkrei',
+		});
+		// 行の途中の画像記法や http(s) 以外は画像にしない。
+		expect(parseRichText('x ![a](https://e.com/a.png)')[0].type).toBe('p');
+		expect(parseRichText('![a](javascript:alert(1))')[0].type).toBe('p');
+	});
+
+	it('keeps image syntax raw instead of turning it into a named link', () => {
+		const parsed = parsePostText(`text\n${image}`);
+		expect(parsed.text).toBe(`text\n${image}`);
+		expect(parsed.facets).toEqual([]);
+		expect(parsed.cardUrls).toEqual([]);
+	});
+
+	it('annotates code, rule and image lines for the composer', () => {
+		const { lines, marks } = annotateMarkdownSource('```\nx\n```\n---\n![a](https://e.com/a)');
+		expect(lines).toEqual(['code', 'code', 'code', 'rule', 'image']);
+		expect(marks[4]).toEqual(['code']);
+		expect(marks[0]).toBeNull();
+	});
+
+	it('leaves images and rules out of plain text', () => {
+		expect(stripMarkdown(`# T\n\n${image}\n---\n\`\`\`\ncode\n\`\`\``)).toBe('T code');
+	});
+});

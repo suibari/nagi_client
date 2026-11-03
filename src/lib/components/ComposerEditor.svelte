@@ -60,8 +60,14 @@
 		applyMarkdown: (format: MarkdownFormat) => void;
 		applyContentWarning: () => void;
 		insertAtCaret: (text: string) => void;
+		insertBlock: (text: string) => void;
 		insertEmoji: (emoji: string | EmojiView) => void;
 	}>();
+
+	/** 記事本文の画像のように、独立した1行として差し込む。 */
+	export function insertBlock(text: string) {
+		editor?.insertBlock(text);
+	}
 	let emojiPickerOpen = $state(false);
 	let emojiButton = $state<HTMLButtonElement>();
 	let contentWarningPickerOpen = $state(false);

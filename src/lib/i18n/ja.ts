@@ -452,8 +452,8 @@ export const ja = {
 	articleTitleRequired: 'ブログにはタイトルが必要です',
 	articleContentWarningDisabled: 'コンテンツ警告のある投稿はブログにできません',
 	articleQuoteDisabled: '引用や返信のある投稿はブログにできません',
-	articleCoverTooLarge:
-		'ヘッダー画像が大きすぎたため、記事には添えられませんでした（1MB未満にしてください）。',
+	articleInlineImageMismatch:
+		'本文の画像を正しくアップロードできませんでした。画像を外して、もう一度追加してください。',
 	articleTeaserSuffix: (p: { url: string }) => `続きはNagiで：${p.url}`,
 	articleCrosspostTeaserNote:
 		'Blueskyクロスポスト時には、冒頭の抜粋とNagiへのリンクだけを1件投稿します（全文は分割投稿しません）。',
