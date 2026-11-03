@@ -20,11 +20,13 @@
 		{#each post.trilines.lines as line, index (index)}
 			{@const image = line.imageIndex === undefined ? undefined : post.images?.[line.imageIndex]}
 			<li>
-				<span class="trilines-card-number" aria-hidden="true">{index + 1}</span>
 				<div class="trilines-card-line">
+					<span class="trilines-card-number" aria-hidden="true">{index + 1}</span>
 					<p>{line.text}</p>
-					{#if image}<ImageGallery images={[image]} {clampTall} />{/if}
 				</div>
+				{#if image}
+					<div class="trilines-card-image"><ImageGallery images={[image]} {clampTall} /></div>
+				{/if}
 			</li>
 		{/each}
 	</ol>
@@ -49,8 +51,8 @@
 	}
 	.trilines-card-lines li {
 		display: flex;
-		align-items: flex-start;
-		gap: 8px;
+		flex-direction: column;
+		gap: 6px;
 		min-width: 0;
 	}
 	.trilines-card-number {
@@ -67,15 +69,20 @@
 	}
 	.trilines-card-line {
 		display: flex;
-		flex: 1;
-		flex-direction: column;
-		gap: 6px;
+		align-items: center;
+		gap: 8px;
 		min-width: 0;
 	}
 	.trilines-card-line p {
+		flex: 1;
+		min-width: 0;
 		margin: 0;
 		overflow-wrap: anywhere;
 		white-space: pre-wrap;
+	}
+	.trilines-card-image {
+		min-width: 0;
+		margin-inline-start: 28px;
 	}
 	.trilines-card-link {
 		align-self: flex-start;
