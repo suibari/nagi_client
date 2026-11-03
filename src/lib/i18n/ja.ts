@@ -409,7 +409,7 @@ export const ja = {
 	trilinesConsult: 'botたんに相談',
 	trilinesConsulting: 'botたんが考えています…',
 	trilinesConsultHelp:
-		'今日（正午区切り）のNagiのポストをもとに、botたんが空いている行の下書きを考えます。投稿はしません。',
+		'今日の0時から今までのNagiのポストをもとに、botたんが空いている行の下書きを考えます。投稿はしません。',
 	trilinesPublicNote: '3行日記はTriLinesAtでも見られます。',
 	trilinesScopeKossori: '3行日記はTriLinesAtでも公開されるため、こっそりにはできません',
 	trilinesConsultNoPosts: '今日はまだポストがないみたい。ポストしてから、また相談してね！',

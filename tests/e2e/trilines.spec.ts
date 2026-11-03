@@ -98,9 +98,9 @@ test('しっかりとブログの間の3行日記タブで、botたんが空い�
 	await expect(inputs.nth(2)).toHaveValue('早く寝た');
 	expect(recorded.assist).toHaveLength(1);
 	expect(recorded.assist[0].lines).toEqual(['', '猫をなでた', '']);
-	// 正午区切り: 21時なら同じ日の正午から翌日の正午まで。
-	expect(recorded.assist[0].from).toBe('2026-11-03T03:00:00.000Z');
-	expect(recorded.assist[0].to).toBe('2026-11-04T03:00:00.000Z');
+	// 材料は日記の日付の0時から今まで（21時に書けば、その日の朝の出来事も入る）。
+	expect(recorded.assist[0].from).toBe('2026-11-02T15:00:00.000Z');
+	expect(recorded.assist[0].to).toBe('2026-11-03T12:00:00.000Z');
 	// 相談しただけでは投稿しない。
 	expect(recorded.created).toHaveLength(0);
 

@@ -699,7 +699,7 @@ export const generatePostAssist = (
 	);
 
 /**
- * 3行日記の「botたんに相談」。その日（from〜to、正午区切り）の本人の投稿から、
+ * 3行日記の「botたんに相談」。日記の日付の0時から今まで（from〜to）の本人の投稿から、
  * 空いている行の候補を作る。入力済みの行はそのまま返る。投稿はしない。
  */
 export const generateTrilinesAssist = (

@@ -392,7 +392,7 @@ export const en: Messages = {
 	trilinesConsult: 'Ask Bot-tan',
 	trilinesConsulting: 'Bot-tan is thinking…',
 	trilinesConsultHelp:
-		"Bot-tan drafts the empty lines from today's Nagi posts (the day changes at noon). Nothing is posted.",
+		'Bot-tan drafts the empty lines from your Nagi posts since midnight today. Nothing is posted.',
 	trilinesPublicNote: '3 Lines diaries can also be viewed on TriLinesAt.',
 	trilinesScopeKossori: '3 Lines diaries are also public on TriLinesAt, so they cannot be hidden',
 	trilinesConsultNoPosts: "Looks like you haven't posted today yet. Ask me again after you post!",

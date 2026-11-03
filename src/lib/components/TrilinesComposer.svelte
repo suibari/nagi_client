@@ -13,7 +13,7 @@
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import type { TrilinesEditTarget } from '$lib/post/composer-host.svelte';
-	import { diaryDayRange } from '$lib/trilines/date';
+	import { consultRange } from '$lib/trilines/date';
 	import {
 		TRILINES_IMAGE_MAX_BYTES,
 		TRILINES_LINE_MAX_GRAPHEMES,
@@ -193,7 +193,7 @@
 		consulting = true;
 		consultMessage = '';
 		try {
-			const { from, to } = diaryDayRange();
+			const { from, to } = consultRange();
 			const result = await generateTrilinesAssist({
 				from: from.toISOString(),
 				to: to.toISOString(),
@@ -286,12 +286,9 @@
 					onclick={consult}
 				>
 					{#if consulting}<Spinner inline size="sm" decorative />
-					{:else}<img
-							class="trilines-bot"
-							src="/bot_icon_trans.png"
-							alt=""
-							width="18"
-							height="18"
+					{:else}<!-- 線画をマスクにして文字色で塗る（ほかのアイコンと色をそろえる）。 --><Icon
+							name="bot"
+							size={18}
 						/>{/if}
 					<span>{consulting ? m.trilinesConsulting() : m.trilinesConsult()}</span>
 					<span class="trilines-help-mark" aria-hidden="true"><Icon name="info" size={14} /></span>
@@ -604,11 +601,6 @@
 		border-radius: var(--r-sm);
 		object-fit: cover;
 		background: var(--surface-2);
-	}
-	.trilines-bot {
-		width: 20px;
-		height: 20px;
-		object-fit: contain;
 	}
 	.trilines-foot {
 		display: flex;

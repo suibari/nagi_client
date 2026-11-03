@@ -19,10 +19,15 @@ export function getDiaryDateKey(value: string | Date = new Date()): string {
 	return formatDateKey(getDiaryDate(value));
 }
 
-/** その日の範囲 [from, to)。「botたんに相談」で材料にする投稿の期間に使う。 */
-export function diaryDayRange(value: string | Date = new Date()): { from: Date; to: Date } {
-	const from = getDiaryDate(value);
-	const to = new Date(from);
-	to.setDate(to.getDate() + 1);
-	return { from, to };
+/**
+ * 「botたんに相談」で材料にする投稿の期間 [from, to)。日記の日付の0時から今まで。
+ *
+ * 日記の日付は正午区切りだが、材料まで正午で切ると、夜に書いたときにその日の午前中の
+ * 出来事が入らない。日付は正午区切りのまま決め、材料はその日付の朝から拾う。
+ * 日付をまたいだ深夜（正午前）に書いたときは、前日の0時から今までになる（最大で約36時間）。
+ */
+export function consultRange(now: Date = new Date()): { from: Date; to: Date } {
+	const from = getDiaryDate(now);
+	from.setHours(0, 0, 0, 0);
+	return { from, to: new Date(now) };
 }
