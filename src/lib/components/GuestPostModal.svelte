@@ -7,6 +7,7 @@
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import {
 		getComposerMode,
+		isPlainPostMode,
 		resetComposerMode,
 		setComposerMode,
 		type ComposerMode,
@@ -33,10 +34,10 @@
 		if (open === wasOpen) return;
 		wasOpen = open;
 		if (!open) return;
-		// ゲストは PDS に書けないのでブログタブを出さない。
-		// サインイン中にブログを選んだ端末でも、どのタブも選ばれていない状態にしない。
+		// ゲストは PDS に書けないのでブログと3行日記のタブを出さない。
+		// サインイン中にそれらを選んだ端末でも、どのタブも選ばれていない状態にしない。
 		const stored = getComposerMode();
-		mode = stored === 'blog' ? 'rich' : stored;
+		mode = isPlainPostMode(stored) ? stored : 'rich';
 		try {
 			agreed = localStorage.getItem('nagi.guest-ai-consent.v1') === '1';
 		} catch {

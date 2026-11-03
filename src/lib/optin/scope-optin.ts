@@ -76,7 +76,7 @@ export function scopesCover(grantedScope: string, required: string[]): boolean {
 	return required.every((scope) => granted.some((s) => s === scope || s.startsWith(`${scope}?`)));
 }
 
-async function sessionCovers(required: string[]): Promise<boolean> {
+export async function sessionCovers(required: string[]): Promise<boolean> {
 	const current = get(session);
 	if (!current) return false;
 	try {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { COMPOSER_MODES, type ComposerMode } from '$lib/post/composer-mode';
+	import { COMPOSER_MODES, isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
 	import Icon from './shell/Icon.svelte';
 
 	let {
@@ -38,7 +38,9 @@
 			? m.postModeSimple()
 			: value === 'rich'
 				? m.postModeRich()
-				: m.postModeBlog();
+				: value === 'diary'
+					? m.postModeDiary()
+					: m.postModeBlog();
 
 	let viewportTop = $state(0);
 	let viewportBottom = $state(0);
@@ -99,7 +101,7 @@
 	<div
 		bind:this={dialog}
 		class="post-modal"
-		class:rich={mode !== 'simple'}
+		class:rich={isWideComposer(mode)}
 		class:blog={mode === 'blog'}
 		class:has-header-action={headerAction}
 		role="dialog"
@@ -194,7 +196,7 @@
 	.post-modal-modes {
 		display: flex;
 		gap: 4px;
-		/* タブが3つになったので、狭い画面では閉じる/送信より先に縮む側にする。 */
+		/* タブが4つあるので、狭い画面では閉じる/送信より先に縮む側にする。 */
 		min-width: 0;
 		flex-shrink: 1;
 	}

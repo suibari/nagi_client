@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	COMPOSER_MODE_STORAGE_KEY,
+	COMPOSER_MODES,
 	getComposerMode,
+	isPlainPostMode,
 	isWideComposer,
 	resetComposerMode,
 	setComposerMode,
@@ -48,9 +50,21 @@ describe('composer mode preference', () => {
 		expect(resetComposerMode()).toBe('simple');
 	});
 
+	it('places the diary tab between rich and blog and remembers it', () => {
+		vi.stubGlobal('window', { localStorage: storageWith() });
+
+		expect(COMPOSER_MODES).toEqual(['simple', 'rich', 'diary', 'blog']);
+		setComposerMode('diary');
+		expect(getComposerMode()).toBe('diary');
+		expect(isPlainPostMode('diary')).toBe(false);
+		expect(isPlainPostMode('blog')).toBe(false);
+		expect(isPlainPostMode('rich')).toBe(true);
+	});
+
 	it('treats both rich and blog as the wide editor', () => {
 		expect(isWideComposer('simple')).toBe(false);
 		expect(isWideComposer('rich')).toBe(true);
 		expect(isWideComposer('blog')).toBe(true);
+		expect(isWideComposer('diary')).toBe(false);
 	});
 });

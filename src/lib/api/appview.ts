@@ -698,6 +698,21 @@ export const generatePostAssist = (
 		'required',
 	);
 
+/**
+ * 3行日記の「botたんに相談」。その日（from〜to、正午区切り）の本人の投稿から、
+ * 空いている行の候補を作る。入力済みの行はそのまま返る。投稿はしない。
+ */
+export const generateTrilinesAssist = (
+	input: { from: string; to: string; lines: string[]; lang: 'ja' | 'en' },
+	signal?: AbortSignal,
+) =>
+	call<{ lines: string[]; reason?: 'noPosts' }>(
+		'com.suibari.nagi.generateTrilinesAssist',
+		'/xrpc/com.suibari.nagi.generateTrilinesAssist',
+		{ method: 'POST', body: JSON.stringify(input), signal },
+		'required',
+	);
+
 // カードの所持状況は公開情報。自分の drawStatus と未反映の控えだけ認証付きで返る。
 // 図鑑は publicOnly で先に出し、本人向け情報は requireViewer であとから補う。
 export const getCards = (

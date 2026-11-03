@@ -8,11 +8,14 @@
 	import QuoteFrame from './QuoteFrame.svelte';
 	import PostModerationGuard from './PostModerationGuard.svelte';
 	import PostUnavailableNotice from './PostUnavailableNotice.svelte';
+	import TrilinesCard from './TrilinesCard.svelte';
 	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	let { post }: { post: PostView } = $props();
 	let expanded = $state(false);
 	let overflowing = $state(false);
 	let threadHref = $derived(postPageHref(post));
+	// 3行日記は行ごとに画像を添えて描くので、本文と画像ギャラリーの代わりに日記の体裁で出す。
+	let trilines = $derived(post.trilines ? { ...post, trilines: post.trilines } : undefined);
 </script>
 
 <PostModerationGuard {post}>
@@ -24,6 +27,8 @@
 	>
 		{#if post.deleted}
 			<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
+		{:else if trilines}
+			<TrilinesCard post={trilines} />
 		{:else}
 			{#snippet collapseToggle()}
 				{#if overflowing || expanded}<button
@@ -44,7 +49,7 @@
 				{collapseToggle}
 			/>
 		{/if}
-		{#if post.images?.length}<ImageGallery images={post.images} />{/if}
+		{#if !trilines && post.images?.length}<ImageGallery images={post.images} />{/if}
 		{#if post.video}<VideoPlayer video={post.video} />{/if}
 		{#if post.linkCards?.length}<div class="link-cards">
 				{#each post.linkCards as card}<LinkCard {card} />{/each}
