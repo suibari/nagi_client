@@ -20,8 +20,8 @@ export const AVAILABLE_SELF_LABELS: SelfLabelOption[] = [
 		value: 'sexual',
 		name: { ja: '性的 / NSFW', en: 'Adult / NSFW' },
 		description: {
-			ja: '成人向けまたは性的な表現を含みます（閲覧時に画像をぼかします）',
-			en: 'Contains adult or sexually suggestive content (blurs media)',
+			ja: '成人向けまたは性的な表現を含みます（投稿全体を伏せて表示します。Blueskyにも反映されます）',
+			en: 'Contains adult or sexually suggestive content (hides the whole post, also on Bluesky)',
 		},
 		badgeText: { ja: '🔞 性的コンテンツ', en: '🔞 Adult / NSFW' },
 	},
@@ -29,8 +29,8 @@ export const AVAILABLE_SELF_LABELS: SelfLabelOption[] = [
 		value: 'graphic-media',
 		name: { ja: '暴力的・グロテスク', en: 'Graphic Media' },
 		description: {
-			ja: '流血や暴力などショッキングな表現を含みます（閲覧時に画像をぼかします）',
-			en: 'Contains violent or disturbing content (blurs media)',
+			ja: '流血や暴力などショッキングな表現を含みます（投稿全体を伏せて表示します。Blueskyにも反映されます）',
+			en: 'Contains violent or disturbing content (hides the whole post, also on Bluesky)',
 		},
 		badgeText: { ja: '⚠️ 閲覧注意（暴力）', en: '⚠️ Graphic Media' },
 	},

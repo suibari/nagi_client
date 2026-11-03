@@ -8,6 +8,10 @@
 		open = $bindable(false),
 		anchor,
 		selectedLabels = $bindable([]),
+		labelsEnabled = true,
+		mediaWarning = $bindable(false),
+		mediaWarningEnabled = false,
+		hasMedia = false,
 		hasSelection,
 		textWarningDisabled = false,
 		disabled = false,
@@ -16,6 +20,12 @@
 		open?: boolean;
 		anchor?: HTMLElement;
 		selectedLabels?: string[];
+		/** 投稿全体のラベルを選ばせるか。こっそり・編集では出さない。 */
+		labelsEnabled?: boolean;
+		/** 添付した画像・動画をすべてぼかすか。1枚ずつではなく投稿単位で決める。 */
+		mediaWarning?: boolean;
+		mediaWarningEnabled?: boolean;
+		hasMedia?: boolean;
 		hasSelection: boolean;
 		textWarningDisabled?: boolean;
 		disabled?: boolean;
@@ -41,6 +51,15 @@
 		selectedLabels = selectedLabels.includes(value)
 			? selectedLabels.filter((label) => label !== value)
 			: [...selectedLabels, value];
+	}
+
+	/**
+	 * ラベルとは独立して切り替える。ぼかしは Nagi の中で必ず伏せる（閲覧者の設定で外れない）、
+	 * ラベルは Bluesky にも伝わる、と役割が違うので、両方選べば両方効く。
+	 */
+	function toggleMediaWarning() {
+		if (disabled || !hasMedia) return;
+		mediaWarning = !mediaWarning;
 	}
 
 	$effect(() => {
@@ -97,7 +116,11 @@
 		>
 			<div class="menu-heading">
 				<strong>{m.contentWarningMenuTitle()}</strong>
-				<span>{m.contentWarningMenuHelp()}</span>
+				<span
+					>{labelsEnabled
+						? m.contentWarningMenuHelp()
+						: m.contentWarningMenuHelpWithoutLabels()}</span
+				>
 			</div>
 			<button
 				type="button"
@@ -113,8 +136,26 @@
 					></span
 				>
 			</button>
-			<div class="menu-divider"></div>
-			{#each AVAILABLE_SELF_LABELS as option}
+			{#if mediaWarningEnabled}
+				<button
+					type="button"
+					class="menu-item"
+					class:selected={mediaWarning}
+					disabled={disabled || !hasMedia}
+					aria-checked={mediaWarning}
+					role="menuitemcheckbox"
+					onclick={toggleMediaWarning}
+				>
+					<input type="checkbox" checked={mediaWarning} tabindex="-1" aria-hidden="true" />
+					<span
+						><strong>{m.contentWarningMediaChoice()}</strong><small
+							>{hasMedia ? m.contentWarningMediaChoiceHelp() : m.contentWarningMediaNone()}</small
+						></span
+					>
+				</button>
+			{/if}
+			{#if labelsEnabled}<div class="menu-divider"></div>{/if}
+			{#each labelsEnabled ? AVAILABLE_SELF_LABELS : [] as option}
 				{@const selected = selectedLabels.includes(option.value)}
 				<button
 					type="button"

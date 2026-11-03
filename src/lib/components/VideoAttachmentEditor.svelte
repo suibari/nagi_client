@@ -13,12 +13,9 @@
 	let {
 		video = $bindable(),
 		disabled = false,
-		contentWarningEnabled = true,
 	}: {
 		video: VideoAttachment | undefined;
 		disabled?: boolean;
-		/** 編集では、CW 運用で始まった投稿にしか CW を付けられない。 */
-		contentWarningEnabled?: boolean;
 	} = $props();
 	let tracked: VideoAttachment | undefined;
 
@@ -151,17 +148,6 @@
 				</div>
 			{/if}
 		</div>
-		{#if contentWarningEnabled}
-			<button
-				class="ghost attachment-cw"
-				class:active={video.contentWarning}
-				type="button"
-				aria-pressed={video.contentWarning}
-				{disabled}
-				onclick={() => video && (video.contentWarning = !video.contentWarning)}
-				><Icon name="warning" size={16} /><span>{m.contentWarningImage()}</span></button
-			>
-		{/if}
 		<label>
 			<span>{m.videoAltLabel()}</span>
 			<input
@@ -239,8 +225,5 @@
 		margin: 0;
 		color: var(--text-muted);
 		font-size: 12px;
-	}
-	.video-attachment > button {
-		justify-self: start;
 	}
 </style>

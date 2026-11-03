@@ -187,7 +187,12 @@ export type PostDraft = {
 	linkCards: LinkCardDraft[];
 	/** こっそりモード。共有フィードには表示せず、本人のプロフィールや検索で確認できる。 */
 	kossori?: boolean;
-	/** 作成時からCW運用であり、外部コピーを永久に作らない投稿。 */
+	/**
+	 * 作成時からCW運用の投稿。CW（本文の伏せ字・画像のぼかし）は Nagi 独自で、外では効く保証が無い。
+	 * そのためブログ（standard.site）・検索向けの公開はしない。CW は後から付け外しできない。
+	 * Bluesky へのクロスポストは、Bluesky でも伏せられるかで別に判定する
+	 * （crosspost/content-warning.ts）。
+	 */
 	cwRestricted?: boolean;
 	/** botたんサイレント機能。true の投稿には botたんが返信しない。 */
 	botSilent?: boolean;

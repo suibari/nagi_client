@@ -18,12 +18,10 @@
 		existing = $bindable(),
 		video = $bindable(),
 		disabled = false,
-		contentWarningEnabled = false,
 	}: {
 		existing: ExistingVideoEdit | undefined;
 		video: VideoAttachment | undefined;
 		disabled?: boolean;
-		contentWarningEnabled?: boolean;
 	} = $props();
 
 	function setAlt(alt: string) {
@@ -57,18 +55,6 @@
 				onclick={() => (existing = undefined)}><Icon name="close" size={16} /></button
 			>
 		</div>
-		{#if contentWarningEnabled}
-			<button
-				class="ghost attachment-cw"
-				class:active={existing.contentWarning}
-				type="button"
-				aria-pressed={Boolean(existing.contentWarning)}
-				{disabled}
-				onclick={() =>
-					existing && (existing = { ...existing, contentWarning: !existing.contentWarning })}
-				><Icon name="warning" size={16} /><span>{m.contentWarningImage()}</span></button
-			>
-		{/if}
 		<label>
 			<span>{m.videoAltLabel()}</span>
 			<input
@@ -82,7 +68,7 @@
 		</label>
 	</div>
 {:else}
-	<VideoAttachmentEditor bind:video {disabled} {contentWarningEnabled} />
+	<VideoAttachmentEditor bind:video {disabled} />
 {/if}
 
 <style>
@@ -113,8 +99,5 @@
 		display: grid;
 		gap: 4px;
 		font-size: 13px;
-	}
-	.existing-video > button {
-		justify-self: start;
 	}
 </style>

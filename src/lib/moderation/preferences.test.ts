@@ -77,6 +77,61 @@ describe('post moderation preferences', () => {
 	});
 });
 
+describe('content already hidden by the author', () => {
+	const warned = { contentWarning: true };
+
+	it('does not stack the automatic warning on media the author already blurred', () => {
+		expect(
+			contentModerationDisplay({ moderationLabels: ['sexual'], images: [warned, warned] }),
+		).toEqual({ hidden: false, warn: false, reason: undefined });
+		expect(
+			contentModerationDisplay({ moderationLabels: ['graphic-media'], video: warned }),
+		).toMatchObject({ warn: false });
+	});
+
+	it('keeps the warning when some media is left visible', () => {
+		expect(
+			contentModerationDisplay({ moderationLabels: ['sexual'], images: [warned, {}] }),
+		).toEqual({ hidden: false, warn: true, reason: 'automatic' });
+		expect(
+			contentModerationDisplay({ moderationLabels: ['sexual'], images: [warned], video: {} }),
+		).toMatchObject({ warn: true });
+	});
+
+	it('keeps warnings that can come from the text or protect minors', () => {
+		for (const label of ['harassment', 'hate', '!warn', '!hide'])
+			expect(
+				contentModerationDisplay({ moderationLabels: [label], images: [warned] }),
+			).toMatchObject({ warn: true, reason: 'automatic' });
+		expect(
+			contentModerationDisplay({ moderationLabels: ['sexual', 'harassment'], images: [warned] }),
+		).toMatchObject({ warn: true });
+	});
+
+	it('still hides when the viewer chose to hide automatic labels', () => {
+		setModerationPreference('automatic', 'hide');
+		expect(contentModerationDisplay({ moderationLabels: ['sexual'], images: [warned] })).toEqual({
+			hidden: true,
+			warn: false,
+			reason: 'automatic',
+		});
+	});
+
+	it('keeps the author NSFW label covering the whole post, text included', () => {
+		expect(contentModerationDisplay({ selfLabels: ['sexual'], images: [warned] })).toEqual({
+			hidden: false,
+			warn: true,
+			reason: 'selfNsfw',
+		});
+	});
+
+	it('titles the warning with the author label rather than the automatic one', () => {
+		expect(
+			contentModerationDisplay({ selfLabels: ['sexual'], moderationLabels: ['sexual'] }),
+		).toEqual({ hidden: false, warn: true, reason: 'selfNsfw' });
+	});
+});
+
 describe('moderation settings layout', () => {
 	it('shows content choices before age assurance and orders NSFW, AI, automatic', () => {
 		const page = readFileSync(

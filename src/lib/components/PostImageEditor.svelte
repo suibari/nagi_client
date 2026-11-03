@@ -28,7 +28,6 @@
 		allowVideo = false,
 		hasVideo = false,
 		disabled = false,
-		contentWarningEnabled = true,
 		processing = $bindable(false),
 		maxCount = MAX_IMAGE_COUNT,
 	}: {
@@ -41,7 +40,6 @@
 		/** 編集前からの動画も含め、動画が付いている。付いている間は動画を足せない。 */
 		hasVideo?: boolean;
 		disabled?: boolean;
-		contentWarningEnabled?: boolean;
 		processing?: boolean;
 	} = $props();
 	const accept = $derived(allowVideo && !hasVideo ? MEDIA_ACCEPT : IMAGE_ACCEPT);
@@ -150,12 +148,6 @@
 		images = images.map((image) => (image.id === id ? { ...image, alt: limited } : image));
 	}
 
-	function toggleContentWarning(id: string) {
-		images = images.map((image) =>
-			image.id === id ? { ...image, contentWarning: !image.contentWarning || undefined } : image,
-		);
-	}
-
 	onDestroy(() => {
 		destroyed = true;
 		processing = false;
@@ -215,15 +207,6 @@
 						onclick={() => remove(image.id)}><Icon name="close" size={16} /></button
 					>
 				</div>
-				{#if contentWarningEnabled}<button
-						class="ghost attachment-cw"
-						class:active={image.contentWarning}
-						type="button"
-						aria-pressed={Boolean(image.contentWarning)}
-						{disabled}
-						onclick={() => toggleContentWarning(image.id)}
-						><Icon name="warning" size={16} /><span>{m.contentWarningImage()}</span></button
-					>{/if}
 				<label>
 					<span>{m.postImageAltLabel()}</span>
 					<input

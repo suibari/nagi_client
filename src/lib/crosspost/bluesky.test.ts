@@ -5,6 +5,7 @@ import type { PostAssets, PostDraft } from '$lib/atproto/records';
 import {
 	buildArticleEmbed,
 	buildArticleTeaser,
+	crosspostDraftBlock,
 	getCrosspostSelfLabels,
 	prepareCrosspostContent,
 	splitForBluesky,
@@ -216,6 +217,38 @@ describe('getCrosspostSelfLabels', () => {
 				},
 			}),
 		).toEqual([{ val: 'sexual' }]);
+	});
+});
+
+describe('crosspostDraftBlock', () => {
+	const image = { contentWarning: true } as PostDraft['attachments'][number];
+	const labels = (...values: string[]) => ({
+		$type: 'com.atproto.label.defs#selfLabels',
+		values: values.map((val) => ({ val })),
+	});
+
+	it('posts blurred media to Bluesky when the self-label blurs it there too', () => {
+		expect(
+			crosspostDraftBlock({ text: 'hi', attachments: [image], labels: labels('sexual') }),
+		).toBeUndefined();
+	});
+
+	it('keeps blurred media off Bluesky without such a label', () => {
+		expect(crosspostDraftBlock({ text: 'hi', attachments: [image] })).toBe('media');
+		expect(
+			crosspostDraftBlock({
+				text: 'hi',
+				attachments: [],
+				video: { video: {}, contentWarning: true },
+				labels: labels('ai-generated'),
+			}),
+		).toBe('media');
+	});
+
+	it('keeps blurred text off Bluesky', () => {
+		expect(
+			crosspostDraftBlock({ text: '||secret||', attachments: [], labels: labels('sexual') }),
+		).toBe('text');
 	});
 });
 
