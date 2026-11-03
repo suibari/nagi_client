@@ -10,7 +10,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { goto } from '$app/navigation';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
-	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
+	import { followPostedScroll, threadRootUriFromPage } from '$lib/feed/post-follow.svelte';
 	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { replyDepths, replyIndent } from '$lib/thread/replyIndent';
@@ -18,7 +18,7 @@
 	let error = $state('');
 	let enteringReplyUris = $state<Set<string>>(new Set());
 	let entryGeneration = 0;
-	const uri = `at://${page.params.did}/com.suibari.nagi.post/${page.params.rkey}`;
+	const uri = threadRootUriFromPage(page.params.did!, page.params.rkey!, page.url.searchParams);
 	let threadRootUri = $derived(thread?.post.uri ?? uri);
 	async function refreshThread() {
 		const next = (await getThread(uri)).thread;

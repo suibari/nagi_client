@@ -156,6 +156,11 @@ export type PostView = {
 	 * 区別するために、推測ではなくレコードの値をそのまま使う。
 	 */
 	article?: boolean;
+	/**
+	 * TriLinesAt の3行日記（URI は com.suibari.trilinesat.diary）。行の画像は images の添字で指す。
+	 * 本文の text は行を改行でつないだもので、検索・翻訳用。表示はこちらを使う。
+	 */
+	trilines?: { lines: { text: string; imageIndex?: number }[] };
 	/** 投稿後に編集された（AppView が cid 変化を観測した）か。UI の「編集済み」バッジ用。 */
 	edited?: boolean;
 	deleted?: boolean;

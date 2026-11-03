@@ -4,9 +4,17 @@ import {
 	buildScope,
 	CROSSPOST_SCOPE,
 	STANDARD_SITE_COLLECTION_SCOPES,
+	TRILINES_COLLECTION_SCOPE,
 } from './client';
 
 describe('buildScope', () => {
+	it('always includes the 3 Lines diary collection and its assist RPC', () => {
+		const base = buildScope().split(' ');
+		expect(TRILINES_COLLECTION_SCOPE).toBe('repo:com.suibari.trilinesat.diary');
+		expect(base).toContain(TRILINES_COLLECTION_SCOPE);
+		expect(base).toContain('rpc:com.suibari.nagi.generateTrilinesAssist?aud=*');
+	});
+
 	it('always includes standard.site and keeps Bluesky crossposting optional', () => {
 		const base = buildScope().split(' ');
 		for (const scope of STANDARD_SITE_COLLECTION_SCOPES) {

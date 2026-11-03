@@ -39,6 +39,9 @@ export const STANDARD_SITE_COLLECTION_SCOPES = [
 	'repo:site.standard.publication',
 	'repo:site.standard.document',
 ];
+// TriLinesAt の3行日記。作成・編集・削除するので action は絞らない。
+// 別 namespace なので permission set に入れられない。真実源は nagi-lexicon の NAGI_TRILINES_SCOPE。
+export const TRILINES_COLLECTION_SCOPE = 'repo:com.suibari.trilinesat.diary';
 // Nagi namespace の repo/rpc 権限は permission set に集約し、公開済み lexicon を真実源にする。
 // 定義: bsky-affirmative-bot/packages/nagi-lexicon/lexicons/com/suibari/nagi/appviewAccess.json
 // blob と別 namespace の Bluemoji repo 権限は permission set に入れられないため直接スコープで残す。
@@ -65,6 +68,8 @@ const baseScopes = [
 	BLUEMOJI_SCOPE,
 	BLUESKY_PROFILE_SCOPE,
 	...STANDARD_SITE_COLLECTION_SCOPES,
+	TRILINES_COLLECTION_SCOPE,
+	'rpc:com.suibari.nagi.generateTrilinesAssist?aud=*',
 ];
 /** standardSite は旧呼び出し元との互換用。standard.site 権限は常に base に含む。 */
 export type ScopeOptIns = { crosspost?: boolean; standardSite?: boolean };

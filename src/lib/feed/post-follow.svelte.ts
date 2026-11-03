@@ -27,13 +27,27 @@ const state = $state<{ notice?: PostFollowNotice; target?: FollowTarget }>({});
 
 /** 投稿の AT-URI からスレッドページの相対 URL へ。追従できなかったときの導線に使う。 */
 export function postHref(uri: string): string {
-	const [did, , rkey] = uri.slice('at://'.length).split('/');
-	return `/thread/${did}/${rkey}`;
+	const [did, collection, rkey] = uri.slice('at://'.length).split('/');
+	// 3行日記はコレクションが違うので、スレッドページへ印を付けて渡す（URL の形は投稿と揃える）。
+	return collection === TRILINES_DIARY
+		? `/thread/${did}/${rkey}?${THREAD_DIARY_PARAM}`
+		: `/thread/${did}/${rkey}`;
+}
+
+/** スレッドページで、ルートが3行日記であることを表すクエリ。 */
+export const THREAD_DIARY_PARAM = 'diary';
+const TRILINES_DIARY = 'com.suibari.trilinesat.diary';
+
+/** スレッドページの URL からルートの AT-URI を組み立てる。 */
+export function threadRootUriFromPage(did: string, rkey: string, search: URLSearchParams): string {
+	const collection = search.has(THREAD_DIARY_PARAM) ? TRILINES_DIARY : 'com.suibari.nagi.post';
+	return `at://${did}/${collection}/${rkey}`;
 }
 
 /** 記事として公開されたルート投稿は、本文と会話を一緒に読めるブログページへ。 */
 export function postPageHref(post: { uri: string; article?: boolean; reply?: unknown }): string {
-	if ((!post.article && !post.uri.includes('/site.standard.document/')) || post.reply) return postHref(post.uri);
+	if ((!post.article && !post.uri.includes('/site.standard.document/')) || post.reply)
+		return postHref(post.uri);
 	const [did, , rkey] = post.uri.slice('at://'.length).split('/');
 	return `/blog/${did}/${rkey}`;
 }

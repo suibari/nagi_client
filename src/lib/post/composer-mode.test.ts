@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	COMPOSER_MODE_STORAGE_KEY,
+	COMPOSER_MODES,
 	getComposerMode,
+	groupComposerModes,
+	isPlainPostMode,
 	isWideComposer,
 	resetComposerMode,
 	setComposerMode,
@@ -48,9 +51,28 @@ describe('composer mode preference', () => {
 		expect(resetComposerMode()).toBe('simple');
 	});
 
+	it('places the diary tab between rich and blog and remembers it', () => {
+		vi.stubGlobal('window', { localStorage: storageWith() });
+
+		expect(COMPOSER_MODES).toEqual(['simple', 'rich', 'diary', 'blog']);
+		setComposerMode('diary');
+		expect(getComposerMode()).toBe('diary');
+		expect(isPlainPostMode('diary')).toBe(false);
+		expect(isPlainPostMode('blog')).toBe(false);
+		expect(isPlainPostMode('rich')).toBe(true);
+	});
+
+	it('groups simple and rich as posts, and keeps diary and blog on their own', () => {
+		expect(groupComposerModes(COMPOSER_MODES)).toEqual([['simple', 'rich'], ['diary'], ['blog']]);
+		// 返信・引用やゲストでは、ポストのグループだけになる。
+		expect(groupComposerModes(['simple', 'rich'])).toEqual([['simple', 'rich']]);
+		expect(groupComposerModes(['diary'])).toEqual([['diary']]);
+	});
+
 	it('treats both rich and blog as the wide editor', () => {
 		expect(isWideComposer('simple')).toBe(false);
 		expect(isWideComposer('rich')).toBe(true);
 		expect(isWideComposer('blog')).toBe(true);
+		expect(isWideComposer('diary')).toBe(false);
 	});
 });

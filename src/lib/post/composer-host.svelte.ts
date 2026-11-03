@@ -7,6 +7,13 @@ export type ReplyTarget = {
 	post: PostView;
 };
 
+/** 編集する3行日記。ポストモーダルを3行日記タブだけにして開く。 */
+export type TrilinesEditTarget = {
+	uri: string;
+	cid: string;
+	post: PostView;
+};
+
 export type QuoteTarget = {
 	uri: string;
 	cid: string;
@@ -27,9 +34,11 @@ class ComposerHost {
 	defaultScope = $state<PostScope>('feed');
 	replyTarget = $state<ReplyTarget | undefined>(undefined);
 	quoteTarget = $state<QuoteTarget | undefined>(undefined);
+	trilinesEditTarget = $state<TrilinesEditTarget | undefined>(undefined);
 
 	show(defaultScope: PostScope = 'feed') {
 		this.defaultScope = defaultScope;
+		this.trilinesEditTarget = undefined;
 		this.open = true;
 	}
 
@@ -42,6 +51,7 @@ class ComposerHost {
 		};
 		this.quoteTarget = undefined;
 		this.defaultScope = defaultScope;
+		this.trilinesEditTarget = undefined;
 		this.open = true;
 	}
 
@@ -53,6 +63,7 @@ class ComposerHost {
 		};
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
+		this.trilinesEditTarget = undefined;
 		this.open = true;
 	}
 
@@ -64,6 +75,7 @@ class ComposerHost {
 		};
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
+		this.trilinesEditTarget = undefined;
 		this.open = true;
 	}
 
@@ -75,6 +87,13 @@ class ComposerHost {
 		this.quoteTarget = undefined;
 	}
 
+	openTrilinesEdit(post: PostView) {
+		this.trilinesEditTarget = { uri: post.uri, cid: post.cid, post };
+		this.replyTarget = undefined;
+		this.quoteTarget = undefined;
+		this.open = true;
+	}
+
 	clearAllTargets() {
 		this.replyTarget = undefined;
 		this.quoteTarget = undefined;
@@ -82,6 +101,8 @@ class ComposerHost {
 
 	hide() {
 		this.open = false;
+		// 日記の編集はその場限り。次に開いたときは通常の投稿に戻す。
+		this.trilinesEditTarget = undefined;
 	}
 }
 

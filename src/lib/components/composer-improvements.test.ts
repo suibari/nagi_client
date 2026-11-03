@@ -66,9 +66,9 @@ describe('rich composer improvements', () => {
 		expect(modal).toContain('onmodechange?.(nextMode)');
 		expect(signedInModal).toContain('mode = getComposerMode()');
 		expect(signedInModal).toContain('mode = resetComposerMode()');
-		// ゲストはブログにできないので、保存済みの blog は rich へ読み替えて復元する。
+		// ゲストはブログと3行日記にできないので、保存済みのそれらは rich へ読み替えて復元する。
 		expect(guestModal).toContain('const stored = getComposerMode()');
-		expect(guestModal).toContain("mode = stored === 'blog' ? 'rich' : stored");
+		expect(guestModal).toContain("mode = isPlainPostMode(stored) ? stored : 'rich'");
 		expect(guestModal).toContain('mode = resetComposerMode()');
 	});
 

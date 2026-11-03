@@ -16,6 +16,8 @@
 	import { createPost, deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
+	import TrilinesCard from './TrilinesCard.svelte';
+	import { deleteTrilinesDiary } from '$lib/trilines/records';
 	import VideoPlayer from './VideoPlayer.svelte';
 	import { MAX_IMAGE_COUNT, type ImageAttachment, type PostEditImage } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
@@ -207,6 +209,8 @@
 	 */
 	let articleHeader = $derived(post.article && !editing ? post.images?.[0] : undefined);
 	let isBlogPost = $derived(post.article || post.uri.includes('/site.standard.document/'));
+	// 3行日記は行ごとに画像を添えるので、本文下のギャラリーには出さない。
+	let trilines = $derived(post.trilines ? { ...post, trilines: post.trilines } : undefined);
 	// ヘッダーに出した1枚は本文下のギャラリーから外す（同じ画像を二度出さない）。
 	let bodyImages = $derived(articleHeader ? post.images?.slice(1) : post.images);
 	const resolveAsset = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
@@ -626,6 +630,13 @@
 		deleting = true;
 		deleteError = '';
 		try {
+			if (trilines) {
+				// 3行日記の正本は TriLinesAt と共有の日記レコード。Nagi の投稿ではない。
+				await deleteTrilinesDiary(post.uri, post.cid);
+				deleteOpen = false;
+				ondeleted?.(post.uri);
+				return;
+			}
 			// こっそりは PDS に正本が無いので AppView 側の手続きへ振り分ける（deletePost が判定）。
 			await deletePost(post.uri, post.cid);
 			// 記事にしてある投稿なら standard.site 側も消す。こっそりは記事化できないので空振りする。
@@ -707,6 +718,9 @@
 						<!-- ブログの印は日時と同じ控えめな行に置く。カバー画像の上に札を重ねない。 -->
 						{#if isBlogPost}<span class="post-blog-label"
 								><Icon name="newspaper" size={14} />{m.blogTitle()}</span
+							>{/if}
+						{#if trilines}<span class="post-blog-label"
+								><Icon name="edit" size={14} />{m.trilinesLabel()}</span
 							>{/if}
 						{#if !hideTimestamp}
 							<time>
@@ -813,6 +827,8 @@
 				</div>
 			{:else if !managementOnly && post.deleted}
 				<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
+			{:else if !managementOnly && trilines}
+				<TrilinesCard post={trilines} clampTall={clampTallImages} />
 			{:else if !managementOnly}
 				{#snippet collapseToggle()}
 					{#if collapsible && (overflowing || expanded)}<button
@@ -834,7 +850,7 @@
 					{collapseToggle}
 					{translatedText}
 				/>
-			{/if}{#if !managementOnly && !editing && visibleImages?.length}
+			{/if}{#if !managementOnly && !editing && !trilines && visibleImages?.length}
 				<ImageGallery images={visibleImages} clampTall={clampTallImages} />
 				{#if imageToggleable}<button class="read" onclick={() => (showAllImages = !showAllImages)}
 						>{showAllImages ? m.readLess() : m.showAllMedia()}</button
@@ -929,14 +945,20 @@
 									role="menuitem"
 									class:active={editing}
 									onclick={() =>
-										runSecondaryAction(
-											closeMenu,
-											editing ? cancelEdit : startEdit,
-											editing ? 'trigger' : 'editor',
-										)}
+										trilines
+											? runSecondaryAction(
+													closeMenu,
+													() => composerHost.openTrilinesEdit(post),
+													'none',
+												)
+											: runSecondaryAction(
+													closeMenu,
+													editing ? cancelEdit : startEdit,
+													editing ? 'trigger' : 'editor',
+												)}
 								>
 									<Icon name="edit" size={17} />
-									<span>{editing ? m.cancel() : m.editPost()}</span>
+									<span>{trilines ? m.trilinesEdit() : editing ? m.cancel() : m.editPost()}</span>
 								</button>
 							{/if}
 							{#if mine}
@@ -954,7 +976,7 @@
 										)}
 								>
 									<Icon name="trash" size={17} />
-									<span>{m.deletePost()}</span>
+									<span>{trilines ? m.trilinesDelete() : m.deletePost()}</span>
 								</button>
 							{/if}
 						{/snippet}
