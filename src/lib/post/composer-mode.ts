@@ -31,6 +31,21 @@ export const isWideComposer = (mode: ComposerMode) => mode === 'rich' || mode ==
  */
 export const isPlainPostMode = (mode: ComposerMode) => mode === 'simple' || mode === 'rich';
 
+/**
+ * タブの見た目上のまとまり。あっさり・しっかりはどちらも「ポスト」の書き方の違いなので
+ * 1つのグループに入れ、3行日記とブログはそれぞれ別のものとして分ける。
+ * 並びは渡した順を保ち、隣り合う同じグループだけをまとめる。
+ */
+export function groupComposerModes(modes: readonly ComposerMode[]): ComposerMode[][] {
+	const groups: ComposerMode[][] = [];
+	for (const mode of modes) {
+		const last = groups.at(-1);
+		if (last && isPlainPostMode(last[0]) && isPlainPostMode(mode)) last.push(mode);
+		else groups.push([mode]);
+	}
+	return groups;
+}
+
 export function getComposerMode(): ComposerMode {
 	if (typeof window === 'undefined') return 'simple';
 

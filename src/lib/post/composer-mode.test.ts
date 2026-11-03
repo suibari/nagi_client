@@ -3,6 +3,7 @@ import {
 	COMPOSER_MODE_STORAGE_KEY,
 	COMPOSER_MODES,
 	getComposerMode,
+	groupComposerModes,
 	isPlainPostMode,
 	isWideComposer,
 	resetComposerMode,
@@ -59,6 +60,13 @@ describe('composer mode preference', () => {
 		expect(isPlainPostMode('diary')).toBe(false);
 		expect(isPlainPostMode('blog')).toBe(false);
 		expect(isPlainPostMode('rich')).toBe(true);
+	});
+
+	it('groups simple and rich as posts, and keeps diary and blog on their own', () => {
+		expect(groupComposerModes(COMPOSER_MODES)).toEqual([['simple', 'rich'], ['diary'], ['blog']]);
+		// 返信・引用やゲストでは、ポストのグループだけになる。
+		expect(groupComposerModes(['simple', 'rich'])).toEqual([['simple', 'rich']]);
+		expect(groupComposerModes(['diary'])).toEqual([['diary']]);
 	});
 
 	it('treats both rich and blog as the wide editor', () => {

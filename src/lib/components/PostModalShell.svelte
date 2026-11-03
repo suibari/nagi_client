@@ -1,7 +1,12 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { COMPOSER_MODES, isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
+	import {
+		COMPOSER_MODES,
+		groupComposerModes,
+		isWideComposer,
+		type ComposerMode,
+	} from '$lib/post/composer-mode';
 	import Icon from './shell/Icon.svelte';
 
 	let {
@@ -112,15 +117,21 @@
 		<header>
 			<h2 id="post-modal-title" class="visually-hidden">{title}</h2>
 			<div class="post-modal-modes" role="tablist" aria-label={m.postModalModesAria()}>
-				{#each modes as value (value)}
-					<button
-						type="button"
-						role="tab"
-						aria-selected={mode === value}
-						class:active={mode === value}
-						disabled={sending}
-						onclick={() => selectMode(value)}>{modeLabel(value)}</button
-					>
+				<!-- あっさり・しっかりは「ポスト」のグループとして1つの枠に入れ、ほかとは区切り線で分ける。 -->
+				{#each groupComposerModes(modes) as group, index (group.join())}
+					{#if index > 0}<span class="post-modal-mode-separator" aria-hidden="true"></span>{/if}
+					<div class="post-modal-mode-group" class:segmented={group.length > 1} role="none">
+						{#each group as value (value)}
+							<button
+								type="button"
+								role="tab"
+								aria-selected={mode === value}
+								class:active={mode === value}
+								disabled={sending}
+								onclick={() => selectMode(value)}>{modeLabel(value)}</button
+							>
+						{/each}
+					</div>
 				{/each}
 			</div>
 			{#if headerAction}
@@ -195,7 +206,8 @@
 	}
 	.post-modal-modes {
 		display: flex;
-		gap: 4px;
+		align-items: center;
+		gap: 6px;
 		/* タブが4つあるので、狭い画面では閉じる/送信より先に縮む側にする。 */
 		min-width: 0;
 		flex-shrink: 1;
@@ -222,6 +234,26 @@
 		border-color: var(--line-strong);
 		background: var(--surface-2);
 		color: var(--text);
+	}
+	.post-modal-mode-group {
+		display: flex;
+		flex-shrink: 0;
+		gap: 2px;
+	}
+	/* 書き方だけが違うタブの組。枠で囲んで、ひとまとまりに見せる。 */
+	.post-modal-mode-group.segmented {
+		padding: 2px;
+		border: 1px solid var(--line);
+		border-radius: var(--r-sm);
+	}
+	.post-modal-mode-group.segmented button {
+		min-height: 24px;
+	}
+	.post-modal-mode-separator {
+		flex-shrink: 0;
+		width: 1px;
+		height: 18px;
+		background: var(--line);
 	}
 	@media (min-width: 1024px) {
 		/* ブログは本文の右に記事メタ欄が並ぶぶんだけ広い。しっかりは本文 1 列なので通常幅のまま。 */
@@ -260,6 +292,9 @@
 		.post-modal-modes {
 			overflow-x: auto;
 			scrollbar-width: none;
+		}
+		.post-modal-modes {
+			gap: 4px;
 		}
 		.post-modal-modes button {
 			padding: 4px 6px;
