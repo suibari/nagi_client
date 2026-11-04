@@ -579,3 +579,33 @@ describe('initial Nagi profile', () => {
 		expect(putRecord).not.toHaveBeenCalled();
 	});
 });
+
+describe('link card limit', () => {
+	const cards = Array.from({ length: 6 }, (_, index) => ({
+		uri: `https://example.com/${index}`,
+		title: `リンク${index}`,
+	}));
+
+	it('keeps four cards on plain posts and every card on articles', () => {
+		expect(preparePostDraft('本文', undefined, undefined, [], cards).linkCards).toHaveLength(4);
+		expect(
+			preparePostDraft(
+				'本文',
+				undefined,
+				undefined,
+				[],
+				cards,
+				[],
+				[],
+				false,
+				false,
+				false,
+				[],
+				undefined,
+				{
+					article: true,
+				},
+			).linkCards,
+		).toHaveLength(6);
+	});
+});

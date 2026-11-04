@@ -1,5 +1,5 @@
 import type { BluemojiFacetFormats, EmojiView, Facet } from '$lib/api/types';
-import { httpUrl, IMAGE_LINE } from './facets';
+import { cardLineUrl, httpUrl, IMAGE_LINE } from './facets';
 import { decorateSiblingUrl } from '$lib/sso/links';
 import { isInternalUrl, toInternalPath } from '$lib/utils/url';
 
@@ -27,6 +27,11 @@ export type Block = { gap?: number } & (
 	 * ここでは URL を検証せず受け取るだけにする。
 	 */
 	| { type: 'image'; alt: string; url: string }
+	/**
+	 * URL だけの行（記事本文のリンクカード位置）。parseRichText に cardLines を渡したときだけ作る。
+	 * url はカードの照合キー。カードが無いときに段落として出せるよう runs も持つ。
+	 */
+	| { type: 'card'; url: string; runs: InlineRun[] }
 );
 
 type FacetRange = {
@@ -356,11 +361,12 @@ type SourceBlock = { gap: number } & (
 	| { type: 'rule'; line: LineRange }
 	/** alt は ![ と ] の間の範囲。 */
 	| { type: 'image'; line: LineRange; alt: LineRange; url: string }
+	| { type: 'card'; line: LineRange; url: string }
 );
 
 const isBlank = (line: string) => !line.trim();
 
-function splitBlocks(source: string): SourceBlock[] {
+function splitBlocks(source: string, cardLines = false): SourceBlock[] {
 	const lines: LineRange[] = [];
 	for (let offset = 0; offset <= source.length;) {
 		const next = source.indexOf('\n', offset);
@@ -430,6 +436,14 @@ function splitBlocks(source: string): SourceBlock[] {
 			continue;
 		}
 
+		const card = cardLines ? cardLineUrl(raw) : undefined;
+		if (card) {
+			blocks.push({ type: 'card', line, url: card, gap });
+			gap = 0;
+			index++;
+			continue;
+		}
+
 		const heading = HEADING.exec(raw);
 		if (heading) {
 			blocks.push({
@@ -479,7 +493,7 @@ function splitBlocks(source: string): SourceBlock[] {
 		while (index < lines.length) {
 			const current = lines[index];
 			const text = source.slice(current.start, current.end);
-			if (body.length && startsBlock(text)) break;
+			if (body.length && (startsBlock(text) || (cardLines && cardLineUrl(text)))) break;
 			body.push(current);
 			index++;
 		}
@@ -502,6 +516,11 @@ export function parseRichText(
 	options: {
 		/** 指定すると、リンクをこのオリジン基準の装飾なし絶対 URL で返す（commonmark 書き出し用）。 */
 		absoluteOrigin?: string;
+		/**
+		 * URL だけの行を card ブロックにする（記事本文用）。
+		 * 通常の投稿では段落の区切り方を変えないよう、既定では切り出さない。
+		 */
+		cardLines?: boolean;
 	} = {},
 ): Block[] {
 	const ranges = facetRanges(source, facets, options.absoluteOrigin);
@@ -510,7 +529,7 @@ export function parseRichText(
 	const blocks: Block[] = [];
 	// 表示されないブロック（中身が空の段落など）の余白は、次に表示するブロックへ持ち越す
 	let carried = 0;
-	for (const block of splitBlocks(source)) {
+	for (const block of splitBlocks(source, options.cardLines)) {
 		const gap = carried + block.gap;
 		const parsed: Block =
 			block.type === 'ul'
@@ -531,7 +550,9 @@ export function parseRichText(
 										alt: source.slice(block.alt.start, block.alt.end),
 										url: block.url,
 									}
-								: { type: block.type, runs: runs(block.body) };
+								: block.type === 'card'
+									? { type: 'card', url: block.url, runs: runs([block.line]) }
+									: { type: block.type, runs: runs(block.body) };
 		if ('runs' in parsed ? !parsed.runs.length : 'items' in parsed && !parsed.items.length) {
 			carried = gap;
 			continue;
@@ -591,7 +612,12 @@ export function annotateMarkdownSource(source: string): MarkdownSourceAnnotation
 				for (let i = block.alt.start; i < block.alt.end; i++) marks[i] = [];
 			continue;
 		}
-		const groups = 'body' in block ? [block.body] : block.items.map((item) => [item]);
+		const groups =
+			'body' in block
+				? [block.body]
+				: 'items' in block
+					? block.items.map((item) => [item])
+					: [[block.line]];
 		for (const group of groups) {
 			for (const range of group) lines[lineOf[range.start] ?? lineCount - 1] = block.type;
 			const piece = toPiece(source, group);
@@ -616,6 +642,17 @@ export function extractTitle(source: string): string | undefined {
 		.join('')
 		.trim();
 	return title || undefined;
+}
+
+/**
+ * 記事本文で、行の位置にリンクカードを置く URL（URL だけの行）を本文順に返す。
+ * コードブロックの中の URL は含めない。
+ */
+export function articleCardUrls(source: string): string[] {
+	const urls: string[] = [];
+	for (const block of splitBlocks(source, true))
+		if (block.type === 'card' && !urls.includes(block.url)) urls.push(block.url);
+	return urls;
 }
 
 /** 通知の 1 行プレビュー向けに、記法マーカーを落とした素のテキストを返す。 */

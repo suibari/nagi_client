@@ -2,6 +2,8 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onDestroy } from 'svelte';
 	import { parsePostText } from '$lib/atproto/facets';
+	import { articleCardUrls } from '$lib/atproto/markdown';
+	import { MAX_POST_LINK_CARDS } from '$lib/atproto/records';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { APPVIEW_URL, getLinkMetadata, getLinkThumbnail } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -14,14 +16,19 @@
 		// ユーザーが × で消した URL。下書きに保存して復元時の再取得を防ぐため公開している。
 		dismissedUrls = $bindable([]),
 		disabled = false,
+		// 記事本文。カードは URL だけの行に置いたものだけを作り、本文の行ごとに出せるので
+		// 通常投稿の4枚の上限も掛けない（文中の URL はリンクのまま）。
+		article = false,
 	}: {
 		text: string;
 		cards: LinkCardDraft[];
 		dismissedUrls?: string[];
 		disabled?: boolean;
+		article?: boolean;
 	} = $props();
 	let loading = $state<string[]>([]);
-	let urls = $derived(parsePostText(text).cardUrls);
+	let urls = $derived(article ? articleCardUrls(text) : parsePostText(text).cardUrls);
+	let limit = $derived(article ? Infinity : MAX_POST_LINK_CARDS);
 	const previews = new Set<string>();
 	const hydrationAttempted = new Set<string>();
 	let previousUrls = new Set<string>();
@@ -55,10 +62,10 @@
 			(uri) =>
 				!kept.includes(uri) && !cards.some((card) => card.uri === uri) && !loading.includes(uri),
 		);
-		if (!candidates.length || cards.length >= 4) return;
+		if (!candidates.length || cards.length >= limit) return;
 		const timer = window.setTimeout(() => {
 			for (const uri of candidates) {
-				if (cards.length >= 4 || dismissedUrls.includes(uri) || !urls.includes(uri)) break;
+				if (cards.length >= limit || dismissedUrls.includes(uri) || !urls.includes(uri)) break;
 				void add(uri);
 			}
 		}, 700);

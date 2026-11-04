@@ -616,6 +616,7 @@
 			reply ? silentReply : false,
 			selfLabels,
 			video?.toRecord(),
+			{ article: Boolean(article) },
 		);
 		// preparePostDraft の引数はすでに多いので、記事フラグは組み立て後に足す。
 		if (article) draft.article = true;
@@ -954,7 +955,13 @@
 						hideFirst={blog && Boolean(attachments[0]?.header)}
 					/>
 					<VideoAttachmentEditor bind:video disabled={busy} />
-					<LinkCardEditor {text} bind:cards={linkCards} bind:dismissedUrls disabled={busy} />
+					<LinkCardEditor
+						{text}
+						bind:cards={linkCards}
+						bind:dismissedUrls
+						disabled={busy}
+						article={blog}
+					/>
 				{/if}
 				<ComposerQuoteEditor quote={quotePick} disabled={busy} />
 			</div>

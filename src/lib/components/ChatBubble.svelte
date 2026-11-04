@@ -151,6 +151,9 @@
 	let editingArticle = $derived(
 		Boolean(post.article || post.uri.includes('/site.standard.document/')),
 	);
+	// standard.site の document として保存された記事。リンクカードを本文の行ごとに置けるので
+	// 通常投稿の4枚の上限を掛けない（com.suibari.nagi.post のままの旧記事は4枚まで）。
+	let editingDocument = $derived(post.uri.includes('/site.standard.document/'));
 	let editMentions = $state<MentionSelection[]>([]);
 	let editEmojis = $state<EmojiSelection[]>([]);
 	let editImages = $state<PostEditImage[]>([]);
@@ -498,6 +501,12 @@
 			editLinkCards,
 			shift(editMentions),
 			shift(editEmojis),
+			false,
+			false,
+			false,
+			[],
+			undefined,
+			{ article: editingDocument },
 		);
 		if (editingArticle && !editTitle.trim()) {
 			editError = m.articleTitleRequired();
@@ -813,6 +822,7 @@
 						bind:cards={editLinkCards}
 						bind:dismissedUrls={editDismissedUrls}
 						disabled={editBusy}
+						article={editingDocument}
 					/>
 					<div class="post-composer-foot">
 						{#if editError}<span class="error" role="alert">{editError}</span>{/if}

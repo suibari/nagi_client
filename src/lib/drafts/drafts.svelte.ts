@@ -1,5 +1,5 @@
 import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
-import type { LinkCardDraft } from '$lib/atproto/records';
+import { MAX_POST_LINK_CARDS, type LinkCardDraft } from '$lib/atproto/records';
 import type { DraftContent, DraftSummary } from '$lib/api/types';
 import {
 	ApiRequestError,
@@ -35,7 +35,11 @@ const remoteContent = (draft: StoredDraft | ComposerSnapshot): DraftContent => (
 	text: draft.text,
 	mentions: draft.mentions,
 	emojis: (draft.emojis ?? []).map(({ start, end, emoji }) => ({ start, end, uri: emoji.uri })),
-	linkCards: draft.linkCards.map(({ uri, title, description }) => ({ uri, title, description })),
+	// AppView の下書きは通常投稿と同じく4枚まで。記事で5枚目以降があっても、
+	// 本文の URL 行から復元時に取り直されるので、保存は先頭の4枚に絞る。
+	linkCards: draft.linkCards
+		.slice(0, MAX_POST_LINK_CARDS)
+		.map(({ uri, title, description }) => ({ uri, title, description })),
 	dismissedUrls: draft.dismissedUrls,
 	...(draft.quoteUri ? { quoteUri: draft.quoteUri } : {}),
 });
