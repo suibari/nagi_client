@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onDestroy } from 'svelte';
-	import { parsePostText } from '$lib/atproto/facets';
+	import { httpUrl, parsePostText } from '$lib/atproto/facets';
 	import { articleCardUrls } from '$lib/atproto/markdown';
 	import { MAX_POST_LINK_CARDS } from '$lib/atproto/records';
 	import type { LinkCardDraft } from '$lib/atproto/records';
@@ -19,14 +19,20 @@
 		// 記事本文。カードは URL だけの行に置いたものだけを作り、本文の行ごとに出せるので
 		// 通常投稿の4枚の上限も掛けない（文中の URL はリンクのまま）。
 		article = false,
+		// 記事の入力欄が URL 行の下にカードを重ねて見せるとき。行に置いたカードは一覧に出さず、
+		// 行に置かれていないもの（URL 行を消した後に残ったカードなど）だけを並べる。
+		inline = false,
+		// 取得中の URL。入力欄に重ねたカードにも「取得中」を出せるよう公開している。
+		loading = $bindable([]),
 	}: {
 		text: string;
 		cards: LinkCardDraft[];
 		dismissedUrls?: string[];
 		disabled?: boolean;
 		article?: boolean;
+		inline?: boolean;
+		loading?: string[];
 	} = $props();
-	let loading = $state<string[]>([]);
 	let urls = $derived(article ? articleCardUrls(text) : parsePostText(text).cardUrls);
 	let limit = $derived(article ? Infinity : MAX_POST_LINK_CARDS);
 	const previews = new Set<string>();
@@ -34,11 +40,15 @@
 	let previousUrls = new Set<string>();
 	const resolve = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 
-	const sortableItems = $derived(cards.map((card) => ({ ...card, id: card.id ?? card.uri })));
+	let placed = $derived(new Set(article && inline ? urls : []));
+	const isPlaced = (card: LinkCardDraft) => placed.has(httpUrl(card.uri) ?? card.uri);
+	let listed = $derived(cards.filter((card) => !isPlaced(card)));
+	const sortableItems = $derived(listed.map((card) => ({ ...card, id: card.id ?? card.uri })));
 
 	const sortable = createSortable<LinkCardDraft & { id: string }>({
 		items: () => sortableItems,
-		commit: (next) => (cards = next),
+		// 並べ替えるのは一覧に出しているカードだけ。行に置いたカードの位置は本文が決める。
+		commit: (next) => (cards = [...cards.filter(isPlaced), ...next]),
 		ghostClass: 'attachment-drag-ghost',
 		handleSelector: '.attachment-drag-handle',
 		announce: (position) => m.postImageMoved({ position }),
@@ -155,17 +165,18 @@
 		}
 	}
 
-	function remove(uri: string) {
+	/** 入力欄に重ねたカードの × からも呼ぶ。 */
+	export function remove(uri: string) {
 		if (urls.includes(uri) && !dismissedUrls.includes(uri)) dismissedUrls = [...dismissedUrls, uri];
 		cards = cards.filter((card) => card.uri !== uri);
 		loading = loading.filter((item) => item !== uri);
 	}
 </script>
 
-{#if cards.length}
+{#if listed.length}
 	<div class="link-card-editor" use:sortable.container>
 		<div class="link-card-previews">
-			{#each cards as card, index (card.id ?? card.uri)}
+			{#each listed as card, index (card.id ?? card.uri)}
 				<article
 					class="link-card-preview"
 					class:loading={loading.includes(card.uri)}
@@ -176,7 +187,7 @@
 					<button
 						class="attachment-drag-handle"
 						type="button"
-						disabled={disabled || cards.length < 2}
+						disabled={disabled || listed.length < 2}
 						aria-label={m.postImageReorder({ index: index + 1 })}
 						title={m.postImageReorder({ index: index + 1 })}
 						onkeydown={(event) => keydown(event, card.id ?? card.uri)}

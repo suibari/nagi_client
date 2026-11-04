@@ -29,6 +29,7 @@
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
+		httpUrl,
 		restorePostEditState,
 		type EmojiSelection,
 		type MentionSelection,
@@ -58,6 +59,7 @@
 	import type { PostVideoEdit } from '$lib/atproto/records';
 	import LinkCardEditor from './LinkCardEditor.svelte';
 	import { extractTitle, IMAGE_LINE } from '$lib/atproto/markdown';
+	import { usesPlainTextarea, type ComposerEmbeds } from './composer-embeds';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import {
 		deleteStandardSiteDocument,
@@ -184,7 +186,7 @@
 	 * URL から、足した画像は手元で計算した CID から作る。外した画像の行を本文から消すのと、
 	 * 保存前に添付の無い画像行を落とすのに使う。
 	 */
-	let editImageUrls: Record<string, string> = {};
+	let editImageUrls = $state<Record<string, string>>({});
 	let editSeenImageIds = new Set<string>();
 	$effect(() => {
 		const current = editImages;
@@ -211,6 +213,34 @@
 				editComposer?.insertBlock(imageMarkdown(image.alt, url));
 			});
 		}
+	});
+	/**
+	 * standard.site の記事の編集では、URL だけの行のリンクカードと本文の画像を入力欄の中
+	 * （行の下）に見せる。Android の素の textarea では重ねられないので従来の一覧に出す。
+	 */
+	const editInlineEmbeds = $derived(editingDocument && !usesPlainTextarea());
+	let editLinkCardEditor = $state<{ remove: (uri: string) => void }>();
+	let editLinkCardLoading = $state<string[]>([]);
+	const removeEditInlineCard = (uri: string) => editLinkCardEditor?.remove(uri);
+	let editEmbeds = $derived.by((): ComposerEmbeds | undefined => {
+		if (!editInlineEmbeds) return undefined;
+		const images: Record<string, string> = {};
+		for (const image of editImages) {
+			const key = editImageUrls[image.id] && blobKey(editImageUrls[image.id]);
+			if (key) images[key] = image.previewUrl;
+		}
+		return {
+			cards: editLinkCards.map(({ uri, title, description, previewUrl }) => ({
+				uri,
+				title,
+				description,
+				previewUrl,
+				loading: editLinkCardLoading.includes(uri),
+			})),
+			images,
+			disabled: editBusy,
+			onremovecard: removeEditInlineCard,
+		};
 	});
 	let reactionPickerOpen = $state(false);
 	let contentRevealed = $state(false);
@@ -808,6 +838,7 @@
 						mediaWarningEnabled
 						bind:mediaWarning={editMediaWarning}
 						hasMedia={editHasMedia}
+						embeds={editEmbeds}
 						onsubmit={() => void submitEdit()}
 						onpaste={(event) => editImageEditor?.handlePaste(event)}
 						tools={editTools}
@@ -818,11 +849,14 @@
 						disabled={editBusy}
 					/>
 					<LinkCardEditor
+						bind:this={editLinkCardEditor}
 						text={editText}
 						bind:cards={editLinkCards}
 						bind:dismissedUrls={editDismissedUrls}
+						bind:loading={editLinkCardLoading}
 						disabled={editBusy}
 						article={editingDocument}
+						inline={editInlineEmbeds}
 					/>
 					<div class="post-composer-foot">
 						{#if editError}<span class="error" role="alert">{editError}</span>{/if}

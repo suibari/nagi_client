@@ -9,6 +9,7 @@ const signedInModal = read('./PostModal.svelte');
 const guestModal = read('./GuestPostModal.svelte');
 const input = read('./ComposerInput.svelte');
 const decorations = read('./composer-decorations.ts');
+const embeds = read('./composer-embeds.ts');
 const styles = read('../../routes/styles/components.css');
 
 describe('rich composer improvements', () => {
@@ -23,7 +24,8 @@ describe('rich composer improvements', () => {
 	});
 
 	it('falls back to a plain textarea on Android, where CodeMirror cannot take input', () => {
-		expect(input).toContain('const plainTextarea = /Android/i.test(navigator.userAgent);');
+		expect(input).toContain('const plainTextarea = usesPlainTextarea();');
+		expect(embeds).toContain('/Android/i.test(navigator.userAgent)');
 		expect(input).toMatch(/\{#if plainTextarea\}\s*<textarea/);
 		expect(input).toContain('onkeydown={handleKeydown}');
 	});

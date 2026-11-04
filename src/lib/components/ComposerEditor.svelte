@@ -4,6 +4,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import MarkdownPalette, { type MarkdownFormat } from './MarkdownPalette.svelte';
 	import ComposerInput from './ComposerInput.svelte';
+	import type { ComposerEmbeds } from './composer-embeds';
 	import Icon from './shell/Icon.svelte';
 	import { parseContentWarning } from '$lib/atproto/contentWarning';
 	import { isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
@@ -33,6 +34,7 @@
 		ontextinput,
 		oncompositionchange,
 		tools,
+		embeds,
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
@@ -61,6 +63,8 @@
 		ontextinput?: (event: InputEvent) => void;
 		oncompositionchange?: (composing: boolean) => void;
 		tools?: Snippet;
+		/** 記事本文で、URL 行・画像行の下に重ねて見せるリンクカードと画像。 */
+		embeds?: ComposerEmbeds;
 	} = $props();
 
 	let editor = $state<{
@@ -109,6 +113,7 @@
 		{onpaste}
 		{ontextinput}
 		{oncompositionchange}
+		{embeds}
 		onselectionchange={(selected) => (hasSelection = selected)}
 	/>
 	<div class="composer-tools" class:with-leading={tools}>

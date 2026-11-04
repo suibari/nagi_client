@@ -21,6 +21,12 @@
 	import { EditorView, keymap, placeholder as placeholderExtension } from '@codemirror/view';
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { composerDecorations, refreshDecorations } from './composer-decorations';
+	import {
+		composerEmbeds,
+		setComposerEmbeds,
+		usesPlainTextarea,
+		type ComposerEmbeds,
+	} from './composer-embeds';
 	import { textareaCaretRect } from './textarea-caret';
 	import {
 		applyContentWarning as wrapContentWarning,
@@ -41,6 +47,7 @@
 		ontextinput,
 		oncompositionchange,
 		onselectionchange,
+		embeds,
 	}: {
 		value?: string;
 		mentions?: MentionSelection[];
@@ -55,6 +62,8 @@
 		ontextinput?: (event: InputEvent) => void;
 		oncompositionchange?: (composing: boolean) => void;
 		onselectionchange?: (selected: boolean) => void;
+		/** 記事本文で、URL 行・画像行の下に重ねて見せるリンクカードと画像。 */
+		embeds?: ComposerEmbeds;
 	} = $props();
 
 	/**
@@ -63,7 +72,7 @@
 	 * codemirror.net 本体でも再現する。機種は UA から判別できないので Android 全体を対象にする。
 	 * 記法のその場装飾はなくなるが、候補・装飾ボタン・CW などの操作は同じ関数を通す。
 	 */
-	const plainTextarea = /Android/i.test(navigator.userAgent);
+	const plainTextarea = usesPlainTextarea();
 
 	let host = $state<HTMLDivElement>();
 	let textarea = $state<HTMLTextAreaElement>();
@@ -203,6 +212,7 @@
 					EditorView.editorAttributes.of({ class: 'composer-input' }),
 					EditorView.lineWrapping,
 					composerDecorations(() => ({ mentions, emojis })),
+					composerEmbeds,
 					placeholderText.of(placeholder ? placeholderExtension(placeholder) : []),
 					editable.of([EditorView.editable.of(!disabled), EditorState.readOnly.of(disabled)]),
 					attributes.of(EditorView.contentAttributes.of(contentAttributes())),
@@ -277,6 +287,12 @@
 	$effect(() => {
 		const next = value;
 		if (view && next !== view.state.doc.toString()) setText(next, next.length);
+	});
+
+	$effect(() => {
+		// 呼び出し側は中身が変わるたびに新しいオブジェクトを渡す（$derived で組み立てる）。
+		const next = embeds;
+		view?.dispatch({ effects: setComposerEmbeds.of(next) });
 	});
 
 	// メンション等の選択範囲が変わったら、リンク色の装飾を付け直す。
