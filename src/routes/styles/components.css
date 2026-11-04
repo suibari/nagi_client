@@ -451,6 +451,75 @@
 	border-radius: var(--radius-m);
 	object-fit: contain;
 }
+/* 画像の左下に重ねる「ALT」。押すと画像の下に alt の入力欄を開く。 */
+.mention-textarea .composer-input .composer-embed-image-frame {
+	position: relative;
+	width: fit-content;
+	max-width: 100%;
+}
+.mention-textarea .composer-input .composer-embed-alt {
+	position: absolute;
+	bottom: 8px;
+	left: 8px;
+	padding: 2px 7px;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	color: white;
+	background: rgb(0 0 0 / 68%);
+	border: 1px solid transparent;
+	border-radius: 6px;
+}
+/* alt が空のときは点線にして、まだ書いていないと分かるようにする。 */
+.mention-textarea .composer-input .composer-embed-alt:not(.filled) {
+	border-color: rgb(255 255 255 / 70%);
+	border-style: dashed;
+}
+.mention-textarea .composer-input .composer-embed-alt[hidden] {
+	display: none;
+}
+.mention-textarea .composer-input .composer-embed-alt:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+.mention-textarea .composer-input .composer-embed-alt-editor {
+	display: grid;
+	gap: 6px;
+	max-width: 480px;
+	margin-top: 6px;
+	user-select: text;
+	cursor: auto;
+}
+.mention-textarea .composer-input .composer-embed-alt-editor[hidden] {
+	display: none;
+}
+.mention-textarea .composer-input .composer-embed-alt-editor label {
+	display: grid;
+	gap: 4px;
+}
+.mention-textarea .composer-input .composer-embed-alt-editor label span {
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--text-muted);
+}
+.mention-textarea .composer-input .composer-embed-alt-editor input {
+	width: 100%;
+	padding: 7px 8px;
+	font-size: 13px;
+	color: var(--text);
+	background: var(--bg-raised);
+	border: 1px solid var(--line-strong);
+	border-radius: 8px;
+}
+.mention-textarea .composer-input .composer-embed-alt-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 6px;
+}
+.mention-textarea .composer-input .composer-embed-alt-actions button {
+	padding: 5px 12px;
+	font-size: 12px;
+}
 /* 投稿の ul/ol と同じ字下げ。マーカーは左の余白へぶら下げる。 */
 .mention-textarea .composer-input .cm-line[data-block='ul'],
 .mention-textarea .composer-input .cm-line[data-block='ol'] {

@@ -10,8 +10,27 @@
 		attachments = $bindable(),
 		disabled = false,
 		hideFirst = false,
-	}: { attachments: ImageAttachment[]; disabled?: boolean; hideFirst?: boolean } = $props();
-	let visibleAttachments = $derived(hideFirst ? attachments.slice(1) : attachments);
+		// 記事の入力欄の中に出している画像など、一覧に出さない添付の id。
+		hiddenIds,
+	}: {
+		attachments: ImageAttachment[];
+		disabled?: boolean;
+		hideFirst?: boolean;
+		hiddenIds?: ReadonlySet<string>;
+	} = $props();
+	let visibleAttachments = $derived(
+		attachments.filter(
+			(attachment, index) => !(hideFirst && index === 0) && !hiddenIds?.has(attachment.id),
+		),
+	);
+	/** 一覧に出している添付だけを並べ替え、出していない添付の位置はそのままにする。 */
+	function reorder(next: ImageAttachment[]) {
+		const visible = new Set(visibleAttachments.map((attachment) => attachment.id));
+		let index = 0;
+		attachments = attachments.map((attachment) =>
+			visible.has(attachment.id) ? next[index++] : attachment,
+		);
+	}
 	let tracked = new Map<string, ImageAttachment>();
 
 	$effect(() => {
@@ -39,11 +58,7 @@
 
 {#if visibleAttachments.length}
 	<div class="attachment-editor">
-		<SortableImageList
-			items={visibleAttachments}
-			{disabled}
-			onreorder={(next) => (attachments = hideFirst ? [attachments[0], ...next] : next)}
-		>
+		<SortableImageList items={visibleAttachments} {disabled} onreorder={reorder}>
 			{#snippet children(attachment)}
 				<div class="attachment-preview">
 					{#if attachment.contentWarning}

@@ -309,6 +309,8 @@ export const en: Messages = {
 	postPastedImageName: 'Pasted image',
 	postImageAltLabel: 'Image description (optional)',
 	postImageAltPlaceholder: 'Describe the contents of this image',
+	postImageAltAdd: 'Add image description',
+	postImageAltEdit: 'Edit image description',
 	postImageCountError: 'You can attach up to four images',
 	postImageTypeError: (p) => `${p.name}: choose a JPEG, PNG, WebP, or GIF image`,
 	postImageInputSizeError: (p) => `${p.name}: choose an image no larger than 25MB`,

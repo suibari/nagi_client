@@ -30,8 +30,11 @@
 		disabled = false,
 		processing = $bindable(false),
 		maxCount = MAX_IMAGE_COUNT,
+		hiddenIds,
 	}: {
 		images: PostEditImage[];
+		/** 記事の入力欄の中に出している画像など、一覧に出さない画像の id。 */
+		hiddenIds?: ReadonlySet<string>;
 		/** 画像の上限。記事は standard.site に上限が無いので Infinity を渡す。 */
 		maxCount?: number;
 		/** allowVideo のとき、選んだ動画（1本まで）をここへ入れる。画像と併用できる。 */
@@ -46,6 +49,13 @@
 	/** 画像が上限で、動画もこれ以上足せないときだけボタンを止める。 */
 	const full = $derived(images.length >= maxCount && (!allowVideo || hasVideo));
 	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
+	let visibleImages = $derived(images.filter((image) => !hiddenIds?.has(image.id)));
+	/** 一覧に出している画像だけを並べ替え、出していない画像の位置はそのままにする。 */
+	function reorder(next: PostEditImage[]) {
+		const visible = new Set(visibleImages.map((image) => image.id));
+		let index = 0;
+		images = images.map((image) => (visible.has(image.id) ? next[index++] : image));
+	}
 
 	let errors = $state<string[]>([]);
 	let compressionProgress = $state<GifCompressionProgress | null>(null);
@@ -182,8 +192,8 @@
 		{/if}
 	</button>
 	<span class="visually-hidden" aria-live="polite">{processing ? processingLabel : ''}</span>
-	{#if images.length}
-		<SortableImageList bind:items={images} {disabled}>
+	{#if visibleImages.length}
+		<SortableImageList items={visibleImages} {disabled} onreorder={reorder}>
 			{#snippet children(image)}
 				<div class="attachment-preview">
 					{#if image.contentWarning}
