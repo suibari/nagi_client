@@ -56,7 +56,7 @@
 	} from '$lib/standardsite/document';
 	import { getPublicationRef } from '$lib/standardsite/publication';
 	import ComposerArticleMeta from './ComposerArticleMeta.svelte';
-	import { isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
+	import { isPlainPostMode, isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
 	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
@@ -931,7 +931,9 @@
 				onpaste={(event) => {
 					// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
 					// それ以外は素通しするので、画像ペーストは従来どおり動く。
-					quotePick.handlePaste(event, $session?.did);
+					// ブログは引用を持てない（記事にできなくなる）ので、URLのまま本文へ入れて
+					// 通常のリンクカードとして扱わせる。
+					if (isPlainPostMode(mode)) quotePick.handlePaste(event, $session?.did);
 					imagePicker?.handlePaste(event);
 				}}
 				tools={editorTools}
