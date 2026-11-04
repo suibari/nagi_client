@@ -1,23 +1,41 @@
 <script lang="ts">
-	import type { Facet, PostImage } from '$lib/api/types';
+	import type { Facet, LinkCardView, PostImage } from '$lib/api/types';
 	import { parseRichText } from '$lib/atproto/markdown';
 	import { contentWarningDisplay } from '$lib/atproto/contentWarning';
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import { blobKey } from '$lib/blog/inlineImages';
+	import { httpUrl } from '$lib/atproto/facets';
 	import InlineRuns from './InlineRuns.svelte';
 	import ImageGallery from './ImageGallery.svelte';
+	import LinkCard from './LinkCard.svelte';
 	/**
 	 * images は本文の `![alt](url)` を差し込むための添付画像。本文に書かれた URL が
 	 * この投稿の添付と同じ blob を指すときだけ表示する（任意の外部画像は読み込まない）。
 	 * 渡されなければ画像行は何も出さない（タイムラインでは添付はギャラリー側に出る）。
+	 *
+	 * linkCards は記事本文用。渡したときだけ URL だけの行をその位置のリンクカードにする
+	 * （画像と同じく、カードの中身は投稿の linkCards から URL で引く）。カードの無い URL 行は
+	 * 普通の段落として出す。渡さなければ段落の区切り方も含めて従来どおり。
 	 */
 	let {
 		text,
 		facets = [],
 		images = [],
-	}: { text: string; facets?: Facet[]; images?: PostImage[] } = $props();
+		linkCards,
+	}: {
+		text: string;
+		facets?: Facet[];
+		images?: PostImage[];
+		linkCards?: LinkCardView[];
+	} = $props();
 	let display = $derived(contentWarningDisplay(text, facets as Facet[]));
-	let blocks = $derived(parseRichText(display.text, display.facets, display.range));
+	let blocks = $derived(
+		parseRichText(display.text, display.facets, display.range, { cardLines: Boolean(linkCards) }),
+	);
+	// 行の URL は httpUrl で正規化済みなので、カード側も同じ形にそろえて引く。
+	let cardsByUrl = $derived(
+		new Map((linkCards ?? []).map((card) => [httpUrl(card.uri) ?? card.uri, card])),
+	);
 	let imagesByKey = $derived.by(() => {
 		const origins = [new URL(APPVIEW_URL, 'http://localhost').origin];
 		const map = new Map<string, PostImage>();
@@ -74,6 +92,10 @@
 		{#if image}<div class="post-inline-image" data-block="image">
 				<ImageGallery images={[image]} />
 			</div>{/if}
+	{:else if block.type === 'card'}
+		{@const card = cardsByUrl.get(block.url)}
+		{#if card}<div class="post-inline-card" data-block="card"><LinkCard {card} /></div>
+		{:else}<p data-block="p"><InlineRuns runs={block.runs} {warningState} /></p>{/if}
 	{:else}
 		<p data-block="p"><InlineRuns runs={block.runs} {warningState} /></p>
 	{/if}

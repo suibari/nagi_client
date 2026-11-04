@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { annotateMarkdownSource, extractTitle, parseRichText, stripMarkdown } from './markdown';
+import {
+	annotateMarkdownSource,
+	articleCardUrls,
+	extractTitle,
+	parseRichText,
+	stripMarkdown,
+} from './markdown';
 import { parsePostText } from './facets';
 
 const flatten = (runs: Array<{ text: string }>) => runs.map((run) => run.text).join('');
@@ -208,5 +214,38 @@ describe('article blocks', () => {
 
 	it('leaves images and rules out of plain text', () => {
 		expect(stripMarkdown(`# T\n\n${image}\n---\n\`\`\`\ncode\n\`\`\``)).toBe('T code');
+	});
+});
+
+describe('article link card lines', () => {
+	const url = 'https://example.com/a';
+	const source = `前の段落\n${url}\n後ろの段落\n\n文中の ${url} はリンクのまま`;
+
+	it('splits a URL-only line into a card block only when cardLines is on', () => {
+		const parsed = parsePostText(source);
+		expect(
+			parseRichText(parsed.text, parsed.facets, undefined, { cardLines: true }).map(
+				(block) => block.type,
+			),
+		).toEqual(['p', 'card', 'p']);
+		const card = parseRichText(parsed.text, parsed.facets, undefined, { cardLines: true })[1];
+		expect(card).toMatchObject({ type: 'card', url });
+		// カードが無いときは段落として出せるよう、行のリンクも runs に残す。
+		expect(card.type === 'card' && card.runs[0]).toMatchObject({ text: url, href: url });
+		// 既定（タイムラインなど）では段落の区切り方を変えない。
+		expect(parseRichText(parsed.text, parsed.facets).map((block) => block.type)).toEqual(['p']);
+	});
+
+	it('lists card URLs in body order without duplicates or URLs inside sentences and code', () => {
+		expect(
+			articleCardUrls(
+				`${url}\n本文 https://example.com/inline\n  https://example.com/b  \n${url}\n\`\`\`\nhttps://example.com/code\n\`\`\``,
+			),
+		).toEqual([url, 'https://example.com/b']);
+	});
+
+	it('does not treat a URL followed by punctuation as a card line', () => {
+		expect(articleCardUrls('https://example.com/a。')).toEqual([]);
+		expect(articleCardUrls('<https://example.com/a>')).toEqual([]);
 	});
 });

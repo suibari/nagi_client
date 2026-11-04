@@ -1724,7 +1724,8 @@
 	border: 0;
 	border-top: 1px solid var(--line-strong);
 }
-.post-text .post-inline-image {
+.post-text .post-inline-image,
+.post-text .post-inline-card {
 	margin: 0.4em 0;
 }
 .read {

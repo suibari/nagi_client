@@ -16,6 +16,8 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { splitArticleText } from '$lib/blog/articleText';
 	import { blobKey, inlineImageKeys } from '$lib/blog/inlineImages';
+	import { articleCardUrls } from '$lib/atproto/markdown';
+	import { httpUrl } from '$lib/atproto/facets';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { languageName, languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -131,6 +133,13 @@
 	);
 	let cover = $derived(images[0] && looseImages[0] === images[0] ? images[0] : undefined);
 	let bodyImages = $derived(cover ? looseImages.slice(1) : looseImages);
+	// リンクカードも画像と同じく、本文の URL だけの行に置いたものはその位置に出し、
+	// 残り（行に置かれていないカード。行単位の配置に対応する前の記事）は本文の後ろにまとめる。
+	let linkCards = $derived(post?.linkCards ?? []);
+	let inlineCardUrls = $derived(new Set(articleCardUrls(text)));
+	let looseLinkCards = $derived(
+		linkCards.filter((card) => !inlineCardUrls.has(httpUrl(card.uri) ?? card.uri)),
+	);
 	let reactions = $derived(post?.reactions ?? []);
 	let replies = $derived([
 		...(thread?.replies ?? []).filter(
@@ -271,11 +280,11 @@
 	{/if}
 
 	<div class="blog-body post-text" lang={showingTranslation ? translationTarget : undefined}>
-		<RichText text={body} facets={bodyFacets} {images} />
+		<RichText text={body} facets={bodyFacets} {images} {linkCards} />
 	</div>
 	{#if bodyImages.length}<div class="blog-media"><ImageGallery images={bodyImages} /></div>{/if}
-	{#if post?.linkCards?.length}<div class="blog-links">
-			{#each post.linkCards as card}<LinkCard {card} />{/each}
+	{#if looseLinkCards.length}<div class="blog-links">
+			{#each looseLinkCards as card}<LinkCard {card} />{/each}
 		</div>{/if}
 
 	{#if post}

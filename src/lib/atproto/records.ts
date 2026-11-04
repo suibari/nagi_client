@@ -216,6 +216,9 @@ export type PostVideoRecord = {
 	aspectRatio?: { width: number; height: number };
 };
 
+/** 通常投稿に付けられるリンクカードの上限。記事は本文の行ごとに置けるので上限を掛けない。 */
+export const MAX_POST_LINK_CARDS = 4;
+
 export function preparePostDraft(
 	text: string,
 	reply?: PostDraft['reply'],
@@ -229,6 +232,7 @@ export function preparePostDraft(
 	silentReply = false,
 	selfLabels: string[] = [],
 	video?: PostVideoRecord,
+	options: { article?: boolean } = {},
 ): PostDraft {
 	const leadingWhitespace = text.length - text.trimStart().length;
 	const source = text.trim();
@@ -254,7 +258,9 @@ export function preparePostDraft(
 		quote,
 		attachments: [...attachments],
 		...(video ? { video } : {}),
-		linkCards: linkCards.slice(0, 4).map((card) => ({ ...card })),
+		linkCards: (options.article ? linkCards : linkCards.slice(0, MAX_POST_LINK_CARDS)).map(
+			(card) => ({ ...card }),
+		),
 		...(hasContentWarning(parsed.text) ||
 		attachments.some((image) => image.contentWarning) ||
 		video?.contentWarning
@@ -675,7 +681,8 @@ export async function updatePost(
 		else delete record.embed;
 	}
 
-	if (draft.linkCards.length > 4) throw new Error('A post can contain at most four link cards');
+	if (collection !== DOCUMENT && draft.linkCards.length > MAX_POST_LINK_CARDS)
+		throw new Error('A post can contain at most four link cards');
 	const storedLinkCards = Array.isArray(record.linkCards)
 		? (record.linkCards as StoredPostLinkCard[])
 		: [];

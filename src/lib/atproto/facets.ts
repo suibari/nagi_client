@@ -75,6 +75,18 @@ const trimRawUrl = (value: string) => {
 };
 
 /**
+ * 行が URL だけで出来ていれば、その URL（リンクカードの照合キー）を返す。
+ * 記事本文で「その位置にリンクカードを置く」書き方として使う。
+ * 末尾の句読点を落とさないと URL にならない行は文の一部とみなし、カードにしない。
+ * 返す URL は parsePostText の cardUrls と同じ正規化なので、カードの uri とそのまま照合できる。
+ */
+export function cardLineUrl(line: string): string | undefined {
+	const source = line.trim();
+	if (!/^https?:\/\/[^\s<>]+$/.test(source) || trimRawUrl(source) !== source) return undefined;
+	return httpUrl(source);
+}
+
+/**
  * 保存済み本文と facet を Composer が再解釈できる編集入力へ戻す。
  * facet の位置は UTF-8 バイト単位なので、文字列へ戻しながら mention の文字位置を組み直す。
  * 名前付きリンクは保存時に Markdown 記法が本文から除かれるため、[label](url) へ復元する。
