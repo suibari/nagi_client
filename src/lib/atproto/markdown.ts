@@ -657,16 +657,21 @@ export function articleCardUrls(source: string): string[] {
 
 /**
  * 記事本文で、行の位置に埋め込みを出す行（URL だけの行と `![alt](url)` の行）を本文順に返す。
- * end はその行の末尾の文字位置。入力欄で行の下にカードや画像を重ねて見せるのに使う。
+ * start / end はその行の先頭・末尾の文字位置。入力欄で行の下にカードや画像を重ねて見せるのに使う。
  * コードブロックの中の行は含めない。
  */
 export function articleEmbedLines(
 	source: string,
-): Array<{ type: 'card' | 'image'; end: number; url: string }> {
-	const lines: Array<{ type: 'card' | 'image'; end: number; url: string }> = [];
+): Array<{ type: 'card' | 'image'; start: number; end: number; url: string }> {
+	const lines: Array<{ type: 'card' | 'image'; start: number; end: number; url: string }> = [];
 	for (const block of splitBlocks(source, true))
 		if (block.type === 'card' || block.type === 'image')
-			lines.push({ type: block.type, end: block.line.end, url: block.url });
+			lines.push({
+				type: block.type,
+				start: block.line.start,
+				end: block.line.end,
+				url: block.url,
+			});
 	return lines;
 }
 

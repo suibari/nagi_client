@@ -257,9 +257,15 @@ describe('article embed lines', () => {
 		const source = `前\nhttps://example.com/a\n${image}\n\`\`\`\nhttps://example.com/code\n\`\`\``;
 		const lines = articleEmbedLines(source);
 		expect(lines).toEqual([
-			{ type: 'card', end: source.indexOf('\n', 2), url: 'https://example.com/a' },
+			{
+				type: 'card',
+				start: 2,
+				end: source.indexOf('\n', 2),
+				url: 'https://example.com/a',
+			},
 			{
 				type: 'image',
+				start: source.indexOf(image),
 				end: source.indexOf(image) + image.length,
 				url: 'https://nagi.suibari.com/api/blob/did:plc:a/bafy',
 			},
