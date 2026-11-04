@@ -67,6 +67,16 @@
 		// 行う（この effect は dismissedUrls を読むので、無条件の代入はループになる）。
 		const kept = dismissedUrls.filter((uri) => !previousUrls.has(uri) || currentUrls.has(uri));
 		if (kept.length !== dismissedUrls.length) dismissedUrls = kept;
+		// 記事では、カードは URL だけの行の位置に出す。行を消したらカードも外す（残すと入力欄の下の
+		// 一覧に移り、記事の末尾に出てしまう）。開いた時点で行に無かった古い記事のカードは、
+		// 一度も previousUrls に入らないので残る。
+		if (article) {
+			const gone = [...previousUrls].filter((uri) => !currentUrls.has(uri));
+			const lost = (card: LinkCardDraft) => gone.includes(httpUrl(card.uri) ?? card.uri);
+			if (gone.length && cards.some(lost)) cards = cards.filter((card) => !lost(card));
+			if (loading.some((uri) => gone.includes(uri)))
+				loading = loading.filter((uri) => !gone.includes(uri));
+		}
 		previousUrls = currentUrls;
 		const candidates = urls.filter(
 			(uri) =>

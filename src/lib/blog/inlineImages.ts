@@ -37,13 +37,64 @@ export function blobKey(url: string, allowedOrigins: readonly string[] = []): st
 
 /** 本文に1行画像として置かれている blob の照合キー。 */
 export function inlineImageKeys(text: string): Set<string> {
-	const keys = new Set<string>();
+	return new Set(inlineImageAlts(text).keys());
+}
+
+/**
+ * 本文に1行画像として置かれている blob の照合キーと、その行の alt（`![alt](url)`）。
+ * 記事の入力欄では alt を本文の行で持つので、添付の alt をこれに合わせる。
+ */
+export function inlineImageAlts(text: string): Map<string, string> {
+	const alts = new Map<string, string>();
 	for (const line of text.split('\n')) {
 		const match = IMAGE_LINE.exec(line);
 		const key = match && blobKey(match[2]);
-		if (key) keys.add(key);
+		if (key && !alts.has(key)) alts.set(key, match[1]);
 	}
-	return keys;
+	return alts;
+}
+
+/**
+ * 本文の画像行のうち alt が空のものへ、添付の alt（照合キーごと）を入れる。
+ * 以前の記事は alt を添付だけに持つことがあり、本文の alt に揃える前に移しておく。
+ */
+export function fillInlineImageAlts(text: string, alts: ReadonlyMap<string, string>): string {
+	return text
+		.split('\n')
+		.map((line) => {
+			const match = IMAGE_LINE.exec(line);
+			const key = match && blobKey(match[2]);
+			const alt = key ? alts.get(key) : undefined;
+			return match && !match[1] && alt ? imageMarkdown(alt, match[2]) : line;
+		})
+		.join('\n');
+}
+
+/** 画像の alt の上限（書記素）。添付の入力欄と同じ。 */
+export const MAX_IMAGE_ALT = 1000;
+
+export function limitAlt(alt: string): string {
+	return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(alt)]
+		.slice(0, MAX_IMAGE_ALT)
+		.map((segment) => segment.segment)
+		.join('');
+}
+
+/**
+ * 記事の入力欄で、本文の行に置いた画像の扱い。placed は今の本文にある照合キー、seen は
+ * この編集中に一度でも本文にあった照合キー。
+ * - 本文にある画像は入力欄の中に出すので、下の一覧には出さない
+ * - 行を消した画像（seen にあって placed に無い）は一覧にも投稿にも出さない。添付は
+ *   残しておき、元に戻すで行が戻れば画像も戻る
+ * - 一度も本文に無かった画像（行単位の配置に対応する前の記事の画像など）は一覧に残す
+ */
+export function inlineImageState(
+	key: string | undefined,
+	placed: ReadonlyMap<string, string> | ReadonlySet<string>,
+	seen: ReadonlySet<string>,
+): 'placed' | 'detached' | 'listed' {
+	if (!key || !seen.has(key)) return 'listed';
+	return placed.has(key) ? 'placed' : 'detached';
 }
 
 /** `![alt](url)` の alt に入れられない文字（改行と閉じ角括弧）を落とす。 */

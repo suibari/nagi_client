@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
 	blobKey,
+	fillInlineImageAlts,
 	imageMarkdown,
+	inlineImageAlts,
 	inlineImageKeys,
+	inlineImageState,
 	inlineImageUrl,
 	pruneInlineImages,
 } from './inlineImages';
@@ -29,5 +32,32 @@ describe('inline article images', () => {
 		expect(pruneInlineImages(text, new Set(['did:plc:alice/bafkreiabc']))).toBe(
 			`intro\n![a b](${url})\n![ext](https://example.com/a.png)`,
 		);
+	});
+
+	it('reads the alt of each image line', () => {
+		const text = `${imageMarkdown('猫', url)}\n![](${inlineImageUrl('did:plc:alice', 'other')})`;
+		expect([...inlineImageAlts(text)]).toEqual([
+			['did:plc:alice/bafkreiabc', '猫'],
+			['did:plc:alice/other', ''],
+		]);
+	});
+
+	it('tells placed, detached and listed images apart', () => {
+		const placed = new Set(['a']);
+		const seen = new Set(['a', 'b']);
+		expect(inlineImageState('a', placed, seen)).toBe('placed');
+		expect(inlineImageState('b', placed, seen)).toBe('detached');
+		expect(inlineImageState('c', placed, seen)).toBe('listed');
+		expect(inlineImageState(undefined, placed, seen)).toBe('listed');
+	});
+
+	it('moves attachment alts into empty image lines', () => {
+		const other = inlineImageUrl('did:plc:alice', 'other');
+		const text = `![](${url})\n![既存](${other})`;
+		const alts = new Map([
+			['did:plc:alice/bafkreiabc', '猫'],
+			['did:plc:alice/other', '上書きしない'],
+		]);
+		expect(fillInlineImageAlts(text, alts)).toBe(`![猫](${url})\n![既存](${other})`);
 	});
 });

@@ -43,7 +43,10 @@
 	import { computeBlobCid } from '$lib/atproto/cid';
 	import {
 		blobKey,
+		fillInlineImageAlts,
 		imageMarkdown,
+		inlineImageAlts,
+		inlineImageState,
 		inlineImageUrl,
 		pruneInlineImages,
 	} from '$lib/blog/inlineImages';
@@ -242,6 +245,52 @@
 			onremovecard: removeEditInlineCard,
 		};
 	});
+	/**
+	 * 本文の画像行と画像の対応（Composer と同じ）。入力欄の中に出した画像は下の一覧に出さず、
+	 * alt も本文の `![alt](url)` に合わせる。行を消した画像は保存しない。
+	 */
+	const editImageKey = (image: PostEditImage) =>
+		editImageUrls[image.id] ? blobKey(editImageUrls[image.id]) : undefined;
+	let editPlacedImages = $derived(inlineImageAlts(editText));
+	let editSeenImageKeys = $state<string[]>([]);
+	let editSeenImages = $derived(new Set([...editSeenImageKeys, ...editPlacedImages.keys()]));
+	const editImageState = (image: PostEditImage) =>
+		editInlineEmbeds
+			? inlineImageState(editImageKey(image), editPlacedImages, editSeenImages)
+			: 'listed';
+	let editHiddenImageIds = $derived(
+		new Set(
+			editImages.filter((image) => editImageState(image) !== 'listed').map((image) => image.id),
+		),
+	);
+	$effect(() => {
+		if (!editInlineEmbeds) return;
+		const seen = untrack(() => editSeenImageKeys);
+		const fresh = [...editPlacedImages.keys()].filter((key) => !seen.includes(key));
+		if (fresh.length) editSeenImageKeys = [...seen, ...fresh];
+		const current = untrack(() => editImages);
+		// 初めて本文に見えた画像は、添付にだけある alt を先に本文の行へ移す（消さないため）。
+		if (fresh.length) {
+			const moved = new Map<string, string>();
+			for (const image of current) {
+				const key = editImageKey(image);
+				if (key && fresh.includes(key) && image.alt) moved.set(key, image.alt);
+			}
+			const source = untrack(() => editText);
+			const filled = moved.size ? fillInlineImageAlts(source, moved) : source;
+			if (filled !== source) {
+				editText = filled;
+				return;
+			}
+		}
+		const alts = editPlacedImages;
+		const next = current.map((image) => {
+			const key = editImageKey(image);
+			const alt = key ? alts.get(key) : undefined;
+			return alt === undefined || alt === image.alt ? image : { ...image, alt };
+		});
+		if (next.some((image, index) => image !== current[index])) editImages = next;
+	});
 	let reactionPickerOpen = $state(false);
 	let contentRevealed = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
@@ -397,6 +446,7 @@
 		editImageProcessing = false;
 		const appViewOrigins = [new URL(APPVIEW_URL, 'http://localhost').origin];
 		editImageUrls = {};
+		editSeenImageKeys = [];
 		for (const [sourceIndex, image] of (post.images ?? []).entries()) {
 			const key = blobKey(image.url, appViewOrigins);
 			if (!key) continue;
@@ -516,8 +566,10 @@
 				end: item.end + heading.length,
 			}));
 		// 添付に無い Nagi の画像行は保存しない（存在しない blob を指す画像になる）。
+		// 記事の本文から行を消した画像は保存しない。
+		const savedImages = editImages.filter((image) => editImageState(image) !== 'detached');
 		const knownImages = new Set(
-			editImages.flatMap((image) => {
+			savedImages.flatMap((image) => {
 				const key = editImageUrls[image.id] && blobKey(editImageUrls[image.id]);
 				return key ? [key] : [];
 			}),
@@ -568,7 +620,7 @@
 		editError = '';
 		try {
 			// 旧チャンネル投稿の channel は updatePost が元レコードから引き継ぐ。
-			const result = await updatePost(match[2], draft, editImages, {
+			const result = await updatePost(match[2], draft, savedImages, {
 				collection: match[1],
 				...(videoEdit ? { video: videoEdit } : {}),
 			});
@@ -814,6 +866,7 @@
 						<PostImageEditor
 							bind:this={editImageEditor}
 							bind:images={editImages}
+							hiddenIds={editHiddenImageIds}
 							bind:video={editNewVideo}
 							allowVideo={!editingArticle && !isAppviewOwnedUri(post.uri)}
 							maxCount={editingArticle ? Infinity : MAX_IMAGE_COUNT}

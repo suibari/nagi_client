@@ -11,7 +11,10 @@
 	import { computeBlobCid } from '$lib/atproto/cid';
 	import {
 		blobKey,
+		fillInlineImageAlts,
 		imageMarkdown,
+		inlineImageAlts,
+		inlineImageState,
 		inlineImageUrl,
 		pruneInlineImages,
 	} from '$lib/blog/inlineImages';
@@ -215,6 +218,53 @@
 			onremovecard: removeInlineCard,
 		};
 	});
+	/**
+	 * 本文の画像行と添付の対応。入力欄の中に出した画像は下の一覧に出さず、alt も本文の
+	 * `![alt](url)`（入力欄の「ALT」で直す）に合わせる。行を消した画像は投稿しない
+	 * （inlineImageState 参照）。添付は残すので、元に戻すで行が戻れば画像も戻る。
+	 */
+	const attachmentKey = (image: ImageAttachment) => {
+		const did = $session?.did;
+		const cid = inlineCids[image.id];
+		return did && cid ? blobKey(inlineImageUrl(did, cid)) : undefined;
+	};
+	let placedImages = $derived(inlineImageAlts(text));
+	let seenImageKeys = $state<string[]>([]);
+	// 今の本文の行も数えて、行に置いた直後に一瞬だけ一覧へ出ることがないようにする。
+	let seenImages = $derived(new Set([...seenImageKeys, ...placedImages.keys()]));
+	const imageState = (image: ImageAttachment) =>
+		inlineEmbeds ? inlineImageState(attachmentKey(image), placedImages, seenImages) : 'listed';
+	let hiddenAttachmentIds = $derived(
+		new Set(attachments.filter((image) => imageState(image) !== 'listed').map((image) => image.id)),
+	);
+	$effect(() => {
+		if (!inlineEmbeds) return;
+		const seen = untrack(() => seenImageKeys);
+		const fresh = [...placedImages.keys()].filter((key) => !seen.includes(key));
+		if (fresh.length) seenImageKeys = [...seen, ...fresh];
+		const current = untrack(() => attachments);
+		// 初めて本文に見えた画像は、添付にだけある alt を先に本文の行へ移す（消さないため）。
+		if (fresh.length) {
+			const moved = new Map<string, string>();
+			for (const image of current) {
+				const key = attachmentKey(image);
+				if (key && fresh.includes(key) && image.alt) moved.set(key, image.alt);
+			}
+			const source = untrack(() => text);
+			const filled = moved.size ? fillInlineImageAlts(source, moved) : source;
+			if (filled !== source) {
+				text = filled;
+				return;
+			}
+		}
+		const alts = placedImages;
+		const next = current.map((image) => {
+			const key = attachmentKey(image);
+			const alt = key ? alts.get(key) : undefined;
+			return alt === undefined || alt === image.alt ? image : { ...image, alt };
+		});
+		if (next.some((image, index) => image !== current[index])) attachments = next;
+	});
 	// 入力欄の中に出しているカードは、下の一覧の有無に数えない。
 	let listedLinkCards = $derived.by(() => {
 		if (!inlineEmbeds) return linkCards;
@@ -223,7 +273,9 @@
 	});
 	let hasEmbeds = $derived(
 		Boolean(
-			attachments.filter((image) => !(mode === 'blog' && image.header)).length ||
+			attachments.filter(
+				(image) => !(mode === 'blog' && image.header) && !hiddenAttachmentIds.has(image.id),
+			).length ||
 			video ||
 			listedLinkCards.length ||
 			quotePick.pending ||
@@ -623,8 +675,10 @@
 		// 記事側のタイトルも extractTitle でそのまま追従する。
 		// 下書きから戻した本文などで、添付の無い Nagi の画像行が残っていたら落とす
 		// （書き出すと、他のリーダーでは存在しない blob を指す壊れた画像になる）。
+		// 記事の本文から行を消した画像は投稿しない。
+		const postedAttachments = attachments.filter((image) => imageState(image) !== 'detached');
 		const knownInline = new Set(
-			attachments.flatMap((image) =>
+			postedAttachments.flatMap((image) =>
 				inlineCids[image.id] ? [`${$session.did}/${inlineCids[image.id]}`] : [],
 			),
 		);
@@ -651,7 +705,7 @@
 			body,
 			reply,
 			quoteRef,
-			attachments,
+			postedAttachments,
 			linkCards,
 			shift(mentions),
 			shift(emojis),
@@ -998,6 +1052,7 @@
 						bind:attachments
 						disabled={busy}
 						hideFirst={blog && Boolean(attachments[0]?.header)}
+						hiddenIds={hiddenAttachmentIds}
 					/>
 					<VideoAttachmentEditor bind:video disabled={busy} />
 					<LinkCardEditor

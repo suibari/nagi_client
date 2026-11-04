@@ -325,6 +325,8 @@ export const ja = {
 	postPastedImageName: '貼り付け画像',
 	postImageAltLabel: '画像の説明（任意）',
 	postImageAltPlaceholder: '画像の内容を説明してください',
+	postImageAltAdd: '画像の説明を追加',
+	postImageAltEdit: '画像の説明を編集',
 	postImageCountError: '画像は4枚まで添付できます',
 	postImageTypeError: (p: { name: string }) => `${p.name}: JPEG・PNG・WebP・GIFを選択してください`,
 	postImageInputSizeError: (p: { name: string }) => `${p.name}: 25MB以下の画像を選択してください`,
