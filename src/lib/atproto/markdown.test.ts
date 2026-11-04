@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	annotateMarkdownSource,
 	articleCardUrls,
+	articleEmbedLines,
 	extractTitle,
 	parseRichText,
 	stripMarkdown,
@@ -247,5 +248,22 @@ describe('article link card lines', () => {
 	it('does not treat a URL followed by punctuation as a card line', () => {
 		expect(articleCardUrls('https://example.com/a。')).toEqual([]);
 		expect(articleCardUrls('<https://example.com/a>')).toEqual([]);
+	});
+});
+
+describe('article embed lines', () => {
+	it('returns card and image lines with their line ends, skipping code blocks', () => {
+		const image = '![図](https://nagi.suibari.com/api/blob/did:plc:a/bafy)';
+		const source = `前\nhttps://example.com/a\n${image}\n\`\`\`\nhttps://example.com/code\n\`\`\``;
+		const lines = articleEmbedLines(source);
+		expect(lines).toEqual([
+			{ type: 'card', end: source.indexOf('\n', 2), url: 'https://example.com/a' },
+			{
+				type: 'image',
+				end: source.indexOf(image) + image.length,
+				url: 'https://nagi.suibari.com/api/blob/did:plc:a/bafy',
+			},
+		]);
+		expect(source.slice(0, lines[0].end).endsWith('https://example.com/a')).toBe(true);
 	});
 });

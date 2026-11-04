@@ -9,7 +9,13 @@
 	import { untrack } from 'svelte';
 	import { blobRefCid, createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
 	import { computeBlobCid } from '$lib/atproto/cid';
-	import { imageMarkdown, inlineImageUrl, pruneInlineImages } from '$lib/blog/inlineImages';
+	import {
+		blobKey,
+		imageMarkdown,
+		inlineImageUrl,
+		pruneInlineImages,
+	} from '$lib/blog/inlineImages';
+	import { usesPlainTextarea, type ComposerEmbeds } from './composer-embeds';
 	import {
 		crosspostArticleToBluesky,
 		crosspostDraftBlock,
@@ -43,7 +49,8 @@
 		type DraftSaveTarget,
 	} from '$lib/drafts/drafts.svelte';
 	import DraftListDialog from './DraftListDialog.svelte';
-	import { extractTitle, IMAGE_LINE } from '$lib/atproto/markdown';
+	import { articleCardUrls, extractTitle, IMAGE_LINE } from '$lib/atproto/markdown';
+	import { httpUrl } from '$lib/atproto/facets';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { signIn } from '$lib/oauth/session.svelte';
@@ -177,11 +184,48 @@
 			quoteUri: quotePick.ref?.uri,
 		}),
 	);
+	/**
+	 * ブログでは、URL だけの行に置いたリンクカードと本文の画像を入力欄の中（行の下）に見せる。
+	 * Android の素の textarea では重ねられないので、従来どおり入力欄の下の一覧に出す。
+	 */
+	const inlineEmbeds = $derived(mode === 'blog' && !usesPlainTextarea());
+	let linkCardEditor = $state<{ remove: (uri: string) => void }>();
+	let linkCardLoading = $state<string[]>([]);
+	const removeInlineCard = (uri: string) => linkCardEditor?.remove(uri);
+	let editorEmbeds = $derived.by((): ComposerEmbeds | undefined => {
+		if (!inlineEmbeds) return undefined;
+		const did = $session?.did;
+		const images: Record<string, string> = {};
+		if (did)
+			for (const image of attachments) {
+				const cid = inlineCids[image.id];
+				const key = cid && blobKey(inlineImageUrl(did, cid));
+				if (key) images[key] = image.previewUrl;
+			}
+		return {
+			cards: linkCards.map(({ uri, title, description, previewUrl }) => ({
+				uri,
+				title,
+				description,
+				previewUrl,
+				loading: linkCardLoading.includes(uri),
+			})),
+			images,
+			disabled: busy,
+			onremovecard: removeInlineCard,
+		};
+	});
+	// 入力欄の中に出しているカードは、下の一覧の有無に数えない。
+	let listedLinkCards = $derived.by(() => {
+		if (!inlineEmbeds) return linkCards;
+		const placed = new Set(articleCardUrls(text));
+		return linkCards.filter((card) => !placed.has(httpUrl(card.uri) ?? card.uri));
+	});
 	let hasEmbeds = $derived(
 		Boolean(
 			attachments.filter((image) => !(mode === 'blog' && image.header)).length ||
 			video ||
-			linkCards.length ||
+			listedLinkCards.length ||
 			quotePick.pending ||
 			quotePick.post ||
 			quotePick.error,
@@ -928,6 +972,7 @@
 				bind:mediaWarning
 				{hasMedia}
 				{mode}
+				embeds={editorEmbeds}
 				onsubmit={() => submit()}
 				onpaste={(event) => {
 					// Nagi のスレッドURL単体なら引用として引き取る（そのとき本文へは入らない）。
@@ -956,11 +1001,14 @@
 					/>
 					<VideoAttachmentEditor bind:video disabled={busy} />
 					<LinkCardEditor
+						bind:this={linkCardEditor}
 						{text}
 						bind:cards={linkCards}
 						bind:dismissedUrls
+						bind:loading={linkCardLoading}
 						disabled={busy}
 						article={blog}
+						inline={inlineEmbeds}
 					/>
 				{/if}
 				<ComposerQuoteEditor quote={quotePick} disabled={busy} />

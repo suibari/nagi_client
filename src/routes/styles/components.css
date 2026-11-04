@@ -428,6 +428,29 @@
 .mention-textarea .composer-input .cm-line[data-block='image'] {
 	color: var(--text-sub);
 }
+/*
+	記事の入力欄で、URL だけの行・画像行の下に重ねるリンクカードと画像（composer-embeds.ts）。
+	投稿後の記事ページ（.post-inline-card / .post-inline-image）と同じ位置に見せる。
+	本文の字組み（行の高さ・折り返し）を持ち込まないよう、ここで戻す。
+*/
+.mention-textarea .composer-input .composer-embed {
+	margin: 0.4em 0;
+	font-size: 14px;
+	line-height: 1.5;
+	word-break: normal;
+	cursor: default;
+	user-select: none;
+}
+.mention-textarea .composer-input .composer-embed .link-card-preview small {
+	font-size: 11px;
+}
+.mention-textarea .composer-input .composer-embed-image img {
+	display: block;
+	max-width: 100%;
+	max-height: 360px;
+	border-radius: var(--radius-m);
+	object-fit: contain;
+}
 /* 投稿の ul/ol と同じ字下げ。マーカーは左の余白へぶら下げる。 */
 .mention-textarea .composer-input .cm-line[data-block='ul'],
 .mention-textarea .composer-input .cm-line[data-block='ol'] {
