@@ -151,9 +151,14 @@
 		border-radius: 8px;
 		color: var(--text);
 		text-align: start;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		white-space: normal;
+	}
+	.action-menu :global(button > svg) {
+		flex-shrink: 0;
+	}
+	.action-menu :global(button > span) {
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
 	}
 	.action-menu :global(button:hover),
 	.action-menu :global(button:focus-visible) {
