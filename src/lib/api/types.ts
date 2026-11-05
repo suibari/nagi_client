@@ -106,6 +106,8 @@ export type IndexableBlog = {
 	createdAt: string;
 	indexedAt: string;
 	author: Pick<ActorView, 'did' | 'handle' | 'displayName'>;
+	/** 一覧の公開キャッシュから引くので、送り主も自分の反応も入らない絵文字だけ。 */
+	reactions?: ReactionView[];
 };
 export type NewsSubmissionPreview = {
 	articleId: string;

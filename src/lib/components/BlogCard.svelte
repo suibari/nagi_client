@@ -3,6 +3,7 @@
 	import { blogPath } from '$lib/blog/indexable';
 	import { APPVIEW_URL } from '$lib/api/appview';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
+	import ReactionBar from './ReactionBar.svelte';
 
 	let { item }: { item: BlogDirectoryItem } = $props();
 	let published = $derived(
@@ -38,6 +39,13 @@
 				<time datetime={item.createdAt}>{published}</time>
 			</span>
 		</a>
+		<!-- ブログを選ぶときの手がかり。数は出さず、どんな気持ちが届いているかだけを見せる。
+		     一覧は公開キャッシュなので、ここでは付け外しさせない（記事を開いてから）。 -->
+		{#if item.reactions?.length}
+			<div class="blog-card-reactions">
+				<ReactionBar uri={item.uri} cid="" reactions={item.reactions} readOnly />
+			</div>
+		{/if}
 		{#if item.tags.length}
 			<ul class="blog-card-tags" aria-label={m.blogTags()}>
 				{#each item.tags as tag (tag)}
