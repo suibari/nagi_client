@@ -252,6 +252,13 @@
 	can distinguish false positives from actual violations. Data sent to Discord is handled under
 	Discord's retention and security policies. "Kossori" posts are never sent.
 </p>
+<h3>Reports and feedback go to an operator-only Discord channel</h3>
+<p>
+	When you send something with "Tell the moderators", we send your DID, the post text or emoji you
+	reported, its author's DID, the URI, the reason you chose, and your comment to an operator-only
+	Discord channel. If you report a post in your own "Kossori" thread, its text is included too. We
+	never tell the reported person who sent it.
+</p>
 <h3>How OpenAI handles it</h3>
 <ul>
 	<li>OpenAI does <strong>not use what we send to train its models</strong>.</li>
@@ -305,6 +312,13 @@
 				<td>
 					Text, images, decision reasons, DID, and URI for public content that was labelled or
 					rejected ("Kossori" posts are excluded)
+				</td>
+			</tr>
+			<tr>
+				<td>Discord (operator-only reports and feedback)</td>
+				<td>
+					The text or emoji you reported, the author's and your DID, the URI, the reason, and your
+					comment
 				</td>
 			</tr>
 			<tr>

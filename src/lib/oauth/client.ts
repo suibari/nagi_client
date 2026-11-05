@@ -59,6 +59,7 @@ const baseScopes = [
 	'rpc:com.suibari.nagi.getRadioTrack?aud=*',
 	'rpc:com.suibari.nagi.getRadioHistory?aud=*',
 	'rpc:com.suibari.nagi.markRadioSeen?aud=*',
+	'rpc:com.suibari.nagi.createReport?aud=*',
 	'repo:com.suibari.nagi.cardGet',
 	// 動画は video.bsky.app に変換を任せる。PDS から service auth を取るための権限で、
 	// どちらも Nagi namespace ではないので permission set に入れられない。

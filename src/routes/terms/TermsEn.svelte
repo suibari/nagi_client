@@ -148,8 +148,8 @@
 	<p>
 		“Private on this device” while signed out is a device-local feature, separate from ordinary
 		Kossori posts. The post and Bot-tan’s reply are stored in your browser and never appear in
-		shared timelines, search, or profiles. They may be impossible to recover
-		after browser-data deletion, the end of a private-browsing session, or loss of the device.
+		shared timelines, search, or profiles. They may be impossible to recover after browser-data
+		deletion, the end of a private-browsing session, or loss of the device.
 	</p>
 	<p>
 		An Affirmation Card drawn while signed out is added to your Card File if you sign in during the
@@ -328,22 +328,26 @@
 
 <h2 id="t9">9. Reporting</h2>
 <p>
-	If you find a post or account that violates these Terms, please use the
-	<a href="#t17">contact details in Section 17</a>. We do not currently offer in-app reporting.
+	If you find a post or reaction that violates these Terms, you can report it from the post's "…"
+	menu with "Tell the moderators". Reactions on your own posts can be reported with "Report a
+	reaction", and you can share how a Bot-tan reply felt with "Give feedback on Bot-tan's reply". For
+	anything you cannot send in the app, such as an account, please use the
+	<a href="#t17">contact details in Section 17</a>.
 </p>
 <ul>
-	<li>
-		Where possible, include the URL of the post (a Nagi permalink, or an at:// URI) and why you feel
-		it is a problem.
-	</li>
 	<li>We will not disclose the reporter's identity to the person reported.</li>
+	<li>
+		After reviewing a report we may take the actions in <a href="#t8">Section 8</a>. We may not tell
+		you the outcome of each report.
+	</li>
 </ul>
 
 <h2 id="t10">10. About the AI features</h2>
 <div class="callout">
 	<p>
 		<strong>Bot-tan is an AI, not a human.</strong> Bot-tan's replies and conversations, the automatic
-		analysis of your profile, diaries, card comments, and news selection are all produced by generative AI.
+		analysis of your profile, diaries, card comments, and news selection are all produced by generative
+		AI.
 	</p>
 </div>
 <ul>

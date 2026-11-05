@@ -13,6 +13,7 @@
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
+	import ReportDialog from './ReportDialog.svelte';
 	import { createPost, deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
@@ -138,6 +139,8 @@
 	let showAllImages = $state(false);
 	let showAllLinkCards = $state(false);
 	let deleteOpen = $state(false);
+	/** 運営に伝えるダイアログ。'reaction' は自分の投稿に付いたリアクションを伝えるとき。 */
+	let reportOpen = $state<'post' | 'reaction'>();
 	let deleting = $state(false);
 	let deleteError = $state('');
 	// どちらのボタンでコンポーザーを開いたか。引用は composeMode とは別枠のスロットで、
@@ -360,7 +363,20 @@
 			Boolean(translateSourceLang) &&
 			translateSourceLang !== languagePreferences.translationLanguage,
 	);
-	let hasSecondaryActions = $derived(canTranslateExternally || mine);
+	// 他人の投稿（botたんを含む）は運営に伝えられる。自分の投稿は、他人が付けたリアクションを伝えられる。
+	// 端末保存のゲスト投稿は運営の手が届かないので出さない。
+	let canReportPost = $derived(Boolean($session) && !mine && !managementOnly);
+	let canReportReactions = $derived(
+		Boolean($session) &&
+			!localGuest &&
+			$session?.did === post.author.did &&
+			(post.reactions ?? []).some((reaction) =>
+				reaction.reactors.some((actor) => actor.did !== $session?.did),
+			),
+	);
+	let hasSecondaryActions = $derived(
+		canTranslateExternally || mine || canReportPost || canReportReactions,
+	);
 	let editHasContent = $derived(
 		Boolean(
 			editText.trim() ||
@@ -1093,6 +1109,26 @@
 									<span>{trilines ? m.trilinesDelete() : m.deletePost()}</span>
 								</button>
 							{/if}
+							{#if canReportPost || canReportReactions}
+								<button
+									role="menuitem"
+									onclick={() =>
+										runSecondaryAction(
+											closeMenu,
+											() => (reportOpen = canReportPost ? 'post' : 'reaction'),
+											'none',
+										)}
+								>
+									<Icon name="flag" size={17} />
+									<span
+										>{canReportPost
+											? post.isBot
+												? m.reportMenuBot()
+												: m.reportMenuPost()
+											: m.reportMenuReaction()}</span
+									>
+								</button>
+							{/if}
 						{/snippet}
 					</ActionMenu>
 				{/if}
@@ -1106,6 +1142,13 @@
 		{#if postError}<p class="error" role="alert">{postError}</p>{/if}
 	</div>
 </div>
+{#if reportOpen}
+	<ReportDialog
+		{post}
+		reactions={reportOpen === 'reaction' ? post.reactions : undefined}
+		onclose={() => (reportOpen = undefined)}
+	/>
+{/if}
 {#if deleteOpen}
 	<PostDeleteDialog
 		busy={deleting}
