@@ -30,7 +30,7 @@ for (const phase of ['list', 'create']) {
 				`,
 				}),
 			);
-			await page.goto('/emoji');
+			await page.goto('/emoji?tab=generate');
 			await page.evaluate(async () => {
 				// @ts-expect-error Vite resolves the browser module.
 				const { session } = await import('/src/lib/oauth/session.svelte.ts');
@@ -61,7 +61,7 @@ for (const phase of ['list', 'create']) {
 				});
 			await expect
 				.poll(() => page.evaluate(() => localStorage.getItem('nagi.oauth.return-to')))
-				.toBe('/emoji');
+				.toBe('/emoji?tab=generate');
 		});
 	}
 }

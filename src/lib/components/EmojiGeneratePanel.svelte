@@ -51,7 +51,7 @@
 	let registered = $state(new Set<string>());
 	/**
 	 * 生成ごとの rkey。失敗して押し直しても同じ rkey で書くので、応答だけ失われていても
-	 * 別の絵文字が増えない（まとめて作成の再試行と同じ）。
+	 * 別の絵文字が増えない。
 	 */
 	const rkeys = new Map<string, string>();
 	/**
@@ -197,7 +197,10 @@
 {/snippet}
 
 <div class="emoji-generate">
-	<p>{m.emojiGenerateNote()}</p>
+	<div class="emoji-generate-intro">
+		<p>{m.emojiGenerateNote()}</p>
+		<p class="emoji-generate-hint">{m.emojiGenerateHint()}</p>
+	</div>
 	<form
 		class="emoji-generate-form"
 		onsubmit={(event) => {

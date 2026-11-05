@@ -2457,17 +2457,6 @@ button.reaction-emoji:active {
 		opacity: 1;
 	}
 }
-.emoji-favorites-editor {
-	margin-top: 4px;
-}
-.emoji-favorites-editor .emoji-sort-grid {
-	grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
-	grid-auto-rows: 44px;
-	gap: 6px;
-}
-.emoji-favorite-add {
-	align-self: flex-start;
-}
 /* 正方形セルは崩さず、その中でアスペクト比を保つ（横長は縦が縮む）。 */
 .emoji-custom-item img {
 	width: auto;
@@ -2520,91 +2509,146 @@ button.reaction-emoji:active {
 .emoji-settings-tabs {
 	display: flex;
 	gap: 4px;
-	margin: 18px 0 12px;
+	margin: 0 0 16px;
 	border-bottom: 1px solid var(--line);
 	overflow-x: auto;
 }
 .emoji-settings-tabs button {
-	flex: 0 0 auto;
-	padding: 10px 12px;
+	flex: 1 0 auto;
+	padding: 12px;
 	border: 0;
 	border-bottom: 2px solid transparent;
 	border-radius: 0;
 	background: transparent;
 	color: var(--text-muted);
+	font-size: 14px;
+	transition:
+		color 0.15s ease,
+		border-color 0.15s ease;
+}
+.emoji-settings-tabs button:hover {
+	color: var(--text);
 }
 .emoji-settings-tabs button.active {
 	border-bottom-color: var(--accent-strong);
 	color: var(--accent-strong);
-}
-.emoji-batch-progress {
-	margin-bottom: 4px;
-}
-.emoji-batch-progress + progress {
-	width: 100%;
-	accent-color: var(--accent-strong);
-}
-.emoji-upload {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 10px;
-	margin: 8px 0;
-}
-.emoji-upload-preview {
-	width: auto;
-	height: 48px;
-	max-width: 160px;
-	object-fit: contain;
+	font-weight: 600;
 }
 .emoji-return {
 	display: inline-block;
 	margin-left: 8px;
 	color: var(--accent-strong);
-	font-weight: 700;
+	font-weight: 600;
 }
-button.emoji-return {
-	padding: 0;
-	border: 0;
-	background: transparent;
-	text-decoration: underline;
-}
-.emoji-list {
+
+/* お気に入り：リアクションパレット（.reaction-quick-picker）と同じ寸法で並べる */
+.emoji-favorites-palette {
 	display: grid;
-	gap: 6px;
-	margin: 8px 0 0;
+	gap: 4px;
+	width: min(336px, 100%);
+	padding: 8px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-m);
+	background: var(--bg-raised);
+}
+.emoji-favorites-palette .emoji-sort-grid {
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	grid-auto-rows: 38px;
+	gap: 4px;
+	overflow: visible;
+}
+.emoji-favorites-palette .emoji-sort-item {
+	padding: 0;
+	border-radius: 8px;
+	font-size: 22px;
+}
+.emoji-favorites-palette .emoji-sort-item .bluemoji-media {
+	width: 25px;
+	height: 25px;
+	overflow: hidden;
+}
+.emoji-favorites-palette .emoji-sort-item img,
+.emoji-favorites-palette .emoji-sort-item canvas {
+	max-height: 100%;
+}
+.emoji-page .emoji-favorites-empty {
+	padding: 8px 4px;
+	color: var(--text-faint);
+	font-size: 12px;
+	line-height: 1.6;
+}
+/* パレットの「すべてのリアクション」（.reaction-show-all）と同じ形の行 */
+.emoji-favorites-add {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 36px;
+	margin-top: 4px;
+	padding: 4px 8px;
+	border: 0;
+	border-radius: 8px;
+	background: var(--bg-inset);
+	color: var(--text-muted);
+	font-size: 12px;
+	font-weight: 600;
+	transition:
+		color 0.15s ease,
+		background-color 0.15s ease;
+}
+.emoji-favorites-add:hover:not(:disabled),
+.emoji-favorites-add:focus-visible {
+	color: var(--accent-strong);
+	background: var(--accent-softer);
+}
+
+/* 「絵文字をつくる」：えもじあっとへの入口 */
+.emojiat-card {
+	display: grid;
+	gap: 16px;
+	padding: 20px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--bg-raised);
+}
+.emojiat-text {
+	display: grid;
+	gap: 4px;
+}
+.emojiat-ways {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
 	padding: 0;
 	list-style: none;
 }
-.emoji-list li {
-	display: flex;
+.emojiat-ways li {
+	display: inline-flex;
 	align-items: center;
-	gap: 10px;
-	padding: 6px 8px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius-m);
-}
-.emoji-list img {
-	width: auto;
-	height: 28px;
-	max-width: 96px;
-	object-fit: contain;
-}
-.emoji-list-name {
-	flex: 1;
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	gap: 8px;
+	padding: 4px 12px 4px 8px;
+	border-radius: var(--radius-pill);
+	background: var(--bg-inset);
 	color: var(--text-muted);
 	font-size: 13px;
 }
-.emoji-settings-grid,
-.emoji-batch-grid {
+.emojiat-card .emojiat-open {
+	justify-self: start;
+	gap: 8px;
+}
+.emoji-page .emojiat-after {
+	margin-top: 12px;
+	color: var(--text-faint);
+	font-size: 13px;
+}
+
+/* My絵文字 */
+.emoji-settings-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 	gap: 8px;
-	margin-top: 8px;
 }
 .emoji-settings-grid .infinite-scroll,
 .emoji-settings-grid .infinite-scroll-error {
@@ -2613,23 +2657,23 @@ button.emoji-return {
 .emoji-settings-item {
 	position: relative;
 	display: grid;
-	grid-template-columns: 44px minmax(0, 1fr);
+	grid-template-columns: 40px minmax(0, 1fr);
 	align-items: center;
-	gap: 8px;
-	min-height: 60px;
-	padding: 6px;
+	gap: 12px;
+	min-height: 56px;
+	padding: 8px;
 	border-radius: var(--radius-m);
 	background: var(--bg-inset);
 }
 .emoji-settings-item .bluemoji-media {
-	width: 44px;
-	height: 44px;
+	width: 40px;
+	height: 40px;
 }
 .emoji-settings-meta {
 	display: grid;
 	min-width: 0;
 	gap: 2px;
-	padding-right: 22px;
+	padding-right: 20px;
 }
 .emoji-settings-meta strong,
 .emoji-settings-meta small {
@@ -2640,18 +2684,37 @@ button.emoji-return {
 .emoji-settings-meta strong {
 	color: var(--text-strong);
 	font-size: 13px;
+	font-weight: 500;
 }
 .emoji-settings-meta small {
-	color: var(--text-muted);
+	color: var(--text-faint);
+	font-size: 12px;
+}
+.emoji-settings-item .emoji-sort-remove {
+	top: 4px;
+	right: 4px;
 }
 .emoji-settings-item:hover .emoji-sort-remove,
 .emoji-settings-item:focus-within .emoji-sort-remove {
 	opacity: 1;
 }
+
+/* AIでつくる */
+.emoji-generate {
+	display: grid;
+	gap: 16px;
+}
+.emoji-generate-intro {
+	display: grid;
+	gap: 8px;
+}
+.emoji-page .emoji-generate-hint {
+	color: var(--text-faint);
+	font-size: 13px;
+}
 .emoji-generate-form {
 	display: grid;
-	gap: 10px;
-	margin: 16px 0;
+	gap: 12px;
 }
 .emoji-generate-form label {
 	min-width: 0;
@@ -2659,8 +2722,8 @@ button.emoji-return {
 }
 .emoji-generate-item {
 	display: grid;
-	gap: 8px;
-	padding: 10px;
+	gap: 12px;
+	padding: 16px;
 	border-radius: var(--radius-m);
 	background: var(--bg-inset);
 }
@@ -2669,17 +2732,18 @@ button.emoji-return {
 }
 .emoji-generate-head {
 	display: grid;
-	gap: 2px;
+	gap: 4px;
 	min-width: 0;
 }
 .emoji-generate-head strong {
 	overflow-wrap: anywhere;
 	color: var(--text-strong);
+	font-weight: 500;
 }
 .emoji-generate-head small {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	color: var(--text-muted);
 }
 /* 透過したまま、縦横比どおりに出す（横長の絵文字も縮めない） */
@@ -2712,54 +2776,15 @@ button.emoji-return {
 	max-width: 100%;
 	max-height: 64px;
 }
-/* 「画像から作成」の登録ボタンと同じく、横いっぱいに伸ばさない */
+/* 登録ボタンは横いっぱいに伸ばさない */
 .emoji-generate-item > .btn {
 	justify-self: start;
 }
 .emoji-generate-item label {
-	margin: 4px 0 0;
+	margin: 0;
 }
 .emoji-generate-item .error {
 	margin: 0;
-}
-.emoji-batch-actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-}
-.emoji-batch-grid {
-	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-	margin-bottom: 10px;
-}
-.emoji-batch-item {
-	display: grid;
-	grid-template-columns: 40px minmax(0, 1fr);
-	grid-template-rows: auto auto;
-	gap: 4px 8px;
-	align-items: center;
-	padding: 8px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius-m);
-}
-.emoji-batch-item.failed {
-	border-color: var(--danger);
-}
-.emoji-batch-item .bluemoji-media {
-	grid-row: 1 / 3;
-	width: 40px;
-	height: 40px;
-}
-.emoji-batch-item input {
-	min-width: 0;
-	margin: 0;
-	padding: 5px 7px;
-}
-.emoji-batch-item small {
-	min-width: 0;
-	overflow: hidden;
-	color: var(--text-muted);
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 .notification-emoji {
 	width: 1.4em;
@@ -5836,42 +5861,46 @@ a.about-feature:focus-visible {
 /* Emoji is a full center-pane page, with the palette above creation and management. */
 .emoji-page {
 	min-width: 0;
-	padding: 0 16px 32px;
+	padding-bottom: 32px;
 }
 .emoji-favorites-section {
 	display: grid;
 	gap: 16px;
-	padding: 20px 0 24px;
+	padding: 8px 0 32px;
 	border-bottom: 1px solid var(--line);
 	scroll-margin-top: 72px;
 }
+.emoji-favorites-head {
+	display: grid;
+	gap: 4px;
+}
 .emoji-page h2 {
 	margin: 0;
-	font-size: 17px;
+	font-size: 16px;
+	font-weight: 500;
 	color: var(--text-strong);
 }
 .emoji-page p {
 	margin: 0;
 	font-size: 14px;
 }
-.emoji-favorites-section .emoji-favorite-add {
-	justify-self: start;
-}
 .emoji-custom-section {
 	min-width: 0;
 	padding-top: 24px;
 }
 .emoji-custom-section [role='tabpanel'] {
-	padding: 12px 0;
 	min-width: 0;
+}
+.emoji-custom-section > [role='status'],
+.emoji-custom-section > [role='alert'] {
+	margin-bottom: 12px;
+}
+.emoji-page label {
+	gap: 8px;
+	font-weight: 600;
 }
 .emoji-page label input {
 	min-width: 0;
 	width: 100%;
-}
-.emoji-page .emoji-settings-tabs {
-	margin-top: 20px;
-}
-.emoji-page .emoji-settings-tabs button {
-	flex: 1 0 auto;
+	padding: 12px;
 }
