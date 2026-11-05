@@ -4,6 +4,7 @@ import { unreadCount } from '$lib/notifications/unread.svelte';
 import { unplayedToday } from '$lib/zenkatsu/notice';
 import { chronicleUnread } from '$lib/chronicle/notice';
 import { radioUnread } from '$lib/radio/radio.svelte';
+import { cardUndrawn } from '$lib/cards/draw-notice.svelte';
 
 /**
  * ナビ項目に重ねる未読表示。ドットと数値バッジで真実源が違う（既読ウォーターマーク /
@@ -16,7 +17,14 @@ export type NavBadge = {
 	style: 'dot' | 'count' | 'text';
 	aria: (count: number) => string;
 };
-export type NavItem = { href: string; label: () => string; icon: string; badge?: NavBadge };
+export type NavItem = {
+	href: string;
+	label: () => string;
+	icon: string;
+	badge?: NavBadge;
+	/** badge とは別の知らせを、アイコンの点で重ねたいとき（カードの未ドロー）。 */
+	iconBadge?: NavBadge;
+};
 /** 未読バッジの表示テキスト。3桁以上は "99+" に丸める。 */
 export const formatUnread = (count: number) => (count > 99 ? '99+' : String(count));
 // TOP（`/`）がフィード。my Nagi は廃止した。
@@ -46,6 +54,7 @@ const cards: NavItem = {
 	label: m.navCards,
 	icon: 'cards',
 	badge: { unread: unplayedToday, style: 'text', aria: () => m.zenkatsuNotPlayedBadge() },
+	iconBadge: { unread: cardUndrawn, style: 'dot', aria: () => m.cardUndrawnBadgeAria() },
 };
 const radio: NavItem = {
 	href: '/radio',
@@ -74,10 +83,10 @@ export const mobileMenuGroups: NavItem[][] = [
 	[settings],
 ];
 export const mobileMenuItems: NavItem[] = mobileMenuGroups.flat();
-/** カード未プレイ・ラジオ未読・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
+/** カード未プレイ・未ドロー・ラジオ未読・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
 export const mobileMenuNotice = derived(
-	[unplayedToday, radioUnread, chronicleUnread],
-	([$cards, $radio, $chronicle]) => ($cards > 0 || $radio > 0 || $chronicle > 0 ? 1 : 0),
+	[unplayedToday, cardUndrawn, radioUnread, chronicleUnread],
+	(counts) => (counts.some((count) => count > 0) ? 1 : 0),
 );
 /** 旧フィード URL（`/feed` はリダイレクト、`/global` `/affirmation` は互換ルート）もフィード扱い。 */
 const FEED_PATHS = ['/feed', '/global', '/affirmation'];

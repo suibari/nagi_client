@@ -92,6 +92,7 @@
 										{...item.badge}
 										style={item.badge.style === 'text' ? 'dot' : item.badge.style}
 									/>{/if}
+								{#if item.iconBadge}<NavBadge {...item.iconBadge} />{/if}
 							</span>
 							<span>{item.label()}</span>
 							<Icon name="chevron" size={17} />

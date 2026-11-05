@@ -1329,7 +1329,8 @@ export const en: Messages = {
 	searchSubmitAria: 'Search',
 	// Affirmation cards (one draw per day)
 	cardDrawButton: "Draw today's card",
-	cardHeaderLabel: "Today's card!",
+	cardBannerLabel: "Draw today's card",
+	cardUndrawnBadgeAria: "Today's card is ready to draw",
 	cardReactionNextLabel: 'Next: React for one more!',
 	cardReactionNextLead: 'NEXT:',
 	cardReactionNextText: 'React for one more!',

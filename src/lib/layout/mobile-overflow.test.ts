@@ -39,7 +39,7 @@ function cssRules(source: string, selector: string): string[] {
 
 describe('mobile overflow layout contracts', () => {
 	it('keeps the top page heading within the main column', () => {
-		expect(topPage).toContain('<PageHeader title={m.navFeed()}>');
+		expect(topPage).toContain('<PageHeader title={m.navFeed()}');
 		expect(baseCss).toMatch(
 			/\.page-header\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
 		);

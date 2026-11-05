@@ -16,12 +16,14 @@
 	import CardDrawFab from './CardDrawFab.svelte';
 	import CardMilestoneDialog from './CardMilestoneDialog.svelte';
 	import CardReactionGuideDialog from './CardReactionGuideDialog.svelte';
+	import Icon from './shell/Icon.svelte';
 
 	let {
-		variant = 'header',
+		variant = 'banner',
 		shifted = false,
 	}: {
-		variant?: 'header' | 'fab';
+		/** banner: /cards のタブの上に置く帯。fab: 画面右下の浮きボタン（開発用に残している）。 */
+		variant?: 'banner' | 'fab';
 		shifted?: boolean;
 	} = $props();
 
@@ -52,8 +54,8 @@
 				drawing ||
 				Boolean(drawError)),
 	);
-	let showHeader = $derived(
-		variant === 'header' &&
+	let showBanner = $derived(
+		variant === 'banner' &&
 			$oauthReady &&
 			(forceFab ||
 				(!myDid && guestCardDraw.canDrawToday) ||
@@ -138,32 +140,33 @@
 	}
 </script>
 
-{#if showHeader}
-	<div class="card-header-entry">
+{#if showBanner}
+	<div class="card-banner">
 		<button
 			type="button"
-			class="card-header-button"
+			class="card-banner-button"
 			disabled={drawing}
 			aria-busy={drawing}
 			onclick={openTodayCard}
 		>
-			<span class="card-header-card" aria-hidden="true">
-				<span class="card-header-card-face"><CardBack mark="52%" frame={false} /></span>
+			<span class="card-banner-card" aria-hidden="true">
+				<span class="card-banner-card-face"><CardBack mark="52%" frame={false} /></span>
 			</span>
-			{#if drawing}
-				<span>{m.cardDrawing()}</span>
-			{:else if anniversaryPending}
-				<span>{m.cardAnniversaryEntryLabel()}</span>
-			{:else if reactionNext}
-				<span class="card-header-reaction-label">
-					<span>{m.cardReactionNextLead()}</span>
-					<span>{m.cardReactionNextText()}</span>
-				</span>
-			{:else}
-				<span>{m.cardHeaderLabel()}</span>
-			{/if}
+			<span class="card-banner-label">
+				{#if drawing}
+					{m.cardDrawing()}
+				{:else if anniversaryPending}
+					{m.cardAnniversaryEntryLabel()}
+				{:else if reactionNext}
+					<span class="card-banner-lead">{m.cardReactionNextLead()}</span>
+					{m.cardReactionNextText()}
+				{:else}
+					{m.cardBannerLabel()}
+				{/if}
+			</span>
+			<span class="card-banner-chevron" aria-hidden="true"><Icon name="chevron" size={18} /></span>
 		</button>
-		{#if drawError}<p class="card-header-error" role="alert">{drawError}</p>{/if}
+		{#if drawError}<p class="card-banner-error" role="alert">{drawError}</p>{/if}
 	</div>
 {:else if showFab}
 	<CardDrawFab
@@ -199,86 +202,87 @@
 {/if}
 
 <style>
-	.card-header-entry {
-		position: relative;
-		flex: 0 1 auto;
-		min-inline-size: 0;
-		max-inline-size: 100%;
+	/* /cards のタブの上に置く帯。ゲームの手順とは別の「今日の一回」なので、タブより上に独立させる。 */
+	.card-banner {
+		padding: 12px 16px 4px;
 	}
 
-	.card-header-button {
-		display: inline-flex;
+	.card-banner-button {
+		display: flex;
 		align-items: center;
-		gap: 10px;
-		min-height: 48px;
-		padding: 2px 5px;
-		border: 0;
-		border-radius: var(--radius-m);
-		background: transparent;
-		color: var(--accent-strong);
+		gap: 12px;
+		inline-size: 100%;
+		min-block-size: 56px;
+		padding: 8px 12px 8px 16px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--bg-raised);
+		color: var(--text);
 		font: inherit;
-		font-size: 13px;
-		font-weight: 800;
-		min-inline-size: 0;
-		max-inline-size: 100%;
+		font-size: 0.9rem;
+		font-weight: 700;
+		text-align: start;
 		cursor: pointer;
 		transition:
-			color 0.14s ease,
-			transform 0.14s ease;
+			background-color 0.14s ease,
+			border-color 0.14s ease;
 	}
 
-	.card-header-button:hover,
-	.card-header-button:focus-visible {
-		color: var(--text-strong);
-		transform: translateY(-1px);
+	.card-banner-button:hover {
+		border-color: var(--line-strong);
 	}
 
-	.card-header-button:focus-visible {
+	.card-banner-button:focus-visible {
 		outline: 2px solid var(--focus-ring);
 		outline-offset: 2px;
 	}
 
-	.card-header-button:disabled {
+	.card-banner-button:disabled {
 		opacity: 0.7;
 		cursor: progress;
 	}
 
-	.card-header-card {
+	.card-banner-card {
 		display: block;
 		flex: 0 0 auto;
-		inline-size: 25px;
+		inline-size: 24px;
 		aspect-ratio: 59 / 86;
 		perspective: 120px;
-		transform: rotate(-9deg);
+		transform: rotate(-8deg);
 	}
 
-	.card-header-card-face {
+	.card-banner-card-face {
 		position: relative;
 		display: block;
 		inline-size: 100%;
 		block-size: 100%;
-		aspect-ratio: 59 / 86;
 		overflow: hidden;
 		border-radius: 4px;
-		box-shadow: 0 3px 8px color-mix(in srgb, var(--text) 26%, transparent);
+		box-shadow: 0 2px 6px color-mix(in srgb, var(--text) 20%, transparent);
 		--card-back-border: 1px;
 		transform-style: preserve-3d;
-		animation: card-header-flip 3.8s ease-in-out infinite;
+		animation: card-banner-flip 3.8s ease-in-out infinite;
 	}
 
-	.card-header-reaction-label {
-		display: grid;
+	.card-banner-label {
+		flex: 1 1 auto;
 		min-inline-size: 0;
-		line-height: 1.2;
-		text-align: start;
-	}
-
-	.card-header-reaction-label > span {
 		overflow-wrap: anywhere;
 	}
 
+	.card-banner-lead {
+		margin-inline-end: 4px;
+		color: var(--accent-strong);
+	}
+
+	.card-banner-chevron {
+		display: inline-flex;
+		flex: 0 0 auto;
+		color: var(--text-faint);
+	}
+
 	/* 読み始めを邪魔しないよう長く静止し、周期の終わりだけ1回転して存在を知らせる。 */
-	@keyframes card-header-flip {
+	@keyframes card-banner-flip {
 		0%,
 		68% {
 			transform: rotateY(0deg);
@@ -290,27 +294,16 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.card-header-button {
+		.card-banner-button {
 			transition: none;
 		}
-		.card-header-card-face {
+		.card-banner-card-face {
 			animation: none;
 		}
 	}
 
-	.card-header-error {
-		position: absolute;
-		top: calc(100% + 5px);
-		right: 0;
-		z-index: 2;
-		width: max-content;
-		max-width: min(260px, calc(100vw - 32px));
-		margin: 0;
-		padding: 7px 10px;
-		border: 1px solid var(--line-strong);
-		border-radius: var(--radius-m);
-		background: var(--bg-raised);
-		box-shadow: var(--shadow-card);
+	.card-banner-error {
+		margin: 8px 0 0;
 		color: var(--danger);
 		font-size: 12px;
 	}

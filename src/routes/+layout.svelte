@@ -39,6 +39,7 @@
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { startChronicleNotice } from '$lib/chronicle/notice';
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
+	import { startCardDrawNotice } from '$lib/cards/draw-notice.svelte';
 	import { startRadioNotice } from '$lib/radio/radio.svelte';
 	import { migrateLegacyStandardSite } from '$lib/standardsite/publication';
 
@@ -179,6 +180,7 @@
 	onMount(() => {
 		const stopRadioNotice = startRadioNotice();
 		const stopZenkatsuNotice = startZenkatsuNotice();
+		const stopCardDrawNotice = startCardDrawNotice();
 		const stopChronicleNotice = startChronicleNotice();
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
@@ -206,6 +208,7 @@
 		return () => {
 			stopRadioNotice();
 			stopZenkatsuNotice();
+			stopCardDrawNotice();
 			stopChronicleNotice();
 			window.removeEventListener('online', repairPush);
 			document.removeEventListener('visibilitychange', onVisibility);

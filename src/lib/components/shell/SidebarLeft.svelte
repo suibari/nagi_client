@@ -31,6 +31,7 @@
 					<span class="nav-icon">
 						<Icon name={item.icon} />
 						{#if item.badge && item.badge.style !== 'text'}<NavBadge {...item.badge} />{/if}
+						{#if item.iconBadge}<NavBadge {...item.iconBadge} />{/if}
 					</span><span class="label">{item.label()}</span>
 					{#if item.badge?.style === 'text'}<NavBadge {...item.badge} />{/if}
 				</a>

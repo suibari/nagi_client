@@ -1371,7 +1371,8 @@ export const ja = {
 	searchSubmitAria: '検索する',
 	// 全肯定カード（通常枠＋リアクション枠で1日最大2枚）
 	cardDrawButton: '今日のカードを引く',
-	cardHeaderLabel: '今日の一枚！',
+	cardBannerLabel: '今日の一枚を引く',
+	cardUndrawnBadgeAria: '今日の一枚がまだ引けます',
 	cardReactionNextLabel: 'Next: リアクションでもう一枚！',
 	cardReactionNextLead: 'NEXT:',
 	cardReactionNextText: 'リアクションでもう一枚！',
