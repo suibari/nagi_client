@@ -924,11 +924,6 @@ export const ja = {
 	loginAgreeSeparator: 'と',
 	loginAgreeAfter: 'に同意したものとみなされます。',
 
-	// onboarding
-	onboardingBody:
-		'ここは、言葉をまず受け止める場所です。公開タイムラインへの投稿は誰でも読むことができます。',
-	onboardingSetupProfile: 'プロフィールを設定する',
-
 	// oauth callback
 	oauthLoggingIn: 'ログインしています…',
 	oauthBody: '認証が完了するとタイムラインへ戻ります。',
@@ -984,8 +979,6 @@ export const ja = {
 	ageErrorAlreadySet: 'すでに登録済みのため変更できません。',
 	ageErrorFailed: '登録できませんでした。時間をおいて試してください。',
 	ageAdultLocked: '成人向けのコンテンツは、18歳未満のアカウントには表示されません。',
-	onboardingAgeIntro:
-		'18歳未満の方は、保護者の同意を得てご利用ください。任意で生年月日を登録すると、誕生日にプロフィールの風船やカードなどのお祝いがあります。',
 	moderationLoginRequired: 'コンテンツの表示設定を変えるにはログインしてください。',
 	moderationSectionTitle: 'コンテンツ表示設定',
 	moderationSettingsHelp:
@@ -1272,8 +1265,6 @@ export const ja = {
 		'現在のWebサイトを確認できていないため、変更できません。ページを再読み込みしてください。',
 	profileWebsiteLoadWarning: '現在のWebサイトを読み込めませんでした。',
 	profileWebsiteSaveWarning: 'プロフィールは保存されましたが、Webサイトを更新できませんでした。',
-	onboardingLoadedNote:
-		'Blueskyのプロフィールを初期値として読み込みました。内容を確認して保存してください。',
 	loginRequired: '設定を変更するにはログインしてください。',
 	currentAvatarAlt: '現在のアバター',
 	selectImage: '画像を選択',
@@ -1620,6 +1611,21 @@ export const ja = {
 		`コンボ「${o.name}」ほか${o.n}種を世界で最初に見つけた！`,
 	cardNewsFetchFailed: 'ニュースを読み込めませんでした',
 	cropperBannerTitle: 'バナーをトリミング',
+	tutorialTitle: 'Nagiのはじめかた',
+	tutorialLead: '気になったものから試してみてね。全部やらなくても大丈夫',
+	tutorialLeadDone: 'ぜんぶ試せたね。これからも、思ったことを気軽に置いていってね',
+	tutorialProgressAria: (p: { done: number; total: number }) => `${p.total}つ中${p.done}つ完了`,
+	tutorialDoneAria: '完了',
+	tutorialPostTitle: '思ったことをポストしてみよう',
+	tutorialPostBody: '何気ないひとことで大丈夫。botたんが受けとめてくれるよ',
+	tutorialReactionTitle: '誰かに絵文字を送ってみよう',
+	tutorialReactionBody: '言葉にしなくても、絵文字ひとつで気持ちが届くよ',
+	tutorialMoodTitle: '自分の感情グラフを見てみよう',
+	tutorialMoodBody: 'ポストから読み取った気持ちを、あとから振り返れるよ',
+	tutorialProfileNote: 'プロフィールはBlueskyからコピーしました。',
+	tutorialProfileLink: '設定で変える',
+	tutorialDismiss: 'もう表示しない',
+	tutorialOpen: 'Nagiのはじめかたを開く',
 } satisfies Record<string, string | ((...args: never[]) => string)>;
 
 export type Messages = typeof ja;

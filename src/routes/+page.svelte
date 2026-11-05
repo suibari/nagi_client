@@ -7,6 +7,7 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import FeedTabsView from '$lib/components/FeedTabsView.svelte';
 	import GuestHero from '$lib/components/GuestHero.svelte';
+	import WelcomeTutorialEntry from '$lib/components/WelcomeTutorialEntry.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
 
@@ -19,6 +20,8 @@
      並び（見出し → ヒーロー → フィード）は guest-posts/privacy.test.ts が固定している。
      今日のカードはゼンカツ（/cards）から引く。フィードに置くと毎日開く義務のように見えるため。 -->
 <PageHeader title={m.navFeed()} />
+
+<WelcomeTutorialEntry />
 
 {#if showHero}
 	<GuestHero />

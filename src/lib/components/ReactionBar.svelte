@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { welcomeTutorial } from '$lib/onboarding/tutorial.svelte';
 	import { onDestroy, tick } from 'svelte';
 	import type { ActorView, EmojiView, ReactionView } from '$lib/api/types';
 	import { session } from '$lib/oauth/session.svelte';
@@ -196,6 +197,7 @@
 					keyOf(r) === key ? { ...r, viewerReactionUri: res.data.uri } : r,
 				);
 				ontoggled?.(true);
+				welcomeTutorial.markDone('reaction');
 				// リアクション自体の成功を確定してから、独立したカード報酬を請求する。
 				// 報酬側の一時失敗で、PDSに作成済みのリアクションを巻き戻してはいけない。
 				if (uri.split('/')[2] !== viewerDid && REWARDING_SUBJECTS.includes(uri.split('/')[3])) {

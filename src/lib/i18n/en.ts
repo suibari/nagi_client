@@ -888,10 +888,6 @@ export const en: Messages = {
 	loginAgreeSeparator: ' and the ',
 	loginAgreeAfter: '.',
 
-	onboardingBody:
-		'This is a place where words are embraced first. Posts to the public timeline can be read by anyone.',
-	onboardingSetupProfile: 'Set up your profile',
-
 	oauthLoggingIn: 'Logging you in…',
 	oauthBody: "You'll return to the timeline once authentication completes.",
 	oauthErrorTitle: 'Login failed',
@@ -944,8 +940,6 @@ export const en: Messages = {
 	ageErrorAlreadySet: 'Your date of birth is already set and cannot be changed.',
 	ageErrorFailed: 'Could not save. Please try again later.',
 	ageAdultLocked: 'Adult content is not shown to accounts under 18.',
-	onboardingAgeIntro:
-		"If you are under 18, please use Nagi with your parent or guardian's permission. If you optionally add your date of birth, your birthday brings profile balloons, a card, and other celebrations.",
 	moderationLoginRequired: 'Please log in to change how content is displayed.',
 	moderationSectionTitle: 'Content display settings',
 	moderationSettingsHelp:
@@ -1229,8 +1223,6 @@ export const en: Messages = {
 		'The current website could not be verified, so it cannot be changed. Reload the page and try again.',
 	profileWebsiteLoadWarning: 'Your current website could not be loaded.',
 	profileWebsiteSaveWarning: 'Your profile was saved, but its website could not be updated.',
-	onboardingLoadedNote:
-		'Your Bluesky profile has been loaded as a starting point. Review it and save.',
 	loginRequired: 'Log in to change your settings.',
 	currentAvatarAlt: 'Current avatar',
 	selectImage: 'Choose image',
@@ -1586,4 +1578,19 @@ export const en: Messages = {
 		`First in the world to find ${o.name} and ${o.n} more!`,
 	cardNewsFetchFailed: 'Could not load news',
 	cropperBannerTitle: 'Crop your banner',
+	tutorialTitle: 'Getting started with Nagi',
+	tutorialLead: "Try whatever catches your eye. You don't have to do them all",
+	tutorialLeadDone: 'You tried them all. Keep dropping your thoughts here whenever you like',
+	tutorialProgressAria: (p: { done: number; total: number }) => `${p.done} of ${p.total} done`,
+	tutorialDoneAria: 'Done',
+	tutorialPostTitle: "Post what's on your mind",
+	tutorialPostBody: 'Anything small is fine. Bot-tan will take it in',
+	tutorialReactionTitle: 'Send someone an emoji',
+	tutorialReactionBody: 'One emoji can say what words don’t',
+	tutorialMoodTitle: 'See your mood graph',
+	tutorialMoodBody: 'Look back on the feelings read from your posts',
+	tutorialProfileNote: 'We copied your profile from Bluesky.',
+	tutorialProfileLink: 'Change it in settings',
+	tutorialDismiss: "Don't show again",
+	tutorialOpen: 'Open getting started',
 };

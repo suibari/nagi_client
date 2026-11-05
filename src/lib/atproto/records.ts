@@ -335,6 +335,38 @@ export async function ensureOwnNagiProfile(): Promise<ProfileDraft> {
 	}
 }
 
+/**
+ * 初回サインインで Nagi プロフィールを Bluesky のプロフィールから作る。登録画面は挟まない
+ * （まず使ってもらい、変えたくなったら設定から変えてもらう）。アバターは同じ repo の blob なので
+ * そのまま参照できる。別タブが先に作っていたら上書きせず、作らなかったことを返す。
+ */
+export async function createNagiProfileFromBluesky(): Promise<boolean> {
+	const draft = await getBlueskyProfileDraft();
+	const s = current();
+	try {
+		await indexed(
+			new Agent(s).com.atproto.repo.putRecord({
+				repo: s.did,
+				collection: PROFILE,
+				rkey: 'self',
+				swapRecord: null,
+				validate: false,
+				record: {
+					$type: PROFILE,
+					displayName: draft.displayName,
+					description: draft.description,
+					...(draft.avatar !== undefined ? { avatar: draft.avatar } : {}),
+					createdAt: new Date().toISOString(),
+				},
+			}),
+		);
+		return true;
+	} catch (error) {
+		if (await getOwnNagiProfile()) return false;
+		throw error;
+	}
+}
+
 export async function getBlueskyProfileDraft(): Promise<ProfileDraft> {
 	const s = current();
 	const agent = new Agent(s);
