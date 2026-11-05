@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Button from '$lib/components/Button.svelte';
 	import { preferences } from '$lib/preferences/preferences.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -51,25 +50,15 @@
 </script>
 
 <section class="emoji-favorites-section" id="favorites" aria-labelledby="emoji-favorites-heading">
-	<h2 id="emoji-favorites-heading">{m.emojiFavoritesSettingsTitle()}</h2>
-	<p>{m.emojiFavoritesSettingsNote()}</p>
+	<div class="emoji-favorites-head">
+		<h2 id="emoji-favorites-heading">{m.emojiFavoritesSettingsTitle()}</h2>
+		<p>{m.emojiFavoritesSettingsNote()}</p>
+	</div>
 	<PreferencesSyncNotice />
 
-	<Button
-		variant="secondary"
-		type="button"
-		class="emoji-favorite-add"
-		bind:ref={addButton}
-		disabled={full}
-		onclick={() => (pickerOpen = true)}
-	>
-		<Icon name="emojiPlus" size={17} />
-		<span>{m.emojiFavoriteAdd()}</span>
-	</Button>
-	{#if full}<p class="error">{m.emojiFavoritesFull()}</p>{/if}
-
-	{#if items.length}
-		<div class="emoji-favorites-editor">
+	<!-- リアクションパレット（QuickEmojiPalette）と同じ6列・同じタイルで見せ、並びをそのまま確かめられるようにする -->
+	<div class="emoji-favorites-palette">
+		{#if items.length}
 			<SortableEmojiGrid bind:items onreorder={persist}>
 				{#snippet children(item)}
 					{#if item.choice.kind === 'custom'}
@@ -88,12 +77,22 @@
 					</button>
 				{/snippet}
 			</SortableEmojiGrid>
-		</div>
-	{:else}
-		<p>
-			{$session && !preferences.synced ? m.emojiFavoritesUnconfirmed() : m.emojiFavoritesEmpty()}
-		</p>
-	{/if}
+		{:else}
+			<p class="emoji-favorites-empty">
+				{$session && !preferences.synced ? m.emojiFavoritesUnconfirmed() : m.emojiFavoritesEmpty()}
+			</p>
+		{/if}
+		<button
+			type="button"
+			class="emoji-favorites-add"
+			bind:this={addButton}
+			disabled={full}
+			onclick={() => (pickerOpen = true)}
+		>
+			<Icon name="emojiPlus" size={16} />
+			<span>{full ? m.emojiFavoritesFull() : m.emojiFavoriteAdd()}</span>
+		</button>
+	</div>
 </section>
 
 {#if pickerOpen && addButton}
