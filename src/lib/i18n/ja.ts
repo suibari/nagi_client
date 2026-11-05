@@ -777,6 +777,8 @@ export const ja = {
 	notifGiftSuffix: 'さんに、あなたがおすそわけしたカードが届きました',
 	notifEmojiSuffix: 'さんが、頼まれた絵文字を描きました',
 	notifChronicleSuffix: 'さんがあなたの年表を更新しました',
+	notifMoodSuffix: 'さんがあなたの気持ちを感情グラフに載せました',
+	notifMoodBody: 'ポストから読み取った気持ちを、アクティビティで振り返れます',
 	notifUnreadBadgeAria: (p: { count: number }) => `未読通知 ${p.count} 件`,
 
 	// 名刺カード

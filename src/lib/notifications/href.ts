@@ -8,6 +8,8 @@ export function notificationHref(item: NotificationView, viewerDid?: string): st
 	if (item.type === 'gift') return '/cards?tab=board';
 	if (item.type === 'emoji') return '/emoji?tab=generate';
 	if (item.type === 'chronicle') return '/diary?tab=chronicle';
+	// 感情グラフは「アクティビティ」の既定タブにある。
+	if (item.type === 'mood') return '/diary';
 	const collection = item.subjectUri.slice('at://'.length).split('/')[1];
 	if (
 		item.cardSubject ||

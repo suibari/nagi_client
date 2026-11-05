@@ -753,6 +753,8 @@ export const en: Messages = {
 	notifGiftSuffix: ' received a card you shared',
 	notifEmojiSuffix: ' finished drawing your emoji',
 	notifChronicleSuffix: ' updated your chronicle',
+	notifMoodSuffix: ' added your feelings to your mood graph',
+	notifMoodBody: 'Look back on the feelings read from your posts in Activity',
 	notifUnreadBadgeAria: (p: { count: number }) => `${p.count} unread notifications`,
 
 	nameCardTitle: 'Card',
