@@ -10,6 +10,7 @@ import type {
 	NewsSubmissionPreview,
 	PostImage,
 	PostVideoView,
+	StrongRef,
 } from '$lib/api/types';
 import { blueskyVideoUrls } from '$lib/video';
 import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
@@ -181,6 +182,11 @@ export type PostDraft = {
 	createdAt: string;
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
 	quote?: { uri: string; cid: string };
+	/**
+	 * Bluesky に同時投稿したコピーへの参照。Nagi の投稿より先に Bluesky へ出し、作成時のレコードに
+	 * 入れる（後から書き足すと AppView が「編集」と見なし、翻訳や判定をやり直してしまう）。
+	 */
+	crosspost?: { root: StrongRef; tail: StrongRef; threadRoot?: StrongRef };
 	attachments: ImageAttachment[];
 	/** video.bsky.app で変換済みの動画。画像と併用できる（引用なしなら #gallery で書く）。 */
 	video?: PostVideoRecord;
@@ -511,6 +517,7 @@ export async function createPost(
 				...(embed && { embed }),
 				...(draft.labels && { labels: draft.labels }),
 				...(draft.article && { article: true }),
+				...(draft.crosspost && { crosspost: draft.crosspost }),
 			},
 		});
 		return { uri: data.uri, cid: data.cid };

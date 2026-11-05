@@ -14,6 +14,7 @@
 	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import ReportDialog from './ReportDialog.svelte';
+	import { ownCrosspost } from '$lib/crosspost/target.svelte';
 	import { createPost, deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
@@ -306,6 +307,9 @@
 	 */
 	let articleHeader = $derived(post.article && !editing ? post.images?.[0] : undefined);
 	let isBlogPost = $derived(post.article || post.uri.includes('/site.standard.document/'));
+	// 自分のクロスポストにだけ付ける目印。返信・引用を Bluesky にも続けられることが分かるように。
+	// 他人のクロスポストには付けない（AppView も作者本人にしか参照を返さない）。
+	let showsCrosspostLabel = $derived(Boolean(ownCrosspost(post, $session?.did)) && !isBlogPost);
 	// 3行日記は行ごとに画像を添えるので、本文下のギャラリーには出さない。
 	let trilines = $derived(post.trilines ? { ...post, trilines: post.trilines } : undefined);
 	// ヘッダーに出した1枚は本文下のギャラリーから外す（同じ画像を二度出さない）。
@@ -836,7 +840,7 @@
 						<div class="meta-badges"><ActorBadges actor={post.author} /></div>
 					{/if}
 				</div>
-				{#if !hideTimestamp || post.edited || isBlogPost}
+				{#if !hideTimestamp || post.edited || isBlogPost || showsCrosspostLabel}
 					<div class="meta-time">
 						<!-- ブログの印は日時と同じ控えめな行に置く。カバー画像の上に札を重ねない。 -->
 						{#if isBlogPost}<span class="post-blog-label"
@@ -844,6 +848,9 @@
 							>{/if}
 						{#if trilines}<span class="post-blog-label"
 								><Icon name="edit" size={14} />{m.trilinesLabel()}</span
+							>{/if}
+						{#if showsCrosspostLabel}<span class="post-blog-label" title={m.crosspostLabelHint()}
+								><Icon name="bluesky" size={14} />{m.crosspostLabel()}</span
 							>{/if}
 						{#if !hideTimestamp}
 							<time>

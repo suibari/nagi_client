@@ -23,7 +23,16 @@
 		crosspostArticleToBluesky,
 		crosspostDraftBlock,
 		crosspostToBluesky,
+		deleteBlueskyPosts,
+		type CrosspostResult,
+		type CrosspostTarget,
 	} from '$lib/crosspost/bluesky';
+	import {
+		checkCrosspostTarget,
+		goneCrossposts,
+		ownCrosspost,
+		type CrosspostTargetState,
+	} from '$lib/crosspost/target.svelte';
 	import { crosspostContentWarningBlock } from '$lib/crosspost/content-warning';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -293,7 +302,8 @@
 			contentWarningValid &&
 			articleReady &&
 			!articleBlockedReason &&
-			!kossoriReplyBlockedReason;
+			!kossoriReplyBlockedReason &&
+			!(scope === 'external' && !externalEligible);
 	});
 
 	// --- 外部への同時投稿 ---------------------------------------------------------
@@ -351,19 +361,49 @@
 		}),
 	);
 	/**
+	 * 返信・引用の相手。Bluesky にも続けられるのは、自分のクロスポスト済みの投稿1件だけ
+	 * （他人のクロスポストへは続けない）。Bluesky 側では、そのコピーへの返信・引用として出す。
+	 * 返信と引用を同時にするときは、両方を Bluesky で揃えられないので外へは出さない。
+	 */
+	const quoting = $derived(quotePick.active || Boolean(composerHost.quoteTarget));
+	const hasThreadTarget = $derived(quoting || Boolean(composerHost.replyTarget));
+	const crosspostTargetPost = $derived(
+		composerHost.replyTarget?.post ?? composerHost.quoteTarget?.post ?? quotePick.post,
+	);
+	const crosspostTargetRef = $derived(
+		hasThreadTarget && !(quoting && composerHost.replyTarget)
+			? ownCrosspost(crosspostTargetPost, $session?.did)
+			: undefined,
+	);
+	/** コピーがまだ Bluesky にあるか。消えていたら同時投稿を止める（孤立した返信を作らない）。 */
+	let crosspostTargetState = $state<CrosspostTargetState>('checking');
+	$effect(() => {
+		// 同じ返信先でも、モーダルを開き直したらコピーを確かめ直す。
+		publishingPreferencesVersion;
+		const quote = quoting;
+		const post = crosspostTargetPost;
+		const ref = crosspostTargetRef;
+		if (!post || !ref || !crosspostReady) return;
+		crosspostTargetState = 'checking';
+		let cancelled = false;
+		void checkCrosspostTarget(post.uri, ref, quote ? 'quote' : 'reply').then((state) => {
+			if (!cancelled) crosspostTargetState = state;
+		});
+		return () => {
+			cancelled = true;
+		};
+	});
+	/**
 	 * Bluesky にも出せる条件。
 	 *
-	 * 引用付きは外部へ出せない。Bluesky の embed には Nagi のレコードを載せられず
-	 * （crosspost/bluesky.ts の buildEmbed は images / external のみ）、参照が黙って消える。
-	 * 記事化にも同じ条件が要る（引用は記事本文に現れない）ので、判定は1本のまま使う。
-	 * CW 付きの記事は articleBlockedReason が別に止める。
+	 * 返信・引用は、自分のクロスポスト済みの投稿に続けるときだけ外へ出せる。それ以外は
+	 * Bluesky 側に返信先・引用先が無く、参照が黙って消える。
+	 * 記事化は引用・返信では別に止める（articleBlockedReason）。CW 付きの記事も同じ。
 	 */
 	const externalEligible = $derived(
 		crosspostReady &&
 			!crosspostCwBlock &&
-			!quotePick.active &&
-			!composerHost.replyTarget &&
-			!composerHost.quoteTarget,
+			(!hasThreadTarget || (Boolean(crosspostTargetRef) && crosspostTargetState === 'ok')),
 	);
 	const externalDisabledReason = $derived(
 		!crosspostReady
@@ -372,9 +412,19 @@
 				? m.crosspostDisabledTextWarning()
 				: crosspostCwBlock === 'media'
 					? m.crosspostDisabledMediaWarning()
-					: quotePick.active
-						? m.quoteExternalDisabled()
-						: '',
+					: !hasThreadTarget
+						? ''
+						: crosspostTargetPost && goneCrossposts.has(crosspostTargetPost.uri)
+							? m.crosspostTargetGone()
+							: !crosspostTargetRef
+								? m.crosspostTargetNotOwn()
+								: crosspostTargetState === 'checking'
+									? m.crosspostTargetChecking()
+									: crosspostTargetState === 'gone'
+										? m.crosspostTargetGone()
+										: crosspostTargetState === 'failed'
+											? m.crosspostTargetCheckFailed()
+											: '',
 	);
 	/**
 	 * 本文先頭の「# 見出し」はタイトルそのもの。タイトルの真実源は常に本文側に置き、
@@ -465,7 +515,12 @@
 	// 外部に出せない状態に変わったら黙って1段階狭める（意図せぬ公開を作らない）。
 	// OAuth scope の再確認中は前回値を保持し、利用不能だと確定してからだけ狭める。
 	$effect(() => {
-		const next = scopeAfterExternalEligibility(scope, publishingReadinessLoaded, externalEligible);
+		// 返信先のコピーを確かめている間は、前回の「Blueskyにも」を保ったまま待つ。
+		const next = scopeAfterExternalEligibility(
+			scope,
+			publishingReadinessLoaded && !(crosspostTargetRef && crosspostTargetState === 'checking'),
+			externalEligible,
+		);
 		if (next !== scope) scope = next;
 	});
 
@@ -664,10 +719,15 @@
 			!contentWarningValid ||
 			!articleReady ||
 			articleBlockedReason ||
-			kossoriReplyBlockedReason
+			kossoriReplyBlockedReason ||
+			(scope === 'external' && !externalEligible)
 		)
 			return;
 		const wantsCrosspost = scope === 'external' && externalEligible;
+		const target: CrosspostTarget = {};
+		if (crosspostTargetRef && composerHost.replyTarget)
+			target.reply = { root: crosspostTargetRef.threadRoot, parent: crosspostTargetRef.tail };
+		else if (crosspostTargetRef && quoting) target.quote = crosspostTargetRef.root;
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
 		const article = publishesArticle ? { title: (headingTitle ?? articleTitle).trim() } : undefined;
 		// ブログのタイトルは本文の先頭見出しとして保存する。こうしておくと Nagi の
@@ -751,6 +811,25 @@
 			// ときは超えうるので、そのときはカバーを付けない（記事自体は出す）。
 			const firstImage = assets.images[0]?.image;
 			const cover = firstImage && usableAsCoverImage(firstImage) ? firstImage : undefined;
+			/*
+			 * 記事以外のクロスポストは、Nagi の投稿より先に Bluesky へ出して、そのコピーへの参照を
+			 * 作成時のレコードに入れる（後から書き足すと AppView が「編集」と見なすため）。
+			 * Bluesky 側が失敗しても Nagi の投稿は出す（警告にとどめる）。Nagi の投稿が作れなかったら、
+			 * 先に出したコピーは消して巻き戻す。
+			 */
+			let earlyCrosspost: CrosspostResult | undefined;
+			if (wantsCrosspost && !article && !draft.kossori && !crosspostDraftBlock(draft)) {
+				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
+					warning = m.crosspostPermissionMissing();
+				else {
+					try {
+						earlyCrosspost = await crosspostToBluesky(draft, assets, target);
+						if (earlyCrosspost) draft.crosspost = earlyCrosspost.ref;
+					} catch (e) {
+						warning = e instanceof Error ? e.message : m.crosspostFailed();
+					}
+				}
+			}
 			const created = article
 				? await publishStandardSiteDocument({
 						title: article.title,
@@ -769,7 +848,10 @@
 						},
 						...(draft.labels ? { labels: draft.labels } : {}),
 					})
-				: await createPost(draft, assets);
+				: await createPost(draft, assets).catch(async (cause) => {
+						if (earlyCrosspost) await deleteBlueskyPosts(earlyCrosspost.posts);
+						throw cause;
+					});
 			optimisticPosts.markCreated(optimisticId, created);
 			postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
@@ -777,17 +859,10 @@
 			const rkey = created.uri.slice(created.uri.lastIndexOf('/') + 1);
 			// 記事の canonical URL。standard.site の document.path と同じ組み立て方。
 			const articleUrl = `${NAGI_PUBLIC_ORIGIN}/blog/${$session.did}/${rkey}`;
-			// Bluesky へのクロスポストは失敗しても Nagi の投稿は成立しているので、
-			// エラーではなく警告として伝える。
-			// 引用はNagi内のレコードを参照するため、Blueskyへはクロスポストしない
-			// （返信・引用の既存方針と同じ）。scope 側でも外部を選べなくしてある。
+			// 記事の Bluesky ティーザーは、Nagi の URL を載せるので投稿の後に出す。
+			// 失敗しても記事は成立しているので、エラーではなく警告として伝える。
 			let bskyPostRef: { uri: string; cid: string } | undefined;
-			if (
-				wantsCrosspost &&
-				!draft.kossori &&
-				!(article ? draft.cwRestricted : crosspostDraftBlock(draft)) &&
-				!draft.quote
-			) {
+			if (wantsCrosspost && article && !draft.cwRestricted && !draft.quote) {
 				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
 					warning = m.crosspostPermissionMissing();
 				else
@@ -795,19 +870,15 @@
 						// 記事は分割連投にせず、抜粋と Nagi への誘導リンクだけを1件出す。
 						// document と publication の強参照を添えると、Bluesky が記事カードで出す。
 						// 取れなければ通常のリンクカードで出す（ティーザー自体は止めない）。
-						const publicationRef = article
-							? await getPublicationRef().catch(() => undefined)
-							: undefined;
-						bskyPostRef = article
-							? await crosspostArticleToBluesky(draft, assets, {
-									url: articleUrl,
-									title: article.title,
-									teaser: m.articleTeaserSuffix({ url: articleUrl }),
-									...(publicationRef
-										? { associatedRefs: [{ uri: created.uri, cid: created.cid }, publicationRef] }
-										: {}),
-								})
-							: await crosspostToBluesky(draft, assets);
+						const publicationRef = await getPublicationRef().catch(() => undefined);
+						bskyPostRef = await crosspostArticleToBluesky(draft, assets, {
+							url: articleUrl,
+							title: article.title,
+							teaser: m.articleTeaserSuffix({ url: articleUrl }),
+							...(publicationRef
+								? { associatedRefs: [{ uri: created.uri, cid: created.cid }, publicationRef] }
+								: {}),
+						});
 					} catch (e) {
 						warning = e instanceof Error ? e.message : m.crosspostFailed();
 					}
@@ -1142,15 +1213,7 @@
 				variant="primary"
 				class="submit-primary"
 				type="button"
-				disabled={busy ||
-					empty ||
-					videoPending ||
-					(!blog && graphemes > 3000) ||
-					articleTitleMissing ||
-					!contentWarningValid ||
-					!articleReady ||
-					Boolean(articleBlockedReason) ||
-					Boolean(kossoriReplyBlockedReason)}
+				disabled={!submittable}
 				aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
 				title={busy
 					? m.composerSubmitting()

@@ -130,9 +130,13 @@ export type NewsSubmissionItem = {
 	requestedAt: string;
 	finishedAt?: string;
 };
+/** Bluesky に同時投稿したコピーへの参照。root は先頭、tail は分割の末尾、threadRoot は Bluesky 上のスレッドの先頭。 */
+export type CrosspostRef = { root: StrongRef; tail: StrongRef; threadRoot: StrongRef };
 export type PostView = {
 	uri: string;
 	cid: string;
+	/** Bluesky に同時投稿したコピー。AppView は作者本人にだけ返す。 */
+	crosspost?: CrosspostRef;
 	author: ActorView;
 	text: string;
 	facets?: Facet[];
