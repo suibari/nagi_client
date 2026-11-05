@@ -2,7 +2,7 @@
 // with the same signatures (enforced via the Messages type).
 export const ja = {
 	// brand
-	appTitle: 'Nagi — やさしい言葉が凪ぐ場所',
+	appTitle: 'Nagi（ナギ）— 気持ちを残し、ゆるくつながるSNS',
 	appDescription: 'すべての声を受け止める、AT Protocol上のSNS',
 
 	// common
