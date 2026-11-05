@@ -33,7 +33,11 @@ const UNDRAWN_RECHECK_MS = 60_000;
  */
 class CardCollections {
 	#entries = $state(new Map<string, Entry>());
-	#selfDid: string | undefined;
+	/*
+	 * $state にしておく。OAuth の復元はレイアウトの初回描画より遅れて終わるので、普通のフィールドだと
+	 * その前に評価した $derived / $effect（ナビの未ドロー点など）が自分の DID を追跡できず、止まったままになる。
+	 */
+	#selfDid = $state<string | undefined>();
 
 	constructor() {
 		session.subscribe((value) => {

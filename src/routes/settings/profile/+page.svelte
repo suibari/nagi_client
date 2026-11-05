@@ -19,12 +19,9 @@
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import { APPVIEW_URL, getProfile } from '$lib/api/appview';
 	import { session, oauthReady, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
-	import AgeAssuranceForm from '$lib/components/AgeAssuranceForm.svelte';
 	import SignedOutNotice from '$lib/components/SignedOutNotice.svelte';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { syncExistingPublicationFromProfile } from '$lib/standardsite/publication';
@@ -49,7 +46,6 @@
 	let avatarChange = $state<Blob | null>();
 	let cropFile = $state<File>();
 	let avatarInput = $state<HTMLInputElement>();
-	let onboarding = $derived(page.url.searchParams.get('onboarding') === '1');
 
 	onDestroy(() => {
 		if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview);
@@ -184,7 +180,6 @@
 			avatarChange = undefined;
 			status = m.saved();
 			myProfile.refresh();
-			if (onboarding) await goto('/');
 		} catch (e) {
 			error = e instanceof Error ? e.message : m.saveFailed();
 		} finally {
@@ -193,12 +188,7 @@
 	}
 </script>
 
-<SettingsPage
-	title={m.profileSettingsTitle()}
-	description={m.profileSettingsNote()}
-	back={onboarding ? null : undefined}
->
-	{#if onboarding}<p class="settings-section-description">{m.onboardingLoadedNote()}</p>{/if}
+<SettingsPage title={m.profileSettingsTitle()} description={m.profileSettingsNote()}>
 	{#if !$session && $oauthReady}
 		<SignedOutNotice message={m.loginRequired()} />
 	{:else if $session}
@@ -274,16 +264,6 @@
 				{/if}
 			</SettingRow>
 		</SettingsSection>
-		{#if onboarding}
-			<!--
-				初回登録でだけ年齢を訊く。任意なので、入力せず「保存」で先へ進める
-				（その場合は18歳未満として扱われ、あとから設定→コンテンツ表示で
-				1度だけ登録できる）。
-			-->
-			<SettingsSection description={m.onboardingAgeIntro()}>
-				<SettingRow><AgeAssuranceForm /></SettingRow>
-			</SettingsSection>
-		{/if}
 		<div class="settings-actions">
 			<Button variant="primary" disabled={busy || !loaded} onclick={save}
 				>{busy ? m.saving() : m.save()}</Button

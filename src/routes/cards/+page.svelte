@@ -4,6 +4,7 @@
 	import ZenkatsuRecord from '$lib/components/ZenkatsuRecord.svelte';
 	import ZenkatsuBoard from '$lib/components/ZenkatsuBoard.svelte';
 	import CardShareBoard from '$lib/components/CardShareBoard.svelte';
+	import CardDrawEntry from '$lib/components/CardDrawEntry.svelte';
 	import { page } from '$app/state';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -32,6 +33,9 @@
 	const requested = page.url.searchParams.get('tab');
 	let tab = $state<TabId>(tabs.some((t) => t.id === requested) ? (requested as TabId) : 'zenkatsu');
 </script>
+
+<!-- 今日の一枚はフィードではなくここから引く。引けるものが無い日は何も描かない。 -->
+<CardDrawEntry variant="banner" />
 
 <div class="tabs" role="tablist">
 	{#each tabs as t (t.id)}

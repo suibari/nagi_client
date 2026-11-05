@@ -179,56 +179,130 @@ export function crosspostDraftBlock(
 	});
 }
 
+/** Bluesky 側で続ける先。返信ならコピーへの返信、引用ならコピーの引用として出す。 */
+export type CrosspostTarget = {
+	reply?: { root: StrongRef; parent: StrongRef };
+	quote?: StrongRef;
+};
+
+/** 作ったコピー。ref は Nagi の投稿レコードの crosspost にそのまま入れ、posts は巻き戻し用の全件。 */
+export type CrosspostResult = {
+	ref: { root: StrongRef; tail: StrongRef; threadRoot: StrongRef };
+	posts: StrongRef[];
+};
+
+/** 引用は先頭の1件にだけ付ける。画像・動画・リンクカードと一緒なら recordWithMedia にする。 */
+function withQuote(embed: ReturnType<typeof buildEmbed>, quote: StrongRef | undefined) {
+	if (!quote) return embed;
+	const record = { $type: 'app.bsky.embed.record', record: quote };
+	return embed ? { $type: 'app.bsky.embed.recordWithMedia', record, media: embed } : record;
+}
+
 /**
- * Nagi のトップレベル投稿を Bluesky にも投稿する。
+ * Nagi の投稿を Bluesky にも投稿する。
  * 300 文字を超える場合は分割し、2件目以降は直前の投稿へのリプライで芋づるに繋ぐ。
  * blob は Nagi 投稿でアップロード済みのものを使い回す（同一リポジトリ・同一サイズ上限）。
+ *
+ * target を渡すと、自分のクロスポスト済みの投稿への返信・引用として Bluesky でも続ける。
+ * 途中で失敗したら、作った分は消してから投げる（Bluesky に半端なスレッドを残さない）。
  */
 export async function crosspostToBluesky(
 	draft: PostDraft,
 	assets: PostAssets,
-): Promise<StrongRef | undefined> {
+	target: CrosspostTarget = {},
+): Promise<CrosspostResult | undefined> {
 	// こっそり投稿と、Bluesky では伏せられない CW を含む投稿はクロスポストしない。
 	if (draft.kossori || crosspostDraftBlock(draft)) return;
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);
 	const { chunks, embed } = prepareCrosspostContent(draft, assets);
+	const firstEmbed = withQuote(embed, target.quote);
+	if (!chunks.length && firstEmbed) chunks.push({ text: '', facets: [] });
 	if (!chunks.length) return;
 	const base = Date.parse(draft.createdAt) || Date.now();
-	let root: { uri: string; cid: string } | undefined;
-	let parent: { uri: string; cid: string } | undefined;
+	const threadRoot = target.reply?.root;
+	let root: StrongRef | undefined;
+	let parent: StrongRef | undefined = target.reply?.parent;
+	const created: StrongRef[] = [];
 	const crosspostSelfLabels = getCrosspostSelfLabels(draft);
 
-	for (const [index, chunk] of chunks.entries()) {
-		const response = await agent.com.atproto.repo.createRecord({
-			repo: current.did,
-			collection: BSKY_POST,
-			record: {
-				$type: BSKY_POST,
-				text: chunk.text,
-				...(chunk.facets.length ? { facets: chunk.facets } : {}),
-				langs: draft.langs,
-				...(crosspostSelfLabels?.length
-					? {
-							labels: {
-								$type: 'com.atproto.label.defs#selfLabels',
-								values: crosspostSelfLabels,
-							},
-						}
-					: {}),
-				createdAt: new Date(base + index).toISOString(),
-				via: VIA,
-				...(index === 0 && embed ? { embed } : {}),
-				...(root && parent ? { reply: { root, parent } } : {}),
-			},
-		});
-		const ref = { uri: response.data.uri, cid: response.data.cid };
-		root ??= ref;
-		parent = ref;
+	try {
+		for (const [index, chunk] of chunks.entries()) {
+			const replyRoot = threadRoot ?? root;
+			const response = await agent.com.atproto.repo.createRecord({
+				repo: current.did,
+				collection: BSKY_POST,
+				record: {
+					$type: BSKY_POST,
+					text: chunk.text,
+					...(chunk.facets.length ? { facets: chunk.facets } : {}),
+					langs: draft.langs,
+					...(crosspostSelfLabels?.length
+						? {
+								labels: {
+									$type: 'com.atproto.label.defs#selfLabels',
+									values: crosspostSelfLabels,
+								},
+							}
+						: {}),
+					createdAt: new Date(base + index).toISOString(),
+					via: VIA,
+					...(index === 0 && firstEmbed ? { embed: firstEmbed } : {}),
+					...(replyRoot && parent ? { reply: { root: replyRoot, parent } } : {}),
+				},
+			});
+			const ref = { uri: response.data.uri, cid: response.data.cid };
+			created.push(ref);
+			root ??= ref;
+			parent = ref;
+		}
+	} catch (cause) {
+		await deleteBlueskyPosts(created);
+		throw cause;
 	}
-	// スレッドの先頭。記事の bskyPostRef にはこれを使う。
-	return root;
+	return {
+		ref: { root: root!, tail: parent!, threadRoot: threadRoot ?? root! },
+		posts: created,
+	};
+}
+
+/** 作ったコピーを消す。Nagi の投稿が作れなかったときの巻き戻し用で、失敗は握る。 */
+export async function deleteBlueskyPosts(refs: StrongRef[]): Promise<void> {
+	const current = get(session);
+	if (!current || !refs.length) return;
+	const agent = new Agent(current);
+	for (const ref of [...refs].reverse()) {
+		const rkey = ref.uri.slice(ref.uri.lastIndexOf('/') + 1);
+		await agent.com.atproto.repo
+			.deleteRecord({ repo: current.did, collection: BSKY_POST, rkey })
+			.catch((error) => console.warn('[crosspost] failed to roll back', ref.uri, error));
+	}
+}
+
+/**
+ * Bluesky のコピーがまだあるか。自分の PDS に聞く（1件ずつ getRecord）。
+ * 無い（RecordNotFound）なら false、確かめられなかったら例外。
+ */
+export async function blueskyPostsExist(refs: StrongRef[]): Promise<boolean> {
+	const current = get(session);
+	if (!current) throw new Error('Authentication required');
+	const agent = new Agent(current);
+	for (const ref of refs) {
+		const rkey = ref.uri.slice(ref.uri.lastIndexOf('/') + 1);
+		try {
+			await agent.com.atproto.repo.getRecord({ repo: current.did, collection: BSKY_POST, rkey });
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			if (
+				/RecordNotFound|Could not locate record/i.test(message) ||
+				(error as { error?: string })?.error === 'RecordNotFound'
+			)
+				return false;
+			throw error;
+		}
+	}
+	return true;
 }
 
 /**

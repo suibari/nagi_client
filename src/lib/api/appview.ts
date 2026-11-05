@@ -811,6 +811,23 @@ export const drawCard = (
 		{ method: 'POST', body: JSON.stringify(input) },
 		'required',
 	);
+/** 通報・フィードバックの理由。AppView の REPORT_REASONS と揃えること。 */
+export type ReportReason = 'spam' | 'harassment' | 'sensitive' | 'botResponse' | 'other';
+/**
+ * 投稿（botたんの投稿を含む）や、投稿に付いたリアクションを運営に伝える。
+ * reactor を付けると「この投稿にこの人が付けたリアクション」の通報になる。運営の Discord にだけ届く。
+ */
+export const createReport = (input: {
+	subject: { uri: string; reactor?: string };
+	reason: ReportReason;
+	comment?: string;
+}) =>
+	call<Record<string, never>>(
+		'com.suibari.nagi.createReport',
+		'/xrpc/com.suibari.nagi.createReport',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
 /**
  * おすそわけボード。図鑑のカードごとの「ある／ない」と、置ける枚数・Ƶ 残高を返す。
  * はじめて開いたときに Ƶ が配られる（welcomeGranted）。要認証。

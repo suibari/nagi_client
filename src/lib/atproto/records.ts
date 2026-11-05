@@ -10,6 +10,7 @@ import type {
 	NewsSubmissionPreview,
 	PostImage,
 	PostVideoView,
+	StrongRef,
 } from '$lib/api/types';
 import { blueskyVideoUrls } from '$lib/video';
 import { BLUEMOJI_ITEM, bluemojiRefOf, NAGI_BLUEMOJI } from './bluemoji';
@@ -181,6 +182,11 @@ export type PostDraft = {
 	createdAt: string;
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
 	quote?: { uri: string; cid: string };
+	/**
+	 * Bluesky に同時投稿したコピーへの参照。Nagi の投稿より先に Bluesky へ出し、作成時のレコードに
+	 * 入れる（後から書き足すと AppView が「編集」と見なし、翻訳や判定をやり直してしまう）。
+	 */
+	crosspost?: { root: StrongRef; tail: StrongRef; threadRoot?: StrongRef };
 	attachments: ImageAttachment[];
 	/** video.bsky.app で変換済みの動画。画像と併用できる（引用なしなら #gallery で書く）。 */
 	video?: PostVideoRecord;
@@ -335,6 +341,38 @@ export async function ensureOwnNagiProfile(): Promise<ProfileDraft> {
 	}
 }
 
+/**
+ * 初回サインインで Nagi プロフィールを Bluesky のプロフィールから作る。登録画面は挟まない
+ * （まず使ってもらい、変えたくなったら設定から変えてもらう）。アバターは同じ repo の blob なので
+ * そのまま参照できる。別タブが先に作っていたら上書きせず、作らなかったことを返す。
+ */
+export async function createNagiProfileFromBluesky(): Promise<boolean> {
+	const draft = await getBlueskyProfileDraft();
+	const s = current();
+	try {
+		await indexed(
+			new Agent(s).com.atproto.repo.putRecord({
+				repo: s.did,
+				collection: PROFILE,
+				rkey: 'self',
+				swapRecord: null,
+				validate: false,
+				record: {
+					$type: PROFILE,
+					displayName: draft.displayName,
+					description: draft.description,
+					...(draft.avatar !== undefined ? { avatar: draft.avatar } : {}),
+					createdAt: new Date().toISOString(),
+				},
+			}),
+		);
+		return true;
+	} catch (error) {
+		if (await getOwnNagiProfile()) return false;
+		throw error;
+	}
+}
+
 export async function getBlueskyProfileDraft(): Promise<ProfileDraft> {
 	const s = current();
 	const agent = new Agent(s);
@@ -479,6 +517,7 @@ export async function createPost(
 				...(embed && { embed }),
 				...(draft.labels && { labels: draft.labels }),
 				...(draft.article && { article: true }),
+				...(draft.crosspost && { crosspost: draft.crosspost }),
 			},
 		});
 		return { uri: data.uri, cid: data.cid };

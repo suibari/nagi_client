@@ -5309,6 +5309,9 @@ a.about-feature:focus-visible {
 	color: var(--text-faint);
 	font-size: 0.75rem;
 }
+.blog-card-reactions {
+	margin-block-start: 8px;
+}
 .blog-card-tags {
 	display: flex;
 	flex-wrap: wrap;

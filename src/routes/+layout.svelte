@@ -6,9 +6,11 @@
 	import MobileNav from '$lib/components/shell/MobileNav.svelte';
 	import { initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
 	import { initLocale, m, i18n } from '$lib/i18n/i18n.svelte';
-	import { getOwnNagiProfile } from '$lib/atproto/records';
+	import { createNagiProfileFromBluesky, getOwnNagiProfile } from '$lib/atproto/records';
+	import { myProfile } from '$lib/profile/me.svelte';
+	import { welcomeTutorial } from '$lib/onboarding/tutorial.svelte';
 	import { resolvePendingOptIns } from '$lib/optin/scope-optin';
-	import { beforeNavigate, goto } from '$app/navigation';
+	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
@@ -30,6 +32,7 @@
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
 	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
+	import WelcomeTutorialHost from '$lib/components/WelcomeTutorialHost.svelte';
 	import AnniversaryCardHost from '$lib/components/AnniversaryCardHost.svelte';
 	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
 	import GuestPostModal from '$lib/components/GuestPostModal.svelte';
@@ -39,6 +42,7 @@
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { startChronicleNotice } from '$lib/chronicle/notice';
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
+	import { startCardDrawNotice } from '$lib/cards/draw-notice.svelte';
 	import { startRadioNotice } from '$lib/radio/radio.svelte';
 	import { migrateLegacyStandardSite } from '$lib/standardsite/publication';
 
@@ -179,6 +183,7 @@
 	onMount(() => {
 		const stopRadioNotice = startRadioNotice();
 		const stopZenkatsuNotice = startZenkatsuNotice();
+		const stopCardDrawNotice = startCardDrawNotice();
 		const stopChronicleNotice = startChronicleNotice();
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
@@ -206,6 +211,7 @@
 		return () => {
 			stopRadioNotice();
 			stopZenkatsuNotice();
+			stopCardDrawNotice();
 			stopChronicleNotice();
 			window.removeEventListener('online', repairPush);
 			document.removeEventListener('visibilitychange', onVisibility);
@@ -216,15 +222,23 @@
 		if (!$oauthReady || !did || checkedDid === did) return;
 		checkedDid = did;
 		void getOwnNagiProfile()
-			.then((profile) => {
-				if (!profile && page.url.pathname !== '/settings/profile')
-					void goto('/settings/profile?onboarding=1');
+			.then(async (profile) => {
+				/*
+				 * 初回はプロフィール登録を挟まず、Bluesky のプロフィールをそのまま写して始めてもらう。
+				 * 変えたくなったら設定から変えられる。まず「Nagiのはじめかた」で使ってみてもらう。
+				 */
+				if (!profile) {
+					if (await createNagiProfileFromBluesky()) {
+						myProfile.refresh();
+						if ($session?.did === did) welcomeTutorial.start(did);
+					}
+					return;
+				}
 				// 移行前の standard.site 記事を、検証できる形（ユーザーごとの url）へ直す。
 				// 端末ごとに一度だけ。失敗しても次のサインインでやり直すので握りつぶす。
-				if (profile)
-					void migrateLegacyStandardSite().catch((error) =>
-						console.warn('Failed to migrate standard.site records:', error),
-					);
+				void migrateLegacyStandardSite().catch((error) =>
+					console.warn('Failed to migrate standard.site records:', error),
+				);
 			})
 			.catch((error) => {
 				checkedDid = undefined;
@@ -273,6 +287,7 @@
 {#if $session}
 	<PostModal />
 	<ReactionCardRewardHost />
+	<WelcomeTutorialHost />
 	<!-- 記念日はその日しか来ないので、どの画面にいても受け取れるよう常駐させる。 -->
 	<AnniversaryCardHost />
 {:else if $oauthReady}

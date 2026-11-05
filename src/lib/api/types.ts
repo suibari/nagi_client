@@ -106,6 +106,8 @@ export type IndexableBlog = {
 	createdAt: string;
 	indexedAt: string;
 	author: Pick<ActorView, 'did' | 'handle' | 'displayName'>;
+	/** 一覧の公開キャッシュから引くので、送り主も自分の反応も入らない絵文字だけ。 */
+	reactions?: ReactionView[];
 };
 export type NewsSubmissionPreview = {
 	articleId: string;
@@ -128,9 +130,13 @@ export type NewsSubmissionItem = {
 	requestedAt: string;
 	finishedAt?: string;
 };
+/** Bluesky に同時投稿したコピーへの参照。root は先頭、tail は分割の末尾、threadRoot は Bluesky 上のスレッドの先頭。 */
+export type CrosspostRef = { root: StrongRef; tail: StrongRef; threadRoot: StrongRef };
 export type PostView = {
 	uri: string;
 	cid: string;
+	/** Bluesky に同時投稿したコピー。AppView は作者本人にだけ返す。 */
+	crosspost?: CrosspostRef;
 	author: ActorView;
 	text: string;
 	facets?: Facet[];
@@ -416,7 +422,17 @@ export type NotificationView = {
 	/** 'gift' はおすそわけボードに置いたカードが届いた。actor は受け取った人、cardSubject にカードが入る。 */
 	/** 'emoji' は依頼した絵文字の生成が終わった（失敗も含む）。actor は常に botたん。 */
 	/** 'chronicle' は年表に週のトピックが載った。actor は常に botたん、post も diary も付かない。 */
-	type: 'reply' | 'reaction' | 'mention' | 'diary' | 'analysis' | 'gift' | 'emoji' | 'chronicle';
+	/** 'mood' は始めたばかりの人の最初の気持ちが感情グラフに載った。actor は常に botたん。 */
+	type:
+		| 'reply'
+		| 'reaction'
+		| 'mention'
+		| 'diary'
+		| 'analysis'
+		| 'gift'
+		| 'emoji'
+		| 'chronicle'
+		| 'mood';
 	actor: ActorView;
 	post?: PostView;
 	/** type が 'diary' のときの日記本体。post は付かない。 */

@@ -63,6 +63,9 @@ describe('notificationHref', () => {
 	it('routes chronicle notifications to the chronicle tab', () => {
 		expect(notificationHref(notification({ type: 'chronicle' }))).toBe('/diary?tab=chronicle');
 	});
+	it('routes first-mood notifications to the mood graph', () => {
+		expect(notificationHref(notification({ type: 'mood' }))).toBe('/diary');
+	});
 	it('routes gift notifications to the share board tab', () => {
 		expect(notificationHref(notification({ type: 'gift' }))).toBe('/cards?tab=board');
 	});
