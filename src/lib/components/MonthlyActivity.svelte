@@ -9,7 +9,13 @@
 		monthOf,
 		shiftMonth,
 	} from '$lib/diary/calendar';
-	import { moodPostAnchorId, replaceMood, summarizeMoodDays } from '$lib/diary/mood';
+	import {
+		moodClockFromPage,
+		moodPostAnchorId,
+		replaceMood,
+		summarizeMoodDays,
+		type MoodClock,
+	} from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
 	import DiaryDayDetail from './DiaryDayDetail.svelte';
@@ -43,8 +49,8 @@
 		moods: DiaryMoodView[];
 		entries: DiaryView[];
 		pending: number;
-		/** AppView が気分の日付を切ったタイムゾーン。横バーと投稿の時刻をこれで揃える。 */
-		timeZone?: string;
+		/** AppView が気分の日付を切った区切り。横バーと投稿の時刻をこれで揃える。 */
+		clock?: MoodClock;
 	};
 
 	const graph = $derived(buildDiaryGraphForMonth(month));
@@ -77,7 +83,7 @@
 					moods: page.moods ?? [],
 					entries: page.items,
 					pending: page.moodPending ?? 0,
-					timeZone: page.moodTimezone,
+					clock: moodClockFromPage(page),
 				};
 				cache.set(key, value);
 				loaded = value;
@@ -274,7 +280,7 @@
 						<MoodDayPosts
 							date={focusDate}
 							day={focusMood}
-							timeZone={loaded.timeZone}
+							clock={loaded.clock}
 							onchange={changeMood}
 						/>
 					</details>

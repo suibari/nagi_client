@@ -12,6 +12,7 @@ import type {
 } from '$lib/api/types';
 import type { ReadPosition } from '$lib/unread/watermark.svelte';
 import { session } from '$lib/oauth/session.svelte';
+import { deviceTimezone, timezoneToReport } from '$lib/diary/timezone';
 
 /**
  * 端末をまたいで同期する設定（my Nagi の既読位置・お気に入り絵文字）の通信層。
@@ -102,6 +103,7 @@ class Preferences {
 			if (request !== this.#loadRequest || get(session)?.did !== did) return undefined;
 			this.#rememberPositions(view);
 			this.synced = true;
+			void this.#reportTimezone(did, view);
 			return view;
 		} catch (error) {
 			if (request !== this.#loadRequest || get(session)?.did !== did) return undefined;
@@ -193,6 +195,20 @@ class Preferences {
 		if (this.#flushTimer) clearTimeout(this.#flushTimer);
 		this.#flushTimer = undefined;
 		return this.#flush();
+	}
+
+	/**
+	 * この端末のタイムゾーンを AppView に教える（日記の1日をその人のタイムゾーンで区切るため）。
+	 * 変わったときだけ送る。送れなくても次に開いたときにまた試すので、失敗は黙って捨てる。
+	 */
+	async #reportTimezone(did: string, view: PreferencesView) {
+		const detectedTimezone = timezoneToReport(view.diaryDay, deviceTimezone());
+		if (!detectedTimezone) return;
+		try {
+			await putPreferences({ detectedTimezone });
+		} catch (error) {
+			if (get(session)?.did === did) this.noteScopeError(error);
+		}
 	}
 
 	#rememberPositions(view: PreferencesView) {

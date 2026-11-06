@@ -4,8 +4,11 @@ import {
 	clampMoodZoom,
 	formatValence,
 	moodColor,
+	moodClockFromPage,
+	moodDayFrame,
 	moodDayOffset,
 	moodDayRange,
+	moodDayTicks,
 	moodTimeLabel,
 	moodGradient,
 	moodSegmentStops,
@@ -154,23 +157,85 @@ describe('moodTimelineStops', () => {
 describe('moodDayRange with the AppView time zone', () => {
 	it('cuts the day at 22:00 in the given zone, not the device zone', () => {
 		// AppView の moodDiaryDate と同じ境界（2026-08-01T13:00Z は Tokyo の 8/1 22:00）。
-		expect(moodDayRange('2026-08-01', 'Asia/Tokyo')).toEqual({
+		expect(moodDayRange('2026-08-01', { timeZone: 'Asia/Tokyo' })).toEqual({
 			start: Date.parse('2026-07-31T13:00:00.000Z'),
 			end: Date.parse('2026-08-01T13:00:00.000Z'),
 		});
-		expect(moodDayOffset('2026-08-01', '2026-08-01T01:00:00.000Z', 'Asia/Tokyo')).toBeCloseTo(0.5);
+		expect(
+			moodDayOffset('2026-08-01', '2026-08-01T01:00:00.000Z', { timeZone: 'Asia/Tokyo' }),
+		).toBeCloseTo(0.5);
 	});
 
 	it('follows daylight saving changes', () => {
 		// 2026-11-01 は New York の夏時間終了日。22時 EDT → 22時 EST の 25 時間。
-		expect(moodDayRange('2026-11-01', 'America/New_York')).toEqual({
+		expect(moodDayRange('2026-11-01', { timeZone: 'America/New_York' })).toEqual({
 			start: Date.parse('2026-11-01T02:00:00.000Z'),
 			end: Date.parse('2026-11-02T03:00:00.000Z'),
 		});
 	});
 
 	it('falls back to the device zone for an unknown zone', () => {
-		expect(moodDayRange('2026-08-01', 'Not/AZone')).toEqual(moodDayRange('2026-08-01'));
+		expect(moodDayRange('2026-08-01', { timeZone: 'Not/AZone' })).toEqual(
+			moodDayRange('2026-08-01'),
+		);
+	});
+
+	it('cuts a morning start hour at the next day (AppView と同じ決め方)', () => {
+		// 2時区切りの 8/1 は 8/1 02:00〜8/2 02:00（JST）。
+		expect(moodDayRange('2026-08-01', { timeZone: 'Asia/Tokyo', startHour: 2 })).toEqual({
+			start: Date.parse('2026-07-31T17:00:00.000Z'),
+			end: Date.parse('2026-08-01T17:00:00.000Z'),
+		});
+	});
+
+	it('prefers the per-day window from the AppView', () => {
+		// 設定が変わった日は 28 時間（8/1 22:00 〜 8/3 02:00 JST）。
+		const clock = moodClockFromPage({
+			moodTimezone: 'Asia/Tokyo',
+			moodDayStartHour: 2,
+			moodDayWindows: [
+				{
+					date: '2026-08-02',
+					start: '2026-08-01T13:00:00.000Z',
+					end: '2026-08-02T17:00:00.000Z',
+					timezone: 'Asia/Tokyo',
+					startHour: 2,
+				},
+			],
+		});
+		expect(moodDayRange('2026-08-02', clock)).toEqual({
+			start: Date.parse('2026-08-01T13:00:00.000Z'),
+			end: Date.parse('2026-08-02T17:00:00.000Z'),
+		});
+		// 窓の無い日は moodTimezone と moodDayStartHour で計算する。
+		expect(moodDayRange('2026-08-05', clock)).toEqual({
+			start: Date.parse('2026-08-04T17:00:00.000Z'),
+			end: Date.parse('2026-08-05T17:00:00.000Z'),
+		});
+		expect(moodDayFrame('2026-08-02', clock).timeZone).toBe('Asia/Tokyo');
+	});
+
+	it('falls back to 22:00 when an old AppView sends no start hour', () => {
+		const clock = moodClockFromPage({ moodTimezone: 'Asia/Tokyo' });
+		expect(moodDayRange('2026-08-01', clock)).toEqual({
+			start: Date.parse('2026-07-31T13:00:00.000Z'),
+			end: Date.parse('2026-08-01T13:00:00.000Z'),
+		});
+	});
+
+	it('places hour ticks inside the day in its own zone', () => {
+		// 22時区切りは 0・6・12・18時がそれぞれ 2/24, 8/24, 14/24, 20/24。
+		const ticks = moodDayTicks('2026-08-01', { timeZone: 'Asia/Tokyo' });
+		expect(ticks.map((tick) => tick.hour)).toEqual([0, 6, 12, 18]);
+		expect(ticks[0].offset).toBeCloseTo(2 / 24);
+		expect(ticks[3].offset).toBeCloseTo(20 / 24);
+		// 2時区切りは 6・12・18・0時の順。
+		const night = moodDayTicks('2026-08-01', { timeZone: 'Asia/Tokyo', startHour: 2 });
+		expect(night.map((tick) => tick.hour)).toEqual([6, 12, 18, 0]);
+		expect(night[0].offset).toBeCloseTo(4 / 24);
+		// 0時区切りは両端の0時を出さない。
+		const midnight = moodDayTicks('2026-08-01', { timeZone: 'Asia/Tokyo', startHour: 0 });
+		expect(midnight.map((tick) => tick.hour)).toEqual([6, 12, 18]);
 	});
 
 	it('shows post times in the same zone', () => {

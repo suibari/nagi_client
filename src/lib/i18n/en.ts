@@ -1253,6 +1253,30 @@ export const en: Messages = {
 	botNameLoadFailed: 'Could not load your preferred name',
 	botNameSaveFailed: 'Could not save your preferred name',
 	botNameLoginRequired: 'Log in to set how Bot-tan calls you.',
+	settingsBotDiaryDayTitle: 'Diary time',
+	settingsBotDiaryDayDescription: 'Tell Bot-tan your time zone and when your day ends',
+	diaryDayHelp:
+		'Every day, when your day ends, Bot-tan looks back on your posts and writes your diary. The "day" in your diary, calendar, and mood graph follows the same boundary.',
+	diaryDayTimezoneLabel: 'Time zone',
+	diaryDayTimezoneHelp:
+		"When you open Nagi, it tells Bot-tan this device's time zone (for example, Europe/London). It isn't added to your posts or profile, and no one else can see it. If you choose one yourself, Nagi stops sending it.",
+	diaryDayTimezoneAuto: (p: { zone: string }) => `Automatic (this device: ${p.zone})`,
+	diaryDayTimezoneAutoUnknown: 'Automatic',
+	diaryDayStartHourLabel: 'Your day ends at',
+	diaryDayStartHourHelp:
+		"Everything up to this time goes into that day's diary. If you stay up late, a later time keeps your night in the same day.",
+	diaryDayHourNextDay: (p: { time: string }) => `${p.time} (next day)`,
+	diaryDayHourDefault: (p: { time: string }) => `${p.time} (usual)`,
+	diaryDayCurrent: (p: { zone: string; time: string }) =>
+		`Your diary currently follows ${p.zone}, with the day ending at ${p.time}.`,
+	diaryDayEffectiveFrom: (p: { date: string }) =>
+		`This applies from your diary for ${p.date}. Earlier diaries keep the previous boundary.`,
+	diaryDayUnavailable: "This setting isn't available yet. Please come back a little later.",
+	diaryDaySaving: 'Saving…',
+	diaryDaySaved: 'Bot-tan got it.',
+	diaryDayLoadFailed: 'Could not load your diary time',
+	diaryDaySaveFailed: 'Could not save your diary time',
+	diaryDayLoginRequired: 'Log in to set your diary time.',
 	botReplyFreqHelp:
 		'Set the probability of Bot-tan replying to your posts. Setting it to 0% disables automatic replies. (Shared with Bluesky freq setting)',
 	botReplyFreqLabel: 'Reply frequency',

@@ -1291,6 +1291,30 @@ export const ja = {
 	botNameLoadFailed: '呼び方を読み込めませんでした',
 	botNameSaveFailed: '呼び方を保存できませんでした',
 	botNameLoginRequired: '呼び方を設定するにはログインしてください。',
+	settingsBotDiaryDayTitle: '日記を書く時間',
+	settingsBotDiaryDayDescription: 'botたんに、あなたのタイムゾーンと1日の区切りを教える',
+	diaryDayHelp:
+		'botたんは毎日、1日の区切りの時刻に、その日のあなたの投稿をふりかえって日記を書きます。日記・カレンダー・感情グラフの「1日」も、ここで決めた区切りになります。',
+	diaryDayTimezoneLabel: 'タイムゾーン',
+	diaryDayTimezoneHelp:
+		'Nagi を開いたとき、この端末のタイムゾーン（例: Europe/London）を botたんに伝えます。投稿やプロフィールには載らず、ほかの人からは見えません。手動で選ぶと、自動で伝えるのをやめます。',
+	diaryDayTimezoneAuto: (p: { zone: string }) => `自動（この端末: ${p.zone}）`,
+	diaryDayTimezoneAutoUnknown: '自動',
+	diaryDayStartHourLabel: '1日の区切り',
+	diaryDayStartHourHelp:
+		'この時刻までのことを、その日の日記に書きます。夜ふかしの人は遅めにすると、寝る前のことまで同じ日にまとまります。',
+	diaryDayHourNextDay: (p: { time: string }) => `翌${p.time}`,
+	diaryDayHourDefault: (p: { time: string }) => `${p.time}（いつもの時間）`,
+	diaryDayCurrent: (p: { zone: string; time: string }) =>
+		`いまは ${p.zone} の ${p.time} 区切りで日記を書いています。`,
+	diaryDayEffectiveFrom: (p: { date: string }) =>
+		`${p.date}の日記から反映されます。それより前の日記は、前の区切りのままです。`,
+	diaryDayUnavailable: 'この設定はまだ使えません。しばらくしてから開き直してください。',
+	diaryDaySaving: '保存中…',
+	diaryDaySaved: 'botたんに伝えました。',
+	diaryDayLoadFailed: '日記の時間を読み込めませんでした',
+	diaryDaySaveFailed: '日記の時間を保存できませんでした',
+	diaryDayLoginRequired: '日記の時間を設定するにはログインしてください。',
 	botReplyFreqHelp:
 		'botたんがあなたの投稿に返信する確率を設定できます。0%にすると自動返信を行わなくなります（Bluesky側のfreq設定と共用されます）。',
 	botReplyFreqLabel: '返信の確率',

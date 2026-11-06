@@ -87,9 +87,44 @@ export function moodColor(median: number): string {
 	return `color-mix(in srgb, var(--mood-scale-${from}), var(--mood-scale-${to}) ${percent}%)`;
 }
 
-/** 日記の1日は前日22時の直後〜当日22時（`DiaryMoodView.date` と同じ区切り）。 */
+/** 区切りの時刻の既定値。AppView が区切りを返さないとき（旧 AppView）に使う。 */
 export const MOOD_DAY_START_HOUR = 22;
 const MINUTE = 60_000;
+
+/** AppView が返す、1日の窓（`DiaryPage.moodDayWindows` の1件）。 */
+export type MoodDayWindow = {
+	date: string;
+	start: string;
+	end: string;
+	timezone: string;
+	startHour: number;
+};
+
+/**
+ * 日記の1日をどう区切るか。AppView から受け取った値をまとめたもの。
+ * - windows: 点のある日ごとの窓。あればこれをそのまま使う（設定が途中で変わった日も正しく描ける）。
+ * - timeZone / startHour: windows に無い日の計算に使う。旧 AppView は timeZone だけ返す。
+ */
+export type MoodClock = {
+	timeZone?: string;
+	startHour?: number;
+	windows?: ReadonlyMap<string, MoodDayWindow>;
+};
+
+/** getDiaries の結果から MoodClock を作る。 */
+export function moodClockFromPage(page: {
+	moodTimezone?: string;
+	moodDayStartHour?: number;
+	moodDayWindows?: MoodDayWindow[];
+}): MoodClock {
+	return {
+		timeZone: page.moodTimezone,
+		startHour: page.moodDayStartHour,
+		windows: page.moodDayWindows?.length
+			? new Map(page.moodDayWindows.map((window) => [window.date, window]))
+			: undefined,
+	};
+}
 
 /** その瞬間の、timeZone の UTC からのずれ（ミリ秒）。 */
 function timeZoneOffsetMs(instant: number, timeZone: string): number {
@@ -123,7 +158,7 @@ function zonedHour(date: string, hour: number, timeZone: string): number {
 	return naive - timeZoneOffsetMs(first, timeZone);
 }
 
-/** 不正なタイムゾーン名なら端末のタイムゾーンに戻す。 */
+/** 不正なタイムゾーン名なら undefined（端末のタイムゾーンに戻す）。 */
 function validTimeZone(timeZone: string | undefined): string | undefined {
 	if (!timeZone) return undefined;
 	try {
@@ -134,30 +169,76 @@ function validTimeZone(timeZone: string | undefined): string | undefined {
 	}
 }
 
-/**
- * date（YYYY-MM-DD）の日記の1日をミリ秒で返す。
- * timeZone は AppView が日付を切ったタイムゾーン（`DiaryPage.moodTimezone`）。無ければ端末の時刻で切る。
- */
-export function moodDayRange(date: string, timeZone?: string): { start: number; end: number } {
-	const zone = validTimeZone(timeZone);
-	if (zone) {
-		const previous = new Date(`${date}T12:00:00.000Z`);
-		previous.setUTCDate(previous.getUTCDate() - 1);
-		return {
-			start: zonedHour(previous.toISOString().slice(0, 10), MOOD_DAY_START_HOUR, zone),
-			end: zonedHour(date, MOOD_DAY_START_HOUR, zone),
-		};
-	}
-	const end = new Date(`${date}T${MOOD_DAY_START_HOUR}:00:00`);
-	const start = new Date(end);
-	start.setDate(start.getDate() - 1);
-	return { start: start.getTime(), end: end.getTime() };
+const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function shiftDate(date: string, days: number): string {
+	const value = new Date(`${date}T12:00:00.000Z`);
+	value.setUTCDate(value.getUTCDate() + days);
+	return value.toISOString().slice(0, 10);
 }
 
-/** その日の中での位置（0 = 前日22時、1 = 当日22時）。範囲外は端に寄せる。 */
-export function moodDayOffset(date: string, iso: string, timeZone?: string): number {
-	const { start, end } = moodDayRange(date, timeZone);
+/** 1つの設定での、date の日の終わり。夕方区切りは当日、朝区切りは翌日の区切り（AppView と同じ）。 */
+function dayEnd(date: string, startHour: number, timeZone: string): number {
+	return zonedHour(startHour >= 12 ? date : shiftDate(date, 1), startHour, timeZone);
+}
+
+export type MoodDayFrame = { start: number; end: number; timeZone: string; startHour: number };
+
+/**
+ * date（YYYY-MM-DD）の日記の1日。AppView が窓を返していればそれを使い、無ければ
+ * timeZone（無ければ端末）と startHour（無ければ22時）で計算する。
+ */
+export function moodDayFrame(date: string, clock: MoodClock = {}): MoodDayFrame {
+	const window = clock.windows?.get(date);
+	if (window) {
+		const start = Date.parse(window.start);
+		const end = Date.parse(window.end);
+		if (end > start)
+			return {
+				start,
+				end,
+				timeZone: validTimeZone(window.timezone) ?? deviceTimeZone(),
+				startHour: window.startHour,
+			};
+	}
+	const timeZone = validTimeZone(clock.timeZone) ?? deviceTimeZone();
+	const startHour = clock.startHour ?? MOOD_DAY_START_HOUR;
+	return {
+		start: dayEnd(shiftDate(date, -1), startHour, timeZone),
+		end: dayEnd(date, startHour, timeZone),
+		timeZone,
+		startHour,
+	};
+}
+
+export function moodDayRange(date: string, clock?: MoodClock): { start: number; end: number } {
+	const { start, end } = moodDayFrame(date, clock);
+	return { start, end };
+}
+
+/** その日の中での位置（0 = 前の区切り、1 = その日の区切り）。範囲外は端に寄せる。 */
+export function moodDayOffset(date: string, iso: string, clock?: MoodClock): number {
+	const { start, end } = moodDayRange(date, clock);
 	return Math.min(1, Math.max(0, (new Date(iso).getTime() - start) / (end - start)));
+}
+
+/**
+ * 横バーの目盛り（0・6・12・18時）。窓の中にある時刻だけを、その日のタイムゾーンの壁時計で置く。
+ * 区切りそのもの（両端）とその近くは線と重なるので出さない。設定が変わった日は窓が
+ * 24時間でないので、同じ時刻が2回出ることもある。
+ */
+export function moodDayTicks(date: string, clock?: MoodClock): { hour: number; offset: number }[] {
+	const { start, end, timeZone } = moodDayFrame(date, clock);
+	const ticks: { hour: number; offset: number }[] = [];
+	for (let shift = -2; shift <= 2; shift++) {
+		const day = shiftDate(date, shift);
+		for (const hour of [0, 6, 12, 18]) {
+			const at = zonedHour(day, hour, timeZone);
+			const offset = (at - start) / (end - start);
+			if (offset > 0.04 && offset < 0.96) ticks.push({ hour, offset });
+		}
+	}
+	return ticks.sort((a, b) => a.offset - b.offset);
 }
 
 /** 投稿の時刻の表示。横バーと同じタイムゾーンで出し、バー上の位置と食い違わないようにする。 */
@@ -182,10 +263,10 @@ export type MoodStop = { offset: number; valence: number };
 export function moodTimelineStops(
 	date: string,
 	points: Pick<DiaryMoodView, 'createdAt' | 'valence'>[],
-	options: { timeZone?: string; stepMinutes?: number } = {},
+	options: { clock?: MoodClock; stepMinutes?: number } = {},
 ): MoodStop[] {
-	const { timeZone, stepMinutes = 20 } = options;
-	const { start, end } = moodDayRange(date, timeZone);
+	const { clock, stepMinutes = 20 } = options;
+	const { start, end } = moodDayRange(date, clock);
 	const byMinute = new Map<number, number[]>();
 	for (const point of points) {
 		const time = new Date(point.createdAt).getTime();
