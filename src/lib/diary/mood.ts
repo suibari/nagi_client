@@ -43,6 +43,23 @@ export function summarizeMoodDays(moods: DiaryMoodView[]): Map<string, MoodDay> 
 	return days;
 }
 
+/**
+ * 点を1つ差し替える。next が無ければ取り除く（AIの値に戻したら中立だった、など）。
+ * 投稿の日付は変わらないので、日ごとの並びは summarizeMoodDays に任せる。
+ */
+export function replaceMood(
+	moods: DiaryMoodView[],
+	uri: string,
+	next: DiaryMoodView | undefined,
+): DiaryMoodView[] {
+	return next
+		? moods.map((mood) => (mood.uri === uri ? next : mood))
+		: moods.filter((mood) => mood.uri !== uri);
+}
+
+/** 本人が選べる値。0 は中立（グラフに載らない）なので選ばせない。 */
+export const MOOD_EDIT_VALUES = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5] as const;
+
 /** 1日あたりの横幅（px）。いちばん小さい段で1年がおおむね1画面に収まる。 */
 export const MOOD_ZOOM_LEVELS = [3, 6, 10, 16, 24] as const;
 export const MOOD_DEFAULT_ZOOM = 2;

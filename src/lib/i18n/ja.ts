@@ -862,12 +862,20 @@ export const ja = {
 	moodDayNoPosts: 'この日は、気分が読み取れる投稿がありませんでした。',
 	moodTimelineAria: (p: { date: string }) => `${p.date}の気分の流れ（前日22時〜22時）`,
 	moodTimelinePostAria: (p: { time: string; text: string }) => `${p.time}の投稿へ移動: ${p.text}`,
+	moodEditOpen: (p: { value: string }) => `気分 ${p.value}。押すと直せます`,
+	moodEdited: '自分で直した値',
+	moodEditAria: '気分を直す',
+	moodEditHint: '明るい（+5）〜沈んだ（-5）から、そのときの気分に近いものを選んでください。',
+	moodEditRevert: 'botたんの値に戻す',
+	moodEditClose: '閉じる',
+	moodEditFailed: '保存できませんでした。時間をおいてもう一度お試しください。',
+	moodEditAuthorizationNeeded: '直すには権限の更新が必要です。再ログインして権限を更新してください',
 	moodSelectHint: 'グラフの日付を押すと、その日の投稿の気分と日記が表示されます。',
 	moodPending: (p: { count: number }) =>
 		`まだ気分を読み取っていない投稿が${p.count}件あります。順番に反映されます。`,
 	moodEmpty: '過去1年間に、気分が読み取れる投稿はまだありません。',
 	moodAbout:
-		'botたんが投稿ごとに、明るい（+5）〜沈んだ（-5）気分を読み取って、日ごとの幅で表示しています。告知や事実の共有など、気分が読み取れない投稿は含めていません。あなただけが見られます。',
+		'botたんが投稿ごとに、明るい（+5）〜沈んだ（-5）気分を読み取って、日ごとの幅で表示しています。告知や事実の共有など、気分が読み取れない投稿は含めていません。日付を押して、投稿の値を押すと自分で直せます。あなただけが見られます。',
 
 	// chronicle（自分年表）
 	// 「連続」「今年は少ない」の類は**書かない**。数えた瞬間に義務になる（docs/chronicle.md）。

@@ -8,6 +8,7 @@
 		formatValence,
 		MOOD_DEFAULT_ZOOM,
 		MOOD_ZOOM_LEVELS,
+		replaceMood,
 		summarizeMoodDays,
 	} from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
@@ -210,6 +211,12 @@
 				void scrollToInitial(key);
 			});
 	});
+
+	/** 本人が点を直したら、表示中の点とキャッシュの両方を差し替える。 */
+	function changeMood(uri: string, next: DiaryMoodView | undefined) {
+		moods = replaceMood(moods, uri, next);
+		for (const value of cache.values()) value.moods = replaceMood(value.moods, uri, next);
+	}
 
 	/** 開いたときは選択中の日を中央に、無ければ今日（右端）を見せる。 */
 	async function scrollToInitial(key: string) {
@@ -487,7 +494,13 @@
 
 		{#if selected && !loading && !embedded}
 			<div class="mood-selection" data-mood-keep>
-				<MoodDayPosts date={selected} day={selectedDay} preview={Boolean(preview)} {timeZone} />
+				<MoodDayPosts
+					date={selected}
+					day={selectedDay}
+					preview={Boolean(preview)}
+					{timeZone}
+					onchange={preview ? undefined : changeMood}
+				/>
 				{#if selectedDiary && !preview}
 					<a class="mood-diary-link" href={`/diary?date=${selectedDiary.date}`}>
 						{m.chronicleOpenDiary()} →

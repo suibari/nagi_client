@@ -9,7 +9,7 @@
 		monthOf,
 		shiftMonth,
 	} from '$lib/diary/calendar';
-	import { moodPostAnchorId, summarizeMoodDays } from '$lib/diary/mood';
+	import { moodPostAnchorId, replaceMood, summarizeMoodDays } from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
 	import DiaryDayDetail from './DiaryDayDetail.svelte';
@@ -90,6 +90,13 @@
 				if (version === loadVersion) loading = false;
 			});
 	});
+
+	/** 本人が点を直したら、表示中の月とキャッシュ済みの月の両方を差し替える。 */
+	function changeMood(uri: string, next: DiaryMoodView | undefined) {
+		loaded = { ...loaded, moods: replaceMood(loaded.moods, uri, next) };
+		for (const [key, value] of cache)
+			cache.set(key, { ...value, moods: replaceMood(value.moods, uri, next) });
+	}
 
 	// 別の月の日（URL から）を選んだら、その月へ移る。
 	$effect(() => {
@@ -264,7 +271,12 @@
 				{#if focusMood}
 					<details class="detail-posts" bind:open={postsOpen}>
 						<summary>{m.activityDayPosts({ count: focusMood.points.length })}</summary>
-						<MoodDayPosts date={focusDate} day={focusMood} timeZone={loaded.timeZone} />
+						<MoodDayPosts
+							date={focusDate}
+							day={focusMood}
+							timeZone={loaded.timeZone}
+							onchange={changeMood}
+						/>
 					</details>
 				{:else if selected}
 					<p class="detail-hint">{m.moodDayNoPosts()}</p>

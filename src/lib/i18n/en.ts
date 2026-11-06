@@ -837,12 +837,21 @@ export const en: Messages = {
 		`Mood through ${p.date} (10 PM the day before to 10 PM)`,
 	moodTimelinePostAria: (p: { time: string; text: string }) =>
 		`Jump to the ${p.time} post: ${p.text}`,
+	moodEditOpen: (p: { value: string }) => `Mood ${p.value}. Tap to change`,
+	moodEdited: 'Set by you',
+	moodEditAria: 'Change mood',
+	moodEditHint: 'Pick what is closest to how you felt, from brighter (+5) to lower (-5).',
+	moodEditRevert: "Use Bot-tan's value",
+	moodEditClose: 'Close',
+	moodEditFailed: "Couldn't save. Please try again later.",
+	moodEditAuthorizationNeeded:
+		'Changing this needs updated permissions. Sign in again to update them',
 	moodSelectHint: "Tap a day on the graph to see that day's post moods and diary.",
 	moodPending: (p: { count: number }) =>
 		`${p.count} ${p.count === 1 ? 'post has' : 'posts have'} not been read yet. They will appear over time.`,
 	moodEmpty: 'No posts with a readable mood in the past year yet.',
 	moodAbout:
-		'Bot-tan reads the mood of each post, from brighter (+5) to lower (-5), and shows the daily range. Announcements and plain updates without a readable mood are left out. Only you can see this.',
+		'Bot-tan reads the mood of each post, from brighter (+5) to lower (-5), and shows the daily range. Announcements and plain updates without a readable mood are left out. Tap a day, then a post’s value, to change it yourself. Only you can see this.',
 
 	// chronicle
 	diaryTabActivity: 'Monthly activity',
