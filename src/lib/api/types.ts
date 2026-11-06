@@ -347,6 +347,11 @@ export type DiaryPage = {
 	moods?: DiaryMoodView[];
 	/** 期間内でまだ採点されていない投稿の数（導入直後のバックフィル中）。 */
 	moodPending?: number;
+	/**
+	 * moods の date を切ったタイムゾーン（IANA 名）。AppView が日記の言語から決める。
+	 * 端末のタイムゾーンと違うことがあるので、1日の中の位置はこれで計算する。
+	 */
+	moodTimezone?: string;
 };
 
 /** 本人専用の「botたんラジオ」。現在の放送枠だけ取得できる。 */

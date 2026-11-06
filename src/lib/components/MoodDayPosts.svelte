@@ -6,6 +6,7 @@
 		moodGradient,
 		moodPostAnchorId,
 		moodSegmentStops,
+		moodTimeLabel,
 	} from '$lib/diary/mood';
 	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
@@ -21,10 +22,13 @@
 		date,
 		day,
 		preview = false,
+		timeZone,
 	}: {
 		date: string;
 		day?: MoodDay;
 		preview?: boolean;
+		/** 時刻の表示に使うタイムゾーン（横バーと揃える）。無ければ端末の時刻。 */
+		timeZone?: string;
 	} = $props();
 
 	const longDate = (value: string) =>
@@ -33,8 +37,7 @@
 			month: 'long',
 			day: 'numeric',
 		});
-	const timeLabel = (iso: string) =>
-		new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+	const timeLabel = (iso: string) => moodTimeLabel(iso, dateLocale(), timeZone);
 	const tone = (value: number) => (value > 0 ? 'positive' : 'negative');
 	const GAP_HOURS = 3;
 	const isGap = (index: number) => {

@@ -47,6 +47,7 @@
 			moods: DiaryMoodView[];
 			entries: DiaryView[];
 			pending: number;
+			timeZone?: string;
 			loading: boolean;
 			error: string;
 		};
@@ -77,6 +78,7 @@
 	let moods = $state<DiaryMoodView[]>([]);
 	let entries = $state<DiaryView[]>([]);
 	let pending = $state(0);
+	let timeZone = $state<string>();
 	let loading = $state(true);
 	let error = $state('');
 	let hovered = $state<string | undefined>();
@@ -85,10 +87,13 @@
 	let scrollerWidth = $state(0);
 	let loadVersion = 0;
 	let scrolledKey = '';
-	const cache = new Map<
-		string,
-		{ moods: DiaryMoodView[]; entries: DiaryView[]; pending: number }
-	>();
+	type Loaded = {
+		moods: DiaryMoodView[];
+		entries: DiaryView[];
+		pending: number;
+		timeZone?: string;
+	};
+	const cache = new Map<string, Loaded>();
 
 	// 埋め込み（1か月）は横幅いっぱいに割り付ける。測れるまでは既定の段で描く。
 	const px = $derived(
@@ -149,6 +154,7 @@
 		moods = data.moods;
 		entries = data.entries;
 		pending = data.pending;
+		timeZone = data.timeZone;
 		loading = data.loading;
 		error = data.error;
 	});
@@ -159,10 +165,11 @@
 		if (!actor || data) return;
 		const key = `${actor}:${from}:${to}`;
 		const version = ++loadVersion;
-		const apply = (value: { moods: DiaryMoodView[]; entries: DiaryView[]; pending: number }) => {
+		const apply = (value: Loaded) => {
 			moods = value.moods;
 			entries = value.entries;
 			pending = value.pending;
+			timeZone = value.timeZone;
 		};
 		if (preview) {
 			apply({ moods: preview.moods, entries: preview.entries ?? [], pending: 0 });
@@ -188,6 +195,7 @@
 					moods: page.moods ?? [],
 					entries: page.items,
 					pending: page.moodPending ?? 0,
+					timeZone: page.moodTimezone,
 				};
 				cache.set(key, value);
 				apply(value);
@@ -470,7 +478,7 @@
 		</p>
 		{#if embedded && focusDay && !loading}
 			<div data-mood-keep>
-				<MoodDayBar date={focusDay} day={focusSummary} {onjump} />
+				<MoodDayBar date={focusDay} day={focusSummary} {timeZone} {onjump} />
 			</div>
 		{/if}
 		{#if pending > 0}
@@ -479,7 +487,7 @@
 
 		{#if selected && !loading && !embedded}
 			<div class="mood-selection" data-mood-keep>
-				<MoodDayPosts date={selected} day={selectedDay} preview={Boolean(preview)} />
+				<MoodDayPosts date={selected} day={selectedDay} preview={Boolean(preview)} {timeZone} />
 				{#if selectedDiary && !preview}
 					<a class="mood-diary-link" href={`/diary?date=${selectedDiary.date}`}>
 						{m.chronicleOpenDiary()} →

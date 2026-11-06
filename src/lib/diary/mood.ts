@@ -74,8 +74,63 @@ export function moodColor(median: number): string {
 export const MOOD_DAY_START_HOUR = 22;
 const MINUTE = 60_000;
 
-/** date（YYYY-MM-DD）の日記の1日を、端末のローカル時刻のミリ秒で返す。 */
-export function moodDayRange(date: string): { start: number; end: number } {
+/** その瞬間の、timeZone の UTC からのずれ（ミリ秒）。 */
+function timeZoneOffsetMs(instant: number, timeZone: string): number {
+	const parts = new Intl.DateTimeFormat('en-US', {
+		timeZone,
+		hourCycle: 'h23',
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+	}).formatToParts(new Date(instant));
+	const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+	const wall = Date.UTC(
+		get('year'),
+		get('month') - 1,
+		get('day'),
+		get('hour'),
+		get('minute'),
+		get('second'),
+	);
+	return wall - Math.floor(instant / 1000) * 1000;
+}
+
+/** timeZone の壁時計で date の hour 時ちょうどの瞬間。夏時間の切り替わりも2回測って合わせる。 */
+function zonedHour(date: string, hour: number, timeZone: string): number {
+	const [year, month, day] = date.split('-').map(Number);
+	const naive = Date.UTC(year, month - 1, day, hour);
+	const first = naive - timeZoneOffsetMs(naive, timeZone);
+	return naive - timeZoneOffsetMs(first, timeZone);
+}
+
+/** 不正なタイムゾーン名なら端末のタイムゾーンに戻す。 */
+function validTimeZone(timeZone: string | undefined): string | undefined {
+	if (!timeZone) return undefined;
+	try {
+		new Intl.DateTimeFormat('en-US', { timeZone });
+		return timeZone;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * date（YYYY-MM-DD）の日記の1日をミリ秒で返す。
+ * timeZone は AppView が日付を切ったタイムゾーン（`DiaryPage.moodTimezone`）。無ければ端末の時刻で切る。
+ */
+export function moodDayRange(date: string, timeZone?: string): { start: number; end: number } {
+	const zone = validTimeZone(timeZone);
+	if (zone) {
+		const previous = new Date(`${date}T12:00:00.000Z`);
+		previous.setUTCDate(previous.getUTCDate() - 1);
+		return {
+			start: zonedHour(previous.toISOString().slice(0, 10), MOOD_DAY_START_HOUR, zone),
+			end: zonedHour(date, MOOD_DAY_START_HOUR, zone),
+		};
+	}
 	const end = new Date(`${date}T${MOOD_DAY_START_HOUR}:00:00`);
 	const start = new Date(end);
 	start.setDate(start.getDate() - 1);
@@ -83,9 +138,18 @@ export function moodDayRange(date: string): { start: number; end: number } {
 }
 
 /** その日の中での位置（0 = 前日22時、1 = 当日22時）。範囲外は端に寄せる。 */
-export function moodDayOffset(date: string, iso: string): number {
-	const { start, end } = moodDayRange(date);
+export function moodDayOffset(date: string, iso: string, timeZone?: string): number {
+	const { start, end } = moodDayRange(date, timeZone);
 	return Math.min(1, Math.max(0, (new Date(iso).getTime() - start) / (end - start)));
+}
+
+/** 投稿の時刻の表示。横バーと同じタイムゾーンで出し、バー上の位置と食い違わないようにする。 */
+export function moodTimeLabel(iso: string, locale: string, timeZone?: string): string {
+	return new Date(iso).toLocaleTimeString(locale, {
+		hour: '2-digit',
+		minute: '2-digit',
+		timeZone: validTimeZone(timeZone),
+	});
 }
 
 export type MoodStop = { offset: number; valence: number };
@@ -101,9 +165,10 @@ export type MoodStop = { offset: number; valence: number };
 export function moodTimelineStops(
 	date: string,
 	points: Pick<DiaryMoodView, 'createdAt' | 'valence'>[],
-	stepMinutes = 20,
+	options: { timeZone?: string; stepMinutes?: number } = {},
 ): MoodStop[] {
-	const { start, end } = moodDayRange(date);
+	const { timeZone, stepMinutes = 20 } = options;
+	const { start, end } = moodDayRange(date, timeZone);
 	const byMinute = new Map<number, number[]>();
 	for (const point of points) {
 		const time = new Date(point.createdAt).getTime();

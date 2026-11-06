@@ -39,7 +39,13 @@
 		botActor?: ActorView;
 	} = $props();
 
-	type Loaded = { moods: DiaryMoodView[]; entries: DiaryView[]; pending: number };
+	type Loaded = {
+		moods: DiaryMoodView[];
+		entries: DiaryView[];
+		pending: number;
+		/** AppView が気分の日付を切ったタイムゾーン。横バーと投稿の時刻をこれで揃える。 */
+		timeZone?: string;
+	};
 
 	const graph = $derived(buildDiaryGraphForMonth(month));
 	const thisMonth = currentMonth();
@@ -71,6 +77,7 @@
 					moods: page.moods ?? [],
 					entries: page.items,
 					pending: page.moodPending ?? 0,
+					timeZone: page.moodTimezone,
 				};
 				cache.set(key, value);
 				loaded = value;
@@ -257,7 +264,7 @@
 				{#if focusMood}
 					<details class="detail-posts" bind:open={postsOpen}>
 						<summary>{m.activityDayPosts({ count: focusMood.points.length })}</summary>
-						<MoodDayPosts date={focusDate} day={focusMood} />
+						<MoodDayPosts date={focusDate} day={focusMood} timeZone={loaded.timeZone} />
 					</details>
 				{:else if selected}
 					<p class="detail-hint">{m.moodDayNoPosts()}</p>

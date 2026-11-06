@@ -5,6 +5,8 @@ import {
 	formatValence,
 	moodColor,
 	moodDayOffset,
+	moodDayRange,
+	moodTimeLabel,
 	moodGradient,
 	moodSegmentStops,
 	moodTimelineStops,
@@ -144,6 +146,34 @@ describe('moodTimelineStops', () => {
 			mood(at(DATE, '12:00:50'), -2),
 		]);
 		expect(stops.map((s) => s.valence)).toEqual([1, 1, 1]);
+	});
+});
+
+describe('moodDayRange with the AppView time zone', () => {
+	it('cuts the day at 22:00 in the given zone, not the device zone', () => {
+		// AppView の moodDiaryDate と同じ境界（2026-08-01T13:00Z は Tokyo の 8/1 22:00）。
+		expect(moodDayRange('2026-08-01', 'Asia/Tokyo')).toEqual({
+			start: Date.parse('2026-07-31T13:00:00.000Z'),
+			end: Date.parse('2026-08-01T13:00:00.000Z'),
+		});
+		expect(moodDayOffset('2026-08-01', '2026-08-01T01:00:00.000Z', 'Asia/Tokyo')).toBeCloseTo(0.5);
+	});
+
+	it('follows daylight saving changes', () => {
+		// 2026-11-01 は New York の夏時間終了日。22時 EDT → 22時 EST の 25 時間。
+		expect(moodDayRange('2026-11-01', 'America/New_York')).toEqual({
+			start: Date.parse('2026-11-01T02:00:00.000Z'),
+			end: Date.parse('2026-11-02T03:00:00.000Z'),
+		});
+	});
+
+	it('falls back to the device zone for an unknown zone', () => {
+		expect(moodDayRange('2026-08-01', 'Not/AZone')).toEqual(moodDayRange('2026-08-01'));
+	});
+
+	it('shows post times in the same zone', () => {
+		expect(moodTimeLabel('2026-08-01T01:00:00.000Z', 'en-GB', 'Asia/Tokyo')).toBe('10:00');
+		expect(moodTimeLabel('2026-08-01T01:00:00.000Z', 'en-GB', 'America/New_York')).toBe('21:00');
 	});
 });
 

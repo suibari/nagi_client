@@ -5,6 +5,7 @@
 		moodColor,
 		moodDayOffset,
 		moodGradient,
+		moodTimeLabel,
 		moodTimelineStops,
 		type MoodDay,
 	} from '$lib/diary/mood';
@@ -18,14 +19,19 @@
 	let {
 		date,
 		day,
+		timeZone,
 		onjump,
 	}: {
 		date: string;
 		day?: MoodDay;
+		/** AppView が日付を切ったタイムゾーン。無ければ端末の時刻。 */
+		timeZone?: string;
 		onjump?: (point: DiaryMoodView) => void;
 	} = $props();
 
-	const background = $derived(day ? moodGradient(moodTimelineStops(date, day.points)) : 'none');
+	const background = $derived(
+		day ? moodGradient(moodTimelineStops(date, day.points, { timeZone })) : 'none',
+	);
 	/** 0・6・12・18時の目盛り。両端（22時）は日の境目なので線だけにする。 */
 	const ticks = [0, 6, 12, 18].map((hour) => ({
 		hour,
@@ -37,8 +43,7 @@
 			month: 'long',
 			day: 'numeric',
 		});
-	const timeLabel = (iso: string) =>
-		new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+	const timeLabel = (iso: string) => moodTimeLabel(iso, dateLocale(), timeZone);
 	const hourLabel = (hour: number) =>
 		new Date(2000, 0, 1, hour).toLocaleTimeString(dateLocale(), { hour: 'numeric' });
 	/** ラベル付きの投稿は、本文を読み上げにも出さない（本文側は PostModerationGuard が隠す）。 */
@@ -53,7 +58,7 @@
 				<button
 					type="button"
 					class="dot"
-					style:left={percent(moodDayOffset(date, point.createdAt))}
+					style:left={percent(moodDayOffset(date, point.createdAt, timeZone))}
 					style:--dot-color={moodColor(point.valence)}
 					aria-label={m.moodTimelinePostAria({
 						time: timeLabel(point.createdAt),
