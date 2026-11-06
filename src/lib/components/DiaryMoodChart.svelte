@@ -13,6 +13,7 @@
 	} from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
+	import MoodDayBar from './MoodDayBar.svelte';
 	import MoodDayPosts from './MoodDayPosts.svelte';
 
 	/**
@@ -22,6 +23,8 @@
 	 *
 	 * 月間アクティビティに埋め込むときは、取得済みの data と表示する日 days を親から受け取る。
 	 * そのときは横幅いっぱいに収めて（ズームなし）、日ごとの投稿一覧は親の詳細欄に任せる。
+	 * 埋め込みでは、ステータス行がその日の見出しを兼ね、直下に1日の気分の横バーを出す。
+	 * 何も選んでいないときは fallbackDate（親が詳細欄に出している日）を見出しにする。
 	 */
 	let {
 		did,
@@ -30,6 +33,8 @@
 		preview,
 		data,
 		days: daysOverride,
+		fallbackDate,
+		onjump,
 	}: {
 		did: string;
 		anchorDate?: string;
@@ -43,10 +48,14 @@
 			moods: DiaryMoodView[];
 			entries: DiaryView[];
 			pending: number;
+			timeZone?: string;
 			loading: boolean;
 			error: string;
 		};
 		days?: string[];
+		fallbackDate?: string;
+		/** 横バーの点を押したとき。親が該当の投稿の行へ移る。 */
+		onjump?: (point: DiaryMoodView) => void;
 	} = $props();
 
 	const embedded = $derived(data !== undefined);
@@ -70,6 +79,7 @@
 	let moods = $state<DiaryMoodView[]>([]);
 	let entries = $state<DiaryView[]>([]);
 	let pending = $state(0);
+	let timeZone = $state<string>();
 	let loading = $state(true);
 	let error = $state('');
 	let hovered = $state<string | undefined>();
@@ -78,10 +88,13 @@
 	let scrollerWidth = $state(0);
 	let loadVersion = 0;
 	let scrolledKey = '';
-	const cache = new Map<
-		string,
-		{ moods: DiaryMoodView[]; entries: DiaryView[]; pending: number }
-	>();
+	type Loaded = {
+		moods: DiaryMoodView[];
+		entries: DiaryView[];
+		pending: number;
+		timeZone?: string;
+	};
+	const cache = new Map<string, Loaded>();
 
 	// 埋め込み（1か月）は横幅いっぱいに割り付ける。測れるまでは既定の段で描く。
 	const px = $derived(
@@ -113,7 +126,7 @@
 	const diaryByDate = $derived(new Map(entries.map((entry) => [entry.date, entry])));
 	const selectedDay = $derived(selected ? summary.get(selected) : undefined);
 	const selectedDiary = $derived(selected ? diaryByDate.get(selected) : undefined);
-	const focusDay = $derived(hovered ?? selected);
+	const focusDay = $derived(hovered ?? selected ?? (embedded ? fallbackDate : undefined));
 	const focusSummary = $derived(focusDay ? summary.get(focusDay) : undefined);
 
 	/** 投稿のない日で線を切る。帯と同じく、その日の中央値だけを結ぶ。 */
@@ -142,6 +155,7 @@
 		moods = data.moods;
 		entries = data.entries;
 		pending = data.pending;
+		timeZone = data.timeZone;
 		loading = data.loading;
 		error = data.error;
 	});
@@ -152,10 +166,11 @@
 		if (!actor || data) return;
 		const key = `${actor}:${from}:${to}`;
 		const version = ++loadVersion;
-		const apply = (value: { moods: DiaryMoodView[]; entries: DiaryView[]; pending: number }) => {
+		const apply = (value: Loaded) => {
 			moods = value.moods;
 			entries = value.entries;
 			pending = value.pending;
+			timeZone = value.timeZone;
 		};
 		if (preview) {
 			apply({ moods: preview.moods, entries: preview.entries ?? [], pending: 0 });
@@ -181,6 +196,7 @@
 					moods: page.moods ?? [],
 					entries: page.items,
 					pending: page.moodPending ?? 0,
+					timeZone: page.moodTimezone,
 				};
 				cache.set(key, value);
 				apply(value);
@@ -467,6 +483,11 @@
 				{m.moodEmpty()}
 			{/if}
 		</p>
+		{#if embedded && focusDay && !loading}
+			<div data-mood-keep>
+				<MoodDayBar date={focusDay} day={focusSummary} {timeZone} {onjump} />
+			</div>
+		{/if}
 		{#if pending > 0}
 			<p class="mood-pending">{m.moodPending({ count: pending })}</p>
 		{/if}
@@ -477,6 +498,7 @@
 					date={selected}
 					day={selectedDay}
 					preview={Boolean(preview)}
+					{timeZone}
 					onchange={preview ? undefined : changeMood}
 				/>
 				{#if selectedDiary && !preview}

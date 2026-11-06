@@ -13,10 +13,13 @@
 		summary,
 		entry,
 		botActor,
+		showDate = true,
 	}: {
 		summary?: DiaryView;
 		entry?: DiaryView;
 		botActor?: ActorView;
+		/** 月間アクティビティでは日付を感情グラフの見出しに任せるので出さない。 */
+		showDate?: boolean;
 	} = $props();
 
 	const longDate = (date: string) =>
@@ -52,10 +55,10 @@
 	});
 </script>
 
-{#if summary}
-	<article class="diary-day-detail" aria-live="polite">
+{#if summary && (showDate || entryTitle(summary) || summary.involvedActors?.length)}
+	<article class="diary-day-detail" class:compact={!showDate} aria-live="polite">
 		<div>
-			<h3>{longDate(summary.date)}</h3>
+			{#if showDate}<h3>{longDate(summary.date)}</h3>{/if}
 			{#if entryTitle(summary)}
 				<p class="diary-title">{m.diaryTitleLabel({ title: entryTitle(summary)! })}</p>
 			{/if}
@@ -98,6 +101,14 @@
 		border-radius: var(--radius-m);
 		background: var(--surface-soft);
 		min-block-size: 62px;
+	}
+	.diary-day-detail.compact {
+		min-block-size: 0;
+		padding: 0;
+		background: none;
+	}
+	.diary-day-detail.compact .diary-title {
+		margin-top: 0;
 	}
 	.diary-day-detail h3 {
 		font-size: 12px;

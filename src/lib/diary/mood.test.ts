@@ -4,6 +4,12 @@ import {
 	clampMoodZoom,
 	formatValence,
 	moodColor,
+	moodDayOffset,
+	moodDayRange,
+	moodTimeLabel,
+	moodGradient,
+	moodSegmentStops,
+	moodTimelineStops,
 	moodColorMix,
 	MOOD_EDIT_VALUES,
 	MOOD_ZOOM_LEVELS,
@@ -77,6 +83,120 @@ describe('moodColorMix', () => {
 	});
 	it('builds a color-mix expression', () => {
 		expect(moodColor(0)).toBe('color-mix(in srgb, var(--mood-scale-3), var(--mood-scale-4) 0%)');
+	});
+});
+
+describe('moodTimelineStops', () => {
+	// ローカル時刻で書く（日記の22時区切りは端末のタイムゾーン）。
+	const at = (date: string, time: string) => new Date(`${date}T${time}`).toISOString();
+	const mood = (time: string, valence: number) => ({
+		createdAt: time,
+		valence,
+	});
+	const DATE = '2026-11-05';
+	const offsetOf = (hour: number) => (hour + 2) / 24; // 前日22時が 0
+
+	it('spans 22:00 the previous day to 22:00', () => {
+		expect(moodDayOffset(DATE, at('2026-11-04', '22:00:00'))).toBe(0);
+		expect(moodDayOffset(DATE, at(DATE, '10:00:00'))).toBeCloseTo(0.5);
+		expect(moodDayOffset(DATE, at(DATE, '22:00:00'))).toBe(1);
+	});
+
+	it('returns nothing without posts', () => {
+		expect(moodTimelineStops(DATE, [])).toEqual([]);
+	});
+
+	it('extends the first and last mood to both ends', () => {
+		const stops = moodTimelineStops(DATE, [mood(at(DATE, '12:00:00'), 3)]);
+		expect(stops).toEqual([
+			{ offset: 0, valence: 3 },
+			{ offset: offsetOf(12), valence: 3 },
+			{ offset: 1, valence: 3 },
+		]);
+	});
+
+	it('drops steeply between close posts and then holds the mood', () => {
+		const stops = moodTimelineStops(DATE, [
+			mood(at(DATE, '00:00:00'), 5),
+			mood(at(DATE, '01:00:00'), -5),
+			mood(at(DATE, '18:00:00'), -5),
+		]);
+		// 0:00 → 1:00 は 20 分刻みで +5 → -5 に落ちる。
+		const fall = stops.filter((s) => s.offset >= offsetOf(0) && s.offset <= offsetOf(1));
+		expect(fall.map((s) => Math.round(s.valence * 100) / 100)).toEqual([5, 1.67, -1.67, -5]);
+		// 1:00 → 18:00 は -5 のまま（中間点を置かない）。
+		const hold = stops.filter((s) => s.offset > offsetOf(1) && s.offset < offsetOf(18));
+		expect(hold).toEqual([]);
+		expect(stops.at(-1)).toEqual({ offset: 1, valence: -5 });
+		expect(stops[0]).toEqual({ offset: 0, valence: 5 });
+	});
+
+	it('changes gradually over a long gap', () => {
+		const stops = moodTimelineStops(DATE, [
+			mood(at(DATE, '00:00:00'), 5),
+			mood(at(DATE, '18:00:00'), -5),
+		]);
+		const middle = stops.find((s) => Math.abs(s.offset - offsetOf(9)) < 1e-9);
+		expect(middle?.valence).toBeCloseTo(0);
+		// 18 時間を 20 分刻み → 中間点 53 個 + 両端の投稿 + 0 と 1。
+		expect(stops).toHaveLength(53 + 2 + 2);
+	});
+
+	it('averages posts within the same minute', () => {
+		const stops = moodTimelineStops(DATE, [
+			mood(at(DATE, '12:00:10'), 4),
+			mood(at(DATE, '12:00:50'), -2),
+		]);
+		expect(stops.map((s) => s.valence)).toEqual([1, 1, 1]);
+	});
+});
+
+describe('moodDayRange with the AppView time zone', () => {
+	it('cuts the day at 22:00 in the given zone, not the device zone', () => {
+		// AppView の moodDiaryDate と同じ境界（2026-08-01T13:00Z は Tokyo の 8/1 22:00）。
+		expect(moodDayRange('2026-08-01', 'Asia/Tokyo')).toEqual({
+			start: Date.parse('2026-07-31T13:00:00.000Z'),
+			end: Date.parse('2026-08-01T13:00:00.000Z'),
+		});
+		expect(moodDayOffset('2026-08-01', '2026-08-01T01:00:00.000Z', 'Asia/Tokyo')).toBeCloseTo(0.5);
+	});
+
+	it('follows daylight saving changes', () => {
+		// 2026-11-01 は New York の夏時間終了日。22時 EDT → 22時 EST の 25 時間。
+		expect(moodDayRange('2026-11-01', 'America/New_York')).toEqual({
+			start: Date.parse('2026-11-01T02:00:00.000Z'),
+			end: Date.parse('2026-11-02T03:00:00.000Z'),
+		});
+	});
+
+	it('falls back to the device zone for an unknown zone', () => {
+		expect(moodDayRange('2026-08-01', 'Not/AZone')).toEqual(moodDayRange('2026-08-01'));
+	});
+
+	it('shows post times in the same zone', () => {
+		expect(moodTimeLabel('2026-08-01T01:00:00.000Z', 'en-GB', 'Asia/Tokyo')).toBe('10:00');
+		expect(moodTimeLabel('2026-08-01T01:00:00.000Z', 'en-GB', 'America/New_York')).toBe('21:00');
+	});
+});
+
+describe('moodGradient', () => {
+	it('is a solid color for one stop and a gradient otherwise', () => {
+		expect(moodGradient([])).toBe('none');
+		expect(moodGradient([{ offset: 0, valence: 5 }])).toBe(moodColor(5));
+		expect(
+			moodGradient(
+				[
+					{ offset: 0, valence: -5 },
+					{ offset: 1, valence: 5 },
+				],
+				'to bottom',
+			),
+		).toBe(`linear-gradient(to bottom, ${moodColor(-5)} 0%, ${moodColor(5)} 100%)`);
+	});
+
+	it('interpolates a segment through the scale', () => {
+		expect(moodSegmentStops(2, 2)).toEqual([{ offset: 0, valence: 2 }]);
+		expect(moodSegmentStops(-4, 4, 2).map((s) => s.valence)).toEqual([-4, 0, 4]);
 	});
 });
 

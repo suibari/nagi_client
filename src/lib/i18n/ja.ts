@@ -860,6 +860,8 @@ export const ja = {
 	moodMedian: (p: { value: string }) => `中央値 ${p.value}`,
 	moodDayPosts: (p: { count: number }) => `気分が読み取れた投稿 ${p.count}件`,
 	moodDayNoPosts: 'この日は、気分が読み取れる投稿がありませんでした。',
+	moodTimelineAria: (p: { date: string }) => `${p.date}の気分の流れ（前日22時〜22時）`,
+	moodTimelinePostAria: (p: { time: string; text: string }) => `${p.time}の投稿へ移動: ${p.text}`,
 	moodEditOpen: (p: { value: string }) => `気分 ${p.value}。押すと直せます`,
 	moodEdited: '自分で直した値',
 	moodEditAria: '気分を直す',

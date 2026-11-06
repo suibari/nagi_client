@@ -3,7 +3,15 @@
 	import { isAuthorizationError, setPostMood } from '$lib/api/appview';
 	import type { DiaryMoodView } from '$lib/api/types';
 	import type { MoodDay } from '$lib/diary/mood';
-	import { formatValence, MOOD_EDIT_VALUES } from '$lib/diary/mood';
+	import {
+		formatValence,
+		MOOD_EDIT_VALUES,
+		moodColor,
+		moodGradient,
+		moodPostAnchorId,
+		moodSegmentStops,
+		moodTimeLabel,
+	} from '$lib/diary/mood';
 	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
@@ -12,7 +20,9 @@
 	import PostModerationGuard from './PostModerationGuard.svelte';
 
 	/**
-	 * 1日ぶんの感情の点（投稿）の一覧。感情グラフと月間アクティビティの詳細欄で使う。
+	 * 1日ぶんの感情の点（投稿）を縦のタイムラインで並べる。感情グラフと月間アクティビティの詳細欄で使う。
+	 * 左のレールは、各投稿の気分から次の投稿の気分へ補間したグラデーション（横バーと同じ考え方）。
+	 * 時間の比率では並べず、長い空白（GAP_HOURS 以上）は行間を広げて「〜」で示す。
 	 * preview（/about のサンプル）では投稿が実在しないのでリンクにしない。
 	 *
 	 * onchange を渡すと、値を押して直せる（botたんの読み取りが本人の解釈と違うことがあるため）。
@@ -22,11 +32,14 @@
 		date,
 		day,
 		preview = false,
+		timeZone,
 		onchange,
 	}: {
 		date: string;
 		day?: MoodDay;
 		preview?: boolean;
+		/** 時刻の表示に使うタイムゾーン（横バーと揃える）。無ければ端末の時刻。 */
+		timeZone?: string;
 		onchange?: (uri: string, next: DiaryMoodView | undefined) => void;
 	} = $props();
 
@@ -42,9 +55,20 @@
 			month: 'long',
 			day: 'numeric',
 		});
-	const timeLabel = (iso: string) =>
-		new Date(iso).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+	const timeLabel = (iso: string) => moodTimeLabel(iso, dateLocale(), timeZone);
 	const tone = (value: number) => (value > 0 ? 'positive' : 'negative');
+	const GAP_HOURS = 3;
+	const isGap = (index: number) => {
+		if (!day || index === 0) return false;
+		const previous = new Date(day.points[index - 1].createdAt).getTime();
+		const current = new Date(day.points[index].createdAt).getTime();
+		return current - previous >= GAP_HOURS * 3_600_000;
+	};
+	const segment = (index: number) => {
+		const next = day?.points[index + 1];
+		if (!day || !next) return undefined;
+		return moodGradient(moodSegmentStops(day.points[index].valence, next.valence), 'to bottom');
+	};
 
 	function toggle(uri: string) {
 		if (busy) return;
@@ -94,8 +118,19 @@
 <section class="mood-day" aria-label={longDate(date)}>
 	{#if day}
 		<ol>
-			{#each day.points as point (point.uri)}
-				<li>
+			{#each day.points as point, index (point.uri)}
+				{@const rail = segment(index)}
+				<li
+					id={moodPostAnchorId(point.uri)}
+					class:gap={isGap(index)}
+					class:editing={editable && editing === point.uri}
+					tabindex="-1"
+				>
+					<span class="rail" aria-hidden="true">
+						{#if isGap(index)}<span class="rail-gap">〜</span>{/if}
+						{#if rail}<span class="rail-line" style:background={rail}></span>{/if}
+						<span class="rail-dot" style:background={moodColor(point.valence)}></span>
+					</span>
 					{#if editable}
 						<button
 							type="button"
@@ -188,15 +223,72 @@
 		display: grid;
 	}
 	.mood-day li {
+		--dot-top: 14px;
 		display: grid;
-		grid-template-columns: 38px 1fr;
+		grid-template-columns: 12px 38px 1fr;
 		gap: 10px;
 		align-items: start;
 		padding: 8px 0;
-		border-top: 1px solid var(--line);
+		border-radius: var(--radius-m);
+		outline: none;
+		scroll-margin-block: 96px;
 	}
-	.mood-day li:first-child {
-		border-top: 0;
+	.mood-day li.gap {
+		padding-block-start: 26px;
+		--dot-top: 32px;
+	}
+	.mood-day li:global([data-flash]) {
+		animation: mood-flash 1.6s ease-out;
+	}
+	@keyframes mood-flash {
+		from {
+			background: var(--accent-weak);
+		}
+		to {
+			background: transparent;
+		}
+	}
+	.rail {
+		position: relative;
+		align-self: stretch;
+		margin-block: -8px;
+	}
+	.mood-day li.editing .rail {
+		grid-row: span 2;
+	}
+	.mood-day li.gap .rail {
+		margin-block-start: -26px;
+	}
+	.rail-dot {
+		position: absolute;
+		inset-block-start: var(--dot-top);
+		inset-inline-start: 50%;
+		inline-size: 10px;
+		block-size: 10px;
+		border-radius: 50%;
+		box-shadow: 0 0 0 2px var(--bg-raised);
+		transform: translate(-50%, -50%);
+	}
+	/* 自分の点から次の行の点まで伸ばす。次の行の点は、この行の下端 + 次の行の --dot-top。 */
+	.rail-line {
+		position: absolute;
+		inset-block-start: var(--dot-top);
+		inset-block-end: calc(-1 * var(--next-dot-top, 14px));
+		inset-inline-start: 50%;
+		inline-size: 4px;
+		border-radius: 2px;
+		transform: translateX(-50%);
+	}
+	.mood-day li:has(+ li.gap) {
+		--next-dot-top: 32px;
+	}
+	.rail-gap {
+		position: absolute;
+		inset-block-start: 4px;
+		inset-inline-start: calc(100% + 10px);
+		font-size: 11px;
+		line-height: 1;
+		color: var(--text-faint);
 	}
 	.mood-post {
 		display: grid;
@@ -270,7 +362,7 @@
 	}
 
 	.mood-editor {
-		grid-column: 1 / -1;
+		grid-column: 2 / -1;
 		display: grid;
 		gap: 8px;
 		padding: 10px;
