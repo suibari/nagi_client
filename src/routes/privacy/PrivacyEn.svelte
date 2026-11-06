@@ -131,6 +131,14 @@
 		link URL/title/description, and quote URI, plus post and translation settings, visible only to you.
 		We do not store images, link thumbnails, or other binary data.
 	</li>
+	<li>
+		<strong>Diary time (time zone and when your day ends).</strong> When you open Nagi, it sends your
+		device's time zone name (for example, Europe/London). If you choose one in settings, we use that instead
+		and stop sending your device's time zone. We use it only to split your diary and mood graph into the
+		right days, and store it on our servers, visible only to you. We do not put it in your PDS because
+		it hints at where you live. So that past diary dates do not shift, we also keep a record of each change
+		and the day it took effect.
+	</li>
 	<li><strong>Translation cache and card collection records.</strong></li>
 </ul>
 <p>

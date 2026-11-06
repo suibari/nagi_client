@@ -8,8 +8,10 @@
 		formatValence,
 		MOOD_DEFAULT_ZOOM,
 		MOOD_ZOOM_LEVELS,
+		moodClockFromPage,
 		replaceMood,
 		summarizeMoodDays,
+		type MoodClock,
 	} from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
@@ -48,7 +50,7 @@
 			moods: DiaryMoodView[];
 			entries: DiaryView[];
 			pending: number;
-			timeZone?: string;
+			clock?: MoodClock;
 			loading: boolean;
 			error: string;
 		};
@@ -79,7 +81,7 @@
 	let moods = $state<DiaryMoodView[]>([]);
 	let entries = $state<DiaryView[]>([]);
 	let pending = $state(0);
-	let timeZone = $state<string>();
+	let clock = $state<MoodClock>();
 	let loading = $state(true);
 	let error = $state('');
 	let hovered = $state<string | undefined>();
@@ -92,7 +94,7 @@
 		moods: DiaryMoodView[];
 		entries: DiaryView[];
 		pending: number;
-		timeZone?: string;
+		clock?: MoodClock;
 	};
 	const cache = new Map<string, Loaded>();
 
@@ -155,7 +157,7 @@
 		moods = data.moods;
 		entries = data.entries;
 		pending = data.pending;
-		timeZone = data.timeZone;
+		clock = data.clock;
 		loading = data.loading;
 		error = data.error;
 	});
@@ -170,7 +172,7 @@
 			moods = value.moods;
 			entries = value.entries;
 			pending = value.pending;
-			timeZone = value.timeZone;
+			clock = value.clock;
 		};
 		if (preview) {
 			apply({ moods: preview.moods, entries: preview.entries ?? [], pending: 0 });
@@ -196,7 +198,7 @@
 					moods: page.moods ?? [],
 					entries: page.items,
 					pending: page.moodPending ?? 0,
-					timeZone: page.moodTimezone,
+					clock: moodClockFromPage(page),
 				};
 				cache.set(key, value);
 				apply(value);
@@ -485,7 +487,7 @@
 		</p>
 		{#if embedded && focusDay && !loading}
 			<div data-mood-keep>
-				<MoodDayBar date={focusDay} day={focusSummary} {timeZone} {onjump} />
+				<MoodDayBar date={focusDay} day={focusSummary} {clock} {onjump} />
 			</div>
 		{/if}
 		{#if pending > 0}
@@ -498,7 +500,7 @@
 					date={selected}
 					day={selectedDay}
 					preview={Boolean(preview)}
-					{timeZone}
+					{clock}
 					onchange={preview ? undefined : changeMood}
 				/>
 				{#if selectedDiary && !preview}

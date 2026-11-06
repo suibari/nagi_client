@@ -91,6 +91,12 @@
 					title={m.settingsBotReplyFreqTitle()}
 					description={m.settingsBotReplyFreqDescription()}
 				/>
+				<SettingsCategoryCard
+					href="/settings/diary"
+					icon="clock"
+					title={m.settingsBotDiaryDayTitle()}
+					description={m.settingsBotDiaryDayDescription()}
+				/>
 			</div>
 		</section>
 

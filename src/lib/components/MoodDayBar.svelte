@@ -1,42 +1,42 @@
 <script lang="ts">
 	import type { DiaryMoodView } from '$lib/api/types';
 	import {
-		MOOD_DAY_START_HOUR,
 		moodColor,
+		moodDayFrame,
 		moodDayOffset,
+		moodDayTicks,
 		moodGradient,
 		moodTimeLabel,
 		moodTimelineStops,
+		type MoodClock,
 		type MoodDay,
 	} from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 
 	/**
-	 * 1日（前日22時〜当日22時）の気分の流れを1本の横バーにする。
+	 * 1日（前の区切り〜その日の区切り。既定は前日22時〜当日22時）の気分の流れを1本の横バーにする。
 	 * 投稿の間は気分を時間で補間したグラデーションでつなぎ、投稿の位置に点を置く。
 	 * 点を押すと onjump で親に知らせ、縦タイムラインの該当の投稿へ移る。
 	 */
 	let {
 		date,
 		day,
-		timeZone,
+		clock,
 		onjump,
 	}: {
 		date: string;
 		day?: MoodDay;
-		/** AppView が日付を切ったタイムゾーン。無ければ端末の時刻。 */
-		timeZone?: string;
+		/** AppView から受け取った区切り。無ければ端末の時刻の22時区切り。 */
+		clock?: MoodClock;
 		onjump?: (point: DiaryMoodView) => void;
 	} = $props();
 
 	const background = $derived(
-		day ? moodGradient(moodTimelineStops(date, day.points, { timeZone })) : 'none',
+		day ? moodGradient(moodTimelineStops(date, day.points, { clock })) : 'none',
 	);
-	/** 0・6・12・18時の目盛り。両端（22時）は日の境目なので線だけにする。 */
-	const ticks = [0, 6, 12, 18].map((hour) => ({
-		hour,
-		offset: ((hour - MOOD_DAY_START_HOUR + 24) % 24) / 24,
-	}));
+	/** 0・6・12・18時の目盛り。両端（区切り）は日の境目なので線だけにする。 */
+	const ticks = $derived(moodDayTicks(date, clock));
+	const timeZone = $derived(moodDayFrame(date, clock).timeZone);
 	const percent = (value: number) => `${Math.round(value * 10000) / 100}%`;
 	const longDate = (value: string) =>
 		new Date(`${value}T12:00:00`).toLocaleDateString(dateLocale(), {
@@ -58,7 +58,7 @@
 				<button
 					type="button"
 					class="dot"
-					style:left={percent(moodDayOffset(date, point.createdAt, timeZone))}
+					style:left={percent(moodDayOffset(date, point.createdAt, clock))}
 					style:--dot-color={moodColor(point.valence)}
 					aria-label={m.moodTimelinePostAria({
 						time: timeLabel(point.createdAt),
@@ -71,7 +71,7 @@
 		{/if}
 	</div>
 	<div class="scale" aria-hidden="true">
-		{#each ticks as tick (tick.hour)}
+		{#each ticks as tick (tick.offset)}
 			<span style:left={percent(tick.offset)}>{hourLabel(tick.hour)}</span>
 		{/each}
 	</div>

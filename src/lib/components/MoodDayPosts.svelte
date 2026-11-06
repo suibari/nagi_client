@@ -2,11 +2,12 @@
 	import { page } from '$app/state';
 	import { isAuthorizationError, setPostMood } from '$lib/api/appview';
 	import type { DiaryMoodView } from '$lib/api/types';
-	import type { MoodDay } from '$lib/diary/mood';
+	import type { MoodClock, MoodDay } from '$lib/diary/mood';
 	import {
 		formatValence,
 		MOOD_EDIT_VALUES,
 		moodColor,
+		moodDayFrame,
 		moodGradient,
 		moodPostAnchorId,
 		moodSegmentStops,
@@ -32,14 +33,14 @@
 		date,
 		day,
 		preview = false,
-		timeZone,
+		clock,
 		onchange,
 	}: {
 		date: string;
 		day?: MoodDay;
 		preview?: boolean;
-		/** 時刻の表示に使うタイムゾーン（横バーと揃える）。無ければ端末の時刻。 */
-		timeZone?: string;
+		/** AppView から受け取った区切り。時刻はその日のタイムゾーンで出す（横バーと揃える）。 */
+		clock?: MoodClock;
 		onchange?: (uri: string, next: DiaryMoodView | undefined) => void;
 	} = $props();
 
@@ -55,6 +56,7 @@
 			month: 'long',
 			day: 'numeric',
 		});
+	const timeZone = $derived(moodDayFrame(date, clock).timeZone);
 	const timeLabel = (iso: string) => moodTimeLabel(iso, dateLocale(), timeZone);
 	const tone = (value: number) => (value > 0 ? 'positive' : 'negative');
 	const GAP_HOURS = 3;

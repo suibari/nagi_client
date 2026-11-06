@@ -350,10 +350,25 @@ export type DiaryPage = {
 	/** 期間内でまだ採点されていない投稿の数（導入直後のバックフィル中）。 */
 	moodPending?: number;
 	/**
-	 * moods の date を切ったタイムゾーン（IANA 名）。AppView が日記の言語から決める。
+	 * moods の date を切ったタイムゾーン（IANA 名）。期間の最後の日の値。
 	 * 端末のタイムゾーンと違うことがあるので、1日の中の位置はこれで計算する。
 	 */
 	moodTimezone?: string;
+	/** 区切りの時刻（期間の最後の日の値）。旧 AppView は返さない（22時）。 */
+	moodDayStartHour?: number;
+	/**
+	 * 点のある日ごとの窓。期間の途中で区切りの設定が変わることがあるので日ごとに持つ。
+	 * 旧 AppView は返さない（moodTimezone と moodDayStartHour から計算する）。
+	 */
+	moodDayWindows?: {
+		date: string;
+		/** この瞬間は含まない。 */
+		start: string;
+		/** この瞬間までを含む。 */
+		end: string;
+		timezone: string;
+		startHour: number;
+	}[];
 };
 
 /** 本人専用の「botたんラジオ」。現在の放送枠だけ取得できる。 */
@@ -551,6 +566,21 @@ export type PreferencesView = {
 		/** 申告済みなら本人が確認できるよう返る。改定前からの既存ユーザーは未申告なので省略。 */
 		birthDate?: string;
 	};
+	/** 日記の1日の区切り。旧 AppView は返さない（そのときは設定画面に項目を出さない）。 */
+	diaryDay?: DiaryDayPreferences;
+};
+/** 日記の「1日」を決める設定。AppView の本人用の設定にだけあり、公開されない。 */
+export type DiaryDayPreferences = {
+	/** Nagi を開いたときに送ったこの端末（または別の端末）のタイムゾーン。 */
+	detectedTimezone?: string;
+	/** 本人が選んだタイムゾーン。あれば自動より優先する。 */
+	manualTimezone?: string;
+	/** 本人が選んだ区切りの時刻（18〜23, 0〜6）。 */
+	startHour: number;
+	/** 今開いている日に使っている設定。effectiveFrom はその設定が有効になった日。 */
+	current: { timezone: string; startHour: number; effectiveFrom?: string };
+	/** まだ有効になっていない変更。effectiveFrom の日の日記から反映される。 */
+	pending?: { timezone: string; startHour: number; effectiveFrom: string };
 };
 export type SyncedLanguagePreferences = {
 	post: string;
@@ -564,6 +594,10 @@ export type SyncedModerationPreferences = {
 	selfNsfw: 'warn' | 'hide' | 'ignore';
 };
 export type PutPreferencesInput = {
+	/** この端末のタイムゾーン（IANA 名）。手動で選んでいる間は送らない。 */
+	detectedTimezone?: string;
+	/** 日記の1日の区切り。timezone: null で自動に戻す。送った項目だけを変える。 */
+	diaryDay?: { timezone?: string | null; startHour?: number };
 	/** 表示した年のハッシュ。現在の内容と一致する版だけ保存される。 */
 	chronicleReadYears?: ChronicleReadYear[];
 	readPositions?: RemoteReadPosition[];
