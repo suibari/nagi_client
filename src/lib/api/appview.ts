@@ -17,6 +17,7 @@ import type {
 	DraftContent,
 	DraftsView,
 	DraftView,
+	DiaryMoodView,
 	DiaryPage,
 	DrawCardResult,
 	EmojiGenerationView,
@@ -438,6 +439,17 @@ export const getDiaries = (
 		'required',
 	);
 };
+/**
+ * 感情グラフの点（自分の投稿の気分）を直す。valence を省くと botたん（LLM）の値に戻す。
+ * 返りの mood が無ければ、戻した結果グラフから外れた（中立だった・採点し直し待ち）ということ。
+ */
+export const setPostMood = (input: { uri: string; valence?: number }) =>
+	call<{ mood?: DiaryMoodView }>(
+		'com.suibari.nagi.setPostMood',
+		'/xrpc/com.suibari.nagi.setPostMood',
+		{ method: 'POST', body: JSON.stringify(input) },
+		'required',
+	);
 export const getRadioTrack = () =>
 	call<RadioTrackResponse>(
 		'com.suibari.nagi.getRadioTrack',

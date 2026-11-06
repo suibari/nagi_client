@@ -5,8 +5,10 @@ import {
 	formatValence,
 	moodColor,
 	moodColorMix,
+	MOOD_EDIT_VALUES,
 	MOOD_ZOOM_LEVELS,
 	quantile,
+	replaceMood,
 	summarizeMoodDays,
 } from './mood';
 
@@ -75,5 +77,28 @@ describe('moodColorMix', () => {
 	});
 	it('builds a color-mix expression', () => {
 		expect(moodColor(0)).toBe('color-mix(in srgb, var(--mood-scale-3), var(--mood-scale-4) 0%)');
+	});
+});
+
+describe('replaceMood', () => {
+	const a = point('2026-09-20', '2026-09-20T01:00:00.000Z', 3);
+	const b = point('2026-09-20', '2026-09-20T02:00:00.000Z', -2);
+
+	it('swaps in the edited point and the day summary follows it', () => {
+		const next = replaceMood([a, b], a.uri, { ...a, valence: -4, edited: true });
+		expect(next.map((mood) => [mood.valence, mood.edited])).toEqual([
+			[-4, true],
+			[-2, undefined],
+		]);
+		expect(summarizeMoodDays(next).get('2026-09-20')?.median).toBe(-3);
+	});
+
+	it('drops the point when reverting leaves it off the graph', () => {
+		expect(replaceMood([a, b], a.uri, undefined)).toEqual([b]);
+	});
+
+	it('never offers 0, which would mean neutral', () => {
+		expect(MOOD_EDIT_VALUES).not.toContain(0);
+		expect(MOOD_EDIT_VALUES).toHaveLength(10);
 	});
 });
