@@ -257,7 +257,8 @@ test('calendar distinguishes missing counts, unscored moods, and days without di
 	await expect(day('2020-02-10').locator('.post-dots i')).toHaveCount(3);
 	await day('2020-02-02').click();
 	await expect(page.locator('.detail-stats')).toContainText('0 posts');
-	await expect(page.locator('.detail-stats')).toContainText('Mood unavailable');
+	// 気分は感情グラフのステータス行（日付見出し）側に出す。気分がない日は日付だけ。
+	await expect(page.locator('.mood-status')).toHaveText('February 2, 2020');
 	await day('2020-02-11').click();
 	await expect(day('2020-02-11').locator('.post-dots i.unknown')).toHaveCount(1);
 	await expect(page.locator('.detail-stats')).toContainText('Post count unknown');
@@ -272,7 +273,7 @@ test('calendar distinguishes missing counts, unscored moods, and days without di
 	);
 	await day('2020-02-01').click();
 	await expect(page.locator('.detail')).toContainText('No diary for this day.');
-	await expect(page.locator('.detail-stats')).toContainText('Mood unavailable');
+	await expect(page.locator('.mood-status')).toHaveText('February 1, 2020');
 	await page.getByRole('button', { name: 'Previous month' }).click();
 	await expect(page.locator('.detail')).toContainText(
 		'No diary or mood records for this month yet.',

@@ -860,6 +860,8 @@ export const ja = {
 	moodMedian: (p: { value: string }) => `中央値 ${p.value}`,
 	moodDayPosts: (p: { count: number }) => `気分が読み取れた投稿 ${p.count}件`,
 	moodDayNoPosts: 'この日は、気分が読み取れる投稿がありませんでした。',
+	moodTimelineAria: (p: { date: string }) => `${p.date}の気分の流れ（前日22時〜22時）`,
+	moodTimelinePostAria: (p: { time: string; text: string }) => `${p.time}の投稿へ移動: ${p.text}`,
 	moodSelectHint: 'グラフの日付を押すと、その日の投稿の気分と日記が表示されます。',
 	moodPending: (p: { count: number }) =>
 		`まだ気分を読み取っていない投稿が${p.count}件あります。順番に反映されます。`,

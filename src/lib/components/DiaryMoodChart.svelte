@@ -12,6 +12,7 @@
 	} from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
 	import { tick, untrack } from 'svelte';
+	import MoodDayBar from './MoodDayBar.svelte';
 	import MoodDayPosts from './MoodDayPosts.svelte';
 
 	/**
@@ -21,6 +22,8 @@
 	 *
 	 * 月間アクティビティに埋め込むときは、取得済みの data と表示する日 days を親から受け取る。
 	 * そのときは横幅いっぱいに収めて（ズームなし）、日ごとの投稿一覧は親の詳細欄に任せる。
+	 * 埋め込みでは、ステータス行がその日の見出しを兼ね、直下に1日の気分の横バーを出す。
+	 * 何も選んでいないときは fallbackDate（親が詳細欄に出している日）を見出しにする。
 	 */
 	let {
 		did,
@@ -29,6 +32,8 @@
 		preview,
 		data,
 		days: daysOverride,
+		fallbackDate,
+		onjump,
 	}: {
 		did: string;
 		anchorDate?: string;
@@ -46,6 +51,9 @@
 			error: string;
 		};
 		days?: string[];
+		fallbackDate?: string;
+		/** 横バーの点を押したとき。親が該当の投稿の行へ移る。 */
+		onjump?: (point: DiaryMoodView) => void;
 	} = $props();
 
 	const embedded = $derived(data !== undefined);
@@ -112,7 +120,7 @@
 	const diaryByDate = $derived(new Map(entries.map((entry) => [entry.date, entry])));
 	const selectedDay = $derived(selected ? summary.get(selected) : undefined);
 	const selectedDiary = $derived(selected ? diaryByDate.get(selected) : undefined);
-	const focusDay = $derived(hovered ?? selected);
+	const focusDay = $derived(hovered ?? selected ?? (embedded ? fallbackDate : undefined));
 	const focusSummary = $derived(focusDay ? summary.get(focusDay) : undefined);
 
 	/** 投稿のない日で線を切る。帯と同じく、その日の中央値だけを結ぶ。 */
@@ -460,6 +468,11 @@
 				{m.moodEmpty()}
 			{/if}
 		</p>
+		{#if embedded && focusDay && !loading}
+			<div data-mood-keep>
+				<MoodDayBar date={focusDay} day={focusSummary} {onjump} />
+			</div>
+		{/if}
 		{#if pending > 0}
 			<p class="mood-pending">{m.moodPending({ count: pending })}</p>
 		{/if}

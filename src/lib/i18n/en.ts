@@ -833,6 +833,10 @@ export const en: Messages = {
 	moodDayPosts: (p: { count: number }) =>
 		`${p.count} ${p.count === 1 ? 'post' : 'posts'} with a readable mood`,
 	moodDayNoPosts: 'No posts with a readable mood on this day.',
+	moodTimelineAria: (p: { date: string }) =>
+		`Mood through ${p.date} (10 PM the day before to 10 PM)`,
+	moodTimelinePostAria: (p: { time: string; text: string }) =>
+		`Jump to the ${p.time} post: ${p.text}`,
 	moodSelectHint: "Tap a day on the graph to see that day's post moods and diary.",
 	moodPending: (p: { count: number }) =>
 		`${p.count} ${p.count === 1 ? 'post has' : 'posts have'} not been read yet. They will appear over time.`,

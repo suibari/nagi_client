@@ -9,9 +9,9 @@
 		monthOf,
 		shiftMonth,
 	} from '$lib/diary/calendar';
-	import { formatValence, moodColor, summarizeMoodDays } from '$lib/diary/mood';
+	import { moodPostAnchorId, summarizeMoodDays } from '$lib/diary/mood';
 	import { m, dateLocale } from '$lib/i18n/i18n.svelte';
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import DiaryDayDetail from './DiaryDayDetail.svelte';
 	import DiaryMoodChart from './DiaryMoodChart.svelte';
 	import MoodCalendar from './MoodCalendar.svelte';
@@ -145,19 +145,37 @@
 	const focusDiary = $derived(focusDate ? diaryByDate.get(focusDate) : undefined);
 	const focusMood = $derived(focusDate ? summary.get(focusDate) : undefined);
 
+	/** その日の投稿一覧の開閉。日記がある日は日記を主役にして閉じておく。 */
+	let postsOpen = $state(false);
+	$effect(() => {
+		postsOpen = !focusDiary;
+	});
+
+	/**
+	 * 横バーの点を押したら、その投稿の行へ移る。
+	 * ホバー中の別の日の点だった場合は、先にその日を選んでから移る。
+	 */
+	async function jumpToPost(point: DiaryMoodView) {
+		if (point.date !== focusDate) selected = point.date;
+		await tick();
+		postsOpen = true;
+		await tick();
+		const row = document.getElementById(moodPostAnchorId(point.uri));
+		if (!row) return;
+		const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		row.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+		row.focus({ preventScroll: true });
+		row.removeAttribute('data-flash');
+		void row.offsetWidth;
+		row.setAttribute('data-flash', '');
+		row.addEventListener('animationend', () => row.removeAttribute('data-flash'), { once: true });
+	}
+
 	const monthTitle = (value: string) =>
 		new Date(`${value}-01T12:00:00`).toLocaleDateString(dateLocale(), {
 			year: 'numeric',
 			month: 'long',
 		});
-	const longDate = (date: string) =>
-		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			weekday: 'short',
-		});
-	const medianLabel = (value: number) => formatValence(Math.round(value * 10) / 10);
 </script>
 
 <div class="activity">
@@ -205,35 +223,31 @@
 			<MoodCalendar {month} {summary} {diaryByDate} {loading} bind:selected />
 		</section>
 
-		<DiaryMoodChart {did} bind:selected days={monthDays} data={{ ...loaded, loading, error }} />
+		<DiaryMoodChart
+			{did}
+			bind:selected
+			days={monthDays}
+			data={{ ...loaded, loading, error }}
+			fallbackDate={focusDate}
+			onjump={jumpToPost}
+		/>
 
 		<section id="activity-diary" class="detail card" data-activity-keep aria-live="polite">
 			{#if loading}
 				<Spinner />
 			{:else if focusDate}
+				<!-- 日付・気分の投稿数・中央値は感情グラフのステータス行が見出しとして出す。
+				     ここには日記側の総投稿数（気分が読み取れない投稿も含む）だけを残す。 -->
 				<header class="detail-head">
 					{#if !selected}<p class="detail-eyebrow">{m.activityLatestDiary()}</p>{/if}
-					<!-- 日記がある日は DiaryDayDetail の見出しが日付と称号を出す。 -->
 					{#if focusDiary}
-						<DiaryDayDetail summary={focusDiary} />
-					{:else}
-						<h3>{longDate(focusDate)}</h3>
+						<DiaryDayDetail summary={focusDiary} showDate={false} />
 					{/if}
-					<div class="detail-stats">
-						{#if focusMood}
-							<p class="detail-mood">
-								<i style={`background: ${moodColor(focusMood.median)}`} aria-hidden="true"></i>
-								{m.moodMedian({ value: medianLabel(focusMood.median) })}
-							</p>
-						{:else}
-							<p>{m.activityMoodUnknown()}</p>
-						{/if}
-						<p>
-							{focusDiary?.postCount === undefined
-								? m.activityPostsUnknown()
-								: m.activityPostCount({ count: focusDiary.postCount })}
-						</p>
-					</div>
+					<p class="detail-stats">
+						{focusDiary?.postCount === undefined
+							? m.activityPostsUnknown()
+							: m.activityPostCount({ count: focusDiary.postCount })}
+					</p>
 				</header>
 				{#if focusDiary}
 					<DiaryDayDetail entry={focusDiary} {botActor} />
@@ -241,7 +255,7 @@
 					<p class="detail-hint">{m.activityNoDiary()}</p>
 				{/if}
 				{#if focusMood}
-					<details class="detail-posts" open={!focusDiary}>
+					<details class="detail-posts" bind:open={postsOpen}>
 						<summary>{m.activityDayPosts({ count: focusMood.points.length })}</summary>
 						<MoodDayPosts date={focusDate} day={focusMood} />
 					</details>
@@ -318,9 +332,6 @@
 		justify-self: center;
 	}
 	.detail-stats {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px 16px;
 		font-size: 12px;
 		color: var(--text-muted);
 	}
@@ -337,24 +348,6 @@
 		font-size: 11px;
 		font-weight: 700;
 		color: var(--accent-strong);
-	}
-	.detail-head h3 {
-		font-size: 15px;
-		font-weight: 800;
-		color: var(--text-strong);
-	}
-	.detail-mood {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 12px;
-		color: var(--text-muted);
-		font-variant-numeric: tabular-nums;
-	}
-	.detail-mood i {
-		inline-size: 10px;
-		block-size: 10px;
-		border-radius: 50%;
 	}
 	.detail-hint,
 	.activity-about {
