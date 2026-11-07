@@ -7,14 +7,14 @@ import type { PostView } from '$lib/api/types';
  * 作者を指さないので、URI から読むのは親がカードに無いときだけにする。その場合こっそりの親は
  * 閲覧者と一致せず、目印が出ないほうへ倒れる。
  *
- * botたんの返信は除く。自分の投稿にはほぼ毎回付くので、目印にすると全部の投稿に出てしまう。
+ * botたんの返信も人の返信と同じく扱う。誰からでも自分宛てなら同じ目印にそろえる。
  */
 export function isReplyToViewer(
 	post: PostView,
 	viewerDid: string | undefined,
 	knownPosts: readonly PostView[],
 ): boolean {
-	if (!viewerDid || !post.reply || post.deleted || post.isBot) return false;
+	if (!viewerDid || !post.reply || post.deleted) return false;
 	if (post.author.did === viewerDid) return false;
 	const parentUri = post.reply.parent.uri;
 	const parent = knownPosts.find((known) => known.uri === parentUri);

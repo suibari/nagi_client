@@ -6,7 +6,7 @@
 	import { oauthReady, session, type OAuthSession } from '$lib/oauth/session.svelte';
 
 	/**
-	 * 「あなたへ」の目印の確認用。自分への返信・他の人への返信・自分の自己返信・botたんの返信を
+	 * 「あなたへ」の目印の確認用。人とbotたんからの自分への返信・他の人への返信・自分の自己返信を
 	 * 通常カードと会話カードの両方で並べる。サインイン済みなら本物のセッションの DID を使う。
 	 */
 	let viewerDid = $state('did:plc:reply-viewer');
