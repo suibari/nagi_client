@@ -57,11 +57,14 @@ describe('isReplyToViewer', () => {
 		expect(isReplyToViewer(reply, VIEWER, [other, reply])).toBe(false);
 	});
 
-	it('ignores the viewer replying to themselves, bot replies, top-level and deleted posts', () => {
-		expect(isReplyToViewer(post(VIEWER, 'self', mine), VIEWER, [mine])).toBe(false);
+	it('marks bot replies to the viewer the same way as people', () => {
 		expect(isReplyToViewer(post('did:plc:bot', 'b', mine, { isBot: true }), VIEWER, [mine])).toBe(
-			false,
+			true,
 		);
+	});
+
+	it('ignores the viewer replying to themselves, top-level and deleted posts', () => {
+		expect(isReplyToViewer(post(VIEWER, 'self', mine), VIEWER, [mine])).toBe(false);
 		expect(isReplyToViewer(post('did:plc:other', 'top'), VIEWER, [])).toBe(false);
 		expect(isReplyToViewer({ ...fromOther, deleted: true }, VIEWER, [mine])).toBe(false);
 	});
