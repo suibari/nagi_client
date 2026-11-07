@@ -40,11 +40,11 @@ test('only eligible bot replies collapse; expansion survives refresh and human r
 	await page.goto('/dev/e2e/bot-reply-collapse');
 	const group = page.getByTestId('group');
 	const legacy = page.getByTestId('legacy');
-	await expect(group.getByRole('button', { name: '返信を表示', exact: true })).toBeVisible();
+	await expect(group.getByRole('button', { name: 'botたんの返信を表示', exact: true })).toBeVisible();
 	await expect(group.getByText('direct-bot', { exact: true })).toHaveCount(0);
-	await expect(legacy.getByRole('button', { name: '返信を表示', exact: true })).toBeVisible();
+	await expect(legacy.getByRole('button', { name: 'botたんの返信を表示', exact: true })).toBeVisible();
 	await expect(
-		page.getByTestId('legacy-duplicate').getByRole('button', { name: '返信を表示', exact: true }),
+		page.getByTestId('legacy-duplicate').getByRole('button', { name: 'botたんの返信を表示', exact: true }),
 	).toBeVisible();
 	expect(threadRequests).toBe(1);
 	await expect(page.getByTestId('own').getByText('own-bot', { exact: true })).toBeVisible();
@@ -53,7 +53,7 @@ test('only eligible bot replies collapse; expansion survives refresh and human r
 		page.getByTestId('bot-root').getByText('bot-root-human', { exact: true }),
 	).toBeVisible();
 	await expect(page.getByTestId('human').getByText('direct-bot', { exact: true })).toBeVisible();
-	await group.getByRole('button', { name: '返信を表示', exact: true }).click();
+	await group.getByRole('button', { name: 'botたんの返信を表示', exact: true }).click();
 	await expect(group.getByText('direct-bot', { exact: true })).toBeVisible();
 	await page.getByRole('button', { name: '一覧を更新', exact: true }).click();
 	await expect(group.getByText('direct-bot', { exact: true })).toBeVisible();
@@ -65,7 +65,7 @@ test('only eligible bot replies collapse; expansion survives refresh and human r
 	await expect(group.locator('.thread-reply-toggle-btn')).toHaveCount(0);
 	await page.getByRole('button', { name: 'テスト用ログアウト', exact: true }).click();
 	await expect(
-		page.getByTestId('own').getByRole('button', { name: '返信を表示', exact: true }),
+		page.getByTestId('own').getByRole('button', { name: 'botたんの返信を表示', exact: true }),
 	).toBeVisible();
 });
 
@@ -112,7 +112,7 @@ test('a human reply found by the thread check keeps the bot visible after refres
 	});
 	await page.goto('/dev/e2e/bot-reply-collapse');
 	const legacy = page.getByTestId('legacy');
-	await expect(legacy.getByRole('button', { name: '返信を表示', exact: true })).toBeVisible();
+	await expect(legacy.getByRole('button', { name: 'botたんの返信を表示', exact: true })).toBeVisible();
 	includeHuman = true;
 	const response = page.waitForResponse((response) =>
 		response.url().includes('com.suibari.nagi.getThread'),
