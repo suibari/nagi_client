@@ -4,6 +4,8 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import BotReplyStatus from './BotReplyStatus.svelte';
 	import ThreadFlags from './ThreadFlags.svelte';
+	import ReplyToViewerMark from './ReplyToViewerMark.svelte';
+	import { isReplyToViewer } from '$lib/thread/reply-to-viewer';
 	import Icon from './shell/Icon.svelte';
 	import { replyIndent } from '$lib/thread/replyIndent';
 	import { postPageHref } from '$lib/feed/post-follow.svelte';
@@ -141,6 +143,7 @@
 	{#if collapsible && !expanded}
 		{@render replyToggle(post, false)}
 	{:else}
+		{#if isReplyToViewer(post, $session?.did, knownPosts)}<ReplyToViewerMark />{/if}
 		<ChatBubble {post} {botActor} ondeleted={postDeleted} onposted={postPosted} />
 		{#if collapsible}{@render replyToggle(post, true)}{/if}
 	{/if}

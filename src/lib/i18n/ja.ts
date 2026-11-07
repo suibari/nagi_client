@@ -607,6 +607,7 @@ export const ja = {
 	threadViewAll: 'やりとりを全部見る',
 	showReplies: (p: { count: number }) => (p.count > 1 ? `返信を表示 (${p.count}件)` : '返信を表示'),
 	hideReplies: '返信を隠す',
+	replyToViewer: 'あなたへ',
 	showAllMedia: '全部見る',
 
 	// reactions
