@@ -1,6 +1,7 @@
 /**
  * 共有用プロフィールカード（Canvas PNG / OGP）の固定デザイン値。
  * 両レンダラーは描画APIが異なるため、座標・寸法・色だけは必ずここを正とする。
+ * 保存用 PNG の寸法とそれに伴う座標は saved-design.ts で上書きする。
  */
 export const CARD_WIDTH = 1200;
 export const CARD_HEIGHT = 630;
