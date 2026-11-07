@@ -593,6 +593,7 @@ export const en: Messages = {
 	threadViewAll: 'View full conversation',
 	showReplies: (p: { count: number }) => (p.count > 1 ? `Show replies (${p.count})` : 'Show reply'),
 	hideReplies: 'Hide replies',
+	replyToViewer: 'To you',
 	showAllMedia: 'Show all',
 
 	reactWithAria: (p) => `React with ${p.emoji}`,

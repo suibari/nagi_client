@@ -9,9 +9,12 @@
 	import BotReplyStatus from '$lib/components/BotReplyStatus.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { goto } from '$app/navigation';
+	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { followPostedScroll, threadRootUriFromPage } from '$lib/feed/post-follow.svelte';
 	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
+	import ReplyToViewerMark from '$lib/components/ReplyToViewerMark.svelte';
+	import { isReplyToViewer } from '$lib/thread/reply-to-viewer';
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { replyDepths, replyIndent } from '$lib/thread/replyIndent';
 	let thread = $state<ThreadView>();
@@ -49,9 +52,8 @@
 		),
 		...optimisticPosts.items.filter((item) => item.reply?.root.uri === threadRootUri),
 	]);
-	let replyDepthByUri = $derived(
-		replyDepths(threadRootUri, [...(thread ? [thread.post] : []), ...replies]),
-	);
+	let threadPosts = $derived([...(thread ? [thread.post] : []), ...replies]);
+	let replyDepthByUri = $derived(replyDepths(threadRootUri, threadPosts));
 	let awaitingBotReply = $derived(
 		Boolean(
 			thread &&
@@ -122,6 +124,7 @@
 					data-post-uri={reply.uri}
 					data-optimistic-key={reply.optimisticKey}
 				>
+					{#if isReplyToViewer(reply, $session?.did, threadPosts)}<ReplyToViewerMark />{/if}
 					<ChatBubble post={reply} ondeleted={postDeleted} onposted={refreshThread} />
 				</div>
 				<BotReplyStatus
