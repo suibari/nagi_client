@@ -132,8 +132,8 @@
 		aria-expanded={expanded}
 		onclick={() => toggleReply(post.uri)}
 	>
-		<Icon name="chevron" size={14} />
-		<span>{expanded ? m.hideReplies() : m.showReplies({ count: 1 })}</span>
+		<Icon name="chevron" size={12} />
+		<span>{expanded ? m.hideReplies() : m.showBotReply()}</span>
 	</button>
 {/snippet}
 
@@ -223,28 +223,29 @@
 {/if}
 
 <style>
+	/* 省略中の .thread-gap（「N件のやりとり」）と同じ控えめな見た目にそろえる。 */
 	.thread-reply-toggle-btn {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
-		gap: 6px;
-		margin-top: 6px;
-		margin-inline-start: 12px;
-		padding: 5px 12px;
-		border: 1px solid var(--panel-border);
-		border-radius: 9999px;
-		background: var(--surface-2, rgba(0, 0, 0, 0.03));
-		color: var(--accent-strong);
+		gap: 4px;
+		width: fit-content;
+		margin: 8px auto 2px;
+		padding: 3px 12px;
+		border: 1px solid var(--line);
+		border-radius: var(--radius-pill);
+		background: var(--bg-inset);
+		color: var(--text-faint);
+		font: inherit;
 		font-size: 12px;
-		font-weight: 700;
 		cursor: pointer;
 		transition:
 			background-color 0.15s ease,
-			border-color 0.15s ease;
+			color 0.15s ease;
 	}
 
 	.thread-reply-toggle-btn:hover {
-		background: var(--surface-3, rgba(0, 0, 0, 0.06));
-		border-color: var(--accent);
+		background: var(--bg-hover);
+		color: var(--text);
 	}
 
 	.thread-reply-toggle-btn :global(.icon) {
