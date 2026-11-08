@@ -45,7 +45,7 @@ function graphemes(text: string): Segment[] {
  * またぐ位置では切らない（切れる場所が無いときだけ facet を諦めて強制分割）。
  *
  * `reserved` は、呼び出し元があとから末尾に足す文字列のぶんの席取り。
- * 記事のティーザー（1件だけ投稿し、末尾に「続きはNagiで」を置く）で使う。
+ * 記事のリンクカード用抜粋で、省略記号のぶんを確保するために使う。
  */
 export function splitForBluesky(
 	text: string,
@@ -364,9 +364,8 @@ export function stripImageLines(text: string, facets: Facet[] = []) {
 }
 
 /**
- * ティーザー本文（抜粋＋誘導文）と、その facet を組み立てる。
- * 誘導文は呼び出し元が翻訳済みの1行で渡す（URL を含む）ので、
- * このモジュールは i18n を知らないままでいられる。
+ * ブログの投稿通知と「Nagi」のリンク facet、リンクカード用の抜粋を組み立てる。
+ * 通知文は呼び出し元が翻訳済みで渡す。
  */
 export function buildArticleTeaser(
 	draft: Pick<PostDraft, 'text' | 'facets'>,
@@ -374,30 +373,27 @@ export function buildArticleTeaser(
 ): CrosspostChunk & { excerpt: string } {
 	const heading = stripLeadingHeading(draft.text, draft.facets as Facet[]);
 	const body = stripImageLines(heading.text, heading.facets);
-	const suffix = `\n\n${article.teaser}`;
-	// 抜粋を切り詰めたときに足す「…」のぶんも先に席を取っておく。
-	const reserved = {
-		graphemes:
-			[...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(suffix)].length + 1,
-		bytes: encoder.encode(suffix).length + encoder.encode('…').length,
-	};
-	const [head] = splitForBluesky(body.text, body.facets, reserved);
+	const [head] = splitForBluesky(body.text, body.facets, {
+		graphemes: 1,
+		bytes: encoder.encode('…').length,
+	});
 	const excerpt = head?.text ?? '';
 	const truncated = excerpt.length < body.text.trim().length;
-	const text = `${excerpt}${truncated ? '…' : ''}${suffix}`;
-	// 誘導文の URL をリンクにする。URL は末尾にあるので最後の出現位置を見る。
-	const urlOffset = text.lastIndexOf(article.url);
-	const byteStart = encoder.encode(text.slice(0, urlOffset)).length;
+	const text = article.teaser;
+	const nagiOffset = text.indexOf(VIA);
+	const byteStart = encoder.encode(text.slice(0, nagiOffset)).length;
 	return {
 		text,
 		excerpt: `${excerpt}${truncated ? '…' : ''}`,
-		facets: [
-			...(head?.facets ?? []),
-			{
-				index: { byteStart, byteEnd: byteStart + encoder.encode(article.url).length },
-				features: [{ $type: 'app.bsky.richtext.facet#link' as const, uri: article.url }],
-			},
-		],
+		facets:
+			nagiOffset < 0
+				? []
+				: [
+						{
+							index: { byteStart, byteEnd: byteStart + encoder.encode(VIA).length },
+							features: [{ $type: 'app.bsky.richtext.facet#link' as const, uri: article.url }],
+						},
+					],
 	};
 }
 
@@ -439,8 +435,8 @@ export function buildArticleEmbed(article: ArticleTeaserTarget, excerpt: string,
  * ブログとして書いた投稿を Bluesky に1件だけ出す。
  *
  * 記事を crosspostToBluesky に流すと 300 グラフェムごとの分割連投になり、
- * Bluesky のタイムラインが1本の記事で埋まってしまう。代わりに冒頭の抜粋と
- * Nagi への誘導リンクだけを載せた「ティーザー」を1件投稿する。
+ * Bluesky のタイムラインが1本の記事で埋まってしまう。代わりにリンク付きの
+ * 投稿通知と記事のリンクカードを1件投稿する。
  * 本文全体は Nagi と standard.site の document が持つ。
  */
 export async function crosspostArticleToBluesky(

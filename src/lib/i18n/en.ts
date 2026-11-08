@@ -488,9 +488,9 @@ export const en: Messages = {
 	articleQuoteDisabled: 'A post with a quote or reply cannot be a blog post',
 	articleInlineImageMismatch:
 		'An image in the article body did not upload correctly. Please remove it and add it again.',
-	articleTeaserSuffix: (p: { url: string }) => `Read the rest on Nagi: ${p.url}`,
+	articleCrosspostText: 'I published a blog post on Nagi!',
 	articleCrosspostTeaserNote:
-		'When crossposting to Bluesky, only the opening excerpt and a link back to Nagi are posted, as a single post (the full text is not split into a thread).',
+		'When crossposting to Bluesky, a publication notice linking to Nagi and an article link card are shared as a single post.',
 
 	// drafts
 	draftSave: 'Save as draft',

@@ -255,7 +255,7 @@ describe('crosspostDraftBlock', () => {
 describe('article teaser', () => {
 	const url = 'https://nagi.suibari.com/thread/did:plc:example/3abc';
 	const teaser = (text: string, facets: Facet[] = []) =>
-		buildArticleTeaser({ text, facets }, { url, teaser: `続きはNagiで：${url}` });
+		buildArticleTeaser({ text, facets }, { url, teaser: 'Nagiにブログを投稿しました！' });
 
 	it('drops the leading title so it is not repeated in the excerpt', () => {
 		expect(stripLeadingHeading('# ねこの話\n\n本文です').text).toBe('本文です');
@@ -277,24 +277,38 @@ describe('article teaser', () => {
 		});
 	});
 
-	it('keeps a short article in one post and links back to Nagi', () => {
+	it('posts a notice linking Nagi to the article and keeps the excerpt for the card', () => {
 		const { text, facets, excerpt } = teaser('# ねこの話\n\nみじかい本文');
 
-		expect(text).toBe(`みじかい本文\n\n続きはNagiで：${url}`);
+		expect(text).toBe('Nagiにブログを投稿しました！');
+		expect(facets).toHaveLength(1);
 		expect(excerpt).toBe('みじかい本文');
-		// 誘導文の URL がリンクになっている。
+		// 通知文の「Nagi」だけが記事へのリンクになっている。
 		const linkFacet = facets.at(-1)!;
 		expect(linkFacet.features).toEqual([{ $type: 'app.bsky.richtext.facet#link', uri: url }]);
-		expect(text.slice(...byteRange(text, linkFacet))).toBe(url);
+		expect(text.slice(...byteRange(text, linkFacet))).toBe('Nagi');
 	});
 
-	it('truncates a long article to fit one post, leaving room for the link', () => {
+	it('links only Nagi in an English notice using UTF-8 byte offsets', () => {
+		const { text, facets } = buildArticleTeaser(
+			{ text: '# Title\n\nBody', facets: [] },
+			{ url, teaser: 'I published a blog post on Nagi!' },
+		);
+		expect(text).toBe('I published a blog post on Nagi!');
+		expect(facets).toEqual([
+			link(bytes('I published a blog post on '), bytes('I published a blog post on Nagi'), url),
+		]);
+	});
+
+	it('keeps the notice fixed for long articles and truncates only the card excerpt', () => {
 		const { text, excerpt } = teaser(`# ながい話\n\n${'あ'.repeat(2000)}`);
 
 		expect(graphemeCount(text)).toBeLessThanOrEqual(300);
 		expect(bytes(text)).toBeLessThanOrEqual(3000);
 		expect(excerpt.endsWith('…')).toBe(true);
-		expect(text.endsWith(`続きはNagiで：${url}`)).toBe(true);
+		expect(text).toBe('Nagiにブログを投稿しました！');
+		expect(graphemeCount(excerpt)).toBeLessThanOrEqual(300);
+		expect(bytes(excerpt)).toBeLessThanOrEqual(3000);
 	});
 });
 
@@ -302,7 +316,7 @@ describe('article teaser embed', () => {
 	const target = {
 		url: 'https://nagi.suibari.com/blog/did:plc:example/3abc',
 		title: 'ねこの話',
-		teaser: '続きはNagiで',
+		teaser: 'Nagiにブログを投稿しました！',
 	};
 
 	it('pins the standard.site records so Bluesky renders the article card', () => {

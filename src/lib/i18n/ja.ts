@@ -504,9 +504,9 @@ export const ja = {
 	articleQuoteDisabled: '引用や返信のある投稿はブログにできません',
 	articleInlineImageMismatch:
 		'本文の画像を正しくアップロードできませんでした。画像を外して、もう一度追加してください。',
-	articleTeaserSuffix: (p: { url: string }) => `続きはNagiで：${p.url}`,
+	articleCrosspostText: 'Nagiにブログを投稿しました！',
 	articleCrosspostTeaserNote:
-		'Blueskyクロスポスト時には、冒頭の抜粋とNagiへのリンクだけを1件投稿します（全文は分割投稿しません）。',
+		'Blueskyクロスポスト時には、Nagiへのリンク付きの投稿通知と記事のリンクカードを1件投稿します。',
 
 	// drafts
 	draftSave: '下書きに保存',
