@@ -867,14 +867,14 @@
 					warning = m.crosspostPermissionMissing();
 				else
 					try {
-						// 記事は分割連投にせず、抜粋と Nagi への誘導リンクだけを1件出す。
+						// 記事はリンク付きの投稿通知とリンクカードを1件出す。
 						// document と publication の強参照を添えると、Bluesky が記事カードで出す。
 						// 取れなければ通常のリンクカードで出す（ティーザー自体は止めない）。
 						const publicationRef = await getPublicationRef().catch(() => undefined);
 						bskyPostRef = await crosspostArticleToBluesky(draft, assets, {
 							url: articleUrl,
 							title: article.title,
-							teaser: m.articleTeaserSuffix({ url: articleUrl }),
+							teaser: m.articleCrosspostText(),
 							...(publicationRef
 								? { associatedRefs: [{ uri: created.uri, cid: created.cid }, publicationRef] }
 								: {}),
