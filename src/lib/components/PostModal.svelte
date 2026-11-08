@@ -10,7 +10,7 @@
 		isPlainPostMode,
 		resetComposerMode,
 		setComposerMode,
-		type ComposerMode,
+		type PostModalMode,
 	} from '$lib/post/composer-mode';
 	import Composer from './Composer.svelte';
 	import TrilinesComposer from './TrilinesComposer.svelte';
@@ -25,8 +25,11 @@
 	 * アンマウント時に Object URL を解放してしまい、閉じて開き直しただけで添付画像の
 	 * プレビューと書きかけが失われる。
 	 * 開閉は表示の切り替えだけで行う。
+	 *
+	 * ブログはここではなく BlogModal で書く（ポストと行き来する場面がほぼないため）。
+	 * Composer も別インスタンスなので、書きかけはそれぞれのモーダルに残る。
 	 */
-	let mode = $state<ComposerMode>('simple');
+	let mode = $state<PostModalMode>('simple');
 	let wasOpen = $state(false);
 	let sending = $state(false);
 	let publishingPreferencesVersion = $state(0);
@@ -40,25 +43,24 @@
 	let trilinesSubmittable = $state(false);
 
 	/**
-	 * ブログと3行日記にできない文脈ではタブごと出さない。返信・引用は記事本文に文脈が現れない、
-	 * という Composer 側の判定と同じ理由（3行日記も返信・引用を持てない）。
+	 * 3行日記にできない文脈ではタブごと出さない。3行日記は返信・引用を持てない。
 	 * 3行日記を編集するときは、3行日記のタブだけを出す。
 	 */
-	const articleAllowed = $derived(!composerHost.replyTarget && !composerHost.quoteTarget);
+	const diaryAllowed = $derived(!composerHost.replyTarget && !composerHost.quoteTarget);
 	const editingDiary = $derived(Boolean(composerHost.trilinesEditTarget));
-	const modes = $derived<ComposerMode[]>(
+	const modes = $derived<PostModalMode[]>(
 		editingDiary
 			? ['diary']
-			: articleAllowed
+			: diaryAllowed
 				? COMPOSER_MODES
 				: COMPOSER_MODES.filter((value) => isPlainPostMode(value)),
 	);
 	const diary = $derived(mode === 'diary');
 	// 書きかけの途中で返信先が付いたときに、選べないタブへ取り残されないようにする。
-	// 端末の設定は書き換えない。返信のたびに「ブログ」の選択が失われてしまうため。
+	// 端末の設定は書き換えない。返信のたびに「3行日記」の選択が失われてしまうため。
 	$effect(() => {
 		if (editingDiary) mode = 'diary';
-		else if (!articleAllowed && !isPlainPostMode(mode)) mode = 'rich';
+		else if (!diaryAllowed && !isPlainPostMode(mode)) mode = 'rich';
 	});
 
 	// 投稿できたことを表示中のフィードへ伝えるだけ。画面をどこへ寄せるか（寄せられない
@@ -109,7 +111,7 @@
 	headerAction={mobileSubmit}
 	onclose={() => composerHost.hide()}
 	onmodechange={(next) => {
-		if (!editingDiary) setComposerMode(next);
+		if (next !== 'blog' && !editingDiary) setComposerMode(next);
 	}}
 >
 	<!--

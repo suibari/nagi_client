@@ -16,6 +16,7 @@
 		ready = true;
 		return () => {
 			composerHost.hide();
+			composerHost.hideBlog();
 			session.set(null);
 		};
 	});
@@ -27,6 +28,7 @@
 	<h1>ポストおたすけ E2E</h1>
 	{#if ready}
 		<button type="button" onclick={() => composerHost.show()}>ポストモーダルを開く</button>
+		<button type="button" onclick={() => composerHost.showBlog()}>ブログモーダルを開く</button>
 	{/if}
 </section>
 

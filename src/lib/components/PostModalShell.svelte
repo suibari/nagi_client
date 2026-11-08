@@ -24,8 +24,9 @@
 		open: boolean;
 		mode?: ComposerMode;
 		/**
-		 * 出すタブ。ゲスト投稿や返信のようにブログにできない文脈では絞る。
+		 * 出すタブ。ゲスト投稿や返信のように3行日記にできない文脈では絞る。
 		 * 選択中のモードがここから外れたら、呼び出し元が mode を戻す。
+		 * 空ならタブの代わりに title を見出しとして見せる（ブログモーダル）。
 		 */
 		modes?: ComposerMode[];
 		sending?: boolean;
@@ -38,6 +39,9 @@
 		children: Snippet;
 	} = $props();
 	let dialog = $state<HTMLDivElement>();
+	// ポストモーダルとブログモーダルが同時に DOM にあるので、見出しの id は重ねない。
+	const uid = $props.id();
+	const titleId = `post-modal-title-${uid}`;
 	const modeLabel = (value: ComposerMode) =>
 		value === 'simple'
 			? m.postModeSimple()
@@ -111,29 +115,33 @@
 		class:has-header-action={headerAction}
 		role="dialog"
 		aria-modal="true"
-		aria-labelledby="post-modal-title"
+		aria-labelledby={titleId}
 		tabindex="-1"
 	>
 		<header>
-			<h2 id="post-modal-title" class="visually-hidden">{title}</h2>
-			<div class="post-modal-modes" role="tablist" aria-label={m.postModalModesAria()}>
-				<!-- あっさり・しっかりは「ポスト」のグループとして1つの枠に入れ、ほかとは区切り線で分ける。 -->
-				{#each groupComposerModes(modes) as group, index (group.join())}
-					{#if index > 0}<span class="post-modal-mode-separator" aria-hidden="true"></span>{/if}
-					<div class="post-modal-mode-group" class:segmented={group.length > 1} role="none">
-						{#each group as value (value)}
-							<button
-								type="button"
-								role="tab"
-								aria-selected={mode === value}
-								class:active={mode === value}
-								disabled={sending}
-								onclick={() => selectMode(value)}>{modeLabel(value)}</button
-							>
-						{/each}
-					</div>
-				{/each}
-			</div>
+			<h2 id={titleId} class:visually-hidden={modes.length > 0} class="post-modal-title">
+				{title}
+			</h2>
+			{#if modes.length > 0}
+				<div class="post-modal-modes" role="tablist" aria-label={m.postModalModesAria()}>
+					<!-- あっさり・しっかりは「ポスト」のグループとして1つの枠に入れ、ほかとは区切り線で分ける。 -->
+					{#each groupComposerModes(modes) as group, index (group.join())}
+						{#if index > 0}<span class="post-modal-mode-separator" aria-hidden="true"></span>{/if}
+						<div class="post-modal-mode-group" class:segmented={group.length > 1} role="none">
+							{#each group as value (value)}
+								<button
+									type="button"
+									role="tab"
+									aria-selected={mode === value}
+									class:active={mode === value}
+									disabled={sending}
+									onclick={() => selectMode(value)}>{modeLabel(value)}</button
+								>
+							{/each}
+						</div>
+					{/each}
+				</div>
+			{/if}
 			{#if headerAction}
 				<div class="post-modal-header-action">{@render headerAction()}</div>
 			{/if}
@@ -204,11 +212,20 @@
 		padding-bottom: 10px;
 		border-bottom: 1px solid var(--line);
 	}
+	.post-modal-title {
+		margin: 0;
+		min-width: 0;
+		font-size: 14px;
+		font-weight: 700;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 	.post-modal-modes {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		/* タブが4つあるので、狭い画面では閉じる/送信より先に縮む側にする。 */
+		/* 狭い画面では閉じる/送信より先に縮む側にする。 */
 		min-width: 0;
 		flex-shrink: 1;
 	}
@@ -286,8 +303,8 @@
 			height: 100%;
 		}
 		/*
-			閉じる・タブ3つ・投稿ボタンを1行に並べると、360px 幅の端末でブログのタブが投稿ボタンの
-			裏へ潜る。タブの余白を詰め、それでも収まらない幅ではタブの列を横スクロールにする。
+			閉じる・タブ・投稿ボタンを1行に並べると、狭い端末ではタブが投稿ボタンの裏へ潜る。
+			タブの余白を詰め、それでも収まらない幅ではタブの列を横スクロールにする。
 		*/
 		.post-modal-modes {
 			overflow-x: auto;
