@@ -69,6 +69,49 @@ async function mockXrpc(page: Page) {
 	return () => savedRecord;
 }
 
+test('絵文字パレットはお気に入りを除いた使用履歴を最新順に表示する', async ({ page }) => {
+	await mockXrpc(page);
+	await page.addInitScript(() => {
+		localStorage.setItem('nagi-locale', 'ja');
+		localStorage.setItem(
+			'nagi:emoji-favorites:v1',
+			JSON.stringify([{ kind: 'unicode', emoji: '🎉' }]),
+		);
+		localStorage.setItem(
+			'nagi:reaction-usage:v2',
+			JSON.stringify(
+				['😊', '😄', '😆', '🥰', '😍', '🤗', '🤩', '🎉'].map((emoji, index) => ({
+					kind: 'unicode',
+					emoji,
+					count: 20 - index,
+					lastUsedAt: index + 1,
+				})),
+			),
+		);
+	});
+	await page.goto('/dev/e2e/post-edit');
+	const fixture = page.getByTestId('post-edit-fixture');
+	await fixture.getByRole('button', { name: 'その他の投稿操作' }).click();
+	await fixture.getByRole('menuitem', { name: '編集' }).click();
+	const openPalette = fixture.getByRole('button', { name: '絵文字を挿入', exact: true });
+	await openPalette.click();
+	const palette = page.locator('.reaction-quick-picker');
+	const recent = palette
+		.locator('.reaction-quick-section')
+		.filter({ has: page.getByText('最近使った絵文字', { exact: true }) })
+		.locator('.reaction-quick-item');
+	await expect(recent).toHaveText(['🤩', '🤗', '😍', '🥰', '😆', '😄']);
+
+	// 開いたままのお気に入り解除も、最新順の履歴に戻す。
+	await palette.locator('.reaction-quick-favorites button').press('Delete');
+	await expect(recent).toHaveText(['🎉', '🤩', '🤗', '😍', '🥰', '😆']);
+	await recent.filter({ hasText: '😍' }).click({ modifiers: ['Shift'] });
+	await expect(recent).toHaveText(['😍', '🎉', '🤩', '🤗', '🥰', '😆']);
+	await page.locator('.reaction-picker-backdrop').click({ position: { x: 1, y: 1 } });
+	await openPalette.click();
+	await expect(recent).toHaveText(['😍', '🎉', '🤩', '🤗', '🥰', '😆']);
+});
+
 test('投稿編集でリンクカードを張り替えて保存できる', async ({ page }) => {
 	const savedRecord = await mockXrpc(page);
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));

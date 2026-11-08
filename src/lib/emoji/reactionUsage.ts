@@ -207,7 +207,8 @@ export function recordReactionUsage(
 					lastUsedAt: Date.now(),
 				};
 	const next = [updated, ...usage.filter((item) => reactionChoiceKey(item) !== key)]
-		.sort((a, b) => b.count - a.count || b.lastUsedAt - a.lastUsedAt)
+		// 履歴の上限は最新順で適用する。使用回数順だと新しい絵文字が脱落する。
+		.sort((a, b) => b.lastUsedAt - a.lastUsedAt)
 		.slice(0, MAX_USAGE_ITEMS);
 	saveUsage(next);
 	return next;
