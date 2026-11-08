@@ -10,7 +10,7 @@
 		buildExternalTranslationUrl,
 		translationProviderName,
 	} from '$lib/i18n/translationProviders';
-	import type { Facet } from '$lib/api/types';
+	import type { Facet, LinkCardView, PostImage } from '$lib/api/types';
 	import RichText from './RichText.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
@@ -28,6 +28,8 @@
 		collapseToggle,
 		translatedText,
 		plain = false,
+		images,
+		linkCards,
 	}: {
 		uri: string;
 		cid: string;
@@ -43,6 +45,9 @@
 		translatedText?: string;
 		/** Markdown として描画しない（ゼンカツの作者の意図など、入力がただのテキスト欄のもの）。 */
 		plain?: boolean;
+		/** 記事本文の行に置いた画像・リンクカードをその位置に出す（RichText にそのまま渡す）。 */
+		images?: PostImage[];
+		linkCards?: LinkCardView[];
 	} = $props();
 	let body = $state<HTMLElement>();
 	let originalExpanded = $derived(
@@ -129,6 +134,8 @@
 	{#if plain}<span class="plain">{value}</span>{:else}<RichText
 			text={value}
 			facets={valueFacets}
+			{images}
+			{linkCards}
 		/>{/if}
 {/snippet}
 
