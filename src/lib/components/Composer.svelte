@@ -108,6 +108,12 @@
 		/** モーダルヘッダーなど、コンポーザ外の送信ボタンへ状態を渡す。 */
 		submittable?: boolean;
 	} = $props();
+	/*
+		返信・引用の文脈はポストモーダルのもの。ブログモーダルの Composer は別インスタンスなので、
+		ポストモーダル側で返信先を選んでもブログの書きかけに混ざらないよう見ない。
+	*/
+	const replyTarget = $derived(mode === 'blog' ? undefined : composerHost.replyTarget);
+	const quoteTarget = $derived(mode === 'blog' ? undefined : composerHost.quoteTarget);
 	let busy = $state(false);
 	let error = $state('');
 	let warning = $state('');
@@ -365,13 +371,11 @@
 	 * （他人のクロスポストへは続けない）。Bluesky 側では、そのコピーへの返信・引用として出す。
 	 * 返信と引用を同時にするときは、両方を Bluesky で揃えられないので外へは出さない。
 	 */
-	const quoting = $derived(quotePick.active || Boolean(composerHost.quoteTarget));
-	const hasThreadTarget = $derived(quoting || Boolean(composerHost.replyTarget));
-	const crosspostTargetPost = $derived(
-		composerHost.replyTarget?.post ?? composerHost.quoteTarget?.post ?? quotePick.post,
-	);
+	const quoting = $derived(quotePick.active || Boolean(quoteTarget));
+	const hasThreadTarget = $derived(quoting || Boolean(replyTarget));
+	const crosspostTargetPost = $derived(replyTarget?.post ?? quoteTarget?.post ?? quotePick.post);
 	const crosspostTargetRef = $derived(
-		hasThreadTarget && !(quoting && composerHost.replyTarget)
+		hasThreadTarget && !(quoting && replyTarget)
 			? ownCrosspost(crosspostTargetPost, $session?.did)
 			: undefined,
 	);
@@ -459,7 +463,7 @@
 				? m.postScopeKossoriArticle()
 				: hasContentWarningSetting
 					? m.articleContentWarningDisabled()
-					: quotePick.active || composerHost.quoteTarget || composerHost.replyTarget
+					: quotePick.active || quoteTarget || replyTarget
 						? m.articleQuoteDisabled()
 						: '',
 	);
@@ -481,7 +485,7 @@
 	 * URI から分からないので、直接の返信のときに post.kossori で補う。
 	 */
 	const kossoriThread = $derived.by(() => {
-		const target = composerHost.replyTarget;
+		const target = replyTarget;
 		if (!target) return false;
 		return isAppviewOwnedUri(target.root.uri) || Boolean(target.post.kossori);
 	});
@@ -496,7 +500,7 @@
 	 * 「通信状態を確認」と出て失敗していた。返信先が付いた時点でまだ何も書いていなければ
 	 * フィードへ切り替え、書きかけなら黙って公開範囲を広げず送信を止めて理由を出す。
 	 */
-	const publicReply = $derived(Boolean(composerHost.replyTarget) && !kossoriThread);
+	const publicReply = $derived(Boolean(replyTarget) && !kossoriThread);
 	$effect(() => {
 		if (!publicReply) return;
 		untrack(() => {
@@ -579,7 +583,7 @@
 		emojis = [];
 		dismissedUrls = [];
 		quotePick.clear();
-		composerHost.clearAllTargets();
+		if (mode !== 'blog') composerHost.clearAllTargets();
 		scope = restorePostScope(defaultScope);
 		articleTitle = '';
 		articleTags = [];
@@ -725,7 +729,7 @@
 			return;
 		const wantsCrosspost = scope === 'external' && externalEligible;
 		const target: CrosspostTarget = {};
-		if (crosspostTargetRef && composerHost.replyTarget)
+		if (crosspostTargetRef && replyTarget)
 			target.reply = { root: crosspostTargetRef.threadRoot, parent: crosspostTargetRef.tail };
 		else if (crosspostTargetRef && quoting) target.quote = crosspostTargetRef.root;
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
@@ -753,14 +757,10 @@
 						end: item.end + articleHeading.length,
 					}))
 				: list;
-		const reply = composerHost.replyTarget
-			? { root: composerHost.replyTarget.root, parent: composerHost.replyTarget.parent }
-			: undefined;
-		const replyPost = composerHost.replyTarget?.post;
-		const quotedPost = composerHost.quoteTarget?.post ?? quotePick.post;
-		const quoteRef = composerHost.quoteTarget
-			? { uri: composerHost.quoteTarget.uri, cid: composerHost.quoteTarget.cid }
-			: quotePick.ref;
+		const reply = replyTarget ? { root: replyTarget.root, parent: replyTarget.parent } : undefined;
+		const replyPost = replyTarget?.post;
+		const quotedPost = quoteTarget?.post ?? quotePick.post;
+		const quoteRef = quoteTarget ? { uri: quoteTarget.uri, cid: quoteTarget.cid } : quotePick.ref;
 		const draft = preparePostDraft(
 			body,
 			reply,
@@ -892,7 +892,7 @@
 			}
 			// 返信の範囲はスレッドで決まる（こっそりスレッドは固定、公開スレッドはこっそり不可）ので、
 			// 次の新規投稿の既定として残さない。
-			if (!composerHost.replyTarget) setLastPostScope(scope);
+			if (!replyTarget) setLastPostScope(scope);
 			// 投稿開始前から進行中だった自動保存を待ち、その保存分も確実に片付ける。
 			await finishDraftSaves();
 			const savedDraftId = activeDraftTarget?.id;
@@ -953,16 +953,15 @@
 		{/if}
 	{/snippet}
 
-	{#if composerHost.replyTarget || composerHost.quoteTarget}
+	{#if replyTarget || quoteTarget}
 		<div class="composer-target-box">
-			{#if composerHost.replyTarget}
+			{#if replyTarget}
 				<div class="composer-target-card reply">
 					<div class="composer-target-header">
 						<div class="composer-target-badge">
 							<Icon name="reply" size={14} />
 							<span>{m.replyTargetLabel()}</span>
-							<span class="composer-target-sub">@{composerHost.replyTarget.post.author.handle}</span
-							>
+							<span class="composer-target-sub">@{replyTarget.post.author.handle}</span>
 						</div>
 						<button
 							type="button"
@@ -976,30 +975,27 @@
 						</button>
 					</div>
 					<div class="composer-target-body">
-						<Avatar actor={composerHost.replyTarget.post.author} size="small" />
+						<Avatar actor={replyTarget.post.author} size="small" />
 						<div class="composer-target-content">
 							<div class="composer-target-meta">
 								<span class="name"
-									>{composerHost.replyTarget.post.author.displayName ||
-										composerHost.replyTarget.post.author.handle}</span
+									>{replyTarget.post.author.displayName || replyTarget.post.author.handle}</span
 								>
 							</div>
-							<PostModerationGuard post={composerHost.replyTarget.post}>
-								<p class="composer-target-text">{composerHost.replyTarget.post.text}</p>
+							<PostModerationGuard post={replyTarget.post}>
+								<p class="composer-target-text">{replyTarget.post.text}</p>
 							</PostModerationGuard>
 						</div>
 					</div>
 				</div>
-			{:else if composerHost.quoteTarget}
+			{:else if quoteTarget}
 				<div class="composer-target-card quote">
 					<div class="composer-target-header">
 						<div class="composer-target-badge">
 							<Icon name="quote" size={14} />
 							<span>{m.quoteTargetLabel()}</span>
-							{#if composerHost.quoteTarget.post}
-								<span class="composer-target-sub"
-									>@{composerHost.quoteTarget.post.author.handle}</span
-								>
+							{#if quoteTarget.post}
+								<span class="composer-target-sub">@{quoteTarget.post.author.handle}</span>
 							{/if}
 						</div>
 						<button
@@ -1014,25 +1010,24 @@
 						</button>
 					</div>
 					<div class="composer-target-body">
-						{#if composerHost.quoteTarget.post}
-							<Avatar actor={composerHost.quoteTarget.post.author} size="small" />
+						{#if quoteTarget.post}
+							<Avatar actor={quoteTarget.post.author} size="small" />
 							<div class="composer-target-content">
 								<div class="composer-target-meta">
 									<span class="name"
-										>{composerHost.quoteTarget.post.author.displayName ||
-											composerHost.quoteTarget.post.author.handle}</span
+										>{quoteTarget.post.author.displayName || quoteTarget.post.author.handle}</span
 									>
 								</div>
-								<PostModerationGuard post={composerHost.quoteTarget.post}>
-									<p class="composer-target-text">{composerHost.quoteTarget.post.text}</p>
+								<PostModerationGuard post={quoteTarget.post}>
+									<p class="composer-target-text">{quoteTarget.post.text}</p>
 								</PostModerationGuard>
 							</div>
-						{:else if composerHost.quoteTarget.news}
+						{:else if quoteTarget.news}
 							<div class="composer-target-content">
 								<div class="composer-target-meta">
-									<span class="name">{composerHost.quoteTarget.news.sourceName || 'News'}</span>
+									<span class="name">{quoteTarget.news.sourceName || 'News'}</span>
 								</div>
-								<p class="composer-target-text">{composerHost.quoteTarget.news.title}</p>
+								<p class="composer-target-text">{quoteTarget.news.title}</p>
 							</div>
 						{/if}
 					</div>
@@ -1182,7 +1177,7 @@
 			{/if}
 		</div>
 		<div class="composer-submit-actions">
-			{#if composerHost.replyTarget}
+			{#if replyTarget}
 				<button
 					class="icon-action bot-silent-toggle"
 					class:active={silentReply}

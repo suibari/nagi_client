@@ -94,7 +94,9 @@
 	title={m.guestPostTitle()}
 	headerAction={mobileSubmit}
 	{onclose}
-	onmodechange={setComposerMode}
+	onmodechange={(next) => {
+		if (next !== 'blog') setComposerMode(next);
+	}}
 >
 	<section class="composer guest-composer" class:rich={mode !== 'simple'}>
 		<ComposerEditor

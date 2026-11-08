@@ -53,8 +53,7 @@ test('手が止まるとbotたんが考え中を見せてから声をかけ、×
 
 	// 未入力のまま3秒で、吹き出しを先に出して考え中を見せる。
 	await openModal.click();
-	await page.getByRole('tab', { name: 'ブログ' }).click();
-	await page.getByPlaceholder('タイトルを入力…').fill('今日のこと');
+	await page.getByRole('tab', { name: 'しっかり' }).click();
 	const modalBeforeAssist = await page.locator('.post-modal').boundingBox();
 	expect(modalBeforeAssist).not.toBeNull();
 	await page.clock.runFor(2500);
@@ -302,4 +301,34 @@ test('生成中に削除すると古い肯定を表示せず、削除後の問�
 	await page.clock.runFor(500);
 	await expect(page.locator('.composer-assist')).toContainText('どんな空だった？');
 	await expect(page.locator('.composer-assist')).not.toContainText('古い肯定');
+});
+
+test('ポストとブログは別のモーダルで、書きかけもそれぞれに残る', async ({ page }) => {
+	await mockXrpc(page);
+	await page.clock.install();
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+	await page.goto('/dev/e2e/post-assist');
+	const modal = page.locator('.post-modal:visible');
+
+	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
+	await expect(modal.getByRole('tab')).toHaveText(['あっさり', 'しっかり', '3行日記']);
+	await modal.locator('.cm-content').fill('ポストの書きかけ');
+	await modal.locator('.post-modal-close').click();
+
+	// ブログモーダルはタブを持たず、ポストの書きかけも引き継がない。
+	await page.getByRole('button', { name: 'ブログモーダルを開く' }).click();
+	await expect(modal.getByRole('heading', { name: 'ブログを書く' })).toBeVisible();
+	await expect(modal.getByRole('tab')).toHaveCount(0);
+	await expect(modal.locator('.cm-content')).not.toContainText('ポストの書きかけ');
+	await modal.getByPlaceholder('タイトルを入力…').fill('今日のこと');
+	await modal.locator('.cm-content').fill('ブログの書きかけ');
+	await modal.locator('.post-modal-close').click();
+
+	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
+	await expect(modal.locator('.cm-content')).toContainText('ポストの書きかけ');
+	await modal.locator('.post-modal-close').click();
+
+	await page.getByRole('button', { name: 'ブログモーダルを開く' }).click();
+	await expect(modal.locator('.cm-content')).toContainText('ブログの書きかけ');
+	await expect(modal.getByPlaceholder('タイトルを入力…')).toHaveValue('今日のこと');
 });

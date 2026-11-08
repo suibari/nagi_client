@@ -13,7 +13,6 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
-	import { setComposerMode } from '$lib/post/composer-mode';
 
 	let { data } = $props();
 	// svelte-ignore state_referenced_locally -- prerender seed; onMount enriches it with document tags
@@ -68,9 +67,7 @@
 			location.href = '/login';
 			return;
 		}
-		composerHost.clearAllTargets();
-		setComposerMode('blog');
-		composerHost.show();
+		composerHost.showBlog();
 	}
 </script>
 

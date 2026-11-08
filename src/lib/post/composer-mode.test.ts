@@ -43,18 +43,15 @@ describe('composer mode preference', () => {
 		expect(getComposerMode()).toBe('simple');
 	});
 
-	it('remembers the blog mode and still resets it after a post', () => {
-		vi.stubGlobal('window', { localStorage: storageWith() });
-
-		setComposerMode('blog');
-		expect(getComposerMode()).toBe('blog');
-		expect(resetComposerMode()).toBe('simple');
+	it('ignores a blog tab stored before the blog moved to its own modal', () => {
+		vi.stubGlobal('window', { localStorage: storageWith('blog') });
+		expect(getComposerMode()).toBe('simple');
 	});
 
-	it('places the diary tab between rich and blog and remembers it', () => {
+	it('places the diary tab after rich, without a blog tab, and remembers it', () => {
 		vi.stubGlobal('window', { localStorage: storageWith() });
 
-		expect(COMPOSER_MODES).toEqual(['simple', 'rich', 'diary', 'blog']);
+		expect(COMPOSER_MODES).toEqual(['simple', 'rich', 'diary']);
 		setComposerMode('diary');
 		expect(getComposerMode()).toBe('diary');
 		expect(isPlainPostMode('diary')).toBe(false);
@@ -62,8 +59,8 @@ describe('composer mode preference', () => {
 		expect(isPlainPostMode('rich')).toBe(true);
 	});
 
-	it('groups simple and rich as posts, and keeps diary and blog on their own', () => {
-		expect(groupComposerModes(COMPOSER_MODES)).toEqual([['simple', 'rich'], ['diary'], ['blog']]);
+	it('groups simple and rich as posts, and keeps diary on its own', () => {
+		expect(groupComposerModes(COMPOSER_MODES)).toEqual([['simple', 'rich'], ['diary']]);
 		// 返信・引用やゲストでは、ポストのグループだけになる。
 		expect(groupComposerModes(['simple', 'rich'])).toEqual([['simple', 'rich']]);
 		expect(groupComposerModes(['diary'])).toEqual([['diary']]);

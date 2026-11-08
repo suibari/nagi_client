@@ -19,6 +19,7 @@
 	import { postFollow } from '$lib/feed/post-follow.svelte';
 	import PostFab from '$lib/components/PostFab.svelte';
 	import PostModal from '$lib/components/PostModal.svelte';
+	import BlogModal from '$lib/components/BlogModal.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { defaultScopeForPath } from '$lib/post/scope';
 	import { mutes } from '$lib/mute/mutes.svelte';
@@ -56,6 +57,7 @@
 	const showPostFab = $derived(
 		$oauthReady &&
 			!composerHost.open &&
+			!composerHost.blogOpen &&
 			!guestComposerHost.open &&
 			!NO_FAB.some((path) => page.url.pathname.startsWith(path)),
 	);
@@ -286,6 +288,8 @@
 {/if}
 {#if $session}
 	<PostModal />
+	<!-- ブログは別モーダル。初めて開いたときにマウントし、書きかけを保つためリロードまで残す。 -->
+	{#if composerHost.blogMounted}<BlogModal />{/if}
 	<ReactionCardRewardHost />
 	<WelcomeTutorialHost />
 	<!-- 記念日はその日しか来ないので、どの画面にいても受け取れるよう常駐させる。 -->

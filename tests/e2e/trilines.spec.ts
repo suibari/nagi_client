@@ -56,7 +56,7 @@ async function mockXrpc(page: Page, { writtenToday = false } = {}) {
 	return recorded;
 }
 
-test('しっかりとブログの間の3行日記タブで、botたんが空いた行だけ埋め、投稿は日記レコードになる', async ({
+test('しっかりの隣の3行日記タブで、botたんが空いた行だけ埋め、投稿は日記レコードになる', async ({
 	page,
 }) => {
 	const recorded = await mockXrpc(page, { writtenToday: true });
@@ -66,7 +66,7 @@ test('しっかりとブログの間の3行日記タブで、botたんが空い�
 	await page.getByRole('button', { name: 'ポストモーダルを開く' }).click();
 
 	const tabs = page.locator('.post-modal-modes [role="tab"]');
-	await expect(tabs).toHaveText(['あっさり', 'しっかり', '3行日記', 'ブログ']);
+	await expect(tabs).toHaveText(['あっさり', 'しっかり', '3行日記']);
 	await page.getByRole('tab', { name: '3行日記' }).click();
 
 	const inputs = page.locator('.trilines-input');

@@ -1,21 +1,27 @@
 /**
- * 投稿モーダルの書き方タブ。
+ * Composer の書き方。
  *
  * - simple（あっさり）: 本文・画像・CW だけの短文向け（記法の装飾は見せるが、装飾ボタンは出さない）
  * - rich（しっかり）:   文字装飾のボタンが付く長文向け
  * - diary（3行日記）:  TriLinesAt の3行日記（com.suibari.trilinesat.diary）を書くモード。
  *                       本文エディタの代わりに3行の入力欄を出す
  * - blog（ブログ）:     rich に記事メタ（タイトル・ヘッダー画像・タグ）を足し、
- *                       standard.site へ記事としても公開するモード
+ *                       standard.site へ記事としても公開するモード。
+ *                       ポストと行き来する場面がほぼないので、ポストモーダルのタブではなく
+ *                       別のブログモーダル（BlogModal）で書く
  */
 export type ComposerMode = 'simple' | 'rich' | 'diary' | 'blog';
 
 export const COMPOSER_MODE_STORAGE_KEY = 'nagi:composer-mode:v1';
 
-export const COMPOSER_MODES: ComposerMode[] = ['simple', 'rich', 'diary', 'blog'];
+/** ポストモーダルのタブ。ブログは別モーダルなので含めない。 */
+export type PostModalMode = Exclude<ComposerMode, 'blog'>;
 
-export function isComposerMode(value: unknown): value is ComposerMode {
-	return value === 'simple' || value === 'rich' || value === 'diary' || value === 'blog';
+export const COMPOSER_MODES: PostModalMode[] = ['simple', 'rich', 'diary'];
+
+/** 端末に残すのはポストモーダルのタブだけ。以前のタブ時代に保存された 'blog' は捨てる。 */
+export function isComposerMode(value: unknown): value is PostModalMode {
+	return value === 'simple' || value === 'rich' || value === 'diary';
 }
 
 /**
@@ -33,11 +39,11 @@ export const isPlainPostMode = (mode: ComposerMode) => mode === 'simple' || mode
 
 /**
  * タブの見た目上のまとまり。あっさり・しっかりはどちらも「ポスト」の書き方の違いなので
- * 1つのグループに入れ、3行日記とブログはそれぞれ別のものとして分ける。
+ * 1つのグループに入れ、3行日記は別のものとして分ける。
  * 並びは渡した順を保ち、隣り合う同じグループだけをまとめる。
  */
-export function groupComposerModes(modes: readonly ComposerMode[]): ComposerMode[][] {
-	const groups: ComposerMode[][] = [];
+export function groupComposerModes<T extends ComposerMode>(modes: readonly T[]): T[][] {
+	const groups: T[][] = [];
 	for (const mode of modes) {
 		const last = groups.at(-1);
 		if (last && isPlainPostMode(last[0]) && isPlainPostMode(mode)) last.push(mode);
@@ -46,7 +52,7 @@ export function groupComposerModes(modes: readonly ComposerMode[]): ComposerMode
 	return groups;
 }
 
-export function getComposerMode(): ComposerMode {
+export function getComposerMode(): PostModalMode {
 	if (typeof window === 'undefined') return 'simple';
 
 	try {
@@ -57,7 +63,7 @@ export function getComposerMode(): ComposerMode {
 	}
 }
 
-export function setComposerMode(mode: ComposerMode): void {
+export function setComposerMode(mode: PostModalMode): void {
 	if (typeof window === 'undefined') return;
 
 	try {
@@ -67,7 +73,7 @@ export function setComposerMode(mode: ComposerMode): void {
 	}
 }
 
-export function resetComposerMode(): ComposerMode {
+export function resetComposerMode(): PostModalMode {
 	setComposerMode('simple');
 	return 'simple';
 }

@@ -97,7 +97,7 @@ test('動画を添付すると変換が終わるまで投稿できず、終わ�
 	const calls = await mockServices(page);
 	await page.goto('/dev/e2e/video');
 	await page.getByRole('button', { name: 'Open composer' }).click();
-	const composer = page.locator('.post-modal .composer');
+	const composer = page.locator('.post-modal .composer:not(.trilines-composer)');
 	await expect(composer).toBeVisible();
 
 	await composer.locator('input[type="file"][accept*="video"]').setInputFiles({
@@ -159,7 +159,7 @@ test('送信中は%、変換中と仕上げ中は段階を出し、ページ離�
 	);
 	await page.goto('/dev/e2e/video');
 	await page.getByRole('button', { name: 'Open composer' }).click();
-	const composer = page.locator('.post-modal .composer');
+	const composer = page.locator('.post-modal .composer:not(.trilines-composer)');
 	await composer.locator('input[type="file"][accept*="video"]').setInputFiles({
 		name: 'sample.webm',
 		mimeType: 'video/webm',
@@ -226,7 +226,7 @@ test('以前に送った動画で PDS に残っていなければ、添付の時
 	);
 	await page.goto('/dev/e2e/video');
 	await page.getByRole('button', { name: 'Open composer' }).click();
-	const composer = page.locator('.post-modal .composer');
+	const composer = page.locator('.post-modal .composer:not(.trilines-composer)');
 	await composer.locator('input[type="file"][accept*="video"]').setInputFiles({
 		name: 'sample.webm',
 		mimeType: 'video/webm',
@@ -242,7 +242,7 @@ test('画像と動画を一緒に選ぶと、両方を添付する', async ({ pa
 	await mockServices(page);
 	await page.goto('/dev/e2e/video');
 	await page.getByRole('button', { name: 'Open composer' }).click();
-	const composer = page.locator('.post-modal .composer');
+	const composer = page.locator('.post-modal .composer:not(.trilines-composer)');
 	await composer.locator('input[type="file"][accept*="video"]').setInputFiles([
 		{
 			name: 'sample.webm',
