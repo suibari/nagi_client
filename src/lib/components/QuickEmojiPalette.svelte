@@ -18,6 +18,7 @@
 		recordReactionUsage,
 		SAFE_UNICODE_REACTIONS,
 		type ReactionChoice,
+		type ReactionUsage,
 	} from '$lib/emoji/reactionUsage';
 	import {
 		favoritesFull,
@@ -57,7 +58,16 @@
 	let quickPickerStyle = $state('');
 	let quickItems = $state<ReactionChoice[]>([]);
 	let favorites = $state<ReactionChoice[]>([]);
-	let recentItems = $state<ReactionChoice[]>([]);
+	const QUICK_COLUMNS = 6;
+	let usage = $state<ReactionUsage[]>([]);
+	const recentItems = $derived(
+		recentReactionChoices(
+			usage,
+			QUICK_COLUMNS,
+			failedCustomUris,
+			new Set(favorites.map(reactionChoiceKey)),
+		),
+	);
 	let quickQuery = $state('');
 	/** サーバーの検索結果（名前 + 意味）。どの検索語に対する結果かも持つ。 */
 	let quickSearchResult = $state<{ q: string; result: EmojiSearchResult }>();
@@ -71,7 +81,6 @@
 	// ドラッグでお気に入りを編集したら、開いた時点のスナップショットで
 	// localStorage を上書きさせない（下の prepareReactionPalette 参照）。
 	let favoritesDirty = false;
-	const QUICK_COLUMNS = 6;
 	const QUICK_MIN_COLUMNS = 3;
 	const quickSearching = $derived(quickQuery.trim().length > 0);
 	// カスタム絵文字を常に先に並べる。それぞれの中は名前の一致 → 意味の近さの順（AppView が決める）。
@@ -146,7 +155,7 @@
 		);
 		quickQuery = '';
 		favorites = favoriteSnapshot;
-		recentItems = localRecent;
+		usage = usageSnapshot;
 		quickItems =
 			favoriteSnapshot.length || localRecent.length
 				? []
@@ -237,7 +246,6 @@
 		if (!failedCustomUris.includes(uri)) failedCustomUris = [...failedCustomUris, uri];
 		const notFailed = (item: ReactionChoice) => item.kind !== 'custom' || item.emoji.uri !== uri;
 		favorites = favorites.filter(notFailed);
-		recentItems = recentItems.filter(notFailed);
 		const failedIndex = quickItems.findIndex(
 			(item) => item.kind === 'custom' && item.emoji.uri === uri,
 		);
@@ -251,7 +259,7 @@
 
 	/** keepOpen は Shift+クリック。Discord と同じく閉じずに続けて選べる。 */
 	function choose(emoji: string | EmojiView, keepOpen = false) {
-		recordReactionUsage(loadReactionUsage(), emoji);
+		usage = recordReactionUsage(loadReactionUsage(), emoji);
 		select(emoji);
 		if (!keepOpen) {
 			closePalette();
@@ -322,9 +330,6 @@
 		const next = insertFavorite(favorites, choice.emoji, insertionIndex(zone));
 		if (next === favorites) return;
 		commitFavorites(next);
-		// お気に入りにあるものは「最近使った」に出さない規則（上の $effect）と
-		// 食い違わないよう、表示中のリストからも取り除く。履歴自体は残す。
-		recentItems = recentItems.filter((item) => reactionChoiceKey(item) !== key);
 		quickItems = quickItems.filter((item) => reactionChoiceKey(item) !== key);
 		announcement = m.emojiFavoriteAdded({ emoji: labelOf(choice) });
 	}
