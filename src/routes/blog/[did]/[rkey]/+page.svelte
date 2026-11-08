@@ -15,9 +15,7 @@
 	import GuestHero from '$lib/components/GuestHero.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { splitArticleText } from '$lib/blog/articleText';
-	import { blobKey, inlineImageKeys } from '$lib/blog/inlineImages';
-	import { articleCardUrls } from '$lib/atproto/markdown';
-	import { httpUrl } from '$lib/atproto/facets';
+	import { articleMedia } from '$lib/blog/articleMedia';
 	import { isTranslationCandidate, postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { languageName, languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -120,26 +118,16 @@
 					}),
 	);
 	let author = $derived(post?.author ?? data.post.author);
-	// 本文に `![alt](url)` で置いた画像はその位置に出す。残りのうち先頭はヘッダー、
-	// それ以外は従来どおり本文の後ろにまとめる（本文内画像に対応する前の記事との互換）。
+	// 本文に `![alt](url)` で置いた画像・URL だけの行に置いたリンクカードはその位置に出す。
+	// 残りの画像の先頭はヘッダー、それ以外とカードは本文の後ろにまとめる（フィードと共通）。
 	let images = $derived(post?.images ?? []);
-	let inlineKeys = $derived(inlineImageKeys(text));
-	let appViewOrigins = $derived([new URL(APPVIEW_URL, 'http://localhost').origin]);
-	let looseImages = $derived(
-		images.filter((image) => {
-			const key = blobKey(image.url, appViewOrigins);
-			return !key || !inlineKeys.has(key);
-		}),
-	);
-	let cover = $derived(images[0] && looseImages[0] === images[0] ? images[0] : undefined);
-	let bodyImages = $derived(cover ? looseImages.slice(1) : looseImages);
-	// リンクカードも画像と同じく、本文の URL だけの行に置いたものはその位置に出し、
-	// 残り（行に置かれていないカード。行単位の配置に対応する前の記事）は本文の後ろにまとめる。
 	let linkCards = $derived(post?.linkCards ?? []);
-	let inlineCardUrls = $derived(new Set(articleCardUrls(text)));
-	let looseLinkCards = $derived(
-		linkCards.filter((card) => !inlineCardUrls.has(httpUrl(card.uri) ?? card.uri)),
+	let media = $derived(
+		articleMedia(text, images, linkCards, [new URL(APPVIEW_URL, 'http://localhost').origin]),
 	);
+	let cover = $derived(media.cover);
+	let bodyImages = $derived(media.looseImages);
+	let looseLinkCards = $derived(media.looseLinkCards);
 	let reactions = $derived(post?.reactions ?? []);
 	let replies = $derived([
 		...(thread?.replies ?? []).filter(

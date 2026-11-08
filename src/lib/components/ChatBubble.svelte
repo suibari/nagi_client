@@ -24,6 +24,7 @@
 	import { MAX_IMAGE_COUNT, type ImageAttachment, type PostEditImage } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCard from './LinkCard.svelte';
+	import { articleMedia } from '$lib/blog/articleMedia';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { APPVIEW_URL, ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
@@ -300,20 +301,29 @@
 	let reactionButton = $state<HTMLButtonElement>();
 	let postRow: HTMLDivElement;
 	let mine = $derived(localGuest || $session?.did === post.author.did);
-	/**
-	 * ブログとして書かれた投稿は、1枚目の画像を本文の上のヘッダーとして出す。
-	 * standard.site の coverImage が「1枚目の画像」なので、記事側の見た目と揃う。
-	 * 先頭が見出しなだけの通常投稿と取り違えないよう、判定は post.article だけを見る。
-	 */
-	let articleHeader = $derived(post.article && !editing ? post.images?.[0] : undefined);
 	let isBlogPost = $derived(post.article || post.uri.includes('/site.standard.document/'));
+	/**
+	 * ブログとして書かれた投稿は記事ページと同じ見た目にする。本文の行に置いた画像・リンクカードは
+	 * その位置に出し、残りの画像の先頭を本文の上のヘッダー、それ以外を本文の後ろに出す。
+	 * 先頭が見出しなだけの通常投稿と取り違えないよう、判定は post.article（と standard.site の
+	 * document）だけを見る。
+	 */
+	let blogMedia = $derived(
+		isBlogPost && !editing
+			? articleMedia(post.text, post.images, post.linkCards, [
+					new URL(APPVIEW_URL, 'http://localhost').origin,
+				])
+			: undefined,
+	);
+	let articleHeader = $derived(blogMedia?.cover);
 	// 自分のクロスポストにだけ付ける目印。返信・引用を Bluesky にも続けられることが分かるように。
 	// 他人のクロスポストには付けない（AppView も作者本人にしか参照を返さない）。
 	let showsCrosspostLabel = $derived(Boolean(ownCrosspost(post, $session?.did)) && !isBlogPost);
 	// 3行日記は行ごとに画像を添えるので、本文下のギャラリーには出さない。
 	let trilines = $derived(post.trilines ? { ...post, trilines: post.trilines } : undefined);
-	// ヘッダーに出した1枚は本文下のギャラリーから外す（同じ画像を二度出さない）。
-	let bodyImages = $derived(articleHeader ? post.images?.slice(1) : post.images);
+	// ヘッダーや本文に出した画像は本文下のギャラリーから外す（同じ画像を二度出さない）。
+	let bodyImages = $derived(blogMedia ? blogMedia.looseImages : post.images);
+	let bodyLinkCards = $derived(blogMedia ? blogMedia.looseLinkCards : post.linkCards);
 	const resolveAsset = (url: string) => (url.startsWith('/') ? APPVIEW_URL + url : url);
 	let hasTallImage = $derived(
 		Boolean(
@@ -328,10 +338,10 @@
 	);
 	let clampTallImages = $derived(Boolean(maxImages && !showAllImages && hasTallImage));
 	let visibleLinkCards = $derived(
-		maxLinkCards && !showAllLinkCards ? post.linkCards?.slice(0, maxLinkCards) : post.linkCards,
+		maxLinkCards && !showAllLinkCards ? bodyLinkCards?.slice(0, maxLinkCards) : bodyLinkCards,
 	);
 	let linkCardToggleable = $derived(
-		Boolean(maxLinkCards && post.linkCards && post.linkCards.length > maxLinkCards),
+		Boolean(maxLinkCards && bodyLinkCards && bodyLinkCards.length > maxLinkCards),
 	);
 	let moderationDisplay = $derived(contentModerationDisplay(post));
 	let moderationWarningText = $derived(
@@ -782,7 +792,7 @@
 <div
 	class="post-row"
 	class:management-only={managementOnly}
-	class:article={post.article}
+	class:article={isBlogPost}
 	class:mine
 	class:bot={post.isBot}
 	class:list-member={!mine && !post.isBot && privateList.has(post.author.did)}
@@ -983,6 +993,8 @@
 					collapsed={collapsible && !expanded}
 					disabled={optimistic}
 					{clampLines}
+					images={blogMedia ? post.images : undefined}
+					linkCards={blogMedia ? (post.linkCards ?? []) : undefined}
 					onoverflowchange={(value) => (overflowing = value)}
 					{collapseToggle}
 					{translatedText}
