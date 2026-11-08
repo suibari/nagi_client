@@ -229,7 +229,7 @@
 		align-items: center;
 		gap: 4px;
 		width: fit-content;
-		margin: 8px auto 2px;
+		margin: 2px auto;
 		padding: 3px 12px;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-pill);
