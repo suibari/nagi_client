@@ -47,6 +47,7 @@
 	import { startZenkatsuNotice } from '$lib/zenkatsu/notice';
 	import { startCardDrawNotice } from '$lib/cards/draw-notice.svelte';
 	import { startRadioNotice } from '$lib/radio/radio.svelte';
+	import { startAdventNotice } from '$lib/advent/notice.svelte';
 	import { migrateLegacyStandardSite } from '$lib/standardsite/publication';
 
 	let { children } = $props();
@@ -193,6 +194,7 @@
 		const stopZenkatsuNotice = startZenkatsuNotice();
 		const stopCardDrawNotice = startCardDrawNotice();
 		const stopChronicleNotice = startChronicleNotice();
+		const stopAdventNotice = startAdventNotice();
 		// プリレンダリングは日本語で固定し、hydration 完了後に端末の言語設定へ追従する。
 		initLocale();
 		// フィードのタブ構成を localStorage から読む。プリレンダでは既定タブのままなので、
@@ -222,6 +224,7 @@
 			stopZenkatsuNotice();
 			stopCardDrawNotice();
 			stopChronicleNotice();
+			stopAdventNotice();
 			window.removeEventListener('online', repairPush);
 			document.removeEventListener('visibilitychange', onVisibility);
 		};

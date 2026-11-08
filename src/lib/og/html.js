@@ -59,3 +59,36 @@ export function withPostCardMeta(html, did, rkey, kind) {
 	if (kind === 'post') return withImageMeta(html, image, 'Nagiのポスト');
 	return withStandardSiteDocumentLink(withImageMeta(html, image, 'Nagiのブログ'), did, rkey);
 }
+export function withAdventCardMeta(html, day, year, lang = 'ja') {
+	const en = lang === 'en';
+	const title = en
+		? day
+			? `Nagi Advent Calendar: the card for December ${day}`
+			: 'Nagi Advent Calendar'
+		: day
+			? `Nagiアドベントカレンダー 12月${day}日のカード`
+			: 'Nagiアドベントカレンダー';
+	const description = en
+		? 'Each day Bot-tan picks one happy thing from everyone’s posts and turns it into a Christmas card.'
+		: 'botたんがみんなのポストから嬉しいものを毎日ひとつ選んで、クリスマスカードにして届けるよ。';
+	let output = replaceMeta(html, 'property', 'og:title', title);
+	output = replaceMeta(output, 'property', 'og:description', description);
+	output = replaceMeta(output, 'name', 'description', description);
+	if (!day) return output;
+	const query = new URLSearchParams({
+		v: '2',
+		year: String(year),
+		day: String(day),
+		...(en ? { lang: 'en' } : {}),
+	});
+	return withImageMeta(output, `https://nagi.suibari.com/api/advent-card?${query}`, title);
+}
+export function parseAdventDay(value) {
+	if (typeof value !== 'string' || !/^\d{1,2}$/.test(value)) return undefined;
+	const day = Number(value);
+	return day >= 1 && day <= 25 ? day : undefined;
+}
+export function adventYearAt(now = Date.now()) {
+	const date = new Date(now + 9 * 60 * 60_000);
+	return date.getUTCMonth() === 0 ? date.getUTCFullYear() - 1 : date.getUTCFullYear();
+}

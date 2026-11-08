@@ -1761,6 +1761,37 @@ export const ja = {
 	landingLiveMore: 'みんなの投稿をもっと見る',
 	landingLiveEmpty: 'いまは表示できる投稿がありません。',
 	landingLiveAria: 'Nagiの公開タイムラインから選んだ投稿',
+	navAdvent: 'アドカレ',
+	adventTitle: 'Nagiアドベントカレンダー',
+	adventDescription:
+		'12月1日から25日まで、botたんがみんなのポストから嬉しいものを毎日ひとつ選んで、クリスマスカードにして届けるよ。',
+	adventUnreadBadgeAria: '新しいアドカレのカードがあります',
+	adventBeforeStart: '12月1日 0:00 から、毎日ひとつずつカードが飾られていくよ',
+	adventNextOpen: (p: { when: string }) => `次のカードは ${p.when} に飾られるよ`,
+	adventComplete: '25枚ぜんぶ飾れたよ。メリークリスマス！',
+	adventLoadError: 'アドベントカレンダーを読み込めませんでした',
+	adventCardLabel: 'Nagi Advent Calendar',
+	adventCardAria: (p: { day: number; name: string }) => `12月${p.day}日のカード（${p.name}さん）`,
+	adventOrnamentAria: (p: { day: number; name: string }) =>
+		`12月${p.day}日のカードを開く（${p.name}さん）`,
+	adventOrnamentPreparingAria: (p: { day: number }) => `12月${p.day}日のカードを準備中`,
+	adventOrnamentLockedAria: (p: { day: number }) => `12月${p.day}日（まだ開いていません）`,
+	adventDialogTitle: (p: { day: number }) => `12月${p.day}日のクリスマスカード`,
+	adventDialogTitleMine: (p: { day: number }) => `12月${p.day}日は、あなたのポストから`,
+	adventMineNote: 'あなたの嬉しいが、Nagiのみんなへのプレゼントになったよ。',
+	adventShareNagi: 'Nagiでシェア',
+	adventShareBluesky: 'Blueskyでシェア',
+	adventCopyLink: 'リンクをコピー',
+	adventLinkCopied: 'コピーしました',
+	adventViewPost: '元のポストを見る',
+	adventShareText: (p: { day: number; title: string }) =>
+		`Nagiアドベントカレンダー 12月${p.day}日のカード「${p.title}」🎄 #Nagiアドカレ`,
+	adventLetterAria: 'botたんからの手紙',
+	adventLetterLead: 'botたんから、あなたに手紙が届いたよ',
+	adventLetterOpen: '手紙を開ける',
+	adventLetterSkip: 'すぐにカードを見る',
+	notifAdventSuffix: 'さんがあなたのポストをアドベントカレンダーのカードにしました',
+	notifAdventBody: (p: { day: number }) => `12月${p.day}日のカードを開いてみてね`,
 } satisfies Record<string, string | ((...args: never[]) => string)>;
 
 export type Messages = typeof ja;

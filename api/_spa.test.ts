@@ -47,6 +47,41 @@ describe('SPA fallback SEO', () => {
 		expect(html.includes('rel="site.standard.document"')).toBe(kind === 'blog');
 	});
 
+	it('uses the advent card for the day in the link', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html><head></head></html>')));
+		const response = responseMock();
+
+		await handler({ method: 'GET', query: { kind: 'advent', day: '3' } }, response);
+
+		const html = response.send.mock.calls[0][0] as string;
+		expect(html).toContain('/api/advent-card?v=2&amp;year=');
+		expect(html).toContain('&amp;day=3"');
+		expect(html).toContain('Nagiアドベントカレンダー 12月3日のカード');
+		expect(html).not.toContain('/api/profile-card');
+	});
+
+	it('uses the English card and title for English shares', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html><head></head></html>')));
+		const response = responseMock();
+
+		await handler({ method: 'GET', query: { kind: 'advent', day: '3', lang: 'en' } }, response);
+
+		const html = response.send.mock.calls[0][0] as string;
+		expect(html).toContain('&amp;day=3&amp;lang=en"');
+		expect(html).toContain('Nagi Advent Calendar: the card for December 3');
+	});
+
+	it('keeps the site image for the advent page without a valid day', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html><head></head></html>')));
+		const response = responseMock();
+
+		await handler({ method: 'GET', query: { kind: 'advent', day: '99' } }, response);
+
+		const html = response.send.mock.calls[0][0] as string;
+		expect(html).not.toContain('/api/advent-card');
+		expect(html).toContain('og:title');
+	});
+
 	it('falls back to the profile card for an unsafe record key', async () => {
 		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html><head></head></html>')));
 		const response = responseMock();

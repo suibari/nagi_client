@@ -47,6 +47,19 @@ class ComposerHost {
 	replyTarget = $state<ReplyTarget | undefined>(undefined);
 	quoteTarget = $state<QuoteTarget | undefined>(undefined);
 	trilinesEditTarget = $state<TrilinesEditTarget | undefined>(undefined);
+	/**
+	 * 開くときに本文へ差し込む文（アドカレのシェアなど）。PostModal が受け取って本文へ移し、
+	 * すぐに消す。書きかけがあれば消さずに後ろへ足す。
+	 */
+	seedText = $state<string | undefined>(undefined);
+
+	/** 本文を入れた状態で、通常のポストとして開く。URL はリンクカードになる。 */
+	showWithText(text: string) {
+		this.replyTarget = undefined;
+		this.quoteTarget = undefined;
+		this.seedText = text;
+		this.show('feed');
+	}
 
 	show(defaultScope: PostScope = 'feed') {
 		this.defaultScope = defaultScope;

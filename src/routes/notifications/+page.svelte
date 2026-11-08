@@ -4,6 +4,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { getNotifications, getProfile, APPVIEW_URL } from '$lib/api/appview';
 	import type { ActorView, NotificationView } from '$lib/api/types';
+	import { adventDayFromReasonUri } from '$lib/advent/advent';
 	import AvatarLink from '$lib/components/AvatarLink.svelte';
 	import { stripMarkdown } from '$lib/atproto/markdown';
 	import { displayEmojiName } from '$lib/atproto/bluemoji';
@@ -171,7 +172,7 @@
 			<strong>{item.actor.displayName ?? item.actor.handle}</strong
 			>{#if item.type === 'reaction' && item.reaction}{m.notifReactedWithPrefix()}{#each item.reactions?.length ? item.reactions : [item.reaction] as reaction}{@render reactionEmoji(
 						reaction,
-					)}{/each}{reactedWithSuffix}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{reactedSuffix}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else if item.type === 'gift'}{m.notifGiftSuffix()}{:else if item.type === 'emoji'}{m.notifEmojiSuffix()}{:else if item.type === 'chronicle'}{m.notifChronicleSuffix()}{:else if item.type === 'mood'}{m.notifMoodSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
+					)}{/each}{reactedWithSuffix}{:else if item.type === 'reply'}{m.notifRepliedSuffix()}{:else if item.type === 'reaction'}{reactedSuffix}{:else if item.type === 'diary'}{m.notifDiarySuffix()}{:else if item.type === 'analysis'}{m.notifAnalysisSuffix()}{:else if item.type === 'gift'}{m.notifGiftSuffix()}{:else if item.type === 'emoji'}{m.notifEmojiSuffix()}{:else if item.type === 'chronicle'}{m.notifChronicleSuffix()}{:else if item.type === 'mood'}{m.notifMoodSuffix()}{:else if item.type === 'advent'}{m.notifAdventSuffix()}{:else}{m.notifMentionedSuffix()}{/if}
 		</span>
 		<time class="when" datetime={item.createdAt}>{relativeTime(item.createdAt)}</time>
 	</div>
@@ -180,8 +181,11 @@
 {#snippet notificationContent(item: NotificationView)}
 	{@const translated = notificationTranslation(item)}
 	<!-- 返信/メンションは新しい投稿、リアクションは対象投稿を AppView が post に入れる。 -->
+	{@const adventDay = item.type === 'advent' ? adventDayFromReasonUri(item.reasonUri) : undefined}
 	{#if item.type === 'mood'}<p class="notification-subject">
 			{m.notifMoodBody()}
+		</p>{:else if adventDay}<p class="notification-subject">
+			{m.notifAdventBody({ day: adventDay })}
 		</p>{:else if item.type === 'diary' && item.diary}<p class="notification-subject">
 			{stripMarkdown(item.diary.text)}
 		</p>{:else if item.cardSubject}<p class="notification-subject">

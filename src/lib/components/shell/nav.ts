@@ -4,6 +4,8 @@ import { unreadCount } from '$lib/notifications/unread.svelte';
 import { unplayedToday } from '$lib/zenkatsu/notice';
 import { chronicleUnread } from '$lib/chronicle/notice';
 import { cardUndrawn } from '$lib/cards/draw-notice.svelte';
+import { adventUnread } from '$lib/advent/notice.svelte';
+import { isAdventMenuSeason } from '$lib/advent/advent';
 
 /**
  * ナビ項目に重ねる未読表示。ドットと数値バッジで真実源が違う（既読ウォーターマーク /
@@ -67,6 +69,15 @@ const radio: NavItem = {
 	label: m.navRadio,
 	icon: 'music',
 };
+// アドベントカレンダー。12/1〜1/7 だけメニューに出す（ページはいつでも開ける）。
+const advent: NavItem = {
+	href: '/advent',
+	label: m.navAdvent,
+	icon: 'gift',
+	badge: { unread: adventUnread, style: 'dot', aria: () => m.adventUnreadBadgeAria() },
+};
+/** 読み込んだ時点の暦で決める。メニューの出し入れは年2回なので、日をまたいだタブは再読込で追従する。 */
+const seasonal: NavItem[] = isAdventMenuSeason() ? [advent] : [];
 const emoji: NavItem = { href: '/emoji', label: m.emojiSettingsTitle, icon: 'emoji' };
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
 
@@ -74,7 +85,7 @@ const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'sett
 export const desktopNavGroups: NavItem[][] = [
 	[feed, notifications],
 	[blog, news],
-	[diary, cards, radio, emoji],
+	[...seasonal, diary, cards, radio, emoji],
 	[settings],
 ];
 
@@ -84,13 +95,13 @@ export const mobilePrimaryItems: NavItem[] = [feed, notifications];
 /** スマホのボトムシート。将来の項目追加はこの配列へ集約する。 */
 export const mobileMenuGroups: NavItem[][] = [
 	[blog, news],
-	[diary, cards, radio, emoji],
+	[...seasonal, diary, cards, radio, emoji],
 	[settings],
 ];
 export const mobileMenuItems: NavItem[] = mobileMenuGroups.flat();
-/** カード未プレイ・未ドロー・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
+/** カード未プレイ・未ドロー・年表更新・アドカレのいずれかで、スマホのメニューに1つの点を出す。 */
 export const mobileMenuNotice = derived(
-	[unplayedToday, cardUndrawn, chronicleUnread],
+	[unplayedToday, cardUndrawn, chronicleUnread, adventUnread],
 	(counts) => (counts.some((count) => count > 0) ? 1 : 0),
 );
 /** `/feed`（未サインインのフィード）と旧フィード URL（`/global` `/affirmation` は互換ルート）もフィード扱い。 */

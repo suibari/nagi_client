@@ -18,6 +18,28 @@
 	/* コンボは追い風と別の色で示す。追い風が定常なのに対し、コンボは見つけもの。 */
 	--zenkatsu-game-gold: #f5cf83;
 	--zenkatsu-game-gold-soft: #3a2f18;
+	/* アドベントカレンダーも夜のツリーとして、サイトのテーマに関わらず同じ色で描く。
+	   カードの PNG（api/advent-card.tsx の ADVENT_COLOR）と同じ値にそろえる。 */
+	--advent-night: #0c1a2b;
+	--advent-night-deep: #07111d;
+	--advent-pine: #1f5a43;
+	--advent-pine-dark: #143d2e;
+	--advent-pine-light: #2c7656;
+	--advent-gold: #f3c96b;
+	--advent-gold-soft: #f7e2ad;
+	--advent-red: #d8434b;
+	--advent-red-dark: #9e2a31;
+	--advent-cream: #fff7e8;
+	--advent-cream-muted: #d8cfbf;
+	--advent-card-bg: #102a21;
+	--advent-card-bg-2: #1b4535;
+	--advent-snow: rgba(255, 255, 255, 0.75);
+	--advent-light: #ffe7a3;
+	--advent-envelope: #f4e6cf;
+	--advent-envelope-shade: #e3cfae;
+	--advent-shadow: rgba(0, 0, 0, 0.35);
+	--advent-glow: rgba(243, 201, 107, 0.45);
+	--advent-veil: rgba(4, 10, 18, 0.82);
 	color-scheme: light;
 
 	/* supplied palette */
