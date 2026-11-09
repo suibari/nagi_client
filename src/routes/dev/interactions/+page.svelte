@@ -50,6 +50,22 @@
 		'その右側には言語アイコン付きの「原文を表示」が並び、どちらも個別に操作できます。',
 		'翻訳結果はこのページ内で直接渡しており、翻訳APIへの通信は発生しません。',
 	].join('\n');
+	const diaryLines = [
+		'朝から雨で、窓の音を聞いていた。',
+		'読みかけの本を最後まで読んだ。',
+		'早めに寝る。',
+	];
+	const diaryPost = {
+		...post(20_002, diaryLines.join('\n')),
+		uri: `at://${actor.did}/com.suibari.trilinesat.diary/20002`,
+		langs: ['ja'],
+		trilines: { lines: diaryLines.map((text) => ({ text })) },
+	};
+	const diaryTranslatedText = [
+		'It rained from the morning, and I listened to it on the window.',
+		'I finished the book I had been reading.',
+		'Going to bed early.',
+	].join('\n');
 	let replyItem = $state<FeedItem>();
 	let replyPreview = $state<HTMLElement>();
 	let previewTimers: ReturnType<typeof setTimeout>[] = [];
@@ -161,6 +177,10 @@
 			<div>
 				<h3>翻訳・本文省略</h3>
 				<ChatBubble post={translatedPost} {translatedText} displayOnly clampLines={3} />
+			</div>
+			<div>
+				<h3>3行日記の翻訳</h3>
+				<ChatBubble post={diaryPost} translatedText={diaryTranslatedText} displayOnly />
 			</div>
 		</div>
 	</section>

@@ -833,7 +833,7 @@
 						active={moderationDisplay.warn}
 						bind:revealed={contentRevealed}
 						title={moderationWarningText}
-			reasons={moderationReasons}
+						reasons={moderationReasons}
 					>
 						<img
 							class="post-header-image"
@@ -983,7 +983,12 @@
 			{:else if !managementOnly && post.deleted}
 				<PostUnavailableNotice reason={post.unavailableReason} authorDid={post.author.did} />
 			{:else if !managementOnly && trilines}
-				<TrilinesCard post={trilines} clampTall={clampTallImages} />
+				<TrilinesCard
+					post={trilines}
+					clampTall={clampTallImages}
+					disabled={optimistic}
+					{translatedText}
+				/>
 			{:else if !managementOnly}
 				{#snippet collapseToggle()}
 					{#if collapsible && (overflowing || expanded)}<button
