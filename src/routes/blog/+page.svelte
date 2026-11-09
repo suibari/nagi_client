@@ -10,6 +10,8 @@
 	import BlogCard from '$lib/components/BlogCard.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { fetchBlogDirectory, type BlogDirectoryItem } from '$lib/blog/directory';
+	import { fetchCachedBlogTranslations } from '$lib/blog/directoryTranslations';
+	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
@@ -40,6 +42,36 @@
 				)
 			: mergedItems,
 	);
+
+	// カードの自動翻訳。キャッシュ済みの訳だけを引く（理由は fetchCachedBlogTranslations）。
+	// 記事の言語は一覧に載らないので、原文と同じ言語の訳はそもそもキャッシュに無いことに任せる。
+	let translationTarget = $derived(languagePreferences.translationLanguage);
+	// 再読込で同じ並びが返ってきたときに引き直さないよう、URI の並びを文字列で持つ。
+	let translatableUris = $derived(
+		languagePreferences.autoTranslate
+			? items
+					.filter((item) => !item.optimisticState)
+					.map((item) => item.uri)
+					.join('\n')
+			: '',
+	);
+	let translations = $state<{ target: string; texts: Map<string, string> }>();
+	$effect(() => {
+		const uris = translatableUris ? translatableUris.split('\n') : [];
+		const target = translationTarget;
+		if (!uris.length) return;
+		const controller = new AbortController();
+		fetchCachedBlogTranslations(uris, target, controller.signal)
+			.then((texts) => {
+				if (!controller.signal.aborted) translations = { target, texts };
+			})
+			.catch(() => undefined);
+		return () => controller.abort();
+	});
+	const translationOf = (item: BlogDirectoryItem) =>
+		languagePreferences.autoTranslate && translations?.target === translationTarget
+			? translations.texts.get(item.uri)
+			: undefined;
 
 	async function load(refresh = false) {
 		loading = !mergedItems.length;
@@ -106,7 +138,7 @@
 	{:else}
 		<div class="blog-list">
 			{#each visibleItems as item (item.optimisticKey ?? item.uri)}
-				<BlogCard {item} />
+				<BlogCard {item} translatedText={translationOf(item)} translatedLang={translationTarget} />
 			{/each}
 		</div>
 	{/if}
