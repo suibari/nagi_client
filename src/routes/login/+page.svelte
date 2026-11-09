@@ -92,7 +92,7 @@
 			href="/privacy">{m.privacyLink()}</a
 		>{m.loginAgreeAfter()}
 	</p>
-	<a href="/">{m.loginBrowse()}</a>
+	<a href="/feed">{m.loginBrowse()}</a>
 </section>
 
 <style>

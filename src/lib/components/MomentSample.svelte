@@ -8,9 +8,13 @@
 	 * 入力中 → 返信 → 絵文字のスタンプ）で一度だけ再生する。順番は CSS の animation-delay で作り、
 	 * ここでは見えた時点で一時停止を解くだけにする。演出を切っている人や JS が動かない環境では、
 	 * 最後の状態が静止して見える。
+	 *
+	 * 再生のあとは絵文字を押せる。押すと本物と同じでか絵文字＋花火が出るが、見た目だけで
+	 * どこにも記録しない（DemoReactionButton）。
 	 */
 	import { sampleMoment } from '$lib/about/samples';
 	import Icon from '$lib/components/shell/Icon.svelte';
+	import DemoReactionButton from '$lib/components/DemoReactionButton.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 
 	let figure: HTMLElement;
@@ -55,7 +59,7 @@
 			<ul class="moment-reactions" aria-label={m.aboutMomentEmojiTitle()}>
 				{#each moment.reactions as emoji, i (emoji)}
 					<li style:--moment-reaction-index={i}>
-						{emoji}
+						<DemoReactionButton {emoji} />
 						<span class="moment-stamp" aria-hidden="true">
 							<span class="moment-sparks">
 								{#each sparks as spark (spark.angle)}

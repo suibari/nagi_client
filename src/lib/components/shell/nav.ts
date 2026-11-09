@@ -27,8 +27,15 @@ export type NavItem = {
 };
 /** 未読バッジの表示テキスト。3桁以上は "99+" に丸める。 */
 export const formatUnread = (count: number) => (count > 99 ? '99+' : String(count));
-// TOP（`/`）がフィード。my Nagi は廃止した。
+// サインイン済みは TOP（`/`）がフィード。未サインインの TOP はランディングなので、
+// フィードの項目は navHref で `/feed` に差し替える。my Nagi は廃止した。
 const feed: NavItem = { href: '/', label: m.navFeed, icon: 'home' };
+
+/** フィードの置き場所。未サインインの `/` はランディング。 */
+export const feedPath = (signedIn: boolean) => (signedIn ? '/' : '/feed');
+/** ナビ項目の実際のリンク先。フィードだけがサインイン状態で変わる。 */
+export const navHref = (href: string, signedIn: boolean) =>
+	href === '/' ? feedPath(signedIn) : href;
 const notifications: NavItem = {
 	href: '/notifications',
 	label: m.navNotifications,
@@ -88,13 +95,14 @@ export const mobileMenuNotice = derived(
 	[unplayedToday, cardUndrawn, radioUnread, chronicleUnread],
 	(counts) => (counts.some((count) => count > 0) ? 1 : 0),
 );
-/** 旧フィード URL（`/feed` はリダイレクト、`/global` `/affirmation` は互換ルート）もフィード扱い。 */
+/** `/feed`（未サインインのフィード）と旧フィード URL（`/global` `/affirmation` は互換ルート）もフィード扱い。 */
 const FEED_PATHS = ['/feed', '/global', '/affirmation'];
 /**
  * フィード（`/`）は完全一致か旧フィード URL のときだけ。前方一致にすると全ページで active になってしまう。
  */
 export const isActive = (pathname: string, href: string) => {
-	if (href === '/') return pathname === '/' || FEED_PATHS.some((path) => pathname.startsWith(path));
+	if (href === '/' || href === '/feed')
+		return pathname === '/' || FEED_PATHS.some((path) => pathname.startsWith(path));
 	return pathname === href || pathname.startsWith(`${href}/`);
 };
 

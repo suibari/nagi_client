@@ -41,9 +41,9 @@ describe.skipIf(!built)('prerendered output', () => {
 	it('serves the homepage with real copy, not a spinner', () => {
 		const html = read('index.html');
 		expect(robotsOf(html)).toBe('index,follow');
-		// ゲートの中に戻すと、ここがスピナーだけになる。
+		// 未サインインの TOP はランディング。セッション待ちのゲートに入れると、ここがスピナーだけになる。
 		expect(bodyText(html).length).toBeGreaterThan(120);
-		expect(html).toContain('class="hero"');
+		expect(html).toContain('class="landing-hero"');
 	});
 
 	it.each(['/about', '/terms', '/privacy'])(
