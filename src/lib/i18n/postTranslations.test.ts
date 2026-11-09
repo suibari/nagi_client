@@ -56,6 +56,12 @@ describe('translation candidates', () => {
 		expect(isTranslationCandidate(post(uri, ['ja']), 'ja')).toBe(false);
 	});
 
+	it('translates TriLinesAt diaries', () => {
+		const uri = 'at://did:plc:alice/com.suibari.trilinesat.diary/3mdiary';
+		expect(isTranslationCandidate(post(uri, ['ja']), 'en')).toBe(true);
+		expect(isTranslationCandidate(post(uri, ['ja']), 'ja')).toBe(false);
+	});
+
 	it('does not send other record types to the translation API', () => {
 		expect(
 			isTranslationCandidate(post('at://did:plc:alice/com.suibari.nagi.cardGet/3m', ['ja']), 'en'),
@@ -63,6 +69,12 @@ describe('translation candidates', () => {
 		expect(
 			isTranslationCandidate(
 				post('at://did:plc:alice/site.standard.publication/self', ['ja']),
+				'en',
+			),
+		).toBe(false);
+		expect(
+			isTranslationCandidate(
+				post('at://did:plc:alice/com.suibari.trilinesat.like/3m', ['ja']),
 				'en',
 			),
 		).toBe(false);
