@@ -4623,6 +4623,11 @@ button.settings-category {
 		display: none;
 	}
 }
+@container landing (max-width: 679px) {
+	.about-bubble.is-wide {
+		display: none;
+	}
+}
 @keyframes about-bubble-rise {
 	from {
 		opacity: 0;
@@ -6298,36 +6303,6 @@ a.about-feature:focus-visible {
 	justify-self: center;
 }
 
-/* 締め：もう一度の参加導線。 */
-.landing-final {
-	display: grid;
-	justify-items: center;
-	gap: 12px;
-	padding: 40px 24px 48px;
-	text-align: center;
-	background: var(--accent-softer);
-	border-radius: 20px;
-}
-.landing-final h2 {
-	margin: 0;
-	font-size: clamp(1.3rem, 3.2cqi, 1.65rem);
-	color: var(--text-strong);
-}
-.landing-final p {
-	margin: 0;
-	color: var(--text-muted);
-	overflow-wrap: anywhere;
-}
-.landing-final .landing-cta {
-	margin-block-start: 8px;
-}
-/* 元絵 264px の 1/3。ドット絵は整数分の1で縮めないと線がにじむ。 */
-.landing-final-bot {
-	display: block;
-	inline-size: 88px;
-	block-size: auto;
-	image-rendering: pixelated;
-}
 .landing-footer {
 	margin-block-start: -64px;
 	padding-block-end: 16px;

@@ -8,13 +8,14 @@
 		sampleNameCard,
 	} from '$lib/about/samples';
 	import BusinessCard from '$lib/components/BusinessCard.svelte';
+	import Bubbles, { type Bubble } from '$lib/components/Bubbles.svelte';
+	import JoinFinale from '$lib/components/JoinFinale.svelte';
 	import ChronicleTimeline from '$lib/components/ChronicleTimeline.svelte';
 	import DiaryMoodChart from '$lib/components/DiaryMoodChart.svelte';
 	import MomentSample from '$lib/components/MomentSample.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session } from '$lib/oauth/session.svelte';
-	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 
 	// m.* はロケールを読むアクセサ。文字列に展開せず関数のまま持ち、
@@ -206,19 +207,7 @@
 		if (moodSample) moodSelected = moodSample.selected;
 	});
 
-	/**
-	 * 水面から上がってくる泡。位置は面に対する割合で、文字の上にかからない場所に置く。
-	 * ヒーローは右のイラストの周りと列の間、締めは中央のbotたんの左右。
-	 */
-	// wide は2列のときだけ出す泡。1列に積むと文字の裏に入ってしまう位置のもの。
-	type Bubble = {
-		size: number;
-		ring?: boolean;
-		wide?: boolean;
-		x: string;
-		y: string;
-		side: 'start' | 'end';
-	};
+	// 水面から上がってくる泡。ヒーローは右のイラストの周りと列の間に置く。
 	const heroBubbles: Bubble[] = [
 		{ size: 56, x: '5%', y: '10%', side: 'end' },
 		{ size: 14, ring: true, wide: true, x: '9%', y: '78%', side: 'end' },
@@ -226,74 +215,16 @@
 		{ size: 20, ring: true, x: '38%', y: '14%', side: 'end' },
 		{ size: 12, wide: true, x: '44%', y: '86%', side: 'start' },
 	];
-	const finalBubbles: Bubble[] = [
-		{ size: 40, wide: true, x: '12%', y: '58%', side: 'start' },
-		{ size: 16, ring: true, x: '22%', y: '22%', side: 'start' },
-		{ size: 28, x: '14%', y: '30%', side: 'end' },
-		{ size: 12, ring: true, x: '24%', y: '70%', side: 'end' },
-	];
-
 	// 参加導線はサインイン前にだけ意味がある。$oauthReady を待つのは、
 	// 復元中に一瞬 CTA が出て消えるのを避けるため。
 	const showJoin = $derived($oauthReady && !$session);
-
-	/**
-	 * 締めの「Nagiをはじめる」に botたんが反応する。愛着を持ってもらう最初の一歩として、
-	 * ボタンに触れると喜び、押すと一度跳ねてから登録へ進む。待たせすぎると「もたついた」に
-	 * なるので遷移は 0.5 秒だけ遅らせ、新しいタブで開く操作と演出を切っている人はすぐ進める。
-	 */
-	const JOIN_HOP_MS = 500;
-	let botHappy = $state(false);
-	let botHopping = $state(false);
-	let joinTimer: ReturnType<typeof setTimeout> | undefined;
-	function onJoinClick(event: MouseEvent) {
-		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-			return;
-		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-		event.preventDefault();
-		const href = (event.currentTarget as HTMLAnchorElement).href;
-		botHappy = true;
-		botHopping = true;
-		clearTimeout(joinTimer);
-		joinTimer = setTimeout(() => goto(href), JOIN_HOP_MS);
-	}
-	function onJoinLeave() {
-		if (!botHopping) botHappy = false;
-	}
-	// ブラウザの「戻る」でキャッシュから戻ったときは、座った姿からやり直す。
-	function onPageShow(event: PageTransitionEvent) {
-		if (!event.persisted) return;
-		clearTimeout(joinTimer);
-		botHappy = false;
-		botHopping = false;
-	}
-	onMount(() => () => clearTimeout(joinTimer));
 </script>
-
-{#snippet bubbles(list: Bubble[])}
-	<div class="about-bubbles" aria-hidden="true">
-		{#each list as bubble, i (i)}
-			<span
-				class="about-bubble"
-				class:is-ring={bubble.ring}
-				class:is-wide={bubble.wide}
-				style:--bubble-size={`${bubble.size}px`}
-				style:--bubble-index={i}
-				style:inset-inline-start={bubble.side === 'start' ? bubble.x : undefined}
-				style:inset-inline-end={bubble.side === 'end' ? bubble.x : undefined}
-				style:inset-block-start={bubble.y}
-			></span>
-		{/each}
-	</div>
-{/snippet}
 
 <!--
 	構成は「ヒーロー → 理由 → ひととき → 見本（サンプル付き） → 機能一覧 → はじめかた → AT Protocol → 締め」。
 	枠（罫線で囲んだカード）はほぼ使わない。まとまりは余白と見出しで作り、色は面ではなく
 	アイコンと小見出しに置く。囲むのは「画面の見本」を本文と見分けるためのサンプルだけ。
 -->
-<svelte:window onpageshow={onPageShow} />
-
 <div class="about-page">
 	<!-- 未サインインで来る導線（ホームの「Nagiのことを知る」）があるので、
 	     戻り先はログイン状態で出し分ける。 -->
@@ -304,7 +235,7 @@
 	{/if}
 
 	<section class="about-hero">
-		{@render bubbles(heroBubbles)}
+		<Bubbles list={heroBubbles} />
 		<div class="about-hero-copy">
 			<p class="about-eyebrow">{m.aboutHeroEyebrow()}</p>
 			<h1>{m.aboutHeroTitle()}</h1>
@@ -499,30 +430,7 @@
 	</section>
 
 	{#if showJoin}
-		<section class="about-final">
-			{@render bubbles(finalBubbles)}
-			<!-- 2枚とも読み込んでおき、重ねて切り替える。喜ぶ瞬間に画像の読み込みを待たせない。 -->
-			<div class="about-final-bot" class:is-happy={botHappy} class:is-hopping={botHopping}>
-				<img src="/bot_assist_sitting.png" alt={m.heroSampleBotName()} width="264" height="350" />
-				<img src="/bot_assist_petted.png" alt="" width="264" height="350" aria-hidden="true" />
-			</div>
-			<h2>{m.aboutFinalHeading()}</h2>
-			<p>{m.aboutFinalBody()}</p>
-			<p>{m.loginSignupBody()}</p>
-			<div class="about-cta">
-				<Button
-					variant="primary"
-					size="lg"
-					href="/login#signup"
-					onclick={onJoinClick}
-					onmouseenter={() => (botHappy = true)}
-					onmouseleave={onJoinLeave}
-					onfocus={() => (botHappy = true)}
-					onblur={onJoinLeave}>{m.loginSignupSubmit()}</Button
-				>
-				<a class="about-text-link" href="/login">{m.loginSubmit()}</a>
-			</div>
-		</section>
+		<JoinFinale />
 	{/if}
 
 	<footer class="about-footer">

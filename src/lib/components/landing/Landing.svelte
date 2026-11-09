@@ -21,6 +21,7 @@
 	import LandingLivePosts from './LandingLivePosts.svelte';
 	import LandingReactionSample from './LandingReactionSample.svelte';
 	import LandingCycle from './LandingCycle.svelte';
+	import JoinFinale from '$lib/components/JoinFinale.svelte';
 	import { sampleMoods } from '$lib/about/samples';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { onMount } from 'svelte';
@@ -162,22 +163,7 @@
 		<a class="about-text-link landing-more" href="/feed">{m.landingLiveMore()} →</a>
 	</section>
 
-	<section class="landing-final">
-		<img
-			class="landing-final-bot"
-			src="/bot_assist_sitting.png"
-			alt={m.heroSampleBotName()}
-			width="264"
-			height="350"
-			loading="lazy"
-		/>
-		<h2>{m.aboutFinalHeading()}</h2>
-		<p>{m.aboutFinalBody()}</p>
-		<div class="landing-cta">
-			<Button variant="primary" size="lg" href="/login#signup">{m.aboutHeroCta()}</Button>
-			<a class="about-text-link" href="/about">{m.welcomeAboutLink()} →</a>
-		</div>
-	</section>
+	<JoinFinale secondary={{ href: '/about', label: m.welcomeAboutLink }} />
 
 	<footer class="landing-footer">
 		<div class="legal-links">

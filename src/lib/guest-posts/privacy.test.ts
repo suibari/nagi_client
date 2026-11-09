@@ -31,6 +31,11 @@ const landing = readFileSync(
 	new URL('../components/landing/Landing.svelte', import.meta.url),
 	'utf8',
 );
+const joinFinale = readFileSync(
+	new URL('../components/JoinFinale.svelte', import.meta.url),
+	'utf8',
+);
+const aboutPage = readFileSync(new URL('../../routes/about/+page.svelte', import.meta.url), 'utf8');
 const loginPage = readFileSync(new URL('../../routes/login/+page.svelte', import.meta.url), 'utf8');
 const guestHero = readFileSync(new URL('../components/GuestHero.svelte', import.meta.url), 'utf8');
 const blogList = readFileSync(new URL('../../routes/blog/+page.svelte', import.meta.url), 'utf8');
@@ -125,11 +130,12 @@ describe('guest post privacy boundary', () => {
 	});
 
 	it('puts join links at the top and bottom of the landing', () => {
-		const joins = landing.match(/href="\/login#signup">\{m\.aboutHeroCta\(\)\}/g) ?? [];
-		expect(joins).toHaveLength(2);
-		expect(landing.indexOf('class="landing-hero"')).toBeLessThan(
-			landing.indexOf('class="landing-final"'),
-		);
+		expect(landing).toContain('href="/login#signup">{m.aboutHeroCta()}</Button>');
+		// 末尾は /about と同じ参加の締めを使う。
+		expect(landing).toContain('<JoinFinale ');
+		expect(joinFinale).toContain('href="/login#signup"');
+		expect(aboutPage).toContain('<JoinFinale />');
+		expect(landing.indexOf('class="landing-hero"')).toBeLessThan(landing.indexOf('<JoinFinale'));
 		expect(landing).toContain('href="/feed"');
 	});
 
