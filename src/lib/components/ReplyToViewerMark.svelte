@@ -16,8 +16,8 @@
 	.reply-to-viewer {
 		display: flex;
 		align-items: center;
-		gap: 3px;
-		margin: 0 0 3px;
+		gap: 4px;
+		margin: 0 0 4px;
 		/* 吹き出しの左端に揃える: アバター(40px) + 間隔(12px) + 少し内側へ。 */
 		padding-inline-start: 54px;
 		color: var(--accent-strong);

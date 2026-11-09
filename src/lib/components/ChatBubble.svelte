@@ -1221,8 +1221,8 @@
 	.post-sending {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		margin-top: 0.45rem;
+		gap: 8px;
+		margin-top: 8px;
 		color: var(--text-muted);
 		font-size: 0.8125rem;
 	}
@@ -1243,10 +1243,10 @@
 		font-size: 11px;
 	}
 	.inline-edit {
-		margin-top: 0.35rem;
+		margin-top: 4px;
 	}
 	.cw-restricted-note {
-		margin: 7px 0 0;
+		margin: 8px 0 0;
 		color: var(--text-muted);
 		font-size: 0.75rem;
 	}
