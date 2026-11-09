@@ -229,8 +229,9 @@
 		align-items: center;
 		gap: 4px;
 		width: fit-content;
-		margin: 2px auto;
-		padding: 3px 12px;
+		/* 畳んだボタンは返信の吹き出しの代わりに立つので、上の間隔は .thread-reply の分だけにする。 */
+		margin: 0 auto;
+		padding: 4px 12px;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-pill);
 		background: var(--bg-inset);
@@ -241,6 +242,11 @@
 		transition:
 			background-color 0.15s ease,
 			color 0.15s ease;
+	}
+
+	/* 展開後は吹き出しの下に付くので、吹き出し同士と同じ 8px だけ離す。 */
+	.thread-reply-toggle-btn.expanded {
+		margin-top: 8px;
 	}
 
 	.thread-reply-toggle-btn:hover {

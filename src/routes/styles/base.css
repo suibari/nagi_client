@@ -210,7 +210,7 @@ img.mark {
 	background: var(--surface-1);
 	border: 1px solid var(--line);
 	border-radius: var(--r-md);
-	padding: 30px;
+	padding: 32px;
 	color: var(--text-muted);
 	box-shadow: none;
 }
