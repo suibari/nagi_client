@@ -3,7 +3,6 @@ import { m } from '$lib/i18n/i18n.svelte';
 import { unreadCount } from '$lib/notifications/unread.svelte';
 import { unplayedToday } from '$lib/zenkatsu/notice';
 import { chronicleUnread } from '$lib/chronicle/notice';
-import { radioUnread } from '$lib/radio/radio.svelte';
 import { cardUndrawn } from '$lib/cards/draw-notice.svelte';
 
 /**
@@ -60,7 +59,6 @@ const radio: NavItem = {
 	href: '/radio',
 	label: m.navRadio,
 	icon: 'music',
-	badge: { unread: radioUnread, style: 'dot', aria: () => m.radioUnreadBadgeAria() },
 };
 const emoji: NavItem = { href: '/emoji', label: m.emojiSettingsTitle, icon: 'emoji' };
 const settings: NavItem = { href: '/settings', label: m.navSettings, icon: 'settings' };
@@ -83,9 +81,9 @@ export const mobileMenuGroups: NavItem[][] = [
 	[settings],
 ];
 export const mobileMenuItems: NavItem[] = mobileMenuGroups.flat();
-/** カード未プレイ・未ドロー・ラジオ未読・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
+/** カード未プレイ・未ドロー・年表更新のいずれかで、スマホのメニューに1つの点を出す。 */
 export const mobileMenuNotice = derived(
-	[unplayedToday, cardUndrawn, radioUnread, chronicleUnread],
+	[unplayedToday, cardUndrawn, chronicleUnread],
 	(counts) => (counts.some((count) => count > 0) ? 1 : 0),
 );
 /** 旧フィード URL（`/feed` はリダイレクト、`/global` `/affirmation` は互換ルート）もフィード扱い。 */
