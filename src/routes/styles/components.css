@@ -6341,13 +6341,14 @@ a.about-feature:focus-visible {
 	}
 }
 
-/* 循環の輪：書く → つながる → 振り返る → また書く。点は下の各柱へのリンク。 */
+/* 循環の輪：書く → つながる → 振り返る → また書く。点は下の各柱へのリンク。
+   普段は無彩色。カーソルを当てた点と、そこから次へ向かう矢印だけがじわっと色づく。 */
 .landing-cycle {
+	--cycle-ease: 0.45s ease;
 	position: relative;
 	inline-size: min(320px, 100%);
 	aspect-ratio: 1;
 	justify-self: center;
-	color: var(--accent-strong);
 }
 /* 輪の矢印だけを全面に広げる。点や中央のアイコンの svg には効かせない。 */
 .landing-cycle > svg {
@@ -6358,11 +6359,26 @@ a.about-feature:focus-visible {
 	overflow: visible;
 }
 .landing-cycle-arc {
+	color: var(--line-strong);
+	transition: color var(--cycle-ease);
+}
+.landing-cycle-arc path {
 	fill: none;
-	stroke: var(--accent-border);
+	stroke: currentColor;
 	stroke-width: 2;
 	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.landing-cycle-arc path:first-child {
 	stroke-dasharray: 2 6;
+	transition: stroke-dashoffset 1.2s linear;
+}
+.landing-cycle-arc.is-active {
+	color: var(--accent);
+}
+/* 灯った矢印は点線が進む向きへ少し流れて、次へ向かうことを示す。 */
+.landing-cycle-arc.is-active path:first-child {
+	stroke-dashoffset: -24;
 }
 .landing-cycle-steps {
 	margin: 0;
@@ -6377,7 +6393,8 @@ a.about-feature:focus-visible {
 	display: grid;
 	justify-items: center;
 	gap: 6px;
-	color: var(--text-strong);
+	color: var(--text-muted);
+	transition: color var(--cycle-ease);
 }
 .landing-cycle-dot {
 	display: grid;
@@ -6385,15 +6402,15 @@ a.about-feature:focus-visible {
 	inline-size: 64px;
 	block-size: 64px;
 	border-radius: 50%;
-	color: var(--accent-strong);
+	color: var(--text-faint);
 	background: var(--surface-1);
-	border: 2px solid var(--accent-border);
-	box-shadow: 0 8px 20px -12px rgb(0 40 50 / 0.35);
-	transition: transform 0.15s ease;
-}
-.landing-cycle-steps a:hover .landing-cycle-dot {
-	transform: scale(1.06);
-	border-color: var(--accent);
+	border: 2px solid var(--line);
+	transition:
+		color var(--cycle-ease),
+		background-color var(--cycle-ease),
+		border-color var(--cycle-ease),
+		box-shadow var(--cycle-ease),
+		transform var(--cycle-ease);
 }
 .landing-cycle-label {
 	display: flex;
@@ -6403,7 +6420,34 @@ a.about-feature:focus-visible {
 	font-weight: 700;
 	white-space: nowrap;
 }
-.landing-cycle-label > span,
+.landing-cycle-label > span {
+	display: inline-grid;
+	place-items: center;
+	inline-size: 20px;
+	block-size: 20px;
+	border-radius: 50%;
+	font-size: 0.72rem;
+	font-weight: 700;
+	color: var(--text-muted);
+	background: var(--surface-3);
+	transition:
+		color var(--cycle-ease),
+		background-color var(--cycle-ease);
+}
+.landing-cycle-steps li.is-active a {
+	color: var(--text-strong);
+}
+.landing-cycle-steps li.is-active .landing-cycle-dot {
+	color: var(--accent-strong);
+	background: var(--accent-softer);
+	border-color: var(--accent-border);
+	box-shadow: 0 0 0 6px var(--accent-weak);
+	transform: scale(1.06);
+}
+.landing-cycle-steps li.is-active .landing-cycle-label > span {
+	color: var(--text-on-accent);
+	background: var(--accent);
+}
 .landing-pillar-num {
 	display: inline-grid;
 	place-items: center;
@@ -6427,7 +6471,16 @@ a.about-feature:focus-visible {
 	font-size: 0.85rem;
 	font-weight: 600;
 	text-align: center;
+	color: var(--text-muted);
+	transition: color var(--cycle-ease);
+}
+.landing-cycle-center.is-active {
 	color: var(--accent-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+	.landing-cycle * {
+		transition: none !important;
+	}
 }
 /* 3本目のあとに置き、1へ戻る導線で輪を閉じる。 */
 .landing-cycle-again {
