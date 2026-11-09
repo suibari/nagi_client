@@ -5861,12 +5861,15 @@ a.about-feature:focus-visible {
 .feed-tab-preview-tab {
 	position: relative;
 	flex: 1;
+	min-width: 0;
 	padding: 10px 8px 12px;
 	border: 0;
 	background: transparent;
 	color: var(--text-muted);
 	font-size: 14px;
 	font-weight: 700;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 .feed-tabs.scrollable .feed-tab-preview-tab {
