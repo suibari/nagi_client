@@ -7,6 +7,7 @@
 		kind = 'text',
 		active = true,
 		title,
+		reasons = [],
 		showIcon = true,
 		interactive = true,
 		children,
@@ -15,6 +16,8 @@
 		kind?: 'text' | 'image' | 'content';
 		active?: boolean;
 		title?: string;
+		/** 見出しの下に1行ずつ出す理由（自動モデレーションの判定理由など）。 */
+		reasons?: readonly string[];
 		showIcon?: boolean;
 		interactive?: boolean;
 		children: Snippet;
@@ -69,6 +72,11 @@
 				</svg>
 				<span class="cw-title">{title ?? m.contentWarningMenuTitle()}</span>
 			</span>
+			{#if reasons.length}
+				<span class="cw-reasons">
+					{#each reasons as reason (reason)}<span class="cw-reason">{reason}</span>{/each}
+				</span>
+			{/if}
 			<span class="cw-icon" class:ja={i18n.locale === 'ja'} class:en={i18n.locale !== 'ja'}></span>
 			{#if interactive}<span class="cw-help">{m.moderationRevealHelp()}</span>{/if}
 		</span>
@@ -178,6 +186,16 @@
 		font-size: 0.875rem;
 		font-weight: 700;
 		line-height: 1.3;
+	}
+	/* 理由は文の途中で折り返さないよう1行ずつ置く。狭い幅で読みにくくなるため。 */
+	.cw-reasons {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.1rem;
+		margin-top: -0.2rem;
+		font-size: 0.8125rem;
+		line-height: 1.35;
 	}
 	.cw-help {
 		font-size: 0.75rem;
