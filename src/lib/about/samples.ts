@@ -141,7 +141,8 @@ const HIGHLIGHT_POSTS: Array<{ time: string; valence: number; text: Text }> = [
 		},
 	},
 	{
-		time: '23:30',
+		// 1日の区切り（22時）より前に置く。後ろだと翌日扱いになり、横バーの端で点が切れる。
+		time: '21:40',
 		valence: 2,
 		text: {
 			ja: 'きょうはいい日だったことにする。おやすみ',
@@ -227,5 +228,29 @@ export function sampleMoment(locale: Locale): SampleMoment {
 			locale,
 		),
 		reactions: ['🌇', '🫶', '✨'],
+	};
+}
+
+export type SampleReactionPost = {
+	displayName: string;
+	avatar: string;
+	post: string;
+	/** 押して試せる絵文字。数は出さない。 */
+	reactions: string[];
+};
+
+/** ランディングの「ゆるくつながる」で、絵文字を押して試してもらう投稿（架空のユーザー）。 */
+export function sampleReactionPost(locale: Locale): SampleReactionPost {
+	return {
+		displayName: pick(NAME, locale),
+		avatar: '/nagi_icon_trans.png',
+		post: pick(
+			{
+				ja: '朝いちばんにパンを焼いてみた。思ったよりふっくらできて、ちょっとうれしい。',
+				en: 'Baked bread first thing this morning. It came out fluffier than I expected — a little happy about it.',
+			},
+			locale,
+		),
+		reactions: ['🍞', '🫶', '✨', '🌱'],
 	};
 }

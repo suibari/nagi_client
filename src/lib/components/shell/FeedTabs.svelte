@@ -6,6 +6,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import Icon from './Icon.svelte';
+	import { feedPath } from './nav';
 
 	/**
 	 * フィードのタブバー。並び・出し入れ・追加はユーザー設定（$lib/feed-tabs）で決まる。
@@ -28,7 +29,9 @@
 
 	// ホームは本人のリストなので、未ログインではサインインへ送る（従来どおり）。
 	const href = (tab: FeedTab) =>
-		tab.kind === 'list' && !$session ? '/login' : `/?tab=${encodeURIComponent(tab.id)}`;
+		tab.kind === 'list' && !$session
+			? '/login'
+			: `${feedPath(Boolean($session))}?tab=${encodeURIComponent(tab.id)}`;
 
 	// 4本以上でスクロールに切り替える。3本以下は今までどおり等分幅のまま。
 	const scrollable = $derived(tabs.length > 3);

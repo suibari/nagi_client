@@ -5,9 +5,9 @@ export const prerender = true;
 
 export const load = (): { seo: PageSeo } => ({
 	seo: {
-		title: 'Nagi（ナギ）— 気持ちを残し、ゆるくつながるSNS',
+		title: 'Nagi（ナギ）— 気持ちを残し、振り返れる。安心してつながるSNS',
 		description:
-			'Nagi（ナギ）は、全肯定botたんが言葉を受け止める、AT Protocol上の全肯定SNSです。いいねやフォローを気にせず、自由に気持ちを投稿できます。',
+			'Nagi（ナギ）は、いいねの数もフォロワー数もないAT Protocol上のSNSです。書いた気持ちは全肯定botたんが受け止め、日記と感情グラフになって残ります。',
 		canonical: absolute('/'),
 	},
 });

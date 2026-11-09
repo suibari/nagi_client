@@ -9,6 +9,7 @@
 		MOOD_DEFAULT_ZOOM,
 		MOOD_ZOOM_LEVELS,
 		moodClockFromPage,
+		moodPostAnchorId,
 		replaceMood,
 		summarizeMoodDays,
 		type MoodClock,
@@ -27,6 +28,10 @@
 	 * そのときは横幅いっぱいに収めて（ズームなし）、日ごとの投稿一覧は親の詳細欄に任せる。
 	 * 埋め込みでは、ステータス行がその日の見出しを兼ね、直下に1日の気分の横バーを出す。
 	 * 何も選んでいないときは fallbackDate（親が詳細欄に出している日）を見出しにする。
+	 *
+	 * 単独表示（/about・ランディングのサンプル）でも、ステータス行の下に同じ横バーを出し、
+	 * その下にその日の投稿の縦タイムラインを置く（実際の画面と同じ並び）。
+	 * 横バーの点を押すと、縦タイムラインの該当の行へ移る。
 	 */
 	let {
 		did,
@@ -290,6 +295,22 @@
 		selected = selected === date ? undefined : date;
 	}
 
+	/** 単独表示で横バーの点を押したとき。その日を選び、縦タイムラインの行へ移って光らせる。 */
+	async function jumpToRow(point: DiaryMoodView) {
+		selected = point.date;
+		hovered = undefined;
+		await tick();
+		const row = document.getElementById(moodPostAnchorId(point.uri));
+		if (!row) return;
+		const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+		row.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+		row.focus({ preventScroll: true });
+		row.removeAttribute('data-flash');
+		void row.offsetWidth;
+		row.setAttribute('data-flash', '');
+		row.addEventListener('animationend', () => row.removeAttribute('data-flash'), { once: true });
+	}
+
 	const longDate = (date: string) =>
 		new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale(), {
 			year: 'numeric',
@@ -485,9 +506,14 @@
 				{m.moodEmpty()}
 			{/if}
 		</p>
-		{#if embedded && focusDay && !loading}
+		{#if focusDay && !loading}
 			<div data-mood-keep>
-				<MoodDayBar date={focusDay} day={focusSummary} {clock} {onjump} />
+				<MoodDayBar
+					date={focusDay}
+					day={focusSummary}
+					{clock}
+					onjump={embedded ? onjump : jumpToRow}
+				/>
 			</div>
 		{/if}
 		{#if pending > 0}

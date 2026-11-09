@@ -11,7 +11,7 @@ export type StoredModerationPreferences = ModerationPreferenceValues & { updated
 
 const LEGACY_STORAGE_KEY = 'nagi:moderation-preferences:v1';
 const STORAGE_PREFIX = 'nagi:moderation-preferences:v2';
-const NSFW_SELF_LABELS = new Set(['porn', 'sexual', 'nudity', 'graphic-media']);
+export const NSFW_SELF_LABELS = new Set(['porn', 'sexual', 'nudity', 'graphic-media']);
 const DEFAULTS: ModerationPreferenceValues = {
 	automatic: 'warn',
 	selfAi: 'ignore',

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { desktopNavGroups, isActive, handleNavClick } from './nav';
+	import { desktopNavGroups, isActive, handleNavClick, navHref } from './nav';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Icon from './Icon.svelte';
 	import NavBadge from './NavBadge.svelte';
@@ -21,12 +21,13 @@
 		{#each desktopNavGroups as group, groupIndex}
 			{#if groupIndex > 0}<div class="side-nav-divider" role="separator"></div>{/if}
 			{#each group as item (item.href)}
+				{@const href = navHref(item.href, Boolean($session))}
 				<a
-					href={item.href}
-					class:active={isActive(page.url.pathname, item.href)}
+					{href}
+					class:active={isActive(page.url.pathname, href)}
 					title={item.label()}
-					aria-current={isActive(page.url.pathname, item.href) ? 'page' : undefined}
-					onclick={(event) => handleNavClick(event, page.url.pathname, item.href)}
+					aria-current={isActive(page.url.pathname, href) ? 'page' : undefined}
+					onclick={(event) => handleNavClick(event, page.url.pathname, href)}
 				>
 					<span class="nav-icon">
 						<Icon name={item.icon} />

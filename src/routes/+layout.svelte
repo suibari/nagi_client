@@ -54,8 +54,12 @@
 	const seo = $derived(page.data.seo);
 	// サインインの動線そのものを塞がないページでは投稿ボタンを出さない。
 	const NO_FAB = ['/login', '/onboarding', '/oauth'];
+	// 未サインインの TOP はランディング。アプリの殻（ナビ・右レール・投稿ボタン）を外して全幅で見せる。
+	// プリレンダ時もセッションが無いのでこちらになり、HTML にナビが混ざらない。
+	const landing = $derived(page.url.pathname === '/' && !$session);
 	const showPostFab = $derived(
-		$oauthReady &&
+		!landing &&
+			$oauthReady &&
 			!composerHost.open &&
 			!composerHost.blogOpen &&
 			!guestComposerHost.open &&
@@ -269,15 +273,19 @@
      取得に失敗したら href の ?did= がそのまま使われる。 -->
 <svelte:document onclick={interceptSiblingLinkClick} />
 
-<MobileHeader />
-<!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。
-     例外は紹介ページだけで、左ナビの位置はそのまま右レールのぶん本文を広げる。 -->
-<div class="shell" class:shell-wide={wideMain}>
-	<SidebarLeft />
-	<main>{@render children()}</main>
-	{#if !wideMain}<SidebarRight />{/if}
-</div>
-<MobileNav />
+{#if landing}
+	<main class="landing-main">{@render children()}</main>
+{:else}
+	<MobileHeader />
+	<!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。
+	     例外は紹介ページだけで、左ナビの位置はそのまま右レールのぶん本文を広げる。 -->
+	<div class="shell" class:shell-wide={wideMain}>
+		<SidebarLeft />
+		<main>{@render children()}</main>
+		{#if !wideMain}<SidebarRight />{/if}
+	</div>
+	<MobileNav />
+{/if}
 <PostFollowNotice />
 <!-- 投稿はページごとではなくアプリ全体の1つの入口に統一する。Composer は
      PostModal の中で常時マウントしたままにする（添付画像を失わないため）。 -->

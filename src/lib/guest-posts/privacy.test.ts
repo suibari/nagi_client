@@ -25,6 +25,18 @@ const chatBubble = readFileSync(
 	'utf8',
 );
 const topPage = readFileSync(new URL('../../routes/+page.svelte', import.meta.url), 'utf8');
+const feedRoute = readFileSync(new URL('../../routes/feed/+page.svelte', import.meta.url), 'utf8');
+const feedHome = readFileSync(new URL('../components/FeedHome.svelte', import.meta.url), 'utf8');
+const landing = readFileSync(
+	new URL('../components/landing/Landing.svelte', import.meta.url),
+	'utf8',
+);
+const joinFinale = readFileSync(
+	new URL('../components/JoinFinale.svelte', import.meta.url),
+	'utf8',
+);
+const aboutPage = readFileSync(new URL('../../routes/about/+page.svelte', import.meta.url), 'utf8');
+const loginPage = readFileSync(new URL('../../routes/login/+page.svelte', import.meta.url), 'utf8');
 const guestHero = readFileSync(new URL('../components/GuestHero.svelte', import.meta.url), 'utf8');
 const blogList = readFileSync(new URL('../../routes/blog/+page.svelte', import.meta.url), 'utf8');
 const newsList = readFileSync(new URL('../../routes/news/+page.svelte', import.meta.url), 'utf8');
@@ -103,15 +115,34 @@ describe('guest post privacy boundary', () => {
 		expect(accountCard).not.toContain('{m.loginHint()}');
 	});
 
-	it('shows the guest hero below the top header and above the feed', () => {
+	it('shows the landing on the signed-out top and keeps the feed at /feed', () => {
+		// 未サインインの TOP はランディング、サインイン済みはフィード。
+		expect(topPage).toMatch(/\{#if \$session\}\s*<FeedHome \/>\s*\{:else\}\s*<Landing \/>/);
+		expect(feedRoute).toContain('<FeedHome />');
+		// フィードは見出し → タブ。ゲスト投稿は FeedShell の中にだけ出る。
+		expect(feedHome.indexOf('<PageHeader')).toBeLessThan(feedHome.indexOf('<FeedTabsView'));
+		expect(feedHome).not.toContain('GuestHero');
+		expect(feedHome).not.toContain('GuestPostSection');
+		expect(landing).not.toContain('GuestPostSection');
+		expect(loginPage).toContain('<a href="/feed">{m.loginBrowse()}</a>');
+		expect(feedShell).not.toContain('<GuestHero');
+		expect(feedShell).not.toContain('{m.heroTitle()}');
+	});
+
+	it('puts join links at the top and bottom of the landing', () => {
+		expect(landing).toContain('href="/login#signup">{m.aboutHeroCta()}</Button>');
+		// 末尾は /about と同じ参加の締めを使う。
+		expect(landing).toContain('<JoinFinale ');
+		expect(joinFinale).toContain('href="/login#signup"');
+		expect(aboutPage).toContain('<JoinFinale />');
+		expect(landing.indexOf('class="landing-hero"')).toBeLessThan(landing.indexOf('<JoinFinale'));
+		expect(landing).toContain('href="/feed"');
+	});
+
+	it('keeps the guest hero copy with its about and join links', () => {
 		expect(guestHero).toContain('{m.heroTitle()}');
 		expect(guestHero).toMatch(/class="hero-about" href="\/about"\s*>\{m\.welcomeAboutLink\(\)\}/);
 		expect(guestHero).toContain('class="hero-join" href="/login">{m.joinCta()}</Button>');
-		expect(topPage).toContain('<GuestHero />');
-		expect(topPage.indexOf('<PageHeader')).toBeLessThan(topPage.indexOf('<GuestHero'));
-		expect(topPage.indexOf('<GuestHero')).toBeLessThan(topPage.indexOf('<FeedTabsView'));
-		expect(feedShell).not.toContain('<GuestHero');
-		expect(feedShell).not.toContain('{m.heroTitle()}');
 	});
 
 	it('puts the guest hero above blog and news articles, not on their list pages', () => {
