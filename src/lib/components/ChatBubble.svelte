@@ -80,6 +80,7 @@
 	import ActionMenu from './ActionMenu.svelte';
 	import ContentWarningMask from './ContentWarningMask.svelte';
 	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
+	import { automaticModerationReasons } from '$lib/moderation/reasons';
 	import { trackPostSeen } from '$lib/post/seen';
 	import PostUnavailableNotice from './PostUnavailableNotice.svelte';
 	let {
@@ -350,6 +351,11 @@
 			: moderationDisplay.reason === 'selfNsfw'
 				? m.moderationSelfNsfwWarning()
 				: m.moderationSelfAiWarning(),
+	);
+	let moderationReasons = $derived(
+		moderationDisplay.reason === 'automatic'
+			? automaticModerationReasons(post.moderationLabels)
+			: [],
 	);
 	let topLevel = $derived(!post.reply);
 	/**
@@ -827,6 +833,7 @@
 						active={moderationDisplay.warn}
 						bind:revealed={contentRevealed}
 						title={moderationWarningText}
+			reasons={moderationReasons}
 					>
 						<img
 							class="post-header-image"
@@ -891,6 +898,7 @@
 			active={moderationDisplay.warn}
 			bind:revealed={contentRevealed}
 			title={moderationWarningText}
+			reasons={moderationReasons}
 		>
 			{#if editing}
 				<div class="inline-edit" use:editEscape>

@@ -16,6 +16,7 @@
 	import ContentWarningMask from './ContentWarningMask.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import { contentModerationDisplay } from '$lib/moderation/preferences.svelte';
+	import { automaticModerationReasons } from '$lib/moderation/reasons';
 	let {
 		news,
 		botActor,
@@ -66,7 +67,7 @@
 	// ユーザーが追加したニュースは審査なしで即時掲載する。自動モデレーションで札が
 	// 付いたものは、投稿と同じ表示設定に従ってカード全体を伏せる（または出さない）。
 	let moderation = $derived(contentModerationDisplay({ moderationLabels: news.moderationLabels }));
-	let moderationTitle = $derived(m.moderationAutomaticWarning());
+	let moderationReasons = $derived(automaticModerationReasons(news.moderationLabels));
 	// プリレンダとハイドレーション直後は JST・日本語で固定し、マウント後に閲覧者の
 	// ロケールとタイムゾーンへ切り替える。固定しないとビルド(UTC)と閲覧者(JST)で
 	// 時刻表示が9時間ずれ、全カードが静かに描き変わる。
@@ -115,7 +116,7 @@
 </script>
 
 {#if !deleted && !moderation.hidden}<article class="news-card" class:unread class:embedded>
-		<ContentWarningMask kind="content" active={moderation.warn} title={moderationTitle}>
+		<ContentWarningMask kind="content" active={moderation.warn} title={m.moderationAutomaticWarning()} reasons={moderationReasons}>
 			{#if reasonGenre}<p class="news-reason">
 					<Icon name="heart" size={14} /><span
 						>{m.newsRecommendedReason({ genre: reasonGenre })}</span
