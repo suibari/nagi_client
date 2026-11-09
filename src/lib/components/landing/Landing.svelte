@@ -3,7 +3,9 @@
 	 * 未サインインの TOP（`/`）。アプリの殻（左ナビ・右レール・投稿ボタン）は外し、
 	 * 体験と「ふつうのSNSとの違い」を上から順に伝える。
 	 *
-	 * 構成は「ヒーロー → 3本柱 → いまのNagi（実投稿） → 締め」。
+	 * 構成は「ヒーロー → 循環の輪 → 3本柱 → いまのNagi（実投稿） → 締め」。
+	 * 3本柱は「書く → つながる → 振り返る → また書きたくなる」と巡るので、輪で全体を見せてから
+	 * 番号付きで1本ずつ見せ、最後に1へ戻る導線で輪を閉じる。
 	 * 違いは比較表にせず、柱ごとに「ふつうのSNSなら」を薄い1行で添え、見出しで Nagi の場合を言い、
 	 * すぐ横の実物（やりとり・絵文字・グラフ）で見せる。説明は1文に抑える。
 	 * 参加の導線はヒーローと締めの2か所。タイムラインそのものは `/feed` にある。
@@ -18,6 +20,7 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import LandingLivePosts from './LandingLivePosts.svelte';
 	import LandingReactionSample from './LandingReactionSample.svelte';
+	import LandingCycle from './LandingCycle.svelte';
 	import { sampleMoods } from '$lib/about/samples';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { onMount } from 'svelte';
@@ -25,7 +28,6 @@
 	// m.* はロケールを読むアクセサ。関数のまま持ち、テンプレートで呼んで言語切り替えに追従させる。
 	type Pillar = {
 		id: 'safe' | 'loose' | 'reflect';
-		icon: string;
 		title: () => string;
 		old: () => string;
 		heading: () => string;
@@ -34,7 +36,6 @@
 	const pillars: Pillar[] = [
 		{
 			id: 'safe',
-			icon: 'shield',
 			title: m.landingSafeTitle,
 			old: m.landingSafeOld,
 			heading: m.landingSafeHeading,
@@ -42,7 +43,6 @@
 		},
 		{
 			id: 'loose',
-			icon: 'emoji',
 			title: m.landingLooseTitle,
 			old: m.landingLooseOld,
 			heading: m.landingLooseHeading,
@@ -50,7 +50,6 @@
 		},
 		{
 			id: 'reflect',
-			icon: 'sun',
 			title: m.landingReflectTitle,
 			old: m.landingReflectOld,
 			heading: m.landingReflectHeading,
@@ -98,12 +97,23 @@
 		</div>
 	</section>
 
-	<!-- 柱ごとに「文 ⇔ 実物」を左右交互に並べる。狭幅では文 → 実物の順に積む。 -->
+	<!-- 3本柱は循環している（書く → つながる → 振り返る → また書く）。先に輪で全体を見せ、
+	     各柱は番号付きで「文 ⇔ 実物」を左右交互に並べる。最後に1へ戻る導線を置いて輪を閉じる。 -->
+	<section class="landing-section" id="landing-cycle">
+		<header class="about-section-head">
+			<h2>{m.landingCycleHeading()}</h2>
+			<p>{m.landingCycleLead()}</p>
+		</header>
+		<LandingCycle />
+	</section>
+
 	<div class="landing-pillars">
-		{#each pillars as pillar (pillar.id)}
-			<section class="landing-pillar" data-pillar={pillar.id}>
+		{#each pillars as pillar, i (pillar.id)}
+			<section class="landing-pillar" data-pillar={pillar.id} id={`landing-${pillar.id}`}>
 				<div class="landing-pillar-copy">
-					<p class="about-eyebrow"><Icon name={pillar.icon} size={16} />{pillar.title()}</p>
+					<p class="about-eyebrow">
+						<span class="landing-pillar-num" aria-hidden="true">{i + 1}</span>{pillar.title()}
+					</p>
 					<p class="landing-pillar-old">
 						<span>{m.landingOldPrefix()}</span>{pillar.old()}
 					</p>
@@ -136,6 +146,11 @@
 				</div>
 			</section>
 		{/each}
+		<a class="landing-cycle-again" href="#landing-safe">
+			<Icon name="refresh" size={18} />
+			<span>{m.landingCycleAgain()}</span>
+			<span class="landing-cycle-again-to">{m.landingCycleBack()} ↑</span>
+		</a>
 	</div>
 
 	<section class="landing-section">

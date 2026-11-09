@@ -1650,6 +1650,15 @@ export const en: Messages = {
 	landingLead:
 		'A social network with no like counts and no follower counts. Bot-tan, who affirms everything, receives every word you write.',
 	landingNavAria: 'Menu',
+	landingCycleHeading: 'Write, connect, look back',
+	landingCycleLead:
+		'Looking back on your feelings makes you want to write again. Nagi is a place for that cycle.',
+	landingCycleWrite: 'Write',
+	landingCycleConnect: 'Connect',
+	landingCycleReflect: 'Look back',
+	landingCycleCenter: 'Want to write again',
+	landingCycleAgain: 'After looking back, write once more',
+	landingCycleBack: 'Back to 1',
 	landingOldPrefix: 'On a typical social network:\u00a0',
 	landingSafeOld: 'No reaction, and that’s the end of it',
 	landingSafeHeading: 'Bot-tan always writes back',

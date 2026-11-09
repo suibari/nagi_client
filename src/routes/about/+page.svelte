@@ -320,7 +320,7 @@
 			{/if}
 		</div>
 		<div class="about-hero-figure">
-			<img src="/bot_image_hero.webp" alt={m.aboutHeroImageAlt()} width="879" height="1319" />
+			<img src="/bot_image_hero_trans.webp" alt={m.aboutHeroImageAlt()} width="600" height="900" />
 		</div>
 	</section>
 
