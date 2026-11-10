@@ -1,5 +1,5 @@
 import type { PostScope } from './scope';
-import type { NewsView, PostView } from '$lib/api/types';
+import type { NewsView, PostView, RadioTrack } from '$lib/api/types';
 
 export type ReplyTarget = {
 	root: { uri: string; cid: string };
@@ -19,6 +19,11 @@ export type QuoteTarget = {
 	cid: string;
 	post?: PostView;
 	news?: NewsView;
+	/**
+	 * botたんラジオの1回。引用先のレコード（com.suibari.nagi.radio）は投稿するときに作るので、
+	 * それまで uri / cid は空。キャンセルすれば何も残らない。
+	 */
+	radio?: RadioTrack;
 };
 
 /**
@@ -83,6 +88,16 @@ class ComposerHost {
 			cid: news.cid,
 			news,
 		};
+		this.replyTarget = undefined;
+		this.defaultScope = defaultScope;
+		this.trilinesEditTarget = undefined;
+		this.blogOpen = false;
+		this.open = true;
+	}
+
+	/** botたんラジオの1回を引用して書く。ニュースの「コメント」と同じ形。 */
+	openQuoteRadio(radio: RadioTrack, defaultScope: PostScope = 'feed') {
+		this.quoteTarget = { uri: '', cid: '', radio };
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;

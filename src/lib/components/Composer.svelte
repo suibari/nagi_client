@@ -7,7 +7,14 @@
 	import PostModerationGuard from './PostModerationGuard.svelte';
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
 	import { untrack } from 'svelte';
-	import { blobRefCid, createPost, preparePostDraft, uploadPostAssets } from '$lib/atproto/records';
+	import {
+		blobRefCid,
+		createPost,
+		createRadioRecord,
+		preparePostDraft,
+		uploadPostAssets,
+	} from '$lib/atproto/records';
+	import { hasRadioScope } from '$lib/radio/share';
 	import { computeBlobCid } from '$lib/atproto/cid';
 	import {
 		blobKey,
@@ -309,6 +316,7 @@
 			articleReady &&
 			!articleBlockedReason &&
 			!kossoriReplyBlockedReason &&
+			!radioScopeBlocked &&
 			!(scope === 'external' && !externalEligible);
 	});
 
@@ -724,9 +732,25 @@
 			!articleReady ||
 			articleBlockedReason ||
 			kossoriReplyBlockedReason ||
+			radioScopeBlocked ||
 			(scope === 'external' && !externalEligible)
 		)
 			return;
+		// ラジオの引用先は投稿するこの時点で作る（キャンセルしたら何も残らない）。
+		// 同じ回は rkey が同じなので、何度ポストしてもレコードは1つ。
+		let radioRef: { uri: string; cid: string } | undefined;
+		if (quoteTarget?.radio) {
+			busy = true;
+			error = '';
+			try {
+				radioRef = await createRadioRecord(quoteTarget.radio.slotKey);
+			} catch {
+				error = m.radioQuoteFailed();
+				return;
+			} finally {
+				busy = false;
+			}
+		}
 		const wantsCrosspost = scope === 'external' && externalEligible;
 		const target: CrosspostTarget = {};
 		if (crosspostTargetRef && replyTarget)
@@ -760,7 +784,8 @@
 		const reply = replyTarget ? { root: replyTarget.root, parent: replyTarget.parent } : undefined;
 		const replyPost = replyTarget?.post;
 		const quotedPost = quoteTarget?.post ?? quotePick.post;
-		const quoteRef = quoteTarget ? { uri: quoteTarget.uri, cid: quoteTarget.cid } : quotePick.ref;
+		const quoteRef =
+			radioRef ?? (quoteTarget ? { uri: quoteTarget.uri, cid: quoteTarget.cid } : quotePick.ref);
 		const draft = preparePostDraft(
 			body,
 			reply,
@@ -921,6 +946,28 @@
 	);
 
 	/** 記事の書き込み権限が無いときに、その場で追加の認可を取りに行く。 */
+	/*
+		botたんラジオの引用は、投稿するときに本人の repo へ公開レコードを書く。その権限は
+		ラジオの引用で初めて要るので、無い人には投稿前に再認可を案内する（既存機能には影響しない）。
+	*/
+	let radioScopeReady = $state<boolean | undefined>(undefined);
+	$effect(() => {
+		const radio = quoteTarget?.radio;
+		if (!radio) {
+			radioScopeReady = undefined;
+			return;
+		}
+		let cancelled = false;
+		radioScopeReady = undefined;
+		void hasRadioScope().then((ready) => {
+			if (!cancelled) radioScopeReady = ready;
+		});
+		return () => {
+			cancelled = true;
+		};
+	});
+	const radioScopeBlocked = $derived(Boolean(quoteTarget?.radio) && radioScopeReady !== true);
+
 	async function authorizeArticle() {
 		if (!$session || reauthorizingArticle) return;
 		reauthorizingArticle = true;
@@ -1029,10 +1076,34 @@
 								</div>
 								<p class="composer-target-text">{quoteTarget.news.title}</p>
 							</div>
+						{:else if quoteTarget.radio}
+							<div class="composer-target-content">
+								<div class="composer-target-meta">
+									<span class="name">{m.radioQuoteLabel()}</span>
+								</div>
+								<p class="composer-target-text">
+									{quoteTarget.radio.artist} - {quoteTarget.radio.title}
+								</p>
+							</div>
 						{/if}
 					</div>
 				</div>
 			{/if}
+		</div>
+	{/if}
+	{#if quoteTarget?.radio && radioScopeReady === false}
+		<!-- 送信ボタンが押せない理由になるので、引用先のすぐ下に出す（引用欄は高さを絞っているので外に置く）。 -->
+		<div class="composer-radio-permission">
+			<p>{m.radioReauthNote()}</p>
+			<Button
+				variant="secondary"
+				size="sm"
+				type="button"
+				disabled={reauthorizingArticle}
+				onclick={authorizeArticle}
+			>
+				{reauthorizingArticle ? m.standardSiteReauthPending() : m.standardSiteReauthSubmit()}
+			</Button>
 		</div>
 	{/if}
 

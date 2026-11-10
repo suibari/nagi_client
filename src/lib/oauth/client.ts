@@ -42,6 +42,8 @@ export const STANDARD_SITE_COLLECTION_SCOPES = [
 // TriLinesAt の3行日記。作成・編集・削除するので action は絞らない。
 // 別 namespace なので permission set に入れられない。真実源は nagi-lexicon の NAGI_TRILINES_SCOPE。
 export const TRILINES_COLLECTION_SCOPE = 'repo:com.suibari.trilinesat.diary';
+// botたんラジオの公開。permission set にも入れたが、古いキャッシュでも再認可で取れるよう明示する。
+export const RADIO_COLLECTION_SCOPE = 'repo:com.suibari.nagi.radio';
 // Nagi namespace の repo/rpc 権限は permission set に集約し、公開済み lexicon を真実源にする。
 // 定義: bsky-affirmative-bot/packages/nagi-lexicon/lexicons/com/suibari/nagi/appviewAccess.json
 // blob と別 namespace の Bluemoji repo 権限は permission set に入れられないため直接スコープで残す。
@@ -62,6 +64,7 @@ const baseScopes = [
 	'rpc:com.suibari.nagi.createReport?aud=*',
 	'rpc:com.suibari.nagi.setPostMood?aud=*',
 	'repo:com.suibari.nagi.cardGet',
+	RADIO_COLLECTION_SCOPE,
 	// 動画は video.bsky.app に変換を任せる。PDS から service auth を取るための権限で、
 	// どちらも Nagi namespace ではないので permission set に入れられない。
 	// 真実源は nagi-lexicon の NAGI_VIDEO_SCOPES。

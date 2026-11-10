@@ -17,7 +17,7 @@ test('Last.fm radio shows a square jacket and link, while old YouTube cards stil
 	await expect(radio.getByText('スピッツ', { exact: true })).toBeVisible();
 	await expect(radio.locator('time')).toContainText('2026');
 	await expect(radio.locator('.radio-station')).toBeVisible();
-	await expect(radio.getByRole('link')).toHaveAttribute(
+	await expect(radio.locator('.radio-song-card').getByRole('link')).toHaveAttribute(
 		'href',
 		'https://www.last.fm/music/Spitz/_/Cherry',
 	);
@@ -28,9 +28,11 @@ test('Last.fm radio shows a square jacket and link, while old YouTube cards stil
 	const bounds = await cover.boundingBox();
 	expect(bounds?.width).toBe(bounds?.height);
 	await expect(radio.locator('iframe')).toHaveCount(0);
-	await expect(page.getByTestId('legacy-radio').getByRole('button')).toBeVisible();
+	await expect(
+		page.getByTestId('legacy-radio').locator('.radio-song-card').getByRole('button'),
+	).toBeVisible();
 	await page.setViewportSize({ width: 1280, height: 900 });
 	await expect(radio.locator('.radio-station')).toBeVisible();
-	await expect(radio.getByRole('link')).toBeVisible();
+	await expect(radio.locator('.radio-song-card').getByRole('link')).toBeVisible();
 	expect(await radio.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
 });

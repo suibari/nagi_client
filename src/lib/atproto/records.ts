@@ -35,6 +35,7 @@ const POST = 'com.suibari.nagi.post',
 const NEWS = 'com.suibari.nagi.news';
 const ZENKATSU = 'com.suibari.nagi.zenkatsu';
 const CARD_GET = 'com.suibari.nagi.cardGet';
+const RADIO = 'com.suibari.nagi.radio';
 export const NAGI_ACCOUNT_DATA_COLLECTIONS = [
 	POST,
 	REACTION,
@@ -44,6 +45,7 @@ export const NAGI_ACCOUNT_DATA_COLLECTIONS = [
 	APP_LINKS,
 	ZENKATSU,
 	CARD_GET,
+	RADIO,
 ] as const;
 const current = () => {
 	const value = get(session);
@@ -863,6 +865,24 @@ export async function createNewsRecord(preview: NewsSubmissionPreview) {
 			},
 		}),
 	);
+}
+
+/**
+ * botたんラジオの1回を公開する。rkey を slotKey にするので、同じ回を何度ポストしても
+ * レコードは1つ。曲とDJコメントは書かず、AppView が本人の放送履歴から引く。
+ */
+export async function createRadioRecord(slotKey: string) {
+	const s = current();
+	const { data } = await indexed(
+		new Agent(s).com.atproto.repo.putRecord({
+			repo: s.did,
+			collection: RADIO,
+			rkey: slotKey,
+			validate: false,
+			record: { $type: RADIO, slotKey, createdAt: new Date().toISOString() },
+		}),
+	);
+	return { uri: data.uri, cid: data.cid };
 }
 
 export async function deleteOwnNews(uri: string, cid?: string) {

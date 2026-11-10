@@ -273,6 +273,23 @@
 	font-size: 11px;
 	line-height: 1.5;
 }
+/* botたんラジオの引用で、公開レコードを書く権限が無いとき。記事の権限案内と同じ見た目。 */
+.composer-radio-permission {
+	display: grid;
+	gap: 6px;
+	justify-items: start;
+	margin-bottom: 8px;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--r-sm);
+	background: var(--surface-2);
+}
+.composer-radio-permission p {
+	margin: 0;
+	color: var(--text-sub);
+	font-size: 11px;
+	line-height: 1.5;
+}
 @media (min-width: 1024px) {
 	/* 広い画面では本文の右に記事メタ欄を置く。2ペインプレビューは blog では出ない。 */
 	.composer.blog .composer-body {

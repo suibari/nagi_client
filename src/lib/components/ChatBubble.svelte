@@ -11,6 +11,7 @@
 	import Icon from './shell/Icon.svelte';
 	import QuoteCard from './QuoteCard.svelte';
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
+	import RadioQuoteCard from '$lib/radio/RadioQuoteCard.svelte';
 	import ActorBadges from './ActorBadges.svelte';
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import ReportDialog from './ReportDialog.svelte';
@@ -1030,6 +1031,10 @@
 				/>
 			{:else if !managementOnly && post.quote?.kind === 'news'}<NewsQuoteCard
 					news={post.quote.news}
+					{botActor}
+				/>
+			{:else if !managementOnly && post.quote?.kind === 'radio'}<RadioQuoteCard
+					radio={post.quote.radio}
 					{botActor}
 				/>{/if}
 		</ContentWarningMask>
