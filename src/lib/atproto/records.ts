@@ -19,7 +19,6 @@ import { forgetPublicationCache } from '$lib/standardsite/cache';
 import { deleteNagiStandardSiteRecords } from '$lib/standardsite/repo';
 import { APP_LINKS } from './appLinks';
 import { hasContentWarning } from './contentWarning';
-import { BLUESKY_PROFILE_COLLECTION_SCOPE } from '$lib/oauth/client';
 import { PostSubmissionError } from '$lib/post/submission-error';
 import { createKossoriPost, deleteKossoriPost, ensureRecord } from '$lib/api/appview';
 import { isAppviewOwnedUri } from '$lib/post/appview-uri';
@@ -90,81 +89,28 @@ async function deleteAndIndex(collection: string, rkey: string, cid?: string) {
 export type ProfileDraft = {
 	displayName: string;
 	description: string;
+	website?: string;
 	avatar?: unknown;
 	avatarUrl?: string;
 	createdAt?: string;
 };
 
-const BLUESKY_PROFILE = 'app.bsky.actor.profile';
-
 export function normalizeProfileWebsite(value: string): string | undefined {
 	const trimmed = value.trim();
+	if (new TextEncoder().encode(trimmed).length > 2048) return undefined;
 	if (!trimmed) return '';
 	const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 	try {
 		const url = new URL(candidate);
-		return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : undefined;
+		return (url.protocol === 'http:' || url.protocol === 'https:') &&
+			new TextEncoder().encode(url.href).length <= 2048
+			? url.href
+			: undefined;
 	} catch {
 		return undefined;
 	}
 }
 
-export async function hasBlueskyProfileScope(): Promise<boolean> {
-	const s = get(session);
-	if (!s) return false;
-	try {
-		const granted = (await s.getTokenInfo()).scope.split(' ');
-		return granted.some(
-			(scope) =>
-				scope === BLUESKY_PROFILE_COLLECTION_SCOPE ||
-				scope.startsWith(`${BLUESKY_PROFILE_COLLECTION_SCOPE}?`),
-		);
-	} catch {
-		return false;
-	}
-}
-
-async function getOwnBlueskyProfileRecord(): Promise<Record<string, unknown> | null> {
-	const s = current();
-	try {
-		const response = await new Agent(s).com.atproto.repo.getRecord({
-			repo: s.did,
-			collection: BLUESKY_PROFILE,
-			rkey: 'self',
-		});
-		return response.data.value as Record<string, unknown>;
-	} catch (error) {
-		if (isRecordNotFound(error)) return null;
-		throw error;
-	}
-}
-
-export async function getOwnBlueskyWebsite(): Promise<string> {
-	const record = await getOwnBlueskyProfileRecord();
-	return typeof record?.website === 'string' ? record.website : '';
-}
-
-export async function putOwnBlueskyWebsite(value: string): Promise<void> {
-	const website = normalizeProfileWebsite(value);
-	if (website === undefined) throw new Error('Invalid website URL');
-	const s = current();
-	const existing = await getOwnBlueskyProfileRecord();
-	if (!existing && !website) return;
-	const record: Record<string, unknown> = {
-		...(existing ?? {}),
-		$type: BLUESKY_PROFILE,
-		...(existing?.createdAt ? {} : { createdAt: new Date().toISOString() }),
-	};
-	if (website) record.website = website;
-	else delete record.website;
-	await new Agent(s).com.atproto.repo.putRecord({
-		repo: s.did,
-		collection: BLUESKY_PROFILE,
-		rkey: 'self',
-		validate: false,
-		record,
-	});
-}
 export type LinkCardDraft = {
 	id?: string;
 	uri: string;
@@ -306,6 +252,7 @@ export async function getOwnNagiProfile(): Promise<ProfileDraft | null> {
 		return {
 			displayName: typeof value.displayName === 'string' ? value.displayName : '',
 			description: typeof value.description === 'string' ? value.description : '',
+			website: typeof value.website === 'string' ? value.website : '',
 			avatar: value.avatar,
 			createdAt: typeof value.createdAt === 'string' ? value.createdAt : undefined,
 		};
@@ -361,6 +308,7 @@ export async function createNagiProfileFromBluesky(): Promise<boolean> {
 					$type: PROFILE,
 					displayName: draft.displayName,
 					description: draft.description,
+					website: draft.website ?? '',
 					...(draft.avatar !== undefined ? { avatar: draft.avatar } : {}),
 					createdAt: new Date().toISOString(),
 				},
@@ -396,6 +344,8 @@ export async function getBlueskyProfileDraft(): Promise<ProfileDraft> {
 				: (view?.displayName ?? view?.handle ?? ''),
 		description:
 			typeof record?.description === 'string' ? record.description : (view?.description ?? ''),
+		website:
+			typeof record?.website === 'string' ? (normalizeProfileWebsite(record.website) ?? '') : '',
 		avatar: record?.avatar,
 		avatarUrl: view?.avatar,
 	};
@@ -943,6 +893,8 @@ export async function deleteAllNagiRecords() {
 	forgetPublicationCache(s.did);
 }
 export async function putProfile(displayName: string, description: string, draft?: ProfileDraft) {
+	const website = normalizeProfileWebsite(draft?.website ?? '');
+	if (website === undefined) throw new Error('Invalid website URL');
 	const s = current();
 	return indexed(
 		new Agent(s).com.atproto.repo.putRecord({
@@ -954,6 +906,7 @@ export async function putProfile(displayName: string, description: string, draft
 				$type: PROFILE,
 				displayName,
 				description,
+				website,
 				...(draft?.avatar !== undefined ? { avatar: draft.avatar } : {}),
 				createdAt: draft?.createdAt ?? new Date().toISOString(),
 			},

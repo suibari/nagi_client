@@ -13,6 +13,7 @@ const ensureRecord = vi.hoisted(() => vi.fn());
 vi.mock('svelte/store', () => ({ get: () => ({ did }) }));
 vi.mock('@atproto/api', () => ({
 	Agent: class {
+		app = { bsky: { actor: { getProfile: vi.fn(async () => ({ data: {} })) } } };
 		com = {
 			atproto: {
 				repo: { listRecords, deleteRecord, createRecord, getRecord, putRecord, uploadBlob },
@@ -25,7 +26,6 @@ vi.mock('$lib/i18n/languagePreferences.svelte', () => ({ languagePreferences: {}
 vi.mock('$lib/optin/scope-optin', () => ({ hasOptInScope: vi.fn(async () => false) }));
 vi.mock('$lib/standardsite/cache', () => ({ forgetPublicationCache: vi.fn() }));
 vi.mock('$lib/standardsite/repo', () => ({ deleteNagiStandardSiteRecords: vi.fn() }));
-vi.mock('$lib/oauth/client', () => ({ BLUESKY_PROFILE_COLLECTION_SCOPE: '' }));
 vi.mock('$lib/api/appview', async (importOriginal) => ({
 	...(await importOriginal<typeof import('$lib/api/appview')>()),
 	createKossoriPost,
@@ -33,6 +33,9 @@ vi.mock('$lib/api/appview', async (importOriginal) => ({
 }));
 
 import {
+	createNagiProfileFromBluesky,
+	getOwnNagiProfile,
+	putProfile,
 	createPost,
 	ensureOwnNagiProfile,
 	deleteAllNagiRecords,
@@ -538,6 +541,53 @@ describe('initial Nagi profile', () => {
 		putRecord.mockReset();
 		ensureRecord.mockReset();
 		ensureRecord.mockResolvedValue({});
+	});
+	it('copies the Bluesky website on registration and saves later edits only in Nagi', async () => {
+		getRecord.mockResolvedValue({
+			data: {
+				value: {
+					displayName: 'Bluesky name',
+					description: 'Bio',
+					website: 'https://bluesky.example/',
+				},
+			},
+		});
+		putRecord.mockResolvedValue({
+			data: { uri: `at://${did}/com.suibari.nagi.profile/self`, cid: 'new' },
+		});
+		await expect(createNagiProfileFromBluesky()).resolves.toBe(true);
+		expect(putRecord).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				collection: 'com.suibari.nagi.profile',
+				swapRecord: null,
+				record: expect.objectContaining({ website: 'https://bluesky.example/' }),
+			}),
+		);
+		getRecord.mockResolvedValue({ data: { value: putRecord.mock.calls[0][0].record } });
+		const profile = await getOwnNagiProfile();
+		expect(profile?.website).toBe('https://bluesky.example/');
+		await putProfile('Nagi name', 'Bio', { ...profile!, website: 'nagi.example' });
+		expect(putRecord).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				collection: 'com.suibari.nagi.profile',
+				record: expect.objectContaining({ website: 'https://nagi.example/' }),
+			}),
+		);
+		await putProfile('Nagi name', 'Bio', { ...profile!, website: '' });
+		expect(putRecord.mock.calls.at(-1)?.[0].record.website).toBe('');
+		expect(
+			putRecord.mock.calls.every(([call]) => call.collection === 'com.suibari.nagi.profile'),
+		).toBe(true);
+	});
+	it('rejects invalid website URLs before writing', async () => {
+		await expect(
+			putProfile('Name', '', {
+				displayName: 'Name',
+				description: '',
+				website: 'ftp://example.com',
+			}),
+		).rejects.toThrow('Invalid website URL');
+		expect(putRecord).not.toHaveBeenCalled();
 	});
 	it('creates an empty profile only when absent and requests indexing', async () => {
 		getRecord.mockRejectedValue({ error: 'RecordNotFound' });

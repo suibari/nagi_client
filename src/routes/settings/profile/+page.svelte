@@ -6,19 +6,16 @@
 	import Button from '$lib/components/Button.svelte';
 	import {
 		getBlueskyProfileDraft,
-		getOwnBlueskyWebsite,
 		getOwnNagiProfile,
 		ensureOwnNagiProfile,
-		hasBlueskyProfileScope,
 		normalizeProfileWebsite,
 		putProfile,
-		putOwnBlueskyWebsite,
 		type ProfileDraft,
 		uploadAvatar,
 	} from '$lib/atproto/records';
 	import AvatarCropper from '$lib/components/AvatarCropper.svelte';
 	import { APPVIEW_URL, getProfile } from '$lib/api/appview';
-	import { session, oauthReady, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
+	import { session, oauthReady } from '$lib/oauth/session.svelte';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { myProfile } from '$lib/profile/me.svelte';
 	import ProfileAppLinks from '$lib/components/ProfileAppLinks.svelte';
@@ -26,16 +23,10 @@
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { syncExistingPublicationFromProfile } from '$lib/standardsite/publication';
 	import { onDestroy } from 'svelte';
-	import { grantedOptIns } from '$lib/optin/scope-optin';
 
 	let name = $state('');
 	let description = $state('');
 	let website = $state('');
-	let initialWebsite = $state('');
-	let websiteLoaded = $state(false);
-	let websiteGranted = $state(false);
-	let websiteReauthBusy = $state(false);
-	let websiteWarning = $state('');
 	let status = $state('');
 	let error = $state('');
 	let syncWarning = $state('');
@@ -56,7 +47,8 @@
 		const profilePromise = getOwnNagiProfile().then(async (profile) => {
 			if (!profile) {
 				const initial = await ensureOwnNagiProfile();
-				if (initial.displayName || initial.description || initial.avatar) return initial;
+				if (initial.displayName || initial.description || initial.avatar || initial.website)
+					return initial;
 				return { ...(await getBlueskyProfileDraft()), createdAt: initial.createdAt };
 			}
 			try {
@@ -68,24 +60,14 @@
 			}
 			return profile;
 		});
-		Promise.all([
-			profilePromise,
-			getOwnBlueskyWebsite()
-				.then((value) => ({ value, failed: false }))
-				.catch(() => ({ value: '', failed: true })),
-			hasBlueskyProfileScope(),
-		])
-			.then(([profile, websiteResult, granted]) => {
+		profilePromise
+			.then((profile) => {
 				if (loaded) return;
 				draft = profile;
 				avatarPreview = profile.avatarUrl;
 				name = profile.displayName;
 				description = profile.description;
-				website = websiteResult.value;
-				initialWebsite = websiteResult.value;
-				websiteLoaded = !websiteResult.failed;
-				websiteGranted = granted;
-				if (websiteResult.failed) websiteWarning = m.profileWebsiteLoadWarning();
+				website = profile.website ?? '';
 				loaded = true;
 			})
 			.catch((e) => {
@@ -93,16 +75,6 @@
 				loaded = true;
 			});
 	});
-	async function reauthorizeWebsite() {
-		if (!$session || websiteReauthBusy) return;
-		websiteReauthBusy = true;
-		setOAuthReturnTo('/settings/profile');
-		try {
-			await signIn($session.did, { ...(await grantedOptIns()), refreshPermissions: true });
-		} finally {
-			websiteReauthBusy = false;
-		}
-	}
 	function selectAvatar(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
@@ -135,12 +107,7 @@
 			location.href = '/login';
 			return;
 		}
-		const websiteChanged = website.trim() !== initialWebsite;
-		if (websiteChanged && (!websiteGranted || !websiteLoaded)) {
-			error = m.profileWebsiteUnavailable();
-			return;
-		}
-		const normalizedWebsite = websiteChanged ? normalizeProfileWebsite(website) : initialWebsite;
+		const normalizedWebsite = normalizeProfileWebsite(website);
 		if (normalizedWebsite === undefined) {
 			error = m.profileWebsiteInvalid();
 			return;
@@ -149,7 +116,6 @@
 		status = '';
 		error = '';
 		syncWarning = '';
-		websiteWarning = '';
 		try {
 			const avatar =
 				avatarChange instanceof Blob ? await uploadAvatar(avatarChange) : draft?.avatar;
@@ -157,18 +123,11 @@
 				...draft,
 				displayName: name,
 				description,
+				website: normalizedWebsite,
 				avatar: avatarChange === null ? undefined : avatar,
 			};
 			await putProfile(name, description, updatedDraft);
-			if (websiteChanged && websiteGranted) {
-				try {
-					await putOwnBlueskyWebsite(normalizedWebsite);
-					website = normalizedWebsite;
-					initialWebsite = normalizedWebsite;
-				} catch {
-					websiteWarning = m.profileWebsiteSaveWarning();
-				}
-			}
+			website = normalizedWebsite;
 			if (await hasStandardSiteScope()) {
 				try {
 					await syncExistingPublicationFromProfile({ fallbackName: name || $session.did });
@@ -246,22 +205,8 @@
 					inputmode="url"
 					placeholder="https://example.com"
 					bind:value={website}
-					readonly={!websiteGranted || !websiteLoaded}
+					maxlength="2048"
 				/>
-				{#if !websiteGranted}
-					<div class="profile-website-permission">
-						<p>{m.profileWebsitePermissionNote()}</p>
-						<Button
-							variant="secondary"
-							size="sm"
-							type="button"
-							disabled={websiteReauthBusy}
-							onclick={reauthorizeWebsite}
-						>
-							{websiteReauthBusy ? m.profileWebsiteReauthPending() : m.profileWebsiteReauthSubmit()}
-						</Button>
-					</div>
-				{/if}
 			</SettingRow>
 		</SettingsSection>
 		<div class="settings-actions">
@@ -271,7 +216,6 @@
 			{#if status}<p class="settings-status" role="status">{status}</p>{/if}
 		</div>
 		{#if syncWarning}<p class="settings-error" role="status">{syncWarning}</p>{/if}
-		{#if websiteWarning}<p class="settings-error" role="status">{websiteWarning}</p>{/if}
 		{#if error}<p class="settings-error">{error}</p>{/if}
 
 		<SettingsSection
@@ -293,20 +237,3 @@
 		onconfirm={applyAvatar}
 		oncancel={() => (cropFile = undefined)}
 	/>{/if}
-
-<style>
-	.profile-website-permission {
-		display: grid;
-		justify-items: start;
-		gap: 8px;
-		padding: 12px;
-		background: var(--bg-inset);
-		border-radius: var(--r-md);
-	}
-	.profile-website-permission p {
-		margin: 0;
-		color: var(--text-muted);
-		font-size: 0.85rem;
-		line-height: 1.6;
-	}
-</style>
