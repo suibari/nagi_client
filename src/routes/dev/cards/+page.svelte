@@ -3,6 +3,7 @@
 	import AffirmationCard from '$lib/components/AffirmationCard.svelte';
 	import CardDetailDialog from '$lib/components/CardDetailDialog.svelte';
 	import CardDrawFab from '$lib/components/CardDrawFab.svelte';
+	import CardDrawBanner from '$lib/components/CardDrawBanner.svelte';
 	import CardMilestoneDialog from '$lib/components/CardMilestoneDialog.svelte';
 	import CardReactionGuideDialog from '$lib/components/CardReactionGuideDialog.svelte';
 
@@ -241,10 +242,17 @@
 	<header>
 		<h1>カード見た目プレビュー（dev 専用）</h1>
 		<p>
-			サーバーに触らないモックだけで描いている。本番ビルドでは <code>/dev/cards</code> は 404。 TL
-			上での実配置は <a href="/?cardFab=1">/?cardFab=1</a> で確認する（未ログインでも出る）。
+			サーバーに触らないモックだけで描いている。本番ビルドでは <code>/dev/cards</code> は 404。
+			ゼンカツページでの実配置は <a href="/cards?cardfab=1">/cards?cardfab=1</a> で確認できる。
 		</p>
 	</header>
+
+	<h2 id="draw-banner">カードを引くバナー</h2>
+	<p>ゼンカツページと同じUI。クリックするとサンプルカードを表示します。</p>
+	<CardDrawBanner ondraw={() => open('new-r')} />
+	<CardDrawBanner reactionNext ondraw={() => (guideOpen = true)} />
+	<CardDrawBanner anniversaryPending ondraw={() => open('anniversary')} />
+	<CardDrawBanner drawing ondraw={() => {}} />
 
 	<h2>CardDrawFab</h2>
 	<div class="dev-controls">
