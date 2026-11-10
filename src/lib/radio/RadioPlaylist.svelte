@@ -1,7 +1,10 @@
 <script lang="ts">
 	import type { RadioTrack } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import Icon from '$lib/components/shell/Icon.svelte';
 	import { radioSongCard } from './song-card';
+	import { quoteRadio, radioComment, shareRadioTrack } from './share';
 
 	/**
 	 * ラジオ履歴を「DJブース＋レコード棚」で見せる。
@@ -48,8 +51,6 @@
 			hour: '2-digit',
 			minute: '2-digit',
 		}).format(new Date(iso));
-	const comment = (track: RadioTrack) =>
-		(i18n.locale === 'en' ? track.commentEn : track.commentJa) || track.comment;
 
 	/** ジャケットが無い曲は、曲名から決まる色のスリーブを作る（同じ曲はいつも同じ色）。 */
 	function sleeveHue(track: RadioTrack) {
@@ -59,6 +60,19 @@
 		return (hash >>> 0) % 360;
 	}
 	const jacket = (track: RadioTrack) => radioSongCard(track)?.thumb;
+
+	let copied = $state(false);
+	let shareError = $state('');
+	async function share(track: RadioTrack) {
+		shareError = '';
+		try {
+			if (!(await shareRadioTrack(track))) return;
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch {
+			shareError = m.radioShareFailed();
+		}
+	}
 
 	function pin(track: RadioTrack) {
 		pinned = track.slotKey;
@@ -99,12 +113,32 @@
 						<strong>{current.title}</strong>
 						<span>{current.artist}</span>
 					</p>
-					<p class="comment">{comment(current)}</p>
-					{#if currentLink}
-						<a class="listen" href={currentLink.uri} target="_blank" rel="noopener noreferrer">
-							{m.radioListen()} ↗
-						</a>
-					{/if}
+					<p class="comment">{radioComment(current)}</p>
+					<!-- ニュース一覧のカード（NewsCard）と同じ操作行。曲のページへのリンクは右端へ。 -->
+					<div class="booth-actions">
+						<Button
+							variant="primary"
+							size="sm"
+							class="post-track"
+							type="button"
+							onclick={() => quoteRadio(current)}
+							><Icon name="quote" size={16} />{m.radioPost()}</Button
+						>
+						{#if currentLink}
+							<button
+								class="ghost icon-action timeline-action"
+								type="button"
+								onclick={() => void share(current)}
+								aria-label={copied ? m.radioCopied() : m.radioShare()}
+								title={copied ? m.radioCopied() : m.radioShare()}
+								><Icon name="share" size={18} /></button
+							>
+							<a class="listen" href={currentLink.uri} target="_blank" rel="noopener noreferrer">
+								{m.radioListen()} ↗
+							</a>
+						{/if}
+					</div>
+					{#if shareError}<p class="share-error" role="alert">{shareError}</p>{/if}
 				</div>
 			</div>
 		</aside>
@@ -348,11 +382,32 @@
 			max-block-size: 5em;
 		}
 	}
+	/* ニュース一覧のカードの操作行（.news-actions）と同じ寸法。 */
+	.booth-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 2px;
+		min-width: 0;
+	}
+	.booth-actions :global(.post-track) {
+		margin-right: 4px;
+	}
+	.booth-actions .icon-action {
+		width: 36px;
+		height: 36px;
+	}
 	.listen {
-		justify-self: start;
+		margin-left: auto;
 		color: var(--accent-strong);
 		font-size: 12px;
 		font-weight: 700;
+		white-space: nowrap;
+	}
+	.share-error {
+		margin: 0;
+		color: var(--danger);
+		font-size: 12px;
 	}
 	.hint {
 		margin: 0;

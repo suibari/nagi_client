@@ -150,7 +150,10 @@ export type PostView = {
 	images?: PostImage[];
 	video?: PostVideoView;
 	linkCards?: LinkCardView[];
-	quote?: { kind: 'post'; post: PostView } | { kind: 'news'; news: NewsView };
+	quote?:
+		| { kind: 'post'; post: PostView }
+		| { kind: 'news'; news: NewsView }
+		| { kind: 'radio'; radio: RadioQuoteView };
 	reactions: ReactionView[];
 	isBot: boolean;
 	isAffirmation: boolean;
@@ -385,6 +388,23 @@ export type RadioTrack = {
 	videoId?: string;
 	publishedAt: string;
 	sourceUrl?: string;
+};
+/**
+ * ポストが引用したbotたんラジオの1回（com.suibari.nagi.radio）。中身は AppView が本人の
+ * 放送履歴から引く。公開をやめた・放送が見つからないときは unavailable だけが立つ。
+ */
+export type RadioQuoteView = {
+	uri: string;
+	cid: string;
+	slotKey: string;
+	title: string;
+	artist: string;
+	commentJa?: string;
+	commentEn?: string;
+	songUrl?: string;
+	thumbnailUrl?: string;
+	publishedAt: string;
+	unavailable?: boolean;
 };
 export type RadioTrackResponse = { track?: RadioTrack; hasUnread: boolean; unreadSlotKey?: string };
 export type RadioHistoryResponse = {

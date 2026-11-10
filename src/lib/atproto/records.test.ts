@@ -525,6 +525,8 @@ describe('deleteAllNagiRecords', () => {
 			// アカウントデータの削除で必ず消えること。
 			'com.suibari.nagi.zenkatsu',
 			'com.suibari.nagi.cardGet',
+			// ラジオの公開。消せば引用カードも出なくなる。
+			'com.suibari.nagi.radio',
 		]);
 
 		await deleteAllNagiRecords();
