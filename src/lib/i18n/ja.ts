@@ -1258,19 +1258,11 @@ export const ja = {
 	profilePublicationSyncWarning:
 		'プロフィールは保存されましたが、ブログ側のプロフィール情報を更新できませんでした。',
 	profileSettingsNote:
-		'表示名・自己紹介・アバターはNagi専用です。WebサイトだけはBlueskyなど対応するAT Protocolアプリと共有されます。',
+		'プロフィールは登録時にBlueskyからコピーします。その後の変更はNagi内だけに反映され、Blueskyとは独立しています。',
 	profileWebsiteLabel: 'Webサイト',
 	profileWebsiteHelp:
-		'https://は省略できます。Blueskyプロフィールのwebsiteとして保存し、Nagiではリンクカードで表示します。反映には最大1分ほどかかる場合があります。',
-	profileWebsitePermissionNote:
-		'Webサイトを編集するには、Blueskyプロフィールの更新権限を追加してください。表示名・自己紹介・アバターは変更しません。',
-	profileWebsiteReauthSubmit: 'Webサイトの編集権限を追加',
-	profileWebsiteReauthPending: '移動しています…',
+		'https://は省略できます。Nagiのプロフィールに保存し、リンクカードで表示します。反映には最大1分ほどかかる場合があります。',
 	profileWebsiteInvalid: 'WebサイトのURLを確認してください。',
-	profileWebsiteUnavailable:
-		'現在のWebサイトを確認できていないため、変更できません。ページを再読み込みしてください。',
-	profileWebsiteLoadWarning: '現在のWebサイトを読み込めませんでした。',
-	profileWebsiteSaveWarning: 'プロフィールは保存されましたが、Webサイトを更新できませんでした。',
 	loginRequired: '設定を変更するにはログインしてください。',
 	currentAvatarAlt: '現在のアバター',
 	selectImage: '画像を選択',

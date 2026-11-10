@@ -8,6 +8,13 @@ import {
 } from './client';
 
 describe('buildScope', () => {
+	it('does not request Bluesky profile write permissions', () => {
+		expect(
+			buildScope({ crosspost: true })
+				.split(' ')
+				.some((scope) => scope.startsWith('repo:app.bsky.actor.profile')),
+		).toBe(false);
+	});
 	it('always includes the 3 Lines diary collection and its assist RPC', () => {
 		const base = buildScope().split(' ');
 		expect(TRILINES_COLLECTION_SCOPE).toBe('repo:com.suibari.trilinesat.diary');

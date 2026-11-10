@@ -1220,19 +1220,11 @@ export const en: Messages = {
 	profilePublicationSyncWarning:
 		'Your profile was saved, but its blog profile information could not be updated.',
 	profileSettingsNote:
-		'Your display name, bio, and avatar are specific to Nagi. Only your website is shared with Bluesky and other compatible AT Protocol apps.',
+		'Your profile is copied from Bluesky when you join. Later changes apply only to Nagi and are independent of Bluesky.',
 	profileWebsiteLabel: 'Website',
 	profileWebsiteHelp:
-		'You can omit https://. This is saved as your Bluesky profile website and shown as a link card on Nagi. Updates may take about a minute to appear.',
-	profileWebsitePermissionNote:
-		'To edit your website, grant permission to update your Bluesky profile. Nagi will not change its display name, bio, or avatar.',
-	profileWebsiteReauthSubmit: 'Grant website editing permission',
-	profileWebsiteReauthPending: 'Redirecting…',
+		'You can omit https://. This is saved in your Nagi profile and shown as a link card. Updates may take about a minute to appear.',
 	profileWebsiteInvalid: 'Check the website URL.',
-	profileWebsiteUnavailable:
-		'The current website could not be verified, so it cannot be changed. Reload the page and try again.',
-	profileWebsiteLoadWarning: 'Your current website could not be loaded.',
-	profileWebsiteSaveWarning: 'Your profile was saved, but its website could not be updated.',
 	loginRequired: 'Log in to change your settings.',
 	currentAvatarAlt: 'Current avatar',
 	selectImage: 'Choose image',
