@@ -17,23 +17,23 @@
 
 ## 分野別の原文
 
-| 分野                                     | 原文                             | 現在の仕様                                        | 現在の設計                                          |
-| ---------------------------------------- | -------------------------------- | ------------------------------------------------- | --------------------------------------------------- |
-| AppView通信・AT Protocolレコード         | [原文](appview-protocol.md)      | [仕様](../../specs/appview-protocol/spec.md)      | [設計](../../specs/appview-protocol/design.md)      |
-| 認証・セッション・姉妹アプリ連携         | [原文](auth-session.md)          | [仕様](../../specs/auth-session/spec.md)          | [設計](../../specs/auth-session/design.md)          |
-| standard.site記事公開・ブログ表示        | [原文](blog-publication.md)      | [仕様](../../specs/blog-publication/spec.md)      | [設計](../../specs/blog-publication/design.md)      |
-| Bluesky閲覧・クロスポスト                | [原文](bluesky-integration.md)   | [仕様](../../specs/bluesky-integration/spec.md)   | [設計](../../specs/bluesky-integration/design.md)   |
-| 全肯定カード・ゼンカツ・アドベント・名刺 | [原文](cards-zenkatsu-advent.md) | [仕様](../../specs/cards-zenkatsu-advent/spec.md) | [設計](../../specs/cards-zenkatsu-advent/design.md) |
-| 日記・気分・3行日記                      | [原文](diary-trilines.md)        | [仕様](../../specs/diary-trilines/spec.md)        | [設計](../../specs/diary-trilines/design.md)        |
-| 絵文字・タグ・生成UI                     | [原文](emoji-tags.md)            | [仕様](../../specs/emoji-tags/spec.md)            | [設計](../../specs/emoji-tags/design.md)            |
-| フィード・タブ・スレッド・リアクション   | [原文](feed-thread.md)           | [仕様](../../specs/feed-thread/spec.md)           | [設計](../../specs/feed-thread/design.md)           |
-| 表示言語・翻訳・テーマ                   | [原文](i18n-theme.md)            | [仕様](../../specs/i18n-theme/spec.md)            | [設計](../../specs/i18n-theme/design.md)            |
-| 画像・GIF・動画・リンクカード            | [原文](media-processing.md)      | [仕様](../../specs/media-processing/spec.md)      | [設計](../../specs/media-processing/design.md)      |
-| モデレーション・年齢・通報               | [原文](moderation-privacy.md)    | [仕様](../../specs/moderation-privacy/spec.md)    | [設計](../../specs/moderation-privacy/design.md)    |
-| ニュース・年表                           | [原文](news-chronicle.md)        | [仕様](../../specs/news-chronicle/spec.md)        | [設計](../../specs/news-chronicle/design.md)        |
-| 通知・Web Push・既読位置                 | [原文](notifications-unread.md)  | [仕様](../../specs/notifications-unread/spec.md)  | [設計](../../specs/notifications-unread/design.md)  |
-| 投稿・編集入力・下書き                   | [原文](post-composer.md)         | [仕様](../../specs/post-composer/spec.md)         | [設計](../../specs/post-composer/design.md)         |
-| 設定同期・プロフィール・ゲスト投稿       | [原文](preferences-profile.md)   | [仕様](../../specs/preferences-profile/spec.md)   | [設計](../../specs/preferences-profile/design.md)   |
-| botたんラジオ                            | [原文](radio.md)                 | [仕様](../../specs/radio/spec.md)                 | [設計](../../specs/radio/design.md)                 |
-| 検索・OGP・静的配信・デプロイ            | [原文](seo-deployment.md)        | [仕様](../../specs/seo-deployment/spec.md)        | [設計](../../specs/seo-deployment/design.md)        |
-| 画面基盤・レイアウト・操作・開発検証     | [原文](ui-platform.md)           | [仕様](../../specs/ui-platform/spec.md)           | [設計](../../specs/ui-platform/design.md)           |
+| 分野                                     | 原文                             | 現在の仕様                                       | 現在の設計                                         |
+| ---------------------------------------- | -------------------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| AppView通信・AT Protocolレコード         | [原文](appview-protocol.md)      | [仕様](../../specs/appview-protocol/spec.md)     | [設計](../../specs/appview-protocol/design.md)     |
+| 認証・セッション・姉妹アプリ連携         | [原文](auth-session.md)          | [仕様](../../specs/auth-session/spec.md)         | [設計](../../specs/auth-session/design.md)         |
+| standard.site記事公開・ブログ表示        | [原文](blog-publication.md)      | [仕様](../../specs/blog-publication/spec.md)     | [設計](../../specs/blog-publication/design.md)     |
+| Bluesky閲覧・クロスポスト                | [原文](bluesky-integration.md)   | [仕様](../../specs/bluesky-integration/spec.md)  | [設計](../../specs/bluesky-integration/design.md)  |
+| 全肯定カード・ゼンカツ・アドベント・名刺 | [原文](cards-zenkatsu-advent.md) | [仕様](../../specs/cards-zenkatsu/spec.md)       | [設計](../../specs/cards-zenkatsu/design.md)       |
+| 日記・気分・3行日記                      | [原文](diary-trilines.md)        | [仕様](../../specs/diary-trilines/spec.md)       | [設計](../../specs/diary-trilines/design.md)       |
+| 絵文字・タグ・生成UI                     | [原文](emoji-tags.md)            | [仕様](../../specs/emoji-tags/spec.md)           | [設計](../../specs/emoji-tags/design.md)           |
+| フィード・タブ・スレッド・リアクション   | [原文](feed-thread.md)           | [仕様](../../specs/feed-thread/spec.md)          | [設計](../../specs/feed-thread/design.md)          |
+| 表示言語・翻訳・テーマ                   | [原文](i18n-theme.md)            | [仕様](../../specs/i18n-theme/spec.md)           | [設計](../../specs/i18n-theme/design.md)           |
+| 画像・GIF・動画・リンクカード            | [原文](media-processing.md)      | [仕様](../../specs/media-processing/spec.md)     | [設計](../../specs/media-processing/design.md)     |
+| モデレーション・年齢・通報               | [原文](moderation-privacy.md)    | [仕様](../../specs/moderation-privacy/spec.md)   | [設計](../../specs/moderation-privacy/design.md)   |
+| ニュース・年表                           | [原文](news-chronicle.md)        | [仕様](../../specs/news-chronicle/spec.md)       | [設計](../../specs/news-chronicle/design.md)       |
+| 通知・Web Push・既読位置                 | [原文](notifications-unread.md)  | [仕様](../../specs/notifications-unread/spec.md) | [設計](../../specs/notifications-unread/design.md) |
+| 投稿・編集入力・下書き                   | [原文](post-composer.md)         | [仕様](../../specs/post-composer/spec.md)        | [設計](../../specs/post-composer/design.md)        |
+| 設定同期・プロフィール・ゲスト投稿       | [原文](preferences-profile.md)   | [仕様](../../specs/preferences-profile/spec.md)  | [設計](../../specs/preferences-profile/design.md)  |
+| botたんラジオ                            | [原文](radio.md)                 | [仕様](../../specs/radio/spec.md)                | [設計](../../specs/radio/design.md)                |
+| 検索・OGP・静的配信・デプロイ            | [原文](seo-deployment.md)        | [仕様](../../specs/seo-deployment/spec.md)       | [設計](../../specs/seo-deployment/design.md)       |
+| 画面基盤・レイアウト・操作・開発検証     | [原文](ui-platform.md)           | [仕様](../../specs/ui-platform/spec.md)          | [設計](../../specs/ui-platform/design.md)          |

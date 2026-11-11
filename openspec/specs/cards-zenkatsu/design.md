@@ -1,4 +1,4 @@
-# 全肯定カード・ゼンカツ・アドベント・名刺：設計判断
+# 全肯定カード・ゼンカツ・名刺：設計判断
 
 ## この文書の役割
 
@@ -30,13 +30,13 @@
 
 **理由と制約**：翻訳も開くまで遅延する。リアクター一覧は対象の持ち主だけへ見せ、第三者が反応関係を追えないようにする。
 
-### D4: 暦と描画の共通化は意味が同じ範囲に限る
+### D4: 名刺の描画は用途に応じて共通化する
 
-**課題**：アドベントの0時とカードの4時は別の境界であり、名刺の画面と保存画像にも用途の差がある。
+**課題**：名刺の画面と保存画像は同じ本人紹介を表すが、配色やQRの必要性は異なる。
 
-**採用判断**：日付境界は別管理し、名刺は入力とデザインを共有しながらDOMのテーマ追従と画像の固定色・QRを使い分ける。
+**採用判断**：入力とデザインは共有し、DOMのテーマ追従と、画像の固定色・QRを使い分ける。
 
-**理由と制約**：手紙はサーバ既読確認後に開封演出を決める。名刺DOMとCanvasは片方だけ直さず、保存PNGとOGPの寸法も区別する。
+**理由と制約**：名刺DOMとCanvasは片方だけ直さず、保存PNGとOGPの寸法も区別する。季節ごとの暦と開封判断は [季節イベントの設計](../seasonal-events/design.md) で扱う。
 
 ## 実装の入口
 
@@ -47,7 +47,6 @@
 | [src/lib/cards/collection.svelte.ts](../../../src/lib/cards/collection.svelte.ts)         | コレクションと取得状態 |
 | [src/lib/cards/celebration.ts](../../../src/lib/cards/celebration.ts)                     | CARD_REVEAL_EFFECTS    |
 | [src/lib/components/ZenkatsuPlay.svelte](../../../src/lib/components/ZenkatsuPlay.svelte) | ゲームの進行           |
-| [src/lib/advent/advent.ts](../../../src/lib/advent/advent.ts)                             | 季節の暦               |
 | [src/lib/card/render.ts](../../../src/lib/card/render.ts)                                 | 名刺画像生成           |
 
 ## 出典と変更時の扱い

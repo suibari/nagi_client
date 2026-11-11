@@ -1,6 +1,6 @@
 # Nagiの仕様書
 
-Nagiの機能、振る舞い、設計判断をまとめる。アプリコード・既存コメントは変更せず、導入時のコメントをもとに18分野、123要件・230シナリオを整理した。
+Nagiの機能、振る舞い、設計判断をまとめる。アプリコード・既存コメントは変更せず、導入時のコメントをもとに19分野、123要件・230シナリオを整理した。
 
 ## 読む順序
 
@@ -23,26 +23,27 @@ Nagiの機能、振る舞い、設計判断をまとめる。アプリコード�
 
 ## 分野別の入口
 
-| 分野                                   | 仕様                                        | 設計・経緯                                    |
-| -------------------------------------- | ------------------------------------------- | --------------------------------------------- |
-| 認証・セッション・SSO                  | [仕様](specs/auth-session/spec.md)          | [設計](specs/auth-session/design.md)          |
-| AppView通信・AT Protocol・型契約       | [仕様](specs/appview-protocol/spec.md)      | [設計](specs/appview-protocol/design.md)      |
-| 投稿・入力・下書き                     | [仕様](specs/post-composer/spec.md)         | [設計](specs/post-composer/design.md)         |
-| 画像・GIF・動画・リンクカード          | [仕様](specs/media-processing/spec.md)      | [設計](specs/media-processing/design.md)      |
-| フィード・タブ・スレッド・リアクション | [仕様](specs/feed-thread/spec.md)           | [設計](specs/feed-thread/design.md)           |
-| Bluesky閲覧・クロスポスト              | [仕様](specs/bluesky-integration/spec.md)   | [設計](specs/bluesky-integration/design.md)   |
-| ブログ・standard.site                  | [仕様](specs/blog-publication/spec.md)      | [設計](specs/blog-publication/design.md)      |
-| 日記・気分・3行日記                    | [仕様](specs/diary-trilines/spec.md)        | [設計](specs/diary-trilines/design.md)        |
-| カード・ゼンカツ・アドベント・名刺     | [仕様](specs/cards-zenkatsu-advent/spec.md) | [設計](specs/cards-zenkatsu-advent/design.md) |
-| botたんラジオ                          | [仕様](specs/radio/spec.md)                 | [設計](specs/radio/design.md)                 |
-| ニュース・年表                         | [仕様](specs/news-chronicle/spec.md)        | [設計](specs/news-chronicle/design.md)        |
-| 通知・Push・既読                       | [仕様](specs/notifications-unread/spec.md)  | [設計](specs/notifications-unread/design.md)  |
-| 絵文字・タグ                           | [仕様](specs/emoji-tags/spec.md)            | [設計](specs/emoji-tags/design.md)            |
-| 設定同期・プロフィール・ゲスト         | [仕様](specs/preferences-profile/spec.md)   | [設計](specs/preferences-profile/design.md)   |
-| モデレーション・年齢・通報             | [仕様](specs/moderation-privacy/spec.md)    | [設計](specs/moderation-privacy/design.md)    |
-| 表示言語・翻訳・テーマ                 | [仕様](specs/i18n-theme/spec.md)            | [設計](specs/i18n-theme/design.md)            |
-| 検索・OGP・静的配信・デプロイ          | [仕様](specs/seo-deployment/spec.md)        | [設計](specs/seo-deployment/design.md)        |
-| 画面基盤・レイアウト・操作・開発検証   | [仕様](specs/ui-platform/spec.md)           | [設計](specs/ui-platform/design.md)           |
+| 分野                                       | 仕様                                       | 設計・経緯                                   |
+| ------------------------------------------ | ------------------------------------------ | -------------------------------------------- |
+| 認証・セッション・SSO                      | [仕様](specs/auth-session/spec.md)         | [設計](specs/auth-session/design.md)         |
+| AppView通信・AT Protocol・型契約           | [仕様](specs/appview-protocol/spec.md)     | [設計](specs/appview-protocol/design.md)     |
+| 投稿・入力・下書き                         | [仕様](specs/post-composer/spec.md)        | [設計](specs/post-composer/design.md)        |
+| 画像・GIF・動画・リンクカード              | [仕様](specs/media-processing/spec.md)     | [設計](specs/media-processing/design.md)     |
+| フィード・タブ・スレッド・リアクション     | [仕様](specs/feed-thread/spec.md)          | [設計](specs/feed-thread/design.md)          |
+| Bluesky閲覧・クロスポスト                  | [仕様](specs/bluesky-integration/spec.md)  | [設計](specs/bluesky-integration/design.md)  |
+| ブログ・standard.site                      | [仕様](specs/blog-publication/spec.md)     | [設計](specs/blog-publication/design.md)     |
+| 日記・気分・3行日記                        | [仕様](specs/diary-trilines/spec.md)       | [設計](specs/diary-trilines/design.md)       |
+| カード・ゼンカツ・名刺                     | [仕様](specs/cards-zenkatsu/spec.md)       | [設計](specs/cards-zenkatsu/design.md)       |
+| 季節イベント（アドカレ、おみくじ追加予定） | [仕様](specs/seasonal-events/spec.md)      | [設計](specs/seasonal-events/design.md)      |
+| botたんラジオ                              | [仕様](specs/radio/spec.md)                | [設計](specs/radio/design.md)                |
+| ニュース・年表                             | [仕様](specs/news-chronicle/spec.md)       | [設計](specs/news-chronicle/design.md)       |
+| 通知・Push・既読                           | [仕様](specs/notifications-unread/spec.md) | [設計](specs/notifications-unread/design.md) |
+| 絵文字・タグ                               | [仕様](specs/emoji-tags/spec.md)           | [設計](specs/emoji-tags/design.md)           |
+| 設定同期・プロフィール・ゲスト             | [仕様](specs/preferences-profile/spec.md)  | [設計](specs/preferences-profile/design.md)  |
+| モデレーション・年齢・通報                 | [仕様](specs/moderation-privacy/spec.md)   | [設計](specs/moderation-privacy/design.md)   |
+| 表示言語・翻訳・テーマ                     | [仕様](specs/i18n-theme/spec.md)           | [設計](specs/i18n-theme/design.md)           |
+| 検索・OGP・静的配信・デプロイ              | [仕様](specs/seo-deployment/spec.md)       | [設計](specs/seo-deployment/design.md)       |
+| 画面基盤・レイアウト・操作・開発検証       | [仕様](specs/ui-platform/spec.md)          | [設計](specs/ui-platform/design.md)          |
 
 共通部品が複数分野を横断する場合、出典は1分野に保管し、機能の要件は該当する複数分野から参照する。特定ファイルを探すときは `coverage.md` または台帳の `path` を使う。
 

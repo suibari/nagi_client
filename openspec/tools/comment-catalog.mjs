@@ -245,10 +245,13 @@ if (checkCurrent) {
 			'Current source file list, content or comments differ from the recorded baseline.',
 		);
 }
-for (const d of new Set(old.files.filter((f) => f.comments.length).map((f) => f.domain))) {
+const historicalDomains = new Set(old.files.filter((f) => f.comments.length).map((f) => f.domain));
+const specDomains = fs
+	.readdirSync(`${root}/specs`)
+	.filter((domain) => fs.existsSync(`${root}/specs/${domain}/spec.md`));
+for (const d of specDomains) {
 	const spec = fs.readFileSync(`${root}/specs/${d}/spec.md`, 'utf8');
 	const design = fs.readFileSync(`${root}/specs/${d}/design.md`, 'utf8');
-	const snapshot = fs.readFileSync(`${root}/reference/comment-snapshot/${d}.md`, 'utf8');
 	for (const section of [
 		'## Purpose',
 		'### 機能概要',
@@ -278,6 +281,10 @@ for (const d of new Set(old.files.filter((f) => f.comments.length).map((f) => f.
 	for (const match of spec.matchAll(/### Requirement: ([A-Z]+-\d+)/g))
 		if (!spec.includes(`](#${match[1].toLowerCase()})`))
 			failures.push(`Requirement missing from feature inventory: ${d}/${match[1]}`);
+}
+// Historical source groups can remain fixed when the living specification is reorganized.
+for (const d of historicalDomains) {
+	const snapshot = fs.readFileSync(`${root}/reference/comment-snapshot/${d}.md`, 'utf8');
 	for (const f of old.files.filter((f) => f.domain === d))
 		for (const c of f.comments) {
 			const id = `${f.path}:${c.line}`;
@@ -325,7 +332,7 @@ if (failures.length) {
 	process.exitCode = 1;
 } else {
 	console.log(
-		`PASS: 18 reader-oriented specs and designs; ${old.files.length} baseline files; ${old.files.reduce((n, f) => n + f.comments.length, 0)} preserved comment blocks with immutable links; ${linkCount} local links.`,
+		`PASS: ${specDomains.length} reader-oriented specs and designs; ${old.files.length} baseline files; ${old.files.reduce((n, f) => n + f.comments.length, 0)} preserved comment blocks with immutable links; ${linkCount} local links.`,
 	);
 	if (checkCurrent)
 		console.log(
