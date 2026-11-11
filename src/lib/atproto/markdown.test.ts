@@ -103,6 +103,17 @@ describe('parseRichText', () => {
 		expect(linked?.external).toBe(false);
 	});
 
+	it('keeps the original tag on a hashtag run for the tag menu', () => {
+		const parsed = parsePostText('今日の #Nagi 日記');
+		const [block] = parseRichText(parsed.text, parsed.facets);
+		const runs = 'runs' in block ? block.runs : [];
+		const tagged = runs.find((run) => run.href);
+		expect(tagged?.text).toBe('#Nagi');
+		expect(tagged?.href).toBe('/search?tag=nagi');
+		expect(tagged?.tag).toBe('Nagi');
+		expect(runs.filter((run) => !run.href).every((run) => run.tag === undefined)).toBe(true);
+	});
+
 	it('refuses to link a facet whose uri is not http(s)', () => {
 		// javascript: を href にしないことは、他人の投稿を描画するうえでの前提。
 		const [block] = parseRichText('あぶない', [

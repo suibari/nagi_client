@@ -566,6 +566,10 @@ export type PreferencesView = {
 	feedTabs: FeedTab[];
 	/** 省略＝まだ一度もタブをカスタムしていない。クライアントは既定タブを使う。 */
 	feedTabsUpdatedAt?: string;
+	/** お気に入りタグ（# なし小文字、表示順）。旧 AppView は返さない。 */
+	tagFavorites?: string[];
+	/** 省略＝このアカウントのお気に入りタグがまだ一度も同期されていない。 */
+	tagFavoritesUpdatedAt?: string;
 	/** botたんからの返信確率（0〜100%）。 */
 	replyFreq?: number;
 	/** 省略＝未設定。botたんは表示名で呼ぶ。 */
@@ -650,6 +654,9 @@ export type PutPreferencesInput = {
 	feedTabs?: FeedTab[];
 	/** feedTabs を送るときは必須。保存済みより古ければサーバは書き込まない。 */
 	feedTabsUpdatedAt?: string;
+	tagFavorites?: string[];
+	/** tagFavorites を送るときは必須。保存済みより古ければサーバは書き込まない。 */
+	tagFavoritesUpdatedAt?: string;
 	/** botたんからの返信確率（0〜100%）。送らなければ変更しない。 */
 	replyFreq?: number;
 	/**

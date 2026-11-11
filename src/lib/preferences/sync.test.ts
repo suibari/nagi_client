@@ -64,7 +64,8 @@ vi.mock('$lib/emoji/reactionUsage', () => ({
 }));
 
 import { session } from '$lib/oauth/session.svelte';
-import { ApiRequestError, getPreferences } from '$lib/api/appview';
+import { ApiRequestError, getPreferences, putPreferences } from '$lib/api/appview';
+import { tagFavorites, tagFavoritesStorageKey } from '$lib/tag-favorites/tag-favorites.svelte';
 import { favoritesStorageKey, loadFavorites } from '$lib/emoji/favorites';
 import { preferences } from './preferences.svelte';
 import { retryPreferences, syncPreferences } from './sync.svelte';
@@ -178,5 +179,53 @@ describe('favorite preference recovery', () => {
 		await old;
 		expect(storage.has(favoritesStorageKey(did))).toBe(false);
 		expect(loadFavorites()).toEqual([]);
+	});
+});
+
+describe('tag favorites sync', () => {
+	it('adopts newer server tags into the cache and the store', async () => {
+		storage.set(
+			tagFavoritesStorageKey(did),
+			JSON.stringify({ tags: ['old'], updatedAt: '2026-10-19T00:00:00.000Z' }),
+		);
+		vi.mocked(getPreferences).mockResolvedValue({
+			...view(),
+			tagFavorites: ['nagi', 'diary'],
+			tagFavoritesUpdatedAt: '2026-10-20T00:00:00.000Z',
+		});
+		await syncPreferences(did);
+		expect(tagFavorites.favorites).toEqual(['nagi', 'diary']);
+		expect(JSON.parse(storage.get(tagFavoritesStorageKey(did))!)).toEqual({
+			tags: ['nagi', 'diary'],
+			updatedAt: '2026-10-20T00:00:00.000Z',
+		});
+		expect(putPreferences).not.toHaveBeenCalled();
+	});
+	it('pushes local tags when the server has none (older AppView or never synced)', async () => {
+		storage.set(
+			tagFavoritesStorageKey(did),
+			JSON.stringify({ tags: ['local'], updatedAt: '2026-10-21T00:00:00.000Z' }),
+		);
+		vi.mocked(getPreferences).mockResolvedValue(view());
+		vi.mocked(putPreferences).mockResolvedValue(view());
+		await syncPreferences(did);
+		expect(tagFavorites.favorites).toEqual(['local']);
+		await preferences.flushNow();
+		expect(putPreferences).toHaveBeenCalledWith(
+			expect.objectContaining({
+				tagFavorites: ['local'],
+				tagFavoritesUpdatedAt: '2026-10-21T00:00:00.000Z',
+			}),
+		);
+	});
+	it('sends edits made after sync', async () => {
+		vi.mocked(getPreferences).mockResolvedValue(view());
+		vi.mocked(putPreferences).mockResolvedValue(view());
+		await syncPreferences(did);
+		expect(tagFavorites.add('#Nagi')).toBe(true);
+		await preferences.flushNow();
+		expect(putPreferences).toHaveBeenCalledWith(
+			expect.objectContaining({ tagFavorites: ['nagi'] }),
+		);
 	});
 });

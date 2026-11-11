@@ -32,11 +32,13 @@
 	import { preferences } from '$lib/preferences/preferences.svelte';
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
+	import { tagFavorites } from '$lib/tag-favorites/tag-favorites.svelte';
 	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
 	import WelcomeTutorialHost from '$lib/components/WelcomeTutorialHost.svelte';
 	import AnniversaryCardHost from '$lib/components/AnniversaryCardHost.svelte';
 	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
 	import GuestPostModal from '$lib/components/GuestPostModal.svelte';
+	import TagContextMenu from '$lib/components/TagContextMenu.svelte';
 	import { guestComposerHost } from '$lib/guest-posts/composer-host.svelte';
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
 	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
@@ -197,6 +199,7 @@
 		// ここで一度読まないと、サインインしない人のカスタムが永久に反映されない
 		// （サインイン後は syncPreferences が DID スコープで読み直す）。
 		feedTabs.hydrate();
+		tagFavorites.hydrate();
 		guestCardDraw.hydrate();
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
 		void initOAuth().then(() => resolvePendingOptIns());
@@ -305,3 +308,6 @@
 {:else if $oauthReady}
 	<GuestPostModal open={guestComposerHost.open} onclose={() => guestComposerHost.hide()} />
 {/if}
+
+<!-- 本文のハッシュタグの右クリック／長押しメニュー。どの画面のタグからも開くので常駐させる。 -->
+<TagContextMenu />

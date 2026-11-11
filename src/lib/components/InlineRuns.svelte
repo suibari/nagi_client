@@ -2,6 +2,7 @@
 	import type { InlineRun } from '$lib/atproto/markdown';
 	import ContentWarningMask from './ContentWarningMask.svelte';
 	import BluemojiMedia from './BluemojiMedia.svelte';
+	import { tagMenuTrigger } from '$lib/tag-favorites/tag-menu.svelte';
 	let { runs, warningState }: { runs: InlineRun[]; warningState: { revealed: boolean } } = $props();
 	let unavailable = $state<string[]>([]);
 </script>
@@ -12,7 +13,9 @@
 				onunavailable={() => (unavailable = [...unavailable, run.bluemoji!.uri])}
 			/>{:else if run.href}<a
 				class="rich-link"
+				class:rich-tag={Boolean(run.tag)}
 				href={run.href}
+				use:tagMenuTrigger={run.tag}
 				target={run.external ? '_blank' : undefined}
 				rel={run.external ? 'noopener noreferrer' : undefined}>{run.text}</a
 			>{:else}{run.text}{/if}{/snippet}{#snippet coded()}{#if run.marks.includes('code')}<code
@@ -30,6 +33,13 @@
 
 <style>
 	/* 本文の絵文字は文字サイズの2倍に揃え、横長画像の比率も保つ。 */
+	/* 長押しでタグのメニューを開くので、iOS のリンクプレビューと文字選択を出さない。 */
+	:global(.rich-tag) {
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+
 	:global(.inline-bluemoji) {
 		display: inline-flex;
 		min-width: 2em;

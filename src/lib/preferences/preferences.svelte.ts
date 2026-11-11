@@ -15,7 +15,7 @@ import { session } from '$lib/oauth/session.svelte';
 import { deviceTimezone, timezoneToReport } from '$lib/diary/timezone';
 
 /**
- * 端末をまたいで同期する設定（my Nagi の既読位置・お気に入り絵文字）の通信層。
+ * 端末をまたいで同期する設定（既読位置・お気に入り絵文字・お気に入りタグなど）の通信層。
  *
  * ここはトランスポートと「サーバーが持っている値」の保持だけを行い、それをどこへ
  * 適用するかは `$lib/preferences/sync.svelte` が決める。favorites / watermark 側から
@@ -39,6 +39,7 @@ type MergedHandler = (
 	sent: {
 		favorites: boolean;
 		feedTabs: boolean;
+		tagFavorites: boolean;
 		language: boolean;
 		moderation: boolean;
 		bookmark: boolean;
@@ -65,6 +66,7 @@ class Preferences {
 	#pendingPositions = new Map<ReadPositionSection, RemoteReadPosition>();
 	#pendingFavorites: { choices: EmojiFavorite[]; updatedAt: string } | undefined;
 	#pendingFeedTabs: { tabs: FeedTab[]; updatedAt: string } | undefined;
+	#pendingTagFavorites: { tags: string[]; updatedAt: string } | undefined;
 	#pendingLanguage: { value: SyncedLanguagePreferences; updatedAt: string } | undefined;
 	#pendingModeration: { value: SyncedModerationPreferences; updatedAt: string } | undefined;
 	#pendingBookmark: { folderId: string | null; updatedAt: string } | undefined;
@@ -133,6 +135,7 @@ class Preferences {
 		this.#pendingPositions.clear();
 		this.#pendingFavorites = undefined;
 		this.#pendingFeedTabs = undefined;
+		this.#pendingTagFavorites = undefined;
 		this.#pendingLanguage = undefined;
 		this.#pendingModeration = undefined;
 		this.#pendingBookmark = undefined;
@@ -155,6 +158,12 @@ class Preferences {
 	pushFeedTabs(tabs: FeedTab[], updatedAt: string) {
 		if (!this.synced) return;
 		this.#pendingFeedTabs = { tabs, updatedAt };
+		this.#schedule();
+	}
+
+	pushTagFavorites(tags: string[], updatedAt: string) {
+		if (!this.synced) return;
+		this.#pendingTagFavorites = { tags, updatedAt };
 		this.#schedule();
 	}
 
@@ -237,14 +246,24 @@ class Preferences {
 		const positions = [...this.#pendingPositions.values()];
 		const favorites = this.#pendingFavorites;
 		const feedTabs = this.#pendingFeedTabs;
+		const tagFavorites = this.#pendingTagFavorites;
 		const language = this.#pendingLanguage;
 		const moderation = this.#pendingModeration;
 		const bookmark = this.#pendingBookmark;
-		if (!positions.length && !favorites && !feedTabs && !language && !moderation && !bookmark)
+		if (
+			!positions.length &&
+			!favorites &&
+			!feedTabs &&
+			!tagFavorites &&
+			!language &&
+			!moderation &&
+			!bookmark
+		)
 			return;
 		this.#pendingPositions.clear();
 		this.#pendingFavorites = undefined;
 		this.#pendingFeedTabs = undefined;
+		this.#pendingTagFavorites = undefined;
 		this.#pendingLanguage = undefined;
 		this.#pendingModeration = undefined;
 		this.#pendingBookmark = undefined;
@@ -257,6 +276,12 @@ class Preferences {
 					}
 				: {}),
 			...(feedTabs ? { feedTabs: feedTabs.tabs, feedTabsUpdatedAt: feedTabs.updatedAt } : {}),
+			...(tagFavorites
+				? {
+						tagFavorites: tagFavorites.tags,
+						tagFavoritesUpdatedAt: tagFavorites.updatedAt,
+					}
+				: {}),
 			...(language
 				? {
 						languagePreferences: language.value,
@@ -283,6 +308,7 @@ class Preferences {
 			this.#onMerged?.(view, {
 				favorites: Boolean(favorites),
 				feedTabs: Boolean(feedTabs),
+				tagFavorites: Boolean(tagFavorites),
 				language: Boolean(language),
 				moderation: Boolean(moderation),
 				bookmark: Boolean(bookmark),
@@ -301,6 +327,7 @@ class Preferences {
 					this.#pendingPositions.set(position.section, position);
 			if (favorites && !this.#pendingFavorites) this.#pendingFavorites = favorites;
 			if (feedTabs && !this.#pendingFeedTabs) this.#pendingFeedTabs = feedTabs;
+			if (tagFavorites && !this.#pendingTagFavorites) this.#pendingTagFavorites = tagFavorites;
 			if (language && !this.#pendingLanguage) this.#pendingLanguage = language;
 			if (moderation && !this.#pendingModeration) this.#pendingModeration = moderation;
 			if (bookmark && !this.#pendingBookmark) this.#pendingBookmark = bookmark;
