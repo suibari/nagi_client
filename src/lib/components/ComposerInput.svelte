@@ -552,7 +552,7 @@
 	/**
 	 * キャレット位置（選択中なら選択範囲を置き換えて）に文字列を差し込む。
 	 * 絵文字挿入のように「装飾ではないただの挿入」のための入口で、
-	 * メンション/チャンネルの選択範囲の付け替えは insertText がまとめて面倒を見る。
+	 * メンションの選択範囲の付け替えは insertText がまとめて面倒を見る。
 	 */
 	export function insertAtCaret(text: string) {
 		if (disabled || !text) return;

@@ -146,7 +146,7 @@ export function stableDateTime(iso: string): string {
 	});
 }
 
-/** "11秒前" / "3 hours ago" のような相対時刻。チャンネルの更新日時などに使う。 */
+/** "11秒前" / "3 hours ago" のような相対時刻。 */
 export function relativeTime(iso: string): string {
 	const then = new Date(iso).getTime();
 	if (Number.isNaN(then)) return '';

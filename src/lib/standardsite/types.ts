@@ -5,10 +5,8 @@ export const MARKDOWN = 'at.markpub.markdown';
 export const MARKDOWN_TEXT = 'at.markpub.text';
 
 /**
- * publication.url は「document.path と連結して canonical URL を作るためのベース」と
- * lexicon に明記されている。ユーザーごとの publication でも url は Nagi 本体で共通にし、
- * name / description / icon で個人を表す。ローカル開発でも本番の公開 URL を書く
- * （レコードは恒久的で、localhost を指しても意味がないため）。
+ * Nagi の公開オリジン。publication.url はこの下のユーザー別パス（nagiPublicationUrl）にする。
+ * ローカル開発でも本番の公開 URL を書く（レコードは恒久的で、localhost を指しても意味がないため）。
  */
 export const NAGI_PUBLIC_ORIGIN = 'https://nagi.suibari.com';
 

@@ -770,7 +770,7 @@
 			),
 		);
 		const body = `${articleHeading}${blog ? pruneInlineImages(text, knownInline) : text}`;
-		// メンション・チャンネル・絵文字の選択は text 上の文字オフセットなので、
+		// メンション・絵文字の選択は text 上の文字オフセットなので、
 		// 先頭へ見出しを差し込んだぶんだけずらしてから facet 化させる。
 		const shift = <T extends { start: number; end: number }>(list: T[]) =>
 			articleHeading
