@@ -11,7 +11,7 @@
 	import SettingsSection from '$lib/components/SettingsSection.svelte';
 	import { mutes } from '$lib/mute/mutes.svelte';
 	import type { ActorView } from '$lib/api/types';
-	import { hashtagHref, normalizeTag } from '$lib/tags';
+	import TagMuteSection from '$lib/components/TagMuteSection.svelte';
 
 	let error = $state('');
 	let loading = $state(false);
@@ -39,27 +39,6 @@
 		} catch {
 			error = m.muteUpdateFailed();
 		}
-	}
-	async function setTagMute(tag: string, muted: boolean) {
-		error = '';
-		try {
-			await mutes.toggleTag(tag, muted);
-			return true;
-		} catch {
-			error = m.muteUpdateFailed();
-			return false;
-		}
-	}
-
-	let tagInput = $state('');
-	const newTag = $derived(normalizeTag(tagInput));
-	async function addTagMute(event: SubmitEvent) {
-		event.preventDefault();
-		if (!newTag || mutes.hasTag(newTag)) {
-			tagInput = '';
-			return;
-		}
-		if (await setTagMute(newTag, true)) tagInput = '';
 	}
 </script>
 
@@ -104,44 +83,7 @@
 			{/if}
 		</SettingsSection>
 
-		<SettingsSection title={m.muteTagsLegend()}>
-			<SettingRow>
-				<form class="mute-tag-form" onsubmit={addTagMute}>
-					<input
-						class="settings-input"
-						bind:value={tagInput}
-						maxlength="128"
-						placeholder={m.muteTagPlaceholder()}
-						aria-label={m.muteTagAdd()}
-					/>
-					<Button variant="primary" type="submit" disabled={!newTag || mutes.isPending(newTag)}>
-						{m.muteTagAdd()}
-					</Button>
-				</form>
-			</SettingRow>
-			{#if loading && !mutes.loaded}
-				<SettingRow><Spinner /></SettingRow>
-			{:else if !mutes.tags.length}
-				<SettingRow description={m.muteTagsEmpty()} />
-			{:else}
-				{#each mutes.tags as tag (tag)}
-					<div class="setting-row has-control">
-						<a class="mute-subject" href={hashtagHref(tag)}>
-							<span class="mute-names"><strong>#{tag}</strong></span>
-						</a>
-						<Button
-							variant="secondary"
-							size="sm"
-							type="button"
-							disabled={mutes.isPending(tag)}
-							onclick={() => void setTagMute(tag, false)}
-						>
-							{m.unmuteTag()}
-						</Button>
-					</div>
-				{/each}
-			{/if}
-		</SettingsSection>
+		<TagMuteSection {loading} onerror={(message) => (error = message)} />
 	{/if}
 </SettingsPage>
 
@@ -178,14 +120,5 @@
 	}
 	.mute-names .muted {
 		font-size: 0.8rem;
-	}
-	.mute-tag-form {
-		display: flex;
-		gap: 8px;
-		min-width: 0;
-	}
-	.mute-tag-form input {
-		flex: 1;
-		min-width: 0;
 	}
 </style>

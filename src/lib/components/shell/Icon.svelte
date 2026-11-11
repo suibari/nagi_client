@@ -63,6 +63,8 @@
 			'M9 18V5l11-2v13M9 9l11-2M9 18a3 2 0 1 1-6 0 3 2 0 0 1 6 0ZM20 16a3 2 0 1 1-6 0 3 2 0 0 1 6 0Z',
 		bookmark: 'M6 3h12v18l-6-4-6 4V3Z',
 		bookmarkFilled: 'M6 3h12v18l-6-4-6 4V3Z',
+		star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L12 3.5Z',
+		starFilled: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9L12 3.5Z',
 		arrowUp: 'M12 19V5M5 12l7-7 7 7',
 		arrowDown: 'M12 5v14M5 12l7 7 7-7',
 		play: 'M8 5v14l11-7L8 5Z',
@@ -105,7 +107,9 @@
 		width={size}
 		height={size}
 		viewBox="0 0 24 24"
-		fill={name === 'bookmarkFilled' || name === 'play' ? 'currentColor' : 'none'}
+		fill={name === 'bookmarkFilled' || name === 'starFilled' || name === 'play'
+			? 'currentColor'
+			: 'none'}
 		stroke="currentColor"
 		stroke-width="1.5"
 		stroke-linecap="round"

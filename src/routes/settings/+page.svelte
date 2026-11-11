@@ -62,6 +62,12 @@
 					description={m.settingsHomeListDescription()}
 				/>
 				<SettingsCategoryCard
+					href="/settings/tags"
+					icon="hash"
+					title={m.settingsTagsTitle()}
+					description={m.settingsTagsDescription()}
+				/>
+				<SettingsCategoryCard
 					href="/settings/mute"
 					icon="hide"
 					title={m.settingsMuteTitle()}

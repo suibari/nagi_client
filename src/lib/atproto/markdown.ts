@@ -12,6 +12,8 @@ export type InlineRun = {
 	contentWarning?: boolean;
 	contentWarningStart?: boolean;
 	bluemoji?: EmojiView;
+	/** ハッシュタグ facet の tag（原文ケース）。右クリック／長押しのメニューで使う。 */
+	tag?: string;
 };
 /** gap は直前のブロックとの間にあった空行の数（無ければ省略）。 */
 export type Block = { gap?: number } & (
@@ -40,6 +42,7 @@ type FacetRange = {
 	href?: string;
 	external: boolean;
 	bluemoji?: EmojiView;
+	tag?: string;
 };
 /** 元テキストの文字位置を保持したブロック本文。map[i] は text[i] の元位置（-1 は挿入した改行）。 */
 type Piece = { text: string; map: number[] };
@@ -148,6 +151,9 @@ function facetRanges(text: string, facets: Facet[], absoluteOrigin?: string): Fa
 			href,
 			external: feature?.$type === 'app.bsky.richtext.facet#link' && !isInternal,
 			...(emoji ? { bluemoji: emoji } : {}),
+			...(feature?.$type === 'app.bsky.richtext.facet#tag' && feature.tag
+				? { tag: feature.tag }
+				: {}),
 		});
 		offset = end;
 	}
@@ -199,6 +205,7 @@ function pushRuns(
 				marks: list,
 				href: range?.href,
 				external: range?.external,
+				...(range?.tag ? { tag: range.tag } : {}),
 				...(warning
 					? { contentWarning: true, contentWarningStart: source === contentWarning?.start }
 					: {}),

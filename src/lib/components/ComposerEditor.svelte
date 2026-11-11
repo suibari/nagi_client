@@ -10,6 +10,7 @@
 	import { isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
 	import type { EmojiView } from '$lib/api/types';
 	import QuickEmojiPalette from './QuickEmojiPalette.svelte';
+	import TagPalette from './TagPalette.svelte';
 	import ContentWarningPicker from './ContentWarningPicker.svelte';
 
 	let {
@@ -73,6 +74,7 @@
 		insertAtCaret: (text: string) => void;
 		insertBlock: (text: string) => void;
 		insertEmoji: (emoji: string | EmojiView) => void;
+		insertTag: (tag: string) => void;
 	}>();
 
 	/** 記事本文の画像のように、独立した1行として差し込む。 */
@@ -80,6 +82,8 @@
 		editor?.insertBlock(text);
 	}
 	let emojiPickerOpen = $state(false);
+	let tagPaletteOpen = $state(false);
+	let tagButton = $state<HTMLButtonElement>();
 	let emojiButton = $state<HTMLButtonElement>();
 	let contentWarningPickerOpen = $state(false);
 	let contentWarningButton = $state<HTMLButtonElement>();
@@ -120,6 +124,18 @@
 		{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}
 		<div class="composer-format-tools">
 			{#if emojiPickerEnabled}<button
+					bind:this={tagButton}
+					class="icon-action"
+					class:active={tagPaletteOpen}
+					type="button"
+					{disabled}
+					aria-label={m.insertTag()}
+					title={m.insertTag()}
+					aria-haspopup="dialog"
+					aria-expanded={tagPaletteOpen}
+					onmousedown={(event) => event.preventDefault()}
+					onclick={() => (tagPaletteOpen = !tagPaletteOpen)}><Icon name="hash" size={17} /></button
+				><button
 					bind:this={emojiButton}
 					class="icon-action"
 					class:active={emojiPickerOpen}
@@ -158,6 +174,11 @@
 		</div>
 	</div>
 </div>
+{#if emojiPickerEnabled}<TagPalette
+		bind:open={tagPaletteOpen}
+		anchor={tagButton}
+		select={(tag) => editor?.insertTag(tag)}
+	/>{/if}
 {#if emojiPickerEnabled}<QuickEmojiPalette
 		bind:open={emojiPickerOpen}
 		anchor={emojiButton}

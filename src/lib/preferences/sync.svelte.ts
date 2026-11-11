@@ -31,6 +31,13 @@ import {
 	setFeedTabsScope,
 } from '$lib/feed-tabs/feed-tabs.svelte';
 import { newsStorageKey } from '$lib/news/unread.svelte';
+import {
+	adoptTagFavorites,
+	loadStoredTagFavorites,
+	recentTagsStorageKey,
+	setTagFavoritesScope,
+	tagFavoritesStorageKey,
+} from '$lib/tag-favorites/tag-favorites.svelte';
 import { session } from '$lib/oauth/session.svelte';
 import {
 	adoptLanguagePreferences,
@@ -128,6 +135,24 @@ function applyFeedTabs(did: string, view: PreferencesView) {
 		preferences.pushFeedTabs(local.tabs, localUpdatedAt);
 }
 
+/**
+ * お気に入りタグの突き合わせ。updatedAt の後勝ち。
+ * サーバーが持っていない（旧 AppView、または未同期）なら、この端末の値を押し上げる。
+ * 新設の項目で、同期前から端末に溜まった一覧は無いので、絵文字のような初回の和集合は要らない。
+ */
+function applyTagFavorites(did: string, view: PreferencesView) {
+	const local = loadStoredTagFavorites(did);
+	const remoteUpdatedAt = view.tagFavoritesUpdatedAt;
+	const localUpdatedAt = local?.updatedAt ?? '';
+	// ISO 8601(UTC) 同士なので文字列比較がそのまま時刻順になる。
+	if (remoteUpdatedAt && remoteUpdatedAt > localUpdatedAt) {
+		adoptTagFavorites(did, view.tagFavorites ?? [], remoteUpdatedAt);
+		return;
+	}
+	if (local && localUpdatedAt > (remoteUpdatedAt ?? ''))
+		preferences.pushTagFavorites(local.tags, localUpdatedAt);
+}
+
 function applyLanguagePreferences(did: string, view: PreferencesView) {
 	const local = loadStoredLanguagePreferences(did);
 	const remoteAt = view.languagePreferencesUpdatedAt;
@@ -205,6 +230,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		syncedDid = undefined;
 		setFavoritesScope(undefined);
 		setFeedTabsScope(undefined);
+		setTagFavoritesScope(undefined);
 		setLanguagePreferencesScope(undefined);
 		setModerationPreferencesScope(undefined);
 		preferences.clear();
@@ -222,6 +248,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 	// タブ構成はサーバー同期の成否に関わらずアカウント単位。load を待たずに切り替える
 	// （待つと、同期できない端末で guest のタブを見せたまま guest のキーへ書いてしまう）。
 	setFeedTabsScope(did);
+	setTagFavoritesScope(did);
 	setLanguagePreferencesScope(did);
 	setModerationPreferencesScope(did);
 	syncing = (async () => {
@@ -248,6 +275,7 @@ export function syncPreferences(did: string | undefined): Promise<void> {
 		reconcileSections(did);
 		applyFavorites(did, view);
 		applyFeedTabs(did, view);
+		applyTagFavorites(did, view);
 		applyLanguagePreferences(did, view);
 		applyModerationPreferences(did, view);
 		applyAgeAssurance(view.ageAssurance);
@@ -292,6 +320,10 @@ export function clearLocalPreferenceCache(did: string) {
 		firstSyncKey(did),
 		feedTabsStorageKey(),
 		feedTabsStorageKey(did),
+		tagFavoritesStorageKey(),
+		tagFavoritesStorageKey(did),
+		recentTagsStorageKey(),
+		recentTagsStorageKey(did),
 		languagePreferencesStorageKey(did),
 		moderationPreferencesStorageKey(did),
 		newsStorageKey(),
@@ -312,6 +344,7 @@ export function clearLocalPreferenceCache(did: string) {
 	clearSections();
 	setFavoritesScope(undefined);
 	setFeedTabsScope(undefined);
+	setTagFavoritesScope(undefined);
 	setLanguagePreferencesScope(undefined);
 	setModerationPreferencesScope(undefined);
 	syncedDid = undefined;
@@ -332,6 +365,8 @@ preferences.subscribeMerged((view, sent) => {
 		adoptFeedTabs(did, view.feedTabs, view.feedTabsUpdatedAt);
 		feedTabs.adopt(view.feedTabs);
 	}
+	if (sent.tagFavorites && view.tagFavoritesUpdatedAt)
+		adoptTagFavorites(did, view.tagFavorites ?? [], view.tagFavoritesUpdatedAt);
 	if (sent.language && view.languagePreferences && view.languagePreferencesUpdatedAt)
 		adoptLanguagePreferences(
 			did,

@@ -605,6 +605,22 @@
 		);
 	}
 
+	/**
+	 * `#tag ` を差し込む。タグ facet は直前が空白か行頭のときだけ付くので、
+	 * 文字に続いていれば空白を補う。後ろに空白が無ければ1つ足して続けて打てるようにする。
+	 */
+	export function insertTag(tag: string) {
+		const body = tag.replace(/^[#＃]+/, '').trim();
+		if (!body) return;
+		const start = selectionStart();
+		const end = selectionEnd();
+		const before = start > 0 ? value[start - 1] : '';
+		const after = value[end] ?? '';
+		const prefix = before && !/\s/.test(before) ? ' ' : '';
+		const suffix = after && /\s/.test(after) ? '' : ' ';
+		insertAtCaret(`${prefix}#${body}${suffix}`);
+	}
+
 	export function applyMarkdown(format: MarkdownFormat) {
 		if (disabled) return;
 		if (format === 'bold') applyInlineFormat('**', '**', m.markdownBoldPlaceholder());

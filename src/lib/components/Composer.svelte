@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tagFavorites } from '$lib/tag-favorites/tag-favorites.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
@@ -878,6 +879,8 @@
 						throw cause;
 					});
 			optimisticPosts.markCreated(optimisticId, created);
+			// タグパレットの「最近使った」。投稿に成功したタグだけを積む。
+			tagFavorites.recordUsed([...tagsFromFacets(draft.facets), ...(article ? articleTags : [])]);
 			postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
 			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
