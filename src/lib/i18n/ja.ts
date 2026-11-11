@@ -1129,7 +1129,6 @@ export const ja = {
 	notifPrefChronicle: '年表の更新',
 	notifPrefMood: '感情グラフ',
 	notifPrefGift: 'おすそわけしたカードが届いたとき',
-	notifPrefEmoji: '頼んだ絵文字ができたとき',
 	notifPrefLoadFailed: '通知の設定を読み込めませんでした。',
 	notifPrefSaveFailed: '通知の設定を保存できませんでした。もう一度お試しください。',
 	externalPublishingHelp:
