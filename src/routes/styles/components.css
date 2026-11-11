@@ -4292,12 +4292,15 @@ a.notification-main::before {
 	display: grid;
 	gap: 8px;
 }
+/* 見出しは設定全体で2段。h2（設定トップのグループ・各ページのセクション）は本文色で一段強く、
+   h3（セクション内の小分け）は控えめな灰色にする。面の上の見出しが同じ強さで並ぶと、
+   親子関係が読み取れなくなるため。 */
 .settings-group h2 {
 	margin: 0;
 	padding-inline: 4px;
-	color: var(--text-muted);
-	font-size: 0.8rem;
-	font-weight: 500;
+	color: var(--text);
+	font-size: 0.875rem;
+	font-weight: 600;
 }
 .settings-categories {
 	display: grid;
@@ -4380,6 +4383,13 @@ button.settings-category {
 .settings-section > h2 {
 	margin: 0;
 	padding-inline: 4px;
+	color: var(--text);
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+.settings-section > h3 {
+	margin: 0;
+	padding-inline: 4px;
 	color: var(--text-muted);
 	font-size: 0.8rem;
 	font-weight: 500;
@@ -4406,6 +4416,10 @@ button.settings-category {
 	display: grid;
 	gap: 8px;
 	min-inline-size: 0;
+}
+/* セクションの中に小分けのセクションを並べるとき、親の説明・小分け同士の間を少し空ける。 */
+.settings-section-body > .settings-section {
+	margin-block-start: 8px;
 }
 .setting-row {
 	display: grid;

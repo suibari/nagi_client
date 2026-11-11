@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
+	import { getPreferences, putPreferences } from '$lib/api/appview';
+	import type { NotificationPreferenceCategory, NotificationPreferences } from '$lib/api/types';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { oauthReady, session, setOAuthReturnTo, signIn } from '$lib/oauth/session.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
@@ -17,13 +20,85 @@
 		needsStandaloneForPush,
 		type PushError,
 	} from '$lib/notifications/push.svelte';
+	import {
+		NOTIFICATION_PREFERENCE_GROUPS,
+		isNotificationCategoryEnabled,
+		withNotificationCategory,
+	} from '$lib/notifications/preferences';
 
 	let needsStandalone = $state(false);
 	let reauthBusy = $state(false);
 
+	// 通知する内容（種別ごとのオン・オフ）。判定は AppView が通知欄・未読数・プッシュの
+	// すべてで行うので、ここは読み書きだけ。端末ごとではなくアカウントの設定。
+	let notificationPreferences = $state<NotificationPreferences>({});
+	let preferencesLoading = $state(true);
+	let preferencesLoadFailed = $state(false);
+	let preferencesSaving = $state(false);
+	let preferencesSaveFailed = $state(false);
+
+	const groupTitle = {
+		people: () => m.notifPrefGroupPeople(),
+		bot: () => m.notifPrefGroupBot(),
+		other: () => m.notifPrefGroupOther(),
+	} as const;
+
+	const categoryLabel: Record<NotificationPreferenceCategory, () => string> = {
+		reply: () => m.notifPrefReply(),
+		mention: () => m.notifPrefMention(),
+		reaction: () => m.notifPrefReaction(),
+		botInteraction: () => m.notifPrefBotInteraction(),
+		diary: () => m.notifPrefDiary(),
+		analysis: () => m.notifPrefAnalysis(),
+		chronicle: () => m.notifPrefChronicle(),
+		mood: () => m.notifPrefMood(),
+		gift: () => m.notifPrefGift(),
+		emoji: () => m.notifPrefEmoji(),
+	};
+
 	onMount(() => {
 		needsStandalone = needsStandaloneForPush();
+		void loadNotificationPreferences();
 	});
+
+	async function loadNotificationPreferences() {
+		if (!$session) {
+			preferencesLoading = false;
+			return;
+		}
+		preferencesLoading = true;
+		preferencesLoadFailed = false;
+		try {
+			const view = await getPreferences();
+			notificationPreferences = view.notificationPreferences ?? {};
+		} catch {
+			preferencesLoadFailed = true;
+		} finally {
+			preferencesLoading = false;
+		}
+	}
+
+	async function toggleCategory(category: NotificationPreferenceCategory, enabled: boolean) {
+		if (preferencesSaving) return;
+		const previous = notificationPreferences;
+		const next = withNotificationCategory(previous, category, enabled);
+		// 先に見た目を変え、失敗したら戻す。保存中は他のトグルを止めて送信を直列にする。
+		notificationPreferences = next;
+		preferencesSaving = true;
+		preferencesSaveFailed = false;
+		try {
+			const view = await putPreferences({
+				notificationPreferences: next,
+				notificationPreferencesUpdatedAt: new Date().toISOString(),
+			});
+			notificationPreferences = view.notificationPreferences ?? next;
+		} catch {
+			notificationPreferences = previous;
+			preferencesSaveFailed = true;
+		} finally {
+			preferencesSaving = false;
+		}
+	}
 
 	// このページは pushState を表示・操作するだけ。購読状態の同期は +layout.svelte が
 	// セッション確立時に済ませている（ページを開かないと直らない状態を作らないため）。
@@ -112,6 +187,49 @@
 							{/if}
 						</div>
 					</SettingRow>
+				{/if}
+			{/if}
+		</SettingsSection>
+
+		<!-- 種別の行は群ごとの小分け（level 3）に並べ、この section は見出しと説明だけを持つ。 -->
+		<SettingsSection title={m.notifPrefTitle()} description={m.notifPrefHelp()} plain>
+			{#if preferencesLoading}
+				<Spinner />
+			{:else if preferencesLoadFailed}
+				<div class="push-error" role="alert">
+					<p>{m.notifPrefLoadFailed()}</p>
+					<Button
+						variant="secondary"
+						size="sm"
+						type="button"
+						onclick={() => void loadNotificationPreferences()}>{m.pushRetry()}</Button
+					>
+				</div>
+			{:else}
+				{#each NOTIFICATION_PREFERENCE_GROUPS as group (group.id)}
+					<SettingsSection title={groupTitle[group.id]()} level={3}>
+						{#each group.categories as category (category)}
+							<SettingRow
+								label={categoryLabel[category]()}
+								description={category === 'botInteraction'
+									? m.notifPrefBotInteractionNote()
+									: undefined}
+							>
+								{#snippet control({ labelId, descriptionId })}
+									<ToggleSwitch
+										checked={isNotificationCategoryEnabled(notificationPreferences, category)}
+										labelledby={labelId}
+										describedby={descriptionId}
+										disabled={preferencesSaving}
+										onchange={(enabled) => void toggleCategory(category, enabled)}
+									/>
+								{/snippet}
+							</SettingRow>
+						{/each}
+					</SettingsSection>
+				{/each}
+				{#if preferencesSaveFailed}
+					<p class="settings-error" role="alert">{m.notifPrefSaveFailed()}</p>
 				{/if}
 			{/if}
 		</SettingsSection>
