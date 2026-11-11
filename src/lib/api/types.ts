@@ -574,6 +574,9 @@ export type PreferencesView = {
 	languagePreferencesUpdatedAt?: string;
 	moderationPreferences?: SyncedModerationPreferences;
 	moderationPreferencesUpdatedAt?: string;
+	/** 省略＝まだ一度も保存していない（すべて既定）。旧 AppView も返さない。 */
+	notificationPreferences?: NotificationPreferences;
+	notificationPreferencesUpdatedAt?: string;
 	lastBookmarkFolderId?: string;
 	lastBookmarkFolderUpdatedAt?: string;
 	/**
@@ -613,6 +616,27 @@ export type SyncedModerationPreferences = {
 	selfAi: 'warn' | 'hide' | 'ignore';
 	selfNsfw: 'warn' | 'hide' | 'ignore';
 };
+/**
+ * 通知設定のカテゴリ。⚠ nagi-lexicon の NOTIFICATION_PREFERENCE_CATEGORIES と対。
+ * botInteraction は「botたんからの返信・メンション・リアクション」。人からの同じ種別とは別に扱う。
+ */
+export type NotificationPreferenceCategory =
+	| 'reply'
+	| 'mention'
+	| 'reaction'
+	| 'botInteraction'
+	| 'diary'
+	| 'analysis'
+	| 'chronicle'
+	| 'mood'
+	| 'gift'
+	| 'emoji';
+/** Bluesky の app.bsky.notification.defs#preference と同じ形。list=通知欄、push=プッシュ通知。 */
+export type NotificationPreference = { list: boolean; push: boolean };
+/** 省略したカテゴリは list / push とも true。 */
+export type NotificationPreferences = Partial<
+	Record<NotificationPreferenceCategory, NotificationPreference>
+>;
 export type PutPreferencesInput = {
 	/** この端末のタイムゾーン（IANA 名）。手動で選んでいる間は送らない。 */
 	detectedTimezone?: string;
@@ -638,6 +662,10 @@ export type PutPreferencesInput = {
 	languagePreferencesUpdatedAt?: string;
 	moderationPreferences?: SyncedModerationPreferences;
 	moderationPreferencesUpdatedAt?: string;
+	/** 全カテゴリ分を丸ごと置き換える。 */
+	notificationPreferences?: NotificationPreferences;
+	/** notificationPreferences を送るときは必須。保存済みより古ければサーバは書き込まない。 */
+	notificationPreferencesUpdatedAt?: string;
 	lastBookmarkFolderId?: string | null;
 	lastBookmarkFolderUpdatedAt?: string;
 	/**
