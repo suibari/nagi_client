@@ -1,5 +1,6 @@
 import type { NotificationView } from '$lib/api/types';
 import { postPageHref } from '$lib/feed/post-follow.svelte';
+import { adventDayFromReasonUri } from '$lib/advent/advent';
 
 /** 投稿以外の通知は専用画面へ、投稿は記事・返信の種類に合うページへ。 */
 export function notificationHref(item: NotificationView, viewerDid?: string): string {
@@ -10,6 +11,11 @@ export function notificationHref(item: NotificationView, viewerDid?: string): st
 	if (item.type === 'chronicle') return '/diary?tab=chronicle';
 	// 感情グラフは「アクティビティ」の既定タブにある。
 	if (item.type === 'mood') return '/diary';
+	// アドカレは開いた先で手紙の開封演出が始まる。
+	if (item.type === 'advent') {
+		const day = adventDayFromReasonUri(item.reasonUri);
+		return day ? `/advent?day=${day}` : '/advent';
+	}
 	const collection = item.subjectUri.slice('at://'.length).split('/')[1];
 	if (
 		item.cardSubject ||

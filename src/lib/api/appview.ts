@@ -49,6 +49,7 @@ import type {
 	ZenkatsuFeed,
 	ChroniclePage,
 	IndexableBlog,
+	AdventCalendarView,
 } from './types';
 const base = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 // AppView へのアクセスはユーザ自身の PDS 経由でプロキシする（atproto-proxy ヘッダー）。
@@ -738,6 +739,19 @@ export const getCards = (
 		: options.requireViewer
 			? call<CardCollectionView>(lxm, path, {}, 'required')
 			: withPublicFallback<CardCollectionView>(lxm, path);
+};
+/**
+ * アドベントカレンダー。公開済みのカードだけが返る公開情報なので、ログイン中でも
+ * PDS を経由せず直接取る（OAuth の権限を増やさないため）。既読は preferences が持つ。
+ */
+export const getAdventCalendar = (year?: number) => {
+	const lxm = 'com.suibari.nagi.getAdventCalendar';
+	return call<AdventCalendarView>(
+		lxm,
+		`/xrpc/${lxm}${year ? `?year=${year}` : ''}`,
+		{},
+		'none',
+	);
 };
 /**
  * ゼンカツ！の、ある1日のお題と全回答（新着順）。

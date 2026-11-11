@@ -35,6 +35,6 @@ describe('notification preferences', () => {
 	it('全カテゴリをちょうど1回ずつ並べる', () => {
 		const all = NOTIFICATION_PREFERENCE_GROUPS.flatMap((group) => group.categories);
 		expect(new Set(all).size).toBe(all.length);
-		expect(all.length).toBe(9);
+		expect(all.length).toBe(10);
 	});
 });

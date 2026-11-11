@@ -21,6 +21,10 @@
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
 		{
+			"source": "/advent",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+		},
+		{
 			"source": "/cards",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
 		},
@@ -115,6 +119,7 @@
 			"source": "/blog/:did/:rkey",
 			"destination": "/api/spa?did=:did&rkey=:rkey&kind=blog"
 		},
+		{ "source": "/advent", "destination": "/api/spa?kind=advent" },
 		{ "source": "/affirmation", "destination": "/200" },
 		{ "source": "/cards", "destination": "/200" },
 		{ "source": "/channels/:path*", "destination": "/200" },

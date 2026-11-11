@@ -465,6 +465,7 @@ export type NotificationView = {
 	/** 'emoji' は依頼した絵文字の生成が終わった（失敗も含む）。actor は常に botたん。 */
 	/** 'chronicle' は年表に週のトピックが載った。actor は常に botたん、post も diary も付かない。 */
 	/** 'mood' は始めたばかりの人の最初の気持ちが感情グラフに載った。actor は常に botたん。 */
+	/** 'advent' はアドベントカレンダーのカードに選ばれた。reasonUri の末尾が日付（at://did/advent/2026-12-03）。 */
 	type:
 		| 'reply'
 		| 'reaction'
@@ -474,7 +475,8 @@ export type NotificationView = {
 		| 'gift'
 		| 'emoji'
 		| 'chronicle'
-		| 'mood';
+		| 'mood'
+		| 'advent';
 	actor: ActorView;
 	post?: PostView;
 	/** type が 'diary' のときの日記本体。post は付かない。 */
@@ -559,6 +561,8 @@ export type FeedTab = {
 export type PreferencesView = {
 	/** 年ごとの既読内容ハッシュ。 */
 	chronicleReadYears?: ChronicleReadYear[];
+	/** 今年のアドカレの既読。旧 AppView は返さない。 */
+	adventRead?: AdventReadState;
 	readPositions: RemoteReadPosition[];
 	emojiFavorites: EmojiFavorite[];
 	/** 省略＝このアカウントのお気に入りがまだ一度も同期されていない（初回同期の合図）。 */
@@ -633,7 +637,9 @@ export type NotificationPreferenceCategory =
 	| 'analysis'
 	| 'chronicle'
 	| 'mood'
-	| 'gift';
+	| 'gift'
+	/** 季節の特別なお知らせ（アドベントカレンダーなど期間限定の催し）。複数の通知種別を束ねる。 */
+	| 'seasonal';
 /** Bluesky の app.bsky.notification.defs#preference と同じ形。list=通知欄、push=プッシュ通知。 */
 export type NotificationPreference = { list: boolean; push: boolean };
 /** 省略したカテゴリは list / push とも true。 */
@@ -647,6 +653,8 @@ export type PutPreferencesInput = {
 	diaryDay?: { timezone?: string | null; startHour?: number };
 	/** 表示した年のハッシュ。現在の内容と一致する版だけ保存される。 */
 	chronicleReadYears?: ChronicleReadYear[];
+	/** 送った項目だけを進める。既読の日は戻らず、開封済みの日は消えない。 */
+	adventRead?: { year: number; lastSeenDay?: number; openedDay?: number };
 	readPositions?: RemoteReadPosition[];
 	emojiFavorites?: EmojiFavorite[];
 	/** emojiFavorites を送るときは必須。保存済みより古ければサーバは書き込まない。 */
@@ -1056,4 +1064,36 @@ export type EmojiGenerationView = {
 	createdAt: string;
 	finishedAt?: string;
 	expiresAt: string;
+};
+
+/**
+ * アドベントカレンダーのカード1枚（nagi-lexicon の AdventCardView と対）。
+ * 選んだ時点の見出しと一言を持ち、元のポストが後から消えても変わらない。
+ */
+export type AdventCardView = {
+	year: number;
+	/** 1〜25。 */
+	day: number;
+	actor: ActorView;
+	/** 元のポスト。消えていれば付かない。 */
+	postUri?: string;
+	titleJa: string;
+	titleEn: string;
+	commentJa: string;
+	commentEn: string;
+	publishedAt: string;
+};
+export type AdventCalendarView = {
+	year: number;
+	/** 公開済みの最新の日（0 = まだ開いていない）。 */
+	openedDay: number;
+	/** 次の日が開く時刻。12/25 が開いたあとは付かない。 */
+	nextOpenAt?: string;
+	cards: AdventCardView[];
+};
+export type AdventReadState = {
+	year: number;
+	lastSeenDay: number;
+	/** 開封演出を見終えた自分のカードの日。 */
+	openedDays: number[];
 };

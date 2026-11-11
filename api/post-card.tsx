@@ -11,6 +11,7 @@ import {
 	flatten,
 	getProfile,
 	initials,
+	loadFonts,
 	type FunctionRequest,
 	type ImageFunctionResponse,
 	type OgpProfile,
@@ -50,37 +51,6 @@ const isPrivate = (post: ThreadPost) =>
 		post.selfLabels?.some((label) => NSFW_SELF_LABELS.has(label)) ||
 		post.moderationLabels?.length,
 	);
-
-/**
- * ImageResponse の既定フォントは Regular しか持たず、太字指定が効かない。
- * カードに載る文字だけを Noto Sans JP からサブセット取得する（@vercel/og の動的読込と同じ方式）。
- * 取れなければ既定フォントで描く。
- */
-async function loadFont(weight: 400 | 700, text: string) {
-	const query = `family=Noto+Sans+JP:wght@${weight}&text=${encodeURIComponent(text)}`;
-	const css = await fetch(`https://fonts.googleapis.com/css2?${query}`, {
-		// TTF を返させるための古い Safari の UA。satori は WOFF2 を読めない。
-		headers: {
-			'User-Agent':
-				'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1',
-		},
-		signal: AbortSignal.timeout(5_000),
-	}).then((response) => response.text());
-	const url = /src: url\((.+?)\) format\('(?:opentype|truetype)'\)/.exec(css)?.[1];
-	if (!url) throw new Error('font css has no TTF source');
-	const font = await fetch(url, { signal: AbortSignal.timeout(5_000) });
-	if (!font.ok) throw new Error(`font returned ${font.status}`);
-	return { name: 'Noto Sans JP', data: await font.arrayBuffer(), weight, style: 'normal' as const };
-}
-
-async function loadFonts(text: string) {
-	try {
-		return await Promise.all([loadFont(400, text), loadFont(700, text)]);
-	} catch (error) {
-		console.warn('Failed to load OGP fonts:', error);
-		return undefined;
-	}
-}
 
 /** `:bottan-nagi:` のような絵文字ショートコードは画像にできないので落とす。 */
 const plain = (text: string) => text.replace(/:[a-z][a-z0-9_+-]*:/gi, '');

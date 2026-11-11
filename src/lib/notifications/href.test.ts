@@ -66,6 +66,16 @@ describe('notificationHref', () => {
 	it('routes first-mood notifications to the mood graph', () => {
 		expect(notificationHref(notification({ type: 'mood' }))).toBe('/diary');
 	});
+	it('routes advent notifications to the card of that day', () => {
+		expect(
+			notificationHref(
+				notification({ type: 'advent', reasonUri: 'at://did:plc:viewer/advent/2026-12-03' }),
+			),
+		).toBe('/advent?day=3');
+		expect(notificationHref(notification({ type: 'advent', reasonUri: 'at://x/advent/bad' }))).toBe(
+			'/advent',
+		);
+	});
 	it('routes gift notifications to the share board tab', () => {
 		expect(notificationHref(notification({ type: 'gift' }))).toBe('/cards?tab=board');
 	});

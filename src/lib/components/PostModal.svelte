@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
@@ -83,6 +84,15 @@
 			if (composerHost.trilinesEditTarget) mode = 'diary';
 			publishingPreferencesVersion += 1;
 		}
+	});
+	// シェアなどから本文を渡されたら、通常のポストの本文へ移す（書きかけは消さない）。
+	$effect(() => {
+		const seed = composerHost.seedText;
+		if (!seed || !composerHost.open) return;
+		composerHost.seedText = undefined;
+		if (!isPlainPostMode(mode)) mode = 'simple';
+		const current = untrack(() => text).trim();
+		text = current ? `${current}\n\n${seed}` : seed;
 	});
 </script>
 

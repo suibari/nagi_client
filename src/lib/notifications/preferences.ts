@@ -12,7 +12,10 @@ import type { NotificationPreferenceCategory, NotificationPreferences } from '$l
 /** 設定画面での並び。人から / botたんから / そのほか。 */
 export const NOTIFICATION_PREFERENCE_GROUPS = [
 	{ id: 'people', categories: ['reply', 'mention', 'reaction'] },
-	{ id: 'bot', categories: ['botInteraction', 'diary', 'analysis', 'chronicle', 'mood'] },
+	{
+		id: 'bot',
+		categories: ['botInteraction', 'diary', 'analysis', 'chronicle', 'mood', 'seasonal'],
+	},
 	{ id: 'other', categories: ['gift'] },
 ] as const satisfies ReadonlyArray<{
 	id: string;
