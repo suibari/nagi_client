@@ -3,12 +3,7 @@ export const SITE_ORIGIN = 'https://nagi.suibari.com';
 
 /**
  * ページ単位の検索向けメタデータ。ルートの `load()` が返し、`+layout.svelte` が読む。
- *
- * **これを返すこと自体が「このページは索引してよい」の合図**で、返さないページには
- * layout が `noindex` を出す。以前はパスの完全一致表を layout が持っていたが、
- * その形だと動的ルートを載せられず、ルートを足したときに表への追記を忘れる。
- * 判定をページ側のデータに移したことで、索引対象は「中身を持って返せたページ」と
- * 同義になり、空の殻が索引される経路が構造的に無くなる。
+ * これを返すこと自体が索引許可の合図で、返さないページには layout が `noindex` を出す（SEO-01）。
  */
 export type PageSeo = {
 	title: string;
@@ -22,5 +17,4 @@ export type PageSeo = {
 	robots?: 'index,follow' | 'noindex,follow';
 };
 
-/** サイト内パスから canonical 用の絶対URLを作る。 */
 export const absolute = (path: string): string => new URL(path, SITE_ORIGIN).toString();

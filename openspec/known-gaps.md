@@ -74,4 +74,4 @@ GAP-01はアプリコードを修正して解消した。それ以外の項目�
 - 出典: [card/render.ts](https://github.com/suibari/nagi_client/blob/24aad5eebea23501b9f7f0b9dfcbde2aa6f6bfdf/src/lib/card/render.ts#L28)、[vite.config.ts](../vite.config.ts)、[api/spa.ts](../api/spa.ts)。
 - コメントには「完全SPA」「サーバーランタイムが無い」やadapter-autoの案内が残るが、現行構成はadapter-staticによるプリレンダとSPAフォールバック、Vercel Functionsの併用である。
 - 確定仕様: adapter-staticで公開HTMLとSPA fallbackを生成し、名刺の保存PNGはブラウザCanvas、OGPはVercel Functionsで生成する。古いadapter-autoの案内と完全SPAという説明は削減対象とする。
-- 未反映: 今回は古いコードコメントや依存パッケージを削除していない。不要依存の除去とコメント削減は別途、実際の利用箇所を確認して扱う。
+- 反映状況（2026-11-12）: `vite.config.ts` のadapter-autoの案内は削除した。`card/render.ts` の「完全SPA」の説明はcards分野のコメント削減で扱う。不要依存の除去は、実際の利用箇所を確認して別途扱う。

@@ -3,12 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SITEMAP_ROUTES } from './sitemap';
 
 /**
- * ビルド成果物そのものを見るテスト。
- *
- * Playwright の webServer は `npm run dev` で、プリレンダを通らない（playwright.config.ts）。
- * つまり E2E はハイドレーション**後**の DOM しか見られず、**クローラが受け取る HTML**を
- * 誰も検証していなかった。ここがその穴を塞ぐ。
- *
+ * クローラが受け取るビルド成果物の HTML を見るテスト。E2E は開発サーバーで動き、プリレンダを通らない。
  * `build/` が無ければ丸ごとスキップする。CI では `npm run build && npm test` の順に流すこと。
  */
 

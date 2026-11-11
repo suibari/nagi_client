@@ -3,7 +3,6 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { loadEnv } from 'vite';
 import { resolveOAuthDeployment } from './src/lib/oauth/deployment.ts';
-// defineConfig は vitest/config のもの（vite の型を包含し、test ブロックを足せる）。
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig(({ command, mode }) => {
@@ -44,9 +43,6 @@ export default defineConfig(({ command, mode }) => {
 						filename.split(/[/\\]/).includes('node_modules') ? undefined : true,
 				},
 
-				// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-				// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-				// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 				// index.html は検索向けにプリレンダリングしたトップページとして残す。
 				// アプリ専用ルートだけ vercel.json から 200.html へ流し、未知のURLは404にする。
 				adapter: adapter({ fallback: '200.html' }),
