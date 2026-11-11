@@ -10,18 +10,18 @@
 
 ## 2. クライアントの送信順序
 
-- [ ] 2.1 `records.ts` に、作成済みのNagi投稿へ `crosspost` を `swapRecord` 付きで追記し、競合時は読み直して1回だけ再試行する処理を追加する。成功・競合後成功・再失敗のユニットテストが通ることを確認する
-- [ ] 2.2 `crosspostToBluesky` から失敗時の削除を外し、途中まで作成した分を結果として返せるようにする。途中失敗で削除APIを呼ばないユニットテストが通ることを確認する
-- [ ] 2.3 Composerの通常投稿を「Nagi保存 → Bluesky作成 → 参照追記」の順に改め、各失敗時の警告文言をi18nに追加する。BSKY-06の5シナリオに対応するテストが通ることを確認する
-- [ ] 2.4 `deleteBlueskyPosts` と関連する説明コメントを削除し、`grep -rn deleteBlueskyPosts src` が0件になることを確認する
-- [ ] 2.5 `pnpm check`・`pnpm test`・関連E2Eが通ることを確認する
+- [x] 2.1 `records.ts` に、作成済みのNagi投稿へ `crosspost` を `swapRecord` 付きで追記し、競合時は読み直して1回だけ再試行する処理を追加する。成功・競合後成功・再失敗のユニットテストが通ることを確認する
+- [x] 2.2 `crosspostToBluesky` から失敗時の削除を外し、途中まで作成した分を結果として返せるようにする。途中失敗で削除APIを呼ばないユニットテストが通ることを確認する
+- [x] 2.3 Composerの通常投稿を「Nagi保存 → Bluesky作成 → 参照追記」の順に改め、各失敗時の警告文言をi18nに追加する。BSKY-06の5シナリオに対応するテストが通ることを確認する
+- [x] 2.4 `deleteBlueskyPosts` と関連する説明コメントを削除し、`grep -rn deleteBlueskyPosts src` が0件になることを確認する
+- [ ] 2.5 `pnpm check`・`pnpm test`・関連E2Eが通ることを確認する（2026-11-12時点：`pnpm test` は741件成功。`pnpm check` は今回の変更と無関係な `@types/node` 未解決の19件だけが残る。E2Eは未実行）
 
 ## 3. 仕様書の同期
 
-- [ ] 3.1 `bluesky-integration/design.md` のD4を新しい順序と理由（D1・D2）に書き換え、`appview-protocol/design.md` に編集判定の判断を追加する
-- [ ] 3.2 `known-gaps.md` のGAP-01を解消済みとして更新し、一覧表の「コード・コメントの扱い」を実装済みの状態に直す
-- [ ] 3.3 `npx --yes @fission-ai/openspec@1.17.0 validate --all --strict --no-interactive` と `node openspec/tools/comment-catalog.mjs --check` が通ることを確認する
+- [x] 3.1 `bluesky-integration/design.md` のD4を新しい順序と理由（D1・D2）に書き換え、`appview-protocol/design.md` に編集判定の判断を追加する
+- [x] 3.2 `known-gaps.md` のGAP-01を解消済みとして更新し、一覧表の「コード・コメントの扱い」を実装済みの状態に直す
+- [x] 3.3 `npx --yes @fission-ai/openspec@1.17.0 validate --all --strict --no-interactive` と `node openspec/tools/comment-catalog.mjs --check` が通ることを確認する
 
 ## Workflow follow-up
 
-- クライアントの本番反映後、このchangeをsyncしてarchiveする。
+- 主仕様（BSKY-06・API-09）は実装と同時に手で同期済み。クライアントの本番反映と1.5の確認後、`archive --skip-specs` でarchiveする。

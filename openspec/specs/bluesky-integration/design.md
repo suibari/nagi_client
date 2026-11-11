@@ -30,25 +30,26 @@
 
 **理由と制約**：返信・引用は本人の既存コピーが確認できる場合に限る。返信・引用ボタンは共通Composerへ接続し、本人のクロスポストの続きを作る。ニュース等は対応する本人のコピーを持たず対象外となる。未使用の旧処理を現行の入口差とは扱わない。
 
-### D4: 外部コピーの作成順を用途ごとに変える
+### D4: 外部コピーはNagiの保存後に作る
 
-**課題**：通常投稿へ後からコピー参照を足すとAppViewには編集とみなされ、翻訳や判定が再実行される。
+**課題**：以前はコピーを先に作り、その参照をNagiの初回レコードへ入れていた。後から参照を足すとAppViewが編集とみなし、翻訳や判定をやり直したためである。この順序ではNagi保存の失敗時にコピーを削除して巻き戻す必要があり、Bluesky投稿の権限をcreate限定とする方針と両立しなかった（GAP-01）。
 
-**採用判断**：通常はコピーを先に作ってNagiの初回レコードへ参照を入れる。記事はURL確定後にティーザーを出す。
+**採用判断**：通常投稿も記事と同じく、Nagiの保存が成功してからBlueskyのコピーを作り、作れたコピーの参照をNagi投稿へ追記する。追記は読み取った版のCIDを条件に書き込み、その間に本人が編集していたら1回だけ読み直す。分割投稿が途中で失敗したときは参照を追記しない。
 
-**理由と制約**：外部作成の失敗はNagi成功を取り消さない。Bluesky投稿はcreate限定とし、不用意な削除権限を持たない。現行コードには失敗時の削除試行が残るが、権限を広げず実装側を整合させる方針である。未反映差異はGAP-01に記録し、巻き戻し成功を保証しない。
+**理由と制約**：正本のNagiが先にあるので、写しだけが残る状況を作らず、削除による補償も要らない。AppViewは見える内容が変わらない更新を編集とみなさない（[API-09](../appview-protocol/spec.md)）ため、参照の追記で編集済み表示や翻訳のやり直しは起きない。Bluesky側の失敗、途中までのスレッド、参照追記の失敗はいずれもNagi投稿を取り消さず、警告で伝える。途中までのコピーを参照として登録しないのは、欠けた写しへ返信や引用を続けさせないためである。
 
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                              | 探す処理・責務                       |
-| ------------------------------------------------------------------------------------- | ------------------------------------ |
-| [src/lib/bsky/agent.ts](../../../src/lib/bsky/agent.ts)                               | PDS経由のBluesky取得                 |
-| [src/lib/bsky/moderation.ts](../../../src/lib/bsky/moderation.ts)                     | bskyPostDisplay                      |
-| [src/lib/bsky/mapView.ts](../../../src/lib/bsky/mapView.ts)                           | 表示型への変換                       |
-| [src/lib/crosspost/bluesky.ts](../../../src/lib/crosspost/bluesky.ts)                 | splitForBluesky / deleteBlueskyPosts |
-| [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts) | crosspostContentWarningBlock         |
+| ファイル                                                                              | 探す処理・責務                                               |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [src/lib/bsky/agent.ts](../../../src/lib/bsky/agent.ts)                               | PDS経由のBluesky取得                                         |
+| [src/lib/bsky/moderation.ts](../../../src/lib/bsky/moderation.ts)                     | bskyPostDisplay                                              |
+| [src/lib/bsky/mapView.ts](../../../src/lib/bsky/mapView.ts)                           | 表示型への変換                                               |
+| [src/lib/crosspost/bluesky.ts](../../../src/lib/crosspost/bluesky.ts)                 | splitForBluesky / crosspostToBluesky / CrosspostPartialError |
+| [src/lib/crosspost/after-post.ts](../../../src/lib/crosspost/after-post.ts)           | 保存後のクロスポストと参照追記                               |
+| [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts) | crosspostContentWarningBlock                                 |
 
 ## 出典と変更時の扱い
 

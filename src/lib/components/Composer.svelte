@@ -30,9 +30,6 @@
 	import {
 		crosspostArticleToBluesky,
 		crosspostDraftBlock,
-		crosspostToBluesky,
-		deleteBlueskyPosts,
-		type CrosspostResult,
 		type CrosspostTarget,
 	} from '$lib/crosspost/bluesky';
 	import {
@@ -43,6 +40,7 @@
 	} from '$lib/crosspost/target.svelte';
 	import { crosspostContentWarningBlock } from '$lib/crosspost/content-warning';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
+	import { crosspostAfterPost } from '$lib/crosspost/after-post';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { MAX_IMAGE_COUNT, type ImageAttachment } from '$lib/images';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
@@ -837,25 +835,6 @@
 			// ときは超えうるので、そのときはカバーを付けない（記事自体は出す）。
 			const firstImage = assets.images[0]?.image;
 			const cover = firstImage && usableAsCoverImage(firstImage) ? firstImage : undefined;
-			/*
-			 * 記事以外のクロスポストは、Nagi の投稿より先に Bluesky へ出して、そのコピーへの参照を
-			 * 作成時のレコードに入れる（後から書き足すと AppView が「編集」と見なすため）。
-			 * Bluesky 側が失敗しても Nagi の投稿は出す（警告にとどめる）。Nagi の投稿が作れなかったら、
-			 * 先に出したコピーは消して巻き戻す。
-			 */
-			let earlyCrosspost: CrosspostResult | undefined;
-			if (wantsCrosspost && !article && !draft.kossori && !crosspostDraftBlock(draft)) {
-				if (!getCrosspostEnabled() || !(await hasCrosspostScope()))
-					warning = m.crosspostPermissionMissing();
-				else {
-					try {
-						earlyCrosspost = await crosspostToBluesky(draft, assets, target);
-						if (earlyCrosspost) draft.crosspost = earlyCrosspost.ref;
-					} catch (e) {
-						warning = e instanceof Error ? e.message : m.crosspostFailed();
-					}
-				}
-			}
 			const created = article
 				? await publishStandardSiteDocument({
 						title: article.title,
@@ -874,16 +853,15 @@
 						},
 						...(draft.labels ? { labels: draft.labels } : {}),
 					})
-				: await createPost(draft, assets).catch(async (cause) => {
-						if (earlyCrosspost) await deleteBlueskyPosts(earlyCrosspost.posts);
-						throw cause;
-					});
+				: await createPost(draft, assets);
 			optimisticPosts.markCreated(optimisticId, created);
 			// タグパレットの「最近使った」。投稿に成功したタグだけを積む。
 			tagFavorites.recordUsed([...tagsFromFacets(draft.facets), ...(article ? articleTags : [])]);
 			postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
 			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
+			if (wantsCrosspost && !article && !draft.kossori && !crosspostDraftBlock(draft))
+				warning = (await crosspostAfterPost(draft, assets, target, created.uri)) ?? warning;
 			const rkey = created.uri.slice(created.uri.lastIndexOf('/') + 1);
 			// 記事の canonical URL。standard.site の document.path と同じ組み立て方。
 			const articleUrl = `${NAGI_PUBLIC_ORIGIN}/blog/${$session.did}/${rkey}`;

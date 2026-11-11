@@ -1176,6 +1176,10 @@ export const ja = {
 	crosspostSignInRequired: 'Bluesky連携を設定するにはログインしてください。',
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
 	crosspostPermissionMissing: 'Blueskyへの投稿権限を確認できませんでした',
+	crosspostPartial:
+		'Blueskyには途中までしか投稿できませんでした。Blueskyに残った分は、必要ならBlueskyで削除してください',
+	crosspostLinkFailed:
+		'Blueskyには投稿できましたが、Nagiの投稿と結びつけられませんでした。このポストへの返信・引用はBlueskyに続けられません',
 	blueskyFeedReadingTitle: 'Blueskyのフィードを見る',
 	blueskyFeedReadingHelp:
 		'フィードのタブ設定から、Blueskyのフォロー中（ホームタイムライン）やカスタムフィードをタブとして追加できます。閲覧専用で、いいねの数は表示しません。',
