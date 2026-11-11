@@ -51,7 +51,7 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
-	import { postFollow, postPageHref } from '$lib/feed/post-follow.svelte';
+	import { postFollow, postFollowNotice, postPageHref } from '$lib/feed/post-follow.svelte';
 	import { ensureRecord } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
@@ -903,6 +903,9 @@
 			await finishDraftSaves();
 			const savedDraftId = activeDraftTarget?.id;
 			if (savedDraftId) await drafts.remove(savedDraftId).catch(() => undefined);
+			// 成功するとモーダルは閉じるので、警告は画面下の案内で伝える。
+			if (warning)
+				postFollowNotice.warn(postPageHref({ uri: created.uri, article: draft.article }), warning);
 			clearComposer();
 			await Promise.resolve(onposted(created.uri)).catch(() => undefined);
 		} catch (e) {
