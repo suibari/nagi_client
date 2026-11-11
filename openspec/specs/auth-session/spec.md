@@ -2,11 +2,35 @@
 
 ## Purpose
 
-OAuthの復元、権限の追加、デプロイ先のorigin、姉妹アプリへの遷移を定義する。
+### 機能概要
 
-この仕様は導入時点の実装・コメントから復元した現状の基準である。根拠と詳細な設計判断は [design.md](design.md)、確認された不整合は [known-gaps.md](../../known-gaps.md) を参照する。記載するシナリオは確認条件であり、今回すべての外部サービスを実行検証したという意味ではない。
+利用者がAT ProtocolのアカウントでNagiへログインし、許可した範囲で投稿や各機能を使えるようにする。再訪時はセッションを復元し、追加機能に必要な権限は再認可で取得する。認証処理の途中や一時的な通信断で、利用者がログアウトしたように見えたり、意図せず権限を失ったりすることを防ぐ。
+
+OAuthは利用者のPDS側の認可サーバーと連携する。姉妹アプリへのSSOは別の移動経路として扱い、DIDヒント自体を認証には使わない。
+
+### 機能一覧
+
+| 機能                     | 役割・利用者ができること                                       | 詳細要件                                  |
+| ------------------------ | -------------------------------------------------------------- | ----------------------------------------- |
+| ログイン・アカウント作成 | 既存アカウントの認可、またはEntryway経由の登録からNagiへ戻る。 | [AUTH-01](#auth-01) / [AUTH-05](#auth-05) |
+| セッション復元           | 再訪時に認証状態を復元し、待機中の初回表示を整える。           | [AUTH-02](#auth-02)                       |
+| 追加認可                 | Bluesky連携等に必要な権限を既存の許可と合わせて取得する。      | [AUTH-03](#auth-03) / [AUTH-04](#auth-04) |
+| デプロイ先の統一         | Previewでも認可の開始元と戻り先のoriginを一致させる。          | [AUTH-01](#auth-01)                       |
+| ログアウト               | 端末Pushの解除を先に試み、その後セッションを終了する。         | [AUTH-05](#auth-05)                       |
+| 姉妹アプリ連携           | クリック時の短期チケットとDIDヒントで移動を補助する。          | [AUTH-06](#auth-06)                       |
+
+### 主な利用の流れ
+
+1. 利用者がハンドルを入力するか、アカウント作成を選ぶ。
+2. PDS側で必要な権限の認可を行い、Nagiのcallbackへ戻る。
+3. セッションと実際の付与スコープを確認し、保留していた連携を確定する。
+4. 再訪時は保存セッションを復元する。ログアウト時は購読解除を先に試みる。
+
+この文書は現行クライアントの振る舞いを整理する。設計判断は [design.md](design.md)、導入時の証跡は [コメント原文](../../reference/comment-snapshot/auth-session.md)、既知の不整合は [known-gaps.md](../../known-gaps.md) に分けて記録する。シナリオは確認条件であり、全外部環境での実行合格を示すものではない。
 
 ## Requirements
+
+<a id="auth-01"></a>
 
 ### Requirement: AUTH-01 正規originと遅延初期化
 
@@ -22,6 +46,8 @@ OAuthの復元、権限の追加、デプロイ先のorigin、姉妹アプリへ
 - **WHEN** ブラウザのlocationが無い
 - **THEN** OAuthクライアントを生成しない
 
+<a id="auth-02"></a>
+
 ### Requirement: AUTH-02 復元と初回描画
 
 認証の真実源はIndexedDBのOAuthセッションでなければならない（MUST）。localStorageの既往サインインmarkerは初回ヒーローのちらつき抑止と復元補助にだけ使い、認可の証拠にしてはならない。通信だけのrefresh失敗ではmarkerから復元を試み、元の分類可能なエラーを保持する。
@@ -35,6 +61,8 @@ OAuthの復元、権限の追加、デプロイ先のorigin、姉妹アプリへ
 
 - **WHEN** markerの読み書きが失敗する
 - **THEN** markerの失敗だけではOAuthの成否を変えない
+
+<a id="auth-03"></a>
 
 ### Requirement: AUTH-03 最小権限と既存スコープ維持
 
@@ -50,6 +78,8 @@ Nagi namespaceは公開permission setを基準とし、別namespace・blob・新
 - **WHEN** rpcのaudを旧方式で照合するPDSを使う
 - **THEN** 互換用のaud=*を使い、includeに重複したaudを付けない
 
+<a id="auth-04"></a>
+
 ### Requirement: AUTH-04 端末オプトインの確定
 
 オプトインは端末フラグと実際の付与スコープの両方を必要としなければならない（MUST）。リダイレクト前のpendingだけでは有効にしない。書き込み権限と後から追加された閲覧権限は別々に判定する。旧セッションの広いscopeとの互換のため、既存の付与判定はaction/audを除いたスコープ名で比較する。
@@ -64,6 +94,8 @@ Nagi namespaceは公開permission setを基準とし、別namespace・blob・新
 - **WHEN** クロスポスト権限はあるが閲覧権限が無い
 - **THEN** Blueskyフィードを閲覧可能とみなさない
 
+<a id="auth-05"></a>
+
 ### Requirement: AUTH-05 サインアウト順序
 
 サインアウトは有効なセッションが必要な端末Push解除を先に試み、その失敗にかかわらずセッション終了を進めなければならない（MUST）。アカウント作成はBluesky Entrywayから開始し、対応するPDSには表示言語を引き継ぐ。
@@ -72,6 +104,8 @@ Nagi namespaceは公開permission setを基準とし、別namespace・blob・新
 
 - **WHEN** 解除APIが失敗してからサインアウトする
 - **THEN** サインアウト自体を完了する
+
+<a id="auth-06"></a>
 
 ### Requirement: AUTH-06 姉妹アプリへのヒントとチケット
 
@@ -86,3 +120,23 @@ Nagi namespaceは公開permission setを基準とし、別namespace・blob・新
 
 - **WHEN** permission setの反映待ちで取得できない
 - **THEN** 元のリンクを壊さずDIDヒント経路で移動する
+
+## 参照資料
+
+### 外部資料
+
+| 資料                                                                                  | この機能で参照する理由                                   |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [AT Protocol — OAuth](https://atproto.com/specs/oauth)                                | 認証フロー、client metadata、callback、セッションの前提  |
+| [AT Protocol — Permissions](https://atproto.com/specs/permission)                     | scope、permission set、repo操作とRPCの認可境界           |
+| [MDN — IndexedDB API](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) | ブラウザに保存するセッション・下書き・端末データの仕組み |
+
+リンクの到達先と対象を2026-11-11に確認した。外部の説明は更新されるため、本リポジトリ固有の制約と外部仕様を区別する。現行実装の基準はこの文書の要件とし、外部仕様への追従で振る舞いを変える場合は差分を記録する。
+
+### 関連する内部資料
+
+- [設計判断](design.md)：採用理由、互換条件、失敗時の考え方。
+- [導入時コメント原文](../../reference/comment-snapshot/auth-session.md)：基準コミットの出典を全件保存した履歴資料。
+- [AppView通信・AT Protocolレコード](../appview-protocol/spec.md)：連携する機能の要件。
+- [Bluesky閲覧・クロスポスト](../bluesky-integration/spec.md)：連携する機能の要件。
+- [通知・Web Push・既読位置](../notifications-unread/spec.md)：連携する機能の要件。

@@ -1,14 +1,14 @@
 import fs from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import ts from 'typescript';
 import { parse } from 'svelte/compiler';
 
-// Documentation tooling only; run from the repository root.
-const check = !process.argv.includes('--write');
-if (!check && fs.existsSync('openspec/comment-catalog.json')) {
+// Read-only verification of historical evidence and current documentation.
+if (process.argv.slice(2).some((arg) => !['--check', '--check-current'].includes(arg))) {
 	console.error(
-		'Existing provenance must not be overwritten. Preserve removed comments and curate later migrations explicitly.',
+		'Read-only verifier. Use --check for history/docs, or --check-current to also verify unchanged application sources.',
 	);
 	process.exit(1);
 }
@@ -202,13 +202,27 @@ function comments(s, p) {
 		text: s.slice(start, end),
 	}));
 }
-const candidates = execFileSync(
-	'git',
-	['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
-	{ encoding: 'utf8' },
-)
-	.split('\0')
-	.filter(
+const jsonPath = `${root}/comment-catalog.json`;
+const old = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+const failures = [];
+const checkCurrent = process.argv.includes('--check-current');
+// Verify the recorded source, not moving line positions on the current branch.
+const historicalFiles = old.files.map((entry) => {
+	const source = execFileSync('git', ['show', `${old.baseline}:${entry.path}`], {
+		encoding: 'utf8',
+	});
+	return { ...entry, sha256: hash(source), comments: comments(source, entry.path) };
+});
+if (JSON.stringify(old.files) !== JSON.stringify(historicalFiles))
+	failures.push('Recorded hashes/comments do not match the baseline Git sources.');
+if (checkCurrent) {
+	const candidates = [
+		...new Set(
+			execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
+				encoding: 'utf8',
+			}).split('\0'),
+		),
+	].filter(
 		(p) =>
 			p &&
 			!p.startsWith('openspec/') &&
@@ -218,85 +232,103 @@ const candidates = execFileSync(
 			(/\.(?:svelte|ts|tsx|js|mjs|cjs|mts|cts|css|html|json|jsonc|ya?ml)$/.test(p) ||
 				['.gitignore', '.prettierignore', '.env.example', '.npmrc'].includes(p)),
 	);
-const files = candidates.map((p) => {
-	const s = fs.readFileSync(p, 'utf8');
-	return { path: p, sha256: hash(s), domain: domain(p), comments: comments(s, p) };
-});
-const data = {
-	schemaVersion: 1,
-	baseline: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-	files,
-};
-const jsonPath = `${root}/comment-catalog.json`;
-if (check) {
-	const old = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-	const failures = [];
-	if (JSON.stringify(old.files) !== JSON.stringify(data.files))
+	const currentFiles = candidates.sort().map((p) => {
+		const source = fs.readFileSync(p, 'utf8');
+		return { path: p, sha256: hash(source), domain: domain(p), comments: comments(source, p) };
+	});
+	const expected = new Map(old.files.map((file) => [file.path, file]));
+	if (
+		currentFiles.length !== expected.size ||
+		currentFiles.some((file) => JSON.stringify(file) !== JSON.stringify(expected.get(file.path)))
+	)
 		failures.push(
-			'Source file list, content or extracted comments differ from the recorded baseline.',
+			'Current source file list, content or comments differ from the recorded baseline.',
 		);
-	for (const d of new Set(files.filter((f) => f.comments.length).map((f) => f.domain))) {
-		const spec = fs.readFileSync(`${root}/specs/${d}/spec.md`, 'utf8');
-		const design = fs.readFileSync(`${root}/specs/${d}/design.md`, 'utf8');
-		if (!spec.includes('### Requirement:') || !spec.includes('#### Scenario:'))
-			failures.push(`Missing requirements/scenarios: ${d}`);
-		for (const f of files.filter((f) => f.domain === d))
-			for (const c of f.comments) {
-				const id = `${f.path}:${c.line}`;
-				if (!design.includes(`<!-- source: ${id} -->`) || !design.includes(c.text))
-					failures.push(`Missing evidence: ${id}`);
-			}
-	}
-	if (failures.length) {
-		console.error(failures.join('\n'));
-		process.exitCode = 1;
-	} else
-		console.log(
-			`PASS: ${files.length} source/config files; ${files.filter((f) => f.comments.length).length} files with comments; ${files.reduce((n, f) => n + f.comments.length, 0)} comment blocks; all source hashes and domain evidence match.`,
-		);
-} else {
-	fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2) + '\n');
-	for (const d of new Set(files.map((f) => f.domain))) {
-		const dir = `${root}/specs/${d}`;
-		fs.mkdirSync(dir, { recursive: true });
-		const out = [
-			`# ${d}：設計判断・コメント出典\n`,
-			'この文書は初期仕様化時点のコメント原文を保存する設計資料である。現在の振る舞い・検証条件は [spec.md](spec.md) を参照する。実装理由、互換性条件、UIの意図、型の意味、テストの狙いを省略せず残す。単なる区切り・ツール指示・テンプレートのコメントは動作要件として扱わない。原文に過去の経緯が書かれていない箇所について、経緯を推測して補わない。\n',
-		];
-		for (const f of files.filter((f) => f.domain === d && f.comments.length)) {
-			out.push(`## ${f.path}\n`);
-			for (const c of f.comments) {
-				const id = `${f.path}:${c.line}`;
-				const category = /(?:\.test\.ts|\.spec\.ts|\/dev\/)/.test(f.path)
-					? '検証・再現条件'
-					: /svelte-ignore|@vite-ignore|@ts-|eslint|prettier|reference lib/.test(c.text)
-						? 'ツール指示（削除対象外）'
-						: '仕様・設計の根拠';
-				const fence = '`'.repeat(
-					Math.max(3, ...[...c.text.matchAll(/`+/g)].map((m) => m[0].length + 1)),
-				);
-				out.push(
-					`<!-- source: ${id} -->\n\n### [${id}](../../../${f.path}#L${c.line})\n\n分類: ${category}。対応仕様: [${d}](spec.md#requirements)。\n\n${fence}text\n${c.text}\n${fence}\n`,
-				);
-			}
+}
+for (const d of new Set(old.files.filter((f) => f.comments.length).map((f) => f.domain))) {
+	const spec = fs.readFileSync(`${root}/specs/${d}/spec.md`, 'utf8');
+	const design = fs.readFileSync(`${root}/specs/${d}/design.md`, 'utf8');
+	const snapshot = fs.readFileSync(`${root}/reference/comment-snapshot/${d}.md`, 'utf8');
+	for (const section of [
+		'## Purpose',
+		'### 機能概要',
+		'### 機能一覧',
+		'### 主な利用の流れ',
+		'## Requirements',
+		'### Requirement:',
+		'#### Scenario:',
+		'## 参照資料',
+		'### 外部資料',
+		'### 関連する内部資料',
+	])
+		if (!spec.includes(section)) failures.push(`Missing reader section ${section}: ${d}`);
+	for (const section of [
+		'## 設計判断',
+		'**課題**',
+		'**採用判断**',
+		'**理由と制約**',
+		'## 実装の入口',
+		'## 出典と変更時の扱い',
+	])
+		if (!design.includes(section)) failures.push(`Missing design section ${section}: ${d}`);
+	if (/#L\d+/.test(design)) failures.push(`Living design contains line-specific code links: ${d}`);
+	for (const match of spec.matchAll(/\]\(#([a-z]+-\d+)\)/g))
+		if (!spec.includes(`<a id="${match[1]}"></a>`))
+			failures.push(`Feature link lacks requirement anchor: ${d}/${match[1]}`);
+	for (const match of spec.matchAll(/### Requirement: ([A-Z]+-\d+)/g))
+		if (!spec.includes(`](#${match[1].toLowerCase()})`))
+			failures.push(`Requirement missing from feature inventory: ${d}/${match[1]}`);
+	for (const f of old.files.filter((f) => f.domain === d))
+		for (const c of f.comments) {
+			const id = `${f.path}:${c.line}`;
+			const permalink = `https://github.com/suibari/nagi_client/blob/${old.baseline}/${f.path}#L${c.line}`;
+			if (!snapshot.includes(`<!-- source: ${id} -->`) || !snapshot.includes(c.text))
+				failures.push(`Missing evidence: ${id}`);
+			if (!snapshot.includes(`](${permalink})`))
+				failures.push(`Missing immutable source link: ${id}`);
 		}
-		fs.writeFileSync(`${dir}/design.md`, out.join('\n'));
+}
+function markdownFiles(directory) {
+	return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+		const target = `${directory}/${entry.name}`;
+		return entry.isDirectory() ? markdownFiles(target) : entry.name.endsWith('.md') ? [target] : [];
+	});
+}
+let linkCount = 0;
+for (const file of ['README.md', 'AGENTS.md', 'CLAUDE.md', ...markdownFiles(root)]) {
+	let fence;
+	const prose = fs
+		.readFileSync(file, 'utf8')
+		.split('\n')
+		.filter((line) => {
+			const opening = line.match(/^\s*(`{3,}|~{3,})/);
+			if (opening) {
+				if (!fence) fence = opening[1];
+				else if (opening[1][0] === fence[0] && opening[1].length >= fence.length) fence = undefined;
+				return false;
+			}
+			return !fence;
+		})
+		.join('\n');
+	for (const match of prose.matchAll(/\]\(([^)\n]+)\)/g)) {
+		const destination = match[1].replace(/^<|>$/g, '');
+		if (/^(?:https?:|mailto:|#)/.test(destination)) continue;
+		const target = resolve(dirname(file), destination.split('#')[0]);
+		if (!fs.existsSync(target)) failures.push(`Missing local link: ${file} -> ${destination}`);
+		linkCount++;
 	}
+}
+if (!fs.readFileSync('CLAUDE.md', 'utf8').includes('@AGENTS.md'))
+	failures.push('Claude entry must import shared AGENTS.md.');
+if (failures.length) {
+	console.error(failures.join('\n'));
+	process.exitCode = 1;
+} else {
 	console.log(
-		JSON.stringify(
-			{
-				files: files.length,
-				commentFiles: files.filter((f) => f.comments.length).length,
-				blocks: files.reduce((n, f) => n + f.comments.length, 0),
-				domains: Object.fromEntries(
-					domains.map(([d]) => [
-						d,
-						files.filter((f) => f.domain === d).reduce((n, f) => n + f.comments.length, 0),
-					]),
-				),
-			},
-			null,
-			2,
-		),
+		`PASS: 18 reader-oriented specs and designs; ${old.files.length} baseline files; ${old.files.reduce((n, f) => n + f.comments.length, 0)} preserved comment blocks with immutable links; ${linkCount} local links.`,
 	);
+	if (checkCurrent)
+		console.log(
+			'PASS: current source/config files and comments are unchanged from the recorded baseline.',
+		);
 }
