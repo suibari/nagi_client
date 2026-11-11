@@ -66,7 +66,7 @@ OAuthは利用者のPDS側の認可サーバーと連携する。姉妹アプリ
 
 ### Requirement: AUTH-03 最小権限と既存スコープ維持
 
-Nagi namespaceは公開permission setを基準とし、別namespace・blob・新機能の互換用権限は明示する必要がある（MUST）。standard.siteは基本権限、Blueskyの作成と閲覧は同じオプトインとする。再認可では既存の有効化状態を落とさない。Bluesky投稿の要求権限はcreate限定とする。削除の補償処理との不整合は [known-gaps.md](../../known-gaps.md#gap-01) に記録する。
+Nagi namespaceは公開permission setを基準とし、別namespace・blob・新機能の互換用権限は明示する必要がある（MUST）。standard.siteは基本権限、Blueskyの作成と閲覧は同じオプトインとする。再認可では既存の有効化状態を落とさない。Bluesky投稿の要求権限はcreate限定とし、後始末のために更新・削除の権限を追加してはならない。削除の補償処理との不整合は [known-gaps.md](../../known-gaps.md#gap-01) に記録する。
 
 #### Scenario: 追加機能の認可
 
