@@ -1120,6 +1120,7 @@ export const en: Messages = {
 	notifPrefChronicle: 'Chronicle updates',
 	notifPrefMood: 'Mood graph',
 	notifPrefGift: 'When someone receives a card you shared',
+	notifPrefSeasonal: 'Seasonal specials',
 	notifPrefLoadFailed: 'Could not load your notification settings.',
 	notifPrefSaveFailed: 'Could not save your notification settings. Please try again.',
 	externalPublishingHelp: 'Manage crossposting to Bluesky and reading Bluesky feeds in a tab.',

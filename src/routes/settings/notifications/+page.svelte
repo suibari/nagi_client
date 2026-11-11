@@ -53,6 +53,7 @@
 		chronicle: () => m.notifPrefChronicle(),
 		mood: () => m.notifPrefMood(),
 		gift: () => m.notifPrefGift(),
+		seasonal: () => m.notifPrefSeasonal(),
 	};
 
 	onMount(() => {

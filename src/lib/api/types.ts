@@ -637,7 +637,9 @@ export type NotificationPreferenceCategory =
 	| 'analysis'
 	| 'chronicle'
 	| 'mood'
-	| 'gift';
+	| 'gift'
+	/** 季節の特別なお知らせ（アドベントカレンダーなど期間限定の催し）。複数の通知種別を束ねる。 */
+	| 'seasonal';
 /** Bluesky の app.bsky.notification.defs#preference と同じ形。list=通知欄、push=プッシュ通知。 */
 export type NotificationPreference = { list: boolean; push: boolean };
 /** 省略したカテゴリは list / push とも true。 */
