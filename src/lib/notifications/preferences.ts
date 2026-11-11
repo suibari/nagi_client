@@ -13,7 +13,7 @@ import type { NotificationPreferenceCategory, NotificationPreferences } from '$l
 export const NOTIFICATION_PREFERENCE_GROUPS = [
 	{ id: 'people', categories: ['reply', 'mention', 'reaction'] },
 	{ id: 'bot', categories: ['botInteraction', 'diary', 'analysis', 'chronicle', 'mood'] },
-	{ id: 'other', categories: ['gift', 'emoji'] },
+	{ id: 'other', categories: ['gift'] },
 ] as const satisfies ReadonlyArray<{
 	id: string;
 	categories: readonly NotificationPreferenceCategory[];

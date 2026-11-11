@@ -629,8 +629,7 @@ export type NotificationPreferenceCategory =
 	| 'analysis'
 	| 'chronicle'
 	| 'mood'
-	| 'gift'
-	| 'emoji';
+	| 'gift';
 /** Bluesky の app.bsky.notification.defs#preference と同じ形。list=通知欄、push=プッシュ通知。 */
 export type NotificationPreference = { list: boolean; push: boolean };
 /** 省略したカテゴリは list / push とも true。 */

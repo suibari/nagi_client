@@ -53,7 +53,6 @@
 		chronicle: () => m.notifPrefChronicle(),
 		mood: () => m.notifPrefMood(),
 		gift: () => m.notifPrefGift(),
-		emoji: () => m.notifPrefEmoji(),
 	};
 
 	onMount(() => {
