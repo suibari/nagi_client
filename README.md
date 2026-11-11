@@ -155,6 +155,10 @@ VercelのProject Settingsでは次を設定してください。
 - 変更時は320px、375px、600pxの表示幅で長いURLと空白のない文字列を入れ、カードとページの `scrollWidth` が `clientWidth` を超えないことを確認する。
 - 操作を伴うUI変更では `npm run test:e2e` を実行し、対応するシナリオを `tests/e2e` に追加する。
 
+## 仕様書
+
+実装仕様・設計判断・コメントに残されていた経緯は [OpenSpec仕様書](./openspec/README.md) に集約しています。分野別の要件とシナリオ、コメントの出典台帳、既知の不整合を確認できます。現在は文書化の段階で、コード側のコメントは残しています。
+
 ## コントリビューション
 
 不具合報告や提案は[GitHub Issues](https://github.com/suibari/nagi_client/issues)へお願いします。変更を提案する場合は、関連するIssueを作成または確認してからPull Requestを送ってください。
