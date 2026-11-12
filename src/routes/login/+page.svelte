@@ -72,7 +72,7 @@
 		onclick={() => void submit('login')}
 		>{busy === 'login' ? m.loginRedirecting() : m.loginSubmit()}</Button
 	>
-	<section class="signup-section" id="signup">
+	<section class="signup-section">
 		<h2>{m.loginSignupTitle()}</h2>
 		<p>{m.loginSignupBody()}</p>
 		<Button
@@ -111,7 +111,6 @@
 		margin-top: 26px;
 		padding-top: 24px;
 		border-top: 1px solid var(--line);
-		scroll-margin-top: 24px;
 	}
 	.signup-section h2 {
 		margin: 0;
