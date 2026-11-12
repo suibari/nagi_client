@@ -2,6 +2,7 @@
 
 export type ScrubRange = { start: number; end: number };
 export type ScrubTick = { year: string; at: number };
+export type ScrubMonth = { month: string; at: number };
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -48,6 +49,59 @@ export function visibleTickYears(ticks: ScrubTick[], trackPx: number, minGap: nu
 		if (isEdge || (px - prev >= minGap && last.at * trackPx - px >= minGap)) {
 			keep.add(tick.year);
 			prev = px;
+		}
+	}
+	return keep;
+}
+
+export const scrubMonthTicks = (
+	anchors: { month: string; top: number }[],
+	range: ScrubRange,
+): ScrubMonth[] => anchors.map(({ month, top }) => ({ month, at: scrubProgress(top, range) }));
+
+export function scrubMonthAt(
+	months: ScrubMonth[],
+	years: ScrubTick[],
+	progress: number,
+): string | undefined {
+	if (progress >= 1) return months.at(-1)?.month;
+	const year = scrubYearAt(years, progress);
+	const candidates = months.filter((tick) => !year || tick.month.startsWith(year));
+	let month = candidates[0]?.month ?? months[0]?.month;
+	for (const tick of candidates) if (tick.at <= progress + 1e-6) month = tick.month;
+	return month;
+}
+
+export function adjacentScrubMonth(
+	months: ScrubMonth[],
+	current: string,
+	direction: -1 | 1,
+): ScrubMonth | undefined {
+	const index = months.findIndex((tick) => tick.month === current);
+	return months[Math.max(0, Math.min(months.length - 1, index + direction))];
+}
+
+export const scrubMonthNumber = (month: string): number => {
+	const [year, value] = month.split('-').map(Number);
+	return year * 12 + value - 1;
+};
+
+export function visibleTickMonths(
+	months: ScrubMonth[],
+	years: ScrubTick[],
+	trackPx: number,
+	minGap: number,
+): Set<string> {
+	const labeledYears = visibleTickYears(years, trackPx, minGap);
+	const occupied = years
+		.filter((tick) => labeledYears.has(tick.year))
+		.map((tick) => tick.at * trackPx);
+	const keep = new Set<string>();
+	for (const tick of months) {
+		const px = tick.at * trackPx;
+		if (occupied.every((other) => Math.abs(other - px) >= minGap)) {
+			keep.add(tick.month);
+			occupied.push(px);
 		}
 	}
 	return keep;

@@ -56,7 +56,15 @@
 
 	const years = $derived(groupChronicleByYear(items));
 	const yearKeys = $derived(years.map((group) => group.year));
-	const scrubbable = $derived(!showcase && !loading && yearKeys.length >= 2);
+	const monthAnchors = $derived.by(() => {
+		const anchors = new Map<string, string>();
+		for (const event of items) {
+			const month = event.date.slice(0, 7);
+			if (!isAttachedNews(event) && !anchors.has(month)) anchors.set(month, event.id);
+		}
+		return anchors;
+	});
+	const scrubbable = $derived(!showcase && !loading && monthAnchors.size > 0);
 	const avatarSrc = $derived(avatar?.startsWith('/') && !preview ? APPVIEW_URL + avatar : avatar);
 
 	/**
@@ -214,6 +222,9 @@
 									class:chronicle-revealed={revealed.has(event.id)}
 									class:is-highlight={event.kind === 'highlight'}
 									data-event-id={event.id}
+									data-chronicle-month={monthAnchors.get(event.date.slice(0, 7)) === event.id
+										? event.date.slice(0, 7)
+										: undefined}
 								>
 									<span class="chronicle-rail" aria-hidden="true">
 										<Icon name={chronicleEventIcon(event.kind)} size={14} />
@@ -274,7 +285,7 @@
 
 	{#if scrubbable && body}
 		<div class="chronicle-scrub-col">
-			<ChronicleScrubber {body} years={yearKeys} />
+			<ChronicleScrubber {body} years={yearKeys} months={[...monthAnchors.keys()]} />
 		</div>
 	{/if}
 </section>

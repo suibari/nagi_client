@@ -38,8 +38,8 @@ describe('chronicle motion contracts', () => {
 		expect(aboutPage).toMatch(/preview=\{chronicleItems\}\s*showcase/);
 	});
 
-	it('スクラバーは2年以上あり、サンプルでないときだけ出す（CHRON-04）', () => {
-		expect(timeline).toContain('!showcase && !loading && yearKeys.length >= 2');
+	it('スクラバーは節目があり、サンプルでないときだけ出す（CHRON-04）', () => {
+		expect(timeline).toContain('!showcase && !loading && monthAnchors.size > 0');
 		expect(scrubber).toContain('role="slider"');
 		expect(scrubber).toContain('aria-valuenow');
 		expect(scrubber).toContain('setPointerCapture');
