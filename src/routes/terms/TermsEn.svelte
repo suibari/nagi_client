@@ -14,9 +14,6 @@
 <div class="summary">
 	<h2>Before anything else</h2>
 	<ul>
-		<li>
-			<strong>If you are under 18, use Nagi with your parent or guardian's permission.</strong>
-		</li>
 		<li><strong>Bot-tan is an AI</strong>, not a human.</li>
 		<li><strong>Saying that things are hard is welcome here.</strong></li>
 		<li>What we prohibit is <strong>conduct that actually harms people</strong> - nothing more.</li>
@@ -76,10 +73,7 @@
 
 <h2 id="t2">2. Eligibility</h2>
 <div class="callout">
-	<p>
-		<strong>If you are under 18, use the Service with your parent or guardian's permission.</strong> Content
-		carrying adult labels is not shown to accounts under 18.
-	</p>
+	<p>Content carrying adult labels is not shown to accounts under 18.</p>
 </div>
 <ul>
 	<li>

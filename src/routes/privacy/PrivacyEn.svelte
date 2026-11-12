@@ -43,7 +43,7 @@
 		<li><a href="#p7">What is stored on your device</a></li>
 		<li><a href="#p8">How public your data is</a></li>
 		<li><a href="#p9">Retention and deletion</a></li>
-		<li><a href="#p10">Age verification and people under 18</a></li>
+		<li><a href="#p10">Age verification</a></li>
 		<li><a href="#p11">Changes to this Policy</a></li>
 		<li><a href="#p12">Contact</a></li>
 		<li><a href="#p13">Governing language</a></li>
@@ -272,11 +272,6 @@
 	<li>OpenAI does <strong>not use what we send to train its models</strong>.</li>
 	<li>Logs are retained for <strong>up to 30 days</strong> for abuse monitoring.</li>
 </ul>
-<p>
-	If you are under 18 you need a parent or guardian's permission to use the Service, because some of
-	what you post is sent to the recipients above. See Section 2 of the
-	<a href="/terms">Terms of Service</a>.
-</p>
 
 <h2 id="p6">6. Where information is sent</h2>
 <div class="table-scroll">
@@ -532,11 +527,8 @@
 	data, we unlink those records from your DID.
 </p>
 
-<h2 id="p10">10. Age verification and people under 18</h2>
-<p>
-	If you are under 18, please use the Service with your parent or guardian's permission. Content
-	carrying adult labels is not shown to accounts under 18.
-</p>
+<h2 id="p10">10. Age verification</h2>
+<p>Content carrying adult labels is not shown to accounts under 18.</p>
 <h3>How we handle your date of birth</h3>
 <ul>
 	<li>

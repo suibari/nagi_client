@@ -70,26 +70,14 @@ export async function loadAgeAssurance(): Promise<void> {
 }
 
 export type DeclareResult =
-	| { ok: true; isAdult: boolean }
-	| { ok: false; reason: 'already_set' | 'consent_required' | 'invalid' | 'failed' };
-
-/** 18歳以上かどうかをクライアント側でも判定する（同意チェックの出し分け用）。 */
-export function isAdultBirthDate(birthDate: string, now = new Date()): boolean {
-	const birth = new Date(`${birthDate}T00:00:00Z`);
-	if (Number.isNaN(birth.getTime())) return false;
-	const threshold = Date.UTC(now.getUTCFullYear() - 18, now.getUTCMonth(), now.getUTCDate());
-	return birth.getTime() <= threshold;
-}
+	{ ok: true; isAdult: boolean } | { ok: false; reason: 'already_set' | 'invalid' | 'failed' };
 
 /**
  * 生年月日を申告する。1度だけ。サーバが真実源なので、返ってきた確定値で状態を更新する。
  */
-export async function declareBirthDate(
-	birthDate: string,
-	parentalConsent: boolean,
-): Promise<DeclareResult> {
+export async function declareBirthDate(birthDate: string): Promise<DeclareResult> {
 	try {
-		const view = await putPreferences({ birthDate, parentalConsent });
+		const view = await putPreferences({ birthDate });
 		applyAgeAssurance(view.ageAssurance);
 		return { ok: true, isAdult: view.ageAssurance?.isAdult ?? false };
 	} catch (error) {
@@ -99,7 +87,6 @@ export async function declareBirthDate(
 				await loadAgeAssurance();
 				return { ok: false, reason: 'already_set' };
 			}
-			if (/parental_consent/i.test(error.message)) return { ok: false, reason: 'consent_required' };
 			if (error.status === 400) return { ok: false, reason: 'invalid' };
 		}
 		return { ok: false, reason: 'failed' };

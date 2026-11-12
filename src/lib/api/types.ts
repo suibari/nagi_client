@@ -684,10 +684,8 @@ export type PutPreferencesInput = {
 	lastBookmarkFolderUpdatedAt?: string;
 	/**
 	 * 生年月日の申告（YYYY-MM-DD）。設定できるのは1度だけで、2度目は 409 になる。
-	 * 18歳未満なら parentalConsent: true が必須。
 	 */
 	birthDate?: string;
-	parentalConsent?: boolean;
 };
 
 export type DraftLinkCard = { uri: string; title: string; description?: string };
