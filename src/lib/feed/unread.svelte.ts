@@ -8,7 +8,7 @@ export const homeFeedRead = createReadWatermark('nagi.feed-read-state.home.v1');
 export const affirmationFeedRead = createReadWatermark('nagi.feed-read-state.affirmation.v1');
 
 /**
- * タブごとのウォーターマーク。追加できるタブ（チャンネル）は数が決まらないので、
+ * タブごとのウォーターマーク。追加できるタブ（ハッシュタグなど）は数が決まらないので、
  * 使われたぶんだけ遅延で作る。上の3本は既存キーをそのまま返す — キー文字列を
  * 変えるとその端末の既読が全部リセットされる。
  */

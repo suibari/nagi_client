@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 const read = (relativePath: string) => readFileSync(new URL(relativePath, import.meta.url), 'utf8');
 
 const timeline = read('./ChronicleTimeline.svelte');
+const scrubber = read('./ChronicleScrubber.svelte');
+const aboutPage = read('../../routes/about/+page.svelte');
 const diaryPage = read('../../routes/diary/+page.svelte');
 const componentsCss = read('../../routes/styles/components.css');
 const baseCss = read('../../routes/styles/base.css');
@@ -29,9 +31,38 @@ describe('chronicle motion contracts', () => {
 		expect(timeline).toContain('new IntersectionObserver');
 	});
 
-	it('無限スクロールは共通の InfiniteScroll を使う（自前で書かない）', () => {
-		expect(timeline).toContain('<InfiniteScroll');
-		expect(timeline).toContain("from './InfiniteScroll.svelte'");
+	it('全年を読み切ってから今（末尾）へ移る。紹介ページのサンプルでは移らない（CHRON-03）', () => {
+		expect(timeline).toContain('loadAllChronicle(');
+		expect(timeline).not.toContain('<InfiniteScroll');
+		expect(timeline).toMatch(/async function scrollToNow\(\) \{\s*if \(showcase\) return;/);
+		expect(aboutPage).toMatch(/preview=\{chronicleItems\}\s*showcase/);
+	});
+
+	it('スクラバーは2年以上あり、サンプルでないときだけ出す（CHRON-04）', () => {
+		expect(timeline).toContain('!showcase && !loading && yearKeys.length >= 2');
+		expect(scrubber).toContain('role="slider"');
+		expect(scrubber).toContain('aria-valuenow');
+		expect(scrubber).toContain('setPointerCapture');
+		for (const key of ['Home', 'End', 'ArrowUp', 'ArrowDown'])
+			expect(scrubber).toContain(`'${key}'`);
+	});
+
+	it('拡大の演出は対応ブラウザだけで、基底は読める大きさのまま（CHRON-02/05）', () => {
+		const supported =
+			/@supports \(animation-timeline: view\(\)\) \{([\s\S]*?)\n\t\}/.exec(timeline)?.[1] ?? '';
+		// 一括指定の animation は animation-timeline を初期化するので、必ず後に書く。
+		for (const name of ['chronicle-year-focus', 'chronicle-title-focus']) {
+			const rule = new RegExp(`animation: ${name}[^;]*;\\s*animation-timeline: view\\(\\);`);
+			expect(supported).toMatch(rule);
+		}
+		const yearBase = /\.chronicle-year-num \{([\s\S]*?)\}/.exec(timeline)?.[1] ?? '';
+		const titleBase = /\.chronicle-title \{([\s\S]*?)\}/.exec(timeline)?.[1] ?? '';
+		for (const base of [yearBase, titleBase]) {
+			expect(base).not.toMatch(/transform:\s*scale/);
+			expect(base).not.toMatch(/opacity:\s*0/);
+		}
+		// 拡大で行の高さを動かさない。font-size はアニメーションさせない。
+		expect(timeline).not.toMatch(/@keyframes chronicle-(year|title)-focus[\s\S]*?font-size/);
 	});
 
 	it('そのころ世の中では、はまとめに付く一行として描く（独立した節目にしない）', () => {
@@ -73,6 +104,9 @@ describe('chronicle motion contracts', () => {
 			'chronicleFetchFailed',
 			'chronicleOpenDiary',
 			'chronicleYearAria',
+			'chronicleScrubberAria',
+			'chronicleScrubberNow',
+			'chronicleYearValue',
 			'chronicleKindNagiJoined',
 			'chronicleKindBotMet',
 			'chronicleKindFirstCardUr',

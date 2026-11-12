@@ -1,4 +1,4 @@
-import type { ChronicleEventKind, ChronicleEventView } from '$lib/api/types';
+import type { ChronicleEventKind, ChronicleEventView, ChroniclePage } from '$lib/api/types';
 
 /**
  * 年表の見せ方を決める純関数だけを置く。
@@ -88,3 +88,39 @@ export function chronicleEventDetail(
  * （日付も出さない。「8/19 まとめ ＋ その下にこの頃の世間の出来事」という読ませ方）。
  */
 export const isAttachedNews = (event: ChronicleEventView): boolean => event.kind === 'news_context';
+
+export type ChronicleLoadResult = {
+	items: ChronicleEventView[];
+	/** 失敗したときに再試行で渡すcursor。全年を読み終えたら undefined。 */
+	cursor?: string;
+	hasMore: boolean;
+	error?: unknown;
+};
+
+/**
+ * 古い年から今年まで、ページを順に読み切る（CHRON-03）。
+ * 途中で失敗したら、読めた分と失敗したページのcursorを返して呼び出し側に再試行させる。
+ * AppViewが同じcursorを返し続けても止まるよう、一度通ったcursorで打ち切る。
+ */
+export async function loadAllChronicle(
+	fetchPage: (cursor: string | undefined) => Promise<ChroniclePage>,
+	start: { items: ChronicleEventView[]; cursor?: string } = { items: [] },
+	onPage?: (page: ChroniclePage) => void,
+): Promise<ChronicleLoadResult> {
+	let items = start.items;
+	let cursor = start.cursor;
+	const seen = new Set<string>();
+	for (;;) {
+		let page: ChroniclePage;
+		try {
+			page = await fetchPage(cursor);
+		} catch (error) {
+			return { items, cursor, hasMore: true, error };
+		}
+		items = mergeChronicle(items, page.items);
+		onPage?.(page);
+		if (!page.hasMore || !page.cursor || seen.has(page.cursor)) return { items, hasMore: false };
+		seen.add(page.cursor);
+		cursor = page.cursor;
+	}
+}

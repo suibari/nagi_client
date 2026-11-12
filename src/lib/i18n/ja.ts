@@ -914,6 +914,9 @@ export const ja = {
 	chronicleFetchFailed: '年表を取得できません',
 	chronicleOpenDiary: 'この日の日記を見る',
 	chronicleYearAria: (p: { year: string }) => `${p.year}年の節目`,
+	chronicleScrubberAria: '年表の年を移動',
+	chronicleScrubberNow: 'いま',
+	chronicleYearValue: (p: { year: string }) => `${p.year}年`,
 	chronicleKindNagiJoined: 'Nagi にやってきた日',
 	// followers.created_at は Bluesky のフォロー以外でも作られる（Nagi の会話・日記の称号・
 	// 超ポジティブLv）。「出会った日」と言い切ると Nagi 専用ユーザで嘘になるので、
@@ -1176,6 +1179,10 @@ export const ja = {
 	crosspostSignInRequired: 'Bluesky連携を設定するにはログインしてください。',
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
 	crosspostPermissionMissing: 'Blueskyへの投稿権限を確認できませんでした',
+	crosspostPartial:
+		'Blueskyには途中までしか投稿できませんでした。Blueskyに残った分は、必要ならBlueskyで削除してください',
+	crosspostLinkFailed:
+		'Blueskyには投稿できましたが、Nagiの投稿と結びつけられませんでした。このポストへの返信・引用はBlueskyに続けられません',
 	blueskyFeedReadingTitle: 'Blueskyのフィードを見る',
 	blueskyFeedReadingHelp:
 		'フィードのタブ設定から、Blueskyのフォロー中（ホームタイムライン）やカスタムフィードをタブとして追加できます。閲覧専用で、いいねの数は表示しません。',

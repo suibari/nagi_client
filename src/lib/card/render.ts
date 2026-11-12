@@ -28,9 +28,8 @@ import { qrRenderData } from './qr';
 /**
  * 名刺カードを PNG 画像として描く。
  *
- * nagi_client は adapter-static の完全 SPA でサーバーランタイムが無いため、画像生成は
- * ブラウザの Canvas で行う。保存・共有用 PNG は名刺（91 × 55 mm）と同じ比率の
- * 1274x770 にし、OGP 用の寸法は design.ts に保持する。
+ * 保存・共有用 PNG はブラウザの Canvas で描く（OGP 画像は Vercel Functions 側で作る）。
+ * 名刺（91 × 55 mm）と同じ比率の 1274x770 にし、OGP 用の寸法は design.ts に保持する。
  *
  * ⚠ この関数は BusinessCard.svelte（DOM 版）と同じ見た目を手で再現している。片方だけ
  *    直すとズレるので、レイアウトを変えるときは必ず両方を直し、/dev/name-card で並べて確認すること。

@@ -2,6 +2,8 @@ import { tick } from 'svelte';
 
 type PostFollowNotice = {
 	href: string;
+	/** 投稿はできたが、Bluesky への連携などで伝えることがある。 */
+	warning?: string;
 };
 
 /**
@@ -57,7 +59,13 @@ export const postFollowNotice = {
 		return state.notice;
 	},
 	show(href: string) {
-		state.notice = { href };
+		// 先に出した警告は、追従できなかったときの導線に差し替えても消さない。
+		const warning = state.notice?.warning;
+		state.notice = { href, ...(warning ? { warning } : {}) };
+	},
+	/** 投稿は成功したが、モーダルを閉じたあとも伝えたい警告がある。 */
+	warn(href: string, warning: string) {
+		state.notice = { href, warning };
 	},
 	clear() {
 		state.notice = undefined;

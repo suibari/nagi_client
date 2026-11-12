@@ -123,6 +123,8 @@ export type LinkCardDraft = {
 	/** 投稿編集時に、元レコードのサムネイル BlobRef を再利用するための位置。 */
 	sourceIndex?: number;
 };
+/** 投稿レコードの crosspost に入れる、Bluesky に同時投稿したコピーへの参照。 */
+export type CrosspostRecordRef = { root: StrongRef; tail: StrongRef; threadRoot?: StrongRef };
 export type PostDraft = {
 	text: string;
 	facets: ReturnType<typeof parsePostText>['facets'];
@@ -130,11 +132,6 @@ export type PostDraft = {
 	createdAt: string;
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
 	quote?: { uri: string; cid: string };
-	/**
-	 * Bluesky に同時投稿したコピーへの参照。Nagi の投稿より先に Bluesky へ出し、作成時のレコードに
-	 * 入れる（後から書き足すと AppView が「編集」と見なし、翻訳や判定をやり直してしまう）。
-	 */
-	crosspost?: { root: StrongRef; tail: StrongRef; threadRoot?: StrongRef };
 	attachments: ImageAttachment[];
 	/** video.bsky.app で変換済みの動画。画像と併用できる（引用なしなら #gallery で書く）。 */
 	video?: PostVideoRecord;
@@ -469,7 +466,6 @@ export async function createPost(
 				...(embed && { embed }),
 				...(draft.labels && { labels: draft.labels }),
 				...(draft.article && { article: true }),
-				...(draft.crosspost && { crosspost: draft.crosspost }),
 			},
 		});
 		return { uri: data.uri, cid: data.cid };
@@ -477,6 +473,40 @@ export async function createPost(
 		throw new PostSubmissionError('record-create', cause);
 	}
 }
+/**
+ * 作成済みの投稿へ Bluesky コピーの参照を足す。読んだ版を swapRecord で指定し、
+ * その間に本人が編集していたら読み直して1回だけやり直す。見える内容は変えないので、
+ * AppView はこの更新を編集とみなさない。
+ */
+export async function attachCrosspost(uri: string, crosspost: CrosspostRecordRef): Promise<void> {
+	const s = current();
+	const agent = new Agent(s);
+	const rkey = uri.slice(uri.lastIndexOf('/') + 1);
+	for (let attempt = 0; ; attempt++) {
+		const { data } = await agent.com.atproto.repo.getRecord({
+			repo: s.did,
+			collection: POST,
+			rkey,
+		});
+		try {
+			await indexed(
+				agent.com.atproto.repo.putRecord({
+					repo: s.did,
+					collection: POST,
+					rkey,
+					validate: false,
+					record: { ...(data.value as Record<string, unknown>), crosspost },
+					swapRecord: data.cid ?? null,
+				}),
+			);
+			return;
+		} catch (error) {
+			const conflict = (error as { error?: string })?.error === 'InvalidSwap';
+			if (!conflict || attempt >= 1) throw error;
+		}
+	}
+}
+
 /**
  * 投稿を削除する。こっそりは PDS に正本が無いので AppView の手続きを通す。
  * 通常の投稿は従来どおり PDS のレコードを消して AppView へ伝える。

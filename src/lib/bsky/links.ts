@@ -1,6 +1,6 @@
 /**
- * Bluesky のフィード・投稿・ユーザーを bsky.app のどこへ飛ばすか。
- * Nagi は Bluesky のプロフィールやスレッドを作り込まず、見たいときは bsky.app で開いてもらう。
+ * Bluesky のフィード・投稿・ユーザーを bsky.app で開くためのリンク。
+ * スレッドは Nagi 内でも読める（BSKY-07）。ここは外部で開くときの URL だけを組む。
  * URL は DID で組む。ハンドルは変わるし、handle.invalid のこともある。
  */
 

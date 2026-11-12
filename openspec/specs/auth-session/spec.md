@@ -1,0 +1,142 @@
+# 認証・セッション・姉妹アプリ連携
+
+## Purpose
+
+### 機能概要
+
+利用者がAT ProtocolのアカウントでNagiへログインし、許可した範囲で投稿や各機能を使えるようにする。再訪時はセッションを復元し、追加機能に必要な権限は再認可で取得する。認証処理の途中や一時的な通信断で、利用者がログアウトしたように見えたり、意図せず権限を失ったりすることを防ぐ。
+
+OAuthは利用者のPDS側の認可サーバーと連携する。姉妹アプリへのSSOは別の移動経路として扱い、DIDヒント自体を認証には使わない。
+
+### 機能一覧
+
+| 機能                     | 役割・利用者ができること                                       | 詳細要件                                  |
+| ------------------------ | -------------------------------------------------------------- | ----------------------------------------- |
+| ログイン・アカウント作成 | 既存アカウントの認可、またはEntryway経由の登録からNagiへ戻る。 | [AUTH-01](#auth-01) / [AUTH-05](#auth-05) |
+| セッション復元           | 再訪時に認証状態を復元し、待機中の初回表示を整える。           | [AUTH-02](#auth-02)                       |
+| 追加認可                 | Bluesky連携等に必要な権限を既存の許可と合わせて取得する。      | [AUTH-03](#auth-03) / [AUTH-04](#auth-04) |
+| デプロイ先の統一         | Previewでも認可の開始元と戻り先のoriginを一致させる。          | [AUTH-01](#auth-01)                       |
+| ログアウト               | 端末Pushの解除を先に試み、その後セッションを終了する。         | [AUTH-05](#auth-05)                       |
+| 姉妹アプリ連携           | クリック時の短期チケットとDIDヒントで移動を補助する。          | [AUTH-06](#auth-06)                       |
+
+### 主な利用の流れ
+
+1. 利用者がハンドルを入力するか、アカウント作成を選ぶ。
+2. PDS側で必要な権限の認可を行い、Nagiのcallbackへ戻る。
+3. セッションと実際の付与スコープを確認し、保留していた連携を確定する。
+4. 再訪時は保存セッションを復元する。ログアウト時は購読解除を先に試みる。
+
+この文書は現行クライアントの振る舞いを整理する。設計判断は [design.md](design.md)、導入時の証跡は [コメント原文](../../reference/comment-snapshot/auth-session.md)、既知の不整合は [known-gaps.md](../../known-gaps.md) に分けて記録する。シナリオは確認条件であり、全外部環境での実行合格を示すものではない。
+
+## Requirements
+
+<a id="auth-01"></a>
+
+### Requirement: AUTH-01 正規originと遅延初期化
+
+クライアントは本番では https://nagi.suibari.com、Vercel Previewでは VERCEL_BRANCH_URL の固定ブランチoriginをOAuthの基準にしなければならない（MUST）。client_idは /client-metadata.json、callbackは /oauth/callback とする。Previewのホスト指定が無い・不正なら構成エラーとする。IndexedDBを開くOAuthクライアントはブラウザ内だけで生成し、共有する。
+
+#### Scenario: Previewの固有URLから開く
+
+- **WHEN** loopback以外の非正規originで認証を開始する
+- **THEN** pathname・query・hashを保って正規originへ移動する
+
+#### Scenario: 静的生成
+
+- **WHEN** ブラウザのlocationが無い
+- **THEN** OAuthクライアントを生成しない
+
+<a id="auth-02"></a>
+
+### Requirement: AUTH-02 復元と初回描画
+
+認証の真実源はIndexedDBのOAuthセッションでなければならない（MUST）。localStorageの既往サインインmarkerは初回ヒーローのちらつき抑止と復元補助にだけ使い、認可の証拠にしてはならない。通信だけのrefresh失敗ではmarkerから復元を試み、元の分類可能なエラーを保持する。
+
+#### Scenario: サインイン済みの再訪
+
+- **WHEN** 非同期の復元がまだ終わっていない
+- **THEN** 静的な未ログイン向けヒーローを初回描画から隠し、確認後に状態を確定する
+
+#### Scenario: ストレージ利用不可
+
+- **WHEN** markerの読み書きが失敗する
+- **THEN** markerの失敗だけではOAuthの成否を変えない
+
+<a id="auth-03"></a>
+
+### Requirement: AUTH-03 最小権限と既存スコープ維持
+
+Nagi namespaceは公開permission setを基準とし、別namespace・blob・新機能の互換用権限は明示する必要がある（MUST）。standard.siteは基本権限、Blueskyの作成と閲覧は同じオプトインとする。再認可では既存の有効化状態を落とさない。Bluesky投稿の要求権限はcreate限定とし、後始末のために更新・削除の権限を追加してはならない。削除の補償処理との不整合は [known-gaps.md](../../known-gaps.md#gap-01) に記録する。
+
+#### Scenario: 追加機能の認可
+
+- **WHEN** Bluesky連携を有効化して再認可する
+- **THEN** 既存オプトインを含むscopeを要求し、戻った後に実際の付与を確認する
+
+#### Scenario: 旧PDS
+
+- **WHEN** rpcのaudを旧方式で照合するPDSを使う
+- **THEN** 互換用のaud=*を使い、includeに重複したaudを付けない
+
+<a id="auth-04"></a>
+
+### Requirement: AUTH-04 端末オプトインの確定
+
+オプトインは端末フラグと実際の付与スコープの両方を必要としなければならない（MUST）。リダイレクト前のpendingだけでは有効にしない。書き込み権限と後から追加された閲覧権限は別々に判定する。旧セッションの広いscopeとの互換のため、既存の付与判定はaction/audを除いたスコープ名で比較する。
+
+#### Scenario: 認可キャンセル
+
+- **WHEN** pendingは残るが必要scopeが付与されていない
+- **THEN** 有効化を確定しない
+
+#### Scenario: 書き込みのみ付与された旧セッション
+
+- **WHEN** クロスポスト権限はあるが閲覧権限が無い
+- **THEN** Blueskyフィードを閲覧可能とみなさない
+
+<a id="auth-05"></a>
+
+### Requirement: AUTH-05 サインアウト順序
+
+サインアウトは有効なセッションが必要な端末Push解除を先に試み、その失敗にかかわらずセッション終了を進めなければならない（MUST）。アカウント作成はBluesky Entrywayから開始し、対応するPDSには表示言語を引き継ぐ。
+
+#### Scenario: Push解除失敗
+
+- **WHEN** 解除APIが失敗してからサインアウトする
+- **THEN** サインアウト自体を完了する
+
+<a id="auth-06"></a>
+
+### Requirement: AUTH-06 姉妹アプリへのヒントとチケット
+
+閲覧者DIDのヒントは許可したcanonical originだけに付け、既存didを尊重しなければならない（MUST）。60秒有効のSSOチケットはクリック時に取得し、失敗時はDIDヒント付きの通常OAuth導線へ戻す。修飾キー操作はブラウザに任せ、新規タブは同期で開いてopenerを切る。
+
+#### Scenario: 無関係な外部リンク
+
+- **WHEN** 許可origin以外へ移動する
+- **THEN** 閲覧者DIDを付加しない
+
+#### Scenario: チケット取得の403
+
+- **WHEN** permission setの反映待ちで取得できない
+- **THEN** 元のリンクを壊さずDIDヒント経路で移動する
+
+## 参照資料
+
+### 外部資料
+
+| 資料                                                                                  | この機能で参照する理由                                   |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [AT Protocol — OAuth](https://atproto.com/specs/oauth)                                | 認証フロー、client metadata、callback、セッションの前提  |
+| [AT Protocol — Permissions](https://atproto.com/specs/permission)                     | scope、permission set、repo操作とRPCの認可境界           |
+| [MDN — IndexedDB API](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) | ブラウザに保存するセッション・下書き・端末データの仕組み |
+
+リンクの到達先と対象を2026-11-11に確認した。外部の説明は更新されるため、本リポジトリ固有の制約と外部仕様を区別する。現行実装の基準はこの文書の要件とし、外部仕様への追従で振る舞いを変える場合は差分を記録する。
+
+### 関連する内部資料
+
+- [設計判断](design.md)：採用理由、互換条件、失敗時の考え方。
+- [導入時コメント原文](../../reference/comment-snapshot/auth-session.md)：基準コミットの出典を全件保存した履歴資料。
+- [AppView通信・AT Protocolレコード](../appview-protocol/spec.md)：連携する機能の要件。
+- [Bluesky閲覧・クロスポスト](../bluesky-integration/spec.md)：連携する機能の要件。
+- [通知・Web Push・既読位置](../notifications-unread/spec.md)：連携する機能の要件。

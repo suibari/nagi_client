@@ -42,6 +42,7 @@ import {
 	NAGI_ACCOUNT_DATA_COLLECTIONS,
 	preparePostDraft,
 	updatePost,
+	attachCrosspost,
 } from './records';
 
 const reply = {
@@ -659,5 +660,75 @@ describe('link card limit', () => {
 				},
 			).linkCards,
 		).toHaveLength(6);
+	});
+});
+
+describe('attachCrosspost', () => {
+	const uri = `at://${did}/com.suibari.nagi.post/3mpost`;
+	const ref = {
+		root: { uri: `at://${did}/app.bsky.feed.post/a`, cid: 'bafya' },
+		tail: { uri: `at://${did}/app.bsky.feed.post/b`, cid: 'bafyb' },
+		threadRoot: { uri: `at://${did}/app.bsky.feed.post/a`, cid: 'bafya' },
+	};
+	const stored = {
+		$type: 'com.suibari.nagi.post',
+		text: 'hello',
+		createdAt: '2026-11-12T00:00:00Z',
+	};
+	const swapError = Object.assign(new Error('Record was at bafyedited'), { error: 'InvalidSwap' });
+
+	beforeEach(() => {
+		getRecord.mockReset();
+		putRecord.mockReset();
+		ensureRecord.mockReset();
+		ensureRecord.mockResolvedValue(undefined);
+	});
+
+	it('adds only the crosspost reference to the stored record, guarded by its cid', async () => {
+		getRecord.mockResolvedValue({ data: { value: stored, cid: 'bafycreated' } });
+		putRecord.mockResolvedValue({ data: { uri, cid: 'bafylinked' } });
+
+		await attachCrosspost(uri, ref);
+
+		expect(putRecord).toHaveBeenCalledTimes(1);
+		expect(putRecord.mock.calls[0][0]).toMatchObject({
+			repo: did,
+			collection: 'com.suibari.nagi.post',
+			rkey: '3mpost',
+			swapRecord: 'bafycreated',
+			record: { ...stored, crosspost: ref },
+		});
+		expect(ensureRecord).toHaveBeenCalledWith(uri, 'bafylinked');
+	});
+
+	it('re-reads and retries once when the post was edited in between', async () => {
+		const edited = { ...stored, text: 'edited' };
+		getRecord
+			.mockResolvedValueOnce({ data: { value: stored, cid: 'bafycreated' } })
+			.mockResolvedValueOnce({ data: { value: edited, cid: 'bafyedited' } });
+		putRecord
+			.mockRejectedValueOnce(swapError)
+			.mockResolvedValueOnce({ data: { uri, cid: 'bafylinked' } });
+
+		await attachCrosspost(uri, ref);
+
+		expect(putRecord).toHaveBeenCalledTimes(2);
+		expect(putRecord.mock.calls[1][0]).toMatchObject({
+			swapRecord: 'bafyedited',
+			record: { ...edited, crosspost: ref },
+		});
+	});
+
+	it('gives up after the second conflict and does not retry other errors', async () => {
+		getRecord.mockResolvedValue({ data: { value: stored, cid: 'bafycreated' } });
+		putRecord.mockRejectedValue(swapError);
+		await expect(attachCrosspost(uri, ref)).rejects.toBe(swapError);
+		expect(putRecord).toHaveBeenCalledTimes(2);
+
+		putRecord.mockReset();
+		const network = new Error('network');
+		putRecord.mockRejectedValue(network);
+		await expect(attachCrosspost(uri, ref)).rejects.toBe(network);
+		expect(putRecord).toHaveBeenCalledTimes(1);
 	});
 });

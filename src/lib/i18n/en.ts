@@ -888,6 +888,9 @@ export const en: Messages = {
 	chronicleFetchFailed: 'Could not fetch the chronicle',
 	chronicleOpenDiary: 'Read that day',
 	chronicleYearAria: (p: { year: string }) => `Milestones in ${p.year}`,
+	chronicleScrubberAria: 'Jump to a year in the chronicle',
+	chronicleScrubberNow: 'Now',
+	chronicleYearValue: (p: { year: string }) => p.year,
 	chronicleKindNagiJoined: 'The day you arrived on Nagi',
 	chronicleKindBotMet: 'When you first connected with Bot-tan',
 	chronicleKindFirstCardUr: 'Your first UR card',
@@ -1140,6 +1143,10 @@ export const en: Messages = {
 	crosspostSignInRequired: 'Log in to configure Bluesky linking.',
 	crosspostFailed: 'Could not crosspost to Bluesky',
 	crosspostPermissionMissing: 'Could not confirm permission to post to Bluesky',
+	crosspostPartial:
+		'Only part of the post reached Bluesky. Delete the partial copy on Bluesky if you no longer need it.',
+	crosspostLinkFailed:
+		'Posted to Bluesky, but could not link it to your Nagi post. Replies and quotes to this post will not continue on Bluesky.',
 	blueskyFeedReadingTitle: 'Read Bluesky feeds',
 	blueskyFeedReadingHelp:
 		'Add your Bluesky Following timeline or custom feeds as tabs from the feed tab settings. They are read-only, and like counts are not shown.',

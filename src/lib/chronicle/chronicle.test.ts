@@ -4,8 +4,10 @@ import {
 	chronicleEventDetail,
 	chronicleEventLabel,
 	groupChronicleByYear,
+	loadAllChronicle,
 	mergeChronicle,
 } from './chronicle';
+import type { ChroniclePage } from '$lib/api/types';
 
 const event = (
 	over: Partial<ChronicleEventView> & Pick<ChronicleEventView, 'id' | 'kind' | 'date'>,
@@ -73,5 +75,58 @@ describe('chronicleEventLabel', () => {
 		const item = event({ id: 'stored:2', kind: 'highlight', date: '2026-08-03', titleJa: 'のみ' });
 		expect(chronicleEventLabel(item, 'en', labels)).toBe('のみ');
 		expect(chronicleEventDetail(item, 'ja')).toBeUndefined();
+	});
+});
+
+describe('loadAllChronicle', () => {
+	const page = (year: number, hasMore: boolean): ChroniclePage => ({
+		year,
+		revision: 'r'.repeat(64),
+		items: [event({ id: `e${year}`, kind: 'highlight', date: `${year}-05-01` })],
+		cursor: hasMore ? String(year + 1) : undefined,
+		hasMore,
+	});
+
+	it('古い年から今年まで読み切り、各ページを通知する', async () => {
+		const seen: number[] = [];
+		const result = await loadAllChronicle(
+			async (cursor) =>
+				page(cursor ? Number(cursor) : 2024, (cursor ? Number(cursor) : 2024) < 2026),
+			undefined,
+			(p) => seen.push(p.year!),
+		);
+		expect(result.items.map((e) => e.id)).toEqual(['e2024', 'e2025', 'e2026']);
+		expect(result.hasMore).toBe(false);
+		expect(result.error).toBeUndefined();
+		expect(seen).toEqual([2024, 2025, 2026]);
+	});
+
+	it('途中で失敗したら読めた年を残し、続きのcursorから再開できる', async () => {
+		let fail = true;
+		const fetchPage = async (cursor: string | undefined) => {
+			const year = cursor ? Number(cursor) : 2024;
+			if (year === 2025 && fail) throw new Error('down');
+			return page(year, year < 2026);
+		};
+		const first = await loadAllChronicle(fetchPage);
+		expect(first.items.map((e) => e.id)).toEqual(['e2024']);
+		expect(first.cursor).toBe('2025');
+		expect(first.hasMore).toBe(true);
+		expect(first.error).toBeInstanceOf(Error);
+
+		fail = false;
+		const retried = await loadAllChronicle(fetchPage, first);
+		expect(retried.items.map((e) => e.id)).toEqual(['e2024', 'e2025', 'e2026']);
+		expect(retried.hasMore).toBe(false);
+	});
+
+	it('同じcursorが繰り返されたら打ち切る', async () => {
+		let calls = 0;
+		const result = await loadAllChronicle(async () => {
+			calls++;
+			return { ...page(2025, true), cursor: '2025' };
+		});
+		expect(calls).toBe(2);
+		expect(result.hasMore).toBe(false);
 	});
 });

@@ -185,11 +185,24 @@ export type CrosspostTarget = {
 	quote?: StrongRef;
 };
 
-/** 作ったコピー。ref は Nagi の投稿レコードの crosspost にそのまま入れ、posts は巻き戻し用の全件。 */
+/** 作ったコピー。ref は Nagi の投稿レコードの crosspost にそのまま入れる。 */
 export type CrosspostResult = {
 	ref: { root: StrongRef; tail: StrongRef; threadRoot: StrongRef };
-	posts: StrongRef[];
 };
+
+/**
+ * 分割投稿の途中で失敗した。作った分は消さない（Bluesky の権限は作成だけ）ので、
+ * 呼び出し側は Bluesky に途中までのコピーが残ったことを伝える。
+ */
+export class CrosspostPartialError extends Error {
+	constructor(
+		readonly posts: StrongRef[],
+		cause: unknown,
+	) {
+		super('Crosspost was only partially created', { cause });
+		this.name = 'CrosspostPartialError';
+	}
+}
 
 /** 引用は先頭の1件にだけ付ける。画像・動画・リンクカードと一緒なら recordWithMedia にする。 */
 function withQuote(embed: ReturnType<typeof buildEmbed>, quote: StrongRef | undefined) {
@@ -204,7 +217,7 @@ function withQuote(embed: ReturnType<typeof buildEmbed>, quote: StrongRef | unde
  * blob は Nagi 投稿でアップロード済みのものを使い回す（同一リポジトリ・同一サイズ上限）。
  *
  * target を渡すと、自分のクロスポスト済みの投稿への返信・引用として Bluesky でも続ける。
- * 途中で失敗したら、作った分は消してから投げる（Bluesky に半端なスレッドを残さない）。
+ * Nagi の投稿を保存した後に呼ぶ。1件目で失敗したら元の例外、2件目以降なら CrosspostPartialError を投げる。
  */
 export async function crosspostToBluesky(
 	draft: PostDraft,
@@ -258,26 +271,10 @@ export async function crosspostToBluesky(
 			parent = ref;
 		}
 	} catch (cause) {
-		await deleteBlueskyPosts(created);
+		if (created.length) throw new CrosspostPartialError(created, cause);
 		throw cause;
 	}
-	return {
-		ref: { root: root!, tail: parent!, threadRoot: threadRoot ?? root! },
-		posts: created,
-	};
-}
-
-/** 作ったコピーを消す。Nagi の投稿が作れなかったときの巻き戻し用で、失敗は握る。 */
-export async function deleteBlueskyPosts(refs: StrongRef[]): Promise<void> {
-	const current = get(session);
-	if (!current || !refs.length) return;
-	const agent = new Agent(current);
-	for (const ref of [...refs].reverse()) {
-		const rkey = ref.uri.slice(ref.uri.lastIndexOf('/') + 1);
-		await agent.com.atproto.repo
-			.deleteRecord({ repo: current.did, collection: BSKY_POST, rkey })
-			.catch((error) => console.warn('[crosspost] failed to roll back', ref.uri, error));
-	}
+	return { ref: { root: root!, tail: parent!, threadRoot: threadRoot ?? root! } };
 }
 
 /**

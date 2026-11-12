@@ -172,7 +172,7 @@ function mediaFullyWarned(content: {
 	return media.length > 0 && media.every((item) => item.contentWarning);
 }
 
-/** 投稿・プロフィール・チャンネル・カスタム絵文字で共通の表示判定。 */
+/** 投稿・プロフィール・カスタム絵文字で共通の表示判定。 */
 export function contentModerationDisplay(content: {
 	selfLabels?: string[];
 	moderationLabels?: string[];

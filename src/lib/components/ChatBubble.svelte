@@ -16,22 +16,19 @@
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import ReportDialog from './ReportDialog.svelte';
 	import { ownCrosspost } from '$lib/crosspost/target.svelte';
-	import { createPost, deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
+	import { deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
 	import TrilinesCard from './TrilinesCard.svelte';
 	import { deleteTrilinesDiary } from '$lib/trilines/records';
 	import VideoPlayer from './VideoPlayer.svelte';
-	import { MAX_IMAGE_COUNT, type ImageAttachment, type PostEditImage } from '$lib/images';
+	import { MAX_IMAGE_COUNT, type PostEditImage } from '$lib/images';
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import LinkCard from './LinkCard.svelte';
 	import { articleMedia } from '$lib/blog/articleMedia';
-	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
-	import { APPVIEW_URL, ensureRecord } from '$lib/api/appview';
+	import { APPVIEW_URL } from '$lib/api/appview';
 	import ComposerEditor from './ComposerEditor.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
-	import { QuotePick } from '$lib/post/quote-pick.svelte';
-	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import {
 		httpUrl,
 		restorePostEditState,
@@ -54,12 +51,7 @@
 		inlineImageUrl,
 		pruneInlineImages,
 	} from '$lib/blog/inlineImages';
-	import {
-		postFollow,
-		postHref,
-		postPageHref,
-		scrollToElement,
-	} from '$lib/feed/post-follow.svelte';
+	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
 	import PostVideoEditor, { type ExistingVideoEdit } from './PostVideoEditor.svelte';
 	import type { VideoAttachment } from '$lib/video-attachment.svelte';
@@ -147,17 +139,6 @@
 	let reportOpen = $state<'post' | 'reaction'>();
 	let deleting = $state(false);
 	let deleteError = $state('');
-	// どちらのボタンでコンポーザーを開いたか。引用は composeMode とは別枠のスロットで、
-	// 返信中に Nagi のスレッドURLを貼れば「返信＋引用」になる（レコードは両立できる）。
-	let composeMode = $state<'reply' | 'quote'>();
-	const quotePick = new QuotePick();
-	let composeText = $state('');
-	let posting = $state(false);
-	let postError = $state('');
-	let attachments = $state<ImageAttachment[]>([]);
-	let linkCards = $state<LinkCardDraft[]>([]);
-	let mentions = $state<MentionSelection[]>([]);
-	let emojis = $state<EmojiSelection[]>([]);
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
 	let editText = $state('');
 	let editingArticle = $derived(
@@ -409,7 +390,6 @@
 		),
 	);
 	let editContentWarningValid = $derived(validContentWarningSyntax(editText));
-	let composeContentWarningValid = $derived(validContentWarningSyntax(composeText));
 	function runSecondaryAction(
 		closeMenu: (restoreFocus?: boolean) => void,
 		action: () => void,
@@ -437,7 +417,6 @@
 			location.href = '/login';
 			return;
 		}
-		postError = '';
 		const defaultScope = replyIsKossori ? 'kossori' : 'feed';
 		if (mode === 'reply') {
 			composerHost.openReply(post, defaultScope);
@@ -451,15 +430,6 @@
 			return;
 		}
 		reactionPickerOpen = !reactionPickerOpen;
-	}
-	function cancelComposer() {
-		composeMode = undefined;
-		composeText = '';
-		attachments = [];
-		linkCards = [];
-		mentions = [];
-		emojis = [];
-		quotePick.clear();
 	}
 	function startEdit() {
 		if (!$session) {
@@ -692,76 +662,6 @@
 			editError = error instanceof Error ? error.message : m.editPostFailed();
 		} finally {
 			editBusy = false;
-		}
-	}
-	async function submitPost() {
-		if (
-			!composeMode ||
-			(!composeText.trim() && !attachments.length && !linkCards.length) ||
-			posting ||
-			!composeContentWarningValid ||
-			!$session
-		)
-			return;
-		const mode = composeMode;
-		const subject = { uri: post.uri, cid: post.cid };
-		// ネスト返信でも最初のルートを維持することで、公開範囲を含むスレッド設定を
-		// 途中の返信が上書きしないようにする。引用は新しいスレッドなので継承しない。
-		const reply =
-			mode === 'reply' ? { root: post.reply?.root ?? subject, parent: subject } : undefined;
-		// 引用ボタン経路ではこの投稿そのものが引用元。返信中はURL貼り付けで付けた
-		// 引用（あれば）がそのまま乗るので、返信と引用が同居する。
-		const quotedPost = mode === 'quote' ? post : quotePick.post;
-		const quoteRef = mode === 'quote' ? subject : quotePick.ref;
-		const draft = preparePostDraft(
-			composeText,
-			reply,
-			quoteRef,
-			attachments,
-			linkCards,
-			mentions,
-			emojis,
-			// こっそりは「共有TLに出すか」ではなく「どこに保存するか」の設定なので、
-			// スレッドルートだけの所有にはできず、返信にも引き継ぐ。
-			mode === 'reply' && replyIsKossori,
-		);
-		const optimisticId = optimisticPosts.add(draft, $session.did, {
-			...(mode === 'reply' ? { replyParent: post } : {}),
-			...(quotedPost ? { quote: quotedPost } : {}),
-			threadKossori: mode === 'reply' ? Boolean(post.threadKossori ?? post.kossori) : false,
-		});
-		// 楽観カード →（サーバー確定後）本物のカード、と2段階で入れ替わるので、追従先は
-		// postFollow に預けて描画のたびに引き直してもらう。ここで一度寄せるだけでは、
-		// 差し替わった先（会話カードの中の自分の返信）を見失う。
-		postFollow.begin(optimisticId, {
-			...(mode === 'reply' ? { threadRootUri: reply!.root.uri } : {}),
-		});
-		posting = true;
-		postError = '';
-		composeText = '';
-		attachments = [];
-		linkCards = [];
-		mentions = [];
-		emojis = [];
-		composeMode = undefined;
-		quotePick.clear();
-		try {
-			// 返信・引用はNagi内の投稿文脈を参照するため、Blueskyへはクロスポストしない。
-			const created = await createPost(draft);
-			optimisticPosts.markCreated(optimisticId, created);
-			// 画面に出せない投稿（検索タブなど）では、postFollow が導線へ切り替える。
-			postFollow.settle(created.uri, postHref(created.uri));
-			// こっそりは PDS に取りに行く相手が居ないので、AppView への即時反映は不要。
-			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
-			await Promise.resolve(onposted?.()).catch(() => undefined);
-		} catch (error) {
-			optimisticPosts.remove(optimisticId);
-			postFollow.fail();
-			postError = postSubmissionErrorMessage(error);
-			await tick();
-			scrollToElement(postRow);
-		} finally {
-			posting = false;
 		}
 	}
 	async function removePost() {
@@ -1176,7 +1076,6 @@
 				<BookmarkActions subject={bookmarkSubject} />
 			</div>
 		{/if}
-		{#if postError}<p class="error" role="alert">{postError}</p>{/if}
 	</div>
 </div>
 {#if reportOpen}

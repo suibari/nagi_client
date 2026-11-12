@@ -40,19 +40,32 @@
 		}),
 	];
 
-	// スクロールさせないと演出が見えないので、上に余白を積む。
-	let spacer = $state(true);
+	// スクラバーと末尾からの表示を確かめるため、数年ぶんの月まとめを足す。
+	const months = ['01', '03', '05', '07', '09', '11'];
+	const filler: ChronicleEventView[] = ['2025', '2026'].flatMap((year) =>
+		months.map((month) =>
+			event({
+				id: `filler:${year}-${month}`,
+				kind: 'highlight',
+				date: `${year}-${month}-10`,
+				titleJa: `${Number(month)}月のできごと`,
+				titleEn: `What happened in month ${Number(month)}`,
+				detailJa: 'いつもの道で、季節が変わったことに気づいた。',
+				detailEn: 'Noticed the season had turned on the usual road.',
+				diaryDate: `${year}-${month}-10`,
+			}),
+		),
+	);
+	const all = [...items, ...filler].sort((x, y) => x.date.localeCompare(y.date));
 </script>
 
 <section class="page-title"><h1>年表プレビュー（開発専用）</h1></section>
 <p class="dev-note">
-	スクロールすると1件ずつ現れる。OSの「視差効果を減らす」を入れると演出は止まるが、
-	<strong>項目そのものは必ず見えたまま</strong>であること。
-	<button type="button" onclick={() => (spacer = !spacer)}>余白を{spacer ? '消す' : '足す'}</button>
+	開くと末尾（いま）から表示され、右端のスクラバーで年を移れる。OSの「視差効果を減らす」を入れると
+	演出は止まるが、<strong>項目そのものは必ず見えたまま</strong>であること。
 </p>
-{#if spacer}<div class="dev-spacer" aria-hidden="true"></div>{/if}
 <section class="timeline">
-	<ChronicleTimeline {did} displayName="すいばり" avatar="/bot_icon_trans.png" preview={items} />
+	<ChronicleTimeline {did} displayName="すいばり" avatar="/bot_icon_trans.png" preview={all} />
 </section>
 
 <style>
@@ -60,8 +73,5 @@
 		padding: 0 1rem 1rem;
 		font-size: 13px;
 		color: var(--text-faint);
-	}
-	.dev-spacer {
-		block-size: 90vh;
 	}
 </style>

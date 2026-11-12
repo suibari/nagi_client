@@ -39,7 +39,7 @@ vi.mock('$lib/oauth/session.svelte', async () => {
 	return { session: writable({ did: 'did:plc:me' }) };
 });
 
-const { blueskyPostsExist, crosspostToBluesky } = await import('./bluesky');
+const { blueskyPostsExist, crosspostToBluesky, CrosspostPartialError } = await import('./bluesky');
 
 const draft = (text: string): PostDraft => ({
 	text,
@@ -72,7 +72,6 @@ describe('crosspostToBluesky with a target', () => {
 		});
 		expect(result?.ref.threadRoot).toEqual(ref('root'));
 		expect(result?.ref.tail.uri).toBe('at://did:plc:me/app.bsky.feed.post/p2');
-		expect(result?.posts).toHaveLength(2);
 	});
 
 	it('quotes the copy, wrapping media in recordWithMedia', async () => {
@@ -99,10 +98,21 @@ describe('crosspostToBluesky with a target', () => {
 		expect(result?.ref.root).toEqual(result?.ref.threadRoot);
 	});
 
-	it('rolls back what it created when a later chunk fails', async () => {
+	it('keeps what it created and reports a partial copy when a later chunk fails', async () => {
 		calls.failAt = 1;
-		await expect(crosspostToBluesky(draft('あ'.repeat(450)), assets())).rejects.toThrow('PDS down');
-		expect(calls.deleted).toEqual(['p1']);
+		const error = await crosspostToBluesky(draft('あ'.repeat(450)), assets()).catch((e) => e);
+		expect(error).toBeInstanceOf(CrosspostPartialError);
+		expect(error.posts).toEqual([{ uri: 'at://did:plc:me/app.bsky.feed.post/p1', cid: 'c1' }]);
+		expect((error.cause as Error).message).toBe('PDS down');
+		expect(calls.deleted).toEqual([]);
+	});
+
+	it('rethrows the original error when nothing was created', async () => {
+		calls.failAt = 0;
+		const error = await crosspostToBluesky(draft('ひとこと'), assets()).catch((e) => e);
+		expect(error).not.toBeInstanceOf(CrosspostPartialError);
+		expect((error as Error).message).toBe('PDS down');
+		expect(calls.deleted).toEqual([]);
 	});
 });
 

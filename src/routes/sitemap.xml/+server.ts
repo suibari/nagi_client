@@ -5,14 +5,8 @@ import { SITEMAP_ROUTES } from '$lib/seo/sitemap';
 import { absolute } from '$lib/seo/seo';
 
 /**
- * sitemap.xml をビルド時に生成する。
- *
- * ルートとして置いているのは、`static/` に手で置くと記事が増えても更新されないため。
- * `client-metadata.json/+server.ts` と同じく `prerender = true` なので、adapter-static でも
- * ビルド成果物に含まれる（ビルドスクリプトも prebuild フックも増やさない）。
- *
- * 記事一覧は prerender の `entries()` と**同じ** `fetchIndexableNews()` から取る。
- * 別々に取ると「sitemap にあるが実体が無いURL」が生まれ、クローラが404を踏む。
+ * 記事一覧は prerender の `entries()` と同じ取得関数から取る。
+ * 別々に取ると「sitemap にあるが実体が無いURL」が生まれ、クローラが404を踏む（SEO-02）。
  */
 export const prerender = true;
 

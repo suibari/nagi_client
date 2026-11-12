@@ -336,6 +336,7 @@
 								displayName={sampleDisplayName(i18n.locale)}
 								avatar={sampleAvatar()}
 								preview={chronicleItems}
+								showcase
 							/>
 						{:else}
 							<BusinessCard data={sampleCard} />

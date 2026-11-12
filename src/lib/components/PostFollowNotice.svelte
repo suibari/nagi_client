@@ -14,7 +14,11 @@
 
 {#if postFollowNotice.current}
 	<aside class="post-follow-notice" role="status" aria-live="polite">
-		<span>{m.postCreated()}</span>
+		<span
+			>{postFollowNotice.current.warning
+				? m.postedWithWarning({ reason: postFollowNotice.current.warning })
+				: m.postCreated()}</span
+		>
 		<a href={postFollowNotice.current.href} onclick={() => postFollowNotice.clear()}
 			>{m.viewCreatedPost()}</a
 		>

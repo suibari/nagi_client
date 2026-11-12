@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { postPageHref, threadRootUriFromPage } from './post-follow.svelte';
+import { postFollowNotice, postPageHref, threadRootUriFromPage } from './post-follow.svelte';
 
 const uri = 'at://did:plc:author/com.suibari.nagi.post/3abc';
 
@@ -24,5 +24,20 @@ describe('3行日記のスレッド', () => {
 		const href = new URL(postPageHref({ uri: diary }), 'https://nagi.example');
 		expect(threadRootUriFromPage('did:plc:author', '3abc', href.searchParams)).toBe(diary);
 		expect(threadRootUriFromPage('did:plc:author', '3abc', new URLSearchParams())).toBe(uri);
+	});
+});
+
+describe('postFollowNotice', () => {
+	it('keeps a posted-with-warning message when the follow link replaces the notice', () => {
+		postFollowNotice.warn('/thread/a/b', 'Blueskyには途中まで');
+		postFollowNotice.show('/thread/a/b');
+		expect(postFollowNotice.current).toEqual({
+			href: '/thread/a/b',
+			warning: 'Blueskyには途中まで',
+		});
+		postFollowNotice.clear();
+		postFollowNotice.show('/thread/a/c');
+		expect(postFollowNotice.current).toEqual({ href: '/thread/a/c' });
+		postFollowNotice.clear();
 	});
 });

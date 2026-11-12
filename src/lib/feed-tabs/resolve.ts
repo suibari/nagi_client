@@ -139,7 +139,7 @@ export function resolveFeedTab(
 				fetcher: (cursor) => searchPosts(tag, cursor),
 				// 楽観投稿は本文のタグを解釈しないと一致を判定できないので出さない。
 				optimisticFilter: () => false,
-				// タグの投稿は時系列で並ぶので、チャンネルタブと同じく未読を持てる。
+				// タグの投稿は時系列で並ぶので、未読を持てる。
 				watermark: feedRead(`hashtag.${encodeURIComponent(tag)}`),
 				empty: m.searchTagEmpty,
 				tag,
