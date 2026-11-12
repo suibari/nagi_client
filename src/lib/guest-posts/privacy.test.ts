@@ -130,10 +130,14 @@ describe('guest post privacy boundary', () => {
 	});
 
 	it('puts join links at the top and bottom of the landing', () => {
-		expect(landing).toContain('href="/login#signup">{m.aboutHeroCta()}</Button>');
+		// 参加ボタンはログイン画面を先頭から開く（AUTH-07）。
+		expect(landing).toContain('href="/login">{m.aboutHeroCta()}</Button>');
+		expect(landing).not.toContain('/login#signup');
 		// 末尾は /about と同じ参加の締めを使う。
 		expect(landing).toContain('<JoinFinale ');
-		expect(joinFinale).toContain('href="/login#signup"');
+		expect(joinFinale).toContain('href="/login"');
+		expect(joinFinale).not.toContain('/login#signup');
+		expect(loginPage).not.toContain('id="signup"');
 		expect(aboutPage).toContain('<JoinFinale />');
 		expect(landing.indexOf('class="landing-hero"')).toBeLessThan(landing.indexOf('<JoinFinale'));
 		expect(landing).toContain('href="/feed"');

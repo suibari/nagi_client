@@ -70,7 +70,7 @@
 		<Button
 			variant="primary"
 			size="lg"
-			href="/login#signup"
+			href="/login"
 			onclick={onJoinClick}
 			onmouseenter={() => (botHappy = true)}
 			onmouseleave={onJoinLeave}
