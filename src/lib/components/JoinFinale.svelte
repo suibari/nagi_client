@@ -65,7 +65,7 @@
 	</div>
 	<h2>{m.aboutFinalHeading()}</h2>
 	<p>{m.aboutFinalBody()}</p>
-	<p>{m.loginSignupBody()}</p>
+	<p>{m.joinFinaleNote()}</p>
 	<div class="about-cta">
 		<Button
 			variant="primary"
@@ -75,7 +75,7 @@
 			onmouseenter={() => (botHappy = true)}
 			onmouseleave={onJoinLeave}
 			onfocus={() => (botHappy = true)}
-			onblur={onJoinLeave}>{m.loginSignupSubmit()}</Button
+			onblur={onJoinLeave}>{m.joinFinaleCta()}</Button
 		>
 		<a class="about-text-link" href={secondary.href}>{secondary.label()}</a>
 	</div>

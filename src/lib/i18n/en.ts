@@ -899,21 +899,21 @@ export const en: Messages = {
 	chronicleKindNewsContext: 'Around that time, in the world',
 	chronicleKindHighlight: 'That day',
 
-	loginTitle: 'Join Nagi',
-	loginBody:
-		'If you already use Bluesky, log in with that account. Other AT Protocol accounts are supported too.',
+	loginTitle: 'Log in to Nagi',
+	loginBody: 'Use your Bluesky or other AT Protocol account.',
 	loginHandleLabel: 'Handle',
 	loginSubmit: 'Log in',
-	loginSignupTitle: 'New to Nagi?',
-	loginSignupBody:
+	loginSignupTitle: "Don't have an account?",
+	loginCreateAccount: 'Create an account to start',
+	joinFinaleNote:
 		'You can start even if you do not use Bluesky. The account you create can also be used on Bluesky.',
-	loginSignupSubmit: 'Start using Nagi',
+	joinFinaleCta: 'Start using Nagi',
 	loginOrStart: 'Sign in / Start using Nagi',
 	loginSignupRedirecting: 'Opening registration…',
 	loginStartFailed: 'Could not open the next screen. Please try again.',
 	loginFederateLabel: 'Link with Bluesky',
 	loginFederateNote:
-		'When on, you grant permission to crosspost to Bluesky and to read Bluesky feeds in a tab. You can change both later in settings.',
+		'Allows crossposting and reading Bluesky feeds. You can change this later in settings.',
 	loginRedirecting: 'Redirecting…',
 	loginBrowse: 'Browse without logging in',
 	loginAgeNotice: "If you are under 18, use Nagi with your parent or guardian's permission.",
