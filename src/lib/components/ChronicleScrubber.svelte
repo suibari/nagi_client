@@ -22,29 +22,46 @@
 
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { m } from '$lib/i18n/i18n.svelte';
+	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import {
 		scrubProgress,
 		scrubScrollY,
 		scrubTicks,
-		scrubYearAt,
+		scrubMonthAt,
+		scrubMonthTicks,
+		scrubMonthNumber,
+		adjacentScrubMonth,
+		visibleTickMonths,
+		type ScrubMonth,
 		visibleTickYears,
 		type ScrubRange,
 		type ScrubTick,
 	} from '$lib/chronicle/scrub';
 
-	let { body, years }: { body: HTMLElement; years: string[] } = $props();
+	let { body, years, months }: { body: HTMLElement; years: string[]; months: string[] } = $props();
 
 	const THUMB = 28;
 	let insets = $state({ top: 16, bottom: 24 });
 	let range = $state<ScrubRange>({ start: 0, end: 0 });
 	let ticks = $state<ScrubTick[]>([]);
+	let monthTicks = $state<ScrubMonth[]>([]);
+	let selectedMonth = $state<string>();
+	let expectedScroll: number | undefined;
 	let progress = $state(1);
 	let trackPx = $state(0);
 	let dragging = $state(false);
 	let track = $state<HTMLElement>();
 
-	const year = $derived(scrubYearAt(ticks, progress) ?? years[years.length - 1]);
+	const month = $derived(selectedMonth ?? scrubMonthAt(monthTicks, ticks, progress) ?? months[0]);
+	const year = $derived(month?.slice(0, 4));
+	const monthLabel = (value: string, full = false) =>
+		new Date(`${value}-01T12:00:00`).toLocaleDateString(dateLocale(), {
+			year: full ? 'numeric' : undefined,
+			month: full ? 'long' : 'short',
+		});
+	const labeledMonths = $derived(
+		visibleTickMonths(monthTicks, ticks, Math.max(0, trackPx - THUMB), 20),
+	);
 	const labeled = $derived(visibleTickYears(ticks, Math.max(0, trackPx - THUMB), 20));
 
 	function measure() {
@@ -61,12 +78,22 @@
 			})),
 			range,
 		);
+		monthTicks = scrubMonthTicks(
+			[...body.querySelectorAll<HTMLElement>('[data-chronicle-month]')].map((node) => ({
+				month: node.dataset.chronicleMonth!,
+				top: node.getBoundingClientRect().top + scrollY - insets.top,
+			})),
+			range,
+		);
 		trackPx = track?.clientHeight ?? 0;
 		progress = scrubProgress(scrollY, range);
 	}
 
 	$effect(() => {
-		void years.length;
+		void years;
+		void months;
+		selectedMonth = undefined;
+		expectedScroll = undefined;
 		// measure は自分で書いた range を読むので、追跡すると自身を再実行し続ける。
 		untrack(measure);
 		let frame = 0;
@@ -74,7 +101,11 @@
 			if (frame) return;
 			frame = requestAnimationFrame(() => {
 				frame = 0;
-				if (!dragging) progress = scrubProgress(scrollY, range);
+				if (!dragging) {
+					if (expectedScroll === undefined || Math.abs(scrollY - expectedScroll) > 1)
+						selectedMonth = undefined;
+					progress = scrubProgress(scrollY, range);
+				}
 			});
 		};
 		const resize = new ResizeObserver(() => untrack(measure));
@@ -94,6 +125,7 @@
 		progress = Math.min(1, Math.max(0, next));
 		// 指の動きにそのまま追従させたいので、smoothにしない。
 		scrollTo({ top: scrubScrollY(progress, range), behavior: 'instant' });
+		expectedScroll = scrollY;
 	}
 
 	function fromPointer(event: PointerEvent) {
@@ -106,6 +138,7 @@
 		event.preventDefault();
 		measure();
 		dragging = true;
+		selectedMonth = undefined;
 		// 指がレールの外へ出てもドラッグを続ける。
 		track.setPointerCapture(event.pointerId);
 		fromPointer(event);
@@ -122,18 +155,20 @@
 	}
 
 	function onKeydown(event: KeyboardEvent) {
-		const eps = 0.002;
-		let next: number | undefined;
-		if (event.key === 'Home') next = 0;
-		else if (event.key === 'End') next = 1;
-		else if (event.key === 'ArrowUp' || event.key === 'PageUp')
-			next = [...ticks].reverse().find((tick) => tick.at < progress - eps)?.at ?? 0;
-		else if (event.key === 'ArrowDown' || event.key === 'PageDown')
-			next = ticks.find((tick) => tick.at > progress + eps)?.at ?? 1;
-		if (next === undefined) return;
+		if (!['Home', 'End', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(event.key)) return;
 		event.preventDefault();
 		measure();
-		jump(next);
+		if (event.key === 'Home' || event.key === 'End') {
+			selectedMonth = event.key === 'Home' ? monthTicks[0]?.month : monthTicks.at(-1)?.month;
+			jump(event.key === 'Home' ? 0 : 1);
+			return;
+		}
+		const direction = event.key === 'ArrowUp' || event.key === 'PageUp' ? -1 : 1;
+		const next = adjacentScrubMonth(monthTicks, month, direction);
+		if (!next) return;
+		// 末尾付近では複数月が同じスクロール位置へ丸められるため、キーで選んだ月を保持する。
+		selectedMonth = next.month;
+		jump(next.at);
 	}
 </script>
 
@@ -148,6 +183,17 @@
 		onpointerup={onPointerUp}
 		onpointercancel={onPointerUp}
 	>
+		{#each monthTicks as tick (tick.month)}
+			<span
+				class="scrub-tick scrub-month"
+				class:labeled={labeledMonths.has(tick.month)}
+				class:current={tick.month === month}
+				style:top="calc({tick.at} * (100% - {THUMB}px) + {THUMB / 2}px)"
+				aria-hidden="true"
+			>
+				<span class="scrub-tick-label">{monthLabel(tick.month)}</span>
+			</span>
+		{/each}
 		{#each ticks as tick (tick.year)}
 			<span
 				class="scrub-tick"
@@ -166,15 +212,15 @@
 			tabindex="0"
 			aria-label={m.chronicleScrubberAria()}
 			aria-orientation="vertical"
-			aria-valuemin={Number(years[0])}
-			aria-valuemax={Number(years[years.length - 1])}
-			aria-valuenow={Number(year)}
-			aria-valuetext={m.chronicleYearValue({ year: year ?? '' })}
+			aria-valuemin={scrubMonthNumber(months[0])}
+			aria-valuemax={scrubMonthNumber(months[months.length - 1])}
+			aria-valuenow={scrubMonthNumber(month)}
+			aria-valuetext={monthLabel(month, true)}
 			style:top="calc({progress} * (100% - {THUMB}px))"
 			onkeydown={onKeydown}
 		>
 			{#if dragging}
-				<span class="scrub-bubble" aria-hidden="true">{year}</span>
+				<span class="scrub-bubble" aria-hidden="true">{monthLabel(month, true)}</span>
 			{/if}
 		</div>
 	</div>
@@ -219,6 +265,16 @@
 		block-size: 2px;
 		border-radius: 1px;
 		background: var(--line-strong);
+	}
+	.scrub-month::after {
+		inline-size: 4px;
+		block-size: 1px;
+	}
+	.scrub-month {
+		inset-inline-end: 10px;
+	}
+	.scrub-month .scrub-tick-label {
+		font-size: 10px;
 	}
 	.scrub-tick-label {
 		visibility: hidden;
@@ -285,7 +341,7 @@
 		border-radius: 12px;
 		background: var(--surface-1);
 		box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
-		font-size: 28px;
+		font-size: clamp(18px, 5vw, 28px);
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 		line-height: 1.2;

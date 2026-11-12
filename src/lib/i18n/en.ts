@@ -888,7 +888,7 @@ export const en: Messages = {
 	chronicleFetchFailed: 'Could not fetch the chronicle',
 	chronicleOpenDiary: 'Read that day',
 	chronicleYearAria: (p: { year: string }) => `Milestones in ${p.year}`,
-	chronicleScrubberAria: 'Jump to a year in the chronicle',
+	chronicleScrubberAria: 'Jump to a month in the chronicle',
 	chronicleScrubberNow: 'Now',
 	chronicleYearValue: (p: { year: string }) => p.year,
 	chronicleKindNagiJoined: 'The day you arrived on Nagi',

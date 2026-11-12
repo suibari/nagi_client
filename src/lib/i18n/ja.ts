@@ -914,7 +914,7 @@ export const ja = {
 	chronicleFetchFailed: '年表を取得できません',
 	chronicleOpenDiary: 'この日の日記を見る',
 	chronicleYearAria: (p: { year: string }) => `${p.year}年の節目`,
-	chronicleScrubberAria: '年表の年を移動',
+	chronicleScrubberAria: '年表の年月を移動',
 	chronicleScrubberNow: 'いま',
 	chronicleYearValue: (p: { year: string }) => `${p.year}年`,
 	chronicleKindNagiJoined: 'Nagi にやってきた日',

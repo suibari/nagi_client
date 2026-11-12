@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import type { ChronicleEventView } from '$lib/api/types';
 	import ChronicleTimeline from '$lib/components/ChronicleTimeline.svelte';
 
@@ -57,15 +58,36 @@
 		),
 	);
 	const all = [...items, ...filler].sort((x, y) => x.date.localeCompare(y.date));
+	const mode = $derived(page.url.searchParams.get('sample') ?? 'all');
+	const preview = $derived(
+		mode === 'empty'
+			? []
+			: mode === 'single'
+				? [items[0]]
+				: mode === 'year'
+					? all.filter((item) => item.date.startsWith('2026'))
+					: all,
+	);
 </script>
 
 <section class="page-title"><h1>年表プレビュー（開発専用）</h1></section>
 <p class="dev-note">
-	開くと末尾（いま）から表示され、右端のスクラバーで年を移れる。OSの「視差効果を減らす」を入れると
+	開くと末尾（いま）から表示され、右端の年・月の目盛りで年月を探せる。上下キーは前後の月、Home/Endは先頭・末尾へ移動する。OSの「視差効果を減らす」を入れると
 	演出は止まるが、<strong>項目そのものは必ず見えたまま</strong>であること。
 </p>
+<nav class="dev-note" aria-label="確認する年表">
+	<a href="?sample=all">全年</a> · <a href="?sample=year">1年</a> ·
+	<a href="?sample=single">1件</a> · <a href="?sample=empty">空</a> ·
+	<a href="?sample=showcase">紹介サンプル</a>
+</nav>
 <section class="timeline">
-	<ChronicleTimeline {did} displayName="すいばり" avatar="/bot_icon_trans.png" preview={all} />
+	<ChronicleTimeline
+		{did}
+		displayName="すいばり"
+		avatar="/bot_icon_trans.png"
+		{preview}
+		showcase={mode === 'showcase'}
+	/>
 </section>
 
 <style>

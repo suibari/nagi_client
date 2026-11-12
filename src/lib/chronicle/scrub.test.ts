@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { scrubProgress, scrubScrollY, scrubTicks, scrubYearAt, visibleTickYears } from './scrub';
+import {
+	scrubProgress,
+	scrubScrollY,
+	scrubTicks,
+	scrubYearAt,
+	visibleTickYears,
+	scrubMonthTicks,
+	scrubMonthAt,
+	adjacentScrubMonth,
+	scrubMonthNumber,
+	visibleTickMonths,
+} from './scrub';
 
 const range = { start: 100, end: 1100 };
 
@@ -47,5 +58,49 @@ describe('chronicle scrubber math', () => {
 			{ year: '2026', at: 1 },
 		];
 		expect([...visibleTickYears(ticks, 400, 24)]).toEqual(['2022', '2024', '2026']);
+	});
+});
+
+describe('month navigation', () => {
+	const years = [
+		{ year: '2025', at: 0 },
+		{ year: '2026', at: 0.5 },
+	];
+	const months = scrubMonthTicks(
+		[
+			{ month: '2025-12', top: 200 },
+			{ month: '2026-02', top: 700 },
+			{ month: '2026-03', top: 1200 },
+			{ month: '2026-04', top: 1300 },
+		],
+		range,
+	);
+	it('本文位置で年月を選び、年見出しではその年の最初の月を返す', () => {
+		expect(scrubMonthAt(months, years, 0)).toBe('2025-12');
+		expect(scrubMonthAt(months, years, 0.5)).toBe('2026-02');
+		expect(scrubMonthAt(months, years, 1)).toBe('2026-04');
+		expect(scrubMonthAt([], [], 0)).toBeUndefined();
+	});
+	it('空月を飛ばし、末尾で位置が重なる月も順番に移動できる', () => {
+		expect(adjacentScrubMonth(months, '2025-12', 1)?.month).toBe('2026-02');
+		expect(adjacentScrubMonth(months, '2026-02', -1)?.month).toBe('2025-12');
+		expect(adjacentScrubMonth(months, '2026-03', 1)?.month).toBe('2026-04');
+		expect(adjacentScrubMonth(months, '2026-04', -1)?.month).toBe('2026-03');
+		expect(adjacentScrubMonth(months, '2026-04', 1)?.month).toBe('2026-04');
+	});
+	it('1か月でも値と移動先が有効', () => {
+		const single = [months[0]];
+		expect(scrubMonthAt(single, [], 1)).toBe('2025-12');
+		expect(adjacentScrubMonth(single, '2025-12', -1)).toBe(single[0]);
+		expect(scrubMonthNumber('2026-01') - scrubMonthNumber('2025-12')).toBe(1);
+	});
+	it('年のラベルを避け、月ラベル同士も重ねない', () => {
+		const ticks = [
+			{ month: '2025-01', at: 0.01 },
+			{ month: '2025-02', at: 0.2 },
+			{ month: '2025-03', at: 0.21 },
+			{ month: '2026-01', at: 0.51 },
+		];
+		expect([...visibleTickMonths(ticks, years, 400, 20)]).toEqual(['2025-02']);
 	});
 });
