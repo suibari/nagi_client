@@ -38,6 +38,16 @@
 
 **理由と制約**：guestは端末内へ閉じ、remote取り込みをそのまま送り返さない。全削除時はメモリ上のインスタンスも破棄し、削除したキーの復活を防ぐ。
 
+### D5: 通知件数はセッション公開前に優先取得する
+
+**課題**：通知ポーリングの購読開始をレイアウトで前へ動かすだけでは、モジュール初期化時からsessionを購読しているプロフィール等の通信が先行する。
+
+**採用判断**：レイアウトのonMountでは通知の起動登録を最初に行う。OAuth復元時の`rememberSession()`は、通常のstoreへ公開する前に`onOAuthSessionReady()`の同期フックを呼ぶ。通知側は復元済みセッションを明示して`getUnreadCount()`を起動し、結果を待たずにセッション公開へ進める。OAuth層から通知APIへの依存を作らない。
+
+**理由と制約**：通知取得の応答待ちを初期表示の条件にすると通信障害でアプリ全体が止まるため、制御するのは開始順だけとする。セッションの同一性で優先起動と通常購読の二重送信を防ぎ、セッション変更と既読化の世代を進めて古い件数や再試行を破棄する。ログアウト後に以前の既読更新が完了しても次の利用者のバッジを消さない。件数は永続化せず、認可も変更しない。ネットワークの送信・応答到着順と本番の表示時間は保証しない。
+
+**比較資料**：[Bluesky公式の未読Provider](https://github.com/bluesky-social/social-app/blob/main/src/state/queries/notifications/unread.tsx)はセッション確立時に即時確認する。[Mastodon Web UI](https://github.com/mastodon/mastodon/blob/main/app/javascript/mastodon/features/ui/index.jsx)も起動時に通知を取得するが、ホーム取得のdispatchが先にある（2026-11-12公開ソース確認）。起動時の並行取得の参考であり、一般のアプリが通知を必ず最初に取得する根拠ではない。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
@@ -46,9 +56,13 @@
 | ----------------------------------------------------------------------------------------- | ------------------------ |
 | [src/lib/notifications/push.svelte.ts](../../../src/lib/notifications/push.svelte.ts)     | 購読と修復               |
 | [src/service-worker.ts](../../../src/service-worker.ts)                                   | 受信・クリック・購読更新 |
-| [src/lib/notifications/unread.svelte.ts](../../../src/lib/notifications/unread.svelte.ts) | 件数と世代管理           |
+| [src/lib/notifications/unread.svelte.ts](../../../src/lib/notifications/unread.svelte.ts) | 件数と世代管理、優先起動 |
 | [src/lib/unread/watermark.svelte.ts](../../../src/lib/unread/watermark.svelte.ts)         | 位置の比較と凍結ビュー   |
 | [src/lib/unread/sections.svelte.ts](../../../src/lib/unread/sections.svelte.ts)           | DID別セクションの共有    |
+
+- [src/routes/+layout.svelte](../../../src/routes/+layout.svelte)：onMountでの通知ポーリングの先行起動と破棄。
+- [src/lib/oauth/session.svelte.ts](../../../src/lib/oauth/session.svelte.ts)：onOAuthSessionReadyとrememberSessionの公開前フック。
+- [src/lib/api/appview.ts](../../../src/lib/api/appview.ts)：getUnreadCountの明示的セッション引き渡し。
 
 ## 出典と変更時の扱い
 

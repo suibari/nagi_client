@@ -14,6 +14,10 @@
 
 GAP-01はアプリコードの修正で解消した。GAP-02・03・04・06・07はコードコメントの更新と未使用処理の削除で解消した（2026-11-12）。GAP-05は外部実装の確認境界として残る。
 
+## 通知の初回取得順
+
+change [prioritize-startup-notification-count](changes/archive/2026-11-12-prioritize-startup-notification-count/proposal.md)で、通知件数取得をOAuthセッションの通常公開より先に開始する実装へ変更した（[NOTIFY-06](specs/notifications-unread/spec.md#notify-06)）。変更前の主仕様は初回取得の優先順位を規定しておらず、既存要件への違反ではなく新要件として追加した。OAuth復元・API通信・ナビバッジの描画を組み合わせたモック検証と、本番での通信・表示時間の実測は区別する。本番の認証済み環境での実測は未確認。
+
 ## GAP-01
 
 ### Blueskyのcreate限定権限と削除による補償
