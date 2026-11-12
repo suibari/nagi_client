@@ -190,6 +190,7 @@
 		};
 	});
 	onMount(() => {
+		const stopUnreadPolling = startUnreadPolling();
 		const stopRadioNotice = startRadioNotice();
 		const stopZenkatsuNotice = startZenkatsuNotice();
 		const stopCardDrawNotice = startCardDrawNotice();
@@ -206,8 +207,6 @@
 		// 再サインイン（クロスポスト権限の追加同意）から戻ってきた場合の確定処理。
 		void initOAuth().then(() => resolvePendingOptIns());
 		void guestPosts.load();
-		// 未読通知バッジのポーリング開始（session の変化には内部で追従する）。
-		startUnreadPolling();
 		// 長時間開いたPC、スリープ復帰、オフライン復帰でもPush endpointを自己修復する。
 		// capability経路ならOAuth refreshが一時的に失敗していても同じinstallationだけ更新できる。
 		const repairPush = () => {
@@ -220,6 +219,7 @@
 		window.addEventListener('online', repairPush);
 		document.addEventListener('visibilitychange', onVisibility);
 		return () => {
+			stopUnreadPolling?.();
 			stopRadioNotice();
 			stopZenkatsuNotice();
 			stopCardDrawNotice();

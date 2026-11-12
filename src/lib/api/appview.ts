@@ -2,7 +2,7 @@ import { get } from 'svelte/store';
 import { dev } from '$app/environment';
 import { PUBLIC_APPVIEW_URL } from '$env/static/public';
 import { env } from '$env/dynamic/public';
-import { session } from '$lib/oauth/session.svelte';
+import { session, type OAuthSession } from '$lib/oauth/session.svelte';
 import type {
 	ActorView,
 	CardBoardView,
@@ -101,8 +101,9 @@ async function request(
 	path: string,
 	options: RequestInit,
 	auth: 'none' | 'optional' | 'required',
+	oauthSession?: OAuthSession,
 ): Promise<Response> {
-	const current = auth === 'none' ? null : get(session);
+	const current = auth === 'none' ? null : (oauthSession ?? get(session));
 	if (auth === 'required' && !current) throw new Error('Authentication required');
 	const headers = { ...(options.body ? { 'content-type': 'application/json' } : {}) };
 	// ローカル開発: Vite の同一オリジンプロキシ経由。ログイン中は viewerDid を dev ヘッダーで渡す。
@@ -125,8 +126,9 @@ async function call<T>(
 	path: string,
 	options: RequestInit = {},
 	auth: 'none' | 'optional' | 'required' = 'optional',
+	oauthSession?: OAuthSession,
 ): Promise<T> {
-	const response = await request(path, options, auth);
+	const response = await request(path, options, auth, oauthSession);
 	if (!response.ok) {
 		const body = (await response.json().catch(() => ({}))) as {
 			error?: string;
@@ -582,12 +584,13 @@ export const getNotifications = () =>
 		{},
 		'required',
 	);
-export const getUnreadCount = () =>
+export const getUnreadCount = (oauthSession?: OAuthSession) =>
 	call<{ count: number }>(
 		'com.suibari.nagi.getUnreadCount',
 		'/xrpc/com.suibari.nagi.getUnreadCount',
 		{},
 		'required',
+		oauthSession,
 	);
 // ミュートは非公開情報なので必ず認証必須（公開フォールバックは付けない）。
 export const getMutes = () =>

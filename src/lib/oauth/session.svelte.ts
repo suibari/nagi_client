@@ -22,6 +22,12 @@ export const oauthError = writable<string | null>(null);
 const OAUTH_RETURN_TO_KEY = 'nagi.oauth.return-to';
 const OAUTH_DID_KEY = 'nagi.did';
 let explicitSignOut = false;
+const sessionReadyListeners = new Set<(value: OAuthSession) => void>();
+
+export function onOAuthSessionReady(listener: (value: OAuthSession) => void): () => void {
+	sessionReadyListeners.add(listener);
+	return () => sessionReadyListeners.delete(listener);
+}
 
 onOAuthSessionDeleted((sub, cause) => {
 	if (get(session)?.did === sub) session.set(null);
@@ -34,6 +40,14 @@ onOAuthSessionDeleted((sub, cause) => {
 });
 
 function rememberSession(value: OAuthSession): void {
+	// 通常のstore購読者が通信を始める前に、優先取得を起動する（NOTIFY-06）。
+	for (const listener of sessionReadyListeners) {
+		try {
+			listener(value);
+		} catch (error) {
+			console.warn('OAuth session ready listener failed:', error);
+		}
+	}
 	session.set(value);
 	oauthError.set(null);
 	try {
