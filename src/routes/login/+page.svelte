@@ -86,7 +86,6 @@
 	>
 	{#if $oauthError}<p class="error">{$oauthError}</p>{/if}
 	<p class="legal-note">
-		{m.loginAgeNotice()}
 		{m.loginAgreeBefore()}<a href="/terms">{m.termsLink()}</a>{m.loginAgreeSeparator()}<a
 			href="/privacy">{m.privacyLink()}</a
 		>{m.loginAgreeAfter()}

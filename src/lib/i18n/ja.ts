@@ -483,7 +483,7 @@ export const ja = {
 	guestPostSubmit: 'こっそり投稿',
 	guestPostSaving: '保存中…',
 	guestPostSaveFailed: 'この端末に投稿を保存できませんでした',
-	guestPostConsentBefore: '18歳未満の場合は保護者の同意を得たうえで、',
+	guestPostConsentBefore: '',
 	guestPostConsentAnd: 'と',
 	guestPostConsentAfter: 'に同意します',
 	guestPostAuthor: 'この端末のあなた',
@@ -946,8 +946,6 @@ export const ja = {
 	// 設定画面で切り替える。入口でスイッチを2つ並べない。
 	loginFederateLabel: 'Blueskyと連携する',
 	loginFederateNote: '同時投稿とBlueskyフィードの閲覧を許可します。あとから設定で変更できます。',
-	// 未成年の保護者同意は入口で告知する。押す前に目に入る位置に置く。
-	loginAgeNotice: '18歳未満の方は保護者の同意を得てご利用ください。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
 	loginAgreeSeparator: 'と',
 	loginAgreeAfter: 'に同意したものとみなされます。',
@@ -1009,10 +1007,8 @@ export const ja = {
 		'生年月日は非公開情報で、他のユーザーには表示されません。誕生日当日はプロフィールに風船が飛び、カードなどのお祝いが届きます。風船の表示から誕生日の月日は分かりますが、生年や年齢は公開されません。',
 	ageBirthDateLabel: '生年月日',
 	ageOnceOnlyNote: '登録できるのは1度だけで、あとから変更できません。',
-	ageParentalConsentLabel: '18歳未満です。保護者の同意を得ています。',
 	ageSubmit: '登録する',
 	ageErrorInvalid: '生年月日を正しく入力してください。',
-	ageErrorConsentRequired: '18歳未満の方は、保護者の同意の確認が必要です。',
 	ageErrorAlreadySet: 'すでに登録済みのため変更できません。',
 	ageErrorFailed: '登録できませんでした。時間をおいて試してください。',
 	ageAdultLocked: '成人向けのコンテンツは、18歳未満のアカウントには表示されません。',

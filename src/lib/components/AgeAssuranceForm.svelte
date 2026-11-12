@@ -3,25 +3,16 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
-	import ToggleSwitch from './ToggleSwitch.svelte';
 	import AgeConfirmDialog from './AgeConfirmDialog.svelte';
-	import {
-		ageAssurance,
-		declareBirthDate,
-		isAdultBirthDate,
-		type DeclareResult,
-	} from '$lib/moderation/age.svelte';
+	import { ageAssurance, declareBirthDate, type DeclareResult } from '$lib/moderation/age.svelte';
 
 	let { onsaved, hideHeading = false }: { onsaved?: () => void; hideHeading?: boolean } = $props();
 
 	let birthDate = $state('');
-	let parentalConsent = $state(false);
 	let confirming = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 
-	// 18歳未満のときだけ保護者同意を訊く。日付が未入力のうちは出さない。
-	let needsConsent = $derived(birthDate !== '' && !isAdultBirthDate(birthDate));
 	let today = new Date().toISOString().slice(0, 10);
 
 	/** "2008-09-02" を表示用に整形する。パースできない値はそのまま出す。 */
@@ -39,11 +30,9 @@
 	const errorText = (reason: Exclude<DeclareResult, { ok: true }>['reason']) =>
 		reason === 'already_set'
 			? m.ageErrorAlreadySet()
-			: reason === 'consent_required'
-				? m.ageErrorConsentRequired()
-				: reason === 'invalid'
-					? m.ageErrorInvalid()
-					: m.ageErrorFailed();
+			: reason === 'invalid'
+				? m.ageErrorInvalid()
+				: m.ageErrorFailed();
 
 	// 一度登録すると変更できないので、送信の前に必ず確認を挟む。
 	function requestConfirm(event: SubmitEvent) {
@@ -56,7 +45,7 @@
 	async function submit() {
 		busy = true;
 		error = '';
-		const result = await declareBirthDate(birthDate, parentalConsent);
+		const result = await declareBirthDate(birthDate);
 		busy = false;
 		confirming = false;
 		if (result.ok) onsaved?.();
@@ -98,14 +87,6 @@
 					/>
 				</label>
 				<p class="note once">{m.ageOnceOnlyNote()}</p>
-				{#if needsConsent}
-					<ToggleSwitch
-						checked={parentalConsent}
-						label={m.ageParentalConsentLabel()}
-						disabled={busy}
-						onchange={(value) => (parentalConsent = value)}
-					/>
-				{/if}
 				{#if error && !confirming}<p class="error" role="alert">{error}</p>{/if}
 				<Button variant="primary" size="lg" block type="submit" disabled={busy || !birthDate}
 					>{m.ageSubmit()}</Button
