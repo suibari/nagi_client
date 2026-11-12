@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { en } from '$lib/i18n/en';
+import { ja } from '$lib/i18n/ja';
 
 const api = readFileSync(new URL('../api/appview.ts', import.meta.url), 'utf8');
 const store = readFileSync(new URL('./guest-posts.svelte.ts', import.meta.url), 'utf8');
@@ -141,6 +143,24 @@ describe('guest post privacy boundary', () => {
 		expect(aboutPage).toContain('<JoinFinale />');
 		expect(landing.indexOf('class="landing-hero"')).toBeLessThan(landing.indexOf('<JoinFinale'));
 		expect(landing).toContain('href="/feed"');
+	});
+
+	it('puts the Bluesky toggle above both login and account creation (AUTH-07)', () => {
+		const toggle = loginPage.indexOf('<ToggleSwitch');
+		const signup = loginPage.indexOf("submit('signup')");
+		expect(toggle).toBeGreaterThan(-1);
+		expect(toggle).toBeLessThan(loginPage.indexOf('m.loginSubmit()'));
+		expect(loginPage.indexOf('m.loginSubmit()')).toBeLessThan(signup);
+		expect(loginPage).toContain('m.loginCreateAccount()');
+		expect(loginPage).not.toContain('m.joinFinaleCta()');
+	});
+
+	it('labels account creation differently from the landing join buttons (AUTH-07)', () => {
+		for (const messages of [ja, en]) {
+			expect(messages.loginCreateAccount).not.toBe(messages.joinFinaleCta);
+			expect(messages.loginCreateAccount).not.toBe(messages.aboutHeroCta);
+		}
+		expect(ja.loginCreateAccount).toBe('アカウントを作ってはじめる');
 	});
 
 	it('keeps the guest hero copy with its about and join links', () => {

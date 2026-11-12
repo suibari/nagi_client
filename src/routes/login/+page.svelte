@@ -40,12 +40,14 @@
 	}
 </script>
 
-<section class="auth-card">
-	<img class="mark large" src="/nagi_icon.png" alt="" />
-	<h1>{m.loginTitle()}</h1>
-	<p>
-		{m.loginBody()}
-	</p>
+<section class="auth-card login-card">
+	<header class="login-head">
+		<img class="mark" src="/nagi_icon.png" alt="" />
+		<div>
+			<h1>{m.loginTitle()}</h1>
+			<p>{m.loginBody()}</p>
+		</div>
+	</header>
 	<label
 		>{m.loginHandleLabel()}<HandleInput
 			bind:value={handle}
@@ -55,6 +57,7 @@
 			onsubmit={() => void submit('login')}
 		/></label
 	>
+	<!-- 連携はログインと新規登録の両方の認可に効くので、両ボタンより前に置く（AUTH-07）。 -->
 	<div class="federate-optin">
 		<ToggleSwitch
 			checked={federateOptIn}
@@ -72,19 +75,15 @@
 		onclick={() => void submit('login')}
 		>{busy === 'login' ? m.loginRedirecting() : m.loginSubmit()}</Button
 	>
-	<section class="signup-section">
-		<h2>{m.loginSignupTitle()}</h2>
-		<p>{m.loginSignupBody()}</p>
-		<Button
-			variant="secondary"
-			size="lg"
-			block
-			class="signup-button"
-			disabled={busy !== null}
-			onclick={() => void submit('signup')}
-			>{busy === 'signup' ? m.loginSignupRedirecting() : m.loginSignupSubmit()}</Button
-		>
-	</section>
+	<div class="signup-divider" role="presentation">{m.loginSignupTitle()}</div>
+	<Button
+		variant="secondary"
+		size="lg"
+		block
+		disabled={busy !== null}
+		onclick={() => void submit('signup')}
+		>{busy === 'signup' ? m.loginSignupRedirecting() : m.loginCreateAccount()}</Button
+	>
 	{#if $oauthError}<p class="error">{$oauthError}</p>{/if}
 	<p class="legal-note">
 		{m.loginAgeNotice()}
@@ -96,32 +95,61 @@
 </section>
 
 <style>
+	.login-card {
+		padding: 28px;
+	}
+	.login-head {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		text-align: left;
+	}
+	.login-head .mark {
+		flex: none;
+		width: 48px;
+		height: 48px;
+		border-radius: 15px;
+	}
+	.login-head h1 {
+		margin: 0;
+		font-size: 20px;
+		line-height: 1.3;
+	}
+	.login-head p {
+		margin: 2px 0 0;
+		font-size: 13px;
+		line-height: 1.5;
+		text-wrap: pretty;
+	}
+	.login-card label {
+		margin: 20px 0 14px;
+	}
 	/* ToggleSwitch は内部で <button> を描画するため、.auth-card 直下に置くと
 	   .auth-card > button のプライマリボタン装飾を拾ってしまう。div で包んで直下 button を回避する。 */
 	.federate-optin {
-		margin: 24px 0;
+		margin: 0 0 18px;
 	}
-	/* トグル直下の補足文。カード内の他の段落より小さく、左寄せでトグルと揃える。 */
 	.hint {
-		margin-top: 6px;
+		margin-top: 4px;
 		text-align: left;
 		font-size: 12px;
+		line-height: 1.5;
+		text-wrap: pretty;
 	}
-	.signup-section {
-		margin-top: 26px;
-		padding-top: 24px;
+	.signup-divider {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 20px 0 12px;
+		color: var(--text-faint);
+		font-size: 12px;
+	}
+	.signup-divider::before,
+	.signup-divider::after {
+		content: '';
+		flex: 1;
 		border-top: 1px solid var(--line);
 	}
-	.signup-section h2 {
-		margin: 0;
-		font-size: 18px;
-		color: var(--text-strong);
-	}
-	.signup-section p {
-		margin: 8px 0 16px;
-		font-size: 13px;
-	}
-	/* 年齢要件の告知と規約同意。両方の入口の直下に置いて、押す前に目に入るようにする。 */
 	.legal-note {
 		margin-top: 14px;
 		font-size: 12px;
@@ -131,5 +159,11 @@
 	.legal-note a {
 		color: var(--accent-strong);
 		text-decoration: underline;
+	}
+	@media (max-width: 767px) {
+		.login-card {
+			margin-block: 16px;
+			padding: 20px;
+		}
 	}
 </style>

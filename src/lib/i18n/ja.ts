@@ -929,15 +929,15 @@ export const ja = {
 	chronicleKindHighlight: 'この日のこと',
 
 	// login
-	loginTitle: 'Nagiに参加する',
-	loginBody:
-		'すでにBlueskyをお使いの方は、そのアカウントでログインできます。Bluesky以外のAT Protocolアカウントも使えます。',
+	loginTitle: 'Nagiにログイン',
+	loginBody: 'BlueskyなどAT Protocolのアカウントで使えます',
 	loginHandleLabel: 'ハンドル',
 	loginSubmit: 'ログイン',
 	loginRedirecting: '移動しています…',
-	loginSignupTitle: 'はじめての方',
-	loginSignupBody: 'Blueskyを使っていなくても始められます。作ったアカウントはBlueskyでも使えます。',
-	loginSignupSubmit: 'Nagiをはじめる',
+	loginSignupTitle: 'アカウントがない方',
+	loginCreateAccount: 'アカウントを作ってはじめる',
+	joinFinaleNote: 'Blueskyを使っていなくても始められます。作ったアカウントはBlueskyでも使えます。',
+	joinFinaleCta: 'Nagiをはじめる',
 	loginOrStart: 'ログイン / Nagiをはじめる',
 	loginSignupRedirecting: '登録画面へ移動しています…',
 	loginStartFailed: '画面を開けませんでした。もう一度お試しください。',
@@ -945,8 +945,7 @@ export const ja = {
 	// クロスポストとブログ公開の権限は入口でまとめて渡し、どちらを実際に使うかは
 	// 設定画面で切り替える。入口でスイッチを2つ並べない。
 	loginFederateLabel: 'Blueskyと連携する',
-	loginFederateNote:
-		'ONにすると、Blueskyへの同時投稿と、Blueskyのフィードをタブで見るための権限を認可します。どちらもあとから設定で変更できます。',
+	loginFederateNote: '同時投稿とBlueskyフィードの閲覧を許可します。あとから設定で変更できます。',
 	// 未成年の保護者同意は入口で告知する。押す前に目に入る位置に置く。
 	loginAgeNotice: '18歳未満の方は保護者の同意を得てご利用ください。',
 	loginAgreeBefore: 'ログインまたは登録を続けると、',
