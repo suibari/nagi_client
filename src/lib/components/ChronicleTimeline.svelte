@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { markChronicleSeen } from '$lib/chronicle/notice';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import { APPVIEW_URL, getChronicle } from '$lib/api/appview';
 	import type { CardView, ChronicleEventKind, ChronicleEventView } from '$lib/api/types';
 	import {
@@ -9,13 +9,14 @@
 		chronicleEventLabel,
 		isAttachedNews,
 		groupChronicleByYear,
-		mergeChronicle,
+		loadAllChronicle,
 	} from '$lib/chronicle/chronicle';
 	import { dateLocale, i18n, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
-	import InfiniteScroll from './InfiniteScroll.svelte';
+	import ChronicleScrubber, { chronicleEndScrollY } from './ChronicleScrubber.svelte';
 	import NewsCard from './NewsCard.svelte';
+	import Spinner from './Spinner.svelte';
 	import Icon from './shell/Icon.svelte';
 
 	let {
@@ -23,6 +24,7 @@
 		displayName,
 		avatar,
 		preview,
+		showcase = false,
 	}: {
 		did: string;
 		/** 見出しに出す本人の名前。取れないうちは節目だけ先に見せる。 */
@@ -30,10 +32,12 @@
 		/** 年表の表紙に添える本人のプロフィール画像。 */
 		avatar?: string;
 		/**
-		 * 開発専用（/dev/chronicle）。渡されたらAPIを叩かず、この配列を年表として描く。
-		 * 数年ぶんの年表を seed しないと演出を確認できない、という状態を避けるためだけの口。
+		 * 開発・紹介用。渡されたらAPIを叩かず、この配列を年表として描く。
+		 * 数年ぶんの年表を seed しないと演出を確認できない、という状態を避けるための口。
 		 */
 		preview?: ChronicleEventView[];
+		/** ページの一部に置くサンプル。スクラバーと末尾への初期スクロールを付けない（CHRON-03/04）。 */
+		showcase?: boolean;
 	} = $props();
 
 	let items = $state<ChronicleEventView[]>([]);
@@ -43,6 +47,7 @@
 	let error = $state('');
 	let opened = $state<CardView | undefined>();
 	let revealed = $state(new Set<string>());
+	let body = $state<HTMLElement>();
 	let loadedFor = '';
 	let disposed = false;
 	onDestroy(() => {
@@ -50,6 +55,8 @@
 	});
 
 	const years = $derived(groupChronicleByYear(items));
+	const yearKeys = $derived(years.map((group) => group.year));
+	const scrubbable = $derived(!showcase && !loading && yearKeys.length >= 2);
 	const avatarSrc = $derived(avatar?.startsWith('/') && !preview ? APPVIEW_URL + avatar : avatar);
 
 	/**
@@ -72,29 +79,43 @@
 			day: 'numeric',
 		});
 
-	async function load(next?: string) {
+	async function scrollToNow() {
+		if (showcase) return;
+		await tick();
+		// ページを直接開いたとき、SvelteKitは描画後にスクロールを先頭へ戻す。その後に動かす。
+		await new Promise((resolve) => requestAnimationFrame(resolve));
+		if (disposed || !body) return;
+		scrollTo({ top: chronicleEndScrollY(body), behavior: 'instant' });
+	}
+
+	/** 全年を読み切ってから描く。途中で失敗したら読めた年を出し、続きから再試行させる。 */
+	async function load() {
 		if (loading) return;
 		loading = true;
 		error = '';
-		try {
-			const actor = did;
-			const page = await getChronicle(actor, { cursor: next, lang: i18n.locale });
-			if (disposed || actor !== did) return;
-			items = next ? mergeChronicle(items, page.items) : page.items;
-			cursor = page.cursor;
-			hasMore = page.hasMore;
-			void markChronicleSeen(actor, page);
-		} catch (cause) {
-			error = cause instanceof Error ? cause.message : m.chronicleFetchFailed();
-		} finally {
-			loading = false;
-		}
+		const actor = did;
+		const result = await loadAllChronicle(
+			(next) => getChronicle(actor, { cursor: next, lang: i18n.locale }),
+			{ items, cursor },
+			(page) => {
+				if (!disposed && actor === did) void markChronicleSeen(actor, page);
+			},
+		);
+		if (disposed || actor !== did) return;
+		items = result.items;
+		cursor = result.cursor;
+		hasMore = result.hasMore;
+		if (result.error)
+			error = result.error instanceof Error ? result.error.message : m.chronicleFetchFailed();
+		loading = false;
+		void scrollToNow();
 	}
 
 	$effect(() => {
 		if (preview) {
 			items = preview;
 			hasMore = false;
+			void scrollToNow();
 			return;
 		}
 		if (!did || loadedFor === did) return;
@@ -111,6 +132,7 @@
 	 * opacity: 0 は @keyframes の from にだけ書き、ここでは観測自体を止める。
 	 */
 	$effect(() => {
+		void items.length;
 		if (typeof IntersectionObserver === 'undefined') return;
 		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		const observer = new IntersectionObserver(
@@ -127,13 +149,13 @@
 			},
 			{ rootMargin: '0px 0px -10%' },
 		);
-		for (const node of document.querySelectorAll<HTMLElement>('[data-event-id]'))
+		for (const node of body?.querySelectorAll<HTMLElement>('[data-event-id]') ?? [])
 			if (!revealed.has(node.dataset.eventId!)) observer.observe(node);
 		return () => observer.disconnect();
 	});
 </script>
 
-<section class="chronicle card">
+<section class="chronicle card" class:has-scrub={scrubbable}>
 	<header class="chronicle-head" class:has-avatar={!!avatarSrc}>
 		{#if avatarSrc}
 			<div class="chronicle-portrait" aria-hidden="true">
@@ -145,85 +167,115 @@
 		<p>{m.chronicleAbout()}</p>
 	</header>
 
-	{#if error && !items.length}
-		<div class="state error">{error}</div>
-	{:else if !items.length && !loading && !hasMore}
-		<p class="chronicle-hint">{m.chronicleEmpty()}</p>
-	{:else}
-		{#each years as group (group.year)}
-			<h3 class="chronicle-year">{group.year}</h3>
-			<ol class="chronicle-list" aria-label={m.chronicleYearAria({ year: group.year })}>
-				{#each group.events as event (event.id)}
-					{#if isAttachedNews(event)}
-						<!--
-							そのころ世の中では。独立した節目ではなく、直前のまとめに**付く一行**として描く。
-							日付も出さない（月末に寄せてあるだけで、その日の出来事ではない）。
-						-->
-						<li class="chronicle-aside" data-event-id={event.id}>
-							<span class="chronicle-aside-label">{m.chronicleKindNewsContext()}</span>
-							<!--
-								見出しは**記事の原題**をそのまま出す（botたんの言い換えは使わない）。
-								news.title はサーバが表示言語に合わせて選んだ値。
-							-->
-							<a
-								class="chronicle-aside-text"
-								href={event.news?.url}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								「{event.news?.title}」
-							</a>
-						</li>
-					{:else}
-						<li
-							class="chronicle-item"
-							class:chronicle-revealed={revealed.has(event.id)}
-							data-event-id={event.id}
-						>
-							<span class="chronicle-rail" aria-hidden="true">
-								<Icon name={chronicleEventIcon(event.kind)} size={14} />
-							</span>
-							<div class="chronicle-body">
-								<time datetime={event.date}>{longDate(event.date)}</time>
-								<p class="chronicle-title">{chronicleEventLabel(event, i18n.locale, labels)}</p>
-								{#if chronicleEventDetail(event, i18n.locale)}
+	<div class="chronicle-main" bind:this={body}>
+		{#if loading && !items.length}
+			<div class="chronicle-state"><Spinner /></div>
+		{:else if error && !items.length}
+			<div class="chronicle-state error" role="alert">
+				<span>{error}</span>
+				<button class="chronicle-retry" type="button" onclick={() => void load()}>
+					<Icon name="refresh" size={16} />{m.retry()}
+				</button>
+			</div>
+		{:else if !items.length && !hasMore}
+			<p class="chronicle-state">{m.chronicleEmpty()}</p>
+		{:else}
+			<div class="chronicle-flow">
+				{#each years as group (group.year)}
+					<h3 class="chronicle-year" data-chronicle-year={group.year}>
+						<span class="chronicle-year-node" aria-hidden="true"></span>
+						<span class="chronicle-year-num">{group.year}</span>
+					</h3>
+					<ol class="chronicle-list" aria-label={m.chronicleYearAria({ year: group.year })}>
+						{#each group.events as event (event.id)}
+							{#if isAttachedNews(event)}
+								<!--
+									そのころ世の中では。独立した節目ではなく、直前のまとめに**付く一行**として描く。
+									日付も出さない（月末に寄せてあるだけで、その日の出来事ではない）。
+								-->
+								<li class="chronicle-aside" data-event-id={event.id}>
+									<span class="chronicle-aside-label">{m.chronicleKindNewsContext()}</span>
 									<!--
-										ひとことは botたんの言葉なので吹き出しで出す。
-										アプリの他の場所（リプライ・日記・ニュース）と同じ .bubble を借りる。
-										ここは ChatBubble の中ではないが、話し手はレールのアイコンで分かるので
-										名前とアバターは重ねない。
+										見出しは**記事の原題**をそのまま出す（botたんの言い換えは使わない）。
+										news.title はサーバが表示言語に合わせて選んだ値。
 									-->
-									<p class="bubble chronicle-detail">
-										{chronicleEventDetail(event, i18n.locale)}
-									</p>
-								{/if}
-								{#if event.card}
-									<!-- draw は渡さない。過去の1枚を見返すのに、毎回フリップと紙吹雪で祝わせない。 -->
-									<button
-										class="chronicle-card"
-										type="button"
-										onclick={() => (opened = event.card)}
+									<a
+										class="chronicle-aside-text"
+										href={event.news?.url}
+										target="_blank"
+										rel="noopener noreferrer"
 									>
-										<AffirmationCard card={event.card} />
-									</button>
-								{/if}
-								{#if event.news}
-									<div class="chronicle-news">
-										<NewsCard news={event.news} embedded />
-									</div>
-								{/if}
-								{#if event.diaryDate}
-									<a class="chronicle-link" href={`/diary?date=${event.diaryDate}`}>
-										{m.chronicleOpenDiary()} →
+										「{event.news?.title}」
 									</a>
-								{/if}
-							</div>
-						</li>
-					{/if}
+								</li>
+							{:else}
+								<li
+									class="chronicle-item"
+									class:chronicle-revealed={revealed.has(event.id)}
+									class:is-highlight={event.kind === 'highlight'}
+									data-event-id={event.id}
+								>
+									<span class="chronicle-rail" aria-hidden="true">
+										<Icon name={chronicleEventIcon(event.kind)} size={14} />
+									</span>
+									<div class="chronicle-body">
+										<time datetime={event.date}>{longDate(event.date)}</time>
+										<p class="chronicle-title">
+											{chronicleEventLabel(event, i18n.locale, labels)}
+										</p>
+										{#if chronicleEventDetail(event, i18n.locale)}
+											<!--
+												ひとことは botたんの言葉なので吹き出しで出す。
+												アプリの他の場所（リプライ・日記・ニュース）と同じ .bubble を借りる。
+												ここは ChatBubble の中ではないが、話し手はレールのアイコンで分かるので
+												名前とアバターは重ねない。
+											-->
+											<p class="bubble chronicle-detail">
+												{chronicleEventDetail(event, i18n.locale)}
+											</p>
+										{/if}
+										{#if event.card}
+											<!-- draw は渡さない。過去の1枚を見返すのに、毎回フリップと紙吹雪で祝わせない。 -->
+											<button
+												class="chronicle-card"
+												type="button"
+												onclick={() => (opened = event.card)}
+											>
+												<AffirmationCard card={event.card} />
+											</button>
+										{/if}
+										{#if event.news}
+											<div class="chronicle-news">
+												<NewsCard news={event.news} embedded />
+											</div>
+										{/if}
+										{#if event.diaryDate}
+											<a class="chronicle-link" href={`/diary?date=${event.diaryDate}`}>
+												{m.chronicleOpenDiary()} →
+											</a>
+										{/if}
+									</div>
+								</li>
+							{/if}
+						{/each}
+					</ol>
 				{/each}
-			</ol>
-		{/each}
-		<InfiniteScroll {hasMore} {loading} {error} onload={() => load(cursor)} />
+			</div>
+			{#if error}
+				<div class="chronicle-state error" role="alert">
+					<span>{error}</span>
+					<button class="chronicle-retry" type="button" onclick={() => void load()}>
+						<Icon name="refresh" size={16} />{m.retry()}
+					</button>
+				</div>
+			{/if}
+		{/if}
+	</div>
+
+	{#if scrubbable && body}
+		<div class="chronicle-scrub-col">
+			<ChronicleScrubber {body} years={yearKeys} />
+		</div>
 	{/if}
 </section>
 
@@ -235,11 +287,18 @@
 	.chronicle {
 		padding: 16px;
 		display: grid;
-		gap: 12px;
+		grid-template-columns: minmax(0, 1fr);
+		row-gap: 12px;
+		column-gap: 8px;
 		min-inline-size: 0;
 		max-inline-size: 100%;
 	}
+	.chronicle.has-scrub {
+		grid-template-columns: minmax(0, 1fr) 52px;
+		padding-inline-end: 8px;
+	}
 	.chronicle-head {
+		grid-column: 1 / -1;
 		position: relative;
 		isolation: isolate;
 		min-inline-size: 0;
@@ -268,6 +327,9 @@
 			linear-gradient(to bottom, #000 62%, transparent);
 		mask-composite: intersect;
 	}
+	.has-scrub .chronicle-portrait {
+		inset-inline-end: -8px;
+	}
 	.chronicle-portrait img {
 		inline-size: 100%;
 		block-size: 100%;
@@ -278,9 +340,9 @@
 	}
 	/* 一覧の見出しより大きく、1冊の表紙のように見せる。 */
 	.chronicle-head h2 {
-		font-size: 22px;
-		font-weight: 800;
-		letter-spacing: 0.01em;
+		font-size: 24px;
+		font-weight: 600;
+		line-height: 1.3;
 		color: var(--text-strong);
 	}
 	.chronicle-head::after {
@@ -293,17 +355,75 @@
 		background: var(--accent-strong);
 	}
 	.chronicle-head p {
-		margin-top: 2px;
-		font-size: 11px;
+		margin-block-start: 4px;
+		font-size: 12px;
 		color: var(--text-faint);
 	}
-	.chronicle-year {
-		margin-block-start: 8px;
-		font-size: 26px;
-		font-weight: 800;
-		letter-spacing: 0.04em;
-		color: var(--text-strong);
+	.chronicle-main {
+		grid-column: 1;
+		min-inline-size: 0;
 	}
+	.chronicle-scrub-col {
+		grid-column: 2;
+		grid-row: 2;
+	}
+
+	/*
+	 * 年をまたいで1本につながるレール。各項目のアイコンと年の節が地の色で線を隠し、
+	 * その上に載って見える。
+	 */
+	.chronicle-flow {
+		position: relative;
+		display: grid;
+		min-inline-size: 0;
+	}
+	.chronicle-flow::before {
+		content: '';
+		position: absolute;
+		inset-inline-start: 13px;
+		inset-block: 32px 24px;
+		inline-size: 2px;
+		border-radius: 1px;
+		background: var(--line);
+		pointer-events: none;
+	}
+
+	.chronicle-year {
+		position: relative;
+		display: grid;
+		grid-template-columns: 28px minmax(0, 1fr);
+		align-items: center;
+		column-gap: 12px;
+		margin: 0;
+		padding-block: 24px 8px;
+	}
+	.chronicle-year:first-child {
+		padding-block-start: 4px;
+	}
+	.chronicle-year-node {
+		justify-self: center;
+		inline-size: 12px;
+		block-size: 12px;
+		border: 2px solid var(--text-faint);
+		border-radius: 50%;
+		background: var(--surface-1);
+	}
+	/*
+	 * 年の数字は最大の大きさで行の高さを取り、強調の演出では縮めた状態から拡大する。
+	 * 基底（演出なし）が最大＝読める状態になる（CHRON-02/05）。
+	 */
+	.chronicle-year-num {
+		display: block;
+		block-size: 44px;
+		font-size: 44px;
+		font-weight: 600;
+		line-height: 1;
+		letter-spacing: -0.02em;
+		font-variant-numeric: tabular-nums;
+		color: var(--text-strong);
+		transform-origin: left center;
+	}
+
 	.chronicle-list {
 		display: grid;
 		gap: 4px;
@@ -315,38 +435,24 @@
 		position: relative;
 		display: grid;
 		grid-template-columns: 28px minmax(0, 1fr);
-		gap: 10px;
+		column-gap: 12px;
 		padding-block: 8px;
 	}
-	/* 縦のレール。節目のあいだを1本の線でつなぐ。 */
 	.chronicle-rail {
-		position: relative;
 		display: grid;
 		place-items: center;
 		inline-size: 28px;
 		block-size: 28px;
+		border: 1px solid var(--line);
 		border-radius: var(--radius-pill);
-		background: color-mix(in srgb, var(--accent-strong), transparent 86%);
+		background: var(--surface-1);
+		color: var(--text-muted);
+	}
+	/* 日記から抜いた出来事が年表の主役。そこだけアクセントで印を付ける。 */
+	.is-highlight .chronicle-rail {
+		border-color: transparent;
+		background: var(--accent-soft);
 		color: var(--accent-strong);
-	}
-	.chronicle-item:has(~ .chronicle-item)::before,
-	.chronicle-aside:has(~ .chronicle-item)::before {
-		content: '';
-		position: absolute;
-		inset-inline-start: 13px;
-		/* 次の項目のアイコンまで、項目間の gap と上 padding もつなぐ。 */
-		inset-block-start: 36px;
-		inset-block-end: -12px;
-		inline-size: 2px;
-		background: color-mix(in srgb, var(--line), transparent 20%);
-		pointer-events: none;
-	}
-	.chronicle-aside:has(~ .chronicle-item)::before {
-		inset-block-start: 0;
-	}
-	.chronicle-item:has(+ .chronicle-aside)::before,
-	.chronicle-aside:has(+ .chronicle-aside)::before {
-		inset-block-end: 0;
 	}
 	.chronicle-body {
 		min-inline-size: 0;
@@ -354,19 +460,27 @@
 		gap: 4px;
 	}
 	.chronicle-body time {
-		font-size: 11px;
+		font-size: 13px;
+		line-height: 28px;
+		font-variant-numeric: tabular-nums;
 		color: var(--text-faint);
 	}
+	.chronicle-body time + .chronicle-title {
+		margin-block-start: -4px;
+	}
+	/* 年の数字と同じく、基底が中央での大きさ。演出では端で縮める（CHRON-02/05）。 */
 	.chronicle-title {
-		font-size: 14px;
-		font-weight: 700;
+		font-size: 22px;
+		font-weight: 600;
+		line-height: 1.45;
 		color: var(--text-strong);
 		overflow-wrap: anywhere;
+		transform-origin: left center;
 	}
 	.chronicle-detail {
 		/* .bubble のしっぽ（::before が left: -8px）が切れないよう左に逃がす。 */
 		margin-inline-start: 8px;
-		margin-block-start: 2px;
+		margin-block-start: 4px;
 		font-size: 13px;
 		color: var(--text);
 		overflow-wrap: anywhere;
@@ -378,21 +492,18 @@
 		padding: 0;
 		border: 0;
 		background: none;
-		inline-size: min(100%, 150px);
+		inline-size: min(100%, 152px);
 	}
 	/* まとめに付く一行。軸の右側に、控えめに寄せる。 */
 	.chronicle-aside {
-		position: relative;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr);
 		gap: 2px;
-		padding-inline-start: 38px;
-		margin-block-start: -4px;
+		padding-inline-start: 40px;
 		padding-block-end: 8px;
 		min-inline-size: 0;
 	}
 	.chronicle-aside-label {
-		font-size: 11px;
+		font-size: 12px;
 		color: var(--text-faint);
 	}
 	.chronicle-aside-text {
@@ -409,14 +520,65 @@
 		font-size: 12px;
 		color: var(--accent-strong);
 	}
-	.chronicle-hint,
-	.state {
-		padding: 1.5rem 0;
+	.chronicle-state {
+		display: grid;
+		justify-items: center;
+		gap: 8px;
+		padding: 24px 0;
 		color: var(--text-faint);
 		font-size: 13px;
 		text-align: center;
 	}
-	.state.error {
+	.chronicle-state.error {
 		color: var(--danger);
+	}
+	.chronicle-retry {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 12px;
+		border: 1px solid var(--line);
+		border-radius: var(--radius-pill);
+		background: var(--surface-1);
+		font-size: 12px;
+		color: var(--text);
+	}
+
+	/*
+	 * 画面中央に近づくほど大きく濃く（CHRON-05）。対応ブラウザだけに当て、
+	 * 非対応・reduced-motion（base.css が animation: none を当てる）では基底の静的表示になる。
+	 * animation の一括指定は animation-timeline を初期化するので、必ず後に書く。
+	 */
+	@supports (animation-timeline: view()) {
+		.chronicle-year-num {
+			animation: chronicle-year-focus linear both;
+			animation-timeline: view();
+		}
+		.chronicle-title {
+			animation: chronicle-title-focus linear both;
+			animation-timeline: view();
+		}
+	}
+	@keyframes chronicle-year-focus {
+		0%,
+		100% {
+			transform: scale(0.55);
+			color: var(--text-faint);
+		}
+		50% {
+			transform: none;
+			color: var(--accent-strong);
+		}
+	}
+	@keyframes chronicle-title-focus {
+		0%,
+		100% {
+			transform: scale(0.72);
+			color: var(--text-muted);
+		}
+		50% {
+			transform: none;
+			color: var(--text-strong);
+		}
 	}
 </style>

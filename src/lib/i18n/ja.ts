@@ -914,6 +914,9 @@ export const ja = {
 	chronicleFetchFailed: '年表を取得できません',
 	chronicleOpenDiary: 'この日の日記を見る',
 	chronicleYearAria: (p: { year: string }) => `${p.year}年の節目`,
+	chronicleScrubberAria: '年表の年を移動',
+	chronicleScrubberNow: 'いま',
+	chronicleYearValue: (p: { year: string }) => `${p.year}年`,
 	chronicleKindNagiJoined: 'Nagi にやってきた日',
 	// followers.created_at は Bluesky のフォロー以外でも作られる（Nagi の会話・日記の称号・
 	// 超ポジティブLv）。「出会った日」と言い切ると Nagi 専用ユーザで嘘になるので、
