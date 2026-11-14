@@ -79,3 +79,7 @@ change [prioritize-startup-notification-count](changes/archive/2026-11-12-priori
 - コメントには「完全SPA」「サーバーランタイムが無い」やadapter-autoの案内が残るが、現行構成はadapter-staticによるプリレンダとSPAフォールバック、Vercel Functionsの併用である。
 - 確定仕様: adapter-staticで公開HTMLとSPA fallbackを生成し、名刺の保存PNGはブラウザCanvas、OGPはVercel Functionsで生成する。古いadapter-autoの案内と完全SPAという説明は削減対象とする。
 - 反映状況（2026-11-12）: `vite.config.ts` のadapter-autoの案内を削除し、`card/render.ts` の「完全SPA」の説明を現行構成に合わせた。不要依存の除去は、実際の利用箇所を確認して別途扱う。
+
+## カードニュースの表示対象
+
+change [card-news-ultra-rare-threshold](changes/archive/2026-11-14-card-news-ultra-rare-threshold/proposal.md)で、取得ニュースをクライアント側でUR・AARに限定した（[CARD-10](specs/cards-zenkatsu/spec.md#card-10)）。従来のR以上というコードコメントは表示条件の説明として整理した。導入時の固定原文は変更しない。AppViewのニュース選定・配信データは別リポジトリのため未確認であり、サーバ側でR・SRの配信を停止したことは意味しない。クライアントの動作確認はモック応答によるものとし、本番での配信確認と区別する。

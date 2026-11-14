@@ -54,19 +54,28 @@
 
 **理由と制約**：結果はダイアログを開く前にAppViewで確定しており、開封は演出であって抽選ではない。パックの見た目と振動は全レア度で同じにし、昇格色などは既存の `CARD_REVEAL_EFFECTS` のままカードが出てから行う。記念日カードはページ表示時に自動で開くため、開封の操作を求めるとわずらわしく、パックを挟まない。なぞる指がパックの外で離れても閉じないよう、開封前は背景のクリックを無視する。動きを減らす設定では今までどおり最初から表を見せる。パックの地は `CardBack` と同じブランドのグラデーションにし、ゼンカツのロゴとbotたんを描く。ロゴの原本は約1.1MBと重いので、パック幅に縮小した `static/card-effects/pack-logo.webp` を使い、引ける状態のときに先読みする。画像が無くても地と切り取り線だけで開封できる。
 
+### D6: カード取得ニュースをUltra Rare以上に絞る
+
+**課題**：Rare以上の取得を流していたニュースの表示対象を、利用者の指定でUltra Rare以上へ引き上げる。
+
+**採用判断**：CARD-10に従い、クライアントで`cardGet`のUR・AARだけを残す。ゼンカツのハイライトと世界初のコンボ発見はカードのレア度で除外しない。日付見出しは絞り込み後の項目で作り、空になったページでもcursorがあれば追加読み込みを残す。
+
+**理由と制約**：APIにレア度指定の契約はないため、既存の応答型・cursorを保ったまま表示を絞る。サーバ側での選定変更は別リポジトリの作業であり、ここでは実施・確認していない。自動で次ページを取り続けず、利用者の追加読み込み操作を保つ。所持・PDS控え・リアクション権限・通信失敗時の表示は既存契約に従い、新たな個人情報の取得や外部書き込みは行わない。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                          | 探す処理・責務              |
-| ------------------------------------------------------------------------------------------------- | --------------------------- |
-| [src/lib/cards/collection.svelte.ts](../../../src/lib/cards/collection.svelte.ts)                 | コレクションと取得状態      |
-| [src/lib/cards/celebration.ts](../../../src/lib/cards/celebration.ts)                             | CARD_REVEAL_EFFECTS         |
-| [src/lib/components/CardDetailDialog.svelte](../../../src/lib/components/CardDetailDialog.svelte) | 取得演出の段階（packPhase） |
-| [src/lib/components/CardPack.svelte](../../../src/lib/components/CardPack.svelte)                 | パックの描画と破る操作      |
-| [src/lib/cards/pack-assets.ts](../../../src/lib/cards/pack-assets.ts)                             | 開封の閾値と画像の先読み    |
-| [src/lib/components/ZenkatsuPlay.svelte](../../../src/lib/components/ZenkatsuPlay.svelte)         | ゲームの進行                |
-| [src/lib/card/render.ts](../../../src/lib/card/render.ts)                                         | 名刺画像生成                |
+| ファイル                                                                                          | 探す処理・責務                       |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| [src/lib/cards/collection.svelte.ts](../../../src/lib/cards/collection.svelte.ts)                 | コレクションと取得状態               |
+| [src/lib/cards/celebration.ts](../../../src/lib/cards/celebration.ts)                             | CARD_REVEAL_EFFECTS                  |
+| [src/lib/components/CardDetailDialog.svelte](../../../src/lib/components/CardDetailDialog.svelte) | 取得演出の段階（packPhase）          |
+| [src/lib/components/CardPack.svelte](../../../src/lib/components/CardPack.svelte)                 | パックの描画と破る操作               |
+| [src/lib/cards/pack-assets.ts](../../../src/lib/cards/pack-assets.ts)                             | 開封の閾値と画像の先読み             |
+| [src/lib/components/ZenkatsuPlay.svelte](../../../src/lib/components/ZenkatsuPlay.svelte)         | ゲームの進行                         |
+| [src/lib/components/CardNewsList.svelte](../../../src/lib/components/CardNewsList.svelte)         | カードニュースの表示対象とページ送り |
+| [src/lib/card/render.ts](../../../src/lib/card/render.ts)                                         | 名刺画像生成                         |
 
 ## 出典と変更時の扱い
 
