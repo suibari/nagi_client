@@ -9,6 +9,7 @@
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardBack from './CardBack.svelte';
 	import CardDrawEffects from './CardDrawEffects.svelte';
+	import CardPack from './CardPack.svelte';
 	import Confetti from './Confetti.svelte';
 
 	/** 時刻表示。日付境界は JST 4:00 だが、表示は閲覧者のローカル時刻に合わせる。 */
@@ -50,6 +51,16 @@
 	// ダイアログ表示中に draw が差し替わることはなく、別結果は親の key で再マウントされる。
 	// svelte-ignore state_referenced_locally
 	const shouldAnimate = !!draw && !draw.alreadyDrawn;
+	const reduceMotion =
+		typeof window !== 'undefined' &&
+		typeof window.matchMedia === 'function' &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	// 抽選で引いた直後だけパックを挟む（CARD-09）。最初の描画から決めて、表が一瞬見えるのを防ぐ。
+	// svelte-ignore state_referenced_locally
+	const usePack = shouldAnimate && !reduceMotion && draw?.source !== 'anniversary';
+	// sealed: 開封待ち、emerging: 裏向きのカードを取り出し中、none: パック無し。
+	let packPhase = $state<'sealed' | 'emerging' | 'none'>(usePack ? 'sealed' : 'none');
+	const PACK_EMERGE_MS = 700;
 	// 初回ドローはタメてから裏 → 表。見返し・当日分の再表示は最初から表。
 	// svelte-ignore state_referenced_locally
 	let revealed = $state(!shouldAnimate);
@@ -61,7 +72,9 @@
 	let commentTimedOut = $state(false);
 	let closeButton = $state<HTMLElement>();
 	let skipButton = $state<HTMLElement>();
+	let packButton = $state<HTMLButtonElement>();
 	let revealTimer: ReturnType<typeof setTimeout> | undefined;
+	let emergeTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const ja = $derived(i18n.locale === 'ja');
 	const name = $derived(ja ? card.nameJa : card.nameEn);
@@ -89,15 +102,9 @@
 	);
 
 	onMount(() => {
-		(skipButton ?? closeButton)?.focus();
-		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		(packButton ?? skipButton ?? closeButton)?.focus();
 		if (shouldAnimate && !reduceMotion) {
-			revealTimer = setTimeout(finishReveal, revealEffect.chargeMs);
-			const touchDevice =
-				navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
-			if (touchDevice && typeof navigator.vibrate === 'function') {
-				navigator.vibrate(revealEffect.vibration);
-			}
+			if (packPhase === 'none') startCharge();
 		} else if (shouldAnimate) {
 			finishReveal();
 		}
@@ -131,14 +138,36 @@
 		return () => {
 			stopped = true;
 			clearTimeout(revealTimer);
+			clearTimeout(emergeTimer);
 			clearTimeout(timer);
 			if (typeof navigator.vibrate === 'function') navigator.vibrate(0);
 		};
 	});
 
+	function startCharge() {
+		revealTimer = setTimeout(finishReveal, revealEffect.chargeMs);
+		const touchDevice =
+			navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+		if (touchDevice && typeof navigator.vibrate === 'function') {
+			navigator.vibrate(revealEffect.vibration);
+		}
+	}
+
+	function openPack() {
+		if (packPhase !== 'sealed') return;
+		packPhase = 'emerging';
+		emergeTimer = setTimeout(() => {
+			packPhase = 'none';
+			startCharge();
+		}, PACK_EMERGE_MS);
+	}
+
 	function finishReveal() {
 		clearTimeout(revealTimer);
+		clearTimeout(emergeTimer);
 		revealTimer = undefined;
+		emergeTimer = undefined;
+		packPhase = 'none';
 		if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
 			navigator.vibrate(0);
 		}
@@ -161,6 +190,8 @@
 		if (event.key === 'Escape') close();
 	}
 	function backdropClick(event: MouseEvent) {
+		// なぞる指がパックの外で離れると背景のクリックになるので、開封前は閉じない。
+		if (packPhase === 'sealed') return;
 		if (event.target === event.currentTarget) close();
 	}
 </script>
@@ -170,7 +201,11 @@
 	<Confetti level={confettiLevel} />
 {/if}
 <div class="draw-backdrop" role="presentation" onclick={backdropClick}>
-	<CardDrawEffects rarity={card.rarity} {revealed} active={shouldAnimate && !skipped} />
+	<CardDrawEffects
+		rarity={card.rarity}
+		{revealed}
+		active={shouldAnimate && !skipped && packPhase === 'none'}
+	/>
 	<div class="draw-dialog" role="dialog" aria-modal="true" aria-labelledby="draw-title">
 		{#if shouldAnimate && !revealed}
 			<Button
@@ -184,7 +219,9 @@
 			</Button>
 		{/if}
 		<h2 id="draw-title" class="draw-title" class:visually-hidden={showNewCardArt}>
-			{#if shouldAnimate && !revealed}
+			{#if packPhase !== 'none'}
+				{m.cardPackTitle()}
+			{:else if shouldAnimate && !revealed}
 				{m.cardDrawing()}
 			{:else if !draw}
 				{name}
@@ -214,7 +251,9 @@
 				class="draw-stage rarity-{card.rarity.toLowerCase()}"
 				class:revealed
 				class:flip={shouldAnimate}
-				class:charging={shouldAnimate && !revealed && !skipped}
+				class:charging={shouldAnimate && !revealed && !skipped && packPhase === 'none'}
+				class:in-pack={packPhase === 'sealed'}
+				class:emerging={packPhase === 'emerging'}
 				style={`--mid-delay: ${Math.floor(revealEffect.chargeMs * 0.34)}ms; --hard-delay: ${Math.floor(revealEffect.chargeMs * 0.67)}ms`}
 			>
 				<div class="draw-shake">
@@ -228,7 +267,14 @@
 					</div>
 				</div>
 			</div>
+			{#if packPhase !== 'none'}
+				<CardPack bind:ref={packButton} opened={packPhase === 'emerging'} onopen={openPack} />
+			{/if}
 		</div>
+
+		{#if packPhase === 'sealed'}
+			<p class="draw-next pack-hint-text">{m.cardPackHint()}</p>
+		{/if}
 
 		{#if revealed}
 			<!-- botたんのひとこと。カードのフレーバーとは別に、引いたその人へ向けた言葉。 -->
@@ -502,6 +548,24 @@
 	}
 	.draw-shake {
 		position: relative;
+	}
+	/* パックの中にある間は見せず、開いたら口からせり上がる。 */
+	.draw-stage.in-pack {
+		visibility: hidden;
+	}
+	.draw-stage.emerging {
+		animation: draw-emerge 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+	}
+	@keyframes draw-emerge {
+		from {
+			transform: translateY(14%) scale(0.94);
+		}
+		to {
+			transform: none;
+		}
+	}
+	.pack-hint-text {
+		text-align: center;
 	}
 	.draw-stage.charging .draw-shake {
 		animation:

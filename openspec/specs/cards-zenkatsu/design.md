@@ -46,16 +46,27 @@
 
 **理由と制約**：名刺DOMとCanvasは片方だけ直さず、保存PNGとOGPの寸法も区別する。季節ごとの暦と開封判断は [季節イベントの設計](../seasonal-events/design.md) で扱う。
 
+### D5: 引いたカードはパックから自分で取り出す
+
+**課題**：ダイアログを開くと演出が自動で進むだけでは、利用者は待つだけで自分の手で引いた感触がない。
+
+**採用判断**：抽選で引いた直後（通常の1日1枚とゲスト）だけ、`CardDetailDialog` の段階を「パック → 取り出し → タメ → 表」とする。封はなぞった分だけ破れ、6割を越えて離すと残りを自動で破る。タップ・Enter・Spaceでも開ける。タメのタイマーと振動はパックが開いてから始める。
+
+**理由と制約**：結果はダイアログを開く前にAppViewで確定しており、開封は演出であって抽選ではない。パックの見た目と振動は全レア度で同じにし、昇格色などは既存の `CARD_REVEAL_EFFECTS` のままカードが出てから行う。記念日カードはページ表示時に自動で開くため、開封の操作を求めるとわずらわしく、パックを挟まない。なぞる指がパックの外で離れても閉じないよう、開封前は背景のクリックを無視する。動きを減らす設定では今までどおり最初から表を見せる。パックの地は `CardBack` と同じブランドのグラデーションにし、ゼンカツのロゴとbotたんを描く。ロゴの原本は約1.1MBと重いので、パック幅に縮小した `static/card-effects/pack-logo.webp` を使い、引ける状態のときに先読みする。画像が無くても地と切り取り線だけで開封できる。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                  | 探す処理・責務         |
-| ----------------------------------------------------------------------------------------- | ---------------------- |
-| [src/lib/cards/collection.svelte.ts](../../../src/lib/cards/collection.svelte.ts)         | コレクションと取得状態 |
-| [src/lib/cards/celebration.ts](../../../src/lib/cards/celebration.ts)                     | CARD_REVEAL_EFFECTS    |
-| [src/lib/components/ZenkatsuPlay.svelte](../../../src/lib/components/ZenkatsuPlay.svelte) | ゲームの進行           |
-| [src/lib/card/render.ts](../../../src/lib/card/render.ts)                                 | 名刺画像生成           |
+| ファイル                                                                                          | 探す処理・責務              |
+| ------------------------------------------------------------------------------------------------- | --------------------------- |
+| [src/lib/cards/collection.svelte.ts](../../../src/lib/cards/collection.svelte.ts)                 | コレクションと取得状態      |
+| [src/lib/cards/celebration.ts](../../../src/lib/cards/celebration.ts)                             | CARD_REVEAL_EFFECTS         |
+| [src/lib/components/CardDetailDialog.svelte](../../../src/lib/components/CardDetailDialog.svelte) | 取得演出の段階（packPhase） |
+| [src/lib/components/CardPack.svelte](../../../src/lib/components/CardPack.svelte)                 | パックの描画と破る操作      |
+| [src/lib/cards/pack-assets.ts](../../../src/lib/cards/pack-assets.ts)                             | 開封の閾値と画像の先読み    |
+| [src/lib/components/ZenkatsuPlay.svelte](../../../src/lib/components/ZenkatsuPlay.svelte)         | ゲームの進行                |
+| [src/lib/card/render.ts](../../../src/lib/card/render.ts)                                         | 名刺画像生成                |
 
 ## 出典と変更時の扱い
 
