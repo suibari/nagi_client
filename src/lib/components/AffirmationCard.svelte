@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CardAttribute, CardRarity, CardView } from '$lib/api/types';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
+	import { isLineArt } from '$lib/cards/card-art';
 
 	let {
 		card,
@@ -83,6 +84,7 @@
 		-->
 		<img
 			class="card-art"
+			class:line-art={isLineArt(art)}
 			src="/card-art/{art}.webp"
 			alt=""
 			aria-hidden="true"
@@ -175,6 +177,9 @@
 		block-size: 100%;
 		object-fit: cover;
 		object-position: var(--card-art-position);
+	}
+	.card-art.line-art {
+		filter: var(--card-line-art-filter);
 	}
 	/* 図鑑の升目は文字が小さく、絵をそのまま出すと名前もフレーバーも潰れる。 */
 	.card.size-grid .card-art {

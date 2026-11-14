@@ -186,6 +186,8 @@
 	--card-art-band-alpha: 72%;
 	/* 絵のどこを見せるか。カード比より縦長の画像を用意したときだけ効く（cover の切り取り位置）。 */
 	--card-art-position: center top;
+	/* 透過の線画だけに当てる。ダークでは黒い線が地に沈むので反転し、色相は元へ戻す。 */
+	--card-line-art-filter: none;
 	--card-attr-light: #e0a300;
 	--card-attr-dark: #6b4fa8;
 	--card-attr-fire: #d64528;
@@ -329,6 +331,7 @@
 	--card-art-band-alpha: 72%;
 	/* 絵のどこを見せるか。カード比より縦長の画像を用意したときだけ効く（cover の切り取り位置）。 */
 	--card-art-position: center top;
+	--card-line-art-filter: invert(1) hue-rotate(180deg);
 	--card-attr-light: #ffd257;
 	--card-attr-dark: #b79bff;
 	--card-attr-fire: #ff8a6b;
@@ -451,6 +454,7 @@
 		--card-art-band-alpha: 72%;
 		/* 絵のどこを見せるか。カード比より縦長の画像を用意したときだけ効く（cover の切り取り位置）。 */
 		--card-art-position: center top;
+		--card-line-art-filter: invert(1) hue-rotate(180deg);
 		--card-attr-light: #ffd257;
 		--card-attr-dark: #b79bff;
 		--card-attr-fire: #ff8a6b;
