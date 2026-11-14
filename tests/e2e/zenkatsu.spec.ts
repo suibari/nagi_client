@@ -921,3 +921,88 @@ test('zenkatsu records carry a reaction row', async ({ page }) => {
 	await page.goto('/cards');
 	await expect(page.locator('.record .card-reactions .reaction-emoji')).toHaveText('🌸');
 });
+
+for (const emptyFirstPage of [false, true]) {
+	test(`card news shows only UR and AAR draws across pages (empty first page: ${emptyFirstPage})`, async ({
+		page,
+	}) => {
+		await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
+		const draw = (rarity: string, id: number, day = '19') => ({
+			uri: `at://did:plc:demo/com.suibari.nagi.cardGet/${id}`,
+			cid: `bafy-${id}`,
+			type: 'cardGet',
+			author: { did: 'did:plc:demo', handle: 'demo.example' },
+			at: `2026-09-${day}T01:23:00Z`,
+			card: {
+				volume: 1,
+				id,
+				rarity,
+				attribute: 'wind',
+				atk: 1800,
+				def: 1200,
+				owned: false,
+				nameJa: `${rarity}の札${id}`,
+				nameEn: `${rarity} card ${id}`,
+				raceJa: 'もふもふ族',
+				raceEn: 'Fluffy',
+				textJa: 'すてきな札',
+				textEn: 'A lovely card',
+			},
+		});
+		const lowDraws = ['N', 'R', 'SR'].map((rarity, i) => draw(rarity, i + 1, '20'));
+		const highlights = ['zenkatsu', 'comboFound'].map((type, i) => ({
+			...draw('SR', i + 10),
+			type,
+			card: undefined,
+			cards: [lowDraws[i].card],
+			themeJa: `ハイライト${i}`,
+			themeEn: `Highlight ${i}`,
+		}));
+		const cursors: (string | null)[] = [];
+		await page.route('**/xrpc/**', (route) =>
+			route.fulfill({ json: { items: [], cards: [], folders: [], uris: [], drafts: [] } }),
+		);
+		await page.route('**/xrpc/com.suibari.nagi.getCardNews**', (route) => {
+			const cursor = new URL(route.request().url()).searchParams.get('cursor');
+			cursors.push(cursor);
+			return route.fulfill({
+				json: cursor
+					? { items: [draw('SR', 20, '18'), draw('UR', 21, '17'), draw('AAR', 22, '17')] }
+					: {
+							items: [
+								...lowDraws,
+								...(emptyFirstPage ? [] : [draw('UR', 4), ...highlights, draw('AAR', 5)]),
+							],
+							cursor: 'next-page',
+						},
+			});
+		});
+		await page.goto('/cards');
+		await page.getByRole('tab', { name: 'ニュース', exact: true }).click();
+		const items = page.locator('.news > .item');
+		if (emptyFirstPage) {
+			await expect(page.getByText('まだニュースはないよ')).toBeVisible();
+			await expect(items).toHaveCount(0);
+			await expect(page.locator('.day-heading')).toHaveCount(0);
+		} else {
+			await expect(items).toHaveCount(4);
+			await expect(items.nth(0)).toContainText('URの札4');
+			await expect(items.nth(1)).toContainText('ハイライト0');
+			await expect(items.nth(2)).toContainText('ハイライト1');
+			await expect(items.nth(3)).toContainText('AARの札5');
+			await expect(page.locator('.day-heading time')).toHaveAttribute('datetime', '2026-09-19');
+		}
+		await page.locator('button.more').click();
+		await expect(items).toHaveCount(emptyFirstPage ? 2 : 6);
+		await expect(items.nth(emptyFirstPage ? 0 : 4)).toContainText('URの札21');
+		await expect(items.last()).toContainText('AARの札22');
+		await expect(page.locator('.day-heading time')).toHaveCount(emptyFirstPage ? 1 : 2);
+		await expect(page.locator('.day-heading time').last()).toHaveAttribute(
+			'datetime',
+			'2026-09-17',
+		);
+		await expect(page.locator('.headline')).not.toContainText(['SRの札20']);
+		await expect(page.locator('button.more')).toHaveCount(0);
+		expect(cursors).toEqual([null, 'next-page']);
+	});
+}

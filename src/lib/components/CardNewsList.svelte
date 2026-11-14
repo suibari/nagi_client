@@ -12,10 +12,6 @@
 	import CardBotReview from './CardBotReview.svelte';
 	import ZenkatsuNote from './ZenkatsuNote.svelte';
 
-	/**
-	 * 全肯定カードのニュース。R以上のドローと、ゼンカツのハイライトだけが並ぶ。
-	 * ゼンカツを全件流すとニュースの約8割がゼンカツになり、レアドローが埋もれるため。
-	 */
 	let feed = $state<CardNewsFeed | undefined>();
 	let loading = $state(true);
 	let error = $state('');
@@ -26,7 +22,11 @@
 		error = '';
 		try {
 			const result = await getCardNews(cursor ? { cursor } : {});
-			feed = cursor && feed ? { ...result, items: [...feed.items, ...result.items] } : result;
+			const items = result.items.filter(
+				(item) =>
+					item.type !== 'cardGet' || item.card?.rarity === 'UR' || item.card?.rarity === 'AAR',
+			);
+			feed = { ...result, items: cursor && feed ? [...feed.items, ...items] : items };
 		} catch {
 			error = m.cardNewsFetchFailed();
 		} finally {
@@ -120,14 +120,14 @@
 	{#if opened}
 		<CardDetailDialog initial={opened} onclose={() => (opened = undefined)} />
 	{/if}
-	{#if feed.cursor}
-		<Button
-			variant="secondary"
-			class="more"
-			disabled={loadingMore}
-			onclick={() => ((loadingMore = true), load(feed?.cursor))}>{m.zenkatsuLoadMore()}</Button
-		>
-	{/if}
+{/if}
+{#if !loading && !error && feed?.cursor}
+	<Button
+		variant="secondary"
+		class="more"
+		disabled={loadingMore}
+		onclick={() => ((loadingMore = true), load(feed?.cursor))}>{m.zenkatsuLoadMore()}</Button
+	>
 {/if}
 
 <style>
