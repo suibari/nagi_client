@@ -6,6 +6,7 @@
 	import type { CardView, DrawCardResult } from '$lib/api/types';
 	import { anniversaryCardReward } from '$lib/cards/anniversary-reward.svelte';
 	import { reachedCardMilestone } from '$lib/cards/celebration';
+	import { preloadCardPack } from '$lib/cards/pack-assets';
 	import { cardCollections } from '$lib/cards/collection.svelte';
 	import { guestCardDraw } from '$lib/cards/guest-draw.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
@@ -62,6 +63,10 @@
 
 	$effect(() => {
 		if (myDid) void cardCollections.ensure(myDid);
+	});
+
+	$effect(() => {
+		if ((showBanner || showFab) && !anniversaryPending) preloadCardPack();
 	});
 
 	onMount(() => {

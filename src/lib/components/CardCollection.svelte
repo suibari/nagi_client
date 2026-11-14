@@ -9,6 +9,7 @@
 		reachedCardMilestone,
 	} from '$lib/cards/celebration';
 	import { cardCollections } from '$lib/cards/collection.svelte';
+	import { preloadCardPack } from '$lib/cards/pack-assets';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
@@ -36,6 +37,9 @@
 	// 実体を見ているので、TOP で引いた直後にここへ来ても drawStatus がズレない。
 	$effect(() => {
 		void cardCollections.ensure(did);
+	});
+	$effect(() => {
+		if (isSelf && cardCollections.canDrawMyNagi) preloadCardPack();
 	});
 	const entry = $derived(cardCollections.entry(did));
 	const collection = $derived(entry?.view);

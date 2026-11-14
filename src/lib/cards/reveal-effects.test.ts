@@ -15,7 +15,9 @@ describe('card reveal presentation contract', () => {
 	});
 
 	it('shakes the card during the charge and stops at reveal', () => {
-		expect(dialog).toContain('class:charging={shouldAnimate && !revealed && !skipped}');
+		expect(dialog).toContain(
+			"class:charging={shouldAnimate && !revealed && !skipped && packPhase === 'none'}",
+		);
 		expect(dialog).toContain('class="draw-shake"');
 		expect(dialog).toMatch(/\.draw-stage\.charging \.draw-shake\s*\{[^}]*draw-shake-hard/s);
 		expect(dialog).toMatch(/\.draw-stage\.rarity-aar\s*\{[^}]*--shake-x:\s*11px;/s);
