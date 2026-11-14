@@ -768,7 +768,7 @@ export type CardBoardEntry = {
 	card: CardView;
 	/** ボードに1枚以上ある。AAR は botたんの分があるので常に true。 */
 	available: boolean;
-	/** 受け取るのに払う Ƶ。ボードに無い AAR は botたんの額（600）。 */
+	/** 受け取るのに払う Ƶ。ボードに無い AAR は botたんの額（300）。 */
 	price: number;
 	/** 置いたときにもらえる Ƶ（1枚あたり）。 */
 	zenny: number;
@@ -794,7 +794,7 @@ export type DonatedCard = {
 export type DonateCardsResult = { donated: DonatedCard[]; earned: number; balance: number };
 export type TakeBoardCardResult = { card: CardView; paid: number; balance: number };
 
-/** my_nagi と reaction は1日1回の抽選枠、anniversary は記念日に配られる特別枠。 */
+/** my_nagi は1日1回の抽選枠、anniversary は記念日に配られる特別枠。reaction は廃止した枠で、過去のデータにだけ現れる。 */
 export type CardDrawSource = 'my_nagi' | 'reaction' | 'anniversary';
 /** その日が記念日で、まだ受け取っていない1枚。 */
 export type PendingAnniversary = {
@@ -809,7 +809,7 @@ export type CardDrawSlotStatus = {
 	cardVolume?: number;
 	cardId?: number;
 };
-/** 本日の2つの取得枠。自分のコレクションを見ているときだけ返る。 */
+/** 本日の取得枠。自分のコレクションを見ているときだけ返る。 */
 export type CardDrawStatus = {
 	/** 旧AppView互換。通常枠の状態。 */
 	canDraw: boolean;
@@ -819,7 +819,6 @@ export type CardDrawStatus = {
 	todayCardId?: number;
 	/** 段階配備中の旧AppView応答では未定義。 */
 	myNagi?: CardDrawSlotStatus;
-	reaction?: CardDrawSlotStatus;
 };
 export type CardCollectionView = {
 	cards: CardView[];

@@ -5,7 +5,6 @@
 	import CardDrawFab from '$lib/components/CardDrawFab.svelte';
 	import CardDrawBanner from '$lib/components/CardDrawBanner.svelte';
 	import CardMilestoneDialog from '$lib/components/CardMilestoneDialog.svelte';
-	import CardReactionGuideDialog from '$lib/components/CardReactionGuideDialog.svelte';
 
 	/*
 	 * カードまわりの見た目をまとめて確認するための開発専用ページ（/dev/cards）。
@@ -151,7 +150,6 @@
 		| 'anniversary-pending';
 	let dialogCase = $state<DialogCase | undefined>();
 	let milestone = $state<number | undefined>();
-	let guideOpen = $state(false);
 	// 演出をやり直すための再マウント用キー。
 	let replay = $state(0);
 
@@ -181,7 +179,6 @@
 		canDraw: false,
 		nextDrawAt: new Date(Date.now() + 8 * 3600_000).toISOString(),
 		myNagi: { canDraw: false, cardVolume: 1, cardId: 1 },
-		reaction: { canDraw: true },
 	};
 
 	function dialogCard(kind: DialogCase): CardView {
@@ -250,7 +247,6 @@
 	<h2 id="draw-banner">カードを引くバナー</h2>
 	<p>ゼンカツページと同じUI。クリックするとサンプルカードを表示します。</p>
 	<CardDrawBanner ondraw={() => open('new-r')} />
-	<CardDrawBanner reactionNext ondraw={() => (guideOpen = true)} />
 	<CardDrawBanner anniversaryPending ondraw={() => open('anniversary')} />
 	<CardDrawBanner drawing ondraw={() => {}} />
 
@@ -268,9 +264,6 @@
 		<label><input type="checkbox" bind:checked={fabFixed} /> 実際の fixed 位置で出す</label>
 	</div>
 	<div class="dev-controls">
-		<button type="button" class="ghost" onclick={() => (guideOpen = true)}>
-			リアクション案内
-		</button>
 		{#each [10, 50, 100] as percent (percent)}
 			<button type="button" class="ghost" onclick={() => (milestone = percent)}>
 				マイルストーン {percent}%
@@ -387,10 +380,6 @@
 		collectionHref="/dev/cards"
 		onclose={() => (milestone = undefined)}
 	/>
-{/if}
-
-{#if guideOpen}
-	<CardReactionGuideDialog onclose={() => (guideOpen = false)} />
 {/if}
 
 <style>

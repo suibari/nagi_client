@@ -33,7 +33,6 @@
 	import { preferencesReady, syncPreferences } from '$lib/preferences/sync.svelte';
 	import { feedTabs } from '$lib/feed-tabs/feed-tabs.svelte';
 	import { tagFavorites } from '$lib/tag-favorites/tag-favorites.svelte';
-	import ReactionCardRewardHost from '$lib/components/ReactionCardRewardHost.svelte';
 	import WelcomeTutorialHost from '$lib/components/WelcomeTutorialHost.svelte';
 	import AnniversaryCardHost from '$lib/components/AnniversaryCardHost.svelte';
 	import { bookmarks } from '$lib/bookmarks/bookmarks.svelte';
@@ -304,7 +303,6 @@
 	<PostModal />
 	<!-- ブログは別モーダル。初めて開いたときにマウントし、書きかけを保つためリロードまで残す。 -->
 	{#if composerHost.blogMounted}<BlogModal />{/if}
-	<ReactionCardRewardHost />
 	<WelcomeTutorialHost />
 	<!-- 記念日はその日しか来ないので、どの画面にいても受け取れるよう常駐させる。 -->
 	<AnniversaryCardHost />

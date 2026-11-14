@@ -78,6 +78,6 @@ export const ZENNY_RATES: { rarity: CardRarity; zenny: number }[] = [
 	{ rarity: 'UR', zenny: 30 },
 	{ rarity: 'AAR', zenny: 100 },
 ];
-export const BOT_AAR_PRICE = 600;
+export const BOT_AAR_PRICE = 300;
 export const KEEP_PER_CARD = 3;
 export const WELCOME_ZENNY = 30;

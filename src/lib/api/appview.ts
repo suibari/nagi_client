@@ -749,12 +749,7 @@ export const getCards = (
  */
 export const getAdventCalendar = (year?: number) => {
 	const lxm = 'com.suibari.nagi.getAdventCalendar';
-	return call<AdventCalendarView>(
-		lxm,
-		`/xrpc/${lxm}${year ? `?year=${year}` : ''}`,
-		{},
-		'none',
-	);
+	return call<AdventCalendarView>(lxm, `/xrpc/${lxm}${year ? `?year=${year}` : ''}`, {}, 'none');
 };
 /**
  * ゼンカツ！の、ある1日のお題と全回答（新着順）。
@@ -824,15 +819,12 @@ export const drawGuestCard = (deviceToken: string) =>
 		'none',
 	);
 /**
- * 通常枠またはリアクション枠のカードを1枚引く。同じ枠への再送は冪等。
+ * 通常枠のカードを1枚引く。同じ日の再送は冪等。
  * source=anniversary は抽選ではなく、その日が記念日なら未受領ぶんをまとめて受け取る
  * （1日1回の枠を消費しない。結果は result.cards に全部入る）。
  */
 export const drawCard = (
-	input:
-		| { source?: 'my_nagi'; reactionUri?: never; guestToken?: string }
-		| { source: 'reaction'; reactionUri: string }
-		| { source: 'anniversary'; reactionUri?: never } = {},
+	input: { source?: 'my_nagi'; guestToken?: string } | { source: 'anniversary' } = {},
 ) =>
 	call<DrawCardResult>(
 		'com.suibari.nagi.drawCard',

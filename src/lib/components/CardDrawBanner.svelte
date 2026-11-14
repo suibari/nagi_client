@@ -6,13 +6,11 @@
 	let {
 		drawing = false,
 		anniversaryPending = false,
-		reactionNext = false,
 		error = '',
 		ondraw,
 	}: {
 		drawing?: boolean;
 		anniversaryPending?: boolean;
-		reactionNext?: boolean;
 		error?: string;
 		ondraw: () => void;
 	} = $props();
@@ -34,9 +32,6 @@
 				{m.cardDrawing()}
 			{:else if anniversaryPending}
 				{m.cardAnniversaryEntryLabel()}
-			{:else if reactionNext}
-				<span class="card-banner-lead">{m.cardReactionNextLead()}</span>
-				{m.cardReactionNextText()}
 			{:else}
 				{m.cardBannerLabel()}
 			{/if}
@@ -115,11 +110,6 @@
 		flex: 1 1 auto;
 		min-inline-size: 0;
 		overflow-wrap: anywhere;
-	}
-
-	.card-banner-lead {
-		margin-inline-end: 4px;
-		color: var(--accent-strong);
 	}
 
 	.card-banner-chevron {
