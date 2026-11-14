@@ -13,7 +13,6 @@
 	import AffirmationCard from './AffirmationCard.svelte';
 	import CardDetailDialog from './CardDetailDialog.svelte';
 	import CardMilestoneDialog from './CardMilestoneDialog.svelte';
-	import CardReactionGuideDialog from './CardReactionGuideDialog.svelte';
 
 	let {
 		did,
@@ -32,7 +31,6 @@
 	let opened = $state<CardView | undefined>();
 	// カード詳細を閉じたあとに出す。モーダルを二重に重ねないため別状態で待機させる。
 	let pendingMilestone = $state<number | undefined>();
-	let guideOpen = $state(false);
 
 	// コレクションは cardCollections が DID ごとに 1 度だけ取る。フィードの FAB と同じ
 	// 実体を見ているので、TOP で引いた直後にここへ来ても drawStatus がズレない。
@@ -134,10 +132,6 @@
 				<Button variant="primary" type="button" disabled={drawing} onclick={draw}>
 					{drawing ? m.cardDrawing() : m.cardDrawButton()}
 				</Button>
-			{:else if cardCollections.canDrawWithReaction}
-				<Button variant="primary" type="button" onclick={() => (guideOpen = true)}>
-					{m.cardReactionNextLabel()}
-				</Button>
 			{:else if status}
 				<p class="cards-next">{m.cardNextDrawAt({ time: formatTime(status.nextDrawAt) })}</p>
 			{/if}
@@ -189,10 +183,6 @@
 	<CardDetailDialog initial={opened} actor={did} draw={drawResult} onclose={closeDialog} />
 {:else if pendingMilestone}
 	<CardMilestoneDialog percent={pendingMilestone} onclose={() => (pendingMilestone = undefined)} />
-{/if}
-
-{#if guideOpen}
-	<CardReactionGuideDialog onclose={() => (guideOpen = false)} />
 {/if}
 
 <style>

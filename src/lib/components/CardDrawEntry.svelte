@@ -15,7 +15,6 @@
 	import CardDetailDialog from './CardDetailDialog.svelte';
 	import CardDrawFab from './CardDrawFab.svelte';
 	import CardMilestoneDialog from './CardMilestoneDialog.svelte';
-	import CardReactionGuideDialog from './CardReactionGuideDialog.svelte';
 
 	let {
 		variant = 'banner',
@@ -31,7 +30,6 @@
 	let drawResult = $state<DrawCardResult>();
 	let openedCard = $state<CardView>();
 	let pendingMilestone = $state<number>();
-	let guideOpen = $state(false);
 	let myDid = $derived($session?.did);
 	const forceFab = $derived(
 		dev &&
@@ -48,7 +46,7 @@
 	let showFab = $derived(
 		variant === 'fab' &&
 			!openedCard &&
-			(Boolean(myDid && (cardCollections.canDrawMyNagi || cardCollections.canDrawWithReaction)) ||
+			(Boolean(myDid && cardCollections.canDrawMyNagi) ||
 				forceFab ||
 				drawing ||
 				Boolean(drawError)),
@@ -59,11 +57,7 @@
 			(forceFab ||
 				(!myDid && guestCardDraw.canDrawToday) ||
 				anniversaryPending ||
-				cardCollections.canDrawMyNagi ||
-				cardCollections.canDrawWithReaction),
-	);
-	let reactionNext = $derived(
-		Boolean(myDid && !cardCollections.canDrawMyNagi && cardCollections.canDrawWithReaction),
+				cardCollections.canDrawMyNagi),
 	);
 
 	$effect(() => {
@@ -110,10 +104,6 @@
 			);
 			return;
 		}
-		if (reactionNext) {
-			guideOpen = true;
-			return;
-		}
 		if (drawing) return;
 		drawing = true;
 		drawError = '';
@@ -140,13 +130,7 @@
 </script>
 
 {#if showBanner}
-	<CardDrawBanner
-		{drawing}
-		{anniversaryPending}
-		{reactionNext}
-		error={drawError}
-		ondraw={openTodayCard}
-	/>
+	<CardDrawBanner {drawing} {anniversaryPending} error={drawError} ondraw={openTodayCard} />
 {:else if showFab}
 	<CardDrawFab
 		{drawing}
@@ -154,13 +138,7 @@
 		{shifted}
 		ondraw={openTodayCard}
 		ondismisserror={() => (drawError = '')}
-		label={reactionNext ? m.cardReactionNextLabel() : undefined}
-		hint={reactionNext ? m.cardReactionGuideBody() : undefined}
 	/>
-{/if}
-
-{#if guideOpen}
-	<CardReactionGuideDialog onclose={() => (guideOpen = false)} />
 {/if}
 
 {#if openedCard}

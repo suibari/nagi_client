@@ -15,12 +15,10 @@ describe('readable text alignment', () => {
 	it('keeps affirmation-card text left-aligned in every host', () => {
 		const card = read('../components/AffirmationCard.svelte');
 		const detail = read('../components/CardDetailDialog.svelte');
-		const guide = read('../components/CardReactionGuideDialog.svelte');
 		const milestone = read('../components/CardMilestoneDialog.svelte');
 
 		expect(card).toMatch(/\.card\s*\{[^}]*text-align:\s*start;/s);
 		expect(detail).toMatch(/\.draw-dialog\s*\{[^}]*text-align:\s*start;/s);
-		expect(guide).toMatch(/\.card-guide\s*\{[^}]*text-align:\s*start;/s);
 		expect(milestone).toMatch(/\.milestone-dialog\s*\{[^}]*text-align:\s*start;/s);
 	});
 

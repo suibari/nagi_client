@@ -11,14 +11,12 @@ const componentsCss = read('../../routes/styles/components.css');
 const postFab = read('../components/PostFab.svelte');
 const cardDrawFab = read('../components/CardDrawFab.svelte');
 const postFollowNotice = read('../components/PostFollowNotice.svelte');
-const reactionRewardHost = read('../components/ReactionCardRewardHost.svelte');
 const cardDrawEffects = read('../components/CardDrawEffects.svelte');
 const postModalShell = read('../components/PostModalShell.svelte');
 const fixedOverlayComponents = [
 	[read('../components/BookmarkFolderDialog.svelte'), 'folder-dialog-backdrop'],
 	[read('../components/CardDetailDialog.svelte'), 'draw-backdrop'],
 	[read('../components/CardMilestoneDialog.svelte'), 'milestone-backdrop'],
-	[read('../components/CardReactionGuideDialog.svelte'), 'card-guide-backdrop'],
 	[read('../components/Confetti.svelte'), 'confetti-layer'],
 	[cardDrawEffects, 'draw-fx'],
 	[cardDrawEffects, 'draw-blackout'],
@@ -90,9 +88,6 @@ describe('mobile overflow layout contracts', () => {
 		);
 		expect(postFollowNotice).toMatch(
 			/left:\s*50%;[^}]*bottom:\s*24px;[^}]*transform:\s*translateX\(-50%\);/s,
-		);
-		expect(reactionRewardHost).toMatch(
-			/inset-inline:\s*50% auto;[^}]*inset-block-end:\s*calc\(84px \+ env\(safe-area-inset-bottom\)\);[^}]*transform:\s*translateX\(-50%\);/s,
 		);
 	});
 

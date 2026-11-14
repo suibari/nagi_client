@@ -1438,22 +1438,10 @@ export const ja = {
 	searchLoadMore: 'もっと見る',
 	searchPlaceholder: '検索',
 	searchSubmitAria: '検索する',
-	// 全肯定カード（通常枠＋リアクション枠で1日最大2枚）
+	// 全肯定カード（1日1枚）
 	cardDrawButton: '今日のカードを引く',
 	cardBannerLabel: '今日の一枚を引く',
 	cardUndrawnBadgeAria: '今日の一枚がまだ引けます',
-	cardReactionNextLabel: 'Next: リアクションでもう一枚！',
-	cardReactionNextLead: 'NEXT:',
-	cardReactionNextText: 'リアクションでもう一枚！',
-	cardReactionNextHint: '今日は、誰かへのリアクションでもう一枚引けるよ！',
-	cardMyNagiNextHint: 'my Nagiのカードボタンから、今日のもう一枚を引けるよ！',
-	cardReactionGuideTitle: 'リアクションでもう一枚！',
-	cardReactionGuideBody:
-		'誰かの投稿や全肯定ニュースへのリアクションで、今日2枚目の全肯定カードが引けます！',
-	cardReactionGuideNote: '自分の投稿へのリアクションは対象外です。',
-	cardReactionGuideClose: 'わかった',
-	cardReactionRewardFailed:
-		'リアクションはできましたが、カードを開けませんでした。もう一度取得できます。',
 	cardDrawing: '引いています…',
 	cardDrawFailed: 'カードを引けませんでした',
 	cardFetchFailed: 'カードを取得できません',

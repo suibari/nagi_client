@@ -255,13 +255,7 @@
 				<p class="draw-next">{m.cardAnniversaryHint()}</p>
 			{:else if draw}
 				<p class="draw-next">
-					{#if draw.source === 'my_nagi' && draw.drawStatus.reaction?.canDraw}
-						{m.cardReactionNextHint()}
-					{:else if draw.source === 'reaction' && draw.drawStatus.myNagi?.canDraw}
-						{m.cardMyNagiNextHint()}
-					{:else}
-						{m.cardNextDrawAt({ time: formatTime(draw.drawStatus.nextDrawAt) })}
-					{/if}
+					{m.cardNextDrawAt({ time: formatTime(draw.drawStatus.nextDrawAt) })}
 				</p>
 			{:else if card.acquiredAt}
 				<p class="draw-next">{m.cardAcquiredAt({ time: formatTime(card.acquiredAt) })}</p>

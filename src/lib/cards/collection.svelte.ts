@@ -70,10 +70,6 @@ class CardCollections {
 		const status = this.selfDrawStatus;
 		return status?.myNagi?.canDraw ?? status?.canDraw === true;
 	}
-	/** 新AppViewの状態が確認できた場合だけ有効にする（旧応答ではfail closed）。 */
-	get canDrawWithReaction(): boolean {
-		return this.selfDrawStatus?.reaction?.canDraw === true;
-	}
 	/**
 	 * 本日ぶんの未受領の記念日。自動モーダルの発火条件そのものなので、コレクションを
 	 * 取得できていないうちは空にしておく（fail closed。どのみち受け取り API も通らない）。
@@ -129,8 +125,7 @@ class CardCollections {
 		}
 		const status = entry.view.drawStatus;
 		if (!status) return;
-		const canDrawAny = (status.myNagi?.canDraw ?? status.canDraw) || status.reaction?.canDraw;
-		if (canDrawAny) {
+		if (status.myNagi?.canDraw ?? status.canDraw) {
 			if (Date.now() - entry.fetchedAt >= UNDRAWN_RECHECK_MS) void this.refresh(did);
 			return;
 		}
