@@ -30,7 +30,7 @@ APIへの未定義パラメータ追加は避ける。AppViewで絞れば通信�
 
 ## Migration Plan
 
-データ移行は不要。クライアントの配信から過去分にも条件が適用される。戻す場合は表示の絞り込みを戻す。固定履歴 [コメント原文](../../reference/comment-snapshot/cards-zenkatsu-advent.md) は書き換えず、主仕様の [設計判断](../../specs/cards-zenkatsu/design.md) にある出典を維持する。
+データ移行は不要。クライアントの配信から過去分にも条件が適用される。戻す場合は表示の絞り込みを戻す。固定履歴 [コメント原文](../../../reference/comment-snapshot/cards-zenkatsu-advent.md) は書き換えず、主仕様の [設計判断](../../../specs/cards-zenkatsu/design.md) にある出典を維持する。
 
 ## 機能概要
 
@@ -50,7 +50,7 @@ APIへの未定義パラメータ追加は避ける。AppViewで絞れば通信�
 
 ## 参照資料
 
-- [主仕様](../../specs/cards-zenkatsu/spec.md)：所持・公開控え・反応の既存契約を確認する。
+- [主仕様](../../../specs/cards-zenkatsu/spec.md)：所持・公開控え・反応の既存契約を確認する。
 - [設計](design.md)：API互換とページ分割の扱いを確認する。
 
 上記の概要・一覧・流れは主仕様への反映時に用いる。差分仕様には要件とシナリオを保持する。

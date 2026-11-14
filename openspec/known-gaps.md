@@ -82,4 +82,4 @@ change [prioritize-startup-notification-count](changes/archive/2026-11-12-priori
 
 ## カードニュースの表示対象
 
-change [card-news-ultra-rare-threshold](changes/card-news-ultra-rare-threshold/proposal.md)で、取得ニュースをクライアント側でUR・AARに限定した（[CARD-10](specs/cards-zenkatsu/spec.md#card-10)）。従来のR以上というコードコメントは表示条件の説明として整理した。導入時の固定原文は変更しない。AppViewのニュース選定・配信データは別リポジトリのため未確認であり、サーバ側でR・SRの配信を停止したことは意味しない。クライアントの動作確認はモック応答によるものとし、本番での配信確認と区別する。
+change [card-news-ultra-rare-threshold](changes/archive/2026-11-14-card-news-ultra-rare-threshold/proposal.md)で、取得ニュースをクライアント側でUR・AARに限定した（[CARD-10](specs/cards-zenkatsu/spec.md#card-10)）。従来のR以上というコードコメントは表示条件の説明として整理した。導入時の固定原文は変更しない。AppViewのニュース選定・配信データは別リポジトリのため未確認であり、サーバ側でR・SRの配信を停止したことは意味しない。クライアントの動作確認はモック応答によるものとし、本番での配信確認と区別する。
