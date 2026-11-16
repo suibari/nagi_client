@@ -4,7 +4,7 @@
 
 動機と変更範囲は [proposal.md](proposal.md) に記載する。現在の新規作成のdirtyは入力の有無だけを見ており、lastSavedDraftKeyを参照しない。draftSnapshotとDraftContentは記事タイトル・タグを持たない。自動保存には本文必須の条件があり、メタデータだけの入力は保存されない。復元時は元の下書きを削除するため、復元しただけで保存済みと扱えない。
 
-現行の設計判断は [ブログの設計](../../specs/blog-publication/design.md) と [投稿の設計](../../specs/post-composer/design.md) にある。導入時の固定証跡は両文書からリンクするcomment-snapshotを保持し、現行コードに合わせて書き換えない。
+現行の設計判断は [ブログの設計](../../../specs/blog-publication/design.md) と [投稿の設計](../../../specs/post-composer/design.md) にある。導入時の固定証跡は両文書からリンクするcomment-snapshotを保持し、現行コードに合わせて書き換えない。
 
 ## Goals / Non-Goals
 
@@ -46,4 +46,4 @@
 | blog-publication | 復元可能な下書きの離脱確認（BLOG-07） | 執筆、保存、離脱、復元                   |
 | post-composer    | タイトル・タグの下書き保存（POST-06） | 入力、手動または自動保存、保存確認、復元 |
 
-[ブログ主仕様](../../specs/blog-publication/spec.md)の執筆条件と[投稿主仕様](../../specs/post-composer/spec.md)のタイトル正本・片付け・画像互換を保持する。対応する差分は[ブログ](specs/blog-publication/spec.md)と[下書き](specs/post-composer/spec.md)に置く。公開プロトコルの変更はないため新たな外部プロトコル資料は追加しない。AppViewの外部実装の確認はtasks.mdで別途追跡する。
+[ブログ主仕様](../../../specs/blog-publication/spec.md)の執筆条件と[投稿主仕様](../../../specs/post-composer/spec.md)のタイトル正本・片付け・画像互換を保持する。対応する差分は[ブログ](specs/blog-publication/spec.md)と[下書き](specs/post-composer/spec.md)に置く。公開プロトコルの変更はないため新たな外部プロトコル資料は追加しない。AppViewの外部実装の確認はtasks.mdで別途追跡する。

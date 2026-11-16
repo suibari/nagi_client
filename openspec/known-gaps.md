@@ -86,6 +86,6 @@ change [card-news-ultra-rare-threshold](changes/archive/2026-11-14-card-news-ult
 
 ## ブログ下書き保存後の離脱確認
 
-change [fix-blog-draft-leave-warning](changes/fix-blog-draft-leave-warning/proposal.md)で、BLOG-07の離脱確認を下書きからの復元可能性に基づく判定へ変更し、POST-06にタイトル・タグの保存を追加した。クライアントは保存応答に保持された内容と現在の入力を照合し、画像が失われる場合は理由を示して確認する。旧APIが追加メタデータを捨てた場合は保存済みと扱わず、警告を維持する。
+change [fix-blog-draft-leave-warning](changes/archive/2026-11-16-fix-blog-draft-leave-warning/proposal.md)で、BLOG-07の離脱確認を下書きからの復元可能性に基づく判定へ変更し、POST-06にタイトル・タグの保存を追加した。クライアントは保存応答に保持された内容と現在の入力を照合し、画像が失われる場合は理由を示して確認する。旧APIが追加メタデータを捨てた場合は保存済みと扱わず、警告を維持する。
 
-別リポジトリのOrcaワークツリー `/home/suibari/orca/workspaces/bsky-affirmative-bot/blog-draft-metadata`（`suibari/blog-draft-metadata`）で下書きAPI・lexiconの保持／返却も実装した。入力検証、HTTPと使い捨てPostgresの往復・所有者分離、およびChromiumからの保存と別ページでの復元を確認した。本番の認証経路での往復とデプロイは未実施であり、API側を先に反映する必要がある。検証の詳細はchangeの [verification.md](changes/fix-blog-draft-leave-warning/verification.md) に記録する。
+別リポジトリのOrcaワークツリー `/home/suibari/orca/workspaces/bsky-affirmative-bot/blog-draft-metadata`（`suibari/blog-draft-metadata`）で下書きAPI・lexiconの保持／返却も実装した。入力検証、HTTPと使い捨てPostgresの往復・所有者分離、およびChromiumからの保存と別ページでの復元を確認した。本番の認証経路での往復とデプロイは未実施であり、API側を先に反映する必要がある。検証の詳細はchangeの [verification.md](changes/archive/2026-11-16-fix-blog-draft-leave-warning/verification.md) に記録する。
