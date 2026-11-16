@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
-	import ArticleTitleInput from '$lib/components/ArticleTitleInput.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -20,6 +19,7 @@
 	import { languageName, languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
+	import { savedArticles } from '$lib/blog/saved-articles.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { followPostedScroll } from '$lib/feed/post-follow.svelte';
 	import { replyDepths, replyIndent } from '$lib/thread/replyIndent';
@@ -31,9 +31,6 @@
 	// svelte-ignore state_referenced_locally -- prerender snapshot; onMount refreshes viewer-specific state
 	let thread = $state<ThreadView | undefined>(data.thread);
 	let error = $state('');
-	let editing = $state(false);
-	let editTitle = $state('');
-	let editBusy = $state(false);
 	let bottomPickerOpen = $state(false);
 	let bottomReactionButton = $state<HTMLElement>();
 	let reactionHoldUntil = 0;
@@ -61,7 +58,15 @@
 					loadError: 'Could not load comments.',
 				},
 	);
-	let post = $derived(thread?.post);
+	// 執筆ページで保存した直後は、AppView が追いつくまで保存した内容を出す（BLOG-07）。
+	let saved = $derived(savedArticles.pending(data.post.uri, thread?.post));
+	let post = $derived(saved?.post ?? thread?.post);
+	let tags = $derived(saved?.tags ?? data.tags);
+	$effect(() => {
+		const fetched = thread?.post;
+		if (fetched && savedArticles.get(data.post.uri)?.post.cid === fetched.cid)
+			savedArticles.clear(data.post.uri);
+	});
 	let text = $derived(post?.text ?? data.post.text);
 	let original = $derived(splitArticleText(text));
 
@@ -71,10 +76,7 @@
 	let translationTarget = $derived(languagePreferences.translationLanguage);
 	let translationEligible = $derived(
 		Boolean(
-			post &&
-			!editing &&
-			languagePreferences.autoTranslate &&
-			isTranslationCandidate(post, translationTarget),
+			post && languagePreferences.autoTranslate && isTranslationCandidate(post, translationTarget),
 		),
 	);
 	let translation = $derived(
@@ -174,7 +176,8 @@
 		const timer = setInterval(() => {
 			if (
 				document.visibilityState === 'visible' &&
-				optimisticPosts.items.some((item) => item.reply?.root.uri === data.post.uri)
+				(optimisticPosts.items.some((item) => item.reply?.root.uri === data.post.uri) ||
+					savedArticles.get(data.post.uri))
 			)
 				void refresh().catch(() => undefined);
 		}, 3_000);
@@ -205,11 +208,7 @@
 	{/if}
 	<header class="blog-header">
 		<p class="blog-label"><Icon name="newspaper" size={17} /> {labels.blog}</p>
-		{#if editing}
-			<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
-		{:else}
-			<h1>{title}</h1>
-		{/if}
+		<h1>{title}</h1>
 		<div class="blog-byline">
 			<AvatarLink actor={author} size="small" />
 			<div class="blog-author">
@@ -224,25 +223,17 @@
 				})}
 			</time>
 		</div>
-		{#if data.tags.length}
+		{#if tags.length}
 			<div class="blog-tags" aria-label={labels.tags}>
-				{#each data.tags as tag}<a href={'/search?tag=' + encodeURIComponent(tag.toLowerCase())}
+				{#each tags as tag}<a href={'/search?tag=' + encodeURIComponent(tag.toLowerCase())}
 						>#{tag}</a
 					>{/each}
 			</div>
 		{/if}
 	</header>
 
-	{#if thread && post && !post.deleted && $session?.did === post.author.did}
-		<ChatBubble
-			bind:post={thread.post}
-			bind:editing
-			bind:editTitle
-			bind:editBusy
-			externalTitleEditor
-			managementOnly
-			ondeleted={() => void goto('/blog')}
-		/>
+	{#if post && !post.deleted && $session?.did === post.author.did}
+		<ChatBubble {post} managementOnly ondeleted={() => void goto('/blog')} />
 	{/if}
 
 	{#if translating}

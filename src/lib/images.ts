@@ -17,6 +17,15 @@ export type ImageAttachment = {
 	 * standard.site の coverImage は「1枚目の画像」なので、位置と印の両方で表す。
 	 */
 	header?: boolean;
+	/**
+	 * ブログの編集で読み込んだ、保存済みの画像。blob は空で、previewUrl は AppView の URL。
+	 * 保存時は PostEditImage の existing へ戻し、アップロードし直さない。
+	 */
+	existing?: {
+		sourceIndex: number;
+		cid: string;
+		aspectRatio?: { width: number; height: number };
+	};
 	id: string;
 	blob: Blob;
 	previewUrl: string;

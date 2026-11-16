@@ -83,6 +83,14 @@
 		{
 			"source": "/thread/:path*",
 			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+		},
+		{
+			"source": "/write",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+		},
+		{
+			"source": "/write/:path*",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
 		}
 	],
 	"redirects": [
@@ -134,6 +142,8 @@
 		{ "source": "/radio", "destination": "/200" },
 		{ "source": "/search", "destination": "/200" },
 		{ "source": "/settings/:path*", "destination": "/200" },
-		{ "source": "/thread/:path*", "destination": "/200" }
+		{ "source": "/thread/:path*", "destination": "/200" },
+		{ "source": "/write", "destination": "/200" },
+		{ "source": "/write/:path*", "destination": "/200" }
 	]
 }

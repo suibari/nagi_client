@@ -38,16 +38,24 @@
 
 **理由と制約**：失敗理由は再試行可能な単位で出す。記事化できない条件は送信前に示し、記事を作らず通常投稿だけ成功させる挙動にしない。
 
+### D5: ブログはモーダルではなく執筆ページで書く
+
+**課題**：ブログをモーダルで書くと入力欄が小さく、おたすけが画面下に重なって本文やメタ欄を覆っていた。
+
+**採用判断**：ブログは執筆ページで書き（経緯は [blog-publication D5](../blog-publication/design.md)）、ポストのモーダルとはComposerを共有しない。おたすけは配置を選べるようにし、執筆ページの広い画面では記事メタ欄の下に置く。狭い画面では下に重ね、その高さの分だけページ下に余白を取る。
+
+**理由と制約**：狭い画面に右カラムは置けない。ソフトウェアキーボードの上に出す既存のfloating表示を使い、余白で本文の末尾まで届くようにする。ポストのモーダルでは従来の配置を変えない。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                            | 探す処理・責務                            |
-| --------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| [src/lib/components/Composer.svelte](../../../src/lib/components/Composer.svelte)                   | 投稿状態と送信処理                        |
-| [src/lib/post/scope.ts](../../../src/lib/post/scope.ts)                                             | scopeForPublicReply / defaultScopeForPath |
-| [src/lib/drafts/drafts.svelte.ts](../../../src/lib/drafts/drafts.svelte.ts)                         | 下書きの共有状態                          |
-| [src/lib/components/ComposerAssistant.svelte](../../../src/lib/components/ComposerAssistant.svelte) | 入力中のおたすけ                          |
+| ファイル                                                                                            | 探す処理・責務                             |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| [src/lib/components/Composer.svelte](../../../src/lib/components/Composer.svelte)                   | 投稿状態と送信処理                         |
+| [src/lib/post/scope.ts](../../../src/lib/post/scope.ts)                                             | scopeForPublicReply / defaultScopeForPath  |
+| [src/lib/drafts/drafts.svelte.ts](../../../src/lib/drafts/drafts.svelte.ts)                         | 下書きの共有状態                           |
+| [src/lib/components/ComposerAssistant.svelte](../../../src/lib/components/ComposerAssistant.svelte) | 入力中のおたすけ（placement で配置を選ぶ） |
 
 ## 出典と変更時の扱い
 

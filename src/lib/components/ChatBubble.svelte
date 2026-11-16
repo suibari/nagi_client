@@ -1,5 +1,4 @@
 <script lang="ts">
-	import ArticleTitleInput from './ArticleTitleInput.svelte';
 	import type { ActorView, PostView } from '$lib/api/types';
 	import type { BookmarkSubjectType } from '$lib/api/types';
 	import ReactionBar from './ReactionBar.svelte';
@@ -40,30 +39,14 @@
 		normalizeSupportedLanguage,
 	} from '$lib/i18n/languagePreferences.svelte';
 	import { buildExternalTranslationUrl } from '$lib/i18n/translationProviders';
-	import { tick, untrack } from 'svelte';
-	import { computeBlobCid } from '$lib/atproto/cid';
-	import {
-		blobKey,
-		fillInlineImageAlts,
-		imageMarkdown,
-		inlineImageAlts,
-		inlineImageState,
-		inlineImageUrl,
-		pruneInlineImages,
-	} from '$lib/blog/inlineImages';
+	import { tick } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import PostImageEditor from './PostImageEditor.svelte';
 	import PostVideoEditor, { type ExistingVideoEdit } from './PostVideoEditor.svelte';
 	import type { VideoAttachment } from '$lib/video-attachment.svelte';
 	import type { PostVideoEdit } from '$lib/atproto/records';
 	import LinkCardEditor from './LinkCardEditor.svelte';
-	import { extractTitle, IMAGE_LINE } from '$lib/atproto/markdown';
-	import { usesPlainTextarea, type ComposerEmbeds } from './composer-embeds';
-	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
-	import {
-		deleteStandardSiteDocument,
-		updateStandardSiteDocument,
-	} from '$lib/standardsite/document';
 	import {
 		hasContentWarning,
 		parseContentWarning,
@@ -84,9 +67,7 @@
 		displayOnly = false,
 		managementOnly = false,
 		editing = $bindable(false),
-		editTitle = $bindable(''),
 		editBusy = $bindable(false),
-		externalTitleEditor = false,
 		hideTimestamp = false,
 		clampLines,
 		maxImages,
@@ -107,10 +88,7 @@
 		/** ブログ本文を別に表示するページ向けの編集・削除 UI。 */
 		managementOnly?: boolean;
 		editing?: boolean;
-		editTitle?: string;
 		editBusy?: boolean;
-		/** ブログの見出し位置でタイトルを編集する場合に指定。 */
-		externalTitleEditor?: boolean;
 		/** APIのローリング更新などで信頼できる日時が無い読み取り専用表示に使う。 */
 		hideTimestamp?: boolean;
 		/** 省略時の表示行数。未指定時は CSS の 6 行。 */
@@ -140,13 +118,8 @@
 	let deleting = $state(false);
 	let deleteError = $state('');
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
+	// ブログは執筆ページで編集する（BLOG-07）ので、ここに来るのは通常の投稿だけ。
 	let editText = $state('');
-	let editingArticle = $derived(
-		Boolean(post.article || post.uri.includes('/site.standard.document/')),
-	);
-	// standard.site の document として保存された記事。リンクカードを本文の行ごとに置けるので
-	// 通常投稿の4枚の上限を掛けない（com.suibari.nagi.post のままの旧記事は4枚まで）。
-	let editingDocument = $derived(post.uri.includes('/site.standard.document/'));
 	let editMentions = $state<MentionSelection[]>([]);
 	let editEmojis = $state<EmojiSelection[]>([]);
 	let editImages = $state<PostEditImage[]>([]);
@@ -171,114 +144,7 @@
 	let editImageProcessing = $state(false);
 	let editError = $state('');
 	let editImageEditor = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
-	let editComposer = $state<{ insertBlock: (text: string) => void }>();
-	/**
-	 * 記事の編集で、画像（id ごと）が本文に書かれるときの URL。既存の画像は AppView の
-	 * URL から、足した画像は手元で計算した CID から作る。外した画像の行を本文から消すのと、
-	 * 保存前に添付の無い画像行を落とすのに使う。
-	 */
-	let editImageUrls = $state<Record<string, string>>({});
-	let editSeenImageIds = new Set<string>();
-	$effect(() => {
-		const current = editImages;
-		const ids = new Set(current.map((image) => image.id));
-		const removed = [...editSeenImageIds].filter((id) => !ids.has(id));
-		const added = current.filter((image) => !editSeenImageIds.has(image.id));
-		editSeenImageIds = ids;
-		if (!untrack(() => editing && editingArticle)) return;
-		for (const id of removed) {
-			const url = editImageUrls[id];
-			if (!url) continue;
-			editText = untrack(() => editText)
-				.split('\n')
-				.filter((line) => IMAGE_LINE.exec(line)?.[2] !== url)
-				.join('\n');
-		}
-		const did = post.author.did;
-		for (const image of added) {
-			if (image.kind !== 'new') continue;
-			void computeBlobCid(image.blob).then((cid) => {
-				if (!editImages.some((item) => item.id === image.id)) return;
-				const url = inlineImageUrl(did, cid);
-				editImageUrls[image.id] = url;
-				editComposer?.insertBlock(imageMarkdown(image.alt, url));
-			});
-		}
-	});
-	/**
-	 * standard.site の記事の編集では、URL だけの行のリンクカードと本文の画像を入力欄の中
-	 * （行の下）に見せる。Android の素の textarea では重ねられないので従来の一覧に出す。
-	 */
-	const editInlineEmbeds = $derived(editingDocument && !usesPlainTextarea());
-	let editLinkCardEditor = $state<{ remove: (uri: string) => void }>();
 	let editLinkCardLoading = $state<string[]>([]);
-	const removeEditInlineCard = (uri: string) => editLinkCardEditor?.remove(uri);
-	let editEmbeds = $derived.by((): ComposerEmbeds | undefined => {
-		if (!editInlineEmbeds) return undefined;
-		const images: Record<string, string> = {};
-		for (const image of editImages) {
-			const key = editImageUrls[image.id] && blobKey(editImageUrls[image.id]);
-			if (key) images[key] = image.previewUrl;
-		}
-		return {
-			cards: editLinkCards.map(({ uri, title, description, previewUrl }) => ({
-				uri,
-				title,
-				description,
-				previewUrl,
-				loading: editLinkCardLoading.includes(uri),
-			})),
-			images,
-			disabled: editBusy,
-			onremovecard: removeEditInlineCard,
-		};
-	});
-	/**
-	 * 本文の画像行と画像の対応（Composer と同じ）。入力欄の中に出した画像は下の一覧に出さず、
-	 * alt も本文の `![alt](url)` に合わせる。行を消した画像は保存しない。
-	 */
-	const editImageKey = (image: PostEditImage) =>
-		editImageUrls[image.id] ? blobKey(editImageUrls[image.id]) : undefined;
-	let editPlacedImages = $derived(inlineImageAlts(editText));
-	let editSeenImageKeys = $state<string[]>([]);
-	let editSeenImages = $derived(new Set([...editSeenImageKeys, ...editPlacedImages.keys()]));
-	const editImageState = (image: PostEditImage) =>
-		editInlineEmbeds
-			? inlineImageState(editImageKey(image), editPlacedImages, editSeenImages)
-			: 'listed';
-	let editHiddenImageIds = $derived(
-		new Set(
-			editImages.filter((image) => editImageState(image) !== 'listed').map((image) => image.id),
-		),
-	);
-	$effect(() => {
-		if (!editInlineEmbeds) return;
-		const seen = untrack(() => editSeenImageKeys);
-		const fresh = [...editPlacedImages.keys()].filter((key) => !seen.includes(key));
-		if (fresh.length) editSeenImageKeys = [...seen, ...fresh];
-		const current = untrack(() => editImages);
-		// 初めて本文に見えた画像は、添付にだけある alt を先に本文の行へ移す（消さないため）。
-		if (fresh.length) {
-			const moved = new Map<string, string>();
-			for (const image of current) {
-				const key = editImageKey(image);
-				if (key && fresh.includes(key) && image.alt) moved.set(key, image.alt);
-			}
-			const source = untrack(() => editText);
-			const filled = moved.size ? fillInlineImageAlts(source, moved) : source;
-			if (filled !== source) {
-				editText = filled;
-				return;
-			}
-		}
-		const alts = editPlacedImages;
-		const next = current.map((image) => {
-			const key = editImageKey(image);
-			const alt = key ? alts.get(key) : undefined;
-			return alt === undefined || alt === image.alt ? image : { ...image, alt };
-		});
-		if (next.some((image, index) => image !== current[index])) editImages = next;
-	});
 	let reactionPickerOpen = $state(false);
 	let contentRevealed = $state(false);
 	let reactionButton = $state<HTMLButtonElement>();
@@ -431,38 +297,21 @@
 		}
 		reactionPickerOpen = !reactionPickerOpen;
 	}
+	/** ブログは執筆ページで編集する（BLOG-07）。 */
+	function openBlogEditor() {
+		void goto(`/write/${post.uri.slice(post.uri.lastIndexOf('/') + 1)}`);
+	}
 	function startEdit() {
 		if (!$session) {
 			location.href = '/login';
 			return;
 		}
 		editError = '';
-		editTitle = editingArticle ? (extractTitle(post.text) ?? '') : '';
-		const prefix = editingArticle ? (post.text.match(/^# [^\n]+\n*/)?.[0] ?? '') : '';
-		const offset = new TextEncoder().encode(prefix).length;
-		const facets = post.facets
-			?.filter((facet) => facet.index.byteStart >= offset)
-			.map((facet) => ({
-				...facet,
-				index: { byteStart: facet.index.byteStart - offset, byteEnd: facet.index.byteEnd - offset },
-			}));
-		const restored = restorePostEditState(post.text.slice(prefix.length), facets);
+		const restored = restorePostEditState(post.text, post.facets);
 		editText = restored.text;
 		editMentions = restored.mentions;
 		editEmojis = restored.emojis;
 		editImageProcessing = false;
-		const appViewOrigins = [new URL(APPVIEW_URL, 'http://localhost').origin];
-		editImageUrls = {};
-		editSeenImageKeys = [];
-		for (const [sourceIndex, image] of (post.images ?? []).entries()) {
-			const key = blobKey(image.url, appViewOrigins);
-			if (!key) continue;
-			const slash = key.lastIndexOf('/');
-			editImageUrls[`${post.cid}-${sourceIndex}`] = inlineImageUrl(
-				key.slice(0, slash),
-				key.slice(slash + 1),
-			);
-		}
 		editImages = (post.images ?? []).map((image, sourceIndex) => ({
 			kind: 'existing',
 			id: `${post.cid}-${sourceIndex}`,
@@ -521,37 +370,8 @@
 			destroy: () => node.removeEventListener('keydown', handleEditKeydown),
 		};
 	}
-	/**
-	 * 投稿の編集・削除に standard.site の記事を追従させる。
-	 * 権限が無い／記事化していない場合は黙って何もしない（Nagi 側の操作は成立している）。
-	 */
-	async function syncStandardSiteDocument(rkey: string, text?: string) {
-		if (post.uri.includes('/site.standard.document/')) return;
-		try {
-			if (!(await hasStandardSiteScope())) return;
-			if (post.cwRestricted) {
-				await deleteStandardSiteDocument(rkey);
-				return;
-			}
-			if (text === undefined) {
-				await deleteStandardSiteDocument(rkey);
-				return;
-			}
-			// タイトルは本文先頭の見出しから引き直す。無ければ既存のタイトルを残す。
-			// タグは渡さない。記事のタグは投稿モーダルの記事メタ欄で決まるもので、
-			// 本文の facet からは復元できないため、本文編集では触らずに残す。
-			await updateStandardSiteDocument(rkey, {
-				...(extractTitle(text) ? { title: extractTitle(text) } : {}),
-				markdown: text,
-			});
-		} catch {
-			// 記事側の同期失敗で Nagi の編集・削除を巻き戻すことはしない。
-		}
-	}
-
 	async function submitEdit() {
-		const match =
-			/^at:\/\/[^/]+\/(com\.suibari\.nagi\.post|site\.standard\.document)\/([^/]+)$/.exec(post.uri);
+		const match = /^at:\/\/[^/]+\/(com\.suibari\.nagi\.post)\/([^/]+)$/.exec(post.uri);
 		if (
 			!editHasContent ||
 			!editContentWarningValid ||
@@ -565,42 +385,16 @@
 			editError = m.editPostFailed();
 			return;
 		}
-		const heading = editingArticle ? `# ${editTitle.trim()}\n\n` : '';
-		const shift = <T extends { start: number; end: number }>(items: T[]) =>
-			items.map((item) => ({
-				...item,
-				start: item.start + heading.length,
-				end: item.end + heading.length,
-			}));
-		// 添付に無い Nagi の画像行は保存しない（存在しない blob を指す画像になる）。
-		// 記事の本文から行を消した画像は保存しない。
-		const savedImages = editImages.filter((image) => editImageState(image) !== 'detached');
-		const knownImages = new Set(
-			savedImages.flatMap((image) => {
-				const key = editImageUrls[image.id] && blobKey(editImageUrls[image.id]);
-				return key ? [key] : [];
-			}),
-		);
-		const editBody = editingArticle ? pruneInlineImages(editText, knownImages) : editText;
+		const savedImages = editImages;
 		const draft = preparePostDraft(
-			heading + editBody,
+			editText,
 			undefined,
 			undefined,
 			[],
 			editLinkCards,
-			shift(editMentions),
-			shift(editEmojis),
-			false,
-			false,
-			false,
-			[],
-			undefined,
-			{ article: editingDocument },
+			editMentions,
+			editEmojis,
 		);
-		if (editingArticle && !editTitle.trim()) {
-			editError = m.articleTitleRequired();
-			return;
-		}
 		if (
 			!post.cwRestricted &&
 			(hasContentWarning(draft.text) ||
@@ -655,9 +449,6 @@
 			editLinkCards = [];
 			editDismissedUrls = [];
 			editImageProcessing = false;
-			// standard.site の記事にしてある投稿なら本文を追従させる。記事化していない
-			// 投稿では何も起きない（編集をきっかけに勝手に公開はしない）。
-			void syncStandardSiteDocument(match[2], draft.text);
 		} catch (error) {
 			editError = error instanceof Error ? error.message : m.editPostFailed();
 		} finally {
@@ -666,11 +457,6 @@
 	}
 	async function removePost() {
 		if (deleting) return;
-		const rkey = post.uri.split('/').pop();
-		if (!rkey) {
-			deleteError = m.deletePostFailed();
-			return;
-		}
 		deleting = true;
 		deleteError = '';
 		try {
@@ -683,8 +469,6 @@
 			}
 			// こっそりは PDS に正本が無いので AppView 側の手続きへ振り分ける（deletePost が判定）。
 			await deletePost(post.uri, post.cid);
-			// 記事にしてある投稿なら standard.site 側も消す。こっそりは記事化できないので空振りする。
-			void syncStandardSiteDocument(rkey);
 			deleteOpen = false;
 			ondeleted?.(post.uri);
 		} catch (error) {
@@ -804,25 +588,20 @@
 			{#if editing}
 				<div class="inline-edit" use:editEscape>
 					{#snippet editTools()}
-						<!-- 画像ボタンから動画も選べる。ブログとこっそりは動画を持てないので画像だけ。 -->
+						<!-- 画像ボタンから動画も選べる。こっそりは動画を持てないので画像だけ。 -->
 						<PostImageEditor
 							bind:this={editImageEditor}
 							bind:images={editImages}
-							hiddenIds={editHiddenImageIds}
 							bind:video={editNewVideo}
-							allowVideo={!editingArticle && !isAppviewOwnedUri(post.uri)}
-							maxCount={editingArticle ? Infinity : MAX_IMAGE_COUNT}
+							allowVideo={!isAppviewOwnedUri(post.uri)}
+							maxCount={MAX_IMAGE_COUNT}
 							hasVideo={Boolean(editExistingVideo || editNewVideo)}
 							bind:processing={editImageProcessing}
 							disabled={editBusy}
 						/>
 					{/snippet}
-					{#if editingArticle && !externalTitleEditor}
-						<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
-					{/if}
 					<ComposerEditor
-						bind:this={editComposer}
-						mode={editingArticle ? 'blog' : 'rich'}
+						mode="rich"
 						id={`edit-${post.cid}`}
 						bind:value={editText}
 						bind:mentions={editMentions}
@@ -833,7 +612,6 @@
 						mediaWarningEnabled
 						bind:mediaWarning={editMediaWarning}
 						hasMedia={editHasMedia}
-						embeds={editEmbeds}
 						onsubmit={() => void submitEdit()}
 						onpaste={(event) => editImageEditor?.handlePaste(event)}
 						tools={editTools}
@@ -844,14 +622,11 @@
 						disabled={editBusy}
 					/>
 					<LinkCardEditor
-						bind:this={editLinkCardEditor}
 						text={editText}
 						bind:cards={editLinkCards}
 						bind:dismissedUrls={editDismissedUrls}
 						bind:loading={editLinkCardLoading}
 						disabled={editBusy}
-						article={editingDocument}
-						inline={editInlineEmbeds}
 					/>
 					<div class="post-composer-foot">
 						{#if editError}<span class="error" role="alert">{editError}</span>{/if}
@@ -1018,11 +793,13 @@
 													() => composerHost.openTrilinesEdit(post),
 													'none',
 												)
-											: runSecondaryAction(
-													closeMenu,
-													editing ? cancelEdit : startEdit,
-													editing ? 'trigger' : 'editor',
-												)}
+											: isBlogPost
+												? runSecondaryAction(closeMenu, openBlogEditor, 'none')
+												: runSecondaryAction(
+														closeMenu,
+														editing ? cancelEdit : startEdit,
+														editing ? 'trigger' : 'editor',
+													)}
 								>
 									<Icon name="edit" size={17} />
 									<span>{trilines ? m.trilinesEdit() : editing ? m.cancel() : m.editPost()}</span>

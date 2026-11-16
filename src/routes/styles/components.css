@@ -221,7 +221,14 @@
 	gap: 8px;
 	min-width: 0;
 }
-/* メタ欄は自分の内容ぶんの高さを保つ（縮めると本文の上に溢れて重なる）。 */
+/* 右カラム（記事メタ欄と執筆ページのおたすけ）は自分の内容ぶんの高さを保つ（縮めると本文の上に溢れて重なる）。 */
+.composer.blog .composer-side {
+	display: flex;
+	flex-direction: column;
+	flex: 0 0 auto;
+	gap: 12px;
+	min-width: 0;
+}
 .composer.blog .article-meta {
 	flex: 0 0 auto;
 	min-width: 0;
@@ -304,9 +311,10 @@
 		flex: 1;
 		min-height: 0;
 	}
-	/* メタ欄は本文の高さを奪わず、はみ出すぶんだけ自分の中でスクロールする。 */
-	.composer.blog .article-meta {
+	/* 右カラムは本文の高さを奪わず、はみ出すぶんだけ自分の中でスクロールする。 */
+	.composer.blog .composer-side {
 		max-height: 100%;
+		min-height: 0;
 		overflow-y: auto;
 	}
 	.composer.blog .composer-article-title input {

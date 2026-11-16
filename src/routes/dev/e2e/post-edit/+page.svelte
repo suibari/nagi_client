@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import type { FeedItem } from '$lib/api/types';
-	import ArticleTitleInput from '$lib/components/ArticleTitleInput.svelte';
 	import { extractTitle } from '$lib/atproto/markdown';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import { parsePostText } from '$lib/atproto/facets';
@@ -13,7 +12,6 @@
 	const parsed = parsePostText(`変更前 ${originalUrl}`);
 	let ready = $state(false);
 	let editing = $state(false);
-	let editTitle = $state('');
 	let editBusy = $state(false);
 	let deleted = $state(false);
 	let managementOnly = $derived(page.url.searchParams.has('blog'));
@@ -43,6 +41,8 @@
 		} as unknown as OAuthSession;
 		session.set(mockSession);
 		if (managementOnly) {
+			// ブログの編集は執筆ページへ移るので、ここでは管理メニューと削除だけを確かめる。
+			editablePost.uri = `at://${did}/site.standard.document/playwright`;
 			editablePost.article = true;
 			editablePost.text = '# 変更前のタイトル\n\n変更前のブログ本文';
 			editablePost.facets = [];
@@ -56,11 +56,7 @@
 
 <section class="e2e-fixture" data-testid="post-edit-fixture">
 	<header>
-		{#if managementOnly && editing}
-			<ArticleTitleInput bind:value={editTitle} disabled={editBusy} />
-		{:else}
-			<h1>{managementOnly ? extractTitle(editablePost.text) : '投稿編集 E2E'}</h1>
-		{/if}
+		<h1>{managementOnly ? extractTitle(editablePost.text) : '投稿編集 E2E'}</h1>
 	</header>
 	{#if managementOnly}<p data-testid="article-body">{editablePost.text}</p>{/if}
 	{#if deleted}<p role="status">削除済み</p>
@@ -68,9 +64,7 @@
 			bind:post={editablePost}
 			{managementOnly}
 			bind:editing
-			bind:editTitle
 			bind:editBusy
-			externalTitleEditor={managementOnly}
 			ondeleted={() => (deleted = true)}
 		/>{/if}
 </section>

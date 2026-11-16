@@ -7,14 +7,18 @@
 	import QuoteCard from './QuoteCard.svelte';
 	import PostModerationGuard from './PostModerationGuard.svelte';
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
-	import { untrack } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import {
 		blobRefCid,
 		createPost,
 		createRadioRecord,
 		preparePostDraft,
+		updatePost,
 		uploadPostAssets,
 	} from '$lib/atproto/records';
+	import { toPostEditImage, type BlogEditTarget } from '$lib/blog/edit-target';
+	import { createdArticleView, savedArticles } from '$lib/blog/saved-articles.svelte';
+	import type { PostView } from '$lib/api/types';
 	import { hasRadioScope } from '$lib/radio/share';
 	import { computeBlobCid } from '$lib/atproto/cid';
 	import {
@@ -72,7 +76,7 @@
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { signIn } from '$lib/oauth/session.svelte';
-	import { NAGI_PUBLIC_ORIGIN } from '$lib/standardsite/types';
+	import { DOCUMENT, NAGI_PUBLIC_ORIGIN } from '$lib/standardsite/types';
 	import {
 		publishStandardSiteDocument,
 		updateStandardSiteDocument,
@@ -101,6 +105,9 @@
 		publishingPreferencesVersion = 0,
 		text = $bindable(''),
 		submittable = $bindable(false),
+		dirty = $bindable(false),
+		editTarget,
+		aside,
 	}: {
 		onposted: (uri: string) => void | Promise<void>;
 		onsendingchange?: (sending: boolean) => void;
@@ -113,9 +120,16 @@
 		text?: string;
 		/** モーダルヘッダーなど、コンポーザ外の送信ボタンへ状態を渡す。 */
 		submittable?: boolean;
+		/** 未保存の変更があるか。執筆ページの離脱確認に使う（BLOG-07）。 */
+		dirty?: boolean;
+		/** ブログの既存記事を編集するとき。マウント時の値だけを初期値に使う。 */
+		editTarget?: BlogEditTarget;
+		/** ブログの記事メタ欄の下に置くもの（執筆ページのおたすけ）。 */
+		aside?: Snippet;
 	} = $props();
+	const editing = untrack(() => (mode === 'blog' ? editTarget : undefined));
 	/*
-		返信・引用の文脈はポストモーダルのもの。ブログモーダルの Composer は別インスタンスなので、
+		返信・引用の文脈はポストモーダルのもの。ブログは執筆ページの別インスタンスなので、
 		ポストモーダル側で返信先を選んでもブログの書きかけに混ざらないよう見ない。
 	*/
 	const replyTarget = $derived(mode === 'blog' ? undefined : composerHost.replyTarget);
@@ -123,12 +137,13 @@
 	let busy = $state(false);
 	let error = $state('');
 	let warning = $state('');
-	let attachments = $state<ImageAttachment[]>([]);
+	let attachments = $state<ImageAttachment[]>(editing ? [...editing.images] : []);
 	// 動画は1本まで、画像と併用できる。添付した時点で送信と変換が始まる。
 	let video = $state<VideoAttachment>();
-	let linkCards = $state<LinkCardDraft[]>([]);
-	let mentions = $state<MentionSelection[]>([]);
-	let emojis = $state<EmojiSelection[]>([]);
+	let linkCards = $state<LinkCardDraft[]>(editing ? [...editing.linkCards] : []);
+	let mentions = $state<MentionSelection[]>(editing ? [...editing.mentions] : []);
+	let emojis = $state<EmojiSelection[]>(editing ? [...editing.emojis] : []);
+	if (editing) text = editing.text;
 	// defaultScope はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
 	let scope = $state<PostScope>(untrack(() => defaultScope));
 	let scopeDialogOpen = $state(false);
@@ -162,8 +177,15 @@
 	 * ブログ本文に差し込んだ画像の CID（添付の id ごと）。本文の URL に CID が要るが、
 	 * アップロードは投稿時なので手元で計算しておき、投稿時に PDS の値と照合する。
 	 */
-	let inlineCids = $state<Record<string, string>>({});
-	let seenAttachmentIds = new Set<string>();
+	let inlineCids = $state<Record<string, string>>(
+		Object.fromEntries(
+			(editing?.images ?? []).flatMap((image) =>
+				image.existing ? [[image.id, image.existing.cid]] : [],
+			),
+		),
+	);
+	// 編集で読み込んだ画像は本文に行があるので、「足した画像」として差し込み直さない。
+	let seenAttachmentIds = new Set<string>(editing?.images.map((image) => image.id));
 	// ブログでは、ピッカーで足した画像をキャレット位置へ `![](url)` として差し込む。
 	// 外した画像は本文の行も消す（行だけ残ると、投稿時に参照先の無い画像になる）。
 	$effect(() => {
@@ -304,6 +326,45 @@
 			quotePick.error,
 		),
 	);
+	/** 編集で比べる中身。並べ替え・alt・ヘッダーの付け替えも変更として数える。 */
+	const editSnapshot = (value: {
+		text: string;
+		title: string;
+		tags: string[];
+		images: ImageAttachment[];
+		cards: LinkCardDraft[];
+	}) =>
+		JSON.stringify([
+			value.text,
+			value.title.trim(),
+			value.tags,
+			value.images.map((image) => [image.id, image.alt, Boolean(image.header)]),
+			value.cards.map((card) => card.uri),
+		]);
+	const initialEditSnapshot = editing
+		? editSnapshot({
+				text: editing.text,
+				title: editing.title,
+				tags: editing.tags,
+				images: editing.images,
+				cards: editing.linkCards,
+			})
+		: '';
+	/** 保存が済んだ。記事ページへ移る間に離脱確認を出さない。 */
+	let saved = $state(false);
+	$effect(() => {
+		dirty =
+			!saved &&
+			(editing
+				? editSnapshot({
+						text,
+						title: articleTitle,
+						tags: articleTags,
+						images: attachments,
+						cards: linkCards,
+					}) !== initialEditSnapshot
+				: !empty || Boolean(articleTitle.trim()) || articleTags.length > 0);
+	});
 	$effect(() => {
 		submittable =
 			!busy &&
@@ -322,11 +383,11 @@
 	// --- 外部への同時投稿 ---------------------------------------------------------
 	// Bluesky クロスポストは投稿範囲ゲージの3段階目（既定は OFF）。
 	// standard.site への記事公開は「どこまで届けるか」ではなく「何を書くか」なので、
-	// ゲージではなく投稿モーダルの書き方タブ（ブログ）が担う。
+	// ゲージではなくブログの執筆ページが担う。
 	let standardSiteReady = $state(false);
 	let publishingReadinessLoaded = $state(false);
-	let articleTitle = $state('');
-	let articleTags = $state<string[]>([]);
+	let articleTitle = $state(editing?.title ?? '');
+	let articleTags = $state<string[]>(editing ? [...editing.tags] : []);
 	let reauthorizingArticle = $state(false);
 	const kossori = $derived(scope === 'kossori');
 	const blog = $derived(mode === 'blog');
@@ -548,7 +609,7 @@
 	$effect(() => {
 		const key = draftKey;
 		const did = $session?.did;
-		if (!isWideComposer(mode) || !did || !text.trim() || key === lastSavedDraftKey) {
+		if (editing || !isWideComposer(mode) || !did || !text.trim() || key === lastSavedDraftKey) {
 			if (draftSaveStatus !== 'saving')
 				draftSaveStatus = key === lastSavedDraftKey && Boolean(key) ? 'saved' : 'idle';
 			return;
@@ -719,7 +780,79 @@
 		await restoreDraft(id);
 	}
 
+	/** 執筆ページで既存の記事を保存する（BLOG-03・BLOG-07）。公開範囲・下書きは扱わない。 */
+	async function submitEdit(target: BlogEditTarget) {
+		if (
+			empty ||
+			busy ||
+			!$session ||
+			articleTitleMissing ||
+			!contentWarningValid ||
+			!articleReady ||
+			articleBlockedReason
+		)
+			return;
+		const postedAttachments = attachments.filter((image) => imageState(image) !== 'detached');
+		const knownInline = new Set(
+			postedAttachments.flatMap((image) =>
+				inlineCids[image.id] ? [`${$session.did}/${inlineCids[image.id]}`] : [],
+			),
+		);
+		const body = `${articleHeading}${pruneInlineImages(text, knownInline)}`;
+		const shift = <T extends { start: number; end: number }>(list: T[]) =>
+			list.map((item) => ({
+				...item,
+				start: item.start + articleHeading.length,
+				end: item.end + articleHeading.length,
+			}));
+		const draft = preparePostDraft(
+			body,
+			undefined,
+			undefined,
+			[],
+			linkCards,
+			shift(mentions),
+			shift(emojis),
+			false,
+			false,
+			false,
+			[],
+			undefined,
+			{ article: true },
+		);
+		const tags = [...new Set([...tagsFromFacets(draft.facets), ...articleTags])];
+		busy = true;
+		onsendingchange?.(true);
+		error = '';
+		try {
+			const result = await updatePost(target.rkey, draft, postedAttachments.map(toPostEditImage), {
+				collection: DOCUMENT,
+				tags,
+			});
+			tagFavorites.recordUsed(tags);
+			const post: PostView = {
+				...target.post,
+				cid: result.response.data.cid,
+				text: draft.text,
+				facets: draft.facets as PostView['facets'],
+				langs: draft.langs,
+				images: result.imageViews?.length ? result.imageViews : undefined,
+				linkCards: result.linkCardViews.length ? result.linkCardViews : undefined,
+				edited: true,
+			};
+			savedArticles.set(post, tags);
+			saved = true;
+			await Promise.resolve(onposted(target.uri)).catch(() => undefined);
+		} catch (e) {
+			error = postSubmissionErrorMessage(e);
+		} finally {
+			busy = false;
+			onsendingchange?.(false);
+		}
+	}
+
 	export async function submit() {
+		if (editing) return submitEdit(editing);
 		if (
 			empty ||
 			videoPending ||
@@ -812,9 +945,11 @@
 		});
 		// 表示中のフィードに楽観カードが出たらそこへ、確定したらその投稿へ画面を寄せる。
 		// 出せないフィード（検索タブなど）や投稿できない画面では導線へ切り替わる。
-		postFollow.begin(optimisticId, {
-			...(reply ? { threadRootUri: reply.root.uri } : {}),
-		});
+		// ブログは保存後に記事ページへ移るので、フィードへの追従は使わない。
+		if (!blog)
+			postFollow.begin(optimisticId, {
+				...(reply ? { threadRootUri: reply.root.uri } : {}),
+			});
 		busy = true;
 		onsendingchange?.(true);
 		error = '';
@@ -857,7 +992,12 @@
 			optimisticPosts.markCreated(optimisticId, created);
 			// タグパレットの「最近使った」。投稿に成功したタグだけを積む。
 			tagFavorites.recordUsed([...tagsFromFacets(draft.facets), ...(article ? articleTags : [])]);
-			postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
+			if (!blog)
+				postFollow.settle(created.uri, postPageHref({ uri: created.uri, article: draft.article }));
+			if (article)
+				savedArticles.set(createdArticleView(draft, assets, created, $session.did), [
+					...new Set([...tagsFromFacets(draft.facets), ...articleTags]),
+				]);
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
 			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
 			if (wantsCrosspost && !article && !draft.kossori && !crosspostDraftBlock(draft))
@@ -907,10 +1047,11 @@
 			if (warning)
 				postFollowNotice.warn(postPageHref({ uri: created.uri, article: draft.article }), warning);
 			clearComposer();
+			if (blog) saved = true;
 			await Promise.resolve(onposted(created.uri)).catch(() => undefined);
 		} catch (e) {
 			optimisticPosts.remove(optimisticId);
-			postFollow.fail();
+			if (!blog) postFollow.fail();
 			error = postSubmissionErrorMessage(e);
 		} finally {
 			busy = false;
@@ -964,7 +1105,7 @@
 </script>
 
 <!--
-	モーダル専用なので、以前タイムラインとの一体感のために付けていた吹き出し
+	モーダルと執筆ページ専用なので、以前タイムラインとの一体感のために付けていた吹き出し
 	（.post-row.mine / .bubble のアクセント枠としっぽ）とアバターは持たない。
 -->
 <section class="composer" class:rich={isWideComposer(mode)} class:blog>
@@ -1141,9 +1282,9 @@
 				placeholder={m.composerPlaceholder()}
 				ariaLabel={m.composerAria()}
 				disabled={busy}
-				contentWarningLabelsEnabled={!kossori}
+				contentWarningLabelsEnabled={!kossori && !editing}
 				bind:selfLabels
-				mediaWarningEnabled={!kossori}
+				mediaWarningEnabled={!kossori && !editing}
 				bind:mediaWarning
 				{hasMedia}
 				{mode}
@@ -1191,48 +1332,59 @@
 			</div>
 		</div>
 		{#if blog}
-			<ComposerArticleMeta bind:attachments bind:tags={articleTags} disabled={busy} />
+			<div class="composer-side">
+				<ComposerArticleMeta
+					bind:attachments
+					bind:tags={articleTags}
+					disabled={busy}
+					editing={Boolean(editing)}
+				/>
+				{@render aside?.()}
+			</div>
 		{/if}
 	</div>
 	<div class="composer-foot">
-		<button
-			class="scope-button"
-			type="button"
-			disabled={busy || kossoriThread}
-			aria-haspopup="dialog"
-			aria-expanded={scopeDialogOpen}
-			aria-label={m.postScopeOpenAria({ scope: scopeLabel })}
-			title={kossoriThread
-				? m.postScopeKossoriDetail()
-				: m.postScopeOpenAria({ scope: scopeLabel })}
-			onclick={() => (scopeDialogOpen = true)}
-		>
-			<Icon name={scopeIcon} size={15} />
-			<span>{scopeLabel}</span>
-		</button>
+		<!-- 編集では届け先と下書きを変えない（公開時に決まったものを保つ）。 -->
+		{#if !editing}<button
+				class="scope-button"
+				type="button"
+				disabled={busy || kossoriThread}
+				aria-haspopup="dialog"
+				aria-expanded={scopeDialogOpen}
+				aria-label={m.postScopeOpenAria({ scope: scopeLabel })}
+				title={kossoriThread
+					? m.postScopeKossoriDetail()
+					: m.postScopeOpenAria({ scope: scopeLabel })}
+				onclick={() => (scopeDialogOpen = true)}
+			>
+				<Icon name={scopeIcon} size={15} />
+				<span>{scopeLabel}</span>
+			</button>{/if}
 		<div class="composer-status">
 			<span>{graphemes}{blog ? '' : ' / 3000'}</span>
 		</div>
-		<div class="draft-control">
-			<button
-				class="icon-action draft-open"
-				type="button"
-				disabled={busy}
-				aria-label={m.draftListOpen()}
-				title={m.draftListOpen()}
-				onclick={() => (draftListOpen = true)}
-				><Icon name="draft" size={18} />{#if drafts.count}<span class="draft-count"
-						>{drafts.count}</span
-					>{/if}</button
-			>
-			{#if isWideComposer(mode) && draftSaveStatus !== 'idle'}
-				<span class="draft-save-status" aria-live="polite">
-					{draftSaveStatus === 'saving' ? m.draftSaving() : m.draftSaved()}
-				</span>
-			{/if}
-		</div>
+		{#if !editing}<div class="draft-control">
+				<button
+					class="icon-action draft-open"
+					type="button"
+					disabled={busy}
+					aria-label={m.draftListOpen()}
+					title={m.draftListOpen()}
+					onclick={() => (draftListOpen = true)}
+					><Icon name="draft" size={18} />{#if drafts.count}<span class="draft-count"
+							>{drafts.count}</span
+						>{/if}</button
+				>
+				{#if isWideComposer(mode) && draftSaveStatus !== 'idle'}
+					<span class="draft-save-status" aria-live="polite">
+						{draftSaveStatus === 'saving' ? m.draftSaving() : m.draftSaved()}
+					</span>
+				{/if}
+			</div>{/if}
 		<div class="composer-submit-actions">
-			{#if replyTarget}
+			{#if editing}
+				<!-- botたんの反応の有無は公開時に決まる。編集では変えない。 -->
+			{:else if replyTarget}
 				<button
 					class="icon-action bot-silent-toggle"
 					class:active={silentReply}
@@ -1264,17 +1416,21 @@
 				class="submit-primary"
 				type="button"
 				disabled={!submittable}
-				aria-label={busy ? m.composerSubmitting() : m.composerSubmitNagi()}
+				aria-label={busy ? m.composerSubmitting() : editing ? m.save() : m.composerSubmitNagi()}
 				title={busy
 					? m.composerSubmitting()
 					: videoPending
 						? m.videoNotReady()
-						: m.composerSubmitNagi()}
+						: editing
+							? m.save()
+							: m.composerSubmitNagi()}
 				onclick={() => submit()}
 			>
 				{#if busy}<Spinner inline size="sm" decorative />
 				{:else}<Icon name="send" size={18} />{/if}
-				<span>{busy ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
+				<span
+					>{busy ? m.composerSubmitting() : editing ? m.save() : m.composerSubmitNagiShort()}</span
+				>
 			</Button>
 		</div>
 	</div>
@@ -1282,7 +1438,7 @@
 	{#if scope === 'external' && video && attachments.length}<p class="draft-image-note">
 			{m.crosspostVideoOnly()}
 		</p>{/if}
-	{#if attachments.length}<p class="draft-image-note">
+	{#if attachments.length && !editing}<p class="draft-image-note">
 			{m.draftImagesUnsupported()}
 		</p>{/if}
 	{#if kossoriReplyBlockedReason}<p class="error" role="status">

@@ -8,22 +8,25 @@
 	/**
 	 * ポストおたすけ。書き進めているときは具体的な良さを肯定し、未入力・削除時は本人の日記・
 	 * 過去の投稿を材料に LLM でひとこと声をかける（生成は AppView の generatePostAssist）。
-	 * ×で閉じたらモーダルを閉じるまで出さない。
+	 * ×で閉じたら、モーダルを閉じるか執筆ページを離れるまで出さない。
 	 *
-	 * ポストモーダルの backdrop は外側クリックで閉じるので、吹き出しは body 直下へ portal し、
-	 * 吹き出し以外はクリックを素通しする。reservedHeight はモーダル側で下端の余白に使う。
+	 * floating のとき: ポストモーダルの backdrop は外側クリックで閉じるので、吹き出しは body 直下へ
+	 * portal し、吹き出し以外はクリックを素通しする。reservedHeight は置き場所の側で下端の余白に使う。
 	 */
 	let {
 		open,
 		text,
 		mode = 'affirm',
 		paused = false,
+		placement = 'floating',
 		reservedHeight = $bindable(0),
 	}: {
 		open: boolean;
 		text: string;
 		mode?: 'affirm' | 'question';
 		paused?: boolean;
+		/** floating は画面下に重ねる。inline は置かれた場所（執筆ページの右カラム）に出す（POST-08）。 */
+		placement?: 'floating' | 'inline';
 		reservedHeight?: number;
 	} = $props();
 
@@ -186,11 +189,66 @@
 	});
 
 	$effect(() => {
-		reservedHeight = visible ? height : 0;
+		reservedHeight = visible && placement === 'floating' ? height : 0;
 	});
 </script>
 
-{#if visible}
+{#snippet content()}
+	<div class="composer-assist-inner">
+		<button
+			type="button"
+			class="composer-assist-character-button"
+			aria-label={m.assistPet()}
+			title={m.assistPet()}
+			disabled={!canPet}
+			onmousedown={(event) => event.preventDefault()}
+			onclick={petBot}
+		>
+			<img
+				class="composer-assist-character"
+				class:petted
+				src={petted ? '/bot_assist_petted.png' : '/bot_assist_sitting.png'}
+				alt=""
+				width="264"
+				height="350"
+				draggable="false"
+			/>
+		</button>
+		<div class="composer-assist-bubble" role="status" aria-live="polite">
+			<div class="composer-assist-head">
+				<span>{m.assistLabel()}</span>
+				<!-- 押しても本文の入力欄からフォーカスを奪わない（モバイルでキーボードが閉じないように）。 -->
+				<button
+					type="button"
+					class="icon-action composer-assist-close"
+					aria-label={m.assistClose()}
+					title={m.assistClose()}
+					onmousedown={(event) => event.preventDefault()}
+					onclick={() => (dismissed = true)}><Icon name="close" size={14} /></button
+				>
+			</div>
+			{#if thinking}
+				<!-- 先に吹き出しを出し、生成を待つ間は「…」で考え中を見せる。 -->
+				<div class="composer-assist-body composer-assist-thinking">
+					<span class="visually-hidden">{m.assistThinking()}</span>
+					<span class="composer-assist-dot" aria-hidden="true"></span>
+					<span class="composer-assist-dot" aria-hidden="true"></span>
+					<span class="composer-assist-dot" aria-hidden="true"></span>
+				</div>
+			{:else}
+				{#key messageVersion}
+					<p class="composer-assist-body composer-assist-message">{message}</p>
+				{/key}
+			{/if}
+		</div>
+	</div>
+{/snippet}
+
+{#if visible && placement === 'inline'}
+	<div class="composer-assist inline" class:fading bind:offsetHeight={height}>
+		{@render content()}
+	</div>
+{:else if visible}
 	<div
 		class="composer-assist"
 		class:fading
@@ -198,54 +256,7 @@
 		style:--composer-assist-keyboard={`${keyboardInset}px`}
 		bind:offsetHeight={height}
 	>
-		<div class="composer-assist-inner">
-			<button
-				type="button"
-				class="composer-assist-character-button"
-				aria-label={m.assistPet()}
-				title={m.assistPet()}
-				disabled={!canPet}
-				onmousedown={(event) => event.preventDefault()}
-				onclick={petBot}
-			>
-				<img
-					class="composer-assist-character"
-					class:petted
-					src={petted ? '/bot_assist_petted.png' : '/bot_assist_sitting.png'}
-					alt=""
-					width="264"
-					height="350"
-					draggable="false"
-				/>
-			</button>
-			<div class="composer-assist-bubble" role="status" aria-live="polite">
-				<div class="composer-assist-head">
-					<span>{m.assistLabel()}</span>
-					<!-- 押しても本文の入力欄からフォーカスを奪わない（モバイルでキーボードが閉じないように）。 -->
-					<button
-						type="button"
-						class="icon-action composer-assist-close"
-						aria-label={m.assistClose()}
-						title={m.assistClose()}
-						onmousedown={(event) => event.preventDefault()}
-						onclick={() => (dismissed = true)}><Icon name="close" size={14} /></button
-					>
-				</div>
-				{#if thinking}
-					<!-- 先に吹き出しを出し、生成を待つ間は「…」で考え中を見せる。 -->
-					<div class="composer-assist-body composer-assist-thinking">
-						<span class="visually-hidden">{m.assistThinking()}</span>
-						<span class="composer-assist-dot" aria-hidden="true"></span>
-						<span class="composer-assist-dot" aria-hidden="true"></span>
-						<span class="composer-assist-dot" aria-hidden="true"></span>
-					</div>
-				{:else}
-					{#key messageVersion}
-						<p class="composer-assist-body composer-assist-message">{message}</p>
-					{/key}
-				{/if}
-			</div>
-		</div>
+		{@render content()}
 	</div>
 {/if}
 
@@ -260,6 +271,11 @@
 		justify-content: center;
 		padding: 0 16px;
 		pointer-events: none;
+	}
+	.composer-assist.inline {
+		position: static;
+		z-index: auto;
+		padding: 0;
 	}
 	.composer-assist-inner {
 		display: flex;

@@ -27,8 +27,7 @@
 	 * プレビューと書きかけが失われる。
 	 * 開閉は表示の切り替えだけで行う。
 	 *
-	 * ブログはここではなく BlogModal で書く（ポストと行き来する場面がほぼないため）。
-	 * Composer も別インスタンスなので、書きかけはそれぞれのモーダルに残る。
+	 * ブログはここではなく執筆ページ（/write）で書く（POST-03）。
 	 */
 	let mode = $state<PostModalMode>('simple');
 	let wasOpen = $state(false);

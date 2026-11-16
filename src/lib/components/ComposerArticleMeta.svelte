@@ -25,10 +25,13 @@
 		attachments = $bindable<ImageAttachment[]>([]),
 		tags = $bindable<string[]>([]),
 		disabled = false,
+		editing = false,
 	}: {
 		attachments?: ImageAttachment[];
 		tags?: string[];
 		disabled?: boolean;
+		/** 公開済みの記事を編集している。Bluesky への告知は公開時だけなので案内を出さない。 */
+		editing?: boolean;
 	} = $props();
 
 	/** lexicon の site.standard.document#tags は 1 件 128 graphemes まで。 */
@@ -243,7 +246,7 @@
 		<section class="article-meta-field">
 			<span class="article-meta-label">{m.articlePublishTargetLabel()}</span>
 			<p class="article-meta-note">{m.articlePublishTargetValue()}</p>
-			<p class="article-meta-note">{m.articleCrosspostTeaserNote()}</p>
+			{#if !editing}<p class="article-meta-note">{m.articleCrosspostTeaserNote()}</p>{/if}
 		</section>
 	</div>
 </details>
