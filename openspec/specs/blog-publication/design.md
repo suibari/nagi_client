@@ -38,6 +38,14 @@
 
 **理由と制約**：訳文には原文facetを流用しない。一覧の翻訳は既存キャッシュだけを使い、一覧閲覧で大量の新規生成を始めない。
 
+### D5: 作成と編集を1つの執筆ページにまとめる
+
+**課題**：以前はブログを専用モーダルで書き、編集は記事ページやフィードの吹き出しでその場で行っていた。ブログを書いている途中にポストへ移ることはほとんどなく、モーダルにする利点は小さかった。画面の一部しか入力欄に使えず、長文を書きにくい。編集側は作成とは別の実装で、記事メタ欄を持たなかったため、タグを付け替えられなかった。
+
+**採用判断**：作成は `/write`、編集は `/write/<rkey>` のページにし、どちらも同じ `Composer`（blogモード）を使う。編集時は読み込んだ記事を初期値として渡し、保存だけを `updatePost` に切り替える。タグは記事メタ欄の値と本文のハッシュタグを合わせ、document.tagsを明示的に置き換える（BLOG-03）。保存後は記事ページへ移り、AppViewが同じcidを返すまでは保存した内容を表示する。
+
+**理由と制約**：`/blog/<did>` はVercelでrewriteしているので、`/blog` 配下の固定パスはDIDと衝突する。編集できるのは本人の記事だけなので、DIDはURLに入れずセッションから決める。ページ化するとモーダルのように添付画像を保持し続けられないため、未保存の変更があれば離脱を確認する。編集では、公開範囲・Blueskyティーザー・下書き・botたんの反応設定を出さない。どれも公開時に決まるものなので、編集で変えると既存の公開状態と食い違う。編集の対象は `site.standard.document` だけとした。`com.suibari.nagi.post` だけの旧形式の記事が残っていないことは、2026-11-16に本番の索引対象記事で確認した（1件あったテスト記事は利用者が削除した）。削除済み・CW付き・判定待ちなど、索引から外れる記事までは確認していない。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
@@ -49,6 +57,9 @@
 | [src/lib/standardsite/publication.ts](../../../src/lib/standardsite/publication.ts)     | publication管理                 |
 | [src/lib/blog/inlineImages.ts](../../../src/lib/blog/inlineImages.ts)                   | 本文配置と添付照合              |
 | [src/routes/blog/[did]/[rkey]/+page.ts](../../../src/routes/blog/[did]/[rkey]/+page.ts) | 記事の公開データ取得            |
+| [src/lib/components/BlogWriter.svelte](../../../src/lib/components/BlogWriter.svelte)   | 執筆ページの画面と離脱確認      |
+| [src/lib/blog/edit-target.ts](../../../src/lib/blog/edit-target.ts)                     | 編集する記事の読み込みと初期値  |
+| [src/lib/blog/saved-articles.svelte.ts](../../../src/lib/blog/saved-articles.svelte.ts) | 保存直後の記事の表示            |
 
 ## 出典と変更時の扱い
 

@@ -35,13 +35,6 @@ export type QuoteTarget = {
  */
 class ComposerHost {
 	open = $state(false);
-	/**
-	 * ブログモーダルの開閉。ポストモーダルとは別の Composer を持つので、
-	 * 書きかけもそれぞれのモーダルで別々に残る。返信・引用の文脈は持たない。
-	 */
-	blogOpen = $state(false);
-	/** ブログモーダルを一度でも開いたか。開いたあとはリロードまで破棄しない（書きかけを保つため）。 */
-	blogMounted = $state(false);
 	/** 開いた文脈での既定の投稿範囲。ホームは従来どおりこっそりを既定にする。 */
 	defaultScope = $state<PostScope>('feed');
 	replyTarget = $state<ReplyTarget | undefined>(undefined);
@@ -64,7 +57,6 @@ class ComposerHost {
 	show(defaultScope: PostScope = 'feed') {
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
-		this.blogOpen = false;
 		this.open = true;
 	}
 
@@ -78,7 +70,6 @@ class ComposerHost {
 		this.quoteTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
-		this.blogOpen = false;
 		this.open = true;
 	}
 
@@ -91,7 +82,6 @@ class ComposerHost {
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
-		this.blogOpen = false;
 		this.open = true;
 	}
 
@@ -104,7 +94,6 @@ class ComposerHost {
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
-		this.blogOpen = false;
 		this.open = true;
 	}
 
@@ -114,7 +103,6 @@ class ComposerHost {
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
-		this.blogOpen = false;
 		this.open = true;
 	}
 
@@ -130,23 +118,12 @@ class ComposerHost {
 		this.trilinesEditTarget = { uri: post.uri, cid: post.cid, post };
 		this.replyTarget = undefined;
 		this.quoteTarget = undefined;
-		this.blogOpen = false;
 		this.open = true;
 	}
 
 	clearAllTargets() {
 		this.replyTarget = undefined;
 		this.quoteTarget = undefined;
-	}
-
-	showBlog() {
-		this.open = false;
-		this.blogMounted = true;
-		this.blogOpen = true;
-	}
-
-	hideBlog() {
-		this.blogOpen = false;
 	}
 
 	hide() {

@@ -13,8 +13,6 @@
 	import { fetchCachedBlogTranslations } from '$lib/blog/directoryTranslations';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import { session } from '$lib/oauth/session.svelte';
-	import { composerHost } from '$lib/post/composer-host.svelte';
 
 	let { data } = $props();
 	// svelte-ignore state_referenced_locally -- prerender seed; onMount enriches it with document tags
@@ -93,19 +91,12 @@
 			when: () => optimisticPosts.blogs.some((item) => item.optimisticState === 'indexing'),
 		});
 	});
-
-	function openBlogComposer() {
-		if (!$session) {
-			location.href = '/login';
-			return;
-		}
-		composerHost.showBlog();
-	}
 </script>
 
 <PageHeader title={m.blogTitle()} description={m.blogIntro()}>
 	{#snippet actions()}
-		<Button variant="primary" type="button" onclick={openBlogComposer}>{m.blogWrite()}</Button>
+		<!-- 未サインインなら執筆ページがログインへ送る。 -->
+		<Button variant="primary" href="/write">{m.blogWrite()}</Button>
 	{/snippet}
 </PageHeader>
 

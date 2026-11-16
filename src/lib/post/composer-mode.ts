@@ -8,13 +8,13 @@
  * - blog（ブログ）:     rich に記事メタ（タイトル・ヘッダー画像・タグ）を足し、
  *                       standard.site へ記事としても公開するモード。
  *                       ポストと行き来する場面がほぼないので、ポストモーダルのタブではなく
- *                       別のブログモーダル（BlogModal）で書く
+ *                       執筆ページ（/write）で書く
  */
 export type ComposerMode = 'simple' | 'rich' | 'diary' | 'blog';
 
 export const COMPOSER_MODE_STORAGE_KEY = 'nagi:composer-mode:v1';
 
-/** ポストモーダルのタブ。ブログは別モーダルなので含めない。 */
+/** ポストモーダルのタブ。ブログは執筆ページで書くので含めない。 */
 export type PostModalMode = Exclude<ComposerMode, 'blog'>;
 
 export const COMPOSER_MODES: PostModalMode[] = ['simple', 'rich', 'diary'];

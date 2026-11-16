@@ -26,7 +26,7 @@
 		/**
 		 * 出すタブ。ゲスト投稿や返信のように3行日記にできない文脈では絞る。
 		 * 選択中のモードがここから外れたら、呼び出し元が mode を戻す。
-		 * 空ならタブの代わりに title を見出しとして見せる（ブログモーダル）。
+		 * 空ならタブの代わりに title を見出しとして見せる。
 		 */
 		modes?: ComposerMode[];
 		sending?: boolean;
@@ -39,7 +39,7 @@
 		children: Snippet;
 	} = $props();
 	let dialog = $state<HTMLDivElement>();
-	// ポストモーダルとブログモーダルが同時に DOM にあるので、見出しの id は重ねない。
+	// ポストモーダルとゲスト投稿モーダルで見出しの id を重ねない。
 	const uid = $props.id();
 	const titleId = `post-modal-title-${uid}`;
 	const modeLabel = (value: ComposerMode) =>
@@ -111,7 +111,6 @@
 		bind:this={dialog}
 		class="post-modal"
 		class:rich={isWideComposer(mode)}
-		class:blog={mode === 'blog'}
 		class:has-header-action={headerAction}
 		role="dialog"
 		aria-modal="true"
@@ -271,12 +270,6 @@
 		width: 1px;
 		height: 18px;
 		background: var(--line);
-	}
-	@media (min-width: 1024px) {
-		/* ブログは本文の右に記事メタ欄が並ぶぶんだけ広い。しっかりは本文 1 列なので通常幅のまま。 */
-		.post-modal.blog {
-			width: min(calc(100vw - 32px), 1120px);
-		}
 	}
 	@media (max-width: 767px) {
 		.post-modal-backdrop {

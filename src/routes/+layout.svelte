@@ -19,7 +19,6 @@
 	import { postFollow } from '$lib/feed/post-follow.svelte';
 	import PostFab from '$lib/components/PostFab.svelte';
 	import PostModal from '$lib/components/PostModal.svelte';
-	import BlogModal from '$lib/components/BlogModal.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
 	import { defaultScopeForPath } from '$lib/post/scope';
 	import { mutes } from '$lib/mute/mutes.svelte';
@@ -55,7 +54,8 @@
 	});
 	const seo = $derived(page.data.seo);
 	// サインインの動線そのものを塞がないページでは投稿ボタンを出さない。
-	const NO_FAB = ['/login', '/onboarding', '/oauth'];
+	// ブログの執筆ページ（/write）はそれ自体が書く画面なので、ポストの入口を重ねない。
+	const NO_FAB = ['/login', '/onboarding', '/oauth', '/write'];
 	// 未サインインの TOP はランディング。アプリの殻（ナビ・右レール・投稿ボタン）を外して全幅で見せる。
 	// プリレンダ時もセッションが無いのでこちらになり、HTML にナビが混ざらない。
 	const landing = $derived(page.url.pathname === '/' && !$session);
@@ -63,14 +63,18 @@
 		!landing &&
 			$oauthReady &&
 			!composerHost.open &&
-			!composerHost.blogOpen &&
 			!guestComposerHost.open &&
 			!NO_FAB.some((path) => page.url.pathname.startsWith(path)),
 	);
 	const defaultScope = $derived(defaultScopeForPath(page.url.pathname));
 	// 紹介ページは、機能の見本を横に並べて見せたいので右レールを畳んで本文を広げる。
+	// ブログの執筆ページも、本文の右に記事メタ欄を並べるので同じく広げる。
 	// 左のナビは残す（ログイン後に設定から来た人の帰り道になる）。
-	const wideMain = $derived(page.url.pathname === '/about');
+	const wideMain = $derived(
+		page.url.pathname === '/about' ||
+			page.url.pathname === '/write' ||
+			page.url.pathname.startsWith('/write/'),
+	);
 	let checkedDid: string | undefined;
 	let mutesDid: string | undefined;
 	let privateListDid: string | undefined;
@@ -301,8 +305,6 @@
 {/if}
 {#if $session}
 	<PostModal />
-	<!-- ブログは別モーダル。初めて開いたときにマウントし、書きかけを保つためリロードまで残す。 -->
-	{#if composerHost.blogMounted}<BlogModal />{/if}
 	<WelcomeTutorialHost />
 	<!-- 記念日はその日しか来ないので、どの画面にいても受け取れるよう常駐させる。 -->
 	<AnniversaryCardHost />

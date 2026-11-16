@@ -563,7 +563,8 @@ export async function updatePost(
 	rkey: string,
 	draft: PostDraft,
 	images?: PostEditImage[],
-	opts: { collection?: string; video?: PostVideoEdit } = {},
+	/** tags は記事（DOCUMENT）だけ。指定すると document.tags を置き換え、省略すると残す（BLOG-03）。 */
+	opts: { collection?: string; video?: PostVideoEdit; tags?: string[] } = {},
 ) {
 	const s = current();
 	const agent = new Agent(s);
@@ -760,9 +761,9 @@ export async function updatePost(
 	else delete record.linkCards;
 	let savedRecord = record;
 	if (collection === DOCUMENT) {
-		const cover = postEmbedMedia(record.embed)?.images[0]?.image;
-		if (cover && !usableAsCoverImage(cover))
-			throw new Error('Blog cover images must be smaller than 1 MB');
+		// coverImage は lexicon で 1MB 未満。新規作成と同じく、超える先頭画像はカバーにしない。
+		const first = postEmbedMedia(record.embed)?.images[0]?.image;
+		const cover = first && usableAsCoverImage(first) ? first : undefined;
 		const originalTitle = typeof original.title === 'string' ? original.title : '';
 		const publishedAt = typeof original.publishedAt === 'string' ? original.publishedAt : '';
 		const site = typeof original.site === 'string' ? original.site : '';
@@ -790,6 +791,8 @@ export async function updatePost(
 			updatedAt: new Date().toISOString(),
 		};
 		if (!cover) delete savedRecord.coverImage;
+		if (opts.tags?.length) savedRecord.tags = opts.tags;
+		else if (opts.tags) delete savedRecord.tags;
 	}
 
 	const response = await indexed(

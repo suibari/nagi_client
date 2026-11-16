@@ -495,6 +495,40 @@ describe('post link card editing', () => {
 		expect(uploadBlob).not.toHaveBeenCalled();
 		expect(result.linkCardViews).toEqual([]);
 	});
+
+	const documentRecord = (tags?: string[]) => ({
+		data: {
+			value: {
+				$type: 'site.standard.document',
+				site: 'at://did:plc:author/site.standard.publication/self',
+				path: '/3abc',
+				title: '記事',
+				publishedAt: '2026-11-16T00:00:00.000Z',
+				...(tags ? { tags } : {}),
+				nagi: { $type: 'com.suibari.nagi.post', text: '# 記事\n\n本文' },
+			},
+		},
+	});
+
+	it('replaces article tags only when the blog editor passes them', async () => {
+		getRecord.mockResolvedValue(documentRecord(['古いタグ']));
+		await updatePost('3abc', preparePostDraft('# 記事\n\n本文'), undefined, {
+			collection: 'site.standard.document',
+		});
+		expect(putRecord.mock.calls[0][0].record.tags).toEqual(['古いタグ']);
+
+		await updatePost('3abc', preparePostDraft('# 記事\n\n本文'), undefined, {
+			collection: 'site.standard.document',
+			tags: ['新しいタグ'],
+		});
+		expect(putRecord.mock.calls[1][0].record.tags).toEqual(['新しいタグ']);
+
+		await updatePost('3abc', preparePostDraft('# 記事\n\n本文'), undefined, {
+			collection: 'site.standard.document',
+			tags: [],
+		});
+		expect(putRecord.mock.calls[2][0].record).not.toHaveProperty('tags');
+	});
 });
 
 describe('deleteAllNagiRecords', () => {
