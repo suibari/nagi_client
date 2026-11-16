@@ -18,6 +18,7 @@
 	let sending = $state(false);
 	let submittable = $state(false);
 	let dirty = $state(false);
+	let unsavedImages = $state(false);
 	let assistMode = $state<'affirm' | 'question'>('affirm');
 	let composing = $state(false);
 	let assistSpace = $state(0);
@@ -50,7 +51,8 @@
 			navigation.cancel();
 			return;
 		}
-		if (!confirm(m.blogLeaveConfirm())) navigation.cancel();
+		if (!confirm(unsavedImages ? m.blogLeaveImagesConfirm() : m.blogLeaveConfirm()))
+			navigation.cancel();
 	});
 
 	async function posted(uri: string) {
@@ -92,6 +94,7 @@
 			bind:text
 			bind:submittable
 			bind:dirty
+			bind:unsavedImages
 			mode="blog"
 			{editTarget}
 			ontextinput={(event) => {

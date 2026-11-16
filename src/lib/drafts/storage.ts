@@ -18,6 +18,8 @@ export type StoredDraftLinkCard = {
 	thumbnail?: Blob;
 };
 export type StoredDraft = {
+	articleTitle?: string;
+	articleTags?: string[];
 	id: string;
 	/** 所有者 DID。端末を共有しても他アカウントの下書きは見えない。 */
 	did: string;

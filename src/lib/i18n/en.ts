@@ -1374,6 +1374,8 @@ export const en: Messages = {
 	blogEdit: 'Edit blog post',
 	blogBackToList: 'Back to blogs',
 	blogBackToArticle: 'Back to the post',
+	blogLeaveImagesConfirm:
+		'Images are not saved in drafts and will be lost when you leave this page. Leave this page?',
 	blogLeaveConfirm: 'You have unsaved changes. Leave this page?',
 	blogEditNotFound: 'We could not find a blog post you can edit.',
 	blogIntro: 'Read blogs published on Nagi. Choose a tag to filter the articles.',

@@ -71,6 +71,7 @@
 		type DraftSaveTarget,
 	} from '$lib/drafts/drafts.svelte';
 	import DraftListDialog from './DraftListDialog.svelte';
+	import { draftContentKey } from '$lib/drafts/content';
 	import { articleCardUrls, extractTitle, IMAGE_LINE } from '$lib/atproto/markdown';
 	import { httpUrl } from '$lib/atproto/facets';
 	import { hasStandardSiteScope } from '$lib/standardsite/preferences';
@@ -106,6 +107,7 @@
 		text = $bindable(''),
 		submittable = $bindable(false),
 		dirty = $bindable(false),
+		unsavedImages = $bindable(false),
 		editTarget,
 		aside,
 	}: {
@@ -122,6 +124,7 @@
 		submittable?: boolean;
 		/** 未保存の変更があるか。執筆ページの離脱確認に使う（BLOG-07）。 */
 		dirty?: boolean;
+		unsavedImages?: boolean;
 		/** ブログの既存記事を編集するとき。マウント時の値だけを初期値に使う。 */
 		editTarget?: BlogEditTarget;
 		/** ブログの記事メタ欄の下に置くもの（執筆ページのおたすけ）。 */
@@ -155,6 +158,7 @@
 	let draftSaveStatus = $state<'idle' | 'saving' | 'saved'>('idle');
 	let activeDraftTarget = $state<DraftSaveTarget>();
 	let lastSavedDraftKey = $state('');
+	let lastAttemptedDraftKey = $state('');
 	let pendingRestoreId = $state<string | null>(null);
 	let loadedDid = $state<string | undefined>(undefined);
 	let crosspostReady = $state(false);
@@ -219,15 +223,25 @@
 	let empty = $derived(!text.trim() && !attachments.length && !video && !linkCards.length);
 	/** 動画の変換が終わるまでは投稿させない（blob がまだ無い）。 */
 	const videoPending = $derived(Boolean(video && !video.ready));
-	let draftSaveable = $derived(Boolean(text.trim() || linkCards.length || quotePick.ref));
+	let articleTitle = $state(editing?.title ?? '');
+	let articleTags = $state<string[]>(editing ? [...editing.tags] : []);
+	let draftSaveable = $derived(
+		Boolean(
+			text.trim() ||
+			linkCards.length ||
+			quotePick.ref ||
+			(mode === 'blog' && (articleTitle.trim() || articleTags.length)),
+		),
+	);
 	let draftKey = $derived(
-		JSON.stringify({
+		draftContentKey({
 			text,
 			mentions,
 			emojis: emojis.map(({ start, end, emoji }) => ({ start, end, uri: emoji.uri })),
-			linkCards: linkCards.map(({ uri, title, description }) => ({ uri, title, description })),
+			linkCards,
 			dismissedUrls,
 			quoteUri: quotePick.ref?.uri,
+			...(mode === 'blog' ? { articleTitle, articleTags } : {}),
 		}),
 	);
 	/**
@@ -353,6 +367,7 @@
 	/** 保存が済んだ。記事ページへ移る間に離脱確認を出さない。 */
 	let saved = $state(false);
 	$effect(() => {
+		unsavedImages = !editing && attachments.length > 0;
 		dirty =
 			!saved &&
 			(editing
@@ -363,7 +378,7 @@
 						images: attachments,
 						cards: linkCards,
 					}) !== initialEditSnapshot
-				: !empty || Boolean(articleTitle.trim()) || articleTags.length > 0);
+				: unsavedImages || (draftSaveable && draftKey !== lastSavedDraftKey));
 	});
 	$effect(() => {
 		submittable =
@@ -386,8 +401,6 @@
 	// ゲージではなくブログの執筆ページが担う。
 	let standardSiteReady = $state(false);
 	let publishingReadinessLoaded = $state(false);
-	let articleTitle = $state(editing?.title ?? '');
-	let articleTags = $state<string[]>(editing ? [...editing.tags] : []);
 	let reauthorizingArticle = $state(false);
 	const kossori = $derived(scope === 'kossori');
 	const blog = $derived(mode === 'blog');
@@ -602,6 +615,7 @@
 		loadedDid = did;
 		activeDraftTarget = undefined;
 		lastSavedDraftKey = '';
+		lastAttemptedDraftKey = '';
 		draftSaveStatus = 'idle';
 		void drafts.load(did);
 	});
@@ -609,7 +623,14 @@
 	$effect(() => {
 		const key = draftKey;
 		const did = $session?.did;
-		if (editing || !isWideComposer(mode) || !did || !text.trim() || key === lastSavedDraftKey) {
+		if (
+			editing ||
+			!isWideComposer(mode) ||
+			!did ||
+			(mode === 'blog' ? !draftSaveable : !text.trim()) ||
+			key === lastSavedDraftKey ||
+			key === lastAttemptedDraftKey
+		) {
 			if (draftSaveStatus !== 'saving')
 				draftSaveStatus = key === lastSavedDraftKey && Boolean(key) ? 'saved' : 'idle';
 			return;
@@ -661,11 +682,13 @@
 		mediaWarning = false;
 		activeDraftTarget = undefined;
 		lastSavedDraftKey = '';
+		lastAttemptedDraftKey = '';
 		draftSaveStatus = 'idle';
 	}
 
 	function draftSnapshot(): ComposerSnapshot {
 		return {
+			...(blog ? { articleTitle, articleTags: [...articleTags] } : {}),
 			text,
 			// 画像Blobは現在のAppView下書き形式に含めない。本文などの保存は継続する。
 			attachments: [],
@@ -685,16 +708,20 @@
 			return false;
 		}
 		draftSaveInFlight = true;
+		lastAttemptedDraftKey = key;
 		draftSaveStatus = 'saving';
 		draftError = '';
 		try {
 			const saved = await drafts.save(currentSession.did, snapshot, activeDraftTarget);
-			if ($session?.did !== currentSession.did) return false;
+			if ($session !== currentSession) return false;
 			activeDraftTarget = { id: saved.id, createdAt: saved.createdAt };
-			lastSavedDraftKey = key;
-			draftSaveStatus = draftKey === key ? 'saved' : 'idle';
-			return true;
+			lastSavedDraftKey = draftContentKey(saved);
+			const retained = lastSavedDraftKey === key;
+			draftSaveStatus = draftKey === lastSavedDraftKey ? 'saved' : 'idle';
+			if (!retained) draftError = m.draftSaveFailed();
+			return retained;
 		} catch (e) {
+			if ($session !== currentSession) return false;
 			draftSaveStatus = 'idle';
 			draftError =
 				e instanceof DraftStorageError && e.code === 'limit'
@@ -707,7 +734,12 @@
 			draftSaveInFlight = false;
 			if (pendingAutoSave) {
 				pendingAutoSave = false;
-				if (isWideComposer(mode) && text.trim() && draftKey !== lastSavedDraftKey)
+				if (
+					isWideComposer(mode) &&
+					(mode === 'blog' ? draftSaveable : Boolean(text.trim())) &&
+					draftKey !== lastSavedDraftKey &&
+					draftKey !== lastAttemptedDraftKey
+				)
 					void startDraftSave(draftKey, draftSnapshot());
 			}
 		}
@@ -740,7 +772,7 @@
 	}
 
 	async function restoreDraft(id: string) {
-		if (!empty) {
+		if (!empty || (blog && (articleTitle.trim() || articleTags.length))) {
 			pendingRestoreId = id;
 			return;
 		}
@@ -750,12 +782,17 @@
 		if (!draft) return;
 		activeDraftTarget = undefined;
 		lastSavedDraftKey = '';
+		lastAttemptedDraftKey = '';
 		draftSaveStatus = 'idle';
 		draftListOpen = false;
 		draftError = '';
 		// previewUrl は保存していないので、blob から作り直す。解放は
 		// ImageAttachmentEditor / LinkCardEditor の既存ライフサイクルに任せる。
 		text = draft.text;
+		if (blog) {
+			articleTitle = draft.articleTitle ?? '';
+			articleTags = [...(draft.articleTags ?? [])];
+		}
 		mentions = [...draft.mentions];
 		emojis = [...(draft.emojis ?? [])];
 		attachments = draft.images.map((image) => ({

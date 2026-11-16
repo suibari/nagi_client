@@ -1,6 +1,6 @@
 import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 import { MAX_POST_LINK_CARDS, type LinkCardDraft } from '$lib/atproto/records';
-import type { DraftContent, DraftSummary } from '$lib/api/types';
+import type { DraftContent, DraftSummary, DraftView } from '$lib/api/types';
 import {
 	ApiRequestError,
 	deleteDraft as deleteRemoteDraft,
@@ -19,6 +19,8 @@ import {
 } from './storage';
 
 export type ComposerSnapshot = {
+	articleTitle?: string;
+	articleTags?: string[];
 	text: string;
 	attachments: ImageAttachment[];
 	linkCards: LinkCardDraft[];
@@ -32,6 +34,8 @@ export type DraftEntry =
 export type DraftSaveTarget = { id: string; createdAt: string };
 
 const remoteContent = (draft: StoredDraft | ComposerSnapshot): DraftContent => ({
+	...(draft.articleTitle !== undefined ? { articleTitle: draft.articleTitle } : {}),
+	...(draft.articleTags !== undefined ? { articleTags: [...draft.articleTags] } : {}),
 	text: draft.text,
 	mentions: draft.mentions,
 	emojis: (draft.emojis ?? []).map(({ start, end, emoji }) => ({ start, end, uri: emoji.uri })),
@@ -92,7 +96,7 @@ class Drafts {
 		did: string,
 		snapshot: ComposerSnapshot,
 		target?: DraftSaveTarget,
-	): Promise<DraftSaveTarget & { updatedAt: string }> {
+	): Promise<DraftView> {
 		if (snapshot.attachments.length) throw new DraftStorageError('images');
 		const now = new Date().toISOString();
 		const id = target?.id ?? crypto.randomUUID();
@@ -105,12 +109,13 @@ class Drafts {
 				createdAt,
 				updatedAt: now,
 			});
-			if (this.#did !== did)
-				return { id: saved.id, createdAt: saved.createdAt, updatedAt: saved.updatedAt };
+			if (this.#did !== did) return saved;
 			this.entries = [
 				{
 					id: saved.id,
 					text: saved.text,
+					articleTitle: saved.articleTitle,
+					articleTags: saved.articleTags,
 					linkCardCount: saved.linkCards.length,
 					createdAt: saved.createdAt,
 					updatedAt: saved.updatedAt,
@@ -118,7 +123,7 @@ class Drafts {
 				},
 				...this.entries.filter((entry) => entry.id !== saved.id),
 			].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-			return { id: saved.id, createdAt: saved.createdAt, updatedAt: saved.updatedAt };
+			return saved;
 		} catch (error) {
 			preferences.noteScopeError(error);
 			if (error instanceof ApiRequestError && error.code === 'draft_limit')

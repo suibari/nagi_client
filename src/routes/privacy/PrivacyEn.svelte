@@ -127,9 +127,9 @@
 		and we do not create a snapshot of the bookmarked content.
 	</li>
 	<li>
-		<strong>Drafts and synced settings.</strong> For drafts without images, we store text, mentions, Bluemoji,
-		link URL/title/description, and quote URI, plus post and translation settings, visible only to you.
-		We do not store images, link thumbnails, or other binary data.
+		<strong>Drafts and synced settings.</strong> For drafts without images, we store text, blog titles
+		and tags, mentions, Bluemoji, link URL/title/description, and quote URI, plus post and translation
+		settings, visible only to you. We do not store images, link thumbnails, or other binary data.
 	</li>
 	<li>
 		<strong>Diary time (time zone and when your day ends).</strong> When you open Nagi, it sends your
