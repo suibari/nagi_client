@@ -1411,6 +1411,8 @@ export const ja = {
 	blogEdit: 'ブログを編集',
 	blogBackToList: 'ブログ一覧に戻る',
 	blogBackToArticle: '記事に戻る',
+	blogLeaveImagesConfirm:
+		'画像は下書きに保存されていません。このページを離れると画像が失われます。離れますか？',
 	blogLeaveConfirm: '保存していない変更があります。このページを離れますか？',
 	blogEditNotFound: '編集できる記事が見つかりませんでした。',
 	blogIntro: 'Nagiで公開されたブログを読めます。タグを選ぶと記事を絞り込めます。',

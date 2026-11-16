@@ -49,7 +49,7 @@
 	onDestroy(() => thumbnails.forEach((url) => URL.revokeObjectURL(url)));
 
 	const summary = (draft: DraftEntry) => {
-		const text = draft.text.trim();
+		const text = draft.text.trim() || draft.articleTitle?.trim() || draft.articleTags?.join(' / ');
 		if (text) return text;
 		if (draft.storage === 'legacy-device' && draft.images.length)
 			return m.draftImagesOnly({ count: draft.images.length });

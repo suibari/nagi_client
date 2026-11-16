@@ -44,6 +44,16 @@
 
 <section class="e2e-fixture" data-testid="blog-write-fixture">
 	{#if ready}<BlogWriter {editTarget} />{/if}
+	<button
+		type="button"
+		onclick={() =>
+			session.update((current) =>
+				current
+					? ({ ...current, did: 'did:plc:other-blog-writer' } as unknown as OAuthSession)
+					: null,
+			)}>アカウントを切り替える</button
+	>
+	<a href="/dev/e2e/blog-write?history">履歴を作る</a>
 	<a href="/dev/e2e/post-assist">別のページへ</a>
 </section>
 

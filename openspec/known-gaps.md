@@ -83,3 +83,9 @@ change [prioritize-startup-notification-count](changes/archive/2026-11-12-priori
 ## カードニュースの表示対象
 
 change [card-news-ultra-rare-threshold](changes/archive/2026-11-14-card-news-ultra-rare-threshold/proposal.md)で、取得ニュースをクライアント側でUR・AARに限定した（[CARD-10](specs/cards-zenkatsu/spec.md#card-10)）。従来のR以上というコードコメントは表示条件の説明として整理した。導入時の固定原文は変更しない。AppViewのニュース選定・配信データは別リポジトリのため未確認であり、サーバ側でR・SRの配信を停止したことは意味しない。クライアントの動作確認はモック応答によるものとし、本番での配信確認と区別する。
+
+## ブログ下書き保存後の離脱確認
+
+change [fix-blog-draft-leave-warning](changes/fix-blog-draft-leave-warning/proposal.md)で、BLOG-07の離脱確認を下書きからの復元可能性に基づく判定へ変更し、POST-06にタイトル・タグの保存を追加した。クライアントは保存応答に保持された内容と現在の入力を照合し、画像が失われる場合は理由を示して確認する。旧APIが追加メタデータを捨てた場合は保存済みと扱わず、警告を維持する。
+
+別リポジトリのOrcaワークツリー `/home/suibari/orca/workspaces/bsky-affirmative-bot/blog-draft-metadata`（`suibari/blog-draft-metadata`）で下書きAPI・lexiconの保持／返却も実装した。入力検証、HTTPと使い捨てPostgresの往復・所有者分離、およびChromiumからの保存と別ページでの復元を確認した。本番の認証経路での往復とデプロイは未実施であり、API側を先に反映する必要がある。検証の詳細はchangeの [verification.md](changes/fix-blog-draft-leave-warning/verification.md) に記録する。
