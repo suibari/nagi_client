@@ -89,6 +89,7 @@
 	import { isPlainPostMode, isWideComposer, type ComposerMode } from '$lib/post/composer-mode';
 	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
+	import { postSilentFlags } from '$lib/post/silent-flags';
 	import {
 		restorePostScope,
 		scopeAfterExternalEligibility,
@@ -573,6 +574,10 @@
 	$effect(() => {
 		if (kossoriThread && scope !== 'kossori') scope = 'kossori';
 	});
+	const replyToBot = $derived(replyTarget?.post.isBot === true);
+	const silentReplyEnableTooltip = $derived(
+		replyToBot ? m.silentReplyToBotEnableTooltip() : m.silentReplyEnableTooltip(),
+	);
 	/**
 	 * こっそりではないスレッドへの返信か。AppView はこっそりスレッドの外にこっそり投稿を
 	 * 置かせない（createKossoriPost が 400 "Reply root is not a kossori post" を返す）。
@@ -952,6 +957,12 @@
 				: list;
 		const reply = replyTarget ? { root: replyTarget.root, parent: replyTarget.parent } : undefined;
 		const replyPost = replyTarget?.post;
+		const flags = postSilentFlags({
+			reply: Boolean(reply),
+			replyToBot,
+			botSilent,
+			silentReply,
+		});
 		const quotedPost = quoteTarget?.post ?? quotePick.post;
 		const quoteRef =
 			radioRef ?? (quoteTarget ? { uri: quoteTarget.uri, cid: quoteTarget.cid } : quotePick.ref);
@@ -964,8 +975,8 @@
 			shift(mentions),
 			shift(emojis),
 			kossori,
-			reply ? false : botSilent,
-			reply ? silentReply : false,
+			flags.botSilent,
+			flags.silentReply,
 			selfLabels,
 			video?.toRecord(),
 			{ article: Boolean(article) },
@@ -1427,9 +1438,9 @@
 					class:active={silentReply}
 					type="button"
 					disabled={busy}
-					aria-label={silentReply ? m.silentReplyDisableTooltip() : m.silentReplyEnableTooltip()}
+					aria-label={silentReply ? m.silentReplyDisableTooltip() : silentReplyEnableTooltip}
 					aria-pressed={silentReply}
-					title={silentReply ? m.silentReplyDisableTooltip() : m.silentReplyEnableTooltip()}
+					title={silentReply ? m.silentReplyDisableTooltip() : silentReplyEnableTooltip}
 					onclick={() => (silentReply = !silentReply)}
 				>
 					<Icon name="bellOff" size={18} />

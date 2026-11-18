@@ -54,16 +54,25 @@
 
 **理由と制約**：本文先頭の見出しがタイトルの正本である条件は維持する。保存中の追加入力は次の保存を必要とし、旧アカウントの応答を切替先へ適用しない。復元時の元下書き削除は変えず、再保存完了まで未保存とする。画像・公開先・bot設定は今回の保存拡張の対象外である。AppView契約の対応確認はknown-gaps.mdに分ける。
 
+### D7: botたんへのサイレントリプライはbotたんサイレントとして保存する
+
+**課題**：サイレントリプライは「相手に知らせずそっと返す」機能だが、返信先がbotたんだとbotたんが返事をしてしまう。返信ではbotたんサイレントのボタンを出していないので、利用者には止める手段がなかった。
+
+**採用判断**：直接の返信先がbotたん（AppViewの `isBot`）でサイレントリプライをONにした返信には、クライアントが `botSilent: true` も付ける（POST-10）。条件は、サイレントリプライが通知を抑える範囲に揃えて直接の返信先だけとし、本文でbotたんをメンションしただけの返信は含めない。ボタンは増やさず、説明文でbotたんも返信しないことを示す。
+
+**理由と制約**：botたんが返事を積むかどうかは、bot側（別リポジトリ）の判定が一か所で `botSilent` を見て決めている。返信でもこっそり投稿でも同じで、`silentReply` は通知の判定にしか使われない（bsky-affirmative-bot `06c1fe06` で確認）。クライアントで `botSilent` を付ければ別リポジトリの変更は要らず、レコードを見ればbotたんが返事をしない理由が分かる。`isBot` が取れない返信先はbotたんでないものとして扱い、`botSilent` は付けない。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                            | 探す処理・責務                             |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| [src/lib/components/Composer.svelte](../../../src/lib/components/Composer.svelte)                   | 投稿状態と送信処理                         |
-| [src/lib/post/scope.ts](../../../src/lib/post/scope.ts)                                             | scopeForPublicReply / defaultScopeForPath  |
-| [src/lib/drafts/drafts.svelte.ts](../../../src/lib/drafts/drafts.svelte.ts)                         | 下書きの共有状態                           |
-| [src/lib/components/ComposerAssistant.svelte](../../../src/lib/components/ComposerAssistant.svelte) | 入力中のおたすけ（placement で配置を選ぶ） |
+| ファイル                                                                                            | 探す処理・責務                                                   |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [src/lib/components/Composer.svelte](../../../src/lib/components/Composer.svelte)                   | 投稿状態と送信処理                                               |
+| [src/lib/post/scope.ts](../../../src/lib/post/scope.ts)                                             | scopeForPublicReply / defaultScopeForPath                        |
+| [src/lib/post/silent-flags.ts](../../../src/lib/post/silent-flags.ts)                               | postSilentFlags（送信時のbotたんサイレント・サイレントリプライ） |
+| [src/lib/drafts/drafts.svelte.ts](../../../src/lib/drafts/drafts.svelte.ts)                         | 下書きの共有状態                                                 |
+| [src/lib/components/ComposerAssistant.svelte](../../../src/lib/components/ComposerAssistant.svelte) | 入力中のおたすけ（placement で配置を選ぶ）                       |
 
 下書きの保存内容の比較は `src/lib/drafts/content.ts` の `draftContentKey` が担当する。下書き一覧では本文が空の場合にタイトル・タグを表示する。
 

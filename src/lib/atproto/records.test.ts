@@ -110,6 +110,34 @@ describe('silent replies', () => {
 			expect.objectContaining({ reply, silentReply: true }),
 		);
 	});
+	it('sends botSilent with a kossori silent reply to Bot-tan', async () => {
+		createKossoriPost.mockResolvedValue({
+			uri: 'at://did:web:nagi-api.suibari.com/com.suibari.nagi.post/reply',
+			cid: 'bafykossori',
+		});
+		const draft = preparePostDraft('reply', reply, undefined, [], [], [], [], true, true, true);
+
+		await createPost(draft);
+
+		expect(createKossoriPost).toHaveBeenCalledWith(
+			expect.objectContaining({ reply, botSilent: true, silentReply: true }),
+		);
+	});
+
+	it('writes botSilent with a public silent reply to Bot-tan', async () => {
+		createRecord.mockResolvedValue({
+			data: { uri: 'at://did:plc:self/com.suibari.nagi.post/reply', cid: 'bafyreply' },
+		});
+		const draft = preparePostDraft('reply', reply, undefined, [], [], [], [], false, true, true);
+
+		await createPost(draft, { images: [], cards: [] });
+
+		expect(createRecord).toHaveBeenCalledWith(
+			expect.objectContaining({
+				record: expect.objectContaining({ reply, botSilent: true, silentReply: true }),
+			}),
+		);
+	});
 });
 
 describe('content warning storage boundaries', () => {

@@ -284,6 +284,7 @@ export const ja = {
 	botSilentDisableTooltip: 'botたんサイレントを解除',
 	botSilentAria: 'botたんサイレント機能',
 	silentReplyEnableTooltip: 'サイレントリプライ（返信先に通知しません）',
+	silentReplyToBotEnableTooltip: 'サイレントリプライ（返信先に通知せず、botたんも返信しません）',
 	silentReplyDisableTooltip: 'サイレントリプライを解除',
 	composerEmbedsAria: '添付・リンク',
 	assistLabel: 'おたすけbotたん',

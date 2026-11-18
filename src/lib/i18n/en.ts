@@ -271,6 +271,7 @@ export const en: Messages = {
 	botSilentDisableTooltip: 'Disable Bot-tan silent',
 	botSilentAria: 'Bot-tan silent mode',
 	silentReplyEnableTooltip: 'Silent reply (does not notify the person you reply to)',
+	silentReplyToBotEnableTooltip: 'Silent reply (no notification, and Bot-tan will not reply)',
 	silentReplyDisableTooltip: 'Disable silent reply',
 	composerEmbedsAria: 'Attachments and links',
 	assistLabel: 'Helper Bot-tan',
