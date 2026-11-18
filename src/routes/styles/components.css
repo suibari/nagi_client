@@ -5897,40 +5897,6 @@ a.about-feature:focus-visible {
 	max-inline-size: 100%;
 	margin-bottom: 8px;
 }
-.feed-tab-preview-tab {
-	position: relative;
-	flex: 1;
-	min-width: 0;
-	padding: 10px 8px 12px;
-	border: 0;
-	background: transparent;
-	color: var(--text-muted);
-	font-size: 14px;
-	font-weight: 700;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.feed-tabs.scrollable .feed-tab-preview-tab {
-	flex: 0 0 auto;
-	max-width: 12em;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-.feed-tab-preview-tab.active {
-	color: var(--accent-strong);
-}
-.feed-tab-preview-tab.active::after {
-	content: '';
-	position: absolute;
-	left: 50%;
-	bottom: 2px;
-	width: 30px;
-	height: 3px;
-	border-radius: var(--radius-pill);
-	background: var(--accent);
-	transform: translateX(-50%);
-}
 /* プレビューの投稿は読むためではなく雰囲気を見るためのもの。操作は無効にする。 */
 .feed-tab-preview-body {
 	pointer-events: none;

@@ -38,17 +38,26 @@
 
 **理由と制約**：peekの参照は表示中フィードのLRU順位を変えない。壊れた1枚を理由に全設定を既定へ戻さず、旧チャンネルはタグへ移行する。
 
+### D5: 入りきらないタブバーは一覧メニューで補う
+
+**課題**：タブは16本まで増やせるが、バーの幅は限られる。横スクロールだけではスクロールバーを隠しているため続きに気づかれず、PCのマウスホイールでは横に動かない。「7本目が見えない」というフィードバックがあり、開発者の確認ではスクロール自体はできていた。設定画面のプレビューは実物とCSSの当たり方が違い、収まる本数でも左寄せになっていた。
+
+**採用判断**：入りきるかどうかは本数でなく実測で判定する。入りきらないときは末尾の ＋ を ▾ に差し替え、▾ の一覧に全タブとタブのカスタマイズを置く。続きがある側の端をフェードさせ、バー上のホイールの縦回転を横送りに変える。タブバーの描画は実物とプレビューで1つの部品を共有する。
+
+**理由と制約**：収まる本数は画面幅・ラベル・言語で変わる。＋ と ▾ を並べると幅がさらに減るため差し替え、両者を同じ幅にして判定を揺らさない。一覧に隠れたタブだけを出す案は、スクロール位置で中身が変わるので採らない。‹ › 送りボタンは幅を取り、一覧と役割が重なるので付けない。ホイールの変換はスクロールできる間だけで、端に達したらページの縦スクロールに戻す。トラックパッドの横入力はブラウザに任せる。▾ の一覧はスクロールする要素の外に置かないと切り取られるため、スクロールはタブの並びだけに持たせる。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                              | 探す処理・責務               |
-| ------------------------------------------------------------------------------------- | ---------------------------- |
-| [src/lib/feed/feed.svelte.ts](../../../src/lib/feed/feed.svelte.ts)                   | 会話のマージと更新           |
-| [src/lib/feed/post-follow.svelte.ts](../../../src/lib/feed/post-follow.svelte.ts)     | 投稿後の追従                 |
-| [src/lib/feed-tabs/resolve.ts](../../../src/lib/feed-tabs/resolve.ts)                 | タブの取得先解決             |
-| [src/lib/thread/bot-reply-collapse.ts](../../../src/lib/thread/bot-reply-collapse.ts) | 折り畳み候補と確認キャッシュ |
-| [src/lib/components/ChatBubble.svelte](../../../src/lib/components/ChatBubble.svelte) | 発言の表示と操作             |
+| ファイル                                                                                          | 探す処理・責務                             |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| [src/lib/feed/feed.svelte.ts](../../../src/lib/feed/feed.svelte.ts)                               | 会話のマージと更新                         |
+| [src/lib/feed/post-follow.svelte.ts](../../../src/lib/feed/post-follow.svelte.ts)                 | 投稿後の追従                               |
+| [src/lib/feed-tabs/resolve.ts](../../../src/lib/feed-tabs/resolve.ts)                             | タブの取得先解決                           |
+| [src/lib/components/shell/FeedTabBar.svelte](../../../src/lib/components/shell/FeedTabBar.svelte) | タブバーの描画・はみ出し判定・一覧メニュー |
+| [src/lib/thread/bot-reply-collapse.ts](../../../src/lib/thread/bot-reply-collapse.ts)             | 折り畳み候補と確認キャッシュ               |
+| [src/lib/components/ChatBubble.svelte](../../../src/lib/components/ChatBubble.svelte)             | 発言の表示と操作                           |
 
 ## 出典と変更時の扱い
 

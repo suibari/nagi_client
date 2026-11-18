@@ -50,7 +50,7 @@ describe('mobile overflow layout contracts', () => {
 		expect(componentsCss).toMatch(
 			/\.feed-tab-preview \.feed-tabs\s*\{[^}]*inline-size:\s*100%;[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s,
 		);
-		expect(shellCss).toMatch(/\.feed-tabs\.scrollable\s*\{[^}]*overflow-x:\s*auto;/s);
+		expect(shellCss).toMatch(/\.feed-tabs\.scrollable \.feed-tabs-scroll\s*\{[^}]*overflow-x:\s*auto;/s);
 	});
 
 	it('keeps post controls shrinkable and wrapping on narrow screens', () => {

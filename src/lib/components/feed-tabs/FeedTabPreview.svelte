@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
 	import ThreadUnit from '$lib/components/ThreadUnit.svelte';
+	import FeedTabBar from '$lib/components/shell/FeedTabBar.svelte';
 	import BskyFeedShell from '$lib/components/bsky/BskyFeedShell.svelte';
 	import { Feed } from '$lib/feed/feed.svelte';
-	import { feedTabLabel, resolveFeedTab } from '$lib/feed-tabs/resolve';
+	import { resolveFeedTab } from '$lib/feed-tabs/resolve';
 	import type { FeedTab } from '$lib/feed-tabs/types';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -49,17 +50,9 @@
 
 <div class="feed-tab-preview">
 	<p class="feed-tab-preview-label">{m.feedTabsPreview()}</p>
-	<nav class="feed-tabs" class:scrollable={tabs.length > 3} aria-hidden="true">
-		{#each tabs as tab (tab.id)}
-			<button
-				type="button"
-				class="feed-tab-preview-tab"
-				class:active={selected?.id === tab.id}
-				onclick={() => (selectedId = tab.id)}>{feedTabLabel(tab)}</button
-			>
-		{/each}
-		<span class="feed-tab-add" aria-hidden="true">＋</span>
-	</nav>
+	<div aria-hidden="true">
+		<FeedTabBar {tabs} current={selected?.id} onselect={(tab) => (selectedId = tab.id)} />
+	</div>
 	<div class="feed-tab-preview-body">
 		{#if selectedSpec?.bsky}
 			<BskyFeedShell
