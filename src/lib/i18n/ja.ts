@@ -1048,6 +1048,7 @@ export const ja = {
 	feedTabsHelp:
 		'フィードの上に並ぶタブを、好きな順番と組み合わせにできます。ハッシュタグや検索も並べておけます。',
 	feedTabsCustomize: 'タブをカスタムする',
+	feedTabsAll: 'すべてのタブ',
 	feedTabsBackToFeed: 'フィードに戻る',
 	feedTabsAdd: 'タブを追加',
 	feedTabsBackToKinds: '種類を選び直す',

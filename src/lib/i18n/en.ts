@@ -1013,6 +1013,7 @@ export const en: Messages = {
 	feedTabsHelp:
 		'Arrange the tabs above your feed however you like. Hashtags and searches can sit there too.',
 	feedTabsCustomize: 'Customize tabs',
+	feedTabsAll: 'All tabs',
 	feedTabsBackToFeed: 'Back to feed',
 	feedTabsAdd: 'Add a tab',
 	feedTabsBackToKinds: 'Pick another type',
