@@ -30,6 +30,8 @@
 
 **理由と制約**：日付と材料範囲は別の意味として維持する。行画像や翻訳も行との対応を保ち、行数が合わない訳文は一続きで表示する。
 
+本文欄の貼り付けイベントから画像ファイルを取り出し、ファイル選択と同じ行画像処理へ渡す。ブラウザーの標準イベントを使うことで、キー操作やメニューからの貼り付けを同じ経路で扱える。貼り付けた時点の行を添付先とし、ファイルの処理・プレビューはブラウザー内で行う。本人PDSへの送信は日記の保存時に行う。
+
 ### D4: 日付の選択と閲覧範囲を分ける
 
 **課題**：選択解除やタブ切替で月まで今日へ戻ると、過去日の振り返りをやり直すことになる。
@@ -48,6 +50,7 @@
 | [src/lib/diary/calendar.ts](../../../src/lib/diary/calendar.ts)                                 | 月と投稿量の計算          |
 | [src/lib/trilines/date.ts](../../../src/lib/trilines/date.ts)                                   | 3行日記の日付と材料範囲   |
 | [src/lib/trilines/records.ts](../../../src/lib/trilines/records.ts)                             | 共通レコードの保存        |
+| [src/lib/components/TrilinesComposer.svelte](../../../src/lib/components/TrilinesComposer.svelte) | ファイル選択と貼り付けによる行画像の添付 |
 | [src/lib/components/MonthlyActivity.svelte](../../../src/lib/components/MonthlyActivity.svelte) | 活動表示の共有選択        |
 
 ## 出典と変更時の扱い

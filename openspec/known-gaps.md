@@ -97,3 +97,9 @@ change [add-web-share-target](changes/add-web-share-target/proposal.md)でWeb Sh
 調査時、Composerの初回生成が保存済みの前回scopeを復元せず、呼び出し元のdefaultScopeだけを使う不一致を確認した。POST-01に合わせて初回も`restorePostScope`で前回値を優先するよう修正した。共有画像がこっそりの意図を自動で広げないことを操作テストで確認する。
 
 検証結果と環境の境界はchangeの [verification.md](changes/add-web-share-target/verification.md)に記す。OSの外部アプリの共有一覧から選ぶ実機確認と、本番OAuth・デプロイは未実施。ブラウザでのPOST受信やモック認証の操作確認を、本番対応の確認済みと扱わない。
+
+## 3行日記の画像貼り付けと圧縮エラーの表示
+
+[paste-trilines-line-image](changes/archive/2026-11-20-paste-trilines-line-image/proposal.md) で、画像選択と同じ行画像処理を本文欄の貼り付けからも使うようにした（[DIARY-05](specs/diary-trilines/spec.md#diary-05)）。この処理の圧縮上限は900,000バイトで、レコードの上限である1MB以内に収まる。圧縮失敗時は通常投稿用の文言を共有しており、画像選択と貼り付けのどちらでも「2MB以下に圧縮できませんでした」と表示される。文言と実際の上限の不一致は既存の課題として残る。
+
+Chromiumの操作テストで Ctrl+V による画像とテキストの貼り付け、差し替え、圧縮失敗時の保持、処理中の保存制御を確認し、モックPDSへの新規保存で画像が対象行に入ることを確認した。本番認証環境での保存は未確認。
