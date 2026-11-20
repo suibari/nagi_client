@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ShareImportPanel from './ShareImportPanel.svelte';
+	import type { ShareComposer } from '$lib/share-target/composer';
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
@@ -38,7 +40,7 @@
 	let composing = $state(false);
 	let assistSpace = $state(0);
 	let submittable = $state(false);
-	let composer = $state<{ submit: () => Promise<void> }>();
+	let composer = $state<ShareComposer & { submit: () => Promise<void> }>();
 	let trilinesComposer = $state<{ submit: () => Promise<void> }>();
 	let trilinesSubmittable = $state(false);
 
@@ -46,7 +48,9 @@
 	 * 3行日記にできない文脈ではタブごと出さない。3行日記は返信・引用を持てない。
 	 * 3行日記を編集するときは、3行日記のタブだけを出す。
 	 */
-	const diaryAllowed = $derived(!composerHost.replyTarget && !composerHost.quoteTarget);
+	const diaryAllowed = $derived(
+		!composerHost.replyTarget && !composerHost.quoteTarget && !composerHost.shared,
+	);
 	const editingDiary = $derived(Boolean(composerHost.trilinesEditTarget));
 	const modes = $derived<PostModalMode[]>(
 		editingDiary
@@ -81,6 +85,7 @@
 			composing = false;
 			mode = getComposerMode();
 			if (composerHost.trilinesEditTarget) mode = 'diary';
+			if (composerHost.shared) mode = 'simple';
 			publishingPreferencesVersion += 1;
 		}
 	});
@@ -137,6 +142,9 @@
 			onposted={postSucceeded}
 		/>
 	</div>
+	{#if composerHost.shared && !diary && composer}
+		<ShareImportPanel {composer} />
+	{/if}
 	<div class="composer-host" hidden={diary}>
 		<Composer
 			bind:this={composer}

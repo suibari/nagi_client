@@ -2,6 +2,31 @@ import type { Messages } from './ja';
 
 // English catalog. The Messages type enforces exact key/signature parity with ja.ts.
 export const en: Messages = {
+	shareTitle: 'Share to Nagi',
+	shareReview: 'Review the shared content, then open the post editor.',
+	shareFileCount: ({ count }: { count: number }) => `Images / files: ${count}`,
+	sharePostingAs: ({ did }: { did: string }) => `Posting account: ${did}`,
+	shareAppendConfirm:
+		'You have a post in progress. Importing will append the text and add images to the available slots.',
+	shareRemoveTarget: 'Remove the reply or quote to return to a new post before importing.',
+	shareChangeScope:
+		'Change the audience from Private to attach images. Shared images will be kept until you import them.',
+	shareImport: 'Confirm and import',
+	shareLater: 'Import later',
+	shareDiscard: 'Discard shared content',
+	shareWait: 'Please wait until the editor is ready and try importing again.',
+	shareAccountChanged: 'Your account changed. Check the posting account and import again.',
+	shareMissing:
+		'No pending shared content was found. If you have not imported it, share again from the original app.',
+	shareStorageFailed:
+		'Could not save or read the shared content on this device. Try again, or share again from the original app.',
+	shareOtherTab: 'This share is being processed in another window. Check again after it finishes.',
+	shareLoginRequired: 'The shared content is temporarily kept on this device. Log in to import it.',
+	shareLogin: 'Log in to import',
+	shareOpenComposer: 'Open post editor',
+	shareHandled:
+		'The shared content has been imported or discarded. Review it in the post editor before posting.',
+
 	appTitle: 'Nagi — a calm place for gentle words',
 	appDescription: 'A social network on the AT Protocol that embraces every voice',
 

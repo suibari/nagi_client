@@ -1,6 +1,31 @@
 // Source-of-truth message catalog. en.ts must define exactly these keys
 // with the same signatures (enforced via the Messages type).
 export const ja = {
+	shareTitle: 'Nagiに共有',
+	shareReview: '共有内容を確認して、投稿画面へ進んでください。',
+	shareFileCount: ({ count }: { count: number }) => `画像・ファイル ${count}件`,
+	sharePostingAs: ({ did }: { did: string }) => `投稿するアカウント: ${did}`,
+	shareAppendConfirm: '書きかけがあります。取り込むと本文の末尾と画像の空き枠へ追加します。',
+	shareRemoveTarget: '返信・引用を外して通常の新規投稿へ戻してから取り込んでください。',
+	shareChangeScope:
+		'画像を添付するには「こっそり」から投稿範囲を変更してください。共有画像は取り込むまで保持します。',
+	shareImport: '確認して取り込む',
+	shareLater: 'あとで取り込む',
+	shareDiscard: '共有内容を破棄',
+	shareWait: '準備ができてから、もう一度取り込んでください。',
+	shareAccountChanged:
+		'アカウントが変わりました。投稿するアカウントを確認して、もう一度取り込んでください。',
+	shareMissing:
+		'未処理の共有内容がありません。取り込み済みでない場合は元のアプリから共有し直してください。',
+	shareStorageFailed:
+		'共有内容の端末への保存・読み取りに失敗しました。もう一度試すか、元のアプリから共有し直してください。',
+	shareOtherTab: '別の画面でこの共有を処理しています。完了後にもう一度確認してください。',
+	shareLoginRequired: '共有内容はこの端末で一時保持しています。ログイン後に取り込めます。',
+	shareLogin: 'ログインして取り込む',
+	shareOpenComposer: '投稿画面へ',
+	shareHandled:
+		'共有内容の取り込みまたは破棄が完了しました。投稿する場合は投稿画面で内容を確認してください。',
+
 	// brand
 	appTitle: 'Nagi（ナギ）— 気持ちを残し、ゆるくつながるSNS',
 	appDescription: 'すべての声を受け止める、AT Protocol上のSNS',

@@ -8,6 +8,10 @@
 	},
 	"headers": [
 		{
+			"source": "/share-target",
+			"headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+		},
+		{
 			"source": "/(.*)",
 			"headers": [
 				{ "key": "X-Content-Type-Options", "value": "nosniff" },
@@ -106,6 +110,7 @@
 		}
 	],
 	"rewrites": [
+		{ "source": "/share-target", "destination": "/200" },
 		{
 			"source": "/.well-known/site.standard.publication/blog/:did",
 			"destination": "https://nagi-api.suibari.com/api/standard-site/publication/:did"
