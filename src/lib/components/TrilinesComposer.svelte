@@ -9,6 +9,7 @@
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { ImageProcessingError, processImage, releaseImage } from '$lib/images';
+	import { IMAGE_ACCEPT, pastedMediaFiles } from '$lib/media-selection';
 	import { session, signIn } from '$lib/oauth/session.svelte';
 	import { grantedOptIns } from '$lib/optin/scope-optin';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
@@ -179,6 +180,14 @@
 		if (previous?.kind === 'new') releaseImage(previous.attachment);
 	}
 
+	function pasteImage(event: ClipboardEvent, index: number) {
+		if (!active || busy || !event.clipboardData) return;
+		const [file] = pastedMediaFiles(event.clipboardData, false);
+		if (!file) return;
+		event.preventDefault();
+		void pickImage(index, file);
+	}
+
 	const previewOf = (line: TrilinesLineDraft) =>
 		line.image?.kind === 'new' ? line.image.attachment.previewUrl : line.image?.previewUrl;
 
@@ -346,6 +355,7 @@
 						type="text"
 						bind:value={line.text}
 						onkeydown={handleKeydown}
+						onpaste={(event) => pasteImage(event, index)}
 						placeholder={m.trilinesLinePlaceholder({ n: index + 1 })}
 						disabled={busy}
 						autocomplete="off"
@@ -369,7 +379,7 @@
 						bind:this={fileInputs[index]}
 						class="visually-hidden"
 						type="file"
-						accept="image/jpeg,image/png,image/webp,image/gif"
+						accept={IMAGE_ACCEPT}
 						tabindex="-1"
 						onchange={(event) => {
 							const input = event.currentTarget;
