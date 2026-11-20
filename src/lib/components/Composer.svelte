@@ -46,6 +46,9 @@
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { crosspostAfterPost } from '$lib/crosspost/after-post';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { processSelectedImage } from '$lib/image-selection';
+	import { acknowledgeShare, restoreShare, type SharedContent } from '$lib/share-target/store';
+	import type { ShareComposerState } from '$lib/share-target/composer';
 	import { MAX_IMAGE_COUNT, type ImageAttachment } from '$lib/images';
 	import ImageAttachmentEditor from './ImageAttachmentEditor.svelte';
 	import ImageAttachmentPicker from './ImageAttachmentPicker.svelte';
@@ -149,7 +152,7 @@
 	let emojis = $state<EmojiSelection[]>(editing ? [...editing.emojis] : []);
 	if (editing) text = editing.text;
 	// defaultScope はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
-	let scope = $state<PostScope>(untrack(() => defaultScope));
+	let scope = $state<PostScope>(untrack(() => restorePostScope(defaultScope)));
 	let scopeDialogOpen = $state(false);
 	let dismissedUrls = $state<string[]>([]);
 	// Nagi のスレッドURLを貼ったときだけ引き取る引用スロット。本文には URL を入れない。
@@ -176,6 +179,7 @@
 	let draftSaveTask: Promise<boolean> | undefined;
 	let pendingAutoSave = false;
 	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
+	let imageProcessing = $state(false);
 	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
 	let composerEditor = $state<{ insertBlock: (text: string) => void }>();
 	/**
@@ -384,6 +388,7 @@
 	$effect(() => {
 		submittable =
 			!busy &&
+			!imageProcessing &&
 			!empty &&
 			!videoPending &&
 			(blog || graphemes <= 3000) &&
@@ -1150,6 +1155,79 @@
 			reauthorizingArticle = false;
 		}
 	}
+	const appliedShareParts = new Set<string>();
+
+	export function getShareState(): ShareComposerState {
+		return {
+			busy: busy || imageProcessing,
+			ready: Boolean($session?.did && loadedDid === $session.did),
+			hasContent: !empty || Boolean(quotePick.ref),
+			hasTarget: Boolean(replyTarget || quoteTarget || quotePick.ref || quotePick.pending),
+			scope,
+		};
+	}
+
+	export async function importShared(content: SharedContent, did: string): Promise<string[]> {
+		const current = getShareState();
+		if (
+			current.busy ||
+			!current.ready ||
+			current.hasTarget ||
+			$session?.did !== did ||
+			(content.files.length && scope === 'kossori')
+		)
+			return [m.shareWait()];
+		const errors: string[] = [];
+		const staged: { part: string; image: ImageAttachment }[] = [];
+		const parts: string[] = [];
+		const keyFor = (part: string) => `${did}:${content.id}:${part}`;
+		const originalText = text;
+		const originalImages = attachments;
+		const stillCurrent = () => $session?.did === did && loadedDid === did;
+		let applied = false;
+		busy = true;
+		onsendingchange?.(true);
+		try {
+			if (content.text) parts.push('text');
+			for (const item of content.files) {
+				if (!stillCurrent()) return [m.shareAccountChanged()];
+				if (appliedShareParts.has(keyFor(item.id))) {
+					parts.push(item.id);
+					continue;
+				}
+				if (attachments.length + staged.length >= MAX_IMAGE_COUNT) {
+					errors.push(m.postImageCountError());
+					break;
+				}
+				const result = await processSelectedImage(item.file);
+				if (result.image) staged.push({ part: item.id, image: result.image });
+				else errors.push(result.error);
+			}
+			if (!stillCurrent()) return [m.shareAccountChanged()];
+			if (content.text && !appliedShareParts.has(keyFor('text')))
+				text = text.trim() ? `${text}\n\n${content.text}` : content.text;
+			attachments = [...attachments, ...staged.map(({ image }) => image)];
+			parts.push(...staged.map(({ part }) => part));
+			for (const part of parts) appliedShareParts.add(keyFor(part));
+			applied = true;
+			await acknowledgeShare(content.id, parts);
+			return stillCurrent() ? errors : [m.shareAccountChanged()];
+		} finally {
+			try {
+				if (applied && !stillCurrent()) {
+					text = originalText;
+					attachments = originalImages;
+					for (const part of parts) appliedShareParts.delete(keyFor(part));
+					applied = false;
+					await restoreShare(content);
+				}
+			} finally {
+				if (!applied) for (const { image } of staged) URL.revokeObjectURL(image.previewUrl);
+				busy = false;
+				onsendingchange?.(false);
+			}
+		}
+	}
 </script>
 
 <!--
@@ -1166,6 +1244,7 @@
 				bind:this={imagePicker}
 				bind:attachments
 				bind:video
+				bind:processing={imageProcessing}
 				allowVideo={!blog}
 				maxCount={blog ? Infinity : MAX_IMAGE_COUNT}
 				disabled={busy}

@@ -2,13 +2,15 @@
 /// <reference lib="webworker" />
 
 import { PUBLIC_APPVIEW_URL, PUBLIC_VAPID_KEY } from '$env/static/public';
+import { isShareRequest, receiveShare } from '$lib/share-target/receive';
 import { loadPushInstallation } from '$lib/notifications/push-installation';
 
-// SvelteKit が自動登録する Service Worker。ここではキャッシュは扱わず、Web Push の
-// 受信（push）とクリック（notificationclick）だけを担当する。閉じた PWA でも OS の
-// プッシュサービス経由でこのワーカーが起こされ、通知を表示できる。
-
 const sw = self as unknown as ServiceWorkerGlobalScope;
+sw.addEventListener('fetch', (event) => {
+	if (isShareRequest(event.request, sw.location.origin))
+		event.respondWith(receiveShare(event.request));
+});
+
 const appviewBase = PUBLIC_APPVIEW_URL || 'http://localhost:3002';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {

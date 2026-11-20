@@ -1,3 +1,4 @@
+import type { SharedContent } from '$lib/share-target/store';
 import type { PostScope } from './scope';
 import type { NewsView, PostView, RadioTrack } from '$lib/api/types';
 
@@ -34,6 +35,13 @@ export type QuoteTarget = {
  * 添付画像と書きかけが消えるため）。開閉は表示の切り替えだけで行う。
  */
 class ComposerHost {
+	shared = $state<SharedContent | undefined>(undefined);
+
+	showShared(content: SharedContent) {
+		this.shared = content;
+		this.show('feed');
+	}
+
 	open = $state(false);
 	/** 開いた文脈での既定の投稿範囲。ホームは従来どおりこっそりを既定にする。 */
 	defaultScope = $state<PostScope>('feed');

@@ -62,6 +62,16 @@
 
 **理由と制約**：botたんが返事を積むかどうかは、bot側（別リポジトリ）の判定が一か所で `botSilent` を見て決めている。返信でもこっそり投稿でも同じで、`silentReply` は通知の判定にしか使われない（bsky-affirmative-bot `06c1fe06` で確認）。クライアントで `botSilent` を付ければ別リポジトリの変更は要らず、レコードを見ればbotたんが返事をしない理由が分かる。`isBot` が取れない返信先はbotたんでないものとして扱い、`botSilent` は付けない。
 
+### D8: 外部共有は端末内で受け、確認して通常投稿へ渡す
+
+**課題**：画像付き共有はPOSTで届き、ページ起動やOAuth復帰を待つ必要がある。モーダルが閉じていても書きかけが残り、こっそりでは画像を持てない。
+
+**採用判断**：manifestの共有先は`POST /share-target`とし、Service Workerが受信ごとのIDでIndexedDBへ保存してからID付きのGETへ303で戻す。受信ページから既存OAuthの復帰先を設定できる。通常投稿に専用の取り込み経路を設け、投稿者と追記を確認する。返信・引用は利用者が外すまで、画像はこっそりから範囲を変更するまで保留する（POST-11）。日記・ブログへ共有内容を混入させない。
+
+**理由と制約**：postMessageだけではページ起動前のデータを失う。受信IDごとのWeb Locksで画像処理中を含め排他し、ページ終了時のロック解放で復帰できる。成功した本文・画像だけをIndexedDBの同一トランザクションで取り除き、失敗分は再試行・破棄を選べる。保存確認の失敗時も同じComposer内では適用済みの部分を重複追加しない。処理中のDID変更を確認し、旧共有を切替先へ適用しない。画像の検証・圧縮・エラー文言は選択・貼り付けと共有で共通にする。
+
+端末の受信保存は下書きAPIの画像対応を意味せず、取り込み後の画像は従来のComposerの保持条件に従う。本文・画像名・DIDを受信URLへ載せず、自動投稿しない。保存容量不足・DB消去は失敗として表示する。OSの共有メニュー表示はインストール状態と対応環境に依存し、実機確認の範囲はknown-gaps.mdへ記録する。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
@@ -73,6 +83,8 @@
 | [src/lib/post/silent-flags.ts](../../../src/lib/post/silent-flags.ts)                               | postSilentFlags（送信時のbotたんサイレント・サイレントリプライ） |
 | [src/lib/drafts/drafts.svelte.ts](../../../src/lib/drafts/drafts.svelte.ts)                         | 下書きの共有状態                                                 |
 | [src/lib/components/ComposerAssistant.svelte](../../../src/lib/components/ComposerAssistant.svelte) | 入力中のおたすけ（placement で配置を選ぶ）                       |
+
+外部共有は `src/lib/share-target/store.ts` の受信保存・Web Locks、`receive.ts` のSW受信、`src/routes/share-target/+page.svelte` の受信画面、`ShareImportPanel.svelte` の取り込み確認、`Composer.svelte` の `importShared` が担当する。`src/lib/image-selection.ts` が画像選択と共有の処理をつなぐ。
 
 下書きの保存内容の比較は `src/lib/drafts/content.ts` の `draftContentKey` が担当する。下書き一覧では本文が空の場合にタイトル・タグを表示する。
 

@@ -1,12 +1,8 @@
 <script lang="ts">
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import {
-		ImageProcessingError,
-		MAX_IMAGE_COUNT,
-		processImage,
-		type ImageAttachment,
-	} from '$lib/images';
+	import { MAX_IMAGE_COUNT, type ImageAttachment } from '$lib/images';
+	import { processSelectedImage } from '$lib/image-selection';
 	import type { GifCompressionProgress } from '$lib/gif-compression';
 	import {
 		IMAGE_ACCEPT,
@@ -23,10 +19,12 @@
 		allowVideo = false,
 		disabled = false,
 		maxCount = MAX_IMAGE_COUNT,
+		processing = $bindable(false),
 	}: {
 		attachments: ImageAttachment[];
 		/** 画像の上限。ブログは standard.site に上限が無いので Infinity を渡す。 */
 		maxCount?: number;
+		processing?: boolean;
 		/** allowVideo のとき、選んだ動画（1本まで）をここへ入れる。画像と併用できる。 */
 		video?: VideoAttachment;
 		allowVideo?: boolean;
@@ -36,22 +34,12 @@
 	/** 画像が上限で、動画もこれ以上足せないときだけボタンを止める。 */
 	const full = $derived(attachments.length >= maxCount && (!allowVideo || Boolean(video)));
 	const addLabel = $derived(allowVideo ? m.postMediaAdd() : m.postImageAdd());
-	let processing = $state(false);
 	let compressionProgress = $state<GifCompressionProgress | null>(null);
 	let errors = $state<string[]>([]);
 	const processingLabel = $derived(
 		compressionProgress ? m.postGifProcessing(compressionProgress) : m.postImageProcessing(),
 	);
 	let input: HTMLInputElement;
-
-	function errorMessage(file: File, error: unknown) {
-		const name = file.name || m.postPastedImageName();
-		if (!(error instanceof ImageProcessingError)) return m.imageProcessFailedNamed({ name });
-		if (error.code === 'type') return m.postImageTypeError({ name });
-		if (error.code === 'input-size') return m.postImageInputSizeError({ name });
-		if (error.code === 'gif-size') return m.postGifSizeError({ name });
-		return m.postImageCompressError({ name });
-	}
 
 	async function addFiles(files: File[]) {
 		if (!files.length || processing) return;
@@ -75,14 +63,12 @@
 		try {
 			for (const file of files.slice(0, available)) {
 				compressionProgress = null;
-				try {
-					attachments = [
-						...attachments,
-						await processImage(file, (progress) => (compressionProgress = progress)),
-					];
-				} catch (error) {
-					errors = [...errors, errorMessage(file, error)];
-				}
+				const result = await processSelectedImage(
+					file,
+					(progress) => (compressionProgress = progress),
+				);
+				if (result.image) attachments = [...attachments, result.image];
+				else errors = [...errors, result.error];
 			}
 		} finally {
 			compressionProgress = null;

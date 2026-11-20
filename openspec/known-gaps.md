@@ -89,3 +89,11 @@ change [card-news-ultra-rare-threshold](changes/archive/2026-11-14-card-news-ult
 change [fix-blog-draft-leave-warning](changes/archive/2026-11-16-fix-blog-draft-leave-warning/proposal.md)で、BLOG-07の離脱確認を下書きからの復元可能性に基づく判定へ変更し、POST-06にタイトル・タグの保存を追加した。クライアントは保存応答に保持された内容と現在の入力を照合し、画像が失われる場合は理由を示して確認する。旧APIが追加メタデータを捨てた場合は保存済みと扱わず、警告を維持する。
 
 別リポジトリのOrcaワークツリー `/home/suibari/orca/workspaces/bsky-affirmative-bot/blog-draft-metadata`（`suibari/blog-draft-metadata`）で下書きAPI・lexiconの保持／返却も実装した。入力検証、HTTPと使い捨てPostgresの往復・所有者分離、およびChromiumからの保存と別ページでの復元を確認した。本番の認証経路での往復とデプロイは未実施であり、API側を先に反映する必要がある。検証の詳細はchangeの [verification.md](changes/archive/2026-11-16-fix-blog-draft-leave-warning/verification.md) に記録する。
+
+## 外部共有受信と初回の投稿範囲
+
+change [add-web-share-target](changes/add-web-share-target/proposal.md)でWeb Share Targetのテキスト・URL・画像受信を実装した（POST-11）。Service WorkerからIndexedDBへ保存し、通常投稿へ確認後に取り込む。下書きAPIは引き続き画像blobを保存しない。
+
+調査時、Composerの初回生成が保存済みの前回scopeを復元せず、呼び出し元のdefaultScopeだけを使う不一致を確認した。POST-01に合わせて初回も`restorePostScope`で前回値を優先するよう修正した。共有画像がこっそりの意図を自動で広げないことを操作テストで確認する。
+
+検証結果と環境の境界はchangeの [verification.md](changes/add-web-share-target/verification.md)に記す。OSの外部アプリの共有一覧から選ぶ実機確認と、本番OAuth・デプロイは未実施。ブラウザでのPOST受信やモック認証の操作確認を、本番対応の確認済みと扱わない。
