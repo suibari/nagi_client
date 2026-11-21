@@ -119,10 +119,12 @@ test('likes and unlikes a Bluesky post without showing any counts', async ({ pag
 	await expect(card(page)).toContainText('いいねしてみる投稿');
 	await expect(card(page)).not.toContainText('12');
 	await expect(card(page)).not.toContainText('3');
+	// Nagi と同じくアイコンだけで、ラベルの文字をタイムラインに出さない。
+	await expect(card(page).locator('.bsky-actions')).toHaveText('');
 
 	const like = card(page).getByRole('button', { name: 'いいね', exact: true });
 	await like.click();
-	const liked = card(page).getByRole('button', { name: 'いいね済み' });
+	const liked = card(page).getByRole('button', { name: 'いいねを取り消す' });
 	await expect(liked).toHaveAttribute('aria-pressed', 'true');
 	await expect.poll(() => writes.length).toBe(1);
 	expect(writes[0].method).toBe('com.atproto.repo.createRecord');
@@ -180,7 +182,7 @@ test('replies to a Bluesky post only on Bluesky, without a Nagi post or draft', 
 	page,
 }) => {
 	await signIn(page);
-	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
 	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
 	await expect(dialog).toBeVisible();
 	await expect(dialog).toContainText('Blueskyにだけ投稿します');
@@ -205,7 +207,7 @@ test('replies to a Bluesky post only on Bluesky, without a Nagi post or draft', 
 
 test('quotes a Bluesky post as a Bluesky quote', async ({ page }) => {
 	await signIn(page);
-	await card(page).getByRole('button', { name: '引用', exact: true }).click();
+	await card(page).getByRole('button', { name: 'Blueskyで引用' }).click();
 	const dialog = page.getByRole('dialog', { name: 'Blueskyで引用' });
 	await editor(page, 'Blueskyで引用').click();
 	await page.keyboard.type('これいい');
@@ -220,7 +222,7 @@ test('quotes a Bluesky post as a Bluesky quote', async ({ page }) => {
 test('keeps the text and stops when the post being replied to is gone', async ({ page }) => {
 	await signIn(page);
 	threadMissing = true;
-	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
 	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
 	await editor(page, 'Blueskyへ返信').click();
 	await page.keyboard.type('届くかな');
@@ -232,7 +234,7 @@ test('keeps the text and stops when the post being replied to is gone', async ({
 
 test('asks before discarding an unsent Bluesky reply', async ({ page }) => {
 	await signIn(page);
-	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
 	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
 	await editor(page, 'Blueskyへ返信').click();
 	await page.keyboard.type('書きかけ');
@@ -243,7 +245,7 @@ test('asks before discarding an unsent Bluesky reply', async ({ page }) => {
 	await dialog.getByRole('button', { name: '閉じる' }).click();
 	await confirm.getByRole('button', { name: '破棄する' }).click();
 	await expect(dialog).toHaveCount(0);
-	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
 	await expect(editor(page, 'Blueskyへ返信')).not.toContainText('書きかけ');
 });
 

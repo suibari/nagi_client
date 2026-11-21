@@ -203,47 +203,44 @@
 						<aside class="bsky-quote bsky-quote-missing">{m.bskyQuoteUnavailable()}</aside>
 					{/if}
 				</ContentWarningMask>
-				<footer class="bsky-footer">
-					{#if interactive && $session}
+				{#if interactive && $session}
+					<div class="post-actions bsky-actions">
 						<button
 							type="button"
-							class="bsky-action"
+							class="ghost timeline-action"
 							disabled={replyDisabled}
+							aria-label={replyDisabled ? m.bskyReplyDisabled() : m.bskyReplyTitle()}
 							title={replyDisabled ? m.bskyReplyDisabled() : m.bskyReplyTitle()}
-							onclick={() => void compose('reply')}
-							><Icon name="reply" size={15} />{m.bskyReply()}</button
+							onclick={() => void compose('reply')}><Icon name="reply" size={17} /></button
 						>
 						<button
 							type="button"
-							class="bsky-action"
+							class="ghost timeline-action"
 							class:active={reposted}
 							aria-pressed={reposted}
-							title={reposted ? m.bskyUndoRepost() : m.bskyRepost()}
 							aria-busy={bskyInteractions.busy('repost', post)}
-							onclick={() => toggle('repost')}
-							><Icon name="refresh" size={15} />{reposted
-								? m.bskyReposted()
-								: m.bskyRepost()}</button
+							aria-label={reposted ? m.bskyUndoRepost() : m.bskyRepost()}
+							title={reposted ? m.bskyUndoRepost() : m.bskyRepost()}
+							onclick={() => toggle('repost')}><Icon name="refresh" size={17} /></button
 						>
 						<button
 							type="button"
-							class="bsky-action"
+							class="ghost timeline-action"
 							disabled={quoteDisabled}
+							aria-label={quoteDisabled ? m.bskyQuoteDisabled() : m.bskyQuoteTitle()}
 							title={quoteDisabled ? m.bskyQuoteDisabled() : m.bskyQuoteTitle()}
-							onclick={() => void compose('quote')}
-							><Icon name="quote" size={15} />{m.bskyQuote()}</button
+							onclick={() => void compose('quote')}><Icon name="quote" size={17} /></button
 						>
 						<button
 							type="button"
-							class="bsky-action"
+							class="ghost timeline-action"
 							class:active={liked}
 							aria-pressed={liked}
-							title={liked ? m.bskyUnlike() : m.bskyLike()}
 							aria-busy={bskyInteractions.busy('like', post)}
+							aria-label={liked ? m.bskyUnlike() : m.bskyLike()}
+							title={liked ? m.bskyUnlike() : m.bskyLike()}
 							onclick={() => toggle('like')}
-							><Icon name={liked ? 'heartFilled' : 'heart'} size={15} />{liked
-								? m.bskyLikedByMe()
-								: m.bskyLike()}</button
+							><Icon name={liked ? 'heartFilled' : 'heart'} size={17} /></button
 						>
 						{#if deletable}
 							<ActionMenu label={m.morePostActions()} icon="moreHorizontal" align="start">
@@ -263,7 +260,10 @@
 								{/snippet}
 							</ActionMenu>
 						{/if}
-					{:else if liked}
+					</div>
+				{/if}
+				<footer class="bsky-footer">
+					{#if !(interactive && $session) && liked}
 						<span class="bsky-liked"><Icon name="heart" size={14} />{m.bskyLikedByMe()}</span>
 					{/if}
 					{#if likers.length}
@@ -358,30 +358,9 @@
 		color: var(--text-mute);
 		font-size: 12px;
 	}
-	.bsky-action {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		min-height: 28px;
-		padding: 2px 8px;
-		border: 1px solid transparent;
-		border-radius: var(--r-pill, 999px);
-		background: none;
-		color: var(--text-mute);
-		font: inherit;
-		cursor: pointer;
-	}
-	.bsky-action:hover:not(:disabled) {
-		border-color: var(--line);
-		color: var(--text-muted);
-	}
-	.bsky-action:disabled {
+	.bsky-actions button:disabled {
 		cursor: not-allowed;
-		opacity: 0.5;
-	}
-	.bsky-action.active,
-	.bsky-action.active:hover:not(:disabled) {
-		color: var(--accent-strong);
+		opacity: 0.45;
 	}
 	.bsky-action-error {
 		margin: 6px 0 0;
