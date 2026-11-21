@@ -121,6 +121,7 @@ test('likes and unlikes a Bluesky post without showing any counts', async ({ pag
 	await expect(card(page)).not.toContainText('3');
 	// Nagi と同じくアイコンだけで、ラベルの文字をタイムラインに出さない。
 	await expect(card(page).locator('.bsky-actions')).toHaveText('');
+	await expect(card(page)).not.toContainText('Blueskyで開く');
 
 	const like = card(page).getByRole('button', { name: 'いいね', exact: true });
 	await like.click();
@@ -263,7 +264,10 @@ test('deletes only my own Bluesky posts made through Nagi', async ({ page }) => 
 	const nagiCard = page.locator(`[data-bsky-uri="at://${VIEWER}/app.bsky.feed.post/nagi"]`);
 	const appCard = page.locator(`[data-bsky-uri="at://${VIEWER}/app.bsky.feed.post/app"]`);
 	await expect(appCard).toBeVisible();
-	await expect(appCard.getByRole('button', { name: 'その他の投稿操作' })).toHaveCount(0);
+	await appCard.getByRole('button', { name: 'その他の投稿操作' }).click();
+	await expect(page.getByRole('menuitem', { name: 'Blueskyで開く' })).toBeVisible();
+	await expect(page.getByRole('menuitem', { name: '削除' })).toHaveCount(0);
+	await page.keyboard.press('Escape');
 	await nagiCard.getByRole('button', { name: 'その他の投稿操作' }).click();
 	await page.getByRole('menuitem', { name: '削除' }).click();
 	const confirm = page.getByRole('dialog', { name: 'Blueskyの投稿を削除' });

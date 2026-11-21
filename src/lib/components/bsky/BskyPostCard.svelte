@@ -63,6 +63,8 @@
 		contentWarning: display.warnMedia || media.contentWarning,
 	});
 
+	/** 操作の列を出せるか。設定画面のプレビューや未ログインでは出さない。 */
+	const canAct = $derived(interactive && Boolean($session));
 	const liked = $derived(bskyInteractions.active('like', post));
 	const reposted = $derived(bskyInteractions.active('repost', post));
 	let permissionPrompt = $state(false);
@@ -203,7 +205,7 @@
 						<aside class="bsky-quote bsky-quote-missing">{m.bskyQuoteUnavailable()}</aside>
 					{/if}
 				</ContentWarningMask>
-				{#if interactive && $session}
+				{#if canAct}
 					<div class="post-actions bsky-actions">
 						<button
 							type="button"
@@ -242,49 +244,64 @@
 							onclick={() => toggle('like')}
 							><Icon name={liked ? 'heartFilled' : 'heart'} size={17} /></button
 						>
-						{#if deletable}
+						{#if post.url || deletable}
 							<ActionMenu label={m.morePostActions()} icon="moreHorizontal" align="start">
 								{#snippet menu(closeMenu)}
-									<button
-										class="danger"
-										role="menuitem"
-										onclick={() => {
-											closeMenu(false);
-											deleteError = '';
-											deleteOpen = true;
-										}}
-									>
-										<Icon name="trash" size={17} />
-										<span>{m.deletePost()}</span>
-									</button>
+									{#if post.url}
+										<button
+											role="menuitem"
+											onclick={() => {
+												closeMenu(false);
+												window.open(post.url, '_blank', 'noopener,noreferrer');
+											}}
+										>
+											<Icon name="bluesky" size={17} />
+											<span>{m.bskyOpenInBluesky()}</span>
+										</button>
+									{/if}
+									{#if deletable}
+										<button
+											class="danger"
+											role="menuitem"
+											onclick={() => {
+												closeMenu(false);
+												deleteError = '';
+												deleteOpen = true;
+											}}
+										>
+											<Icon name="trash" size={17} />
+											<span>{m.deletePost()}</span>
+										</button>
+									{/if}
 								{/snippet}
 							</ActionMenu>
 						{/if}
 					</div>
 				{/if}
-				<footer class="bsky-footer">
-					{#if !(interactive && $session) && liked}
-						<span class="bsky-liked"><Icon name="heart" size={14} />{m.bskyLikedByMe()}</span>
-					{/if}
-					{#if likers.length}
-						<span class="bsky-likers" aria-label={m.bskyLikedBy()} title={m.bskyLikedBy()}>
-							<Icon name="heart" size={14} />
-							{#each likers as liker (liker.did)}
-								<a
-									href={liker.profileUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									title={nameOf(liker)}><Avatar actor={liker} size="small" /></a
-								>
-							{/each}
-						</span>
-					{/if}
-					{#if post.url}
-						<a class="bsky-open" href={post.url} target="_blank" rel="noopener noreferrer"
-							><Icon name="bluesky" size={14} />{m.bskyOpenInBluesky()}</a
-						>
-					{/if}
-				</footer>
+				{#if (!canAct && (liked || post.url)) || likers.length}<footer class="bsky-footer">
+						{#if !canAct && liked}
+							<span class="bsky-liked"><Icon name="heart" size={14} />{m.bskyLikedByMe()}</span>
+						{/if}
+						{#if likers.length}
+							<span class="bsky-likers" aria-label={m.bskyLikedBy()} title={m.bskyLikedBy()}>
+								<Icon name="heart" size={14} />
+								{#each likers as liker (liker.did)}
+									<a
+										href={liker.profileUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										title={nameOf(liker)}><Avatar actor={liker} size="small" /></a
+									>
+								{/each}
+							</span>
+						{/if}
+						<!-- 操作を出せる場面では「…」の中に置く。出せないプレビュー等ではここに残す。 -->
+						{#if post.url && !canAct}
+							<a class="bsky-open" href={post.url} target="_blank" rel="noopener noreferrer"
+								><Icon name="bluesky" size={14} />{m.bskyOpenInBluesky()}</a
+							>
+						{/if}
+					</footer>{/if}
 				{#if actionError}<p class="bsky-action-error" role="status">{m.bskyActionFailed()}</p>{/if}
 			</div>
 		</div>
