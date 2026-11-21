@@ -56,23 +56,34 @@
 
 **理由と制約**：ミュート・ブロックはBluesky側で除外済みの一覧が返るので、Nagi側では判定しない。Bluesky投稿だけを表示する独立した画面は持たないため、別画面へ移らずに読んで返信できる形にした。バッジにBlueskyを混ぜないのは、起動時の優先取得（D5）にBlueskyへの問い合わせを入れないためでもある。自分のクロスポストのコピーへの通知から元のNagi投稿へ移る操作は持たない。必要になったら、Constellationの被リンク索引による逆引きかAppViewのAPIを検討する。
 
+### D7: BlueskyのPushはAppViewが公開された操作から作る
+
+**課題**：Nagiのログインはブラウザだけで完結するOAuthで、AppViewは本人の認証情報を持たない。そのためBlueskyの通知を本人として取得してPushすることはできない。
+
+**採用判断**：利用者が以前作ったSkyPutterと同じく、AppViewがJetstreamを受信し、Pushを有効にした利用者宛ての返信・メンション・引用・いいね・リポスト・フォローを見つけて1件ずつ送る。受信はNagiの取り込みとは別の接続で、botと同じ自作のproxyへ向ける。設定は通知設定の同じ行に既定オフのカテゴリとして持ち、Pushの購読はNagiと共用する。tagはイベントのレコードのURIで一意にし、開いた先はBlueskyタブとする。
+
+**理由と制約**：proxyはcursorを上流へ渡さないので、AppViewが止まっていた間のPushは送らない。Pushは取りこぼしても通知タブで確かめられるので許容する。ミュートは本人の認証なしに取得できないので反映しない（2026-11-21に許容）。ブロックは公開APIで確かめ、確かめられなければ送らない。表示名・本文は公開APIから引くだけで保存しない。成人確認できない人には、セルフラベル・作者のラベル・対象投稿のラベルのいずれかが成人向けなら本文を入れない。返信などのラベルは投稿直後にはまだ付いていないことが多いので、後から付いたラベルは反映できない。アプリのバッジはNagiの通知だけを数えるので、BlueskyのPushでは増やさない。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                                            | 探す処理・責務                      |
-| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| [src/lib/notifications/push.svelte.ts](../../../src/lib/notifications/push.svelte.ts)                               | 購読と修復                          |
-| [src/service-worker.ts](../../../src/service-worker.ts)                                                             | 受信・クリック・購読更新            |
-| [src/lib/notifications/unread.svelte.ts](../../../src/lib/notifications/unread.svelte.ts)                           | 件数と世代管理、優先起動            |
-| [src/lib/unread/watermark.svelte.ts](../../../src/lib/unread/watermark.svelte.ts)                                   | 位置の比較と凍結ビュー              |
-| [src/lib/unread/sections.svelte.ts](../../../src/lib/unread/sections.svelte.ts)                                     | DID別セクションの共有               |
-| [src/routes/notifications/+page.svelte](../../../src/routes/notifications/+page.svelte)                             | Nagi／Blueskyのタブと既読の出し分け |
-| [src/lib/components/bsky/BskyNotificationList.svelte](../../../src/lib/components/bsky/BskyNotificationList.svelte) | Blueskyの通知の一覧と既読           |
+| ファイル                                                                                                            | 探す処理・責務                          |
+| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [src/lib/notifications/push.svelte.ts](../../../src/lib/notifications/push.svelte.ts)                               | 購読と修復                              |
+| [src/service-worker.ts](../../../src/service-worker.ts)                                                             | 受信・クリック・購読更新                |
+| [src/lib/notifications/unread.svelte.ts](../../../src/lib/notifications/unread.svelte.ts)                           | 件数と世代管理、優先起動                |
+| [src/lib/unread/watermark.svelte.ts](../../../src/lib/unread/watermark.svelte.ts)                                   | 位置の比較と凍結ビュー                  |
+| [src/lib/unread/sections.svelte.ts](../../../src/lib/unread/sections.svelte.ts)                                     | DID別セクションの共有                   |
+| [src/routes/notifications/+page.svelte](../../../src/routes/notifications/+page.svelte)                             | Nagi／Blueskyのタブと既読の出し分け     |
+| [src/lib/components/bsky/BskyNotificationList.svelte](../../../src/lib/components/bsky/BskyNotificationList.svelte) | Blueskyの通知の一覧と既読               |
+| [src/routes/settings/notifications/+page.svelte](../../../src/routes/settings/notifications/+page.svelte)           | BlueskyのPushの種類別の設定             |
+| [src/lib/notifications/preferences.ts](../../../src/lib/notifications/preferences.ts)                               | BlueskyのPushの既定オフの判定と保存の形 |
 
 - [src/routes/+layout.svelte](../../../src/routes/+layout.svelte)：onMountでの通知ポーリングの先行起動と破棄。
 - [src/lib/oauth/session.svelte.ts](../../../src/lib/oauth/session.svelte.ts)：onOAuthSessionReadyとrememberSessionの公開前フック。
 - [src/lib/api/appview.ts](../../../src/lib/api/appview.ts)：getUnreadCountの明示的セッション引き渡し。
+- AppView（別リポジトリ `bsky-affirmative-bot/apps/nagi_appview`）の `services/blueskyPush.ts`・`services/blueskyPushTargets.ts`：BlueskyのPushの受信・宛先判定・配信。
 
 ## 出典と変更時の扱い
 

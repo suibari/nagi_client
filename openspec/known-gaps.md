@@ -118,3 +118,15 @@ Blueskyへの返信・引用の入力欄には、最初の版では動画とメ�
 調査中に、Blueskyの閲覧の準備で`@atproto/api`の`getPreferences`が保存フィードの設定を新形式へ移すため`putPreferences`を呼ぶことがあると分かった。新形式の設定をまだ持たないアカウントだけで起きると見ている。Nagiはこの権限を要求していないので書き込みは失敗するはずだが、その失敗がフィードの読み込みを止めるかは確かめていない。今回の変更とは別の既存の課題として残す。
 
 検証の詳細はchangeの [verification.md](changes/bluesky-interactions/verification.md) に記す。
+
+## BlueskyのPushの確認境界
+
+change [bluesky-push](changes/bluesky-push/proposal.md) で、BlueskyのPush（NOTIFY-08・09）をクライアントとAppView（別リポジトリ、Orcaのワークツリー `bsky-affirmative-bot/bluesky-push`、ブランチ `suibari/bluesky-push`）に実装した。AppViewの宛先判定と文面は単体テストで、クライアントの設定画面はモックの操作テストで確かめた。次は未確認である。
+
+- 自作のJetstream proxyからの実際の受信と、Blueskyの全投稿・いいねを受けたときのAppViewの負荷。
+- 本物のPush配信（端末への表示）と、通知を開いてBlueskyタブへ移ること。
+- 公開APIでのブロック判定・表示名・本文の取得が、本番の量で詰まらないか。
+
+設計上の制約として、Blueskyでミュートした相手からもPushが届く（2026-11-21に許容）。返信などに後から付いた成人向けのラベルは、Pushの本文の判定に反映できない。AppViewが止まっていた間の操作はPushされない。
+
+プライバシーポリシーには、BlueskyのPushのための受信と公開APIの参照、Bluesky連携で求める権限の範囲、Blueskyのモデレーションへの通報を追記し、更新日を2026-11-21に改めた（MOD-05）。権限の範囲の記述は、change bluesky-interactionsで広げた権限に追いついていなかったため、あわせて直した。

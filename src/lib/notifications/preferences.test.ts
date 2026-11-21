@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
 	NOTIFICATION_PREFERENCE_GROUPS,
+	isBlueskyPushEnabled,
 	isNotificationCategoryEnabled,
+	withBlueskyPush,
 	withNotificationCategory,
 } from './preferences';
 
@@ -36,5 +38,31 @@ describe('notification preferences', () => {
 		const all = NOTIFICATION_PREFERENCE_GROUPS.flatMap((group) => group.categories);
 		expect(new Set(all).size).toBe(all.length);
 		expect(all.length).toBe(10);
+	});
+});
+
+describe('Bluesky push preferences', () => {
+	it('are off until turned on, unlike Nagi categories', () => {
+		expect(isBlueskyPushEnabled({}, 'blueskyLike')).toBe(false);
+		expect(isNotificationCategoryEnabled({}, 'reply')).toBe(true);
+	});
+
+	it('save push only, keeping the other settings', () => {
+		const next = withBlueskyPush({ reply: { list: false, push: false } }, 'blueskyLike', true);
+		expect(next).toEqual({
+			reply: { list: false, push: false },
+			blueskyLike: { list: false, push: true },
+		});
+		expect(isBlueskyPushEnabled(next, 'blueskyLike')).toBe(true);
+		expect(isBlueskyPushEnabled(withBlueskyPush(next, 'blueskyLike', false), 'blueskyLike')).toBe(
+			false,
+		);
+	});
+
+	it('are not part of the Nagi notification groups', () => {
+		const grouped: string[] = NOTIFICATION_PREFERENCE_GROUPS.flatMap((group) => [
+			...group.categories,
+		]);
+		expect(grouped.some((category) => category.startsWith('bluesky'))).toBe(false);
 	});
 });

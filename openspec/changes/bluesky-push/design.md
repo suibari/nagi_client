@@ -41,13 +41,19 @@ SkyPutterと同じ単純な方式で、Pushを有効にした利用者にBluesky
 
 表示名は`public.api.bsky.app`の`getProfile`、対象投稿の文とラベルは`getPosts`で取得する。どちらも短時間のメモリキャッシュだけにして、データベースに保存しない。年齢保護は、宛先の利用者がNagiで成人確認できていない場合に、Bluesky公式のラベル（`porn`・`sexual`・`nudity`等）が投稿または作者に付いていれば本文を入れないことで行う。利用者が購読している独自のラベラーは反映しない。
 
-### D5: Jetstreamの受信は今の受信と分ける
+### D5: Bluesky用の受信は自作のproxyへ別の接続で張る
 
-Blueskyの全投稿・いいねを受けると、今のNagiのコレクションだけの受信とは量が桁違いになる。Nagiの取り込み（`NAGI_INGEST_COLLECTIONS`）が遅れないよう、Bluesky用の受信は別の接続（できれば別プロセス）にする。処理が詰まったときは古いイベントを捨てる（SkyPutterと同じく上限を設ける）。捨てたぶんのPushは届かないが、通知タブで確認できる。
+Blueskyの全投稿・いいねを受けると、今のNagiのコレクションだけの受信とは量が桁違いになる。Nagiの取り込み（`NAGI_INGEST_COLLECTIONS`、`URL_JETSTREAM_APPVIEW`）は、取りこぼしをcursorで埋め戻せることが前提なので、公式のJetstreamに直接つないだまま変えない。
 
-### D6: 設定はNagiの通知設定と並べて保存する
+Bluesky用の受信は、AppViewのプロセス内に別の接続として張り、botと同じ自作のproxy（`URL_JETSTREAM`）へ向ける。proxyはクライアントのcursorを上流へ渡さないため、AppViewが止まっていた間のPushは送れないが、Pushは取りこぼしても通知タブで確かめられるので許容する。接続にはbotと同じ`startBotJetstream`を使う。処理が詰まったときは古いイベントを捨てる（SkyPutterと同じく上限を設ける）。VAPIDの鍵が無い環境（開発用のAppViewなど）ではPushを送らないので、受信そのものを始めない。
 
-NOTIFY-01の設定はアカウント単位で、未設定は有効である。Blueskyの種類は初期状態をオフにしたいので、Nagiの種類と同じ「未設定は有効」の規則に乗せず、Bluesky用の有効化フラグと種類別の設定を別に持つ。Pushの購読（端末）はNagiと共用する。
+プロセス内に置くのは、Pushを有効にした利用者のDIDの集合を、通知設定の保存と同時に更新できるからである。別プロセスにするとDBを定期的に読み直す必要があり、設定を変えてから反映されるまで遅れる。受信量が問題になったら別プロセスへ分ける。
+
+### D6: 設定はNagiの通知設定と同じ行に、既定オフのカテゴリとして持つ
+
+NOTIFY-01の設定はアカウント単位で、カテゴリごとに`{ list, push }`をjsonbに持ち、未設定は有効である。Blueskyの6種類（`blueskyReply`・`blueskyMention`・`blueskyQuote`・`blueskyLike`・`blueskyRepost`・`blueskyFollow`）を同じ行のカテゴリとして加え、これらだけは未設定を無効（pushがfalse）として扱う。`list`はBlueskyの通知一覧がBluesky側にあるので使わない。別のテーブルや有効化フラグを設けないのは、保存・取得のAPIと設定画面の仕組みをそのまま使えるからである。どれか1つでもpushが有効な利用者を、受信の宛先の集合に入れる。Pushの購読（端末）はNagiと共用する。
+
+通知のtagは、Nagiの通知と同じく1件ごとに一意でなければならない（同じtagの通知は無音で置き換わる）。Blueskyの通知にはNagiの通知の行が無いので、イベントのレコードのURIをtagに使う。通知を開いた先は`/notifications?tab=bluesky`とする。
 
 ## Risks / Trade-offs
 

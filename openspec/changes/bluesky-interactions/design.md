@@ -18,7 +18,7 @@ Bluesky投稿への基本的なやり取り（いいね・リポスト・返信�
 
 ### D1: 操作は本人PDSへ直接書き、Nagi AppViewを通さない
 
-いいね・リポスト・返信・threadgate・postgateは`com.atproto.repo`のレコード操作として本人PDSへ書く。ミュート・ブックマーク・通報・通知はBluesky AppViewのRPCを、閲覧と同じatproto-proxy付きで呼ぶ（通報はBlueskyのモデレーションサービスを宛先にする）。Nagi AppViewにBlueskyのURIや操作の記録を送らないので、BSKY-01の境界とプライバシーポリシーは変わらない。
+いいね・リポスト・返信・threadgate・postgateは`com.atproto.repo`のレコード操作として本人PDSへ書く。ミュート・ブックマーク・通報・通知はBluesky AppViewのRPCを、閲覧と同じatproto-proxy付きで呼ぶ（通報はBlueskyのモデレーションサービスを宛先にする）。Nagi AppViewにBlueskyのURIや操作の記録を送らないので、BSKY-01の境界は変わらない。ただしプライバシーポリシーに書いた、Bluesky連携で求める権限の範囲と外部への送信先（Blueskyのモデレーションへの通報）は実装と合わなくなるため、change bluesky-pushの改定であわせて直した。
 
 表示型には`likedByMe`に加えて`repostedByMe`と、取り消しに必要な自分のレコードのURI（`viewer.like`／`viewer.repost`）を持たせる。件数は従来どおり変換時に捨てる。
 

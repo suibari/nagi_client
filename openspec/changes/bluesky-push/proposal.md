@@ -27,7 +27,7 @@
 
 ### Modified Capabilities
 
-- `bluesky-integration`：BSKY-01のデータ境界に、Push判定のためのJetstream受信を例外として加える。
+- `bluesky-integration`：BSKY-15で、BSKY-01のデータ境界の例外としてPush判定のためのJetstream受信を加える。
 - `notifications-unread`：NOTIFY-08（配信と設定）・NOTIFY-09（文面と除外）でBlueskyの通知のPushを追加する。
 
 ## Impact

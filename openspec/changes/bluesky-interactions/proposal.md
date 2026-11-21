@@ -40,4 +40,4 @@ NagiではBlueskyのフィードを読めるが、読んだ投稿に返信・い
 - クライアント：`src/lib/oauth/client.ts`のscope、`src/lib/bsky/`（agentに書き込み・通知・ミュート・ブックマーク・通報の呼び出しを追加、mapViewに`repostedByMe`等）、`BskyPostCard.svelte`の操作列、共通Composerへの「Blueskyだけに投稿」モード、通知画面のタブ、ブックマーク画面、Nagi投稿の削除確認。
 - 外部リポジトリ：nagi-lexiconの`NAGI_BLUESKY_VIEW_SCOPES`等の権限定義を揃える（`bsky-affirmative-bot/guillemot/packages/nagi-lexicon`）。Nagi AppViewのAPI変更はない。
 - 既存利用者は新しい権限を持っていないため、再認可が必要になる。再認可するまでは閲覧だけが今までどおり使える。
-- 文書：known-gaps.mdのGAP-01に方針変更の経緯を追記する。プライバシーポリシーへの影響はない（Nagi AppViewにBlueskyのデータを保存しない）。
+- 文書：known-gaps.mdのGAP-01に方針変更の経緯を追記する。Nagi AppViewにBlueskyのデータは保存しないが、プライバシーポリシーの権限の範囲と送信先（Blueskyのモデレーションへの通報）の記述は更新が要る（change bluesky-pushの改定でまとめて直した）。

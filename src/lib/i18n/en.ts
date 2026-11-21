@@ -1261,6 +1261,13 @@ export const en: Messages = {
 	bskyBookmarksSection: 'Bluesky',
 	bskyBookmarksEmpty: 'No posts bookmarked on Bluesky',
 	bskyBookmarksFailed: 'Could not load Bluesky bookmarks',
+	notifPrefBlueskyTitle: 'Push for Bluesky notifications',
+	notifPrefBlueskyHelp:
+		'Also get push notifications on this device for activity on Bluesky. All are off at first. Notifications still arrive from people you mute on Bluesky (but not from people you block).',
+	notifPrefBlueskyQuote: 'Quotes',
+	notifPrefBlueskyLike: 'Likes',
+	notifPrefBlueskyRepost: 'Reposts',
+	notifPrefBlueskyFollow: 'Follows',
 	bskyLike: 'Like',
 	bskyUnlike: 'Remove like',
 	bskyRepost: 'Repost',

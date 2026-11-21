@@ -1295,6 +1295,13 @@ export const ja = {
 	bskyBookmarksSection: 'Bluesky',
 	bskyBookmarksEmpty: 'Blueskyでブックマークした投稿はありません',
 	bskyBookmarksFailed: 'Blueskyのブックマークを読み込めませんでした',
+	notifPrefBlueskyTitle: 'Blueskyの通知のプッシュ',
+	notifPrefBlueskyHelp:
+		'Blueskyでの反応を、この端末のプッシュ通知でも受け取ります。最初はすべてオフです。Blueskyでミュートしている相手からも届きます（ブロックしている相手からは届きません）。',
+	notifPrefBlueskyQuote: '引用',
+	notifPrefBlueskyLike: 'いいね',
+	notifPrefBlueskyRepost: 'リポスト',
+	notifPrefBlueskyFollow: 'フォロー',
 	bskyLike: 'いいね',
 	bskyUnlike: 'いいねを取り消す',
 	bskyRepost: 'リポスト',
