@@ -26,6 +26,7 @@
 
 <p class="post-text bsky-text">
 	{#each segments as segment, index (index)}{#if segment.href}<a
+				class="rich-link"
 				href={segment.href}
 				target="_blank"
 				rel="noopener noreferrer">{segment.text}</a

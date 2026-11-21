@@ -412,3 +412,34 @@ test('marks Bluesky feed tabs with the Bluesky icon', async ({ page }) => {
 	await expect(tab.locator('.feed-tab-bsky')).toHaveCount(1);
 	await expect(tab).toContainText('（Bluesky）');
 });
+
+test('shows links and mentions in Bluesky posts the same way as in Nagi', async ({ page }) => {
+	const text = '@friend.test を見て https://example.com';
+	const bytes = (value: string) => new TextEncoder().encode(value).length;
+	timeline = [
+		{
+			post: {
+				...post,
+				record: {
+					...post.record,
+					text,
+					facets: [
+						{
+							index: { byteStart: 0, byteEnd: bytes('@friend.test') },
+							features: [{ $type: 'app.bsky.richtext.facet#mention', did: 'did:plc:friend' }],
+						},
+						{
+							index: { byteStart: bytes('@friend.test を見て '), byteEnd: bytes(text) },
+							features: [{ $type: 'app.bsky.richtext.facet#link', uri: 'https://example.com' }],
+						},
+					],
+				},
+			},
+		},
+	];
+	await signIn(page);
+	const links = card(page).locator('.bsky-text a.rich-link');
+	await expect(links).toHaveCount(2);
+	await expect(links.first()).toHaveText('@friend.test');
+	await expect(links.nth(1)).toHaveAttribute('href', 'https://example.com/');
+});
