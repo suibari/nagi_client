@@ -27,7 +27,7 @@ change [prioritize-startup-notification-count](changes/archive/2026-11-12-priori
 - 実装で確認: `CROSSPOST_SCOPE` は `?action=create`。通常投稿保存失敗時と分割投稿途中失敗時には `deleteBlueskyPosts()` を呼び、削除失敗はconsoleへ記録して継続する。
 - 確定方針: Bluesky投稿の要求権限はcreateのみに限定する。不用意な削除権限を持たないことを優先し、後始末を成立させるために権限を拡張しない。
 - 解消（2026-11-12）: change [crosspost-after-nagi-save](changes/crosspost-after-nagi-save/proposal.md) で、通常投稿もNagi保存後にBlueskyへ投稿し、コピーの参照を投稿へ追記する順序へ改めた。`deleteBlueskyPosts()` を削除し、分割投稿の途中失敗でも作成済みの分を削除しない。途中までのコピーと参照追記の失敗は警告で伝える（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)）。前提として、AppViewは見える内容が変わらない更新を編集とみなさない（[API-09](specs/appview-protocol/spec.md#api-09)）。AppViewは本番反映済み、クライアントは本番反映待ち。
-- 方針変更（2026-11-21）: change [bluesky-interactions](changes/bluesky-interactions/proposal.md) で、Nagiから書いたBluesky投稿を消せるよう、Bluesky投稿の権限を作成と削除に広げた（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)、[AUTH-03](specs/auth-session/spec.md#auth-03)）。updateは要求しない。削除の操作を出すのは`via: "Nagi"`を持つ自分の投稿と、利用者が選んだクロスポストのコピーだけで（[BSKY-10](specs/bluesky-integration/spec.md#bsky-10)）、失敗時に自動で消して巻き戻すことは引き続きしない。上の「create限定」の確定方針は、この時点で置き換えた。
+- 方針変更（2026-11-21）: change [bluesky-interactions](changes/archive/2026-11-22-bluesky-interactions/proposal.md) で、Nagiから書いたBluesky投稿を消せるよう、Bluesky投稿の権限を作成と削除に広げた（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)、[AUTH-03](specs/auth-session/spec.md#auth-03)）。updateは要求しない。削除の操作を出すのは`via: "Nagi"`を持つ自分の投稿と、利用者が選んだクロスポストのコピーだけで（[BSKY-10](specs/bluesky-integration/spec.md#bsky-10)）、失敗時に自動で消して巻き戻すことは引き続きしない。上の「create限定」の確定方針は、この時点で置き換えた。
 - 解消前の状態（記録として残す）: 作成限定scopeと削除の試行が共存し、削除は拒否されうるためコピーが残る可能性があった。実際のPDSでの削除拒否や旧全操作scopeのセッションとの差は、確認しないまま解消した。
 
 ## GAP-02
@@ -107,7 +107,7 @@ Chromiumの操作テストで Ctrl+V による画像とテキストの貼り付�
 
 ## Blueskyの操作・通知タブの確認境界
 
-change [bluesky-interactions](changes/bluesky-interactions/proposal.md) で、Bluesky投稿へのいいね・リポスト・返信・引用・削除・ミュート・返信と引用の許可・ブックマーク・通報と、通知画面のBlueskyタブを実装した（BSKY-08〜14、AUTH-08、NOTIFY-07）。検証はモックのセッションとPDS応答によるもので、本物のPDSとBluesky AppViewでの確認は未実施である。特に次は本番で確かめていない。
+change [bluesky-interactions](changes/archive/2026-11-22-bluesky-interactions/proposal.md) で、Bluesky投稿へのいいね・リポスト・返信・引用・削除・ミュート・返信と引用の許可・ブックマーク・通報と、通知画面のBlueskyタブを実装した（BSKY-08〜14、AUTH-08、NOTIFY-07）。検証はモックのセッションとPDS応答によるもので、本物のPDSとBluesky AppViewでの確認は未実施である。特に次は本番で確かめていない。
 
 - `repo:app.bsky.feed.post?action=create&action=delete` のように複数のactionを並べた権限を、実際のPDSが受け付けて付与するか。
 - 本番OAuthでの再認可の流れと、旧セッションからの移行。
@@ -117,11 +117,11 @@ Blueskyへの返信・引用の入力欄には、最初の版では動画とメ�
 
 調査中に、Blueskyの閲覧の準備で`@atproto/api`の`getPreferences`が保存フィードの設定を新形式へ移すため`putPreferences`を呼ぶことがあると分かった。新形式の設定をまだ持たないアカウントだけで起きると見ている。Nagiはこの権限を要求していないので書き込みは失敗するはずだが、その失敗がフィードの読み込みを止めるかは確かめていない。今回の変更とは別の既存の課題として残す。
 
-検証の詳細はchangeの [verification.md](changes/bluesky-interactions/verification.md) に記す。
+検証の詳細はchangeの [verification.md](changes/archive/2026-11-22-bluesky-interactions/verification.md) に記す。
 
 ## BlueskyのPushの確認境界
 
-change [bluesky-push](changes/bluesky-push/proposal.md) で、BlueskyのPush（NOTIFY-08・09）をクライアントとAppView（別リポジトリ、Orcaのワークツリー `bsky-affirmative-bot/bluesky-push`、ブランチ `suibari/bluesky-push`）に実装した。AppViewの宛先判定と文面は単体テストで、クライアントの設定画面はモックの操作テストで確かめた。次は未確認である。
+change [bluesky-push](changes/archive/2026-11-22-bluesky-push/proposal.md) で、BlueskyのPush（NOTIFY-08・09）をクライアントとAppView（別リポジトリ、Orcaのワークツリー `bsky-affirmative-bot/bluesky-push`、ブランチ `suibari/bluesky-push`）に実装した。AppViewの宛先判定と文面は単体テストで、クライアントの設定画面はモックの操作テストで確かめた。次は未確認である。
 
 - 自作のJetstream proxyからの実際の受信と、Blueskyの全投稿・いいねを受けたときのAppViewの負荷。
 - 本物のPush配信（端末への表示）と、通知を開いてBlueskyタブへ移ること。

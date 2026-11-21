@@ -26,4 +26,4 @@
 
 ## 確認していないこと
 
-すべてモックのセッションとPDS・AppViewの応答で確かめた。本物のPDSとBluesky AppView、本番OAuthでは確認していない。主な境界は [known-gaps.md](../../known-gaps.md) の「Blueskyの操作・通知タブの確認境界」に記す。スマホ幅の画面は、操作列・メニュー・返信と引用の入力欄・通知タブをPlaywrightの画面写真で目視した。
+すべてモックのセッションとPDS・AppViewの応答で確かめた。本物のPDSとBluesky AppView、本番OAuthでは確認していない。主な境界は [known-gaps.md](../../../known-gaps.md) の「Blueskyの操作・通知タブの確認境界」に記す。スマホ幅の画面は、操作列・メニュー・返信と引用の入力欄・通知タブをPlaywrightの画面写真で目視した。

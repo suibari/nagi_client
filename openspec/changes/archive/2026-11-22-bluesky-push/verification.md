@@ -27,4 +27,4 @@ PostgreSQLを使うAppViewのテスト（`*.postgres.test.ts`）は、使い捨�
 
 ## 確認していないこと
 
-自作のJetstream proxyからの実際の受信、本物のWeb Pushの配信と端末での表示、公開APIでのブロック判定・表示名・本文の取得は、本番の環境で確かめていない。配信を組み立てて送る部分（`deliver`）は、通知設定・年齢・購読をデータベースから読むため、単体テストでは通していない。詳細は [known-gaps.md](../../known-gaps.md) の「BlueskyのPushの確認境界」に記す。
+自作のJetstream proxyからの実際の受信、本物のWeb Pushの配信と端末での表示、公開APIでのブロック判定・表示名・本文の取得は、本番の環境で確かめていない。配信を組み立てて送る部分（`deliver`）は、通知設定・年齢・購読をデータベースから読むため、単体テストでは通していない。詳細は [known-gaps.md](../../../known-gaps.md) の「BlueskyのPushの確認境界」に記す。

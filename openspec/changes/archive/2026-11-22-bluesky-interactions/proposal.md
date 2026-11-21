@@ -21,7 +21,7 @@ NagiではBlueskyのフィードを読めるが、読んだ投稿に返信・い
 
 - ブロック・フォロー・Bluesky内のプロフィール画面。Nagiの思想と合わず、ボタンがあること自体に違和感があるため。プロフィールは今のままbsky.appへのリンクとする。
 - DM、ワードミュートの編集、Blueskyでの検索。
-- BlueskyのPush通知は別change [bluesky-push](../bluesky-push/proposal.md) で扱う。
+- BlueskyのPush通知は別change [bluesky-push](../2026-11-22-bluesky-push/proposal.md) で扱う。
 
 ## Capabilities
 

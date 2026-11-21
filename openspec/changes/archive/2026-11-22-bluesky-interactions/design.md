@@ -12,7 +12,7 @@
 
 Bluesky投稿への基本的なやり取り（いいね・リポスト・返信・引用・削除）と、その結果として届く反応の確認（通知タブ）、身を守る手段（ミュート・通報・返信と引用の許可）をNagi内で行えるようにする。Nagi AppViewはBlueskyのデータを中継・保存しない境界を保つ。
 
-ブロック・フォロー・Bluesky内のプロフィール画面・DM・Push通知（[bluesky-push](../bluesky-push/proposal.md)）は扱わない。
+ブロック・フォロー・Bluesky内のプロフィール画面・DM・Push通知（[bluesky-push](../2026-11-22-bluesky-push/proposal.md)）は扱わない。
 
 ## Decisions
 

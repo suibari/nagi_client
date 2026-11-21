@@ -2,7 +2,7 @@
 
 ## Why
 
-[bluesky-interactions](../bluesky-interactions/proposal.md)でBlueskyの通知をNagiの通知画面に表示できるようになるが、Nagiを開いていないと気付けない。Nagiは反応を穏やかに受け取ることを方針としており、Nagiの通知と同じようにBlueskyの反応もPushで届けたい。
+[bluesky-interactions](../2026-11-22-bluesky-interactions/proposal.md)でBlueskyの通知をNagiの通知画面に表示できるようになるが、Nagiを開いていないと気付けない。Nagiは反応を穏やかに受け取ることを方針としており、Nagiの通知と同じようにBlueskyの反応もPushで届けたい。
 
 ## What Changes
 
@@ -35,4 +35,4 @@
 - 外部リポジトリ（Nagi AppView、`bsky-affirmative-bot/guillemot/apps/nagi_appview`）：Bluesky用のJetstream受信、宛先判定、Push配信、利用者ごとの有効化と種類別の設定。今のJetstream受信はNagiのコレクションだけを対象にしており、Blueskyの全投稿・いいねを受けると量が桁違いに増えるため、受信処理を分けるかJetstreamProxyを使う。
 - クライアント：通知設定画面にBlueskyの項目、Service Workerの遷移先（Blueskyのタブ・スレッド）。
 - 保存されるデータ：Pushを有効にした利用者のDIDと種類別の設定だけ。Blueskyの投稿・表示名は配信のために一時的に取得するだけで保存しない。プライバシーポリシーには、Pushのために公開されているBlueskyの操作を監視することを追記する。
-- [bluesky-interactions](../bluesky-interactions/proposal.md)の通知タブ（NOTIFY-07）を前提とする。
+- [bluesky-interactions](../2026-11-22-bluesky-interactions/proposal.md)の通知タブ（NOTIFY-07）を前提とする。
