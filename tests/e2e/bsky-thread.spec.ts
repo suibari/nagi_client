@@ -195,8 +195,10 @@ test('keeps reading past pages hidden by the Following settings, then lets you r
 		}),
 	);
 	// 返信ばかりのタイムライン（botたんの返信が続く状況）。続きは常にある。
+	const limits = new Set<string | null>();
 	await page.route('**/xrpc/app.bsky.feed.getTimeline*', (route) => {
 		timelineRequests++;
+		limits.add(new URL(route.request().url()).searchParams.get('limit'));
 		const reply = post(String((timelineRequests % 9) + 1), 'root');
 		return route.fulfill({
 			json: {
@@ -210,6 +212,8 @@ test('keeps reading past pages hidden by the Following settings, then lets you r
 		timeout: 15_000,
 	});
 	await expect(page.getByText('このフィードには投稿がありません')).toHaveCount(0);
+	// フォロー中は getTimeline の上限まで一度に取る。
+	expect([...limits]).toEqual(['100']);
 	const before = timelineRequests;
 	// 初回と自動の読み足しを合わせても、上限の回数で止まる。
 	expect(before).toBeLessThanOrEqual(4 * 4);

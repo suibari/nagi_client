@@ -43,6 +43,11 @@ const BSKY_APPVIEW_DID = 'did:web:api.bsky.app';
 /** ハンドルの解決だけは認証の要らない公開 API を使う（PDS 経由だと rpc 権限がもう1つ要る）。 */
 const PUBLIC_API = 'https://public.api.bsky.app';
 const PAGE_SIZE = 30;
+/**
+ * フォロー中は表示設定（返信を隠すなど）をクライアントで当てるので、返信の多いタイムラインでは
+ * 30件ではほとんど残らない。getTimeline の上限まで取り、本来の投稿へ届くまでの往復を減らす。
+ */
+const TIMELINE_PAGE_SIZE = 100;
 
 /** フィードタブの指し先。ホームタイムライン（フォロー中）はフィードジェネレータを持たない。 */
 export type BskyFeedRef = { kind: 'timeline' } | { kind: 'generator'; uri: string };
@@ -126,7 +131,7 @@ const MAX_FETCH_ROUNDS = 4;
 async function fetchRaw(ctx: Context, feed: BskyFeedRef, cursor?: string) {
 	const { data } =
 		feed.kind === 'timeline'
-			? await ctx.agent.app.bsky.feed.getTimeline({ cursor, limit: PAGE_SIZE })
+			? await ctx.agent.app.bsky.feed.getTimeline({ cursor, limit: TIMELINE_PAGE_SIZE })
 			: await ctx.agent.app.bsky.feed.getFeed({ feed: feed.uri, cursor, limit: PAGE_SIZE });
 	return {
 		items: data.feed.map(toFeedItem),
