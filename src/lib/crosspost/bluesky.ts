@@ -193,7 +193,7 @@ export type CrosspostResult = {
 };
 
 /**
- * 分割投稿の途中で失敗した。作った分は消さない（Bluesky の権限は作成だけ）ので、
+ * 分割投稿の途中で失敗した。作った分は自動では消さない（BSKY-06）ので、
  * 呼び出し側は Bluesky に途中までのコピーが残ったことを伝える。
  */
 export class CrosspostPartialError extends Error {

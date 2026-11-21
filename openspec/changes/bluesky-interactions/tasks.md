@@ -38,6 +38,6 @@
 
 ## 6. 文書と検証
 
-- [ ] 6.1 主仕様（bluesky-integration・auth-session・notifications-unread）・各design.md・known-gaps.md（GAP-01の経緯）を実装と一致させる。`BskyPostCard.svelte`・`mapView.ts`・`oauth/client.ts`の閲覧専用・作成のみの旧コメントを更新する。
-- [ ] 6.2 `npm run check`、関連Vitest、`npm run build`、操作のPlaywrightテストを実行し、結果をverification.mdに記録する。本番のBlueskyでの確認と、モックでの確認を区別する。
-- [ ] 6.3 `npx --yes @fission-ai/openspec@1.17.0 validate --all --strict --no-interactive`と`node openspec/tools/comment-catalog.mjs --check`を実行する。
+- [x] 6.1 主仕様（bluesky-integration・auth-session・notifications-unread）・各design.md・known-gaps.md（GAP-01の経緯）を実装と一致させる。`BskyPostCard.svelte`・`mapView.ts`・`oauth/client.ts`の閲覧専用・作成のみの旧コメントを更新する。
+- [x] 6.2 `npm run check`、関連Vitest、`npm run build`、操作のPlaywrightテストを実行し、結果をverification.mdに記録する。本番のBlueskyでの確認と、モックでの確認を区別する。
+- [x] 6.3 `npx --yes @fission-ai/openspec@1.17.0 validate --all --strict --no-interactive`と`node openspec/tools/comment-catalog.mjs --check`を実行する。

@@ -1172,7 +1172,7 @@ export const en: Messages = {
 		'Posted to Bluesky, but could not link it to your Nagi post. Replies and quotes to this post will not continue on Bluesky.',
 	blueskyFeedReadingTitle: 'Read Bluesky feeds',
 	blueskyFeedReadingHelp:
-		'Add your Bluesky Following timeline or custom feeds as tabs from the feed tab settings. They are read-only, and like counts are not shown.',
+		'Add your Bluesky Following timeline or custom feeds as tabs from the feed tab settings. You can reply, like and repost from Nagi, but counts are not shown.',
 	blueskyFeedReadingOpenTabs: 'Set up feed tabs',
 	bskyFeedEmpty: 'There are no posts in this feed',
 	bskyThreadLoadFailed: 'Could not load replies',

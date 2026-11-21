@@ -48,17 +48,27 @@
 
 **比較資料**：[Bluesky公式の未読Provider](https://github.com/bluesky-social/social-app/blob/main/src/state/queries/notifications/unread.tsx)はセッション確立時に即時確認する。[Mastodon Web UI](https://github.com/mastodon/mastodon/blob/main/app/javascript/mastodon/features/ui/index.jsx)も起動時に通知を取得するが、ホーム取得のdispatchが先にある（2026-11-12公開ソース確認）。起動時の並行取得の参考であり、一般のアプリが通知を必ず最初に取得する根拠ではない。
 
+### D6: Blueskyの通知はタブで分け、Bluesky側の既読を正本にする
+
+**課題**：Nagiの通知の既読はNagi AppViewのreadAtが正本で、Blueskyの通知の既読はBluesky側のseenAtが正本である。1つの一覧に混ぜると、どちらかの既読がずれる。
+
+**採用判断**：通知画面にNagiとBlueskyのタブを分け、それぞれのタブが見えているときだけ、表示した最新分まで既読にする。Blueskyの通知はグループ化せず1件ずつ並べ、件数の表現を作らない。いいね・リポストの対象投稿は`getPosts`で引いてラベルごと添え、年齢の保護で隠す投稿に付いた通知は行ごと出さない。通知を押すと、その投稿の会話をその場に開く。ナビのバッジはNagiの通知だけを数え、Blueskyの未読はタブの印で示す。
+
+**理由と制約**：ミュート・ブロックはBluesky側で除外済みの一覧が返るので、Nagi側では判定しない。Bluesky投稿だけを表示する独立した画面は持たないため、別画面へ移らずに読んで返信できる形にした。バッジにBlueskyを混ぜないのは、起動時の優先取得（D5）にBlueskyへの問い合わせを入れないためでもある。自分のクロスポストのコピーへの通知から元のNagi投稿へ移る操作は持たない。必要になったら、Constellationの被リンク索引による逆引きかAppViewのAPIを検討する。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                  | 探す処理・責務           |
-| ----------------------------------------------------------------------------------------- | ------------------------ |
-| [src/lib/notifications/push.svelte.ts](../../../src/lib/notifications/push.svelte.ts)     | 購読と修復               |
-| [src/service-worker.ts](../../../src/service-worker.ts)                                   | 受信・クリック・購読更新 |
-| [src/lib/notifications/unread.svelte.ts](../../../src/lib/notifications/unread.svelte.ts) | 件数と世代管理、優先起動 |
-| [src/lib/unread/watermark.svelte.ts](../../../src/lib/unread/watermark.svelte.ts)         | 位置の比較と凍結ビュー   |
-| [src/lib/unread/sections.svelte.ts](../../../src/lib/unread/sections.svelte.ts)           | DID別セクションの共有    |
+| ファイル                                                                                                            | 探す処理・責務                      |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| [src/lib/notifications/push.svelte.ts](../../../src/lib/notifications/push.svelte.ts)                               | 購読と修復                          |
+| [src/service-worker.ts](../../../src/service-worker.ts)                                                             | 受信・クリック・購読更新            |
+| [src/lib/notifications/unread.svelte.ts](../../../src/lib/notifications/unread.svelte.ts)                           | 件数と世代管理、優先起動            |
+| [src/lib/unread/watermark.svelte.ts](../../../src/lib/unread/watermark.svelte.ts)                                   | 位置の比較と凍結ビュー              |
+| [src/lib/unread/sections.svelte.ts](../../../src/lib/unread/sections.svelte.ts)                                     | DID別セクションの共有               |
+| [src/routes/notifications/+page.svelte](../../../src/routes/notifications/+page.svelte)                             | Nagi／Blueskyのタブと既読の出し分け |
+| [src/lib/components/bsky/BskyNotificationList.svelte](../../../src/lib/components/bsky/BskyNotificationList.svelte) | Blueskyの通知の一覧と既読           |
 
 - [src/routes/+layout.svelte](../../../src/routes/+layout.svelte)：onMountでの通知ポーリングの先行起動と破棄。
 - [src/lib/oauth/session.svelte.ts](../../../src/lib/oauth/session.svelte.ts)：onOAuthSessionReadyとrememberSessionの公開前フック。

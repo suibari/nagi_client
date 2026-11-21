@@ -1207,7 +1207,7 @@ export const ja = {
 		'Blueskyには投稿できましたが、Nagiの投稿と結びつけられませんでした。このポストへの返信・引用はBlueskyに続けられません',
 	blueskyFeedReadingTitle: 'Blueskyのフィードを見る',
 	blueskyFeedReadingHelp:
-		'フィードのタブ設定から、Blueskyのフォロー中（ホームタイムライン）やカスタムフィードをタブとして追加できます。閲覧専用で、いいねの数は表示しません。',
+		'フィードのタブ設定から、Blueskyのフォロー中（ホームタイムライン）やカスタムフィードをタブとして追加できます。返信・いいね・リポストなどもNagiからできますが、数は表示しません。',
 	blueskyFeedReadingOpenTabs: 'フィードのタブを設定する',
 	bskyFeedEmpty: 'このフィードには投稿がありません',
 	bskyThreadLoadFailed: '返信を読み込めませんでした',

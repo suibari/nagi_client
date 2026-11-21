@@ -77,7 +77,7 @@
 | [src/lib/chronicle/chronicle.ts](../../../src/lib/chronicle/chronicle.ts)                           | 節目の集約・全年の読み込み・表示文言 |
 | [src/lib/chronicle/read-state.ts](../../../src/lib/chronicle/read-state.ts)                         | 年単位の既読                         |
 | [src/lib/components/ChronicleTimeline.svelte](../../../src/lib/components/ChronicleTimeline.svelte) | 年表表示と演出                       |
-| [src/lib/components/ChronicleScrubber.svelte](../../../src/lib/components/ChronicleScrubber.svelte) | 年月のスクラバーと上下の余白           |
+| [src/lib/components/ChronicleScrubber.svelte](../../../src/lib/components/ChronicleScrubber.svelte) | 年月のスクラバーと上下の余白         |
 | [src/lib/chronicle/scrub.ts](../../../src/lib/chronicle/scrub.ts)                                   | スクラバーの位置計算                 |
 
 ## 出典と変更時の扱い

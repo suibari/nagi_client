@@ -2,15 +2,15 @@
 
 利用者が確認した現行仕様と、コードから確認できた状態を記録する。仕様判断の確定と、コード・コメントへの反映完了を区別する。原文は [導入時コメント原文](reference/comment-snapshot/README.md) に保存する。行番号付き出典は採録コミットの固定位置を指す。
 
-| 項目   | 確定した扱い                                          | コード・コメントの扱い                                            |
-| ------ | ----------------------------------------------------- | ----------------------------------------------------------------- |
-| GAP-01 | Bluesky投稿の権限はcreate限定。削除権限を追加しない。 | 解消。Nagi保存後に投稿する順序へ改め、削除処理を除去した。        |
-| GAP-02 | publicationはユーザー別URL。共通URLは旧仕様。         | 解消。古い説明を更新した。旧データの読み取り・移行コードは残す。  |
-| GAP-03 | Nagi内でBlueskyスレッドを閲覧できる。                 | 解消。外部でしか見られないという説明を更新した。                  |
-| GAP-04 | 自分のクロスポスト済み投稿へ返信・引用できる。        | 解消。未使用の旧処理 `submitPost()` を削除した。                  |
-| GAP-05 | 設計案・PoCと現行動作の保証を区別する。               | 外部リポジトリの実装は未確認。                                    |
-| GAP-06 | チャンネルは廃止済みでハッシュタグへ統合。            | 解消。古い機能説明を更新した。旧リンク・旧設定の互換は保持する。  |
-| GAP-07 | 配信はadapter-staticとVercel Functions。              | 解消。adapter-autoと完全SPAの説明を削除・更新した。依存は未整理。 |
+| 項目   | 確定した扱い                                               | コード・コメントの扱い                                            |
+| ------ | ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| GAP-01 | 2026-11-21に作成と削除へ方針変更。自動の巻き戻しはしない。 | 解消。Nagi保存後に投稿する順序へ改めた。削除は利用者の操作だけ。  |
+| GAP-02 | publicationはユーザー別URL。共通URLは旧仕様。              | 解消。古い説明を更新した。旧データの読み取り・移行コードは残す。  |
+| GAP-03 | Nagi内でBlueskyスレッドを閲覧できる。                      | 解消。外部でしか見られないという説明を更新した。                  |
+| GAP-04 | 自分のクロスポスト済み投稿へ返信・引用できる。             | 解消。未使用の旧処理 `submitPost()` を削除した。                  |
+| GAP-05 | 設計案・PoCと現行動作の保証を区別する。                    | 外部リポジトリの実装は未確認。                                    |
+| GAP-06 | チャンネルは廃止済みでハッシュタグへ統合。                 | 解消。古い機能説明を更新した。旧リンク・旧設定の互換は保持する。  |
+| GAP-07 | 配信はadapter-staticとVercel Functions。                   | 解消。adapter-autoと完全SPAの説明を削除・更新した。依存は未整理。 |
 
 GAP-01はアプリコードの修正で解消した。GAP-02・03・04・06・07はコードコメントの更新と未使用処理の削除で解消した（2026-11-12）。GAP-05は外部実装の確認境界として残る。
 
@@ -27,6 +27,7 @@ change [prioritize-startup-notification-count](changes/archive/2026-11-12-priori
 - 実装で確認: `CROSSPOST_SCOPE` は `?action=create`。通常投稿保存失敗時と分割投稿途中失敗時には `deleteBlueskyPosts()` を呼び、削除失敗はconsoleへ記録して継続する。
 - 確定方針: Bluesky投稿の要求権限はcreateのみに限定する。不用意な削除権限を持たないことを優先し、後始末を成立させるために権限を拡張しない。
 - 解消（2026-11-12）: change [crosspost-after-nagi-save](changes/crosspost-after-nagi-save/proposal.md) で、通常投稿もNagi保存後にBlueskyへ投稿し、コピーの参照を投稿へ追記する順序へ改めた。`deleteBlueskyPosts()` を削除し、分割投稿の途中失敗でも作成済みの分を削除しない。途中までのコピーと参照追記の失敗は警告で伝える（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)）。前提として、AppViewは見える内容が変わらない更新を編集とみなさない（[API-09](specs/appview-protocol/spec.md#api-09)）。AppViewは本番反映済み、クライアントは本番反映待ち。
+- 方針変更（2026-11-21）: change [bluesky-interactions](changes/bluesky-interactions/proposal.md) で、Nagiから書いたBluesky投稿を消せるよう、Bluesky投稿の権限を作成と削除に広げた（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)、[AUTH-03](specs/auth-session/spec.md#auth-03)）。updateは要求しない。削除の操作を出すのは`via: "Nagi"`を持つ自分の投稿と、利用者が選んだクロスポストのコピーだけで（[BSKY-10](specs/bluesky-integration/spec.md#bsky-10)）、失敗時に自動で消して巻き戻すことは引き続きしない。上の「create限定」の確定方針は、この時点で置き換えた。
 - 解消前の状態（記録として残す）: 作成限定scopeと削除の試行が共存し、削除は拒否されうるためコピーが残る可能性があった。実際のPDSでの削除拒否や旧全操作scopeのセッションとの差は、確認しないまま解消した。
 
 ## GAP-02
@@ -103,3 +104,17 @@ change [add-web-share-target](changes/add-web-share-target/proposal.md)でWeb Sh
 [paste-trilines-line-image](changes/archive/2026-11-20-paste-trilines-line-image/proposal.md) で、画像選択と同じ行画像処理を本文欄の貼り付けからも使うようにした（[DIARY-05](specs/diary-trilines/spec.md#diary-05)）。この処理の圧縮上限は900,000バイトで、レコードの上限である1MB以内に収まる。圧縮失敗時は通常投稿用の文言を共有しており、画像選択と貼り付けのどちらでも「2MB以下に圧縮できませんでした」と表示される。文言と実際の上限の不一致は既存の課題として残る。
 
 Chromiumの操作テストで Ctrl+V による画像とテキストの貼り付け、差し替え、圧縮失敗時の保持、処理中の保存制御を確認し、モックPDSへの新規保存で画像が対象行に入ることを確認した。本番認証環境での保存は未確認。
+
+## Blueskyの操作・通知タブの確認境界
+
+change [bluesky-interactions](changes/bluesky-interactions/proposal.md) で、Bluesky投稿へのいいね・リポスト・返信・引用・削除・ミュート・返信と引用の許可・ブックマーク・通報と、通知画面のBlueskyタブを実装した（BSKY-08〜14、AUTH-08、NOTIFY-07）。検証はモックのセッションとPDS応答によるもので、本物のPDSとBluesky AppViewでの確認は未実施である。特に次は本番で確かめていない。
+
+- `repo:app.bsky.feed.post?action=create&action=delete` のように複数のactionを並べた権限を、実際のPDSが受け付けて付与するか。
+- 本番OAuthでの再認可の流れと、旧セッションからの移行。
+- 通報が公式モデレーションサービスに届くこと、threadgate／postgateがBluesky公式アプリでも効いて見えること。
+
+Blueskyへの返信・引用の入力欄には、最初の版では動画とメディアのself-labelを付ける手段が無い。投稿した返信はフィードの会話の再取得（30秒ごと）まで表示に出ない。
+
+調査中に、Blueskyの閲覧の準備で`@atproto/api`の`getPreferences`が保存フィードの設定を新形式へ移すため`putPreferences`を呼ぶことがあると分かった。新形式の設定をまだ持たないアカウントだけで起きると見ている。Nagiはこの権限を要求していないので書き込みは失敗するはずだが、その失敗がフィードの読み込みを止めるかは確かめていない。今回の変更とは別の既存の課題として残す。
+
+検証の詳細はchangeの [verification.md](changes/bluesky-interactions/verification.md) に記す。
