@@ -180,3 +180,43 @@ test('does not request threads for posts explicitly reporting zero replies', asy
 	await expect(page.locator('[data-bsky-thread] .post-row')).toHaveCount(1);
 	expect(requests).toBe(0);
 });
+
+test('keeps reading past pages hidden by the Following settings, then lets you read on', async ({
+	page,
+}) => {
+	let timelineRequests = 0;
+	await page.route('**/xrpc/app.bsky.actor.getPreferences*', (route) =>
+		route.fulfill({
+			json: {
+				preferences: [
+					{ $type: 'app.bsky.actor.defs#feedViewPref', feed: 'home', hideReplies: true },
+				],
+			},
+		}),
+	);
+	// 返信ばかりのタイムライン（botたんの返信が続く状況）。続きは常にある。
+	const limits = new Set<string | null>();
+	await page.route('**/xrpc/app.bsky.feed.getTimeline*', (route) => {
+		timelineRequests++;
+		limits.add(new URL(route.request().url()).searchParams.get('limit'));
+		const reply = post(String((timelineRequests % 9) + 1), 'root');
+		return route.fulfill({
+			json: {
+				feed: [{ post: { ...reply, uri: `${reply.uri}-${timelineRequests}` } }],
+				cursor: `c${timelineRequests}`,
+			},
+		});
+	});
+	await signIn(page);
+	await expect(page.getByText('ここまで読んだ投稿はすべて隠れています')).toBeVisible({
+		timeout: 15_000,
+	});
+	await expect(page.getByText('このフィードには投稿がありません')).toHaveCount(0);
+	// フォロー中は getTimeline の上限まで一度に取る。
+	expect([...limits]).toEqual(['100']);
+	const before = timelineRequests;
+	// 初回と自動の読み足しを合わせても、上限の回数で止まる。
+	expect(before).toBeLessThanOrEqual(4 * 4);
+	await page.getByRole('button', { name: 'さらに読む' }).click();
+	await expect.poll(() => timelineRequests).toBeGreaterThan(before);
+});

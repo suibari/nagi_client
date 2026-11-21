@@ -1210,6 +1210,8 @@ export const ja = {
 	blueskyFeedReadingHelp:
 		'フィードのタブ設定から、Blueskyのフォロー中（ホームタイムライン）やカスタムフィードをタブとして追加できます。返信・いいね・リポストなどもNagiからできますが、数は表示しません。',
 	blueskyFeedReadingOpenTabs: 'フィードのタブを設定する',
+	bskyFeedAllFiltered:
+		'Blueskyの「フォロー中」の表示設定（返信やリポストを隠すなど）で、ここまで読んだ投稿はすべて隠れています。',
 	bskyFeedEmpty: 'このフィードには投稿がありません',
 	bskyThreadLoadFailed: '返信を読み込めませんでした',
 	bskyFeedLoadFailed: 'Blueskyのフィードを読み込めませんでした',
