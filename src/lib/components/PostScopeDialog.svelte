@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { POST_SCOPES, type PostScope } from '$lib/post/scope';
+	import type { BskyGateSettings } from '$lib/bsky/gates';
+	import BskyGateControls from './bsky/BskyGateControls.svelte';
 	import Icon from './shell/Icon.svelte';
 
 	let {
@@ -13,6 +15,8 @@
 		kossoriDisabledReason = '',
 		onselect,
 		onclose,
+		bskyGates = $bindable(),
+		bskyReplyApplicable = true,
 	}: {
 		scope: PostScope;
 		externalEligible: boolean;
@@ -22,6 +26,10 @@
 		kossoriDisabledReason?: string;
 		onselect: (scope: PostScope) => void;
 		onclose: () => void;
+		/** Bluesky にも出すときの、返信できる人と引用の可否（BSKY-12）。 */
+		bskyGates?: BskyGateSettings;
+		/** 返信として出すときは、返信の制限が効かないので選ばせない。 */
+		bskyReplyApplicable?: boolean;
 	} = $props();
 
 	let dialog = $state<HTMLDivElement>();
@@ -129,6 +137,13 @@
 			<p class="scope-note">{externalDisabledReason}</p>
 		{/if}
 
+		{#if scope === 'external' && externalEligible && bskyGates}
+			<section class="scope-bsky-gates" aria-label={m.bskyGatesTitle()}>
+				<h3>{m.bskyGatesTitle()}</h3>
+				<BskyGateControls bind:settings={bskyGates} replyApplicable={bskyReplyApplicable} />
+			</section>
+		{/if}
+
 		<div class="scope-actions">
 			<Button variant="primary" type="button" onclick={onclose}>{m.postScopeDone()}</Button>
 		</div>
@@ -157,6 +172,19 @@
 		border-radius: var(--r-md);
 		background: var(--surface-1);
 		box-shadow: var(--shadow-pop);
+	}
+
+	.scope-bsky-gates {
+		display: grid;
+		gap: 8px;
+		padding-top: 12px;
+		border-top: 1px solid var(--line);
+	}
+	.scope-bsky-gates h3 {
+		margin: 0;
+		color: var(--text-muted);
+		font-size: 12px;
+		font-weight: 700;
 	}
 
 	.scope-dialog:focus {

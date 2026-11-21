@@ -1,14 +1,31 @@
 import { BskyThreadLoader, toThreadSnapshot } from './thread';
 import { get } from 'svelte/store';
-import { SvelteSet } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { Agent, type AppBskyFeedDefs, type ModerationOpts } from '@atproto/api';
 import type { OAuthSession } from '@atproto/oauth-client-browser';
 import { session } from '$lib/oauth/session.svelte';
 import { feedGeneratorUri, isFeedGeneratorUri, parseFeedInput } from './links';
 import { filterTimeline, type TimelineViewPrefs } from './timelineFilter';
-import { toActor, toFeedItem, type BskyActor, type BskyFeedItemView } from './mapView';
+import {
+	toActor,
+	toFeedItem,
+	toPostCard,
+	type BskyActor,
+	type BskyFeedItemView,
+	type BskyPostCardView,
+} from './mapView';
 import { BskyInteractions, type BskyInteractionWriter } from './interactions.svelte';
 import { hasBlueskyInteractionScope } from '$lib/optin/scope-optin';
+import {
+	POSTGATE,
+	THREADGATE,
+	postgateRecord,
+	replyAudienceOf,
+	rkeyOf,
+	threadgateRecord,
+	type BskyGateSettings,
+	type ReplyAudience,
+} from './gates';
 import {
 	BSKY_NOTIFICATION_REASONS,
 	notificationPostUri,
@@ -380,4 +397,140 @@ export async function markBskyNotificationsSeen(seenAt: string): Promise<void> {
 export async function getBskyUnreadCount(): Promise<number> {
 	const { data } = await currentContext().agent.app.bsky.notification.getUnreadCount({});
 	return data.count;
+}
+
+const isRecordNotFound = (error: unknown) =>
+	(error as { error?: string })?.error === 'RecordNotFound' ||
+	/RecordNotFound|Could not locate record/i.test(
+		error instanceof Error ? error.message : String(error),
+	);
+
+/**
+ * 自分の Bluesky 投稿へ、返信できる人と引用の可否を付ける（BSKY-12）。
+ * threadgate はスレッドの先頭（replyRoot）にだけ意味があるので、返信のときは渡さない。
+ * replace のときは、付いている設定を消してから付け直す（update の権限は持たない）。
+ */
+export async function applyBskyGates(
+	target: { replyRoot?: string; posts: string[] },
+	settings: BskyGateSettings,
+	options: { replace?: boolean } = {},
+): Promise<void> {
+	const agent = repoAgent();
+	const repo = agent.assertDid;
+	const now = new Date().toISOString();
+	const put = async (
+		collection: string,
+		postUri: string,
+		record: Record<string, unknown> | undefined,
+	) => {
+		const rkey = rkeyOf(postUri);
+		if (options.replace)
+			await agent.com.atproto.repo.deleteRecord({ repo, collection, rkey }).catch((error) => {
+				if (!isRecordNotFound(error)) throw error;
+			});
+		if (record) await agent.com.atproto.repo.createRecord({ repo, collection, rkey, record });
+	};
+	if (target.replyRoot)
+		await put(
+			THREADGATE,
+			target.replyRoot,
+			threadgateRecord(target.replyRoot, settings.reply, now),
+		);
+	for (const uri of target.posts)
+		await put(POSTGATE, uri, postgateRecord(uri, settings.allowQuote, now));
+}
+
+/** 自分の投稿に今付いている返信・引用の設定。Nagi で選べない返信の条件は reply が undefined。 */
+export async function getBskyGates(
+	postUri: string,
+): Promise<{ reply: ReplyAudience | undefined; allowQuote: boolean }> {
+	const agent = repoAgent();
+	const read = (collection: string) =>
+		agent.com.atproto.repo
+			.getRecord({ repo: agent.assertDid, collection, rkey: rkeyOf(postUri) })
+			.then(({ data }) => data.value as Record<string, unknown>)
+			.catch((error) => {
+				if (isRecordNotFound(error)) return undefined;
+				throw error;
+			});
+	const [threadgate, postgate] = await Promise.all([read(THREADGATE), read(POSTGATE)]);
+	const rules = (postgate?.embeddingRules as { $type?: string }[] | undefined) ?? [];
+	return {
+		reply: replyAudienceOf(threadgate),
+		allowQuote: !rules.some((rule) => rule.$type === `${POSTGATE}#disableRule`),
+	};
+}
+
+/** この画面で切り替えたミュート・ブックマーク。AppView の反映を待たずに表示へ効かせる。 */
+export const bskyMutedActors = new SvelteMap<string, boolean>();
+export const bskyMutedThreads = new SvelteMap<string, boolean>();
+export const bskyBookmarks = new SvelteMap<string, boolean>();
+
+/** 作者のミュート（BSKY-11）。Bluesky の設定に保存し、Nagi AppView には送らない。 */
+export async function setBskyActorMuted(did: string, muted: boolean): Promise<void> {
+	const { agent } = currentContext();
+	if (muted) await agent.mute(did);
+	else await agent.unmute(did);
+	bskyMutedActors.set(did, muted);
+}
+
+/** スレッドのミュート（BSKY-11）。root はスレッドの先頭の投稿。 */
+export async function setBskyThreadMuted(root: string, muted: boolean): Promise<void> {
+	const { agent } = currentContext();
+	if (muted) await agent.app.bsky.graph.muteThread({ root });
+	else await agent.app.bsky.graph.unmuteThread({ root });
+	bskyMutedThreads.set(root, muted);
+}
+
+/** Bluesky のブックマーク（BSKY-13）。保存先は Bluesky で、Nagi AppView には送らない。 */
+export async function setBskyBookmarked(
+	post: { uri: string; cid: string },
+	bookmarked: boolean,
+): Promise<void> {
+	const { agent } = currentContext();
+	if (bookmarked) await agent.app.bsky.bookmark.createBookmark({ uri: post.uri, cid: post.cid });
+	else await agent.app.bsky.bookmark.deleteBookmark({ uri: post.uri });
+	bskyBookmarks.set(post.uri, bookmarked);
+}
+
+export type BskyBookmarkPage = { items: BskyPostCardView[]; cursor?: string };
+
+/** Bluesky 側のブックマーク一覧。公式アプリで保存したものも含む。消えた投稿は出さない。 */
+export async function getBskyBookmarks(cursor?: string): Promise<BskyBookmarkPage> {
+	const ctx = currentContext();
+	await loadPrefs(ctx);
+	const { data } = await ctx.agent.app.bsky.bookmark.getBookmarks({ limit: 30, cursor });
+	return {
+		items: data.bookmarks.flatMap((bookmark) =>
+			(bookmark.item as { $type?: string }).$type === 'app.bsky.feed.defs#postView'
+				? [toPostCard(bookmark.item as AppBskyFeedDefs.PostView)]
+				: [],
+		),
+		cursor: data.cursor && data.cursor !== cursor ? data.cursor : undefined,
+	};
+}
+
+/** Bluesky の公式モデレーションの宛先。通報は Nagi の運営（MOD-04）ではなくここへ送る。 */
+const BSKY_MODERATION_DID = 'did:plc:ar7c4by46qjdydhdevvrndac';
+
+export type BskyReportReason =
+	| 'reasonSpam'
+	| 'reasonViolation'
+	| 'reasonMisleading'
+	| 'reasonSexual'
+	| 'reasonRude'
+	| 'reasonOther';
+
+/** Bluesky 投稿を Bluesky のモデレーションへ通報する（BSKY-14）。相手には知らされない。 */
+export async function reportBskyPost(
+	post: { uri: string; cid: string },
+	reasonType: BskyReportReason,
+	reason?: string,
+): Promise<void> {
+	const agent = currentContext().agent.withProxy('atproto_labeler', BSKY_MODERATION_DID);
+	await agent.com.atproto.moderation.createReport({
+		reasonType: `com.atproto.moderation.defs#${reasonType}`,
+		...(reason ? { reason } : {}),
+		subject: { $type: 'com.atproto.repo.strongRef', uri: post.uri, cid: post.cid },
+	});
 }

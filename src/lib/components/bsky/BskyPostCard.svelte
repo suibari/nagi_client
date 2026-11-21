@@ -7,8 +7,14 @@
 	import VideoPlayer from '$lib/components/VideoPlayer.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import {
+		bskyBookmarks,
 		bskyInteractions,
+		bskyMutedActors,
+		bskyMutedThreads,
 		canInteractWithBsky,
+		setBskyActorMuted,
+		setBskyBookmarked,
+		setBskyThreadMuted,
 		deletedBskyPosts,
 		deleteOwnBskyPost,
 		getBskyLikers,
@@ -24,6 +30,8 @@
 	import { ageAssurance } from '$lib/moderation/age.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import BskyPermissionDialog from './BskyPermissionDialog.svelte';
+	import BskyGateDialog from './BskyGateDialog.svelte';
+	import BskyReportDialog from './BskyReportDialog.svelte';
 	import BskyRichText from './BskyRichText.svelte';
 
 	/**
@@ -85,6 +93,32 @@
 		return false;
 	}
 
+	const threadRoot = $derived(
+		(post.raw.record as { reply?: { root?: { uri?: string } } }).reply?.root?.uri ?? post.uri,
+	);
+	const authorMuted = $derived(
+		bskyMutedActors.get(post.author.did) ?? Boolean(post.raw.author.viewer?.muted),
+	);
+	const threadMuted = $derived(
+		bskyMutedThreads.get(threadRoot) ?? Boolean(post.raw.viewer?.threadMuted),
+	);
+	const bookmarked = $derived(bskyBookmarks.get(post.uri) ?? Boolean(post.raw.viewer?.bookmarked));
+	let reportOpen = $state(false);
+	let gatesOpen = $state(false);
+
+	/** メニューからの操作。権限を確かめ、失敗したら知らせる。 */
+	async function menuAction(run: () => Promise<void>) {
+		if (!(await permitted())) return;
+		try {
+			await run();
+		} catch (error) {
+			console.warn('[BskyPostCard] menu action failed', error);
+			actionError = true;
+			clearTimeout(errorTimer);
+			errorTimer = setTimeout(() => (actionError = false), 4000);
+		}
+	}
+
 	async function compose(kind: 'reply' | 'quote') {
 		if (!(await permitted())) return;
 		if (kind === 'reply') composerHost.openBskyReply(post);
@@ -139,7 +173,7 @@
 	});
 </script>
 
-{#if !display.hidden && !deletedBskyPosts.has(post.uri)}
+{#if !display.hidden && !deletedBskyPosts.has(post.uri) && !(bskyMutedActors.get(post.author.did) && !mine)}
 	<article class="bsky-post" class:thread-unit={standalone} data-bsky-uri={post.uri}>
 		{#if item.repostedBy}
 			<p class="bsky-context">
@@ -244,38 +278,96 @@
 							onclick={() => toggle('like')}
 							><Icon name={liked ? 'heartFilled' : 'heart'} size={17} /></button
 						>
-						{#if post.url || deletable}
-							<ActionMenu label={m.morePostActions()} icon="moreHorizontal" align="start">
-								{#snippet menu(closeMenu)}
-									{#if post.url}
-										<button
-											role="menuitem"
-											onclick={() => {
-												closeMenu(false);
-												window.open(post.url, '_blank', 'noopener,noreferrer');
-											}}
+						<ActionMenu label={m.morePostActions()} icon="moreHorizontal" align="start">
+							{#snippet menu(closeMenu)}
+								{#if post.url}
+									<button
+										role="menuitem"
+										onclick={() => {
+											closeMenu(false);
+											window.open(post.url, '_blank', 'noopener,noreferrer');
+										}}
+									>
+										<Icon name="bluesky" size={17} />
+										<span>{m.bskyOpenInBluesky()}</span>
+									</button>
+								{/if}
+								<button
+									role="menuitem"
+									onclick={() => {
+										closeMenu(false);
+										void menuAction(() => setBskyBookmarked(post, !bookmarked));
+									}}
+								>
+									<Icon name={bookmarked ? 'bookmarkFilled' : 'bookmark'} size={17} />
+									<span>{bookmarked ? m.bskyRemoveBookmark() : m.bskyBookmark()}</span>
+								</button>
+								<button
+									role="menuitem"
+									onclick={() => {
+										closeMenu(false);
+										void menuAction(() => setBskyThreadMuted(threadRoot, !threadMuted));
+									}}
+								>
+									<Icon name="bellOff" size={17} />
+									<span>{threadMuted ? m.bskyUnmuteThread() : m.bskyMuteThread()}</span>
+								</button>
+								{#if !mine}
+									<button
+										role="menuitem"
+										onclick={() => {
+											closeMenu(false);
+											void menuAction(() => setBskyActorMuted(post.author.did, !authorMuted));
+										}}
+									>
+										<Icon name="hide" size={17} />
+										<span
+											>{authorMuted
+												? m.bskyUnmuteAuthor({ handle: post.author.handle })
+												: m.bskyMuteAuthor({ handle: post.author.handle })}</span
 										>
-											<Icon name="bluesky" size={17} />
-											<span>{m.bskyOpenInBluesky()}</span>
-										</button>
-									{/if}
-									{#if deletable}
-										<button
-											class="danger"
-											role="menuitem"
-											onclick={() => {
-												closeMenu(false);
-												deleteError = '';
-												deleteOpen = true;
-											}}
-										>
-											<Icon name="trash" size={17} />
-											<span>{m.deletePost()}</span>
-										</button>
-									{/if}
-								{/snippet}
-							</ActionMenu>
-						{/if}
+									</button>
+									<button
+										role="menuitem"
+										onclick={() => {
+											closeMenu(false);
+											void menuAction(async () => {
+												reportOpen = true;
+											});
+										}}
+									>
+										<Icon name="flag" size={17} />
+										<span>{m.bskyReport()}</span>
+									</button>
+								{/if}
+								{#if deletable}
+									<button
+										role="menuitem"
+										onclick={() => {
+											closeMenu(false);
+											void menuAction(async () => {
+												gatesOpen = true;
+											});
+										}}
+									>
+										<Icon name="shield" size={17} />
+										<span>{m.bskyEditGates()}</span>
+									</button>
+									<button
+										class="danger"
+										role="menuitem"
+										onclick={() => {
+											closeMenu(false);
+											deleteError = '';
+											deleteOpen = true;
+										}}
+									>
+										<Icon name="trash" size={17} />
+										<span>{m.deletePost()}</span>
+									</button>
+								{/if}
+							{/snippet}
+						</ActionMenu>
 					</div>
 				{/if}
 				{#if (!canAct && (liked || post.url)) || likers.length}<footer class="bsky-footer">
@@ -307,6 +399,8 @@
 		</div>
 	</article>
 	{#if permissionPrompt}<BskyPermissionDialog onclose={() => (permissionPrompt = false)} />{/if}
+	{#if reportOpen}<BskyReportDialog {post} onclose={() => (reportOpen = false)} />{/if}
+	{#if gatesOpen}<BskyGateDialog {post} onclose={() => (gatesOpen = false)} />{/if}
 	{#if deleteOpen}
 		<PostDeleteDialog
 			busy={deleting}

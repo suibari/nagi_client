@@ -57,6 +57,7 @@ let failWrites: boolean;
 let timeline: unknown[];
 let threadMissing: boolean;
 let otherRequests: string[];
+let procedures: { method: string; body: unknown; proxy: string | null }[];
 
 test.beforeEach(async ({ page }) => {
 	writes = [];
@@ -64,6 +65,7 @@ test.beforeEach(async ({ page }) => {
 	timeline = [{ post }];
 	threadMissing = false;
 	otherRequests = [];
+	procedures = [];
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.route('**/xrpc/**', async (route) => {
 		const method = new URL(route.request().url()).pathname.split('/').pop() ?? '';
@@ -104,6 +106,22 @@ test.beforeEach(async ({ page }) => {
 			});
 		}
 		otherRequests.push(method);
+		if (route.request().method() === 'POST')
+			procedures.push({
+				method,
+				body: route.request().postDataJSON(),
+				proxy: route.request().headers()['atproto-proxy'] ?? null,
+			});
+		if (method === 'com.atproto.moderation.createReport')
+			return route.fulfill({
+				json: {
+					id: 1,
+					reasonType: 'com.atproto.moderation.defs#reasonSpam',
+					subject: { $type: 'com.atproto.repo.strongRef', uri: post.uri, cid: CID },
+					reportedBy: VIEWER,
+					createdAt: '2026-11-21T00:00:00.000Z',
+				},
+			});
 		return route.fulfill({
 			json: { items: [], cards: [], folders: [], uris: [], actors: [], count: 0, drafts: [] },
 		});
@@ -278,5 +296,112 @@ test('deletes only my own Bluesky posts made through Nagi', async ({ page }) => 
 			method: 'com.atproto.repo.deleteRecord',
 			body: expect.objectContaining({ collection: 'app.bsky.feed.post', rkey: 'nagi' }),
 		},
+	]);
+});
+
+const openMenu = async (page: Page, target = card(page)) => {
+	await target.getByRole('button', { name: 'その他の投稿操作' }).click();
+};
+
+test('mutes an author on Bluesky and hides their posts here', async ({ page }) => {
+	await signIn(page);
+	await openMenu(page);
+	await page.getByRole('menuitem', { name: '@author.testをミュート' }).click();
+	await expect(page.locator(`[data-bsky-uri="${post.uri}"]`)).toHaveCount(0);
+	expect(procedures).toContainEqual(
+		expect.objectContaining({
+			method: 'app.bsky.graph.muteActor',
+			body: { actor: 'did:plc:interaction-author' },
+		}),
+	);
+});
+
+test('mutes a thread and bookmarks a post on Bluesky', async ({ page }) => {
+	await signIn(page);
+	await openMenu(page);
+	await page.getByRole('menuitem', { name: 'このスレッドをミュート' }).click();
+	await openMenu(page);
+	await page.getByRole('menuitem', { name: 'ブックマーク', exact: true }).click();
+	await openMenu(page);
+	await expect(page.getByRole('menuitem', { name: 'スレッドのミュートを解除' })).toBeVisible();
+	await expect(page.getByRole('menuitem', { name: 'ブックマークを解除' })).toBeVisible();
+	expect(
+		procedures
+			.filter((call) => /muteThread|Bookmark/.test(call.method))
+			.map((call) => [call.method, call.body]),
+	).toEqual([
+		['app.bsky.graph.muteThread', { root: post.uri }],
+		['app.bsky.bookmark.createBookmark', { uri: post.uri, cid: CID }],
+	]);
+});
+
+test('reports a post to Bluesky moderation, not to Nagi', async ({ page }) => {
+	await signIn(page);
+	await openMenu(page);
+	await page.getByRole('menuitem', { name: 'Blueskyに通報' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyに通報' });
+	await expect(dialog).toContainText('Nagiの運営に届くものではなく');
+	await dialog.getByRole('radio', { name: 'スパム' }).check();
+	await dialog.getByRole('button', { name: '送信する' }).click();
+	await expect(dialog.getByRole('status')).toContainText('通報を送信しました');
+	const report = procedures.find((call) => call.method === 'com.atproto.moderation.createReport');
+	expect(report?.proxy).toBe('did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler');
+	expect(report?.body).toMatchObject({
+		reasonType: 'com.atproto.moderation.defs#reasonSpam',
+		subject: { uri: post.uri, cid: CID },
+	});
+	expect(otherRequests).not.toContain('com.suibari.nagi.createReport');
+});
+
+test('limits replies and quotes on a quote posted to Bluesky', async ({ page }) => {
+	await signIn(page);
+	await card(page).getByRole('button', { name: 'Blueskyで引用' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyで引用' });
+	await editor(page, 'Blueskyで引用').click();
+	await page.keyboard.type('ひとこと');
+	await dialog.getByText('Blueskyでの返信・引用').click();
+	await dialog.getByLabel('返信できる人').selectOption('nobody');
+	await dialog.getByRole('checkbox', { name: '引用を許可する' }).uncheck();
+	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
+	await expect.poll(() => writes.length).toBe(3);
+	expect(writes.map((write) => [write.body.collection, write.body.rkey])).toEqual([
+		['app.bsky.feed.post', undefined],
+		['app.bsky.feed.threadgate', 'created'],
+		['app.bsky.feed.postgate', 'created'],
+	]);
+	expect((writes[1].body.record as { allow: unknown }).allow).toEqual([]);
+});
+
+test('does not offer reply limits when replying', async ({ page }) => {
+	await signIn(page);
+	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
+	await dialog.getByText('Blueskyでの返信・引用').click();
+	await expect(dialog.getByLabel('返信できる人')).toHaveCount(0);
+	await expect(dialog.getByRole('checkbox', { name: '引用を許可する' })).toBeVisible();
+});
+
+test('changes reply settings later on my own post made through Nagi', async ({ page }) => {
+	timeline = [
+		{
+			post: {
+				...post,
+				uri: `at://${VIEWER}/app.bsky.feed.post/nagi`,
+				author: { did: VIEWER, handle: 'me.test' },
+				record: { ...post.record, via: 'Nagi' },
+			},
+		},
+	];
+	await signIn(page);
+	await openMenu(page);
+	await expect(page.getByRole('menuitem', { name: 'Blueskyに通報' })).toHaveCount(0);
+	await page.getByRole('menuitem', { name: '返信・引用の設定' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyでの返信・引用' });
+	await dialog.getByLabel('返信できる人').selectOption('following');
+	await dialog.getByRole('button', { name: '保存する' }).click();
+	await expect(dialog).toHaveCount(0);
+	expect(writes.map((write) => [write.method, write.body.collection, write.body.rkey])).toEqual([
+		['com.atproto.repo.deleteRecord', 'app.bsky.feed.threadgate', 'nagi'],
+		['com.atproto.repo.createRecord', 'app.bsky.feed.threadgate', 'nagi'],
 	]);
 });

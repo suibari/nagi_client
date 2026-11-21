@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import { preparePostDraft, type LinkCardDraft } from '$lib/atproto/records';
-	import { checkBskyTarget, type BskyTargetStatus } from '$lib/bsky/agent';
+	import { applyBskyGates, checkBskyTarget, type BskyTargetStatus } from '$lib/bsky/agent';
+	import { DEFAULT_BSKY_GATES, type BskyGateSettings } from '$lib/bsky/gates';
+	import BskyGateControls from './BskyGateControls.svelte';
 	import { postToBluesky } from '$lib/bsky/compose';
 	import { bskyPostUrl } from '$lib/bsky/links';
 	import { CrosspostPartialError } from '$lib/crosspost/bluesky';
@@ -45,6 +47,7 @@
 	let busy = $state(false);
 	let error = $state('');
 	let discardOpen = $state(false);
+	let gates = $state<BskyGateSettings>({ ...DEFAULT_BSKY_GATES });
 	let imagePicker = $state<ImageAttachmentPicker>();
 
 	const reply = $derived(target.kind === 'reply');
@@ -82,6 +85,7 @@
 		linkCards = [];
 		dismissedUrls = [];
 		error = '';
+		gates = { ...DEFAULT_BSKY_GATES };
 	}
 
 	export async function submit() {
@@ -105,9 +109,26 @@
 				emojis,
 			);
 			const created = await postToBluesky(draft, target);
+			// 返信の制限はスレッドの先頭にだけ効く。引用は新しいスレッドの先頭になる。
+			const gateWarning = await applyBskyGates(
+				{
+					replyRoot: reply ? undefined : created.ref.root.uri,
+					posts: created.posts.map((post) => post.uri),
+				},
+				gates,
+			).then(
+				() => undefined,
+				(cause) => {
+					console.warn('[BskyComposer] gates failed', cause);
+					return m.bskyGatesFailed();
+				},
+			);
 			reset();
 			composerHost.hide();
-			postFollowNotice.showBluesky(bskyPostUrl(created.uri) ?? target.post.url ?? '');
+			postFollowNotice.showBluesky(
+				bskyPostUrl(created.ref.root.uri) ?? target.post.url ?? '',
+				gateWarning,
+			);
 		} catch (cause) {
 			if (cause instanceof CrosspostPartialError) {
 				// 途中まで投稿できている。同じ内容で送り直すと重複するので、閉じて伝える。
@@ -209,6 +230,13 @@
 		</div>
 	{/if}
 
+	{#if !blockedMessage}
+		<details class="bsky-gates-box">
+			<summary>{m.bskyGatesTitle()}</summary>
+			<BskyGateControls bind:settings={gates} replyApplicable={!reply} disabled={busy} />
+		</details>
+	{/if}
+
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 
 	<div class="composer-foot">
@@ -251,6 +279,15 @@
 		margin: 0;
 		color: var(--text-muted);
 		font-size: 12px;
+	}
+	.bsky-gates-box summary {
+		width: fit-content;
+		color: var(--text-muted);
+		font-size: 12px;
+		cursor: pointer;
+	}
+	.bsky-gates-box[open] summary {
+		margin-bottom: 8px;
 	}
 	.bsky-composer-status {
 		margin-right: auto;

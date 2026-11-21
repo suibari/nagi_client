@@ -188,6 +188,8 @@ export type CrosspostTarget = {
 /** 作ったコピー。ref は Nagi の投稿レコードの crosspost にそのまま入れる。 */
 export type CrosspostResult = {
 	ref: { root: StrongRef; tail: StrongRef; threadRoot: StrongRef };
+	/** 作った投稿を先頭から順に。返信・引用の設定（postgate）を全件へ付けるのに使う。 */
+	posts: StrongRef[];
 };
 
 /**
@@ -274,7 +276,10 @@ export async function crosspostToBluesky(
 		if (created.length) throw new CrosspostPartialError(created, cause);
 		throw cause;
 	}
-	return { ref: { root: root!, tail: parent!, threadRoot: threadRoot ?? root! } };
+	return {
+		ref: { root: root!, tail: parent!, threadRoot: threadRoot ?? root! },
+		posts: created,
+	};
 }
 
 /**

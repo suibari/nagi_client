@@ -18,9 +18,21 @@
 	import Icon from './shell/Icon.svelte';
 	import BookmarkFolderDialog from './BookmarkFolderDialog.svelte';
 	import { session, signIn } from '$lib/oauth/session.svelte';
-	import { grantedOptIns } from '$lib/optin/scope-optin';
+	import { grantedOptIns, hasBlueskyViewScope } from '$lib/optin/scope-optin';
+	import BskyBookmarkList from './bsky/BskyBookmarkList.svelte';
 
 	let selectedFolder = $state<string>();
+	/** Bluesky 側のブックマーク（BSKY-13）を見ているか。Bluesky 連携をしている人にだけ出す。 */
+	let blueskySelected = $state(false);
+	let blueskyLinked = $state(false);
+	$effect(() => {
+		const did = $session?.did;
+		blueskyLinked = false;
+		if (!did) return;
+		void hasBlueskyViewScope().then((linked) => {
+			if ($session?.did === did) blueskyLinked = linked;
+		});
+	});
 	let items = $state<BookmarkItemView[]>([]);
 	let cursor = $state<string>();
 	let hasMore = $state(false);
@@ -148,23 +160,39 @@
 			<div class="bookmark-folders" aria-label={m.bookmarkTab()}>
 				<button
 					class="folder-filter"
-					class:active={!selectedFolder}
-					onclick={() => (selectedFolder = undefined)}
+					class:active={!selectedFolder && !blueskySelected}
+					onclick={() => {
+						selectedFolder = undefined;
+						blueskySelected = false;
+					}}
 				>
 					{m.bookmarkAll()}
 				</button>
 				{#each bookmarks.folders as folder (folder.id)}
 					<button
 						class="folder-filter"
-						class:active={selectedFolder === folder.id}
+						class:active={selectedFolder === folder.id && !blueskySelected}
 						title={folder.name}
-						onclick={() => (selectedFolder = folder.id)}
+						onclick={() => {
+							selectedFolder = folder.id;
+							blueskySelected = false;
+						}}
 					>
 						<span class="folder-name">{folder.name}</span><span class="folder-count"
 							>{folder.count}</span
 						>
 					</button>
 				{/each}
+				{#if blueskyLinked}
+					<button
+						class="folder-filter"
+						class:active={blueskySelected}
+						onclick={() => (blueskySelected = true)}
+						><Icon name="bluesky" size={14} /><span class="folder-name"
+							>{m.bskyBookmarksSection()}</span
+						></button
+					>
+				{/if}
 			</div>
 			<button
 				class="folder-add icon-action"
@@ -176,7 +204,7 @@
 				}}><Icon name="folderPlus" size={20} /></button
 			>
 		</div>
-		{#if selectedFolderView}
+		{#if selectedFolderView && !blueskySelected}
 			<div class="folder-management">
 				<div class="folder-heading">
 					<strong title={selectedFolderView.name}>{selectedFolderView.name}</strong>
@@ -201,7 +229,8 @@
 	</header>
 
 	<div class="bookmarks-list" aria-busy={loading}>
-		{#if loading && !items.length}<Spinner />
+		{#if blueskySelected}<BskyBookmarkList />
+		{:else if loading && !items.length}<Spinner />
 		{:else if error && !items.length}<div class="state error">
 				{bookmarks.unauthorized ? m.bookmarkPermissionRequired() : error}
 				<Button

@@ -18,5 +18,5 @@ export async function postToBluesky(draft: PostDraft, target: BskyComposeTarget)
 			: { quote: target.parent },
 	);
 	if (!result) throw new Error('Nothing to post');
-	return result.ref.root;
+	return result;
 }
