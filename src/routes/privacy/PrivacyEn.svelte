@@ -111,7 +111,8 @@
 	<li><strong>Notifications and read state.</strong></li>
 	<li>
 		<strong>Push notification destinations.</strong> The endpoint URL and encryption keys, stored only
-		if you enable notifications.
+		if you enable notifications. If you turn on push for Bluesky notifications, we also store which kinds
+		you want to receive. We do not store Bluesky posts or other people's display names.
 	</li>
 	<li>
 		<strong>Mute settings.</strong> Visible only to you. We keep these on our servers rather than in your
@@ -353,18 +354,35 @@
 				<td>Your browser's push service (Google, Apple, Mozilla, and so on)</td>
 				<td>
 					Only if you enable notifications. A notification includes the other person's display name
-					and roughly the first 80 characters of the post
+					and roughly the first 80 characters of the post. If you turn on push for Bluesky
+					notifications, it also includes the person's Bluesky display name and the start of the
+					post
 				</td>
 			</tr>
 			<tr>
 				<td>Jetstream, plc.directory</td>
-				<td>Receiving public records, and resolving DIDs</td>
+				<td>
+					Receiving public records, and resolving DIDs. If you turn on push for Bluesky
+					notifications, we also receive public activity addressed to you (replies, mentions,
+					quotes, likes, reposts and follows) to find what to notify you about
+				</td>
 			</tr>
 			<tr>
 				<td>Bluesky's public AppView</td>
 				<td>
-					The analysis run when you sign up, posts if you enable Bluesky linking, and feeds fetched
-					when you open a Bluesky feed tab (sent through your PDS, which shares your signed-in DID)
+					The analysis run when you sign up; if you enable Bluesky linking, posting, liking,
+					reposting, replying, muting, bookmarking and fetching notifications; and feeds fetched
+					when you open a Bluesky feed tab (sent through your PDS, which shares your signed-in DID).
+					If you turn on push for Bluesky notifications, Nagi's servers fetch the person's display
+					name, the post text and whether either of you blocks the other through the public API to
+					write the notification (not stored)
+				</td>
+			</tr>
+			<tr>
+				<td>Bluesky moderation</td>
+				<td>
+					Only when you choose “Report to Bluesky” on a Bluesky post. The reported post and the
+					reason and details you chose (sent through your PDS, which shares your signed-in DID)
 				</td>
 			</tr>
 			<tr>
@@ -391,13 +409,18 @@
 </p>
 <p>
 	Posting features <strong>create additional records in your own PDS.</strong> Optional Bluesky
-	crossposting creates <code>app.bsky.feed.post</code>; Nagi blog posts create
+	linking creates <code>app.bsky.feed.post</code> for crossposts and for replies and quotes to
+	Bluesky posts, <code>app.bsky.feed.like</code> and <code>app.bsky.feed.repost</code> for likes and
+	reposts, and <code>app.bsky.feed.threadgate</code> and <code>app.bsky.feed.postgate</code> for
+	reply and quote settings; Nagi blog posts create
 	<code>site.standard.publication</code> and <code>site.standard.document</code>. All of these are
 	public records. Permission for standard.site is required when you sign in; Bluesky linking
-	permissions (posting and reading feeds) are requested only when you enable Bluesky linking. Posts
-	shown in a Bluesky feed tab are fetched on the spot and are not stored on Nagi's servers. Editing
-	or deleting a post on Nagi updates or removes the matching record, and deleting all of your data
-	from Settings removes them as well.
+	permissions (creating and deleting Bluesky posts written from Nagi, likes and reposts, reply and
+	quote settings, reading feeds, and notifications, mutes, bookmarks and reports) are requested only
+	when you enable Bluesky linking. We do not ask for permission to edit Bluesky posts or to follow
+	or block. Posts shown in a Bluesky feed tab are fetched on the spot and are not stored on Nagi's
+	servers. Editing or deleting a post on Nagi updates or removes the matching record, and deleting
+	all of your data from Settings removes them as well.
 </p>
 
 <h2 id="p7">7. What is stored on your device</h2>

@@ -100,7 +100,7 @@
 	<li><strong>通知と既読の状態。</strong></li>
 	<li>
 		<strong>プッシュ通知の配信先。</strong
-		>エンドポイントURLと暗号鍵で、通知を有効にした場合にのみ保存します。
+		>エンドポイントURLと暗号鍵で、通知を有効にした場合にのみ保存します。Blueskyの通知のプッシュを有効にした場合は、どの種類を受け取るかの設定も保存します。Blueskyの投稿や相手の表示名は保存しません。
 	</li>
 	<li>
 		<strong>ミュート設定。</strong
@@ -296,17 +296,25 @@
 			<tr>
 				<td>ブラウザのプッシュ配信サービス（Google、Apple、Mozillaなど）</td>
 				<td>
-					通知を有効にした場合のみ。通知には、相手の表示名と、投稿本文の冒頭80文字程度が含まれます
+					通知を有効にした場合のみ。通知には、相手の表示名と、投稿本文の冒頭80文字程度が含まれます。Blueskyの通知のプッシュを有効にした場合は、Blueskyでの相手の表示名と投稿本文の冒頭も含まれます
 				</td>
 			</tr>
 			<tr>
 				<td>Jetstream、plc.directory</td>
-				<td>公開レコードの受信と、DIDの解決</td>
+				<td>
+					公開レコードの受信と、DIDの解決。Blueskyの通知のプッシュを有効にした場合は、あなた宛ての公開された操作（返信・メンション・引用・いいね・リポスト・フォロー）を見つけるための受信も行います
+				</td>
 			</tr>
 			<tr>
 				<td>Blueskyの公開AppView</td>
 				<td>
-					登録時の自動分析、Bluesky連携を有効にした場合の投稿、およびBlueskyフィードのタブを開いたときのフィード取得（あなたのPDS経由で、ログイン中のDIDが伝わります）
+					登録時の自動分析、Bluesky連携を有効にした場合の投稿・いいね・リポスト・返信・ミュート・ブックマーク・通知の取得などの操作、およびBlueskyフィードのタブを開いたときのフィード取得（あなたのPDS経由で、ログイン中のDIDが伝わります）。Blueskyの通知のプッシュを有効にした場合は、通知の文面を作るために、相手の表示名・投稿本文・ブロックの関係を本サービスのサーバから公開APIで取得します（保存しません）
+				</td>
+			</tr>
+			<tr>
+				<td>Blueskyのモデレーション</td>
+				<td>
+					Bluesky投稿を「Blueskyに通報」したときのみ。通報した投稿と、選んだ理由・補足（あなたのPDS経由で、ログイン中のDIDが伝わります）
 				</td>
 			</tr>
 			<tr>
@@ -332,10 +340,14 @@
 </p>
 <p>
 	また、投稿機能は、<strong>あなた自身のPDSに追加のレコードを作成します。</strong
-	>任意で有効にしたBlueskyクロスポストは<code>app.bsky.feed.post</code>を、Nagiのブログ投稿は<code
-		>site.standard.publication</code
-	>と<code>site.standard.document</code
-	>を作成します。いずれも公開レコードです。standard.siteの権限はログイン時に必須で求め、Bluesky連携の権限（投稿と、フィードの閲覧）はBluesky連携を有効にするときだけ追加で求めます。Blueskyフィードのタブで表示する投稿はその場で取得するだけで、Nagiのサーバには保存しません。Nagi上で投稿を編集・削除すると対応するレコードも追従し、設定の全データ削除でも消去されます。
+	>任意で有効にしたBluesky連携では、クロスポストやBluesky投稿への返信・引用で<code
+		>app.bsky.feed.post</code
+	>を、いいね・リポストで<code>app.bsky.feed.like</code>・<code>app.bsky.feed.repost</code
+	>を、返信と引用の許可の設定で<code>app.bsky.feed.threadgate</code>・<code
+		>app.bsky.feed.postgate</code
+	>を作成します。Nagiのブログ投稿は<code>site.standard.publication</code>と<code
+		>site.standard.document</code
+	>を作成します。いずれも公開レコードです。standard.siteの権限はログイン時に必須で求め、Bluesky連携の権限（Nagiから書いたBluesky投稿の作成と削除、いいね・リポスト、返信と引用の許可、フィードの閲覧、通知・ミュート・ブックマーク・通報）はBluesky連携を有効にするときだけ追加で求めます。Bluesky投稿の編集やフォロー・ブロックの権限は求めません。Blueskyフィードのタブで表示する投稿はその場で取得するだけで、Nagiのサーバには保存しません。Nagi上で投稿を編集・削除すると対応するレコードも追従し、設定の全データ削除でも消去されます。
 </p>
 
 <h2 id="p7">7. 端末に保存する情報</h2>
