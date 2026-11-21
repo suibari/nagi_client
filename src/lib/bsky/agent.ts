@@ -67,6 +67,31 @@ type Context = {
 };
 let context: Context | undefined;
 
+/**
+ * @atproto/api は応答を lexicon で厳密に検証し、1件でも上限を超えた値（1000文字を超える動画の alt など）が
+ * あるとページごと捨てる。Bluesky AppView 自身はその投稿を返しており HTTP も成功しているので、閲覧では
+ * 検証前の本文を使う。表示型への変換（mapView）は想定外の形にも耐えるよう $type で見分けている。
+ */
+async function lenient<T>(request: Promise<{ data: T }>): Promise<{ data: T }> {
+	try {
+		return await request;
+	} catch (error) {
+		const invalid = error as { validationError?: unknown; responseBody?: unknown };
+		if (
+			invalid?.validationError &&
+			invalid.responseBody &&
+			typeof invalid.responseBody === 'object'
+		) {
+			console.warn(
+				'[bsky] using a response that failed lexicon validation',
+				invalid.validationError,
+			);
+			return { data: invalid.responseBody as T };
+		}
+		throw error;
+	}
+}
+
 function currentContext(): Context {
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
@@ -109,11 +134,9 @@ export async function getBskyThread(uri: string) {
 	const ctx = currentContext();
 	ctx.threads ??= new BskyThreadLoader(async (rootUri) => {
 		await loadPrefs(ctx);
-		const { data } = await ctx.agent.app.bsky.feed.getPostThread({
-			uri: rootUri,
-			depth: 100,
-			parentHeight: 0,
-		});
+		const { data } = await lenient(
+			ctx.agent.app.bsky.feed.getPostThread({ uri: rootUri, depth: 100, parentHeight: 0 }),
+		);
 		return toThreadSnapshot(data.thread);
 	});
 	return ctx.threads.get(uri);
@@ -131,8 +154,10 @@ const MAX_FETCH_ROUNDS = 4;
 async function fetchRaw(ctx: Context, feed: BskyFeedRef, cursor?: string) {
 	const { data } =
 		feed.kind === 'timeline'
-			? await ctx.agent.app.bsky.feed.getTimeline({ cursor, limit: TIMELINE_PAGE_SIZE })
-			: await ctx.agent.app.bsky.feed.getFeed({ feed: feed.uri, cursor, limit: PAGE_SIZE });
+			? await lenient(ctx.agent.app.bsky.feed.getTimeline({ cursor, limit: TIMELINE_PAGE_SIZE }))
+			: await lenient(
+					ctx.agent.app.bsky.feed.getFeed({ feed: feed.uri, cursor, limit: PAGE_SIZE }),
+				);
 	return {
 		items: data.feed.map(toFeedItem),
 		// 同じカーソルが返ってくるフィードがある。続きが無いのに無限に引き続けないよう止める。
@@ -175,7 +200,9 @@ const toGenerator = (view: AppBskyFeedDefs.GeneratorView): BskyFeedGenerator => 
 
 export async function getBskyFeedGenerators(uris: string[]): Promise<BskyFeedGenerator[]> {
 	if (!uris.length) return [];
-	const { data } = await currentContext().agent.app.bsky.feed.getFeedGenerators({ feeds: uris });
+	const { data } = await lenient(
+		currentContext().agent.app.bsky.feed.getFeedGenerators({ feeds: uris }),
+	);
 	return data.feeds.map(toGenerator);
 }
 
@@ -210,7 +237,7 @@ export async function lookupBskyFeed(input: string): Promise<BskyFeedGenerator |
 
 /** 自分の投稿にいいねした人。数は返さず、先頭の数人だけ。 */
 export async function getBskyLikers(uri: string, limit = 5): Promise<BskyActor[]> {
-	const { data } = await currentContext().agent.app.bsky.feed.getLikes({ uri, limit });
+	const { data } = await lenient(currentContext().agent.app.bsky.feed.getLikes({ uri, limit }));
 	return data.likes.slice(0, limit).map((like) => toActor(like.actor));
 }
 
@@ -265,12 +292,12 @@ export async function checkBskyTarget(
 	uri: string,
 	kind: 'reply' | 'quote',
 ): Promise<BskyTargetStatus> {
-	const { data } = await currentContext()
-		.agent.app.bsky.feed.getPostThread({ uri, depth: 0, parentHeight: 0 })
-		.catch((error: unknown) => {
-			if ((error as { error?: string })?.error === 'NotFound') return { data: undefined };
-			throw error;
-		});
+	const { data } = await lenient(
+		currentContext().agent.app.bsky.feed.getPostThread({ uri, depth: 0, parentHeight: 0 }),
+	).catch((error: unknown) => {
+		if ((error as { error?: string })?.error === 'NotFound') return { data: undefined };
+		throw error;
+	});
 	const thread = data?.thread as { $type?: string; post?: AppBskyFeedDefs.PostView } | undefined;
 	if (!thread?.post || thread.$type !== 'app.bsky.feed.defs#threadViewPost') return 'gone';
 	if (kind === 'reply' && thread.post.viewer?.replyDisabled) return 'reply-disabled';
@@ -330,11 +357,9 @@ export async function deleteCrosspostCopies(copy: {
 	let uris = [...new Set([copy.root.uri, copy.tail.uri])];
 	if (copy.root.uri !== copy.tail.uri) {
 		try {
-			const { data } = await ctx.agent.app.bsky.feed.getPostThread({
-				uri: copy.root.uri,
-				depth: 100,
-				parentHeight: 0,
-			});
+			const { data } = await lenient(
+				ctx.agent.app.bsky.feed.getPostThread({ uri: copy.root.uri, depth: 100, parentHeight: 0 }),
+			);
 			uris = crosspostChainUris(data.thread, ctx.session.did, copy);
 		} catch (error) {
 			console.warn('[bsky] could not trace the crosspost chain', error);
@@ -370,11 +395,13 @@ const GET_POSTS_LIMIT = 25;
 export async function getBskyNotifications(cursor?: string): Promise<BskyNotificationPage> {
 	const ctx = currentContext();
 	await loadPrefs(ctx);
-	const { data } = await ctx.agent.app.bsky.notification.listNotifications({
-		limit: 40,
-		cursor,
-		reasons: [...BSKY_NOTIFICATION_REASONS],
-	});
+	const { data } = await lenient(
+		ctx.agent.app.bsky.notification.listNotifications({
+			limit: 40,
+			cursor,
+			reasons: [...BSKY_NOTIFICATION_REASONS],
+		}),
+	);
 	const uris = [
 		...new Set(
 			data.notifications.flatMap((notification) => notificationPostUri(notification) ?? []),
@@ -382,9 +409,9 @@ export async function getBskyNotifications(cursor?: string): Promise<BskyNotific
 	];
 	const posts = new Map<string, AppBskyFeedDefs.PostView>();
 	for (let index = 0; index < uris.length; index += GET_POSTS_LIMIT) {
-		const { data: page } = await ctx.agent.app.bsky.feed.getPosts({
-			uris: uris.slice(index, index + GET_POSTS_LIMIT),
-		});
+		const { data: page } = await lenient(
+			ctx.agent.app.bsky.feed.getPosts({ uris: uris.slice(index, index + GET_POSTS_LIMIT) }),
+		);
 		for (const post of page.posts) posts.set(post.uri, post);
 	}
 	return {
@@ -504,7 +531,7 @@ export type BskyBookmarkPage = { items: BskyPostCardView[]; cursor?: string };
 export async function getBskyBookmarks(cursor?: string): Promise<BskyBookmarkPage> {
 	const ctx = currentContext();
 	await loadPrefs(ctx);
-	const { data } = await ctx.agent.app.bsky.bookmark.getBookmarks({ limit: 30, cursor });
+	const { data } = await lenient(ctx.agent.app.bsky.bookmark.getBookmarks({ limit: 30, cursor }));
 	return {
 		items: data.bookmarks.flatMap((bookmark) =>
 			(bookmark.item as { $type?: string }).$type === 'app.bsky.feed.defs#postView'

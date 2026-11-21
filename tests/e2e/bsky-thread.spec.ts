@@ -220,3 +220,23 @@ test('keeps reading past pages hidden by the Following settings, then lets you r
 	await page.getByRole('button', { name: 'さらに読む' }).click();
 	await expect.poll(() => timelineRequests).toBeGreaterThan(before);
 });
+
+test('shows the timeline even when a post breaks the lexicon limits', async ({ page }) => {
+	// Bluesky AppView が返す、alt が1000文字を超える動画付きの投稿（@atproto/api の検証では弾かれる）。
+	const longAlt = {
+		...post('root'),
+		embed: {
+			$type: 'app.bsky.embed.video#view',
+			cid: 'bafyreidnq5e4j7qaw5l4dpa4g5vjt4y5dpjywqrnit23nkrnnjwf5f24xi',
+			playlist: 'https://video.example/playlist.m3u8',
+			alt: 'あ'.repeat(1001),
+		},
+		replyCount: 0,
+	};
+	await page.route('**/xrpc/app.bsky.feed.getTimeline*', (route) =>
+		route.fulfill({ json: { feed: [{ post: longAlt }] } }),
+	);
+	await signIn(page);
+	await expect(page.getByText('フィードには先頭ポストだけ', { exact: true })).toBeVisible();
+	await expect(page.getByText('Blueskyのフィードを読み込めませんでした')).toHaveCount(0);
+});
