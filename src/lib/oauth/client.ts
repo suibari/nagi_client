@@ -19,6 +19,8 @@ export const BLUESKY_INTERACTION_REPO_SCOPES = [
 	'app.bsky.feed.postgate',
 ].map((collection) => `repo:${collection}?action=create&action=delete`);
 export const BLUESKY_INTERACTION_RPC_SCOPES = [
+	// いいね・リポストの通知で、対象の投稿の本文とラベルを引く。
+	'rpc:app.bsky.feed.getPosts',
 	'rpc:app.bsky.notification.listNotifications',
 	'rpc:app.bsky.notification.getUnreadCount',
 	'rpc:app.bsky.notification.updateSeen',

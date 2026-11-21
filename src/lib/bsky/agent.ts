@@ -9,6 +9,12 @@ import { filterTimeline, type TimelineViewPrefs } from './timelineFilter';
 import { toActor, toFeedItem, type BskyActor, type BskyFeedItemView } from './mapView';
 import { BskyInteractions, type BskyInteractionWriter } from './interactions.svelte';
 import { hasBlueskyInteractionScope } from '$lib/optin/scope-optin';
+import {
+	BSKY_NOTIFICATION_REASONS,
+	notificationPostUri,
+	toBskyNotifications,
+	type BskyNotificationView,
+} from './notifications';
 
 /**
  * Bluesky の AppView への入口。ユーザーの PDS へ atproto-proxy 付きで投げる（A案）。
@@ -324,4 +330,54 @@ export async function deleteCrosspostCopies(copy: {
 		}
 	}
 	return failed;
+}
+
+export type BskyNotificationPage = {
+	items: BskyNotificationView[];
+	cursor?: string;
+	/** 一覧で一番新しい通知の時刻。表示したらここまでを既読にする。 */
+	latest?: string;
+};
+
+const GET_POSTS_LIMIT = 25;
+
+/**
+ * Bluesky の通知（NOTIFY-07）。ミュート・ブロックは Bluesky 側で除いたものが返る。
+ * いいね・リポストの対象の投稿は通知に本文が無いので、まとめて引いてラベルごと添える。
+ */
+export async function getBskyNotifications(cursor?: string): Promise<BskyNotificationPage> {
+	const ctx = currentContext();
+	await loadPrefs(ctx);
+	const { data } = await ctx.agent.app.bsky.notification.listNotifications({
+		limit: 40,
+		cursor,
+		reasons: [...BSKY_NOTIFICATION_REASONS],
+	});
+	const uris = [
+		...new Set(
+			data.notifications.flatMap((notification) => notificationPostUri(notification) ?? []),
+		),
+	];
+	const posts = new Map<string, AppBskyFeedDefs.PostView>();
+	for (let index = 0; index < uris.length; index += GET_POSTS_LIMIT) {
+		const { data: page } = await ctx.agent.app.bsky.feed.getPosts({
+			uris: uris.slice(index, index + GET_POSTS_LIMIT),
+		});
+		for (const post of page.posts) posts.set(post.uri, post);
+	}
+	return {
+		items: toBskyNotifications(data.notifications, posts),
+		cursor: data.cursor && data.cursor !== cursor ? data.cursor : undefined,
+		latest: data.notifications[0]?.indexedAt,
+	};
+}
+
+/** 表示した最新の通知までを Bluesky 側で既読にする。Nagi の通知の既読とは別。 */
+export async function markBskyNotificationsSeen(seenAt: string): Promise<void> {
+	await currentContext().agent.app.bsky.notification.updateSeen({ seenAt });
+}
+
+export async function getBskyUnreadCount(): Promise<number> {
+	const { data } = await currentContext().agent.app.bsky.notification.getUnreadCount({});
+	return data.count;
 }

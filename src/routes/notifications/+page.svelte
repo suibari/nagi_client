@@ -21,6 +21,48 @@
 	import BusinessCard from '$lib/components/BusinessCard.svelte';
 	import BusinessCardDialog from '$lib/components/BusinessCardDialog.svelte';
 	import { cardFromProfile, type BusinessCardData } from '$lib/card/data';
+	import BskyNotificationList from '$lib/components/bsky/BskyNotificationList.svelte';
+	import { getBskyUnreadCount } from '$lib/bsky/agent';
+	import { hasBlueskyViewScope } from '$lib/optin/scope-optin';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+
+	/**
+	 * Nagi と Bluesky の通知はタブで分ける（NOTIFY-07）。既読の正本が別々なので混ぜない。
+	 * Bluesky のタブは Bluesky 連携をしている人にだけ出す。
+	 */
+	type NotificationTab = 'nagi' | 'bluesky';
+	let blueskyLinked = $state(false);
+	let blueskyUnread = $state(false);
+	const tab = $derived<NotificationTab>(
+		blueskyLinked && page.url.searchParams.get('tab') === 'bluesky' ? 'bluesky' : 'nagi',
+	);
+	function selectTab(next: NotificationTab) {
+		const url = new URL(page.url);
+		if (next === 'bluesky') url.searchParams.set('tab', 'bluesky');
+		else url.searchParams.delete('tab');
+		void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+	}
+	async function refreshBlueskyUnread() {
+		if (!blueskyLinked || tab === 'bluesky') return;
+		blueskyUnread = (await getBskyUnreadCount().catch(() => 0)) > 0;
+	}
+	$effect(() => {
+		const did = $session?.did;
+		blueskyLinked = false;
+		if (!did) return;
+		void hasBlueskyViewScope().then((linked) => {
+			if ($session?.did !== did) return;
+			blueskyLinked = linked;
+			void refreshBlueskyUnread();
+		});
+	});
+	// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知はまだ見えていないので、
+	// seenAt は表示済みの最新 createdAt に限る。Bluesky のタブを見ている間は Nagi の一覧が
+	// 見えていないので既読にしない（NOTIFY-02）。一覧を取り直すたび、タブを戻したときにも走る。
+	$effect(() => {
+		if (tab === 'nagi' && items.length) untrack(() => void markAllSeen(items[0].createdAt));
+	});
 	let items = $state<NotificationView[]>([]);
 	let error = $state('');
 	let loading = $state(true);
@@ -62,9 +104,6 @@
 						: [],
 				),
 			);
-			// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知は
-			// まだ見えていないので、seenAt は表示済みの最新 createdAt に限定する。
-			if (items.length) void markAllSeen(items[0].createdAt);
 			error = '';
 			// 名刺更新があるときだけ本人の最新名刺を1回取得する。通知行には更新当時の
 			// スナップショットが無いので、複数行があってもすべて現在の名刺を表示する。
@@ -100,7 +139,16 @@
 		void reload();
 	});
 	// タブ復帰（と保険の60秒ポーリング）で最新へ追従する。
-	onMount(() => startVisiblePolling(() => void reload(), 60_000, { onReturn: true }));
+	onMount(() =>
+		startVisiblePolling(
+			() => {
+				void reload();
+				void refreshBlueskyUnread();
+			},
+			60_000,
+			{ onReturn: true },
+		),
+	);
 	// ナビの通知アイコンをもう一度押したときも開き直す。reload() が読む状態を依存に
 	// 取り込まないよう untrack する（取り込むと初回ロードと二重に走る）。
 	let refreshHandled = 0;
@@ -220,7 +268,39 @@
 {/snippet}
 
 <PageHeader title={m.navNotifications()} />
-<section class="timeline">
+{#if blueskyLinked}
+	<div class="notification-tabs" role="tablist" aria-label={m.notifTabsAria()}>
+		<button
+			type="button"
+			role="tab"
+			aria-selected={tab === 'nagi'}
+			class:active={tab === 'nagi'}
+			onclick={() => selectTab('nagi')}>{m.notifTabNagi()}</button
+		>
+		<button
+			type="button"
+			role="tab"
+			aria-selected={tab === 'bluesky'}
+			class:active={tab === 'bluesky'}
+			onclick={() => selectTab('bluesky')}
+			>{m.notifTabBluesky()}{#if blueskyUnread && tab !== 'bluesky'}<span
+					class="notification-tab-dot"
+					role="img"
+					aria-label={m.notifTabBlueskyUnread()}
+				></span>{/if}</button
+		>
+	</div>
+{/if}
+{#if blueskyLinked}
+	<section class="timeline" hidden={tab !== 'bluesky'}>
+		<BskyNotificationList
+			active={tab === 'bluesky'}
+			refreshToken={$pageRefresh}
+			onseen={() => (blueskyUnread = false)}
+		/>
+	</section>
+{/if}
+<section class="timeline" hidden={tab !== 'nagi'}>
 	{#if error}<div class="state error">{error}</div>
 	{:else if loading}<Spinner />
 	{:else if !items.length}<div class="state">{m.notifEmpty()}</div>
@@ -261,3 +341,45 @@
 		onclose={() => (cardDialogOpen = false)}
 	/>
 {/if}
+
+<style>
+	.notification-tabs {
+		display: flex;
+		gap: 4px;
+		margin: 0 0 12px;
+		padding: 3px;
+		border: 1px solid var(--line);
+		border-radius: var(--r-md);
+		background: var(--surface-2);
+	}
+	.notification-tabs button {
+		position: relative;
+		flex: 1;
+		min-height: 34px;
+		border: 0;
+		border-radius: calc(var(--r-md) - 3px);
+		background: none;
+		color: var(--text-muted);
+		font: inherit;
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+	}
+	.notification-tabs button.active {
+		background: var(--surface-1);
+		color: var(--text-strong);
+		box-shadow: var(--shadow-card);
+	}
+	.notification-tab-dot {
+		display: inline-block;
+		width: 7px;
+		height: 7px;
+		margin-left: 6px;
+		border-radius: 50%;
+		background: var(--accent);
+		vertical-align: middle;
+	}
+	.timeline[hidden] {
+		display: none;
+	}
+</style>
