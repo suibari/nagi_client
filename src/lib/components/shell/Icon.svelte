@@ -4,6 +4,8 @@
 		home: 'M3 10.8 12 3.5l9 7.3M5.8 9.2V20h12.4V9.2',
 		heart:
 			'M12 20.2S4.3 15.6 2.8 10.9C1.7 7.4 4.2 4.5 7.3 4.5c1.9 0 3.4 1 4.7 2.9 1.3-1.9 2.8-2.9 4.7-2.9 3.1 0 5.6 2.9 4.5 6.4C19.7 15.6 12 20.2 12 20.2Z',
+		heartFilled:
+			'M12 20.2S4.3 15.6 2.8 10.9C1.7 7.4 4.2 4.5 7.3 4.5c1.9 0 3.4 1 4.7 2.9 1.3-1.9 2.8-2.9 4.7-2.9 3.1 0 5.6 2.9 4.5 6.4C19.7 15.6 12 20.2 12 20.2Z',
 		bell: 'M6 9.5a6 6 0 0 1 12 0c0 4.6 1.7 5.8 1.7 5.8H4.3S6 14.1 6 9.5M10.3 19a1.8 1.8 0 0 0 3.4 0',
 		bellOff:
 			'M6 9.5a6 6 0 0 1 12 0c0 4.6 1.7 5.8 1.7 5.8H4.3S6 14.1 6 9.5M10.3 19a1.8 1.8 0 0 0 3.4 0M4 4l16 16',
@@ -109,7 +111,10 @@
 		width={size}
 		height={size}
 		viewBox="0 0 24 24"
-		fill={name === 'bookmarkFilled' || name === 'starFilled' || name === 'play'
+		fill={name === 'bookmarkFilled' ||
+		name === 'starFilled' ||
+		name === 'heartFilled' ||
+		name === 'play'
 			? 'currentColor'
 			: 'none'}
 		stroke="currentColor"

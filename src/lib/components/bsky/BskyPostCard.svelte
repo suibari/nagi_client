@@ -6,26 +6,31 @@
 	import LinkCard from '$lib/components/LinkCard.svelte';
 	import VideoPlayer from '$lib/components/VideoPlayer.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { getBskyLikers } from '$lib/bsky/agent';
+	import { bskyInteractions, canInteractWithBsky, getBskyLikers } from '$lib/bsky/agent';
+	import type { BskyInteractionKind } from '$lib/bsky/interactions.svelte';
 	import type { BskyActor, BskyFeedItemView } from '$lib/bsky/mapView';
 	import { bskyPostDisplay } from '$lib/bsky/moderation';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import { ageAssurance } from '$lib/moderation/age.svelte';
 	import { session } from '$lib/oauth/session.svelte';
+	import BskyPermissionDialog from './BskyPermissionDialog.svelte';
 	import BskyRichText from './BskyRichText.svelte';
 
 	/**
-	 * Bluesky の投稿1件。閲覧専用で、いいね・リポスト・返信の操作は置かない。
-	 * 著者・日時・カードは bsky.app を新しいタブで開く（Nagi はユーザーやスレッドを作り込まない）。
-	 *
-	 * いいねは数を出さない。Nagi のリアクションと同じく、誰がいいねしたかは投稿者本人にだけ見せ、
-	 * それも最大5人まで。
+	 * Bluesky の投稿1件。著者・日時・カードは bsky.app を新しいタブで開く。
+	 * 誰がいいねしたかは投稿者本人にだけ、最大5人まで見せる。
 	 */
 	let {
 		item,
 		moderation,
 		standalone = true,
-	}: { item: BskyFeedItemView; moderation: ModerationOpts; standalone?: boolean } = $props();
+		interactive = true,
+	}: {
+		item: BskyFeedItemView;
+		moderation: ModerationOpts;
+		standalone?: boolean;
+		interactive?: boolean;
+	} = $props();
 
 	const LIKERS_LIMIT = 5;
 
@@ -47,6 +52,29 @@
 		...media,
 		contentWarning: display.warnMedia || media.contentWarning,
 	});
+
+	const liked = $derived(bskyInteractions.active('like', post));
+	const reposted = $derived(bskyInteractions.active('repost', post));
+	let permissionPrompt = $state(false);
+	let actionError = $state(false);
+	let errorTimer: ReturnType<typeof setTimeout> | undefined;
+
+	async function toggle(kind: BskyInteractionKind) {
+		if (bskyInteractions.busy(kind, post)) return;
+		if (!(await canInteractWithBsky())) {
+			permissionPrompt = true;
+			return;
+		}
+		try {
+			await bskyInteractions.toggle(kind, post);
+		} catch (error) {
+			console.warn('[BskyPostCard] interaction failed', kind, error);
+			actionError = true;
+			clearTimeout(errorTimer);
+			errorTimer = setTimeout(() => (actionError = false), 4000);
+		}
+	}
+	$effect(() => () => clearTimeout(errorTimer));
 
 	// 自分の投稿だけ、画面に入ったときに一度だけ引く。フィードを開いただけで全件ぶん叩かない。
 	let likers = $state<BskyActor[]>([]);
@@ -134,7 +162,32 @@
 					{/if}
 				</ContentWarningMask>
 				<footer class="bsky-footer">
-					{#if post.likedByMe}
+					{#if interactive && $session}
+						<button
+							type="button"
+							class="bsky-action"
+							class:active={reposted}
+							aria-pressed={reposted}
+							title={reposted ? m.bskyUndoRepost() : m.bskyRepost()}
+							disabled={bskyInteractions.busy('repost', post)}
+							onclick={() => toggle('repost')}
+							><Icon name="refresh" size={15} />{reposted
+								? m.bskyReposted()
+								: m.bskyRepost()}</button
+						>
+						<button
+							type="button"
+							class="bsky-action"
+							class:active={liked}
+							aria-pressed={liked}
+							title={liked ? m.bskyUnlike() : m.bskyLike()}
+							disabled={bskyInteractions.busy('like', post)}
+							onclick={() => toggle('like')}
+							><Icon name={liked ? 'heartFilled' : 'heart'} size={15} />{liked
+								? m.bskyLikedByMe()
+								: m.bskyLike()}</button
+						>
+					{:else if liked}
 						<span class="bsky-liked"><Icon name="heart" size={14} />{m.bskyLikedByMe()}</span>
 					{/if}
 					{#if likers.length}
@@ -156,9 +209,11 @@
 						>
 					{/if}
 				</footer>
+				{#if actionError}<p class="bsky-action-error" role="status">{m.bskyActionFailed()}</p>{/if}
 			</div>
 		</div>
 	</article>
+	{#if permissionPrompt}<BskyPermissionDialog onclose={() => (permissionPrompt = false)} />{/if}
 {/if}
 
 <style>
@@ -215,6 +270,35 @@
 		gap: 8px 12px;
 		margin-top: 8px;
 		color: var(--text-mute);
+		font-size: 12px;
+	}
+	.bsky-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		min-height: 28px;
+		padding: 2px 8px;
+		border: 1px solid transparent;
+		border-radius: var(--r-pill, 999px);
+		background: none;
+		color: var(--text-mute);
+		font: inherit;
+		cursor: pointer;
+	}
+	.bsky-action:hover:not(:disabled) {
+		border-color: var(--line);
+		color: var(--text-muted);
+	}
+	.bsky-action:disabled {
+		cursor: progress;
+	}
+	.bsky-action.active,
+	.bsky-action.active:hover:not(:disabled) {
+		color: var(--accent-strong);
+	}
+	.bsky-action-error {
+		margin: 6px 0 0;
+		color: var(--danger);
 		font-size: 12px;
 	}
 	.bsky-liked,

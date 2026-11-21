@@ -21,6 +21,7 @@
 		isPostEntering = () => false,
 		loadThread,
 		revision = 0,
+		interactive = true,
 	}: {
 		thread: BskyConversation;
 		moderation: ModerationOpts;
@@ -28,6 +29,8 @@
 		isPostEntering?: (uri: string) => boolean;
 		loadThread?: (uri: string) => Promise<BskyThreadSnapshot>;
 		revision?: number;
+		/** 設定画面のプレビュー等では Bluesky への操作を出さない。 */
+		interactive?: boolean;
 	} = $props();
 
 	let row = $state<HTMLElement>();
@@ -104,6 +107,7 @@
 	<BskyPostCard
 		item={{ key: post.uri, post, repostedBy: root ? thread.item.repostedBy : undefined }}
 		{moderation}
+		{interactive}
 		standalone={false}
 	/>
 {/snippet}

@@ -148,6 +148,7 @@
 					{moderation}
 					loadThread={getBskyThread}
 					revision={feed.revision}
+					interactive={!preview}
 					entering={feed.entry.keys.has(thread.key)}
 					isPostEntering={(uri) => feed?.entry.uris.has(uri) ?? false}
 				/>

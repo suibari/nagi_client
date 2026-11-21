@@ -2,15 +2,15 @@
 
 ## 1. 権限と再認可
 
-- [ ] 1.1 `src/lib/oauth/client.ts`のBluesky連携scopeに、投稿のcreate/delete、like・repost・threadgate・postgateの必要なaction、通知・ミュート・ブックマーク・通報のrpcを足す。update・block・followを含まないことをテストで確認する。
-- [ ] 1.2 nagi-lexicon（`bsky-affirmative-bot/guillemot/packages/nagi-lexicon`）の`NAGI_BLUESKY_VIEW_SCOPES`等を同じ内容に揃える。既存の`oauthScope.test.ts`を通す。
-- [ ] 1.3 操作の権限の付与判定と、操作時の再認可案内を実装する（AUTH-08）。閲覧だけの旧セッション、再認可のキャンセルをモック認証で確認する。
+- [x] 1.1 `src/lib/oauth/client.ts`のBluesky連携scopeに、投稿のcreate/delete、like・repost・threadgate・postgateの必要なaction、通知・ミュート・ブックマーク・通報のrpcを足す。update・block・followを含まないことをテストで確認する。
+- [x] 1.2 nagi-lexicon（`bsky-affirmative-bot/guillemot/packages/nagi-lexicon`）の`NAGI_BLUESKY_VIEW_SCOPES`等を同じ内容に揃える。既存の`oauthScope.test.ts`を通す。
+- [x] 1.3 操作の権限の付与判定と、操作時の再認可案内を実装する（AUTH-08）。閲覧だけの旧セッション、再認可のキャンセルをモック認証で確認する。
 
 ## 2. いいね・リポスト
 
-- [ ] 2.1 mapViewに`repostedByMe`と取り消し用の自分のレコードURIを足す。件数を表示型に持たないことをテストで確認する。
-- [ ] 2.2 投稿URIを鍵にした操作状態のストアと、楽観切替・失敗時の巻き戻し・処理中の重複防止を実装する。
-- [ ] 2.3 `BskyPostCard.svelte`に操作列（返信・リポスト／引用・いいね・メニュー）を置く。Nagiのリアクションと見た目を分け、件数を出さないことを確認する。
+- [x] 2.1 mapViewに`repostedByMe`と取り消し用の自分のレコードURIを足す。件数を表示型に持たないことをテストで確認する。
+- [x] 2.2 投稿URIを鍵にした操作状態のストアと、楽観切替・失敗時の巻き戻し・処理中の重複防止を実装する。
+- [x] 2.3 `BskyPostCard.svelte`に操作列（返信・リポスト／引用・いいね・メニュー）を置く。Nagiのリアクションと見た目を分け、件数を出さないことを確認する。
 
 ## 3. 返信・引用・削除
 

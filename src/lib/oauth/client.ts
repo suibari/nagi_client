@@ -6,9 +6,36 @@ export const BLUESKY_ENTRYWAY_URL = 'https://bsky.social';
 
 /** クロスポスト対象コレクション。付与判定の前方一致にも使う。 */
 export const CROSSPOST_COLLECTION_SCOPE = 'repo:app.bsky.feed.post';
-// Nagi は Bluesky 投稿を作成するだけで、更新・削除は一切行わない（cf. crosspost/bluesky.ts）。
-// action 未指定は create/update/delete 全許可になるため、明示的に create のみへ絞る。
-export const CROSSPOST_SCOPE = `${CROSSPOST_COLLECTION_SCOPE}?action=create`;
+// action 未指定は create/update/delete 全許可になるため、update を除く（BSKY-06）。
+export const CROSSPOST_SCOPE = `${CROSSPOST_COLLECTION_SCOPE}?action=create&action=delete`;
+/**
+ * Bluesky 投稿への操作（BSKY-08〜14）。付け外しだけで update は使わない。
+ * 真実源は nagi-lexicon の NAGI_BLUESKY_INTERACTION_SCOPES。
+ */
+export const BLUESKY_INTERACTION_REPO_SCOPES = [
+	'app.bsky.feed.like',
+	'app.bsky.feed.repost',
+	'app.bsky.feed.threadgate',
+	'app.bsky.feed.postgate',
+].map((collection) => `repo:${collection}?action=create&action=delete`);
+export const BLUESKY_INTERACTION_RPC_SCOPES = [
+	'rpc:app.bsky.notification.listNotifications',
+	'rpc:app.bsky.notification.getUnreadCount',
+	'rpc:app.bsky.notification.updateSeen',
+	'rpc:app.bsky.graph.muteActor',
+	'rpc:app.bsky.graph.unmuteActor',
+	'rpc:app.bsky.graph.muteThread',
+	'rpc:app.bsky.graph.unmuteThread',
+	'rpc:app.bsky.bookmark.createBookmark',
+	'rpc:app.bsky.bookmark.deleteBookmark',
+	'rpc:app.bsky.bookmark.getBookmarks',
+	'rpc:com.atproto.moderation.createReport',
+];
+// 閲覧と同じく、bare aud で照合する旧 PDS のため wildcard にする。
+export const BLUESKY_INTERACTION_SCOPES = [
+	...BLUESKY_INTERACTION_REPO_SCOPES,
+	...BLUESKY_INTERACTION_RPC_SCOPES.map((scope) => `${scope}?aud=*`),
+];
 export const BLUEMOJI_SCOPE = 'repo:blue.moji.collection.item';
 // Bluesky のカスタムフィードをタブで読むための権限。クロスポストと同じオプトインでまとめて要求する
 // （同意の導線を増やさない）。PDS へ atproto-proxy 付きで投げるので aud は Bluesky AppView だが、
@@ -82,11 +109,12 @@ export type ScopeOptIns = { crosspost?: boolean; standardSite?: boolean };
  */
 export function buildScope(optIns: ScopeOptIns = {}): string {
 	const scopes = [...baseScopes];
-	if (optIns.crosspost) scopes.push(CROSSPOST_SCOPE, ...BLUESKY_VIEW_SCOPES);
+	if (optIns.crosspost)
+		scopes.push(CROSSPOST_SCOPE, ...BLUESKY_VIEW_SCOPES, ...BLUESKY_INTERACTION_SCOPES);
 	return scopes.join(' ');
 }
 
-// standard.site は必須、Bluesky 連携（クロスポストとフィード閲覧）だけがオプトイン。
+// standard.site は必須、Bluesky 連携（クロスポスト・閲覧・操作）だけがオプトイン。
 export const BASE_SCOPE = buildScope();
 export const FULL_SCOPE = buildScope({ crosspost: true, standardSite: true });
 const scope = FULL_SCOPE;

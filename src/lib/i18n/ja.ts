@@ -1226,6 +1226,15 @@ export const ja = {
 	bskyReplyTo: (p: { name: string }) => `${p.name}さんへの返信`,
 	bskyLikedByMe: 'いいね済み',
 	bskyLikedBy: 'いいねした人',
+	bskyLike: 'いいね',
+	bskyUnlike: 'いいねを取り消す',
+	bskyRepost: 'リポスト',
+	bskyReposted: 'リポスト済み',
+	bskyUndoRepost: 'リポストを取り消す',
+	bskyActionFailed: '操作できませんでした。時間をおいてもう一度お試しください。',
+	bskyPermissionTitle: 'Blueskyで操作するための権限',
+	bskyPermissionBody:
+		'いいね・リポスト・返信などをNagiから行うには、追加の権限の付与が必要です。Blueskyのフィードを読むことは、今のままでも続けられます。',
 	bskyQuoteUnavailable: '引用元の投稿は表示できません',
 	bskyModerationWarning: 'Blueskyのラベルによる注意があります',
 	// 投稿そのものは成立しているときの補足。理由側が何に失敗したかを述べる。

@@ -6,6 +6,8 @@ import { session } from '$lib/oauth/session.svelte';
 import { feedGeneratorUri, isFeedGeneratorUri, parseFeedInput } from './links';
 import { filterTimeline, type TimelineViewPrefs } from './timelineFilter';
 import { toActor, toFeedItem, type BskyActor, type BskyFeedItemView } from './mapView';
+import { BskyInteractions, type BskyInteractionWriter } from './interactions.svelte';
+import { hasBlueskyInteractionScope } from '$lib/optin/scope-optin';
 
 /**
  * Bluesky の AppView への入口。ユーザーの PDS へ atproto-proxy 付きで投げる（A案）。
@@ -181,4 +183,45 @@ export async function lookupBskyFeed(input: string): Promise<BskyFeedGenerator |
 export async function getBskyLikers(uri: string, limit = 5): Promise<BskyActor[]> {
 	const { data } = await currentContext().agent.app.bsky.feed.getLikes({ uri, limit });
 	return data.likes.slice(0, limit).map((like) => toActor(like.actor));
+}
+
+/**
+ * 本人のレコードへの書き込みは PDS が自分で処理するので、Bluesky AppView への proxy を付けない
+ * Agent を使う（atproto-proxy 付きだと PDS が書き込みを AppView へ転送しようとする）。
+ */
+function repoAgent(): Agent {
+	const current = get(session);
+	if (!current) throw new Error('Authentication required');
+	return new Agent(current);
+}
+
+const interactionWriter: BskyInteractionWriter = {
+	async create(kind, subject) {
+		const agent = repoAgent();
+		const created =
+			kind === 'like'
+				? await agent.like(subject.uri, subject.cid)
+				: await agent.repost(subject.uri, subject.cid);
+		return created.uri;
+	},
+	async remove(kind, recordUri) {
+		const agent = repoAgent();
+		if (kind === 'like') await agent.deleteLike(recordUri);
+		else await agent.deleteRepost(recordUri);
+	},
+};
+
+/** いいね・リポストの自分の状態（BSKY-08）。アカウントの切り替えで作り直す。 */
+export const bskyInteractions = new BskyInteractions(interactionWriter);
+session.subscribe((current) => bskyInteractions.setOwner(current?.did));
+
+let interactionScope: { session: OAuthSession; granted: Promise<boolean> } | undefined;
+
+/** 操作の権限があるか（AUTH-08）。押すたびにトークン情報を引かないよう、セッションごとに覚える。 */
+export function canInteractWithBsky(): Promise<boolean> {
+	const current = get(session);
+	if (!current) return Promise.resolve(false);
+	if (interactionScope?.session !== current)
+		interactionScope = { session: current, granted: hasBlueskyInteractionScope() };
+	return interactionScope.granted;
 }
