@@ -15,13 +15,28 @@
 {#if postFollowNotice.current}
 	<aside class="post-follow-notice" role="status" aria-live="polite">
 		<span
-			>{postFollowNotice.current.warning
-				? m.postedWithWarning({ reason: postFollowNotice.current.warning })
-				: m.postCreated()}</span
+			>{postFollowNotice.current.message
+				? postFollowNotice.current.message
+				: postFollowNotice.current.warning
+					? m.postedWithWarning({ reason: postFollowNotice.current.warning })
+					: postFollowNotice.current.bluesky
+						? m.bskyPosted()
+						: m.postCreated()}</span
 		>
-		<a href={postFollowNotice.current.href} onclick={() => postFollowNotice.clear()}
-			>{m.viewCreatedPost()}</a
-		>
+		{#if !postFollowNotice.current.href}
+			<!-- 導線の無いお知らせ。 -->
+		{:else if postFollowNotice.current.bluesky}
+			<a
+				href={postFollowNotice.current.href}
+				target="_blank"
+				rel="noopener noreferrer"
+				onclick={() => postFollowNotice.clear()}>{m.bskyOpenInBluesky()}</a
+			>
+		{:else}
+			<a href={postFollowNotice.current.href} onclick={() => postFollowNotice.clear()}
+				>{m.viewCreatedPost()}</a
+			>
+		{/if}
 		<button
 			type="button"
 			aria-label={m.dismissNotice()}
@@ -50,6 +65,9 @@
 		box-shadow: var(--shadow-pop);
 		color: var(--text);
 		font-size: 13px;
+	}
+	.post-follow-notice > span {
+		margin-right: auto;
 	}
 	.post-follow-notice a {
 		margin-left: auto;

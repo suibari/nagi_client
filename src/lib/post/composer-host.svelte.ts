@@ -1,6 +1,7 @@
 import type { SharedContent } from '$lib/share-target/store';
 import type { PostScope } from './scope';
-import type { NewsView, PostView, RadioTrack } from '$lib/api/types';
+import type { NewsView, PostView, RadioTrack, StrongRef } from '$lib/api/types';
+import type { BskyPostCardView } from '$lib/bsky/mapView';
 
 export type ReplyTarget = {
 	root: { uri: string; cid: string };
@@ -27,6 +28,15 @@ export type QuoteTarget = {
 	radio?: RadioTrack;
 };
 
+/** Bluesky 投稿への返信・引用。Bluesky にだけ投稿する（BSKY-09）。 */
+export type BskyComposeTarget = {
+	kind: 'reply' | 'quote';
+	post: BskyPostCardView;
+	/** 返信先のスレッドの先頭と、直接の返信先。引用では使わない。 */
+	root: StrongRef;
+	parent: StrongRef;
+};
+
 /**
  * ポストモーダルの開閉と、「いま見ているフィード」の文脈。
  *
@@ -48,6 +58,7 @@ class ComposerHost {
 	replyTarget = $state<ReplyTarget | undefined>(undefined);
 	quoteTarget = $state<QuoteTarget | undefined>(undefined);
 	trilinesEditTarget = $state<TrilinesEditTarget | undefined>(undefined);
+	bskyTarget = $state<BskyComposeTarget | undefined>(undefined);
 	/**
 	 * 開くときに本文へ差し込む文（アドカレのシェアなど）。PostModal が受け取って本文へ移し、
 	 * すぐに消す。書きかけがあれば消さずに後ろへ足す。
@@ -65,6 +76,7 @@ class ComposerHost {
 	show(defaultScope: PostScope = 'feed') {
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
+		this.bskyTarget = undefined;
 		this.open = true;
 	}
 
@@ -78,6 +90,7 @@ class ComposerHost {
 		this.quoteTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
+		this.bskyTarget = undefined;
 		this.open = true;
 	}
 
@@ -90,6 +103,7 @@ class ComposerHost {
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
+		this.bskyTarget = undefined;
 		this.open = true;
 	}
 
@@ -102,6 +116,7 @@ class ComposerHost {
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
+		this.bskyTarget = undefined;
 		this.open = true;
 	}
 
@@ -111,6 +126,20 @@ class ComposerHost {
 		this.replyTarget = undefined;
 		this.defaultScope = defaultScope;
 		this.trilinesEditTarget = undefined;
+		this.bskyTarget = undefined;
+		this.open = true;
+	}
+
+	openBskyReply(post: BskyPostCardView) {
+		const parent = { uri: post.uri, cid: post.cid };
+		const reply = (post.raw.record as { reply?: { root?: StrongRef } }).reply;
+		this.bskyTarget = { kind: 'reply', post, root: reply?.root ?? parent, parent };
+		this.open = true;
+	}
+
+	openBskyQuote(post: BskyPostCardView) {
+		const subject = { uri: post.uri, cid: post.cid };
+		this.bskyTarget = { kind: 'quote', post, root: subject, parent: subject };
 		this.open = true;
 	}
 
@@ -126,6 +155,7 @@ class ComposerHost {
 		this.trilinesEditTarget = { uri: post.uri, cid: post.cid, post };
 		this.replyTarget = undefined;
 		this.quoteTarget = undefined;
+		this.bskyTarget = undefined;
 		this.open = true;
 	}
 
@@ -138,6 +168,8 @@ class ComposerHost {
 		this.open = false;
 		// 日記の編集はその場限り。次に開いたときは通常の投稿に戻す。
 		this.trilinesEditTarget = undefined;
+		// Bluesky への返信・引用は下書きに残さない。閉じる前に破棄を確認済み。
+		this.bskyTarget = undefined;
 	}
 }
 

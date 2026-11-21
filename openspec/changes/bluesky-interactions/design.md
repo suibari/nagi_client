@@ -28,7 +28,13 @@ Bluesky投稿への基本的なやり取り（いいね・リポスト・返信�
 
 ### D3: 返信・引用の投稿先は相手の投稿で決める
 
-共通Composerに、返信・引用の相手がBluesky投稿のときのモード（Bluesky専用）を足す。既存のNagi投稿向けの返信・引用（`composerHost.openReply`／`openQuote`、PostViewを受け取る）とは入口を分け、BskyPostCardViewを受け取る`openBskyReply`／`openBskyQuote`を設ける。投稿処理はクロスポストの`crosspostToBluesky`が持つ分割・facet・埋め込み・self-labelを再利用し、返信先の`reply.root`／`reply.parent`と引用の`embed.record`を渡せるようにする。
+返信・引用の相手がBluesky投稿のときは、ポストモーダルの中にBluesky専用の入力欄（`BskyComposer`）を出す。既存のNagi投稿向けの返信・引用（`composerHost.openReply`／`openQuote`、PostViewを受け取る）とは入口を分け、BskyPostCardViewを受け取る`openBskyReply`／`openBskyQuote`を設ける。
+
+当初はNagiのComposerにモードを足す案だったが、実装では同じモーダルの中に別の部品として置いた。NagiのComposerはこっそり・記事・下書きの自動保存・投稿範囲などを1つの状態で扱っており、Bluesky専用のときにそれらをすべて止めるより、入力欄・画像・リンクカードの部品だけを共有するほうが、Nagiの下書きへ誤って書き込む経路を作らずに済むためである。NagiのComposerはその間も隠したまま残し、Nagi側の書きかけと添付を保つ。
+
+投稿処理はクロスポストの`crosspostToBluesky`が持つ分割・facet・埋め込み・`via`を再利用し、返信先の`reply.root`／`reply.parent`と引用の`embed.record`を渡す。画像は既存の処理でPDSへ送り、Nagiの投稿は作らない。投稿の直前に相手の投稿を`getPostThread`で確かめ、削除済み・返信不可・引用不可なら入力を残して止める。Blueskyは返信先が消えていても返信レコードを受け付けるため、孤立した返信を作らないための確認である。分割の途中で失敗したときは、同じ内容を送り直すと重複するので、入力を閉じて途中まで投稿できたことを伝える。
+
+最初の版では、Bluesky専用の入力欄に動画・メディアCW（self-label）を出していない。BSKY-09のメディアCWの条件に触れないよう、ぼかしを付ける手段自体を持たない形にした。必要になったらクロスポストと同じ条件で足す。
 
 こっそり・本文CW・Nagiのタグ等は意味を持たないため、このモードでは表示しない。Bluesky専用モードの内容は下書き（POST-06）に保存しない（2026-11-21に合意）。下書きはNagi AppViewに保存されるため、保存すると本文と返信先のBluesky URIがNagi AppViewに残り、BSKY-01の境界に触れるからである。代わりに、本文や添付がある状態で閉じようとしたら破棄の確認を出し、書いた内容を黙って失わないようにする。
 

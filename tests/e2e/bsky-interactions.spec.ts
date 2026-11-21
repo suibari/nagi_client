@@ -54,10 +54,16 @@ async function signIn(page: Page, withInteractionScopes = true) {
 
 let writes: Write[];
 let failWrites: boolean;
+let timeline: unknown[];
+let threadMissing: boolean;
+let otherRequests: string[];
 
 test.beforeEach(async ({ page }) => {
 	writes = [];
 	failWrites = false;
+	timeline = [{ post }];
+	threadMissing = false;
+	otherRequests = [];
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.route('**/xrpc/**', async (route) => {
 		const method = new URL(route.request().url()).pathname.split('/').pop() ?? '';
@@ -86,8 +92,18 @@ test.beforeEach(async ({ page }) => {
 		if (method === 'app.bsky.actor.getPreferences')
 			return route.fulfill({ json: { preferences: [] } });
 		if (method === 'app.bsky.labeler.getServices') return route.fulfill({ json: { views: [] } });
-		if (method === 'app.bsky.feed.getTimeline')
-			return route.fulfill({ json: { feed: [{ post }] } });
+		if (method === 'app.bsky.feed.getTimeline') return route.fulfill({ json: { feed: timeline } });
+		if (method === 'app.bsky.feed.getPostThread') {
+			const uri = new URL(route.request().url()).searchParams.get('uri');
+			return route.fulfill({
+				json: {
+					thread: threadMissing
+						? { $type: 'app.bsky.feed.defs#notFoundPost', uri, notFound: true }
+						: { $type: 'app.bsky.feed.defs#threadViewPost', post, replies: [] },
+				},
+			});
+		}
+		otherRequests.push(method);
 		return route.fulfill({
 			json: { items: [], cards: [], folders: [], uris: [], actors: [], count: 0, drafts: [] },
 		});
@@ -155,4 +171,106 @@ test('asks sessions without interaction permission to reauthorize instead of wri
 	await dialog.getByRole('button', { name: 'キャンセル' }).click();
 	await expect(dialog).toHaveCount(0);
 	expect(writes).toEqual([]);
+});
+
+const editor = (page: Page, name: string) =>
+	page.getByRole('dialog').getByRole('textbox', { name });
+
+test('replies to a Bluesky post only on Bluesky, without a Nagi post or draft', async ({
+	page,
+}) => {
+	await signIn(page);
+	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
+	await expect(dialog).toBeVisible();
+	await expect(dialog).toContainText('Blueskyにだけ投稿します');
+	await expect(dialog).not.toContainText('こっそり');
+	await editor(page, 'Blueskyへ返信').click();
+	await page.keyboard.type('Nagiから返信します');
+	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
+	await expect(page.getByRole('status').filter({ hasText: 'Blueskyへ投稿しました' })).toBeVisible();
+	await expect(dialog).toHaveCount(0);
+
+	expect(writes).toHaveLength(1);
+	const record = writes[0].body.record as Record<string, unknown>;
+	expect(writes[0].body.collection).toBe('app.bsky.feed.post');
+	expect(record.text).toBe('Nagiから返信します');
+	expect(record.via).toBe('Nagi');
+	expect(record.reply).toEqual({
+		root: { uri: post.uri, cid: CID },
+		parent: { uri: post.uri, cid: CID },
+	});
+	expect(otherRequests.filter((method) => /putDraft|createPost/.test(method))).toEqual([]);
+});
+
+test('quotes a Bluesky post as a Bluesky quote', async ({ page }) => {
+	await signIn(page);
+	await card(page).getByRole('button', { name: '引用', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyで引用' });
+	await editor(page, 'Blueskyで引用').click();
+	await page.keyboard.type('これいい');
+	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
+	await expect.poll(() => writes.length).toBe(1);
+	expect((writes[0].body.record as { embed: unknown }).embed).toEqual({
+		$type: 'app.bsky.embed.record',
+		record: { uri: post.uri, cid: CID },
+	});
+});
+
+test('keeps the text and stops when the post being replied to is gone', async ({ page }) => {
+	await signIn(page);
+	threadMissing = true;
+	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
+	await editor(page, 'Blueskyへ返信').click();
+	await page.keyboard.type('届くかな');
+	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
+	await expect(dialog.getByRole('alert')).toContainText('相手の投稿が見つかりません');
+	await expect(editor(page, 'Blueskyへ返信')).toContainText('届くかな');
+	expect(writes).toEqual([]);
+});
+
+test('asks before discarding an unsent Bluesky reply', async ({ page }) => {
+	await signIn(page);
+	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
+	await editor(page, 'Blueskyへ返信').click();
+	await page.keyboard.type('書きかけ');
+	await dialog.getByRole('button', { name: '閉じる' }).click();
+	const confirm = page.getByRole('dialog', { name: '書きかけを破棄しますか？' });
+	await confirm.getByRole('button', { name: 'キャンセル' }).click();
+	await expect(editor(page, 'Blueskyへ返信')).toContainText('書きかけ');
+	await dialog.getByRole('button', { name: '閉じる' }).click();
+	await confirm.getByRole('button', { name: '破棄する' }).click();
+	await expect(dialog).toHaveCount(0);
+	await card(page).getByRole('button', { name: '返信', exact: true }).click();
+	await expect(editor(page, 'Blueskyへ返信')).not.toContainText('書きかけ');
+});
+
+test('deletes only my own Bluesky posts made through Nagi', async ({ page }) => {
+	const mine = (rkey: string, via?: string) => ({
+		post: {
+			...post,
+			uri: `at://${VIEWER}/app.bsky.feed.post/${rkey}`,
+			author: { did: VIEWER, handle: 'me.test', displayName: '自分' },
+			record: { ...post.record, text: `自分の投稿 ${rkey}`, ...(via ? { via } : {}) },
+		},
+	});
+	timeline = [mine('nagi', 'Nagi'), mine('app')];
+	await signIn(page);
+	const nagiCard = page.locator(`[data-bsky-uri="at://${VIEWER}/app.bsky.feed.post/nagi"]`);
+	const appCard = page.locator(`[data-bsky-uri="at://${VIEWER}/app.bsky.feed.post/app"]`);
+	await expect(appCard).toBeVisible();
+	await expect(appCard.getByRole('button', { name: 'その他の投稿操作' })).toHaveCount(0);
+	await nagiCard.getByRole('button', { name: 'その他の投稿操作' }).click();
+	await page.getByRole('menuitem', { name: '削除' }).click();
+	const confirm = page.getByRole('dialog', { name: 'Blueskyの投稿を削除' });
+	await confirm.getByRole('button', { name: '削除する' }).click();
+	await expect(nagiCard).toHaveCount(0);
+	expect(writes).toEqual([
+		{
+			method: 'com.atproto.repo.deleteRecord',
+			body: expect.objectContaining({ collection: 'app.bsky.feed.post', rkey: 'nagi' }),
+		},
+	]);
 });

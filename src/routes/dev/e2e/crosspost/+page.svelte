@@ -3,6 +3,11 @@
 	import type { PostView } from '$lib/api/types';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
 	import { session, type OAuthSession } from '$lib/oauth/session.svelte';
+	import {
+		BLUESKY_INTERACTION_SCOPES,
+		BLUESKY_VIEW_SCOPES,
+		CROSSPOST_SCOPE,
+	} from '$lib/oauth/client';
 
 	/**
 	 * Bluesky への続き（自分のクロスポストへの返信・引用）の確認用。
@@ -36,10 +41,16 @@
 	const local = post('local', 'Nagiだけのポスト');
 
 	onMount(() => {
+		// ?interact のときは、Bluesky への操作（コピーの削除など）の権限も持つ。
+		const scope = new URLSearchParams(location.search).has('interact')
+			? ['atproto', CROSSPOST_SCOPE, ...BLUESKY_VIEW_SCOPES, ...BLUESKY_INTERACTION_SCOPES].join(
+					' ',
+				)
+			: 'atproto repo:app.bsky.feed.post?action=create';
 		session.set({
 			did,
 			fetchHandler: (url: string | URL, init?: RequestInit) => fetch(url, init),
-			getTokenInfo: async () => ({ scope: 'atproto repo:app.bsky.feed.post?action=create' }),
+			getTokenInfo: async () => ({ scope }),
 		} as unknown as OAuthSession);
 		ready = true;
 		return () => session.set(null);

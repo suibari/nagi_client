@@ -15,6 +15,8 @@
 	import PostDeleteDialog from './PostDeleteDialog.svelte';
 	import ReportDialog from './ReportDialog.svelte';
 	import { ownCrosspost } from '$lib/crosspost/target.svelte';
+	import { canInteractWithBsky, deleteCrosspostCopies } from '$lib/bsky/agent';
+	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import { deletePost, preparePostDraft, updatePost } from '$lib/atproto/records';
 	import { isAppviewOwnedUri } from '$lib/post/appview-uri';
 	import ImageGallery from './ImageGallery.svelte';
@@ -117,6 +119,17 @@
 	let reportOpen = $state<'post' | 'reaction'>();
 	let deleting = $state(false);
 	let deleteError = $state('');
+	/** Bluesky のコピーも消すか（BSKY-10）。選べるのは削除権限があるときだけで、既定はオフ。 */
+	let deleteCopies = $state(false);
+	let copiesDeletable = $state(false);
+
+	async function openDelete() {
+		deleteError = '';
+		deleteCopies = false;
+		copiesDeletable = false;
+		deleteOpen = true;
+		if (ownCrosspost(post, $session?.did)) copiesDeletable = await canInteractWithBsky();
+	}
 	// 編集は返信/引用と違い、下に新しい吹き出しを出さず、この投稿の吹き出し内でその場編集する。
 	// ブログは執筆ページで編集する（BLOG-07）ので、ここに来るのは通常の投稿だけ。
 	let editText = $state('');
@@ -467,8 +480,12 @@
 				ondeleted?.(post.uri);
 				return;
 			}
+			const copy = copiesDeletable && deleteCopies ? ownCrosspost(post, $session?.did) : undefined;
 			// こっそりは PDS に正本が無いので AppView 側の手続きへ振り分ける（deletePost が判定）。
 			await deletePost(post.uri, post.cid);
+			// Nagi の投稿は消えたので、コピーが残っても失敗にはせず伝えるだけにする。
+			if (copy && (await deleteCrosspostCopies(copy).catch(() => 1)) > 0)
+				postFollowNotice.notify(m.crosspostDeleteCopiesFailed());
 			deleteOpen = false;
 			ondeleted?.(post.uri);
 		} catch (error) {
@@ -809,15 +826,7 @@
 								<button
 									class="danger"
 									role="menuitem"
-									onclick={() =>
-										runSecondaryAction(
-											closeMenu,
-											() => {
-												deleteError = '';
-												deleteOpen = true;
-											},
-											'none',
-										)}
+									onclick={() => runSecondaryAction(closeMenu, () => void openDelete(), 'none')}
 								>
 									<Icon name="trash" size={17} />
 									<span>{trilines ? m.trilinesDelete() : m.deletePost()}</span>
@@ -868,10 +877,25 @@
 		error={deleteError}
 		onconfirm={() => void removePost()}
 		oncancel={() => (deleteOpen = false)}
-	/>
+	>
+		{#snippet extra()}
+			{#if copiesDeletable}
+				<label class="delete-copies">
+					<input type="checkbox" bind:checked={deleteCopies} disabled={deleting} />
+					<span>{m.crosspostDeleteCopies()}</span>
+				</label>
+			{/if}
+		{/snippet}
+	</PostDeleteDialog>
 {/if}
 
 <style>
+	.delete-copies {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 14px;
+	}
 	.post-blog-label {
 		display: inline-flex;
 		align-items: center;

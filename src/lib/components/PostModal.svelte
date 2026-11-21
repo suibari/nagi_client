@@ -16,6 +16,7 @@
 		type PostModalMode,
 	} from '$lib/post/composer-mode';
 	import Composer from './Composer.svelte';
+	import BskyComposer from './bsky/BskyComposer.svelte';
 	import TrilinesComposer from './TrilinesComposer.svelte';
 	import ComposerAssistant from './ComposerAssistant.svelte';
 	import PostModalShell from './PostModalShell.svelte';
@@ -43,6 +44,10 @@
 	let composer = $state<ShareComposer & { submit: () => Promise<void> }>();
 	let trilinesComposer = $state<{ submit: () => Promise<void> }>();
 	let trilinesSubmittable = $state(false);
+	let bskyComposer = $state<BskyComposer>();
+	let bskySubmittable = $state(false);
+	/** Bluesky への返信・引用（BSKY-09）。Nagi の Composer は隠したまま書きかけを保つ。 */
+	const bskyTarget = $derived(composerHost.bskyTarget);
 
 	/**
 	 * 3行日記にできない文脈ではタブごと出さない。3行日記は返信・引用を持てない。
@@ -105,25 +110,44 @@
 		variant="primary"
 		class="submit-primary post-modal-mobile-submit"
 		type="button"
-		disabled={diary ? !trilinesSubmittable : !submittable}
-		aria-label={sending ? m.composerSubmitting() : m.composerSubmitNagi()}
-		title={sending ? m.composerSubmitting() : m.composerSubmitNagi()}
-		onclick={() => void (diary ? trilinesComposer : composer)?.submit()}
+		disabled={bskyTarget ? !bskySubmittable : diary ? !trilinesSubmittable : !submittable}
+		aria-label={sending
+			? m.composerSubmitting()
+			: bskyTarget
+				? m.bskyComposeSubmit()
+				: m.composerSubmitNagi()}
+		title={sending
+			? m.composerSubmitting()
+			: bskyTarget
+				? m.bskyComposeSubmit()
+				: m.composerSubmitNagi()}
+		onclick={() => void (bskyTarget ? bskyComposer : diary ? trilinesComposer : composer)?.submit()}
 	>
 		{#if sending}<Spinner inline size="sm" decorative />
 		{:else}<Icon name="send" size={18} />{/if}
-		<span>{sending ? m.composerSubmitting() : m.composerSubmitNagiShort()}</span>
+		<span
+			>{sending
+				? m.composerSubmitting()
+				: bskyTarget
+					? m.bskyComposeSubmit()
+					: m.composerSubmitNagiShort()}</span
+		>
 	</Button>
 {/snippet}
 
 <PostModalShell
 	bind:mode
-	{modes}
+	modes={bskyTarget ? [] : modes}
+	title={bskyTarget
+		? bskyTarget.kind === 'reply'
+			? m.bskyReplyTitle()
+			: m.bskyQuoteTitle()
+		: m.postModalTitle()}
 	open={composerHost.open}
 	{sending}
-	{assistSpace}
+	assistSpace={bskyTarget ? 0 : assistSpace}
 	headerAction={mobileSubmit}
-	onclose={() => composerHost.hide()}
+	onclose={() => (bskyTarget ? bskyComposer?.requestClose() : composerHost.hide())}
 	onmodechange={(next) => {
 		if (next !== 'blog' && !editingDiary) setComposerMode(next);
 	}}
@@ -132,7 +156,17 @@
 		Composer と3行日記の入力欄は、タブを切り替えても破棄しない（書きかけと添付画像を保つため。
 		冒頭のコメント参照）。表示だけを切り替える。
 	-->
-	<div class="composer-host" hidden={!diary}>
+	{#if bskyTarget}
+		{#key bskyTarget}
+			<BskyComposer
+				bind:this={bskyComposer}
+				bind:submittable={bskySubmittable}
+				target={bskyTarget}
+				onsendingchange={(value) => (sending = value)}
+			/>
+		{/key}
+	{/if}
+	<div class="composer-host" hidden={!diary || Boolean(bskyTarget)}>
 		<TrilinesComposer
 			bind:this={trilinesComposer}
 			bind:submittable={trilinesSubmittable}
@@ -142,10 +176,10 @@
 			onposted={postSucceeded}
 		/>
 	</div>
-	{#if composerHost.shared && !diary && composer}
+	{#if composerHost.shared && !diary && !bskyTarget && composer}
 		<ShareImportPanel {composer} />
 	{/if}
-	<div class="composer-host" hidden={diary}>
+	<div class="composer-host" hidden={diary || Boolean(bskyTarget)}>
 		<Composer
 			bind:this={composer}
 			bind:text
@@ -168,7 +202,7 @@
 	</div>
 </PostModalShell>
 <ComposerAssistant
-	open={composerHost.open && !diary}
+	open={composerHost.open && !diary && !bskyTarget}
 	{text}
 	mode={assistMode}
 	paused={sending || composing}

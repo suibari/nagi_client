@@ -1,9 +1,14 @@
 import { tick } from 'svelte';
 
 type PostFollowNotice = {
-	href: string;
+	/** 無いときは導線を出さず、message だけを伝える。 */
+	href?: string;
+	/** 投稿以外の操作の結果をそのまま伝える文。 */
+	message?: string;
 	/** 投稿はできたが、Bluesky への連携などで伝えることがある。 */
 	warning?: string;
+	/** Bluesky にだけ投稿したとき。導線は bsky.app を別タブで開き、文言も Bluesky 向けにする。 */
+	bluesky?: boolean;
 };
 
 /**
@@ -66,6 +71,14 @@ export const postFollowNotice = {
 	/** 投稿は成功したが、モーダルを閉じたあとも伝えたい警告がある。 */
 	warn(href: string, warning: string) {
 		state.notice = { href, warning };
+	},
+	/** 投稿以外の操作の結果（削除したが Bluesky のコピーが残った、など）を伝える。 */
+	notify(message: string) {
+		state.notice = { message };
+	},
+	/** Bluesky にだけ投稿した（BSKY-09）。href は bsky.app の投稿。 */
+	showBluesky(href: string, warning?: string) {
+		state.notice = { href, bluesky: true, ...(warning ? { warning } : {}) };
 	},
 	clear() {
 		state.notice = undefined;

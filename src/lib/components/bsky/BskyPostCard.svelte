@@ -6,7 +6,17 @@
 	import LinkCard from '$lib/components/LinkCard.svelte';
 	import VideoPlayer from '$lib/components/VideoPlayer.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { bskyInteractions, canInteractWithBsky, getBskyLikers } from '$lib/bsky/agent';
+	import {
+		bskyInteractions,
+		canInteractWithBsky,
+		deletedBskyPosts,
+		deleteOwnBskyPost,
+		getBskyLikers,
+	} from '$lib/bsky/agent';
+	import { VIA } from '$lib/crosspost/bluesky';
+	import { composerHost } from '$lib/post/composer-host.svelte';
+	import ActionMenu from '$lib/components/ActionMenu.svelte';
+	import PostDeleteDialog from '$lib/components/PostDeleteDialog.svelte';
 	import type { BskyInteractionKind } from '$lib/bsky/interactions.svelte';
 	import type { BskyActor, BskyFeedItemView } from '$lib/bsky/mapView';
 	import { bskyPostDisplay } from '$lib/bsky/moderation';
@@ -59,12 +69,44 @@
 	let actionError = $state(false);
 	let errorTimer: ReturnType<typeof setTimeout> | undefined;
 
+	/** Nagi 経由で作った自分の投稿だけ削除できる（BSKY-10）。 */
+	const deletable = $derived(mine && (post.raw.record as { via?: unknown }).via === VIA);
+	const replyDisabled = $derived(Boolean(post.raw.viewer?.replyDisabled));
+	const quoteDisabled = $derived(Boolean(post.raw.viewer?.embeddingDisabled));
+	let deleteOpen = $state(false);
+	let deleting = $state(false);
+	let deleteError = $state('');
+
+	async function permitted() {
+		if (await canInteractWithBsky()) return true;
+		permissionPrompt = true;
+		return false;
+	}
+
+	async function compose(kind: 'reply' | 'quote') {
+		if (!(await permitted())) return;
+		if (kind === 'reply') composerHost.openBskyReply(post);
+		else composerHost.openBskyQuote(post);
+	}
+
+	async function removePost() {
+		if (deleting) return;
+		deleting = true;
+		deleteError = '';
+		try {
+			await deleteOwnBskyPost(post.uri);
+			deleteOpen = false;
+		} catch (error) {
+			console.warn('[BskyPostCard] delete failed', error);
+			deleteError = m.bskyDeleteFailed();
+		} finally {
+			deleting = false;
+		}
+	}
+
 	async function toggle(kind: BskyInteractionKind) {
 		if (bskyInteractions.busy(kind, post)) return;
-		if (!(await canInteractWithBsky())) {
-			permissionPrompt = true;
-			return;
-		}
+		if (!(await permitted())) return;
 		try {
 			await bskyInteractions.toggle(kind, post);
 		} catch (error) {
@@ -95,7 +137,7 @@
 	});
 </script>
 
-{#if !display.hidden}
+{#if !display.hidden && !deletedBskyPosts.has(post.uri)}
 	<article class="bsky-post" class:thread-unit={standalone} data-bsky-uri={post.uri}>
 		{#if item.repostedBy}
 			<p class="bsky-context">
@@ -166,10 +208,18 @@
 						<button
 							type="button"
 							class="bsky-action"
+							disabled={replyDisabled}
+							title={replyDisabled ? m.bskyReplyDisabled() : m.bskyReplyTitle()}
+							onclick={() => void compose('reply')}
+							><Icon name="reply" size={15} />{m.bskyReply()}</button
+						>
+						<button
+							type="button"
+							class="bsky-action"
 							class:active={reposted}
 							aria-pressed={reposted}
 							title={reposted ? m.bskyUndoRepost() : m.bskyRepost()}
-							disabled={bskyInteractions.busy('repost', post)}
+							aria-busy={bskyInteractions.busy('repost', post)}
 							onclick={() => toggle('repost')}
 							><Icon name="refresh" size={15} />{reposted
 								? m.bskyReposted()
@@ -178,15 +228,41 @@
 						<button
 							type="button"
 							class="bsky-action"
+							disabled={quoteDisabled}
+							title={quoteDisabled ? m.bskyQuoteDisabled() : m.bskyQuoteTitle()}
+							onclick={() => void compose('quote')}
+							><Icon name="quote" size={15} />{m.bskyQuote()}</button
+						>
+						<button
+							type="button"
+							class="bsky-action"
 							class:active={liked}
 							aria-pressed={liked}
 							title={liked ? m.bskyUnlike() : m.bskyLike()}
-							disabled={bskyInteractions.busy('like', post)}
+							aria-busy={bskyInteractions.busy('like', post)}
 							onclick={() => toggle('like')}
 							><Icon name={liked ? 'heartFilled' : 'heart'} size={15} />{liked
 								? m.bskyLikedByMe()
 								: m.bskyLike()}</button
 						>
+						{#if deletable}
+							<ActionMenu label={m.morePostActions()} icon="moreHorizontal" align="start">
+								{#snippet menu(closeMenu)}
+									<button
+										class="danger"
+										role="menuitem"
+										onclick={() => {
+											closeMenu(false);
+											deleteError = '';
+											deleteOpen = true;
+										}}
+									>
+										<Icon name="trash" size={17} />
+										<span>{m.deletePost()}</span>
+									</button>
+								{/snippet}
+							</ActionMenu>
+						{/if}
 					{:else if liked}
 						<span class="bsky-liked"><Icon name="heart" size={14} />{m.bskyLikedByMe()}</span>
 					{/if}
@@ -214,6 +290,16 @@
 		</div>
 	</article>
 	{#if permissionPrompt}<BskyPermissionDialog onclose={() => (permissionPrompt = false)} />{/if}
+	{#if deleteOpen}
+		<PostDeleteDialog
+			busy={deleting}
+			error={deleteError}
+			title={m.bskyDeleteTitle()}
+			message={m.bskyDeleteBody()}
+			onconfirm={() => void removePost()}
+			oncancel={() => (deleteOpen = false)}
+		/>
+	{/if}
 {/if}
 
 <style>
@@ -290,7 +376,8 @@
 		color: var(--text-muted);
 	}
 	.bsky-action:disabled {
-		cursor: progress;
+		cursor: not-allowed;
+		opacity: 0.5;
 	}
 	.bsky-action.active,
 	.bsky-action.active:hover:not(:disabled) {

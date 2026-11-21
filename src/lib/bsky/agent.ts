@@ -1,5 +1,6 @@
 import { BskyThreadLoader, toThreadSnapshot } from './thread';
 import { get } from 'svelte/store';
+import { SvelteSet } from 'svelte/reactivity';
 import { Agent, type AppBskyFeedDefs, type ModerationOpts } from '@atproto/api';
 import type { OAuthSession } from '@atproto/oauth-client-browser';
 import { session } from '$lib/oauth/session.svelte';
@@ -224,4 +225,103 @@ export function canInteractWithBsky(): Promise<boolean> {
 	if (interactionScope?.session !== current)
 		interactionScope = { session: current, granted: hasBlueskyInteractionScope() };
 	return interactionScope.granted;
+}
+
+export type BskyTargetStatus = 'ok' | 'gone' | 'reply-disabled' | 'quote-disabled';
+
+/**
+ * 返信・引用する直前に、相手の投稿がまだあり、返信・引用を受け付けているかを確かめる（BSKY-09）。
+ * Bluesky は返信先が消えていても返信レコードを受け付けるので、孤立した返信を作らないために聞く。
+ */
+export async function checkBskyTarget(
+	uri: string,
+	kind: 'reply' | 'quote',
+): Promise<BskyTargetStatus> {
+	const { data } = await currentContext()
+		.agent.app.bsky.feed.getPostThread({ uri, depth: 0, parentHeight: 0 })
+		.catch((error: unknown) => {
+			if ((error as { error?: string })?.error === 'NotFound') return { data: undefined };
+			throw error;
+		});
+	const thread = data?.thread as { $type?: string; post?: AppBskyFeedDefs.PostView } | undefined;
+	if (!thread?.post || thread.$type !== 'app.bsky.feed.defs#threadViewPost') return 'gone';
+	if (kind === 'reply' && thread.post.viewer?.replyDisabled) return 'reply-disabled';
+	if (kind === 'quote' && thread.post.viewer?.embeddingDisabled) return 'quote-disabled';
+	return 'ok';
+}
+
+/** この画面で削除した Bluesky 投稿。AppView の反映を待たずに表示から外す。 */
+export const deletedBskyPosts = new SvelteSet<string>();
+
+/**
+ * Nagi 経由で作った自分の Bluesky 投稿を、利用者の明示的な操作で削除する（BSKY-10）。
+ * 自分のリポジトリの投稿以外は消さない。
+ */
+export async function deleteOwnBskyPost(uri: string): Promise<void> {
+	const agent = repoAgent();
+	const [repo, collection] = uri.slice('at://'.length).split('/');
+	if (repo !== agent.did || collection !== 'app.bsky.feed.post')
+		throw new Error('Only your own Bluesky posts can be deleted');
+	await agent.deletePost(uri);
+	deletedBskyPosts.add(uri);
+}
+
+type ThreadNode = { post?: { uri: string; author: { did: string } }; replies?: unknown[] };
+
+/**
+ * 分割したクロスポストの、先頭から末尾までの自分の投稿を順に返す。Nagi の投稿は先頭と末尾しか
+ * 覚えていないので、Bluesky のスレッドを辿って途中の分を見つける。辿れなければ先頭と末尾だけ。
+ */
+export function crosspostChainUris(
+	thread: unknown,
+	did: string,
+	copy: { root: { uri: string }; tail: { uri: string } },
+): string[] {
+	const walk = (node: ThreadNode, path: string[]): string[] | undefined => {
+		if (!node.post || node.post.author.did !== did) return undefined;
+		const next = [...path, node.post.uri];
+		if (node.post.uri === copy.tail.uri) return next;
+		for (const reply of node.replies ?? []) {
+			const found = walk(reply as ThreadNode, next);
+			if (found) return found;
+		}
+		return undefined;
+	};
+	return walk(thread as ThreadNode, []) ?? [...new Set([copy.root.uri, copy.tail.uri])];
+}
+
+/**
+ * Nagi の投稿を削除するときに、利用者が選んだら Bluesky のコピーも全件消す（BSKY-10）。
+ * 消せなかった件数を返す。
+ */
+export async function deleteCrosspostCopies(copy: {
+	root: { uri: string };
+	tail: { uri: string };
+}): Promise<number> {
+	const ctx = currentContext();
+	let uris = [...new Set([copy.root.uri, copy.tail.uri])];
+	if (copy.root.uri !== copy.tail.uri) {
+		try {
+			const { data } = await ctx.agent.app.bsky.feed.getPostThread({
+				uri: copy.root.uri,
+				depth: 100,
+				parentHeight: 0,
+			});
+			uris = crosspostChainUris(data.thread, ctx.session.did, copy);
+		} catch (error) {
+			console.warn('[bsky] could not trace the crosspost chain', error);
+		}
+	}
+	let failed = 0;
+	// 末尾から消す。途中で止まっても、残るのは先頭側の続きのない投稿になる。
+	for (const uri of uris.reverse()) {
+		try {
+			await deleteOwnBskyPost(uri);
+		} catch (error) {
+			if ((error as { error?: string })?.error === 'RecordNotFound') continue;
+			console.warn('[bsky] could not delete a crosspost copy', uri, error);
+			failed++;
+		}
+	}
+	return failed;
 }
