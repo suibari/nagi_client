@@ -1175,6 +1175,8 @@ export const en: Messages = {
 	blueskyFeedReadingHelp:
 		'Add your Bluesky Following timeline or custom feeds as tabs from the feed tab settings. You can reply, like and repost from Nagi, but counts are not shown.',
 	blueskyFeedReadingOpenTabs: 'Set up feed tabs',
+	bskyFeedAllFiltered:
+		'Everything loaded so far is hidden by your Bluesky Following settings (such as hiding replies or reposts).',
 	bskyFeedEmpty: 'There are no posts in this feed',
 	bskyThreadLoadFailed: 'Could not load replies',
 	bskyFeedLoadFailed: 'Could not load the Bluesky feed',

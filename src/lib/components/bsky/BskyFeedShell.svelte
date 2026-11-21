@@ -69,6 +69,22 @@
 		};
 	});
 
+	/**
+	 * フォロー中の表示設定（返信を隠すなど）で1件も残らないページが続くときの、自動の読み足し（BSKY-03）。
+	 * 空のまま止めると続きを読む手段が無くなるので読み足すが、どこまでも読み続けないよう回数を区切り、
+	 * その先は利用者が押して読む。
+	 */
+	const AUTO_EMPTY_LOADS = 3;
+	let emptyLoads = $state(0);
+	$effect(() => {
+		void cacheKey;
+		emptyLoads = 0;
+	});
+	function loadPast() {
+		if (!items.length) emptyLoads++;
+		return feed?.loadMore();
+	}
+
 	const items = $derived(
 		feed ? (preview ? feed.visibleItems.slice(0, preview) : feed.visibleItems) : [],
 	);
@@ -139,6 +155,22 @@
 					onclick={() => feed?.load()}><Icon name="refresh" size={18} /></button
 				>
 			</div>
+		{:else if !items.length && feed.hasMore && !preview}
+			{#if emptyLoads < AUTO_EMPTY_LOADS || feed.loading}
+				<InfiniteScroll
+					hasMore={feed.hasMore}
+					loading={feed.loading}
+					error={feed.error}
+					onload={() => loadPast()}
+				/>
+			{:else}
+				<div class="state bsky-filtered">
+					<p>{m.bskyFeedAllFiltered()}</p>
+					<Button variant="secondary" type="button" onclick={() => void loadPast()}
+						>{m.loadMore()}</Button
+					>
+				</div>
+			{/if}
 		{:else if !items.length}
 			<div class="state">{m.bskyFeedEmpty()}</div>
 		{:else}
@@ -173,13 +205,15 @@
 </FeedSurface>
 
 <style>
-	.bsky-permission {
+	.bsky-permission,
+	.bsky-filtered {
 		display: grid;
 		gap: 0.75rem;
 		justify-items: center;
 		text-align: center;
 	}
-	.bsky-permission p {
+	.bsky-permission p,
+	.bsky-filtered p {
 		margin: 0;
 	}
 	.bsky-feed-open {
