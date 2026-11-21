@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
 	let {
@@ -8,6 +8,8 @@
 		error = '',
 		title,
 		message,
+		confirmLabel,
+		extra,
 		onconfirm,
 		oncancel,
 	}: {
@@ -16,6 +18,9 @@
 		/** 投稿以外（ニュースなど）を消すときの見出しと説明。省略時は投稿用の文言。 */
 		title?: string;
 		message?: string;
+		confirmLabel?: string;
+		/** 確認文の下に置く追加の選択肢（Bluesky のコピーも消すか、など）。 */
+		extra?: Snippet;
 		onconfirm: () => void;
 		oncancel: () => void;
 	} = $props();
@@ -36,6 +41,7 @@
 	<div class="delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
 		<h2 id="delete-title">{title ?? m.deletePostTitle()}</h2>
 		<p>{message ?? m.deletePostConfirmation()}</p>
+		{@render extra?.()}
 		{#if error}<p class="delete-error" role="alert">{error}</p>{/if}
 		<div class="delete-actions">
 			<Button
@@ -46,7 +52,7 @@
 				onclick={oncancel}>{m.cancel()}</Button
 			>
 			<Button variant="danger" type="button" disabled={busy} onclick={onconfirm}>
-				{busy ? m.deletingPost() : m.deletePostConfirm()}
+				{busy ? m.deletingPost() : (confirmLabel ?? m.deletePostConfirm())}
 			</Button>
 		</div>
 	</div>

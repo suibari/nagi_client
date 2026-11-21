@@ -188,10 +188,12 @@ export type CrosspostTarget = {
 /** 作ったコピー。ref は Nagi の投稿レコードの crosspost にそのまま入れる。 */
 export type CrosspostResult = {
 	ref: { root: StrongRef; tail: StrongRef; threadRoot: StrongRef };
+	/** 作った投稿を先頭から順に。返信・引用の設定（postgate）を全件へ付けるのに使う。 */
+	posts: StrongRef[];
 };
 
 /**
- * 分割投稿の途中で失敗した。作った分は消さない（Bluesky の権限は作成だけ）ので、
+ * 分割投稿の途中で失敗した。作った分は自動では消さない（BSKY-06）ので、
  * 呼び出し側は Bluesky に途中までのコピーが残ったことを伝える。
  */
 export class CrosspostPartialError extends Error {
@@ -274,7 +276,10 @@ export async function crosspostToBluesky(
 		if (created.length) throw new CrosspostPartialError(created, cause);
 		throw cause;
 	}
-	return { ref: { root: root!, tail: parent!, threadRoot: threadRoot ?? root! } };
+	return {
+		ref: { root: root!, tail: parent!, threadRoot: threadRoot ?? root! },
+		posts: created,
+	};
 }
 
 /**

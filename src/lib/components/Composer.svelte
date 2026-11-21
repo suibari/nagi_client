@@ -65,6 +65,7 @@
 	import ComposerQuoteEditor from './ComposerQuoteEditor.svelte';
 	import { QuotePick } from '$lib/post/quote-pick.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
+	import { DEFAULT_BSKY_GATES, type BskyGateSettings } from '$lib/bsky/gates';
 	import Icon from './shell/Icon.svelte';
 	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
 	import {
@@ -154,6 +155,8 @@
 	// defaultScope はこの Composer インスタンスの初期値。ユーザー操作後は追従させない。
 	let scope = $state<PostScope>(untrack(() => restorePostScope(defaultScope)));
 	let scopeDialogOpen = $state(false);
+	/** Bluesky のコピーの返信できる人と引用の可否（BSKY-12）。投稿範囲の画面で選ぶ。 */
+	let bskyGates = $state<BskyGateSettings>({ ...DEFAULT_BSKY_GATES });
 	let dismissedUrls = $state<string[]>([]);
 	// Nagi のスレッドURLを貼ったときだけ引き取る引用スロット。本文には URL を入れない。
 	const quotePick = new QuotePick();
@@ -675,6 +678,7 @@
 
 	function clearComposer() {
 		text = '';
+		bskyGates = { ...DEFAULT_BSKY_GATES };
 		attachments = [];
 		video = undefined;
 		linkCards = [];
@@ -1054,7 +1058,8 @@
 			// こっそりは AppView が正本なので、PDS から取り直させる ensureRecord は呼ばない。
 			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
 			if (wantsCrosspost && !article && !draft.kossori && !crosspostDraftBlock(draft))
-				warning = (await crosspostAfterPost(draft, assets, target, created.uri)) ?? warning;
+				warning =
+					(await crosspostAfterPost(draft, assets, target, created.uri, bskyGates)) ?? warning;
 			const rkey = created.uri.slice(created.uri.lastIndexOf('/') + 1);
 			// 記事の canonical URL。standard.site の document.path と同じ組み立て方。
 			const articleUrl = `${NAGI_PUBLIC_ORIGIN}/blog/${$session.did}/${rkey}`;
@@ -1592,6 +1597,8 @@
 			scope = next;
 			setLastPostScope(next);
 		}}
+		bind:bskyGates
+		bskyReplyApplicable={!replyTarget}
 		onclose={() => (scopeDialogOpen = false)}
 	/>
 {/if}

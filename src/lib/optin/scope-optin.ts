@@ -1,7 +1,10 @@
 import { get } from 'svelte/store';
 import {
+	BLUESKY_INTERACTION_REPO_SCOPES,
+	BLUESKY_INTERACTION_RPC_SCOPES,
 	BLUESKY_VIEW_RPC_SCOPES,
 	CROSSPOST_COLLECTION_SCOPE,
+	CROSSPOST_SCOPE,
 	STANDARD_SITE_COLLECTION_SCOPES,
 	type ScopeOptIns,
 } from '$lib/oauth/client';
@@ -76,15 +79,58 @@ export function scopesCover(grantedScope: string, required: string[]): boolean {
 	return required.every((scope) => granted.some((s) => s === scope || s.startsWith(`${scope}?`)));
 }
 
-export async function sessionCovers(required: string[]): Promise<boolean> {
+type RepoGrant = { collections: Set<string>; actions?: Set<string> };
+
+/** `repo:<nsid>?action=...` と `repo?collection=...&action=...` の両方の書き方を読む。 */
+function parseRepoScope(scope: string): RepoGrant | undefined {
+	if (scope !== 'repo' && !scope.startsWith('repo:') && !scope.startsWith('repo?'))
+		return undefined;
+	const [head, query = ''] = scope.split('?', 2);
+	const params = new URLSearchParams(query);
+	const collections = new Set(params.getAll('collection'));
+	if (head.startsWith('repo:')) collections.add(head.slice('repo:'.length));
+	const actions = params.getAll('action');
+	return { collections, actions: actions.length ? new Set(actions) : undefined };
+}
+
+/**
+ * repo 権限を action まで含めて判定する。scopesCover と違い、作成だけを許した旧セッションで
+ * 削除を必要とする操作を使えるとはみなさない。action 未指定の付与は全操作を許す。
+ */
+export function repoScopesCover(grantedScope: string, required: string[]): boolean {
+	const grants = grantedScope
+		.split(' ')
+		.map(parseRepoScope)
+		.filter((grant): grant is RepoGrant => Boolean(grant));
+	return required.every((scope) => {
+		const need = parseRepoScope(scope);
+		if (!need) return false;
+		const needActions = need.actions ?? new Set(['create', 'update', 'delete']);
+		return [...need.collections].every((collection) =>
+			[...needActions].every((action) =>
+				grants.some(
+					(grant) =>
+						(grant.collections.has(collection) || grant.collections.has('*')) &&
+						(!grant.actions || grant.actions.has(action)),
+				),
+			),
+		);
+	});
+}
+
+async function grantedScope(): Promise<string | undefined> {
 	const current = get(session);
-	if (!current) return false;
+	if (!current) return undefined;
 	try {
-		const info = await current.getTokenInfo();
-		return scopesCover(info.scope, required);
+		return (await current.getTokenInfo()).scope;
 	} catch {
-		return false;
+		return undefined;
 	}
+}
+
+export async function sessionCovers(required: string[]): Promise<boolean> {
+	const scope = await grantedScope();
+	return scope !== undefined && scopesCover(scope, required);
 }
 
 /** 現在のセッションに、その機能が要求するコレクションの書き込み権限が付与されているか。 */
@@ -95,6 +141,19 @@ export const hasOptInScope = (kind: OptInKind) => sessionCovers(SPECS[kind].coll
  * 閲覧権限を足す前にクロスポストだけ許可した人がいるので、判定は別に持つ。
  */
 export const hasBlueskyViewScope = () => sessionCovers(BLUESKY_VIEW_RPC_SCOPES);
+
+/**
+ * Bluesky 投稿へ操作する権限があるか（AUTH-08）。閲覧の後に足したので判定は別に持ち、
+ * 投稿の削除まで要るので action も見る。
+ */
+export async function hasBlueskyInteractionScope(): Promise<boolean> {
+	const scope = await grantedScope();
+	return (
+		scope !== undefined &&
+		repoScopesCover(scope, [CROSSPOST_SCOPE, ...BLUESKY_INTERACTION_REPO_SCOPES]) &&
+		scopesCover(scope, BLUESKY_INTERACTION_RPC_SCOPES)
+	);
+}
 
 /**
  * いま付与されているオプトインの一覧。再認可のとき、片方を有効化する操作で

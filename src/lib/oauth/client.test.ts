@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	BLUESKY_INTERACTION_SCOPES,
 	BLUESKY_VIEW_SCOPES,
 	buildScope,
 	CROSSPOST_SCOPE,
@@ -38,5 +39,19 @@ describe('buildScope', () => {
 			expect(base).not.toContain(scope);
 			expect(linked.filter((value) => value === scope)).toHaveLength(1);
 		}
+	});
+
+	it('requests Bluesky interaction scopes with the same opt-in, without update, block or follow', () => {
+		const base = buildScope().split(' ');
+		const linked = buildScope({ crosspost: true }).split(' ');
+		for (const scope of BLUESKY_INTERACTION_SCOPES) {
+			expect(base).not.toContain(scope);
+			expect(linked.filter((value) => value === scope)).toHaveLength(1);
+		}
+		const bsky = linked.filter((scope) => scope.startsWith('repo:app.bsky.'));
+		expect(bsky.some((scope) => scope.includes('action=update'))).toBe(false);
+		expect(bsky.every((scope) => scope.includes('action='))).toBe(true);
+		expect(linked.some((scope) => scope.startsWith('repo:app.bsky.graph.'))).toBe(false);
+		expect(linked).toContain('repo:app.bsky.feed.post?action=create&action=delete');
 	});
 });

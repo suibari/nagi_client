@@ -21,10 +21,15 @@
 		type PushError,
 	} from '$lib/notifications/push.svelte';
 	import {
+		BLUESKY_PUSH_CATEGORIES,
 		NOTIFICATION_PREFERENCE_GROUPS,
+		isBlueskyPushEnabled,
 		isNotificationCategoryEnabled,
+		withBlueskyPush,
 		withNotificationCategory,
+		type BlueskyPushCategory,
 	} from '$lib/notifications/preferences';
+	import { hasBlueskyViewScope } from '$lib/optin/scope-optin';
 
 	let needsStandalone = $state(false);
 	let reauthBusy = $state(false);
@@ -43,7 +48,10 @@
 		other: () => m.notifPrefGroupOther(),
 	} as const;
 
-	const categoryLabel: Record<NotificationPreferenceCategory, () => string> = {
+	const categoryLabel: Record<
+		Exclude<NotificationPreferenceCategory, BlueskyPushCategory>,
+		() => string
+	> = {
 		reply: () => m.notifPrefReply(),
 		mention: () => m.notifPrefMention(),
 		reaction: () => m.notifPrefReaction(),
@@ -55,10 +63,21 @@
 		gift: () => m.notifPrefGift(),
 		seasonal: () => m.notifPrefSeasonal(),
 	};
+	const blueskyLabel: Record<BlueskyPushCategory, () => string> = {
+		blueskyReply: () => m.notifPrefReply(),
+		blueskyMention: () => m.notifPrefMention(),
+		blueskyQuote: () => m.notifPrefBlueskyQuote(),
+		blueskyLike: () => m.notifPrefBlueskyLike(),
+		blueskyRepost: () => m.notifPrefBlueskyRepost(),
+		blueskyFollow: () => m.notifPrefBlueskyFollow(),
+	};
+	/** Bluesky の通知の Push（NOTIFY-08）は Bluesky 連携をしている人にだけ出す。 */
+	let blueskyLinked = $state(false);
 
 	onMount(() => {
 		needsStandalone = needsStandaloneForPush();
 		void loadNotificationPreferences();
+		void hasBlueskyViewScope().then((linked) => (blueskyLinked = linked));
 	});
 
 	async function loadNotificationPreferences() {
@@ -78,10 +97,20 @@
 		}
 	}
 
-	async function toggleCategory(category: NotificationPreferenceCategory, enabled: boolean) {
+	function toggleCategory(
+		category: Exclude<NotificationPreferenceCategory, BlueskyPushCategory>,
+		enabled: boolean,
+	) {
+		return savePreferences(withNotificationCategory(notificationPreferences, category, enabled));
+	}
+
+	function toggleBlueskyPush(category: BlueskyPushCategory, enabled: boolean) {
+		return savePreferences(withBlueskyPush(notificationPreferences, category, enabled));
+	}
+
+	async function savePreferences(next: NotificationPreferences) {
 		if (preferencesSaving) return;
 		const previous = notificationPreferences;
-		const next = withNotificationCategory(previous, category, enabled);
 		// 先に見た目を変え、失敗したら戻す。保存中は他のトグルを止めて送信を直列にする。
 		notificationPreferences = next;
 		preferencesSaving = true;
@@ -233,6 +262,23 @@
 				{/if}
 			{/if}
 		</SettingsSection>
+
+		{#if blueskyLinked && !preferencesLoading && !preferencesLoadFailed}
+			<SettingsSection title={m.notifPrefBlueskyTitle()} description={m.notifPrefBlueskyHelp()}>
+				{#each BLUESKY_PUSH_CATEGORIES as category (category)}
+					<SettingRow label={blueskyLabel[category]()}>
+						{#snippet control({ labelId })}
+							<ToggleSwitch
+								checked={isBlueskyPushEnabled(notificationPreferences, category)}
+								labelledby={labelId}
+								disabled={preferencesSaving}
+								onchange={(enabled) => void toggleBlueskyPush(category, enabled)}
+							/>
+						{/snippet}
+					</SettingRow>
+				{/each}
+			</SettingsSection>
+		{/if}
 	{/if}
 </SettingsPage>
 

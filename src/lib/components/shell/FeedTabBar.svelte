@@ -100,6 +100,15 @@
 	}
 </script>
 
+<!-- Bluesky のフィードのタブは、名前だけでは Nagi のタブと見分けられないので印を付ける。 -->
+{#snippet tabLabel(tab: FeedTab)}
+	{#if tab.kind === 'bsky'}<span class="feed-tab-bsky" aria-hidden="true"
+			><Icon name="bluesky" size={14} /></span
+		>{/if}{feedTabLabel(tab)}{#if tab.kind === 'bsky'}<span class="visually-hidden"
+			>{m.feedTabsBskyHint()}</span
+		>{/if}
+{/snippet}
+
 <nav class="feed-tabs" class:scrollable class:overflowing aria-label={ariaLabel}>
 	<div
 		class="feed-tabs-scroll"
@@ -111,14 +120,14 @@
 		{#each tabs as tab (tab.id)}
 			{#if href}
 				<a class="feed-tab" class:active={current === tab.id} href={href(tab)}
-					>{feedTabLabel(tab)}</a
+					>{@render tabLabel(tab)}</a
 				>
 			{:else}
 				<button
 					type="button"
 					class="feed-tab"
 					class:active={current === tab.id}
-					onclick={() => onselect?.(tab)}>{feedTabLabel(tab)}</button
+					onclick={() => onselect?.(tab)}>{@render tabLabel(tab)}</button
 				>
 			{/if}
 		{/each}
@@ -139,7 +148,7 @@
 							class:active={current === tab.id}
 							onclick={() => choose(tab, close)}
 						>
-							<span>{feedTabLabel(tab)}</span>
+							<span>{@render tabLabel(tab)}</span>
 						</button>
 					{/each}
 					<button
@@ -165,3 +174,11 @@
 		>
 	{/if}
 </nav>
+
+<style>
+	.feed-tab-bsky {
+		display: inline-flex;
+		margin-right: 4px;
+		vertical-align: -2px;
+	}
+</style>

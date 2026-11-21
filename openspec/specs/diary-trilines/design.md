@@ -44,14 +44,14 @@
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                        | 探す処理・責務            |
-| ----------------------------------------------------------------------------------------------- | ------------------------- |
-| [src/lib/diary/mood.ts](../../../src/lib/diary/mood.ts)                                         | summarizeMoodDaysと日の窓 |
-| [src/lib/diary/calendar.ts](../../../src/lib/diary/calendar.ts)                                 | 月と投稿量の計算          |
-| [src/lib/trilines/date.ts](../../../src/lib/trilines/date.ts)                                   | 3行日記の日付と材料範囲   |
-| [src/lib/trilines/records.ts](../../../src/lib/trilines/records.ts)                             | 共通レコードの保存        |
+| ファイル                                                                                          | 探す処理・責務                           |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| [src/lib/diary/mood.ts](../../../src/lib/diary/mood.ts)                                           | summarizeMoodDaysと日の窓                |
+| [src/lib/diary/calendar.ts](../../../src/lib/diary/calendar.ts)                                   | 月と投稿量の計算                         |
+| [src/lib/trilines/date.ts](../../../src/lib/trilines/date.ts)                                     | 3行日記の日付と材料範囲                  |
+| [src/lib/trilines/records.ts](../../../src/lib/trilines/records.ts)                               | 共通レコードの保存                       |
 | [src/lib/components/TrilinesComposer.svelte](../../../src/lib/components/TrilinesComposer.svelte) | ファイル選択と貼り付けによる行画像の添付 |
-| [src/lib/components/MonthlyActivity.svelte](../../../src/lib/components/MonthlyActivity.svelte) | 活動表示の共有選択        |
+| [src/lib/components/MonthlyActivity.svelte](../../../src/lib/components/MonthlyActivity.svelte)   | 活動表示の共有選択                       |
 
 ## 出典と変更時の扱い
 

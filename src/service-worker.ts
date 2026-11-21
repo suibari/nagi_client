@@ -87,9 +87,12 @@ sw.addEventListener('push', (event) => {
 				data: { url },
 			});
 			// アプリバッジを 1 増やす（未読の正確な件数はアプリ起動時に再同期される）。
+			// バッジは Nagi の通知だけを数えるので、Bluesky の通知では増やさない（NOTIFY-07）。
 			try {
 				// @ts-expect-error setAppBadge is not yet in the SW lib types
-				if (navigator.setAppBadge) await navigator.setAppBadge();
+				if (navigator.setAppBadge && !payload.type?.startsWith('bluesky'))
+					// @ts-expect-error setAppBadge is not yet in the SW lib types
+					await navigator.setAppBadge();
 			} catch {
 				// バッジ非対応環境では無視。
 			}

@@ -10,9 +10,9 @@
 
 **課題**：共通UIの再利用で、Bluesky URIをNagiのリアクションAPIへ渡す経路ができる恐れがある。
 
-**採用判断**：表示に必要な型へ変換し、Nagi PostViewとは分離して数値指標も落とす。
+**採用判断**：表示に必要な型へ変換し、Nagi PostViewとは分離して数値指標も落とす。Blueskyへの操作は、Nagiのリアクションや返信の部品を流用せず、Bluesky専用の操作として本人PDSへ送る。
 
-**理由と制約**：UI部品だけを再利用し、保存と操作の権威を混ぜない。カスタムフィードの非時系列な並びや全入れ替えは提供元の結果を採用する。
+**理由と制約**：UI部品だけを再利用し、保存と操作の権威を混ぜない。カスタムフィードの非時系列な並びや全入れ替えは提供元の結果を採用する。表示型は件数を持たず、自分のいいね・リポストの有無と、取り消しに使う自分のレコードのURIだけを持つ。
 
 ### D2: ラベル取得と年齢の保護を両立する
 
@@ -38,18 +38,56 @@
 
 **理由と制約**：正本のNagiが先にあるので、写しだけが残る状況を作らず、削除による補償も要らない。AppViewは見える内容が変わらない更新を編集とみなさない（[API-09](../appview-protocol/spec.md)）ため、参照の追記で編集済み表示や翻訳のやり直しは起きない。Bluesky側の失敗、途中までのスレッド、参照追記の失敗はいずれもNagi投稿を取り消さず、警告で伝える。途中までのコピーを参照として登録しないのは、欠けた写しへ返信や引用を続けさせないためである。
 
+### D5: 操作は本人PDSへ直接書き、押した結果をすぐ見せる
+
+**課題**：Blueskyのやり取りのためにアプリを行き来する手間をなくしたい。一方で、Nagi AppViewにBlueskyのデータを持たせない境界（D1）と、件数を出さない方針は保ちたい。
+
+**採用判断**：いいね・リポスト・返信・threadgate・postgateは本人PDSへのレコード操作として書く。PDSへの書き込みはBluesky AppViewへのproxyを付けないAgentで行う。ミュート・ブックマーク・通知は閲覧と同じproxy付きのRPCで、通報はBlueskyの公式モデレーションサービスを宛先にして呼ぶ。いいね・リポストは押した直後に表示を切り替え、失敗で戻す。状態は投稿のURIを鍵にして持ち、リポストで同じ投稿が複数並んでも揃える。
+
+**理由と制約**：AppViewの反映を待つと押した手応えが無く、読み直しで古いviewerが返ると表示が戻る。そのため、押した結果はセッションの間優先する。アカウントを切り替えたら捨てる。
+
+### D6: 返信・引用は相手の投稿で投稿先を決め、Nagiの入力欄とは部品を分ける
+
+**課題**：Bluesky投稿への返信をNagiに保存することはできず、保存しようとするとBSKY-01の境界に触れる。NagiのComposerはこっそり・記事・下書きの自動保存を1つの状態で扱っており、Bluesky専用の入力を混ぜると、Nagiの下書きへ誤って書き込む経路ができる。
+
+**採用判断**：Bluesky投稿への返信・引用は、ポストモーダルの中に別の入力欄を出してBlueskyにだけ投稿する。入力・画像・リンクカードの部品はNagiと共有し、分割・facet・`via`はクロスポストの処理を使う。下書きには保存せず、書きかけで閉じるときは破棄を確かめる。投稿の直前に相手の投稿の有無と返信・引用の可否を確かめる。
+
+**理由と制約**：Blueskyは返信先が消えていても返信レコードを受け付けるため、孤立した返信を作らないよう確かめる。分割の途中で失敗したら、送り直すと重複するので入力を閉じて伝える。最初の版では動画とメディアのself-labelを付ける手段を持たない。
+
+### D7: 削除権限は持つが、使う場面を絞る
+
+**課題**：以前はBluesky投稿の権限をcreate限定とし、不用意な削除権限を持たないことを優先していた（GAP-01）。Nagiから返信できるようになると、誤った投稿を消せない不便が大きくなる。
+
+**採用判断**：2026-11-21に、Bluesky投稿の権限を作成と削除に広げた。updateは要求しない。削除の操作を出すのはレコードに`via: "Nagi"`を持つ自分の投稿だけにする。Nagi投稿の削除では、利用者が選んだときだけ分割分を含むコピーを消す。分割の途中の投稿はNagi投稿が覚えていないので、Blueskyのスレッドを辿って見つけ、末尾から消す。
+
+**理由と制約**：`via`は自己申告であり改ざんを防ぐものではないが、Nagiの外で書いた投稿を誤って消す導線を作らない目印としては十分である。失敗時に自動で消して巻き戻すことはしない（D4）。削除を呼べる場所はテストで固定する。
+
+### D8: 操作列はアイコン4つに絞る
+
+**課題**：タイムラインを文字やボタンで埋めたくない。
+
+**採用判断**：操作列は返信・リポスト・引用・いいねを、Nagiの投稿と同じアイコンだけのボタンで出す（2026-11-21に合意）。Blueskyで開く・ブックマーク・スレッドと作者のミュート・通報・返信と引用の設定・削除は「…」に入れる。作者のミュートと通報は他人の投稿だけ、返信と引用の設定と削除はNagi経由の自分の投稿だけに出す。
+
+**理由と制約**：Blueskyのブックマークにはフォルダが無く付け外しだけなので、操作列に並べる理由が弱い。返信の制限（threadgate）はスレッドの先頭にだけ効くので、返信として投稿するときは選ばせない。後から変えるときはupdate権限を持たないので消して作り直し、公式アプリで組んだ複数条件の制限は選び直さない限り残す。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                              | 探す処理・責務                                               |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [src/lib/bsky/agent.ts](../../../src/lib/bsky/agent.ts)                               | PDS経由のBluesky取得                                         |
-| [src/lib/bsky/moderation.ts](../../../src/lib/bsky/moderation.ts)                     | bskyPostDisplay                                              |
-| [src/lib/bsky/mapView.ts](../../../src/lib/bsky/mapView.ts)                           | 表示型への変換                                               |
-| [src/lib/crosspost/bluesky.ts](../../../src/lib/crosspost/bluesky.ts)                 | splitForBluesky / crosspostToBluesky / CrosspostPartialError |
-| [src/lib/crosspost/after-post.ts](../../../src/lib/crosspost/after-post.ts)           | 保存後のクロスポストと参照追記                               |
-| [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts) | crosspostContentWarningBlock                                 |
+| ファイル                                                                                            | 探す処理・責務                                               |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [src/lib/bsky/agent.ts](../../../src/lib/bsky/agent.ts)                                             | PDS経由のBluesky取得と、操作・通知・削除・通報の呼び出し     |
+| [src/lib/bsky/moderation.ts](../../../src/lib/bsky/moderation.ts)                                   | bskyPostDisplay                                              |
+| [src/lib/bsky/mapView.ts](../../../src/lib/bsky/mapView.ts)                                         | 表示型への変換                                               |
+| [src/lib/crosspost/bluesky.ts](../../../src/lib/crosspost/bluesky.ts)                               | splitForBluesky / crosspostToBluesky / CrosspostPartialError |
+| [src/lib/crosspost/after-post.ts](../../../src/lib/crosspost/after-post.ts)                         | 保存後のクロスポストと参照追記                               |
+| [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts)               | crosspostContentWarningBlock                                 |
+| [src/lib/bsky/interactions.svelte.ts](../../../src/lib/bsky/interactions.svelte.ts)                 | いいね・リポストの自分の状態と楽観表示                       |
+| [src/lib/bsky/compose.ts](../../../src/lib/bsky/compose.ts)                                         | Blueskyにだけ投稿する返信・引用                              |
+| [src/lib/bsky/gates.ts](../../../src/lib/bsky/gates.ts)                                             | threadgate／postgateの組み立てと読み取り                     |
+| [src/lib/bsky/notifications.ts](../../../src/lib/bsky/notifications.ts)                             | Blueskyの通知の絞り込みと変換                                |
+| [src/lib/components/bsky/BskyPostCard.svelte](../../../src/lib/components/bsky/BskyPostCard.svelte) | 操作列と「…」メニュー                                        |
+| [src/lib/components/bsky/BskyComposer.svelte](../../../src/lib/components/bsky/BskyComposer.svelte) | Blueskyへの返信・引用の入力欄                                |
 
 ## 出典と変更時の扱い
 

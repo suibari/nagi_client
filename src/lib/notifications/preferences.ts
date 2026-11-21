@@ -39,3 +39,30 @@ export function withNotificationCategory(
 ): NotificationPreferences {
 	return { ...preferences, [category]: { list: enabled, push: enabled } };
 }
+
+/** Bluesky の通知の Push（NOTIFY-08）。Nagi の種別と違い、未設定は無効。 */
+export const BLUESKY_PUSH_CATEGORIES = [
+	'blueskyReply',
+	'blueskyMention',
+	'blueskyQuote',
+	'blueskyLike',
+	'blueskyRepost',
+	'blueskyFollow',
+] as const satisfies readonly NotificationPreferenceCategory[];
+export type BlueskyPushCategory = (typeof BLUESKY_PUSH_CATEGORIES)[number];
+
+export function isBlueskyPushEnabled(
+	preferences: NotificationPreferences,
+	category: BlueskyPushCategory,
+): boolean {
+	return preferences[category]?.push === true;
+}
+
+/** Bluesky の通知の一覧は Bluesky 側にあるので、list は常に false で保存する。 */
+export function withBlueskyPush(
+	preferences: NotificationPreferences,
+	category: BlueskyPushCategory,
+	enabled: boolean,
+): NotificationPreferences {
+	return { ...preferences, [category]: { list: false, push: enabled } };
+}

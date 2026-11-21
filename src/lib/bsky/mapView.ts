@@ -15,7 +15,7 @@ import { bskyPostUrl, bskyProfileUrl } from './links';
  * 受け取れる形へ落とす。Nagi の PostView には寄せない — ThreadUnit やリアクション UI が
  * bsky の URI を Nagi AppView へ投げる経路を作らないため。
  *
- * いいねの数・リポスト数・返信数はここで捨てる（Nagi は数を出さない）。
+ * いいね・リポスト・返信・引用の数はここで捨てる（BSKY-01）。
  */
 
 export type BskyFacet = { index: { byteStart: number; byteEnd: number }; features: unknown[] };
@@ -54,7 +54,12 @@ export type BskyPostCardView = {
 	video?: PostVideoView;
 	external?: LinkCardView;
 	quote?: BskyQuote;
+	cid: string;
 	likedByMe: boolean;
+	repostedByMe: boolean;
+	/** 本人のいいね・リポストのレコード。取り消しに使う。 */
+	viewerLike?: string;
+	viewerRepost?: string;
 	/** モデレーション判定にそのまま渡す元のビュー。 */
 	raw: AppBskyFeedDefs.PostView;
 };
@@ -203,7 +208,11 @@ export function toPostCard(post: AppBskyFeedDefs.PostView): BskyPostCardView {
 		facets: text.facets,
 		createdAt: text.createdAt ?? post.indexedAt,
 		...embedOf(post.embed),
+		cid: post.cid,
 		likedByMe: Boolean(post.viewer?.like),
+		repostedByMe: Boolean(post.viewer?.repost),
+		viewerLike: post.viewer?.like,
+		viewerRepost: post.viewer?.repost,
 		raw: post,
 	};
 }

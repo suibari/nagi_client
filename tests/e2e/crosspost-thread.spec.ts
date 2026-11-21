@@ -10,10 +10,15 @@ type Setup = {
 	failBlueskyAt?: number;
 	failNagi?: boolean;
 	failLink?: boolean;
+	/** Bluesky への操作の権限も持つセッションにする。 */
+	interact?: boolean;
+	/** この rkey の Bluesky 投稿の削除を失敗させる。 */
+	failDelete?: string;
 };
 type Write = {
 	method: 'create' | 'put' | 'delete';
 	collection: string;
+	rkey?: string;
 	record?: Record<string, unknown>;
 	swapRecord?: string | null;
 };
@@ -82,11 +87,28 @@ async function setup(page: Page, opts: Setup = {}) {
 	});
 	await page.route('**/xrpc/com.atproto.repo.deleteRecord', async (route) => {
 		const body = route.request().postDataJSON();
-		created.push({ method: 'delete', collection: body.collection });
+		if (body.rkey === opts.failDelete)
+			return route.fulfill({ status: 500, json: { error: 'InternalError', message: 'PDS down' } });
+		created.push({ method: 'delete', collection: body.collection, rkey: body.rkey });
 		await route.fulfill({ json: {} });
 	});
+	// 分割したコピー（root → mid → tail）のスレッド。
+	await page.route('**/xrpc/app.bsky.feed.getPostThread**', (route) => {
+		const node = (rkey: string, replies: unknown[] = []) => ({
+			$type: 'app.bsky.feed.defs#threadViewPost',
+			post: {
+				uri: `at://${did}/app.bsky.feed.post/${rkey}`,
+				cid,
+				author: { did, handle: 'me.test' },
+				record: { $type: 'app.bsky.feed.post', text: rkey, createdAt: '2026-11-05T00:00:00.000Z' },
+				indexedAt: '2026-11-05T00:00:00.000Z',
+			},
+			replies,
+		});
+		return route.fulfill({ json: { thread: node('root', [node('mid', [node('tail')])]) } });
+	});
 	await page.route('**/xrpc/com.suibari.nagi.**', (route) => route.fulfill({ json: {} }));
-	await page.goto('/dev/e2e/crosspost');
+	await page.goto(opts.interact ? '/dev/e2e/crosspost?interact' : '/dev/e2e/crosspost');
 	return created;
 }
 
@@ -240,4 +262,55 @@ test('a failed check disables Bluesky without treating the copy as deleted', asy
 	await expect(
 		page.getByTestId('crossposted').getByText('Blueskyにも投稿', { exact: true }),
 	).toHaveCount(1);
+});
+
+async function openDelete(page: Page) {
+	await page.getByTestId('crossposted').getByRole('button', { name: 'その他の投稿操作' }).click();
+	await page.getByRole('menuitem', { name: '削除' }).click();
+	return page.getByRole('dialog', { name: '投稿を削除しますか？' });
+}
+
+test('deleting a Nagi post keeps the Bluesky copy unless asked', async ({ page }) => {
+	const writes = await setup(page, { interact: true });
+	const dialog = await openDelete(page);
+	const option = dialog.getByRole('checkbox', { name: 'Blueskyのコピーも削除する' });
+	await expect(option).not.toBeChecked();
+	await dialog.getByRole('button', { name: '削除する' }).click();
+	await expect(dialog).toHaveCount(0);
+	expect(writes.filter((write) => write.collection === 'app.bsky.feed.post')).toEqual([]);
+});
+
+test('deleting a Nagi post can delete every split Bluesky copy', async ({ page }) => {
+	const writes = await setup(page, { interact: true });
+	const dialog = await openDelete(page);
+	await dialog.getByRole('checkbox', { name: 'Blueskyのコピーも削除する' }).check();
+	await dialog.getByRole('button', { name: '削除する' }).click();
+	await expect(dialog).toHaveCount(0);
+	await expect
+		.poll(() => writes.filter((write) => write.collection === 'app.bsky.feed.post').length)
+		.toBe(3);
+	expect(writes.map((write) => [write.collection, write.rkey])).toEqual([
+		['com.suibari.nagi.post', 'crossposted'],
+		['app.bsky.feed.post', 'tail'],
+		['app.bsky.feed.post', 'mid'],
+		['app.bsky.feed.post', 'root'],
+	]);
+});
+
+test('a copy that cannot be deleted is reported after the Nagi post is gone', async ({ page }) => {
+	await setup(page, { interact: true, failDelete: 'mid' });
+	const dialog = await openDelete(page);
+	await dialog.getByRole('checkbox', { name: 'Blueskyのコピーも削除する' }).check();
+	await dialog.getByRole('button', { name: '削除する' }).click();
+	await expect(dialog).toHaveCount(0);
+	await expect(page.getByRole('status')).toContainText(
+		'Blueskyのコピーの一部を削除できませんでした',
+	);
+});
+
+test('sessions without delete permission are not offered to delete the copy', async ({ page }) => {
+	await setup(page);
+	const dialog = await openDelete(page);
+	await expect(dialog).toBeVisible();
+	await expect(dialog.getByRole('checkbox')).toHaveCount(0);
 });

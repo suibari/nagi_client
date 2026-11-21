@@ -28,6 +28,26 @@ describe('toFeedItem', () => {
 		expect(item.post).not.toHaveProperty('likeCount');
 	});
 
+	it('keeps my own like and repost records for undoing, without any counts', () => {
+		const item = toFeedItem({
+			post: post({
+				repostCount: 3,
+				replyCount: 2,
+				quoteCount: 1,
+				viewer: {
+					like: 'at://did:plc:me/app.bsky.feed.like/1',
+					repost: 'at://did:plc:me/app.bsky.feed.repost/1',
+				},
+			}),
+		});
+		expect(item.post.cid).toBe('cid');
+		expect(item.post.viewerLike).toBe('at://did:plc:me/app.bsky.feed.like/1');
+		expect(item.post.repostedByMe).toBe(true);
+		expect(item.post.viewerRepost).toBe('at://did:plc:me/app.bsky.feed.repost/1');
+		for (const key of ['likeCount', 'repostCount', 'replyCount', 'quoteCount'])
+			expect(item.post).not.toHaveProperty(key);
+	});
+
 	it('records who a reply is addressed to and whether I follow them', () => {
 		const reply = toFeedItem({
 			post: post({

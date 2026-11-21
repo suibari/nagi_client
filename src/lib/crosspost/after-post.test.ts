@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
 	hasScope: vi.fn(async () => true),
 	crosspost: vi.fn(),
 	attach: vi.fn(),
+	gates: vi.fn(),
 }));
 
 vi.mock('$lib/i18n/i18n.svelte', () => ({
@@ -14,8 +15,10 @@ vi.mock('$lib/i18n/i18n.svelte', () => ({
 		crosspostPartial: () => 'partial',
 		crosspostFailed: () => 'failed',
 		crosspostLinkFailed: () => 'link',
+		bskyGatesFailed: () => 'gates',
 	},
 }));
+vi.mock('$lib/bsky/agent', () => ({ applyBskyGates: mocks.gates }));
 vi.mock('./preferences', () => ({
 	getCrosspostEnabled: () => mocks.enabled,
 	hasCrosspostScope: mocks.hasScope,
@@ -49,8 +52,9 @@ const run = () => crosspostAfterPost(draft, assets, {}, uri);
 beforeEach(() => {
 	mocks.enabled = true;
 	mocks.hasScope.mockReset().mockResolvedValue(true);
-	mocks.crosspost.mockReset().mockResolvedValue({ ref });
+	mocks.crosspost.mockReset().mockResolvedValue({ ref, posts: [ref.root, ref.tail] });
 	mocks.attach.mockReset().mockResolvedValue(undefined);
+	mocks.gates.mockReset().mockResolvedValue(undefined);
 });
 
 describe('crosspostAfterPost', () => {
@@ -79,6 +83,31 @@ describe('crosspostAfterPost', () => {
 		);
 		expect(await run()).toBe('partial');
 		expect(mocks.attach).not.toHaveBeenCalled();
+	});
+
+	it('adds nothing for the default reply and quote settings', async () => {
+		await run();
+		expect(mocks.gates).not.toHaveBeenCalled();
+	});
+
+	it('applies reply and quote settings to the copy, limiting replies only on a thread root', async () => {
+		const gates = { reply: 'following' as const, allowQuote: false };
+		expect(await crosspostAfterPost(draft, assets, {}, uri, gates)).toBeUndefined();
+		expect(mocks.gates).toHaveBeenCalledWith({ replyRoot: 'r', posts: ['r', 't'] }, gates);
+		const reply = { root: { uri: 'x', cid: 'x' }, parent: { uri: 'y', cid: 'y' } };
+		await crosspostAfterPost(draft, assets, { reply }, uri, gates);
+		expect(mocks.gates).toHaveBeenLastCalledWith(
+			{ replyRoot: undefined, posts: ['r', 't'] },
+			gates,
+		);
+	});
+
+	it('keeps the posts and warns when the settings cannot be applied', async () => {
+		mocks.gates.mockRejectedValue(new Error('down'));
+		expect(
+			await crosspostAfterPost(draft, assets, {}, uri, { reply: 'nobody', allowQuote: true }),
+		).toBe('gates');
+		expect(mocks.attach).toHaveBeenCalled();
 	});
 
 	it('keeps both posts and warns when linking fails', async () => {
