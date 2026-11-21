@@ -1092,6 +1092,7 @@ export const ja = {
 	feedTabsOpenHashtag: (o: { name: string }) => `${o.name} のページへ`,
 	feedTabsKindSearch: '検索',
 	feedTabsKindSearchHint: '決まったことばを含む投稿',
+	feedTabsBskyHint: '（Bluesky）',
 	feedTabsKindBsky: 'Blueskyフィード',
 	feedTabsKindBskyHint: 'Blueskyのフォロー中やカスタムフィードを眺める',
 	feedTabsBskyFollowing: 'Blueskyのフォロー中',

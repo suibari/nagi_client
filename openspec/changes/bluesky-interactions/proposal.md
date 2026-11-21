@@ -34,6 +34,7 @@ NagiではBlueskyのフィードを読めるが、読んだ投稿に返信・い
 - `bluesky-integration`：BSKY-01（データ境界）・BSKY-04（クロスポストの可否）・BSKY-06（権限と補償）を改め、BSKY-08〜14（いいね・リポスト、返信・引用、削除、ミュート、返信と引用の許可、ブックマーク、通報）を追加する。
 - `auth-session`：AUTH-03の権限範囲を広げ、AUTH-08で既存セッションの再認可を扱う。
 - `notifications-unread`：NOTIFY-07でBlueskyの通知タブを追加する。
+- `feed-thread`：FEED-01で、フィードのBlueskyのタブにBlueskyのアイコンを付ける。
 
 ## Impact
 

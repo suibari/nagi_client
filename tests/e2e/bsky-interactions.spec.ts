@@ -405,3 +405,10 @@ test('changes reply settings later on my own post made through Nagi', async ({ p
 		['com.atproto.repo.createRecord', 'app.bsky.feed.threadgate', 'nagi'],
 	]);
 });
+
+test('marks Bluesky feed tabs with the Bluesky icon', async ({ page }) => {
+	await signIn(page);
+	const tab = page.locator('.feed-tab').filter({ hasText: 'Bluesky' }).first();
+	await expect(tab.locator('.feed-tab-bsky')).toHaveCount(1);
+	await expect(tab).toContainText('（Bluesky）');
+});

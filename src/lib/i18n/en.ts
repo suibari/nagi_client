@@ -1057,6 +1057,7 @@ export const en: Messages = {
 	feedTabsOpenHashtag: (o: { name: string }) => `Open the ${o.name} page`,
 	feedTabsKindSearch: 'Search',
 	feedTabsKindSearchHint: 'Posts containing a word you keep an eye on',
+	feedTabsBskyHint: ' (Bluesky)',
 	feedTabsKindBsky: 'Bluesky feed',
 	feedTabsKindBskyHint: 'Browse your Bluesky Following timeline or a custom feed',
 	feedTabsBskyFollowing: 'Bluesky Following',
