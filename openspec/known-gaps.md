@@ -130,3 +130,9 @@ change [bluesky-push](changes/archive/2026-11-22-bluesky-push/proposal.md) で�
 設計上の制約として、Blueskyでミュートした相手からもPushが届く（2026-11-21に許容）。返信などに後から付いた成人向けのラベルは、Pushの本文の判定に反映できない。AppViewが止まっていた間の操作はPushされない。
 
 プライバシーポリシーには、BlueskyのPushのための受信と公開APIの参照、Bluesky連携で求める権限の範囲、Blueskyのモデレーションへの通報を追記し、更新日を2026-11-21に改めた（MOD-05）。権限の範囲の記述は、change bluesky-interactionsで広げた権限に追いついていなかったため、あわせて直した。
+
+## フィードの画像上スワイプ
+
+change [allow-feed-swipe-on-images](changes/archive/2026-11-22-allow-feed-swipe-on-images/proposal.md) で、FEED-08のメディア除外を見直し、画像の拡大用タイル上でも横スワイプでタブ移動できるようにした（2026-11-22に合意）。従来は画像タイルがbuttonのため共通認識器で除外されており、従来仕様との不一致ではなく操作対象の変更である。横ドラッグ後は画像を誤って開かず、通常タップと縦スクロールを維持する。警告操作・動画・音声・通常の操作部品・内部スクロール・拡大ビューは保護する。
+
+検証結果と実機での確認境界はchangeの [verification.md](changes/archive/2026-11-22-allow-feed-swipe-on-images/verification.md) に記す。
