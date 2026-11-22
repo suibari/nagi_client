@@ -12,7 +12,7 @@ async function drag(
 	const box = await page.locator(selector).first().boundingBox();
 	if (!box) throw new Error(`Missing ${selector}`);
 	const x = box.x + Math.min(180, box.width / 2);
-	const y = box.y + 30;
+	const y = box.y + Math.min(30, box.height / 2);
 	const cdp = await page.context().newCDPSession(page);
 	await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
 	for (let i = 1; i <= 8; i++) {
@@ -23,7 +23,8 @@ async function drag(
 		if (stepDelay) await page.waitForTimeout(stepDelay);
 	}
 	if (release) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-	await cdp.detach();
+	if (release) await cdp.detach();
+	return cdp;
 }
 
 test.beforeEach(async ({ page }) => {
@@ -227,4 +228,121 @@ test('downward gestures remain unhandled by the app in both sources', async ({ p
 		expect(prevented).toEqual([false, false, false]);
 		await expect(page.getByTestId('refresh-count')).toHaveText(count!);
 	}
+});
+
+const imageTile = '.thread-unit .image-tile';
+
+for (const source of ['nagi', 'bsky']) {
+	for (const direction of [-1, 1]) {
+		test(`${source} image swipe previews and selects the ${direction < 0 ? 'next' : 'previous'} tab`, async ({
+			page,
+		}) => {
+			await page.goto(`/dev/e2e/feed-interactions${direction > 0 ? '?tab=affirmation' : ''}`);
+			if (source === 'bsky') await page.getByRole('button', { name: '表示切替' }).click();
+			await page.locator(imageTile).first().scrollIntoViewIfNeeded();
+			const cdp = await drag(page, imageTile, direction * 140, 0, { release: false });
+			await expect(page.getByTestId('feed-peek')).toBeVisible();
+			await expect(page.getByTestId('peek-tab')).toHaveText(
+				direction < 0 ? 'affirmation' : 'global',
+			);
+			await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+			await cdp.detach();
+			await expect(page).toHaveURL(direction < 0 ? /\/\?tab=affirmation$/ : /\/\?tab=global$/);
+			await expect(page.locator('.image-viewer')).toHaveCount(0);
+		});
+	}
+
+	test(`${source} image tap, keyboard and vertical scrolling remain available`, async ({
+		page,
+	}) => {
+		if (source === 'bsky') await page.getByRole('button', { name: '表示切替' }).click();
+		const tile = page.locator(imageTile).first();
+		await tile.tap();
+		await expect(page.locator('.image-viewer')).toBeVisible();
+		await drag(page, '.image-viewer img', -80, 0);
+		await expect(page.locator('.image-viewer')).toBeVisible();
+		await expect(page.getByTestId('feed-peek')).toHaveCount(0);
+		await page.keyboard.press('Escape');
+		await tile.focus();
+		await page.keyboard.press('Enter');
+		await expect(page.locator('.image-viewer')).toBeVisible();
+		await page.keyboard.press('Escape');
+		await tile.scrollIntoViewIfNeeded();
+		const before = await page.evaluate(() => scrollY);
+		await drag(page, imageTile, 0, -100);
+		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before);
+		await expect(page.getByTestId('feed-peek')).toHaveCount(0);
+		await expect(page.locator('.image-viewer')).toHaveCount(0);
+	});
+}
+
+for (const ending of ['short', 'edge', 'cancel', 'multitouch']) {
+	test(`image ${ending} drag suppresses its click and allows the next tap`, async ({ page }) => {
+		const tile = page.locator(imageTile).first();
+		await tile.scrollIntoViewIfNeeded();
+		const cdp = await drag(page, imageTile, ending === 'edge' ? 70 : -30, 0, {
+			release: ending === 'short' || ending === 'edge',
+			stepDelay: 60,
+		});
+		if (ending === 'cancel' || ending === 'multitouch') {
+			await tile.evaluate((target, ending) => {
+				const touch = (identifier: number) =>
+					new Touch({ identifier, target, clientX: 140, clientY: 300 });
+				target.dispatchEvent(
+					new TouchEvent(ending === 'cancel' ? 'touchcancel' : 'touchstart', {
+						bubbles: true,
+						touches: ending === 'cancel' ? [] : [touch(1), touch(2)],
+					}),
+				);
+			}, ending);
+			await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+			await cdp.detach();
+		}
+		await expect(page.locator('.feed-track')).toHaveCSS('transform', 'none');
+		// Inject the compatibility click even when Chromium itself suppresses it.
+		expect(
+			await tile.evaluate((target) =>
+				target.dispatchEvent(
+					new MouseEvent('click', {
+						bubbles: true,
+						cancelable: true,
+						detail: 1,
+					}),
+				),
+			),
+		).toBe(false);
+		await expect(page.locator('.image-viewer')).toHaveCount(0);
+		await expect(page).toHaveURL(/\/dev\/e2e\/feed-interactions$/);
+		await tile.tap();
+		await expect(page.locator('.image-viewer')).toBeVisible();
+	});
+}
+
+test('warning controls, ordinary controls and nested scrollers keep their gestures', async ({
+	page,
+}) => {
+	const area = page.getByTestId('protected-controls');
+	const selectors = [
+		'[data-testid="protected-controls"] .cw-mask',
+		'[data-testid="protected-controls"] > button',
+		'[data-testid="protected-controls"] > a',
+		'[data-testid="protected-controls"] > video',
+		'[data-testid="protected-controls"] > audio',
+		'.horizontal-scroll .image-tile',
+		'.vertical-scroll .image-tile',
+	];
+	for (const selector of selectors) {
+		await page.locator(selector).first().scrollIntoViewIfNeeded();
+		await drag(page, selector, -80, 0);
+		await expect(page.getByTestId('feed-peek')).toHaveCount(0);
+		await expect(page.locator('.feed-track')).toHaveCSS('transform', 'none');
+		await expect(page).toHaveURL(/\/dev\/e2e\/feed-interactions$/);
+	}
+	await area.locator('.cw-mask').tap();
+	await expect(area.locator('.cw-rehide')).toBeVisible();
+	await area.locator('.cw-rehide').scrollIntoViewIfNeeded();
+	await drag(page, '[data-testid="protected-controls"] .cw-rehide', -80, 0);
+	await expect(page.getByTestId('feed-peek')).toHaveCount(0);
+	await area.locator('.cw-rehide').tap();
+	await expect(area.locator('.cw-mask')).toBeVisible();
 });

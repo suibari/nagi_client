@@ -9,15 +9,26 @@
 	import { toFeedItem } from '$lib/bsky/mapView';
 	import { bskyConversations } from '$lib/bsky/conversation';
 	import { EntryMotion } from '$lib/feed/entry-motion.svelte';
+	import ImageGallery from '$lib/components/ImageGallery.svelte';
 
 	let source = $state('nagi');
 	let refreshes = $state(0);
 	const entry = new EntryMotion();
+	const image = {
+		url:
+			'data:image/svg+xml,' +
+			encodeURIComponent(
+				'<svg xmlns="http://www.w3.org/2000/svg" width="300" height="120"><path fill="skyblue" d="M0 0h300v120H0z"/></svg>',
+			),
+		alt: 'スワイプ確認用の画像',
+		aspectRatio: { width: 300, height: 120 },
+	};
 	const post: PostView = {
 		uri: 'at://did:plc:other/com.suibari.nagi.post/one',
 		cid: 'one',
 		author: { did: 'did:plc:other', handle: 'other.example', displayName: 'ほかの人' },
 		text: 'アバターから吹き出しが出ます。左右にスワイプできます。',
+		images: [image],
 		createdAt: '2026-10-26T00:00:00Z',
 		indexedAt: '2026-10-26T00:00:00Z',
 		reactions: [],
@@ -43,6 +54,12 @@
 		};
 	}
 	const root = bskyPost('root');
+	root.embed = {
+		$type: 'app.bsky.embed.images#view',
+		images: [
+			{ thumb: image.url, fullsize: image.url, alt: image.alt, aspectRatio: image.aspectRatio },
+		],
+	};
 	const [thread] = bskyConversations(
 		['1', '2', '3', '4', '5'].map((key) =>
 			toFeedItem({
@@ -95,6 +112,19 @@
 			<BskyThreadUnit {thread} {moderation} entering={entry.keys.has('thread')} />
 		{/if}
 		<div class="nested" data-feed-gesture-ignore><p>画像ギャラリー相当の操作領域</p></div>
+		<div data-testid="protected-controls">
+			<ImageGallery images={[{ ...image, contentWarning: true }]} />
+			<button class="protected-control" type="button">通常のボタン</button>
+			<a class="protected-control" href="#protected-controls">通常のリンク</a>
+			<video class="protected-control" controls aria-label="動画"></video>
+			<audio class="protected-control" controls aria-label="音声"></audio>
+			<div class="protected-control horizontal-scroll">
+				<div><ImageGallery images={[image]} /></div>
+			</div>
+			<div class="protected-control vertical-scroll">
+				<div><ImageGallery images={[image]} /></div>
+			</div>
+		</div>
 	</div>
 </FeedSurface>
 
@@ -106,5 +136,23 @@
 	}
 	.nested {
 		height: 100px;
+	}
+	.protected-control {
+		display: block;
+		width: 300px;
+		min-height: 64px;
+	}
+	.horizontal-scroll {
+		overflow-x: auto;
+	}
+	.horizontal-scroll > div {
+		width: 500px;
+	}
+	.vertical-scroll {
+		height: 80px;
+		overflow-y: auto;
+	}
+	.vertical-scroll > div {
+		min-height: 400px;
 	}
 </style>

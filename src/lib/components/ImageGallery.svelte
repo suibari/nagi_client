@@ -84,6 +84,7 @@
 			{:else}
 				<button
 					class="image-tile"
+					data-feed-swipe-image
 					type="button"
 					aria-label={image.alt || m.postImageOpen({ index: index + 1 })}
 					onclick={(event) => void open(index, event.currentTarget)}

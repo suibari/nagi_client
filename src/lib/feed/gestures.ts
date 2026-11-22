@@ -22,10 +22,11 @@ export function swipeDirection(dx: number, velocity: number, width: number): -1 
 	return dx < 0 ? 1 : -1;
 }
 
-/** One recognizer for both sources; nested media, controls and horizontal scrollers own their gestures. */
 export function feedGestures(node: HTMLElement, options: FeedGestureOptions) {
 	let start: { x: number; y: number } | undefined;
 	let axis: 'x' | 'y' | undefined;
+	let imageStart = false;
+	let suppressClick = false;
 	/** Recent samples for release velocity. */
 	let samples: { x: number; time: number }[] = [];
 	let frame = 0;
@@ -41,6 +42,7 @@ export function feedGestures(node: HTMLElement, options: FeedGestureOptions) {
 		pending = undefined;
 		start = undefined;
 		axis = undefined;
+		imageStart = false;
 		samples = [];
 	};
 	const abort = () => {
@@ -49,13 +51,14 @@ export function feedGestures(node: HTMLElement, options: FeedGestureOptions) {
 		if (dragging) options.cancel();
 	};
 	function begin(event: TouchEvent) {
+		if (event.touches.length === 1) suppressClick = false;
 		abort();
 		if (!options.enabled() || event.touches.length !== 1) return;
 		const target = event.target;
 		if (!(target instanceof Element)) return;
 		if (
 			target.closest(
-				'a, button, input, textarea, select, video, audio, [contenteditable], [role="slider"], [data-feed-gesture-ignore]',
+				'a, button:not([data-feed-swipe-image]), [role="button"], input, textarea, select, video, audio, [contenteditable], [role="slider"], [data-feed-gesture-ignore]',
 			)
 		)
 			return;
@@ -68,6 +71,7 @@ export function feedGestures(node: HTMLElement, options: FeedGestureOptions) {
 		// Preserve browser edge navigation.
 		if (touch.clientX < 24 || touch.clientX > window.innerWidth - 24) return;
 		start = { x: touch.clientX, y: touch.clientY };
+		imageStart = Boolean(target.closest('button[data-feed-swipe-image]'));
 	}
 	function move(event: TouchEvent) {
 		if (!start) return;
@@ -86,6 +90,7 @@ export function feedGestures(node: HTMLElement, options: FeedGestureOptions) {
 				return;
 			}
 			axis = 'x';
+			suppressClick = imageStart;
 		}
 		if (event.cancelable) event.preventDefault();
 		const now = performance.now();
@@ -114,17 +119,37 @@ export function feedGestures(node: HTMLElement, options: FeedGestureOptions) {
 		}
 		options.release(dx, velocity);
 	}
+	function click(event: MouseEvent) {
+		// A touch drag can still synthesize a click after release or cancellation.
+		if (!suppressClick || event.detail === 0) return;
+		event.preventDefault();
+		event.stopImmediatePropagation();
+		suppressClick = false;
+	}
+	function pointerdown() {
+		if (!start) suppressClick = false;
+	}
+	function keydown() {
+		suppressClick = false;
+	}
+	node.addEventListener('click', click, true);
+	node.addEventListener('pointerdown', pointerdown, true);
+	node.addEventListener('keydown', keydown, true);
 	node.addEventListener('touchstart', begin, { passive: true });
 	node.addEventListener('touchmove', move, { passive: false });
 	node.addEventListener('touchend', end);
 	node.addEventListener('touchcancel', abort);
 	return {
 		destroy() {
+			node.removeEventListener('click', click, true);
+			node.removeEventListener('pointerdown', pointerdown, true);
+			node.removeEventListener('keydown', keydown, true);
 			node.removeEventListener('touchstart', begin);
 			node.removeEventListener('touchmove', move);
 			node.removeEventListener('touchend', end);
 			node.removeEventListener('touchcancel', abort);
 			reset();
+			suppressClick = false;
 		},
 	};
 }
