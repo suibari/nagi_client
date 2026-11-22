@@ -30,7 +30,7 @@
 
 **採用判断**：本文CWは停止し、メディアCWはBlueskyがぼかすself-labelを伴う場合だけ許可する。
 
-**理由と制約**：返信・引用は本人の既存コピーが確認できる場合に限る。返信・引用ボタンは共通Composerへ接続し、本人のクロスポストの続きを作る。ニュース等は対応する本人のコピーを持たず対象外となる。未使用の旧処理を現行の入口差とは扱わない。
+**理由と制約**：返信は本人の既存コピーが確認できる場合に限る。孤立した返信を作らないためである。返信・引用ボタンは共通Composerへ接続し、本人のクロスポストの続きを作る。引用の扱いはD9に従う。未使用の旧処理を現行の入口差とは扱わない。
 
 ### D4: 外部コピーはNagiの保存後に作る
 
@@ -72,6 +72,14 @@
 
 **理由と制約**：Blueskyのブックマークにはフォルダが無く付け外しだけなので、操作列に並べる理由が弱い。返信の制限（threadgate）はスレッドの先頭にだけ効くので、返信として投稿するときは選ばせない。後から変えるときはupdate権限を持たないので消して作り直し、公式アプリで組んだ複数条件の制限は選び直さない限り残す。
 
+### D9: Nagiの引用は、Blueskyではコピーの引用かリンクにする
+
+**課題**：Nagi投稿のURLを単独で貼ると引用になる一方、引用付きの投稿は引用先が本人のクロスポスト済み投稿でない限りBlueskyへ出せなかった。Bluesky側に引用先のレコードが無く、引用が黙って消えるためである。この2つが重なり、Nagiの投稿をBlueskyで紹介できなかった。ニュースの引用も同じ理由で止めていた。
+
+**採用判断**：引用先にコピーがあればコピーを引用し、無ければ引用先の公開ページをリンクカードにする（2026-11-22に合意）。リンク先は、Nagi投稿ならスレッドページ、ニュースならNagiのニュースページ、ラジオなら曲ページとする。ニュースを元記事でなくNagiのページへ向けるのは、Nagiへの誘導とサインアップの動線を兼ねるためである。画像・動画もある場合、Blueskyではexternalとメディアを同時に付けられないので、メディアを埋め込み、URLは分割の前に本文の末尾へ足す。コピーが消えていたり確かめられなかったりした引用も、送信を止めずにリンクへ切り替える。
+
+**理由と制約**：リンク先のOGPはこっそり・ラベルの境界を守る（SEO-03）。こっそり投稿の引用はBluesky上で開けないリンクになるだけなので、クロスポストを選ばせない。貼り付けでURLを引用にする挙動（POST-07）を変える案や、毎回「引用／リンク」を選ばせる案は、今の使い方を壊すか判断を増やすため採らなかった。他人のNagi投稿をリンクの文字だけにする理由は[post-composer](../post-composer/design.md)のD9を参照する。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
@@ -83,6 +91,7 @@
 | [src/lib/bsky/mapView.ts](../../../src/lib/bsky/mapView.ts)                                         | 表示型への変換                                               |
 | [src/lib/crosspost/bluesky.ts](../../../src/lib/crosspost/bluesky.ts)                               | splitForBluesky / crosspostToBluesky / CrosspostPartialError |
 | [src/lib/crosspost/after-post.ts](../../../src/lib/crosspost/after-post.ts)                         | 保存後のクロスポストと参照追記                               |
+| [src/lib/crosspost/quote-link.ts](../../../src/lib/crosspost/quote-link.ts)                         | quoteLinkUrl / loadQuoteLinkCard（引用先のリンクとカード）   |
 | [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts)               | crosspostContentWarningBlock                                 |
 | [src/lib/bsky/interactions.svelte.ts](../../../src/lib/bsky/interactions.svelte.ts)                 | いいね・リポストの自分の状態と楽観表示                       |
 | [src/lib/bsky/compose.ts](../../../src/lib/bsky/compose.ts)                                         | Blueskyにだけ投稿する返信・引用                              |

@@ -45,6 +45,7 @@
 	import { crosspostContentWarningBlock } from '$lib/crosspost/content-warning';
 	import { getCrosspostEnabled, hasCrosspostScope } from '$lib/crosspost/preferences';
 	import { crosspostAfterPost } from '$lib/crosspost/after-post';
+	import { quoteLinkUrl } from '$lib/crosspost/quote-link';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { processSelectedImage } from '$lib/image-selection';
 	import { acknowledgeShare, restoreShare, type SharedContent } from '$lib/share-target/store';
@@ -184,7 +185,10 @@
 	// こっそりでは画像ピッカー自体をマウントしないので、バインドが付いたり外れたりする。
 	let imageProcessing = $state(false);
 	let imagePicker = $state<{ handlePaste: (event: ClipboardEvent) => void }>();
-	let composerEditor = $state<{ insertBlock: (text: string) => void }>();
+	let composerEditor = $state<{
+		insertBlock: (text: string) => void;
+		insertAtCaret: (text: string) => void;
+	}>();
 	/**
 	 * ブログ本文に差し込んだ画像の CID（添付の id ごと）。本文の URL に CID が要るが、
 	 * アップロードは投稿時なので手元で計算しておき、投稿時に PDS の値と照合する。
@@ -456,11 +460,7 @@
 			labels: selfLabels,
 		}),
 	);
-	/**
-	 * 返信・引用の相手。Bluesky にも続けられるのは、自分のクロスポスト済みの投稿1件だけ
-	 * （他人のクロスポストへは続けない）。Bluesky 側では、そのコピーへの返信・引用として出す。
-	 * 返信と引用を同時にするときは、両方を Bluesky で揃えられないので外へは出さない。
-	 */
+	/** 返信・引用の相手と、Bluesky で続けられる自分のコピー（BSKY-04）。 */
 	const quoting = $derived(quotePick.active || Boolean(quoteTarget));
 	const hasThreadTarget = $derived(quoting || Boolean(replyTarget));
 	const crosspostTargetPost = $derived(replyTarget?.post ?? quoteTarget?.post ?? quotePick.post);
@@ -487,17 +487,28 @@
 			cancelled = true;
 		};
 	});
+	/** コピーの無い引用先を Bluesky でリンクとして出す URL（BSKY-05）。こっそり等は undefined。 */
+	const quoteLink = $derived(
+		quoting && !replyTarget
+			? quoteLinkUrl(quoteTarget ?? (quotePick.post ? { post: quotePick.post } : {}))
+			: undefined,
+	);
+	/** 引用をコピーの引用として出せるか。確かめられなかったときはリンクに切り替える。 */
+	const quoteCopyUsable = $derived(Boolean(crosspostTargetRef) && crosspostTargetState === 'ok');
 	/**
-	 * Bluesky にも出せる条件。
+	 * Bluesky にも出せる条件（BSKY-04）。
 	 *
-	 * 返信・引用は、自分のクロスポスト済みの投稿に続けるときだけ外へ出せる。それ以外は
-	 * Bluesky 側に返信先・引用先が無く、参照が黙って消える。
+	 * 返信は、自分のクロスポスト済みの投稿に続けるときだけ外へ出せる（孤立した返信を作らない）。
+	 * 引用は、コピーがあればコピーの引用、無ければ引用先のリンクとして出す。コピーを確かめている間は待つ。
 	 * 記事化は引用・返信では別に止める（articleBlockedReason）。CW 付きの記事も同じ。
 	 */
 	const externalEligible = $derived(
 		crosspostReady &&
 			!crosspostCwBlock &&
-			(!hasThreadTarget || (Boolean(crosspostTargetRef) && crosspostTargetState === 'ok')),
+			(!hasThreadTarget ||
+				(replyTarget
+					? Boolean(crosspostTargetRef) && crosspostTargetState === 'ok'
+					: Boolean(quoteLink) && !(crosspostTargetRef && crosspostTargetState === 'checking'))),
 	);
 	const externalDisabledReason = $derived(
 		!crosspostReady
@@ -508,17 +519,27 @@
 					? m.crosspostDisabledMediaWarning()
 					: !hasThreadTarget
 						? ''
-						: crosspostTargetPost && goneCrossposts.has(crosspostTargetPost.uri)
-							? m.crosspostTargetGone()
-							: !crosspostTargetRef
-								? m.crosspostTargetNotOwn()
-								: crosspostTargetState === 'checking'
+						: quoting && replyTarget
+							? m.crosspostReplyWithQuote()
+							: !replyTarget
+								? quotePick.pending
 									? m.crosspostTargetChecking()
-									: crosspostTargetState === 'gone'
-										? m.crosspostTargetGone()
-										: crosspostTargetState === 'failed'
-											? m.crosspostTargetCheckFailed()
-											: '',
+									: !quoteLink
+										? m.crosspostQuoteUnavailable()
+										: crosspostTargetRef && crosspostTargetState === 'checking'
+											? m.crosspostTargetChecking()
+											: ''
+								: crosspostTargetPost && goneCrossposts.has(crosspostTargetPost.uri)
+									? m.crosspostTargetGone()
+									: !crosspostTargetRef
+										? m.crosspostTargetNotOwn()
+										: crosspostTargetState === 'checking'
+											? m.crosspostTargetChecking()
+											: crosspostTargetState === 'gone'
+												? m.crosspostTargetGone()
+												: crosspostTargetState === 'failed'
+													? m.crosspostTargetCheckFailed()
+													: '',
 	);
 	/**
 	 * 本文先頭の「# 見出し」はタイトルそのもの。タイトルの真実源は常に本文側に置き、
@@ -938,7 +959,10 @@
 		const target: CrosspostTarget = {};
 		if (crosspostTargetRef && replyTarget)
 			target.reply = { root: crosspostTargetRef.threadRoot, parent: crosspostTargetRef.tail };
-		else if (crosspostTargetRef && quoting) target.quote = crosspostTargetRef.root;
+		else if (quoting) {
+			if (crosspostTargetRef && quoteCopyUsable) target.quote = crosspostTargetRef.root;
+			else target.quoteLink = quoteLink;
+		}
 		// 投稿本文はここで確定するので、クリア前にタイトルを解決しておく。
 		const article = publishesArticle ? { title: (headingTitle ?? articleTitle).trim() } : undefined;
 		// ブログのタイトルは本文の先頭見出しとして保存する。こうしておくと Nagi の
@@ -1427,7 +1451,10 @@
 					// それ以外は素通しするので、画像ペーストは従来どおり動く。
 					// ブログは引用を持てない（記事にできなくなる）ので、URLのまま本文へ入れて
 					// 通常のリンクカードとして扱わせる。
-					if (isPlainPostMode(mode)) quotePick.handlePaste(event, $session?.did);
+					if (isPlainPostMode(mode))
+						quotePick.handlePaste(event, $session?.did, (url) =>
+							composerEditor?.insertAtCaret(url),
+						);
 					imagePicker?.handlePaste(event);
 				}}
 				tools={editorTools}

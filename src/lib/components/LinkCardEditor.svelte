@@ -7,6 +7,8 @@
 	import type { LinkCardDraft } from '$lib/atproto/records';
 	import { APPVIEW_URL, getLinkMetadata, getLinkThumbnail } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
+	import { session } from '$lib/oauth/session.svelte';
+	import { linkCardAllowed } from '$lib/post/quote-url';
 	import { createSortable } from '$lib/dnd/sortable.svelte';
 	import Icon from './shell/Icon.svelte';
 
@@ -121,6 +123,10 @@
 
 	async function add(uri: string) {
 		if (cards.some((card) => card.uri === uri) || loading.includes(uri)) return;
+		// 他人の Nagi 投稿はカードにしない（POST-07）。判定を待つ間に URL が消えたら何もしない。
+		const allowed = linkCardAllowed(uri, $session?.did);
+		if (!(allowed === true || (await allowed)) || !urls.includes(uri)) return;
+		if (cards.some((card) => card.uri === uri) || cards.length >= limit) return;
 		const id =
 			typeof crypto !== 'undefined' && crypto.randomUUID
 				? crypto.randomUUID()

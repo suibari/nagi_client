@@ -54,7 +54,7 @@ change [prioritize-startup-notification-count](changes/archive/2026-11-12-priori
 - 確定仕様: 自分のクロスポスト済み投稿には、Bluesky側のコピーへの返信・引用として続けられる。コピーの存在・権限・CW等の条件は [BSKY-04](specs/bluesky-integration/spec.md#bsky-04) に従う。他人の投稿への対応拡張を意味しない。
 - 現行経路: [ChatBubble.svelte](../src/lib/components/ChatBubble.svelte) のボタンは `openComposer()` → [composerHost](../src/lib/post/composer-host.svelte.ts) の `openReply()` / `openQuote()` → [Composer.svelte](../src/lib/components/Composer.svelte) へ進む。`ownCrosspost()` が本人の既存コピーを確認する。
 - 調査の訂正: ChatBubbleに残る `submitPost()` は呼び出しがなく、その中の「返信・引用はクロスポストしない」という説明を現行の入口差と判断したのは誤りだった。未使用処理とそのコメントは2026-11-12に削除した。ChatBubbleの `onposted` 引数は呼び出し元が残るが、内部からは呼ばれなくなった。呼び出し元を含む整理は別途扱う。
-- 対象外: ニュース等の引用は本人投稿の既存Blueskyコピーを持たないため、上記の対応対象と混同しない。
+- 引用の更新: change [nagi-quote-crosspost-as-link](changes/archive/2026-11-22-nagi-quote-crosspost-as-link/proposal.md)（2026-11-22）で、コピーの無い引用先（本人の投稿・botたんの投稿・ニュース・ラジオ）も、Bluesky側では引用先のページのリンクとして出せるようにした。コピーの引用は上記の条件を満たす場合だけ使う。返信の条件は変わらない。
 
 ## GAP-05
 

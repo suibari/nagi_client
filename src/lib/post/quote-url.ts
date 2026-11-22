@@ -83,3 +83,29 @@ export async function resolveQuoteFromUri(
 		return { ok: false, reason: 'forbidden' };
 	return { ok: true, post };
 }
+
+const cardChecks = new Map<string, Promise<boolean>>();
+
+/**
+ * 本文の URL にリンクカードを付けてよいか（POST-07）。他人の Nagi 投稿はカードにしない。
+ * 判定に投稿の取得が要るとき（bot かどうか）だけ Promise を返し、結果は覚えておく。
+ */
+export function linkCardAllowed(
+	url: string,
+	viewerDid: string | undefined,
+): boolean | Promise<boolean> {
+	const target = parseNagiPostUrl(url);
+	if (!target) return true;
+	if (viewerDid && target.did === viewerDid) return true;
+	const key = `${viewerDid ?? ''}|${target.did}/${target.rkey}`;
+	let check = cardChecks.get(key);
+	if (!check) {
+		check = resolveQuoteFromUri(postUriFromTarget(target), viewerDid).then((result) => {
+			// 取得の失敗は次の入力で確かめ直す。それまでカードは付けない。
+			if (!result.ok && result.reason === 'notFound') cardChecks.delete(key);
+			return result.ok;
+		});
+		cardChecks.set(key, check);
+	}
+	return check;
+}

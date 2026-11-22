@@ -77,6 +77,10 @@
 		insertTag: (tag: string) => void;
 	}>();
 
+	export function insertAtCaret(text: string) {
+		editor?.insertAtCaret(text);
+	}
+
 	/** 記事本文の画像のように、独立した1行として差し込む。 */
 	export function insertBlock(text: string) {
 		editor?.insertBlock(text);

@@ -207,6 +207,63 @@ describe('prepareCrosspostContent', () => {
 	});
 });
 
+describe('prepareCrosspostContent with a quote link', () => {
+	const QUOTE = 'https://nagi.suibari.com/thread/did:plc:me/3kquote';
+	const card = { uri: QUOTE, title: 'Nagi', description: '引用先の投稿' };
+
+	it('turns the quote into a link card', () => {
+		const result = prepareCrosspostContent(draft('見てほしい'), emptyAssets(), card);
+		expect(result.chunks).toEqual([{ text: '見てほしい', facets: [] }]);
+		expect(result.embed).toEqual({
+			$type: 'app.bsky.embed.external',
+			external: { uri: QUOTE, title: 'Nagi', description: '引用先の投稿' },
+		});
+	});
+
+	it('prefers the quote card over link cards in the text', () => {
+		const assets: PostAssets = {
+			images: [],
+			cards: [{ uri: 'https://example.com', title: 'Example' }],
+		};
+		const result = prepareCrosspostContent(draft('本文'), assets, card);
+		expect(result.embed).toMatchObject({ external: { uri: QUOTE } });
+	});
+
+	it('creates an empty-text chunk for a quote-only post', () => {
+		expect(prepareCrosspostContent(draft(), emptyAssets(), card).chunks).toEqual([
+			{ text: '', facets: [] },
+		]);
+	});
+
+	it('appends the link to the text when media is attached', () => {
+		const image = { image: { ref: 'blob-ref' }, alt: '', aspectRatio: { width: 1, height: 1 } };
+		const assets: PostAssets = { images: [image], cards: [] };
+		const result = prepareCrosspostContent(draft('写真と引用 \n'), assets, card);
+		const text = `写真と引用\n\n${QUOTE}`;
+		const start = bytes('写真と引用\n\n');
+		expect(result.chunks).toEqual([{ text, facets: [link(start, start + bytes(QUOTE), QUOTE)] }]);
+		expect(result.embed).toEqual({ $type: 'app.bsky.embed.images', images: [image] });
+	});
+
+	it('puts only the link in the text for a media-only quote', () => {
+		const image = { image: { ref: 'blob-ref' }, alt: '', aspectRatio: { width: 1, height: 1 } };
+		const result = prepareCrosspostContent(draft(), { images: [image], cards: [] }, card);
+		expect(result.chunks).toEqual([{ text: QUOTE, facets: [link(0, bytes(QUOTE), QUOTE)] }]);
+	});
+
+	it('keeps the link intact when the text is split', () => {
+		const image = { image: { ref: 'blob-ref' }, alt: '', aspectRatio: { width: 1, height: 1 } };
+		const result = prepareCrosspostContent(
+			draft('あ'.repeat(290)),
+			{ images: [image], cards: [] },
+			card,
+		);
+		const last = result.chunks.at(-1)!;
+		expect(last.text).toBe(QUOTE);
+		expect(last.facets).toEqual([link(0, bytes(QUOTE), QUOTE)]);
+	});
+});
+
 describe('getCrosspostSelfLabels', () => {
 	it('keeps standard NSFW labels but does not publish the Nagi-local AI label to Bluesky', () => {
 		expect(

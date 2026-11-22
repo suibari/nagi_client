@@ -5,6 +5,7 @@ import { IMAGE_LINE, type Facet } from '$lib/atproto/facets';
 import type { PostAssets, PostDraft } from '$lib/atproto/records';
 import type { StrongRef } from '$lib/api/types';
 import { BLUESKY_MEDIA_BLUR_LABELS, crosspostContentWarningBlock } from './content-warning';
+import { loadQuoteLinkCard } from './quote-link';
 
 const BSKY_POST = 'app.bsky.feed.post';
 /** Bluesky の投稿上限。app.bsky.feed.post#text の maxGraphemes / maxLength。 */
@@ -134,6 +135,10 @@ function buildEmbed(assets: PostAssets) {
 		return { $type: 'app.bsky.embed.images', images: assets.images.slice(0, 4) };
 	const card = assets.cards[0];
 	if (!card) return undefined;
+	return externalEmbed(card);
+}
+
+function externalEmbed(card: QuoteLinkCard) {
 	return {
 		$type: 'app.bsky.embed.external',
 		external: {
@@ -145,13 +150,44 @@ function buildEmbed(assets: PostAssets) {
 	};
 }
 
+/** 引用先を Bluesky でリンクとして出すときのカード（BSKY-05）。thumb はアップロード済みの blob。 */
+export type QuoteLinkCard = { uri: string; title: string; description?: string; thumb?: unknown };
+
+const hasMedia = (assets: PostAssets) => Boolean(assets.video || assets.images.length);
+
+/** 本文の末尾に空行で区切って URL を足し、リンクの facet を付ける。分割より前に呼ぶ。 */
+function appendLink(text: string, facets: Facet[], uri: string) {
+	const body = text.trimEnd();
+	const prefix = body ? `${body}\n\n` : '';
+	const byteStart = encoder.encode(prefix).length;
+	return {
+		text: `${prefix}${uri}`,
+		facets: [
+			...facets.filter((facet) => facet.index.byteEnd <= encoder.encode(body).length),
+			{
+				index: { byteStart, byteEnd: byteStart + encoder.encode(uri).length },
+				features: [{ $type: 'app.bsky.richtext.facet#link' as const, uri }],
+			},
+		],
+	};
+}
+
 /**
  * Bluesky に作成する本文チャンクと embed を組み立てる。
  * app.bsky.feed.post は embed があれば空の text を許可するため、画像または
  * リンクカードだけの投稿では空文字のチャンクを1件用意する。
  */
-export function prepareCrosspostContent(draft: PostDraft, assets: PostAssets) {
-	let chunks = splitForBluesky(draft.text, draft.facets as Facet[]).map((chunk) => ({
+export function prepareCrosspostContent(
+	draft: PostDraft,
+	assets: PostAssets,
+	quoteLink?: QuoteLinkCard,
+) {
+	// Bluesky では external とメディアを同時に付けられないので、メディアがあるときは引用先を本文のリンクにする。
+	const linkInText = quoteLink && hasMedia(assets);
+	const source = linkInText
+		? appendLink(draft.text, draft.facets as Facet[], quoteLink.uri)
+		: { text: draft.text, facets: draft.facets as Facet[] };
+	let chunks = splitForBluesky(source.text, source.facets).map((chunk) => ({
 		...chunk,
 		facets: chunk.facets.flatMap((facet) => {
 			// 公式 Bluemoji facet は相互運用のため残し、Nagi の正確な rkey 解決用参照だけ外す。
@@ -161,7 +197,8 @@ export function prepareCrosspostContent(draft: PostDraft, assets: PostAssets) {
 			return features.length ? [{ ...facet, features }] : [];
 		}),
 	}));
-	const embed = buildEmbed(assets);
+	// 引用のカードは本文のリンクカードより優先する。
+	const embed = quoteLink && !linkInText ? externalEmbed(quoteLink) : buildEmbed(assets);
 	if (!chunks.length && embed) chunks = [{ text: '', facets: [] }];
 	return { chunks, embed };
 }
@@ -179,10 +216,14 @@ export function crosspostDraftBlock(
 	});
 }
 
-/** Bluesky 側で続ける先。返信ならコピーへの返信、引用ならコピーの引用として出す。 */
+/**
+ * Bluesky 側で続ける先。返信ならコピーへの返信、引用ならコピーの引用として出す。
+ * コピーが無い引用先は quoteLink（公開ページの URL）でリンクとして出す。quote があればそちらを使う。
+ */
 export type CrosspostTarget = {
 	reply?: { root: StrongRef; parent: StrongRef };
 	quote?: StrongRef;
+	quoteLink?: string;
 };
 
 /** 作ったコピー。ref は Nagi の投稿レコードの crosspost にそのまま入れる。 */
@@ -231,7 +272,17 @@ export async function crosspostToBluesky(
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	const agent = new Agent(current);
-	const { chunks, embed } = prepareCrosspostContent(draft, assets);
+	const quoteLink = target.quote || !target.quoteLink ? undefined : target.quoteLink;
+	const quoteCard = quoteLink
+		? hasMedia(assets)
+			? { uri: quoteLink, title: '' }
+			: await loadQuoteLinkCard(quoteLink, async (blob) => {
+					if (blob.size >= MAX_THUMB_BYTES) return undefined;
+					const response = await agent.com.atproto.repo.uploadBlob(blob, { encoding: blob.type });
+					return response.data.blob;
+				})
+		: undefined;
+	const { chunks, embed } = prepareCrosspostContent(draft, assets, quoteCard);
 	const firstEmbed = withQuote(embed, target.quote);
 	if (!chunks.length && firstEmbed) chunks.push({ text: '', facets: [] });
 	if (!chunks.length) return;

@@ -4,7 +4,6 @@
 	import { newsBotPost, safeNewsUrl } from '$lib/news/bot-post';
 	import { quoteNews, shareNews } from '$lib/news/actions';
 	import { safeNewsImageUrl } from '$lib/news/image';
-	import { NewsQuote } from '$lib/news/quote.svelte';
 	import { m, dateLocale, localeReady, stableDateTime } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
 	import { deleteOwnNews } from '$lib/atproto/records';
@@ -49,7 +48,6 @@
 		 */
 		permalink?: string;
 	} = $props();
-	const quote = new NewsQuote();
 	let shared = $state(false);
 	let shareError = $state('');
 	let reactionPickerOpen = $state(false);
