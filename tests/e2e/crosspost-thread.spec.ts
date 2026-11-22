@@ -228,7 +228,7 @@ test('replies to posts that are not on Bluesky stay on Nagi', async ({ page }) =
 	await composer.getByRole('button', { name: /投稿範囲：/ }).click();
 	const scope = page.getByRole('dialog', { name: /投稿範囲/ });
 	await expect(scope.getByRole('radio', { name: /Blueskyにも/ })).toBeDisabled();
-	await expect(scope.getByText('Blueskyにも投稿した自分のポストへの返信・引用だけ')).toBeVisible();
+	await expect(scope.getByText('Blueskyにも投稿した自分のポストへの返信だけ')).toBeVisible();
 });
 
 test('a quote of your own crosspost quotes the Bluesky copy', async ({ page }) => {
@@ -247,6 +247,42 @@ test('a quote of your own crosspost quotes the Bluesky copy', async ({ page }) =
 	});
 	expect(created[2].record?.crosspost).toMatchObject({
 		root: { uri: `at://${did}/app.bsky.feed.post/new2`, cid },
+	});
+});
+
+async function quoteToBluesky(page: Page, testId: string, text: string) {
+	await page.getByTestId(testId).getByRole('button', { name: '引用', exact: true }).click();
+	const composer = page.getByRole('dialog').last();
+	await composer.getByRole('button', { name: /投稿範囲：/ }).click();
+	await page.getByRole('radio', { name: 'Blueskyにも', exact: true }).click();
+	await page.getByRole('button', { name: '決定', exact: true }).click();
+	await composer.getByRole('textbox').first().fill(text);
+	return composer;
+}
+
+test('a quote of a post that is not on Bluesky becomes a link card there', async ({ page }) => {
+	const created = await setup(page);
+	const other = 'https://nagi.suibari.com/thread/did:plc:someone-else/3kother';
+	const composer = await quoteToBluesky(page, 'local', `紹介します ${other}`);
+	await composer.getByRole('button', { name: '投稿する', exact: true }).click();
+	await expect.poll(() => created.length).toBe(3);
+	// 他人の投稿のリンクはカードにしない（POST-07）。
+	expect(created[0].record?.linkCards).toBeUndefined();
+	expect(created[1].record?.embed).toMatchObject({
+		$type: 'app.bsky.embed.external',
+		external: { uri: `https://nagi.suibari.com/thread/${did}/local` },
+	});
+	expect(created[1].record?.text).toBe(`紹介します ${other}`);
+});
+
+test('a quote whose Bluesky copy is gone falls back to a link card', async ({ page }) => {
+	const created = await setup(page, { missing: ['root'] });
+	const composer = await quoteToBluesky(page, 'crossposted', '引用です');
+	await composer.getByRole('button', { name: '投稿する', exact: true }).click();
+	await expect.poll(() => created.length).toBe(3);
+	expect(created[1].record?.embed).toMatchObject({
+		$type: 'app.bsky.embed.external',
+		external: { uri: `https://nagi.suibari.com/thread/${did}/crossposted` },
 	});
 });
 

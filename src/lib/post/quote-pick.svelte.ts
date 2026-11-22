@@ -11,7 +11,7 @@ import {
  * コンポーザーの「貼り付けで付く引用」スロット。
  *
  * ポストモーダルと返信インライン欄が同じ挙動を持つので、状態と非同期解決を
- * ここへ集約する（ニュース引用の NewsQuote クラスと同じ切り出し方）。
+ * ここへ集約する。
  * 引用は1件だけ持てる。新しく貼られたら置き換える。
  */
 export class QuotePick {
@@ -36,11 +36,18 @@ export class QuotePick {
 	 * LinkCardEditor の自動リンクカード化と競合し、あとから本文を削る処理も要る。
 	 * 画像ペーストなど他の貼り付けは素通しする。
 	 */
-	handlePaste(event: ClipboardEvent, viewerDid: string | undefined): void {
+	handlePaste(
+		event: ClipboardEvent,
+		viewerDid: string | undefined,
+		insertText?: (text: string) => void,
+	): void {
 		const text = event.clipboardData?.getData('text/plain') ?? '';
 		if (!parseNagiPostUrl(text)) return;
 		event.preventDefault();
-		void this.#apply(() => resolveQuoteFromUrl(text, viewerDid));
+		void this.#apply(
+			() => resolveQuoteFromUrl(text, viewerDid),
+			() => insertText?.(text.trim()),
+		);
 	}
 
 	/**
@@ -53,7 +60,8 @@ export class QuotePick {
 		void this.#apply(() => resolveQuoteFromUri(uri, viewerDid));
 	}
 
-	async #apply(resolve: () => Promise<QuoteResolution | undefined>) {
+	/** onForbidden は引用できない相手だったときに呼ぶ（貼り付けでは URL を本文へ戻す、POST-07）。 */
+	async #apply(resolve: () => Promise<QuoteResolution | undefined>, onForbidden?: () => void) {
 		const generation = ++this.#generation;
 		this.pending = true;
 		this.error = '';
@@ -64,8 +72,11 @@ export class QuotePick {
 			if (result.ok) {
 				this.post = result.post;
 				this.error = '';
+			} else if (result.reason === 'forbidden' && onForbidden) {
+				this.post = undefined;
+				onForbidden();
 			} else {
-				// 失敗しても本文へURLは戻さない（クリップボードに残っている）。
+				// 見つからないときは本文へURLを戻さない（クリップボードに残っている）。
 				// 代わりに理由を出して、貼り直すか諦めるかを選べるようにする。
 				this.post = undefined;
 				this.error = result.reason === 'forbidden' ? m.quoteNotAllowed() : m.quoteNotFound();

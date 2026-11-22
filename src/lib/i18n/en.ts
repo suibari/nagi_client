@@ -584,7 +584,10 @@ export const en: Messages = {
 	crosspostLabel: 'Also on Bluesky',
 	crosspostLabelHint: 'Posted to Bluesky too. Replies and quotes can continue there as well',
 	crosspostTargetNotOwn:
-		'Only replies and quotes to your own posts that are also on Bluesky can go to Bluesky',
+		'Only replies to your own posts that are also on Bluesky can go to Bluesky',
+	crosspostQuoteUnavailable:
+		'The quoted item cannot be opened from Bluesky, so this cannot go there',
+	crosspostReplyWithQuote: 'A reply that also quotes cannot go to Bluesky',
 	crosspostTargetChecking: 'Checking the Bluesky post',
 	crosspostTargetGone: 'The Bluesky post was deleted, so this cannot go to Bluesky',
 	crosspostTargetCheckFailed: 'Could not check the Bluesky post. Please try again later',
