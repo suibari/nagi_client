@@ -131,6 +131,7 @@ describe('prepareCrosspostContent', () => {
 		};
 
 		expect(prepareCrosspostContent(draft(), assets)).toEqual({
+			truncated: false,
 			chunks: [{ text: '', facets: [] }],
 			embed: {
 				$type: 'app.bsky.embed.external',
@@ -152,6 +153,7 @@ describe('prepareCrosspostContent', () => {
 		const assets: PostAssets = { images: [image], cards: [] };
 
 		expect(prepareCrosspostContent(draft(), assets)).toEqual({
+			truncated: false,
 			chunks: [{ text: '', facets: [] }],
 			embed: { $type: 'app.bsky.embed.images', images: [image] },
 		});
@@ -167,6 +169,7 @@ describe('prepareCrosspostContent', () => {
 		const assets: PostAssets = { images: [], cards: [], video };
 
 		expect(prepareCrosspostContent(draft(), assets)).toEqual({
+			truncated: false,
 			chunks: [{ text: '', facets: [] }],
 			embed: {
 				$type: 'app.bsky.embed.video',
@@ -190,6 +193,7 @@ describe('prepareCrosspostContent', () => {
 
 	it('does not create a chunk when both text and embeds are absent', () => {
 		expect(prepareCrosspostContent(draft(), emptyAssets())).toEqual({
+			truncated: false,
 			chunks: [],
 			embed: undefined,
 		});
@@ -261,6 +265,88 @@ describe('prepareCrosspostContent with a quote link', () => {
 		const last = result.chunks.at(-1)!;
 		expect(last.text).toBe(QUOTE);
 		expect(last.facets).toEqual([link(0, bytes(QUOTE), QUOTE)]);
+	});
+});
+
+describe('prepareCrosspostContent with a continuation', () => {
+	const URL = 'https://nagi.suibari.com/thread/did:plc:me/3kpost';
+	const more = { url: URL, label: 'もっと見る' };
+	const QUOTE = 'https://nagi.suibari.com/thread/did:plc:me/3kquote';
+	const image = { image: { ref: 'blob-ref' }, alt: '', aspectRatio: { width: 1, height: 1 } };
+
+	it('posts the whole text without a link when it fits', () => {
+		const result = prepareCrosspostContent(draft('みじかい'), emptyAssets(), undefined, more);
+		expect(result.chunks).toEqual([{ text: 'みじかい', facets: [] }]);
+		expect(result.truncated).toBe(false);
+	});
+
+	it('posts one opening ending in a link to the rest when the text is too long', () => {
+		const result = prepareCrosspostContent(draft('あ'.repeat(500)), emptyAssets(), undefined, more);
+		expect(result.chunks).toHaveLength(1);
+		expect(result.truncated).toBe(true);
+		const [{ text, facets }] = result.chunks;
+		expect(text.endsWith('…もっと見る')).toBe(true);
+		expect(graphemeCount(text)).toBeLessThanOrEqual(300);
+		const start = bytes(text) - bytes('もっと見る');
+		expect(facets).toEqual([link(start, bytes(text), URL)]);
+	});
+
+	it('keeps the opening within 3000 bytes', () => {
+		const family = '👨‍👩‍👧‍👦';
+		const result = prepareCrosspostContent(
+			draft(family.repeat(200)),
+			emptyAssets(),
+			undefined,
+			more,
+		);
+		expect(bytes(result.chunks[0].text)).toBeLessThanOrEqual(3000);
+		expect(result.chunks[0].text.endsWith('…もっと見る')).toBe(true);
+	});
+
+	it('keeps facets in the opening and drops those cut off', () => {
+		const text = `https://example.com ${'あ'.repeat(400)} https://example.org`;
+		const facets = [
+			link(0, bytes('https://example.com'), 'https://example.com'),
+			link(bytes(text) - bytes('https://example.org'), bytes(text), 'https://example.org'),
+		];
+		const result = prepareCrosspostContent(
+			{ ...draft(text), facets },
+			emptyAssets(),
+			undefined,
+			more,
+		);
+		const [chunk] = result.chunks;
+		expect(chunk.facets[0]).toEqual(facets[0]);
+		expect(chunk.facets.map((facet) => (facet.features[0] as { uri: string }).uri)).toEqual([
+			'https://example.com',
+			URL,
+		]);
+	});
+
+	it('keeps the quote link after the continuation when media is attached', () => {
+		const result = prepareCrosspostContent(
+			draft('あ'.repeat(400)),
+			{ images: [image], cards: [] },
+			{ uri: QUOTE, title: '' },
+			more,
+		);
+		expect(result.chunks).toHaveLength(1);
+		const [{ text, facets }] = result.chunks;
+		expect(text.endsWith(`…もっと見る\n\n${QUOTE}`)).toBe(true);
+		expect(graphemeCount(text)).toBeLessThanOrEqual(300);
+		const quoteStart = bytes(text) - bytes(QUOTE);
+		const moreStart = quoteStart - bytes('\n\n') - bytes('もっと見る');
+		expect(facets).toEqual([
+			link(moreStart, moreStart + bytes('もっと見る'), URL),
+			link(quoteStart, bytes(text), QUOTE),
+		]);
+		expect(result.embed).toEqual({ $type: 'app.bsky.embed.images', images: [image] });
+	});
+
+	it('splits as before without a continuation', () => {
+		const result = prepareCrosspostContent(draft('あ'.repeat(500)), emptyAssets());
+		expect(result.chunks.length).toBeGreaterThan(1);
+		expect(result.truncated).toBe(false);
 	});
 });
 

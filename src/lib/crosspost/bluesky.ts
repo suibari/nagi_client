@@ -155,20 +155,60 @@ export type QuoteLinkCard = { uri: string; title: string; description?: string; 
 
 const hasMedia = (assets: PostAssets) => Boolean(assets.video || assets.images.length);
 
+function linkFacet(byteStart: number, text: string, uri: string): Facet {
+	return {
+		index: { byteStart, byteEnd: byteStart + encoder.encode(text).length },
+		features: [{ $type: 'app.bsky.richtext.facet#link' as const, uri }],
+	};
+}
+
 /** 本文の末尾に空行で区切って URL を足し、リンクの facet を付ける。分割より前に呼ぶ。 */
 function appendLink(text: string, facets: Facet[], uri: string) {
 	const body = text.trimEnd();
 	const prefix = body ? `${body}\n\n` : '';
-	const byteStart = encoder.encode(prefix).length;
 	return {
 		text: `${prefix}${uri}`,
 		facets: [
 			...facets.filter((facet) => facet.index.byteEnd <= encoder.encode(body).length),
-			{
-				index: { byteStart, byteEnd: byteStart + encoder.encode(uri).length },
-				features: [{ $type: 'app.bsky.richtext.facet#link' as const, uri }],
-			},
+			linkFacet(encoder.encode(prefix).length, uri, uri),
 		],
+	};
+}
+
+/** 長い本文の続きを置く Nagi の投稿ページと、そこへのリンクにする文言（BSKY-05）。 */
+export type CrosspostContinuation = { url: string; label: string };
+
+const ELLIPSIS = '…';
+
+/**
+ * 上限に収まる冒頭の後ろに「…{label}」を付け、label を続きへのリンクにする（BSKY-05）。
+ * quoteUri は画像付き引用で本文の末尾へ足す URL で、冒頭を切っても残す。
+ */
+function continuedChunk(
+	text: string,
+	facets: Facet[],
+	continuation: CrosspostContinuation,
+	quoteUri?: string,
+): CrosspostChunk {
+	const tail = quoteUri ? `\n\n${quoteUri}` : '';
+	const reserved = `${ELLIPSIS}${continuation.label}${tail}`;
+	const [head] = splitForBluesky(text, facets, {
+		graphemes: graphemes(reserved).length,
+		bytes: encoder.encode(reserved).length,
+	});
+	const prefix = `${head?.text ?? ''}${ELLIPSIS}`;
+	const result = {
+		text: `${prefix}${continuation.label}`,
+		facets: [
+			...(head?.facets ?? []),
+			linkFacet(encoder.encode(prefix).length, continuation.label, continuation.url),
+		],
+	};
+	if (!quoteUri) return result;
+	const quoteStart = encoder.encode(`${result.text}\n\n`).length;
+	return {
+		text: `${result.text}${tail}`,
+		facets: [...result.facets, linkFacet(quoteStart, quoteUri, quoteUri)],
 	};
 }
 
@@ -176,18 +216,28 @@ function appendLink(text: string, facets: Facet[], uri: string) {
  * Bluesky に作成する本文チャンクと embed を組み立てる。
  * app.bsky.feed.post は embed があれば空の text を許可するため、画像または
  * リンクカードだけの投稿では空文字のチャンクを1件用意する。
+ *
+ * continuation があれば（Nagi 投稿のクロスポスト）チャンクは常に1件で、
+ * 収まらない本文は冒頭と続きへのリンクにする。無ければ（Bluesky にだけ出す投稿）分割する。
+ * truncated は本文を省略したかどうか。
  */
 export function prepareCrosspostContent(
 	draft: PostDraft,
 	assets: PostAssets,
 	quoteLink?: QuoteLinkCard,
+	continuation?: CrosspostContinuation,
 ) {
 	// Bluesky では external とメディアを同時に付けられないので、メディアがあるときは引用先を本文のリンクにする。
 	const linkInText = quoteLink && hasMedia(assets);
-	const source = linkInText
-		? appendLink(draft.text, draft.facets as Facet[], quoteLink.uri)
-		: { text: draft.text, facets: draft.facets as Facet[] };
-	let chunks = splitForBluesky(source.text, source.facets).map((chunk) => ({
+	const body = { text: draft.text, facets: draft.facets as Facet[] };
+	const source = linkInText ? appendLink(body.text, body.facets, quoteLink.uri) : body;
+	let split = splitForBluesky(source.text, source.facets);
+	const truncated = Boolean(continuation && split.length > 1);
+	if (continuation && truncated)
+		split = [
+			continuedChunk(body.text, body.facets, continuation, linkInText ? quoteLink.uri : undefined),
+		];
+	let chunks = split.map((chunk) => ({
 		...chunk,
 		facets: chunk.facets.flatMap((facet) => {
 			// 公式 Bluemoji facet は相互運用のため残し、Nagi の正確な rkey 解決用参照だけ外す。
@@ -200,7 +250,7 @@ export function prepareCrosspostContent(
 	// 引用のカードは本文のリンクカードより優先する。
 	const embed = quoteLink && !linkInText ? externalEmbed(quoteLink) : buildEmbed(assets);
 	if (!chunks.length && embed) chunks = [{ text: '', facets: [] }];
-	return { chunks, embed };
+	return { chunks, embed, truncated };
 }
 
 /** 組み立て済みの下書きについて、CW がクロスポストを止めるか。 */
@@ -256,16 +306,18 @@ function withQuote(embed: ReturnType<typeof buildEmbed>, quote: StrongRef | unde
 
 /**
  * Nagi の投稿を Bluesky にも投稿する。
- * 300 文字を超える場合は分割し、2件目以降は直前の投稿へのリプライで芋づるに繋ぐ。
+ * continuation を渡すと（Nagi 投稿のクロスポスト）1件だけ作り、長い本文は続きへのリンクにする。
+ * 渡さなければ（Bluesky にだけ出す投稿）分割し、2件目以降は直前の投稿へのリプライで芋づるに繋ぐ。
  * blob は Nagi 投稿でアップロード済みのものを使い回す（同一リポジトリ・同一サイズ上限）。
  *
  * target を渡すと、自分のクロスポスト済みの投稿への返信・引用として Bluesky でも続ける。
- * Nagi の投稿を保存した後に呼ぶ。1件目で失敗したら元の例外、2件目以降なら CrosspostPartialError を投げる。
+ * 1件目で失敗したら元の例外、2件目以降なら CrosspostPartialError を投げる。
  */
 export async function crosspostToBluesky(
 	draft: PostDraft,
 	assets: PostAssets,
 	target: CrosspostTarget = {},
+	continuation?: CrosspostContinuation,
 ): Promise<CrosspostResult | undefined> {
 	// こっそり投稿と、Bluesky では伏せられない CW を含む投稿はクロスポストしない。
 	if (draft.kossori || crosspostDraftBlock(draft)) return;
@@ -282,7 +334,7 @@ export async function crosspostToBluesky(
 					return response.data.blob;
 				})
 		: undefined;
-	const { chunks, embed } = prepareCrosspostContent(draft, assets, quoteCard);
+	const { chunks, embed } = prepareCrosspostContent(draft, assets, quoteCard, continuation);
 	const firstEmbed = withQuote(embed, target.quote);
 	if (!chunks.length && firstEmbed) chunks.push({ text: '', facets: [] });
 	if (!chunks.length) return;

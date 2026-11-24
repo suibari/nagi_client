@@ -184,17 +184,31 @@ test('a failed Nagi save creates nothing on Bluesky', async ({ page }) => {
 	expect(created).toEqual([]);
 });
 
-test('a partial Bluesky thread is kept, not linked, and reported', async ({ page }) => {
-	const created = await setup(page, { failBlueskyAt: 1 });
+test('a long post becomes one Bluesky copy that links to the rest on Nagi', async ({ page }) => {
+	const created = await setup(page);
 	await sendReply(page, 'あ'.repeat(450));
-	await expect(
-		page
-			.getByRole('status')
-			.getByText('Blueskyには途中までしか投稿できませんでした', { exact: false }),
-	).toBeVisible();
+	await expect.poll(() => created.length).toBe(3);
 	expect(created.map((write) => `${write.method}:${write.collection}`)).toEqual([
 		'create:com.suibari.nagi.post',
 		'create:app.bsky.feed.post',
+		'put:com.suibari.nagi.post',
+	]);
+	const record = created[1].record as {
+		text: string;
+		facets: Array<{ features: Array<{ uri: string }> }>;
+	};
+	expect(record.text.endsWith('…もっと見る')).toBe(true);
+	expect(record.facets.at(-1)?.features[0].uri).toBe(`https://nagi.suibari.com/thread/${did}/new1`);
+	const copy = { uri: `at://${did}/app.bsky.feed.post/new2`, cid };
+	expect(created[2].record?.crosspost).toMatchObject({ root: copy, tail: copy });
+});
+
+test('a failed Bluesky copy keeps the Nagi post and warns', async ({ page }) => {
+	const created = await setup(page, { failBlueskyAt: 0 });
+	await sendReply(page, '続きです');
+	await expect(page.getByRole('status').getByText('PDS down', { exact: false })).toBeVisible();
+	expect(created.map((write) => `${write.method}:${write.collection}`)).toEqual([
+		'create:com.suibari.nagi.post',
 	]);
 });
 

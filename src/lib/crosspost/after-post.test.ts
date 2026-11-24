@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('$lib/i18n/i18n.svelte', () => ({
 	m: {
 		crosspostPermissionMissing: () => 'permission',
-		crosspostPartial: () => 'partial',
+		crosspostSeeMore: () => 'もっと見る',
 		crosspostFailed: () => 'failed',
 		crosspostLinkFailed: () => 'link',
 		bskyGatesFailed: () => 'gates',
@@ -24,20 +24,9 @@ vi.mock('./preferences', () => ({
 	hasCrosspostScope: mocks.hasScope,
 }));
 vi.mock('$lib/atproto/records', () => ({ attachCrosspost: mocks.attach }));
-vi.mock('./bluesky', () => {
-	class CrosspostPartialError extends Error {
-		constructor(
-			readonly posts: unknown[],
-			_cause?: unknown,
-		) {
-			super('partial');
-		}
-	}
-	return { CrosspostPartialError, crosspostToBluesky: mocks.crosspost };
-});
+vi.mock('./bluesky', () => ({ crosspostToBluesky: mocks.crosspost }));
 
 const { crosspostAfterPost } = await import('./after-post');
-const { CrosspostPartialError } = await import('./bluesky');
 
 const draft = { text: 'hi' } as PostDraft;
 const assets = { images: [], cards: [] } as PostAssets;
@@ -77,12 +66,17 @@ describe('crosspostAfterPost', () => {
 		expect(mocks.attach).not.toHaveBeenCalled();
 	});
 
-	it('does not link a partial thread and says a partial copy remains', async () => {
-		mocks.crosspost.mockRejectedValue(
-			new CrosspostPartialError([{ uri: 'p1', cid: 'c1' }], new Error('PDS down')),
+	it('links the rest of a long post to its Nagi thread page', async () => {
+		await run();
+		expect(mocks.crosspost).toHaveBeenCalledWith(
+			draft,
+			assets,
+			{},
+			{
+				url: 'https://nagi.suibari.com/thread/did:plc:me/3mpost',
+				label: 'もっと見る',
+			},
 		);
-		expect(await run()).toBe('partial');
-		expect(mocks.attach).not.toHaveBeenCalled();
 	});
 
 	it('adds nothing for the default reply and quote settings', async () => {
