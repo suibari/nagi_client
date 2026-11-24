@@ -1,7 +1,10 @@
 import { attachCrosspost, type PostAssets, type PostDraft } from '$lib/atproto/records';
 import { m } from '$lib/i18n/i18n.svelte';
-import { CrosspostPartialError, crosspostToBluesky, type CrosspostTarget } from './bluesky';
+import { crosspostToBluesky, type CrosspostTarget } from './bluesky';
+import { postHref } from '$lib/feed/post-follow.svelte';
+import { NAGI_PUBLIC_ORIGIN } from '$lib/standardsite/types';
 import { getCrosspostEnabled, hasCrosspostScope } from './preferences';
+import type { StrongRef } from '$lib/api/types';
 import { applyBskyGates } from '$lib/bsky/agent';
 import { DEFAULT_BSKY_GATES, type BskyGateSettings } from '$lib/bsky/gates';
 
@@ -13,16 +16,19 @@ export async function crosspostAfterPost(
 	draft: PostDraft,
 	assets: PostAssets,
 	target: CrosspostTarget,
-	uri: string,
+	post: StrongRef,
 	gates: BskyGateSettings = DEFAULT_BSKY_GATES,
 ): Promise<string | undefined> {
 	const permitted = getCrosspostEnabled() && (await hasCrosspostScope().catch(() => false));
 	if (!permitted) return m.crosspostPermissionMissing();
 	let result;
 	try {
-		result = await crosspostToBluesky(draft, assets, target);
+		result = await crosspostToBluesky(draft, assets, target, {
+			url: `${NAGI_PUBLIC_ORIGIN}${postHref(post.uri)}`,
+			label: m.crosspostSeeMore(),
+			post,
+		});
 	} catch (e) {
-		if (e instanceof CrosspostPartialError) return m.crosspostPartial();
 		return e instanceof Error ? e.message : m.crosspostFailed();
 	}
 	if (!result) return;
@@ -41,7 +47,7 @@ export async function crosspostAfterPost(
 		).catch(() => (warning = m.bskyGatesFailed()));
 	}
 	try {
-		await attachCrosspost(uri, result.ref);
+		await attachCrosspost(post.uri, result.ref);
 	} catch {
 		return m.crosspostLinkFailed();
 	}

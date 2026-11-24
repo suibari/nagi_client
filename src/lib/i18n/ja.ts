@@ -1205,8 +1205,7 @@ export const ja = {
 	crosspostSignInRequired: 'Bluesky連携を設定するにはログインしてください。',
 	crosspostFailed: 'Blueskyへのクロスポストに失敗しました',
 	crosspostPermissionMissing: 'Blueskyへの投稿権限を確認できませんでした',
-	crosspostPartial:
-		'Blueskyには途中までしか投稿できませんでした。Blueskyに残った分は、必要ならBlueskyで削除してください',
+	crosspostSeeMore: 'もっと見る',
 	crosspostLinkFailed:
 		'Blueskyには投稿できましたが、Nagiの投稿と結びつけられませんでした。このポストへの返信・引用はBlueskyに続けられません',
 	blueskyFeedReadingTitle: 'Blueskyのフィードを見る',
@@ -1227,6 +1226,8 @@ export const ja = {
 	bskyFeedUrlHint: 'Blueskyでフィードを開いたときのURLを貼り付けてください。',
 	bskyFeedNotFound: 'フィードが見つかりませんでした',
 	bskyOpenInBluesky: 'Blueskyで開く',
+	bskyShowFullText: '全文を表示',
+	bskyFullTextUnavailable: '全文を表示できませんでした',
 	bskyOpenFeedInBluesky: 'このフィードをBlueskyで開く',
 	bskyRepostedBy: (p: { name: string }) => `${p.name}さんがリポスト`,
 	bskyReplyTo: (p: { name: string }) => `${p.name}さんへの返信`,

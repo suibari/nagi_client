@@ -1170,8 +1170,7 @@ export const en: Messages = {
 	crosspostSignInRequired: 'Log in to configure Bluesky linking.',
 	crosspostFailed: 'Could not crosspost to Bluesky',
 	crosspostPermissionMissing: 'Could not confirm permission to post to Bluesky',
-	crosspostPartial:
-		'Only part of the post reached Bluesky. Delete the partial copy on Bluesky if you no longer need it.',
+	crosspostSeeMore: 'See more',
 	crosspostLinkFailed:
 		'Posted to Bluesky, but could not link it to your Nagi post. Replies and quotes to this post will not continue on Bluesky.',
 	blueskyFeedReadingTitle: 'Read Bluesky feeds',
@@ -1192,6 +1191,8 @@ export const en: Messages = {
 	bskyFeedUrlHint: 'Paste the URL of the feed as shown when you open it on Bluesky.',
 	bskyFeedNotFound: 'Could not find that feed',
 	bskyOpenInBluesky: 'Open in Bluesky',
+	bskyShowFullText: 'Show full text',
+	bskyFullTextUnavailable: 'Could not show the full text',
 	bskyOpenFeedInBluesky: 'Open this feed in Bluesky',
 	bskyRepostedBy: (p: { name: string }) => `Reposted by ${p.name}`,
 	bskyReplyTo: (p: { name: string }) => `Replying to ${p.name}`,

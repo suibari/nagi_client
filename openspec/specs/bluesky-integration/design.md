@@ -36,7 +36,7 @@
 
 **課題**：以前はコピーを先に作り、その参照をNagiの初回レコードへ入れていた。後から参照を足すとAppViewが編集とみなし、翻訳や判定をやり直したためである。この順序ではNagi保存の失敗時にコピーを削除して巻き戻す必要があり、Bluesky投稿の権限をcreate限定とする方針と両立しなかった（GAP-01）。
 
-**採用判断**：通常投稿も記事と同じく、Nagiの保存が成功してからBlueskyのコピーを作り、作れたコピーの参照をNagi投稿へ追記する。追記は読み取った版のCIDを条件に書き込み、その間に本人が編集していたら1回だけ読み直す。分割投稿が途中で失敗したときは参照を追記しない。
+**採用判断**：通常投稿も記事と同じく、Nagiの保存が成功してからBlueskyのコピーを作り、作れたコピーの参照をNagi投稿へ追記する。追記は読み取った版のCIDを条件に書き込み、その間に本人が編集していたら1回だけ読み直す。分割投稿が途中で失敗したときは参照を追記しない（2026-11-25からクロスポストは1件になり、途中の失敗は起きない。D10）。
 
 **理由と制約**：正本のNagiが先にあるので、写しだけが残る状況を作らず、削除による補償も要らない。AppViewは見える内容が変わらない更新を編集とみなさない（[API-09](../appview-protocol/spec.md)）ため、参照の追記で編集済み表示や翻訳のやり直しは起きない。Bluesky側の失敗、途中までのスレッド、参照追記の失敗はいずれもNagi投稿を取り消さず、警告で伝える。途中までのコピーを参照として登録しないのは、欠けた写しへ返信や引用を続けさせないためである。
 
@@ -80,25 +80,42 @@
 
 **理由と制約**：リンク先のOGPはこっそり・ラベルの境界を守る（SEO-03）。こっそり投稿の引用はBluesky上で開けないリンクになるだけなので、クロスポストを選ばせない。貼り付けでURLを引用にする挙動（POST-07）を変える案や、毎回「引用／リンク」を選ばせる案は、今の使い方を壊すか判断を増やすため採らなかった。他人のNagi投稿をリンクの文字だけにする理由は[post-composer](../post-composer/design.md)のD9を参照する。
 
+### D10: 長いクロスポストは冒頭と、Nagiの続きへのリンクにする
+
+**課題**：Nagiの投稿は3000文字まで書けるが、Blueskyへは300graphemesごとに分割したスレッドとして出していた。長い投稿ほどBlueskyのタイムラインを1本で埋め、読む側は続きを返信で辿る必要があった。全文の正本はNagiにある。
+
+**採用判断**：Nagi投稿のコピーは常に1件にし、上限を超える本文は冒頭の末尾に「…もっと見る」を付けて、「もっと見る」をNagiのスレッドページへのリンクにする（2026-11-24に合意、change [crosspost-long-post-teaser](../../changes/crosspost-long-post-teaser/design.md)）。形と文言は、Blueskyの長文投稿サービスmochottに揃えた。冒頭は従来の分割の1件目と同じ規則で切り、文言のぶんを上限から先に取り置く。画像付きの引用で本文の末尾へ足すURLも取り置き、「…もっと見る」の後ろに残す。文言は投稿者の表示言語で選ぶ（英語は「…See more」）。Bluesky投稿への返信・引用（BSKY-09）はNagi投稿を作らず、続きを置く場所が無いので分割を続ける。
+
+**理由と制約**：Nagi投稿へのリンクカード（external）にする案は、Blueskyでexternalと画像・動画・引用を同時に付けられないため採らなかった。本文中のリンクなら既存の埋め込みと衝突しない。既に分割で作られたコピー（`crosspost`の`root`と`tail`が違う）は、返信・引用・削除で従来どおり扱う。
+
+### D11: 長文の目印はmochottと同じ形で、省略したときだけ書く
+
+**課題**：D10のリンクは人には十分だが、プログラムからはBluesky投稿が長文の冒頭かどうか、全文がどのレコードかを確実に知る手段が無い。本文のURLを解析すると、ドメインやURLの形が変わったときに壊れる。
+
+**採用判断**：本文を省略したコピーのレコードに、追加フィールド`com.suibari.nagi.longPost`でNagi投稿への強参照を入れる。形と意味はmochottの`site.mochott.longPost`に揃え、lexiconはbsky-affirmative-botの`packages/nagi-lexicon`で公開する。全文が載っているコピーには入れない。Blueskyタブは、投稿者と同じリポジトリの`com.suibari.nagi.post`を指す目印にだけ「全文を表示」を出し、押されたらNagi AppViewから取得してその場で差し替える。こっそり・削除済み・CW・モデレーションの対象など、Nagiがそのまま見せない投稿は取得できなかった扱いにする。
+
+**理由と制約**：コピーを作った後でNagi投稿へ`crosspost`を追記する（D4）ため、目印の`cid`は必ず1つ古い。`cid`を任意にする案はmochottの形から外れるので採らず、lexiconに「クロスポストした時点の版」と明記した。Nagiは版の違いを編集済みとは扱わない（AppViewの判定はAPI-09）。Nagi AppViewへ渡すのはNagi投稿のURIだけで、BlueskyのURIは渡さない（D1）。botたんの定期ポストも同じ目印を書く（bsky-affirmative-bot側、2026-11-25）。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                            | 探す処理・責務                                               |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [src/lib/bsky/agent.ts](../../../src/lib/bsky/agent.ts)                                             | PDS経由のBluesky取得と、操作・通知・削除・通報の呼び出し     |
-| [src/lib/bsky/moderation.ts](../../../src/lib/bsky/moderation.ts)                                   | bskyPostDisplay                                              |
-| [src/lib/bsky/mapView.ts](../../../src/lib/bsky/mapView.ts)                                         | 表示型への変換                                               |
-| [src/lib/crosspost/bluesky.ts](../../../src/lib/crosspost/bluesky.ts)                               | splitForBluesky / crosspostToBluesky / CrosspostPartialError |
-| [src/lib/crosspost/after-post.ts](../../../src/lib/crosspost/after-post.ts)                         | 保存後のクロスポストと参照追記                               |
-| [src/lib/crosspost/quote-link.ts](../../../src/lib/crosspost/quote-link.ts)                         | quoteLinkUrl / loadQuoteLinkCard（引用先のリンクとカード）   |
-| [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts)               | crosspostContentWarningBlock                                 |
-| [src/lib/bsky/interactions.svelte.ts](../../../src/lib/bsky/interactions.svelte.ts)                 | いいね・リポストの自分の状態と楽観表示                       |
-| [src/lib/bsky/compose.ts](../../../src/lib/bsky/compose.ts)                                         | Blueskyにだけ投稿する返信・引用                              |
-| [src/lib/bsky/gates.ts](../../../src/lib/bsky/gates.ts)                                             | threadgate／postgateの組み立てと読み取り                     |
-| [src/lib/bsky/notifications.ts](../../../src/lib/bsky/notifications.ts)                             | Blueskyの通知の絞り込みと変換                                |
-| [src/lib/components/bsky/BskyPostCard.svelte](../../../src/lib/components/bsky/BskyPostCard.svelte) | 操作列と「…」メニュー                                        |
-| [src/lib/components/bsky/BskyComposer.svelte](../../../src/lib/components/bsky/BskyComposer.svelte) | Blueskyへの返信・引用の入力欄                                |
+| ファイル                                                                                            | 探す処理・責務                                                                                               |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [src/lib/bsky/agent.ts](../../../src/lib/bsky/agent.ts)                                             | PDS経由のBluesky取得と、操作・通知・削除・通報の呼び出し                                                     |
+| [src/lib/bsky/moderation.ts](../../../src/lib/bsky/moderation.ts)                                   | bskyPostDisplay                                                                                              |
+| [src/lib/bsky/mapView.ts](../../../src/lib/bsky/mapView.ts)                                         | 表示型への変換                                                                                               |
+| [src/lib/crosspost/bluesky.ts](../../../src/lib/crosspost/bluesky.ts)                               | splitForBluesky / prepareCrosspostContent（冒頭と続きのリンク） / crosspostToBluesky / CrosspostPartialError |
+| [src/lib/crosspost/after-post.ts](../../../src/lib/crosspost/after-post.ts)                         | 保存後のクロスポストと参照追記                                                                               |
+| [src/lib/crosspost/quote-link.ts](../../../src/lib/crosspost/quote-link.ts)                         | quoteLinkUrl / loadQuoteLinkCard（引用先のリンクとカード）                                                   |
+| [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts)               | crosspostContentWarningBlock                                                                                 |
+| [src/lib/bsky/interactions.svelte.ts](../../../src/lib/bsky/interactions.svelte.ts)                 | いいね・リポストの自分の状態と楽観表示                                                                       |
+| [src/lib/bsky/compose.ts](../../../src/lib/bsky/compose.ts)                                         | Blueskyにだけ投稿する返信・引用                                                                              |
+| [src/lib/bsky/gates.ts](../../../src/lib/bsky/gates.ts)                                             | threadgate／postgateの組み立てと読み取り                                                                     |
+| [src/lib/bsky/notifications.ts](../../../src/lib/bsky/notifications.ts)                             | Blueskyの通知の絞り込みと変換                                                                                |
+| [src/lib/components/bsky/BskyPostCard.svelte](../../../src/lib/components/bsky/BskyPostCard.svelte) | 操作列と「…」メニュー、長文の「全文を表示」                                                                  |
+| [src/lib/bsky/longPost.ts](../../../src/lib/bsky/longPost.ts)                                       | longPostOf / loadLongPostText（長文の目印と全文の取得）                                                      |
+| [src/lib/components/bsky/BskyComposer.svelte](../../../src/lib/components/bsky/BskyComposer.svelte) | Blueskyへの返信・引用の入力欄                                                                                |
 
 ## 出典と変更時の扱い
 

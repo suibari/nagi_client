@@ -7,8 +7,9 @@ import type {
 	AppBskyEmbedVideo,
 	AppBskyFeedDefs,
 } from '@atproto/api';
-import type { LinkCardView, PostImage, PostVideoView } from '$lib/api/types';
+import type { LinkCardView, PostImage, PostVideoView, StrongRef } from '$lib/api/types';
 import { bskyPostUrl, bskyProfileUrl } from './links';
+import { longPostOf } from './longPost';
 
 /**
  * Bluesky の FeedViewPost を、Nagi の表示部品（ImageGallery / VideoPlayer / LinkCard / Avatar）が
@@ -60,6 +61,8 @@ export type BskyPostCardView = {
 	/** 本人のいいね・リポストのレコード。取り消しに使う。 */
 	viewerLike?: string;
 	viewerRepost?: string;
+	/** 本文が長文の冒頭のとき、全文を持つ Nagi 投稿（BSKY-16）。 */
+	longPost?: StrongRef;
 	/** モデレーション判定にそのまま渡す元のビュー。 */
 	raw: AppBskyFeedDefs.PostView;
 };
@@ -200,6 +203,7 @@ function embedOf(embed: unknown): Media & { quote?: BskyQuote } {
 
 export function toPostCard(post: AppBskyFeedDefs.PostView): BskyPostCardView {
 	const text = recordText(post.record);
+	const longPost = longPostOf(post.record, post.author.did);
 	return {
 		uri: post.uri,
 		url: bskyPostUrl(post.uri),
@@ -213,6 +217,7 @@ export function toPostCard(post: AppBskyFeedDefs.PostView): BskyPostCardView {
 		repostedByMe: Boolean(post.viewer?.repost),
 		viewerLike: post.viewer?.like,
 		viewerRepost: post.viewer?.repost,
+		...(longPost ? { longPost } : {}),
 		raw: post,
 	};
 }

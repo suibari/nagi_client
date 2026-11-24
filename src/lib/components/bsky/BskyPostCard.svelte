@@ -33,6 +33,10 @@
 	import BskyGateDialog from './BskyGateDialog.svelte';
 	import BskyReportDialog from './BskyReportDialog.svelte';
 	import BskyRichText from './BskyRichText.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
+	import { getThread } from '$lib/api/appview';
+	import { loadLongPostText } from '$lib/bsky/longPost';
+	import type { BskyFacet } from '$lib/bsky/mapView';
 
 	/**
 	 * Bluesky の投稿1件。著者・日時・カードは bsky.app を新しいタブで開く。
@@ -66,6 +70,32 @@
 		}),
 	);
 	const nameOf = (actor: BskyActor) => actor.displayName ?? actor.handle;
+
+	// 長文の冒頭なら、Nagi の全文に差し替えて読める（BSKY-16）。取得した人とアカウントが
+	// 変わったら使わない。
+	let fullText = $state<{ uri: string; viewer?: string; text: string; facets?: BskyFacet[] }>();
+	let fullTextState = $state<'idle' | 'loading' | 'failed'>('idle');
+	const shownText = $derived(
+		fullText && fullText.uri === post.uri && fullText.viewer === $session?.did ? fullText : post,
+	);
+	async function showFullText() {
+		const ref = post.longPost;
+		if (!ref || fullTextState === 'loading') return;
+		const uri = post.uri;
+		const viewer = $session?.did;
+		fullTextState = 'loading';
+		try {
+			const result = await loadLongPostText(ref, post.author.did, getThread);
+			if (!result) {
+				fullTextState = 'failed';
+				return;
+			}
+			fullText = { ...result, uri, viewer };
+			fullTextState = 'idle';
+		} catch {
+			fullTextState = 'failed';
+		}
+	}
 	const withWarning = <T extends { contentWarning?: boolean }>(media: T): T => ({
 		...media,
 		contentWarning: display.warnMedia || media.contentWarning,
@@ -212,7 +242,23 @@
 					active={display.warnContent}
 					title={m.bskyModerationWarning()}
 				>
-					{#if post.text}<BskyRichText text={post.text} facets={post.facets} />{/if}
+					{#if shownText.text}<BskyRichText text={shownText.text} facets={shownText.facets} />{/if}
+					{#if post.longPost && shownText === post}
+						<button
+							type="button"
+							class="bsky-full-text"
+							onclick={showFullText}
+							disabled={fullTextState === 'loading'}
+							>{#if fullTextState === 'loading'}<Spinner
+									inline
+									size="sm"
+									decorative
+								/>{/if}{m.bskyShowFullText()}</button
+						>
+						{#if fullTextState === 'failed'}
+							<p class="bsky-full-text-error" role="status">{m.bskyFullTextUnavailable()}</p>
+						{/if}
+					{/if}
 					{#if post.images?.length}<ImageGallery images={post.images.map(withWarning)} />{/if}
 					{#if post.video}<VideoPlayer video={withWarning(post.video)} />{/if}
 					{#if post.external}<LinkCard card={post.external} />{/if}
@@ -456,6 +502,27 @@
 	.bsky-quote-open {
 		margin-left: auto;
 		color: var(--text-mute);
+	}
+	.bsky-full-text {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		margin: 4px 0 0;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--accent);
+		font: inherit;
+		font-size: 13px;
+		cursor: pointer;
+	}
+	.bsky-full-text:disabled {
+		cursor: progress;
+	}
+	.bsky-full-text-error {
+		margin: 4px 0 0;
+		color: var(--text-mute);
+		font-size: 12px;
 	}
 	.bsky-quote-missing {
 		color: var(--text-mute);
