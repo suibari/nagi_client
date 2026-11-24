@@ -6,7 +6,7 @@ Nagiの投稿は最大3000文字まで書けるが、Blueskyへのクロスポ�
 
 Blueskyの長文投稿サービスmochottは、2026-11にこの形を採用した。Bluesky投稿には冒頭だけを書いて末尾を「…もっと見る」のリンクにし、さらに投稿レコードへ全文レコードへの強参照（`site.mochott.longPost`）を入れる。対応クライアント（ZonePane v49など）はこの目印を読んで、その場で全文を展開する。ブログ記事については、Nagiはすでに分割せず1件のティーザーを出している（BLOG-04）。
 
-change [crosspost-after-nagi-save](../crosspost-after-nagi-save/proposal.md) で、BlueskyのコピーはNagi保存後に作る順序になった。コピーを作る時点でNagi投稿のURIとCIDが分かっているので、Bluesky側にNagiのURLと強参照を載せられる。この change では非対象として「別のchangeで扱う」としていた。
+change [crosspost-after-nagi-save](../../crosspost-after-nagi-save/proposal.md) で、BlueskyのコピーはNagi保存後に作る順序になった。コピーを作る時点でNagi投稿のURIとCIDが分かっているので、Bluesky側にNagiのURLと強参照を載せられる。この change では非対象として「別のchangeで扱う」としていた。
 
 ## What Changes
 
