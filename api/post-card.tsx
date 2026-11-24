@@ -1,7 +1,8 @@
 import { ImageResponse } from '@vercel/og';
 import React from 'react';
+import type { PostView } from '../src/lib/api/types.js';
 import { CARD_COLOR, CARD_HEIGHT, CARD_WIDTH } from '../src/lib/card/design.js';
-import { isSafeDid, isSafeRkey } from '../src/lib/og/html.js';
+import { POST_ATTACHMENT_CARD_VERSION, isSafeDid, isSafeRkey } from '../src/lib/og/html.js';
 import {
 	NAGI_ORIGIN,
 	absoluteAvatar,
@@ -17,8 +18,9 @@ import {
 	type OgpProfile,
 } from './_ogp.js';
 import { prepareOgpAvatar } from './_profile-card-image.js';
+import { fetchPostCardMedia } from './_post-card-media.js';
 
-type ThreadPost = {
+type ThreadPost = Pick<PostView, 'images' | 'video'> & {
 	uri: string;
 	text: string;
 	author: Pick<OgpProfile, 'did' | 'handle' | 'displayName' | 'avatar'>;
@@ -52,6 +54,20 @@ const isPrivate = (post: ThreadPost) =>
 		post.moderationLabels?.length,
 	);
 
+async function attachmentImage(post: ThreadPost) {
+	const budget = AbortSignal.timeout(4_000);
+	for (const image of post.images ?? []) {
+		if (budget.aborted) return;
+		if (image.contentWarning) continue;
+		const media = await fetchPostCardMedia(image.url, 'image', budget);
+		if (media) return media;
+	}
+	const video = post.video;
+	if (video?.thumbnail && !video.contentWarning && !budget.aborted) {
+		return fetchPostCardMedia(video.thumbnail, 'video', budget);
+	}
+}
+
 /** `:bottan-nagi:` のような絵文字ショートコードは画像にできないので落とす。 */
 const plain = (text: string) => text.replace(/:[a-z][a-z0-9_+-]*:/gi, '');
 
@@ -75,7 +91,7 @@ function blogTitle(text: string) {
 	return flatten(plain(title).replace(/[*_~`]/g, ''), 80);
 }
 
-async function getPost(did: string, rkey: string, kind: 'post' | 'blog') {
+async function getPost(did: string, rkey: string, kind: 'post' | 'blog', cache?: RequestCache) {
 	const collections =
 		kind === 'blog'
 			? ['site.standard.document', 'com.suibari.nagi.post']
@@ -86,6 +102,7 @@ async function getPost(did: string, rkey: string, kind: 'post' | 'blog') {
 		try {
 			const body = await appViewJson<{ thread?: { post?: ThreadPost } }>(
 				`/xrpc/com.suibari.nagi.getThread?uri=${encodeURIComponent(uri)}`,
+				cache,
 			);
 			if (body.thread?.post) return body.thread.post;
 		} catch (error) {
@@ -100,18 +117,29 @@ export default async function handler(request: FunctionRequest, response: ImageF
 	const did = first(request.query.did);
 	const rkey = first(request.query.rkey);
 	const kind = first(request.query.kind) === 'blog' ? 'blog' : 'post';
+	const useAttachments = kind === 'post' && first(request.query.v) === POST_ATTACHMENT_CARD_VERSION;
+	if (useAttachments) response.setHeader('Cache-Control', 'no-store');
 	if (!isSafeDid(did) || !isSafeRkey(rkey)) return fallback(response);
 
 	try {
-		const post = await getPost(did, rkey, kind);
+		const post = await getPost(did, rkey, kind, useAttachments ? 'no-store' : undefined);
 		if (kind === 'blog' && (post.deleted || !post.article)) return fallback(response);
 		// こっそり投稿は誰が書いたかも外へ出さず、サイト共通の画像に倒す。
 		if (post.kossori || post.threadKossori) return fallback(response);
+		const isBlog = kind === 'blog' || post.article === true;
+		const hidden = isPrivate(post);
+		if (useAttachments && !isBlog && !hidden) {
+			const media = await attachmentImage(post);
+			if (media) {
+				response.setHeader('Content-Type', media.contentType);
+				response.setHeader('X-Content-Type-Options', 'nosniff');
+				response.status(200);
+				return response.end(request.method === 'HEAD' ? undefined : media.bytes);
+			}
+		}
 		const profile = await getProfile(post.author.did).catch(() => post.author as OgpProfile);
 		const avatar = await prepareOgpAvatar(absoluteAvatar(profile.avatar));
 		const tags = (profile.tags ?? []).slice(0, 3);
-		const isBlog = kind === 'blog' || post.article === true;
-		const hidden = isPrivate(post);
 		const headline = hidden
 			? isBlog
 				? 'Nagiのブログ'
@@ -292,7 +320,9 @@ export default async function handler(request: FunctionRequest, response: ImageF
 				height: CARD_HEIGHT,
 				fonts,
 				headers: {
-					'cache-control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+					'cache-control': useAttachments
+						? 'no-store'
+						: 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
 					'Content-Disposition': `inline; filename="nagi-${kind}-${encodeURIComponent(rkey)}.png"`,
 				},
 			},
