@@ -58,6 +58,8 @@ let timeline: unknown[];
 let threadMissing: boolean;
 let otherRequests: string[];
 let procedures: { method: string; body: unknown; proxy: string | null }[];
+let nagiThreadRequests: string[];
+let nagiThread: unknown;
 
 test.beforeEach(async ({ page }) => {
 	writes = [];
@@ -66,6 +68,8 @@ test.beforeEach(async ({ page }) => {
 	threadMissing = false;
 	otherRequests = [];
 	procedures = [];
+	nagiThreadRequests = [];
+	nagiThread = undefined;
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.route('**/xrpc/**', async (route) => {
 		const method = new URL(route.request().url()).pathname.split('/').pop() ?? '';
@@ -95,6 +99,12 @@ test.beforeEach(async ({ page }) => {
 			return route.fulfill({ json: { preferences: [] } });
 		if (method === 'app.bsky.labeler.getServices') return route.fulfill({ json: { views: [] } });
 		if (method === 'app.bsky.feed.getTimeline') return route.fulfill({ json: { feed: timeline } });
+		if (method === 'com.suibari.nagi.getThread') {
+			nagiThreadRequests.push(new URL(route.request().url()).searchParams.get('uri') ?? '');
+			if (!nagiThread)
+				return route.fulfill({ status: 404, json: { error: 'NotFound', message: 'gone' } });
+			return route.fulfill({ json: { thread: { post: nagiThread, replies: [] } } });
+		}
 		if (method === 'app.bsky.feed.getPostThread') {
 			const uri = new URL(route.request().url()).searchParams.get('uri');
 			return route.fulfill({
@@ -442,4 +452,67 @@ test('shows links and mentions in Bluesky posts the same way as in Nagi', async 
 	await expect(links).toHaveCount(2);
 	await expect(links.first()).toHaveText('@friend.test');
 	await expect(links.nth(1)).toHaveAttribute('href', 'https://example.com/');
+});
+
+const AUTHOR = 'did:plc:interaction-author';
+const nagiUri = `at://${AUTHOR}/com.suibari.nagi.post/3klong`;
+const longPost = {
+	...post,
+	uri: `at://${AUTHOR}/app.bsky.feed.post/long`,
+	record: {
+		...post.record,
+		text: '長い投稿の冒頭…もっと見る',
+		'com.suibari.nagi.longPost': { uri: nagiUri, cid: 'cid-at-crosspost' },
+	},
+};
+
+test('shows the full text of a long crosspost from Nagi in place', async ({ page }) => {
+	timeline = [{ post: longPost }];
+	nagiThread = {
+		uri: nagiUri,
+		cid: 'cid-after-link',
+		author: { did: AUTHOR, handle: 'author.test' },
+		text: '長い投稿の冒頭から最後までの全文',
+		createdAt: '2026-11-21T00:00:00Z',
+		indexedAt: '2026-11-21T00:00:00Z',
+		reactions: [],
+		isBot: false,
+		isAffirmation: false,
+	};
+	await signIn(page);
+	await expect(card(page)).toContainText('長い投稿の冒頭…もっと見る');
+	await card(page).getByRole('button', { name: '全文を表示' }).click();
+	await expect(card(page)).toContainText('長い投稿の冒頭から最後までの全文');
+	await expect(card(page).getByRole('button', { name: '全文を表示' })).toHaveCount(0);
+	await expect(card(page)).not.toContainText('編集済み');
+	// Nagi AppView へ渡すのは Nagi 投稿の URI だけ。
+	expect(nagiThreadRequests).toEqual([nagiUri]);
+});
+
+test('keeps the opening and says so when the full text cannot be shown', async ({ page }) => {
+	timeline = [{ post: longPost }];
+	await signIn(page);
+	await card(page).getByRole('button', { name: '全文を表示' }).click();
+	await expect(card(page).getByRole('status')).toHaveText('全文を表示できませんでした');
+	await expect(card(page)).toContainText('長い投稿の冒頭…もっと見る');
+});
+
+test("ignores a marker pointing at someone else's Nagi post", async ({ page }) => {
+	timeline = [
+		{
+			post: {
+				...longPost,
+				record: {
+					...longPost.record,
+					'com.suibari.nagi.longPost': {
+						uri: 'at://did:plc:someone-else/com.suibari.nagi.post/3k',
+						cid: 'c',
+					},
+				},
+			},
+		},
+	];
+	await signIn(page);
+	await expect(card(page)).toContainText('長い投稿の冒頭…もっと見る');
+	await expect(card(page).getByRole('button', { name: '全文を表示' })).toHaveCount(0);
 });

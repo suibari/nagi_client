@@ -1191,6 +1191,8 @@ export const en: Messages = {
 	bskyFeedUrlHint: 'Paste the URL of the feed as shown when you open it on Bluesky.',
 	bskyFeedNotFound: 'Could not find that feed',
 	bskyOpenInBluesky: 'Open in Bluesky',
+	bskyShowFullText: 'Show full text',
+	bskyFullTextUnavailable: 'Could not show the full text',
 	bskyOpenFeedInBluesky: 'Open this feed in Bluesky',
 	bskyRepostedBy: (p: { name: string }) => `Reposted by ${p.name}`,
 	bskyReplyTo: (p: { name: string }) => `Replying to ${p.name}`,

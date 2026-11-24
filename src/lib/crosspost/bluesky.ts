@@ -6,6 +6,7 @@ import type { PostAssets, PostDraft } from '$lib/atproto/records';
 import type { StrongRef } from '$lib/api/types';
 import { BLUESKY_MEDIA_BLUR_LABELS, crosspostContentWarningBlock } from './content-warning';
 import { loadQuoteLinkCard } from './quote-link';
+import { LONG_POST_FIELD } from '$lib/bsky/longPost';
 
 const BSKY_POST = 'app.bsky.feed.post';
 /** Bluesky の投稿上限。app.bsky.feed.post#text の maxGraphemes / maxLength。 */
@@ -175,8 +176,11 @@ function appendLink(text: string, facets: Facet[], uri: string) {
 	};
 }
 
-/** 長い本文の続きを置く Nagi の投稿ページと、そこへのリンクにする文言（BSKY-05）。 */
-export type CrosspostContinuation = { url: string; label: string };
+/**
+ * 長い本文の続きを置く Nagi の投稿ページと、そこへのリンクにする文言（BSKY-05）。
+ * post は省略したときに長文の目印（BSKY-16）として入れる、保存直後の Nagi 投稿。
+ */
+export type CrosspostContinuation = { url: string; label: string; post?: StrongRef };
 
 const ELLIPSIS = '…';
 
@@ -334,7 +338,13 @@ export async function crosspostToBluesky(
 					return response.data.blob;
 				})
 		: undefined;
-	const { chunks, embed } = prepareCrosspostContent(draft, assets, quoteCard, continuation);
+	const { chunks, embed, truncated } = prepareCrosspostContent(
+		draft,
+		assets,
+		quoteCard,
+		continuation,
+	);
+	const longPost = truncated && continuation?.post ? continuation.post : undefined;
 	const firstEmbed = withQuote(embed, target.quote);
 	if (!chunks.length && firstEmbed) chunks.push({ text: '', facets: [] });
 	if (!chunks.length) return;
@@ -366,6 +376,7 @@ export async function crosspostToBluesky(
 						: {}),
 					createdAt: new Date(base + index).toISOString(),
 					via: VIA,
+					...(longPost ? { [LONG_POST_FIELD]: { uri: longPost.uri, cid: longPost.cid } } : {}),
 					...(index === 0 && firstEmbed ? { embed: firstEmbed } : {}),
 					...(replyRoot && parent ? { reply: { root: replyRoot, parent } } : {}),
 				},

@@ -88,6 +88,14 @@
 
 **理由と制約**：Nagi投稿へのリンクカード（external）にする案は、Blueskyでexternalと画像・動画・引用を同時に付けられないため採らなかった。本文中のリンクなら既存の埋め込みと衝突しない。既に分割で作られたコピー（`crosspost`の`root`と`tail`が違う）は、返信・引用・削除で従来どおり扱う。
 
+### D11: 長文の目印はmochottと同じ形で、省略したときだけ書く
+
+**課題**：D10のリンクは人には十分だが、プログラムからはBluesky投稿が長文の冒頭かどうか、全文がどのレコードかを確実に知る手段が無い。本文のURLを解析すると、ドメインやURLの形が変わったときに壊れる。
+
+**採用判断**：本文を省略したコピーのレコードに、追加フィールド`com.suibari.nagi.longPost`でNagi投稿への強参照を入れる。形と意味はmochottの`site.mochott.longPost`に揃え、lexiconはbsky-affirmative-botの`packages/nagi-lexicon`で公開する。全文が載っているコピーには入れない。Blueskyタブは、投稿者と同じリポジトリの`com.suibari.nagi.post`を指す目印にだけ「全文を表示」を出し、押されたらNagi AppViewから取得してその場で差し替える。こっそり・削除済み・CW・モデレーションの対象など、Nagiがそのまま見せない投稿は取得できなかった扱いにする。
+
+**理由と制約**：コピーを作った後でNagi投稿へ`crosspost`を追記する（D4）ため、目印の`cid`は必ず1つ古い。`cid`を任意にする案はmochottの形から外れるので採らず、lexiconに「クロスポストした時点の版」と明記した。Nagiは版の違いを編集済みとは扱わない（AppViewの判定はAPI-09）。Nagi AppViewへ渡すのはNagi投稿のURIだけで、BlueskyのURIは渡さない（D1）。botたんの定期ポストも同じ目印を書く（bsky-affirmative-bot側、2026-11-25）。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
@@ -105,7 +113,8 @@
 | [src/lib/bsky/compose.ts](../../../src/lib/bsky/compose.ts)                                         | Blueskyにだけ投稿する返信・引用                                                                              |
 | [src/lib/bsky/gates.ts](../../../src/lib/bsky/gates.ts)                                             | threadgate／postgateの組み立てと読み取り                                                                     |
 | [src/lib/bsky/notifications.ts](../../../src/lib/bsky/notifications.ts)                             | Blueskyの通知の絞り込みと変換                                                                                |
-| [src/lib/components/bsky/BskyPostCard.svelte](../../../src/lib/components/bsky/BskyPostCard.svelte) | 操作列と「…」メニュー                                                                                        |
+| [src/lib/components/bsky/BskyPostCard.svelte](../../../src/lib/components/bsky/BskyPostCard.svelte) | 操作列と「…」メニュー、長文の「全文を表示」                                                                  |
+| [src/lib/bsky/longPost.ts](../../../src/lib/bsky/longPost.ts)                                       | longPostOf / loadLongPostText（長文の目印と全文の取得）                                                      |
 | [src/lib/components/bsky/BskyComposer.svelte](../../../src/lib/components/bsky/BskyComposer.svelte) | Blueskyへの返信・引用の入力欄                                                                                |
 
 ## 出典と変更時の扱い

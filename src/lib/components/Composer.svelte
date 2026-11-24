@@ -1083,7 +1083,13 @@
 			if (!draft.kossori) await ensureRecord(created.uri, created.cid).catch(() => undefined);
 			if (wantsCrosspost && !article && !draft.kossori && !crosspostDraftBlock(draft))
 				warning =
-					(await crosspostAfterPost(draft, assets, target, created.uri, bskyGates)) ?? warning;
+					(await crosspostAfterPost(
+						draft,
+						assets,
+						target,
+						{ uri: created.uri, cid: created.cid },
+						bskyGates,
+					)) ?? warning;
 			const rkey = created.uri.slice(created.uri.lastIndexOf('/') + 1);
 			// 記事の canonical URL。standard.site の document.path と同じ組み立て方。
 			const articleUrl = `${NAGI_PUBLIC_ORIGIN}/blog/${$session.did}/${rkey}`;

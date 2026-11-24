@@ -143,6 +143,7 @@ test('a reply to your own crosspost continues the Bluesky thread', async ({ page
 	expect(created[0]).toMatchObject({ method: 'create', collection: 'com.suibari.nagi.post' });
 	expect(created[0].record?.crosspost).toBeUndefined();
 	expect(created[1]).toMatchObject({ method: 'create', collection: 'app.bsky.feed.post' });
+	expect(created[1].record?.['com.suibari.nagi.longPost']).toBeUndefined();
 	expect(created[1].record?.reply).toEqual({
 		root: { uri: `at://${did}/app.bsky.feed.post/root`, cid: 'cid-root' },
 		parent: { uri: `at://${did}/app.bsky.feed.post/tail`, cid: 'cid-tail' },
@@ -201,6 +202,10 @@ test('a long post becomes one Bluesky copy that links to the rest on Nagi', asyn
 	expect(record.facets.at(-1)?.features[0].uri).toBe(`https://nagi.suibari.com/thread/${did}/new1`);
 	const copy = { uri: `at://${did}/app.bsky.feed.post/new2`, cid };
 	expect(created[2].record?.crosspost).toMatchObject({ root: copy, tail: copy });
+	expect(created[1].record?.['com.suibari.nagi.longPost']).toEqual({
+		uri: `at://${did}/com.suibari.nagi.post/new1`,
+		cid,
+	});
 });
 
 test('a failed Bluesky copy keeps the Nagi post and warns', async ({ page }) => {

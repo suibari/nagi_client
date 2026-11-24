@@ -1226,6 +1226,8 @@ export const ja = {
 	bskyFeedUrlHint: 'Blueskyでフィードを開いたときのURLを貼り付けてください。',
 	bskyFeedNotFound: 'フィードが見つかりませんでした',
 	bskyOpenInBluesky: 'Blueskyで開く',
+	bskyShowFullText: '全文を表示',
+	bskyFullTextUnavailable: '全文を表示できませんでした',
 	bskyOpenFeedInBluesky: 'このフィードをBlueskyで開く',
 	bskyRepostedBy: (p: { name: string }) => `${p.name}さんがリポスト`,
 	bskyReplyTo: (p: { name: string }) => `${p.name}さんへの返信`,

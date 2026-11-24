@@ -26,6 +26,7 @@ BlueskyとNagiを併用する利用者が、Blueskyの投稿をタブで読み�
 | ブックマーク          | Bluesky側に保存し、Nagiの画面でも一覧する。                  | [BSKY-13](#bsky-13)                       |
 | 通報                  | Blueskyのモデレーションへ通報する。                          | [BSKY-14](#bsky-14)                       |
 | Pushのための受信      | BlueskyのPushのためだけにAppViewが公開された操作を受信する。 | [BSKY-15](#bsky-15)                       |
+| 長文の目印            | 省略したコピーに全文の目印を付け、Blueskyタブで全文を出す。  | [BSKY-16](#bsky-16)                       |
 
 ### 主な利用の流れ
 
@@ -392,6 +393,44 @@ BSKY-01の例外として、Nagi AppViewはBlueskyの通知のPush（NOTIFY-08�
 
 - **WHEN** Pushを有効にしていない利用者宛ての返信をJetstreamから受け取る
 - **THEN** 何も取得・配信しない
+
+<a id="bsky-16"></a>
+
+### Requirement: BSKY-16 長文の目印
+
+BSKY-05で本文を省略したBlueskyコピーには、レコードの追加フィールド`com.suibari.nagi.longPost`に、全文を持つNagi投稿への強参照（`uri`と`cid`）を入れなければならない（MUST）。`cid`はコピーを作るときに参照したNagi投稿の版とする。全文をBlueskyに載せたコピーには入れてはならない（MUST NOT）。
+
+NagiのBlueskyタブは、投稿者と同じリポジトリの`com.suibari.nagi.post`を指す目印を持つ投稿に「全文を表示」を出さなければならない（MUST）。押したらNagi AppViewからNagi投稿を取得し、その場で全文を表示する。Nagi AppViewへ渡すのはNagi投稿のURIだけとする（BSKY-01）。目印のDIDが投稿者と違う、参照先が`com.suibari.nagi.post`でない、形が壊れている場合は目印を無視する。目印の`cid`と取得したNagi投稿の版が違っても、編集済みとは表示しない。
+
+#### Scenario: 長い投稿の目印
+
+- **WHEN** 本文を省略してBlueskyにクロスポストする
+- **THEN** コピーのレコードに、Nagi投稿のURIとコピー作成時のCIDを`com.suibari.nagi.longPost`として入れる
+
+#### Scenario: 短い投稿
+
+- **WHEN** 全文がBlueskyに収まる投稿をクロスポストする
+- **THEN** 目印を入れない
+
+#### Scenario: Blueskyタブで全文を表示
+
+- **WHEN** Blueskyタブで目印を持つ投稿の「全文を表示」を押す
+- **THEN** Nagi投稿の本文とリンクをその場に表示する
+
+#### Scenario: 全文を取得できない
+
+- **WHEN** Nagi投稿が削除されている、または表示できない状態で「全文を表示」を押す
+- **THEN** 冒頭の表示のまま全文を表示できなかったことを伝え、「もっと見る」のリンクは残す
+
+#### Scenario: 他人のリポジトリを指す目印
+
+- **WHEN** 目印が投稿者と違うDIDのNagi投稿を指している
+- **THEN** 目印を無視し、「全文を表示」を出さない
+
+#### Scenario: 参照追記で版が進んだ
+
+- **WHEN** 目印の`cid`と、取得したNagi投稿の現在の版が違う
+- **THEN** 全文を表示し、編集済みの表示はしない
 
 ## 参照資料
 

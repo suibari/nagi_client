@@ -31,12 +31,13 @@ const { crosspostAfterPost } = await import('./after-post');
 const draft = { text: 'hi' } as PostDraft;
 const assets = { images: [], cards: [] } as PostAssets;
 const uri = 'at://did:plc:me/com.suibari.nagi.post/3mpost';
+const saved = { uri, cid: 'nagi-cid' };
 const ref = {
 	root: { uri: 'r', cid: 'r' },
 	tail: { uri: 't', cid: 't' },
 	threadRoot: { uri: 'r', cid: 'r' },
 };
-const run = () => crosspostAfterPost(draft, assets, {}, uri);
+const run = () => crosspostAfterPost(draft, assets, {}, saved);
 
 beforeEach(() => {
 	mocks.enabled = true;
@@ -66,7 +67,7 @@ describe('crosspostAfterPost', () => {
 		expect(mocks.attach).not.toHaveBeenCalled();
 	});
 
-	it('links the rest of a long post to its Nagi thread page', async () => {
+	it('links the rest of a long post to its Nagi thread page and marks the saved post', async () => {
 		await run();
 		expect(mocks.crosspost).toHaveBeenCalledWith(
 			draft,
@@ -75,6 +76,7 @@ describe('crosspostAfterPost', () => {
 			{
 				url: 'https://nagi.suibari.com/thread/did:plc:me/3mpost',
 				label: 'もっと見る',
+				post: saved,
 			},
 		);
 	});
@@ -86,10 +88,10 @@ describe('crosspostAfterPost', () => {
 
 	it('applies reply and quote settings to the copy, limiting replies only on a thread root', async () => {
 		const gates = { reply: 'following' as const, allowQuote: false };
-		expect(await crosspostAfterPost(draft, assets, {}, uri, gates)).toBeUndefined();
+		expect(await crosspostAfterPost(draft, assets, {}, saved, gates)).toBeUndefined();
 		expect(mocks.gates).toHaveBeenCalledWith({ replyRoot: 'r', posts: ['r', 't'] }, gates);
 		const reply = { root: { uri: 'x', cid: 'x' }, parent: { uri: 'y', cid: 'y' } };
-		await crosspostAfterPost(draft, assets, { reply }, uri, gates);
+		await crosspostAfterPost(draft, assets, { reply }, saved, gates);
 		expect(mocks.gates).toHaveBeenLastCalledWith(
 			{ replyRoot: undefined, posts: ['r', 't'] },
 			gates,
@@ -99,7 +101,7 @@ describe('crosspostAfterPost', () => {
 	it('keeps the posts and warns when the settings cannot be applied', async () => {
 		mocks.gates.mockRejectedValue(new Error('down'));
 		expect(
-			await crosspostAfterPost(draft, assets, {}, uri, { reply: 'nobody', allowQuote: true }),
+			await crosspostAfterPost(draft, assets, {}, saved, { reply: 'nobody', allowQuote: true }),
 		).toBe('gates');
 		expect(mocks.attach).toHaveBeenCalled();
 	});

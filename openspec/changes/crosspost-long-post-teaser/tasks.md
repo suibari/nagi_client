@@ -15,21 +15,23 @@
 
 ## 2. フェーズ2-a：lexicon（bsky-affirmative-bot 1コミット）
 
-- [ ] 2.1 `packages/nagi-lexicon/lexicons/com/suibari/nagi/longPost.json`を追加する（`uri`・`cid`必須の`object`。同じリポジトリに限ること、`cid`はクロスポストした時点の版であることを説明に書く）。型とスキーマのテストを追加する
+- [x] 2.1 `packages/nagi-lexicon/lexicons/com/suibari/nagi/longPost.json`を追加する（`uri`・`cid`必須の`object`。同じリポジトリに限ること、`cid`はクロスポストした時点の版であることを説明に書く）。型とスキーマのテストを追加する
 - [ ] 2.2 `com.atproto.lexicon.schema/com.suibari.nagi.longPost`を公開する。bsky-affirmative-botの`scripts/deploy.sh`が、`packages/nagi-lexicon/lexicons/`に差分があるデプロイで`lex:publish`を実行するので、2.1のデプロイで公開される。公開後に`com.atproto.repo.getRecord`で取得できることを確かめる
 
 ## 3. フェーズ2-b：目印の書き込みと読み取り（クライアント1コミット）
 
-- [ ] 3.1 1.1で省略したときだけ、コピーのレコードに`com.suibari.nagi.longPost`（Nagi投稿のURIと、保存直後のCID）を入れる。ComposerからCIDを渡す
-- [ ] 3.2 `bsky/mapView.ts`で目印を表示型へ取り込む。同じDIDの`com.suibari.nagi.post`以外は捨てる
-- [ ] 3.3 `BskyPostCard.svelte`に「全文を表示」を追加する。`getThread`で取得して本文とfacetを差し替え、取得中はスピナーを出す。取得できない・隠れた状態なら冒頭のまま伝える。アカウント切替で取得結果を捨てる
-- [ ] 3.4 単体テスト：省略したときだけ目印が入る、DID違い・コレクション違い・壊れた形は無視、取得失敗で冒頭に戻る、CIDの違いで編集済みにしない
-- [ ] 3.5 `pnpm test`・`pnpm check`・e2eを通す
+- [x] 3.1 1.1で省略したときだけ、コピーのレコードに`com.suibari.nagi.longPost`（Nagi投稿のURIと、保存直後のCID）を入れる。ComposerからCIDを渡す
+- [x] 3.2 `bsky/mapView.ts`で目印を表示型へ取り込む。同じDIDの`com.suibari.nagi.post`以外は捨てる
+- [x] 3.3 `BskyPostCard.svelte`に「全文を表示」を追加する。`getThread`で取得して本文とfacetを差し替え、取得中はスピナーを出す。取得できない・隠れた状態なら冒頭のまま伝える。アカウント切替で取得結果を捨てる
+- [x] 3.4 単体テスト：省略したときだけ目印が入る、DID違い・コレクション違い・壊れた形は無視、取得失敗で冒頭に戻る、CIDの違いで編集済みにしない
+- [x] 3.5 `pnpm test`・`pnpm check`・e2eを通す
+
+実施メモ（フェーズ2）：2.1はbsky-affirmative-botでコミット済み（`d735919e`）。2.2はデプロイ時に`deploy.sh`が公開するので、本番反映後に`getRecord`で確認する（未実施）。3.3のe2eを`bsky-interactions.spec.ts`に足した。3.5は、`pnpm test`が全件成功、`pnpm check`は変更前からある23件だけ。e2eは216件中209件成功で、失敗7件のうちchronicleとguest-heroの6件は変更前から起きるもの、feed-interactionsのスワイプ1件は単独実行では成功した。
 
 ## 4. 仕様書の同期
 
-フェーズ1で変わったBSKY-05・BSKY-06、機能一覧、利用の流れ、design.mdのD10と実装の入口は、フェーズ1のコミットで同期済み。BSKY-16はフェーズ2-bで同期する。
+フェーズ1で変わったBSKY-05・BSKY-06、機能一覧、利用の流れ、design.mdのD10と実装の入口は、フェーズ1のコミットで同期済み。BSKY-16とD11はフェーズ2-bのコミットで同期した。known-gaps.mdに関係する記述は無かった。
 
-- [ ] 4.1 主仕様（BSKY-05・BSKY-06・BSKY-16）、機能一覧と利用の流れ、`bluesky-integration/design.md`（冒頭＋続きの判断と目印の判断、実装の入口）を実装と一致させる
-- [ ] 4.2 `known-gaps.md`に関係する記述があれば更新する
-- [ ] 4.3 `npx --yes @fission-ai/openspec@1.17.0 validate --all --strict --no-interactive`と`node openspec/tools/comment-catalog.mjs --check`を通す
+- [x] 4.1 主仕様（BSKY-05・BSKY-06・BSKY-16）、機能一覧と利用の流れ、`bluesky-integration/design.md`（冒頭＋続きの判断と目印の判断、実装の入口）を実装と一致させる
+- [x] 4.2 `known-gaps.md`に関係する記述があれば更新する
+- [x] 4.3 `npx --yes @fission-ai/openspec@1.17.0 validate --all --strict --no-interactive`と`node openspec/tools/comment-catalog.mjs --check`を通す
