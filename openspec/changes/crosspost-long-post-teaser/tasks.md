@@ -16,7 +16,7 @@
 ## 2. フェーズ2-a：lexicon（bsky-affirmative-bot 1コミット）
 
 - [x] 2.1 `packages/nagi-lexicon/lexicons/com/suibari/nagi/longPost.json`を追加する（`uri`・`cid`必須の`object`。同じリポジトリに限ること、`cid`はクロスポストした時点の版であることを説明に書く）。型とスキーマのテストを追加する
-- [ ] 2.2 `com.atproto.lexicon.schema/com.suibari.nagi.longPost`を公開する。bsky-affirmative-botの`scripts/deploy.sh`が、`packages/nagi-lexicon/lexicons/`に差分があるデプロイで`lex:publish`を実行するので、2.1のデプロイで公開される。公開後に`com.atproto.repo.getRecord`で取得できることを確かめる
+- [x] 2.2 `com.atproto.lexicon.schema/com.suibari.nagi.longPost`を公開する。bsky-affirmative-botの`scripts/deploy.sh`が、`packages/nagi-lexicon/lexicons/`に差分があるデプロイで`lex:publish`を実行するので、2.1のデプロイで公開される。公開後に`com.atproto.repo.getRecord`で取得できることを確かめる
 
 ## 3. フェーズ2-b：目印の書き込みと読み取り（クライアント1コミット）
 
@@ -26,7 +26,7 @@
 - [x] 3.4 単体テスト：省略したときだけ目印が入る、DID違い・コレクション違い・壊れた形は無視、取得失敗で冒頭に戻る、CIDの違いで編集済みにしない
 - [x] 3.5 `pnpm test`・`pnpm check`・e2eを通す
 
-実施メモ（フェーズ2）：2.1はbsky-affirmative-botでコミット済み（`d735919e`）。2.2はデプロイ時に`deploy.sh`が公開するので、本番反映後に`getRecord`で確認する（未実施）。3.3のe2eを`bsky-interactions.spec.ts`に足した。3.5は、`pnpm test`が全件成功、`pnpm check`は変更前からある23件だけ。e2eは216件中209件成功で、失敗7件のうちchronicleとguest-heroの6件は変更前から起きるもの、feed-interactionsのスワイプ1件は単独実行では成功した。
+実施メモ（フェーズ2）：2.1はbsky-affirmative-botでコミット済み（`d735919e`）。2.2は2026-11-25のバックエンドのデプロイで公開され、`com.atproto.repo.getRecord`で`com.suibari.nagi.longPost`（`uri`・`cid`必須）を取得できることを確かめた。3.3のe2eを`bsky-interactions.spec.ts`に足した。3.5は、`pnpm test`が全件成功、`pnpm check`は変更前からある23件だけ。e2eは216件中209件成功で、失敗7件のうちchronicleとguest-heroの6件は変更前から起きるもの、feed-interactionsのスワイプ1件は単独実行では成功した。
 
 ## 4. 仕様書の同期
 
