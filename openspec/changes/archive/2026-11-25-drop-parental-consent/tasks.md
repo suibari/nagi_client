@@ -5,7 +5,7 @@
 - [x] 1.1 `declareBirthDate` から18歳未満の保護者同意の検証を外し、`parental_consent_at` を書かない。関連テストを更新する
 - [x] 1.2 lexiconの型の `parentalConsent` の説明を、受け付けるが使わない旨に改める
 - [x] 1.3 （Open Questionsの決定による）既存の `parental_consent_at` を消すマイグレーションを追加する
-- [ ] 1.4 AppViewを公開する
+- [x] 1.4 AppViewを公開する
 
 ## 2. クライアント
 
@@ -24,7 +24,8 @@
 
 ## Workflow follow-up
 
-- AppViewの変更は `bsky-affirmative-bot` の `suibari/drop-parental-consent` ブランチ。1.3は手動適用用のSQL（`0106_nagi_drop_parental_consent.sql`）として記録した。本番DBへの適用と1.4の公開は運営者が行う。
+- AppViewの変更は [PR #181](https://github.com/suibari/bot-tan-core/pull/181) でマージ済み。実装コミット `a721b9e1` は、[2026-11-25のバックエンドの本番デプロイ](../2026-11-25-crosspost-long-post-teaser/tasks.md) に含まれる `d735919e` の祖先であることを確認した。デプロイスクリプトは共有パッケージに差分があるとAppViewを再起動してからlexiconを公開する。
+- 1.3のSQL（`0106_nagi_drop_parental_consent.sql`）は手動適用用。通常のデプロイでは実行されず、本番DBへの適用有無は未確認。作業は運営者が扱う。本番アカウントでの生年月日の申告も未検証。
 - AppViewの検証削除は既存の純粋関数テストとビルドで確認した。DBを通す申告のテストは追加していない。
 - 主仕様（AUTH-07、MOD-01）とdesign.md（moderation-privacy D1a）は実装と同時に手で同期済み。archiveは `archive --skip-specs` で行う。
 - `pnpm check` は `@types/node` が無い環境由来の既存エラーで失敗する（追加テストの `node:fs` で1件増えて20件）。

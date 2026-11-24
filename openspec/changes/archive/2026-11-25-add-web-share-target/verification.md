@@ -28,3 +28,7 @@
 - 実機の外部アプリのOS共有一覧からNagiを選択する確認は未実施。インストール済みPWA、新manifest/SWの反映、対象OS/ブラウザの対応が必要。PlaywrightのPOST送信とOS共有一覧への表示確認は区別する。
 - 本番のOAuthサーバーとの往復、Vercel上での配信、デプロイ、AppView・bot・lexiconの外部実装は未検証。認証はモックで確認し、追加scope・サーバー契約変更は行っていない。
 - Orcaのデスクトップブラウザからこの実行環境の127.0.0.1へは接続できず、LANのHTTP URLではOAuthライブラリが要求するsecure contextを満たさなかった。画面操作はプロジェクト既存のPlaywright/Chromiumのループバック環境で検証した。
+
+## 本番配信の確認（2026-11-25）
+
+- 本番のmanifestから共有先のmultipart POST、テキスト・URL・画像の設定を取得した。配信中のService Workerに受信パスと共有用IndexedDBの名前が含まれることも確認した。実機のOS共有一覧と本番OAuth経由の取り込みは未検証。

@@ -5,7 +5,7 @@
 動機は [proposal.md](proposal.md) のWhyを参照する。
 
 - 現行のクロスポストは、本文を300graphemes・3000bytesごとに分割し、2件目以降を直前の投稿への返信としてつなぐ（BSKY-05）。Bluesky投稿への返信・引用（BSKY-09）も同じ組み立てを使う。
-- コピーはNagi保存後に作り、その強参照をNagi投稿の`crosspost`へ追記する（BSKY-06、[crosspost-after-nagi-save](../../crosspost-after-nagi-save/design.md)）。追記の時点でNagi投稿のCIDは変わる。AppViewはこの追記を編集とみなさない（API-09）。
+- コピーはNagi保存後に作り、その強参照をNagi投稿の`crosspost`へ追記する（BSKY-06、[crosspost-after-nagi-save](../2026-11-25-crosspost-after-nagi-save/design.md)）。追記の時点でNagi投稿のCIDは変わる。AppViewはこの追記を編集とみなさない（API-09）。
 - ブログ記事は分割せず、投稿通知と記事のリンクカードを1件だけ出している（BLOG-04）。
 - mochottの実装（2026-11-24に公開レコードで確認）：
   - ZonePane v49から投稿された`app.bsky.feed.post`は、本文が冒頭＋`…もっと見る`で終わり、「もっと見る」に`https://mochott.site/{handle}/{rkey}`へのlink facetが付いていた。embedは通常の`app.bsky.embed.external`だった。

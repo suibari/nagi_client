@@ -24,5 +24,6 @@
 
 ## Workflow follow-up
 
-- 主仕様（BSKY-06・API-09）は実装と同時に手で同期済み。本番での動作確認は行わない方針とし、クライアントの本番反映後に `archive --skip-specs` でarchiveする。
+- 主仕様（BSKY-06・API-09）は実装と同時に同期済み。クライアントの変更は2026-11-25に本番反映済みと記録された長文クロスポストの実装に含まれることをコミット履歴で確認した。本番での投稿操作は実施していない。 [本番反映の記録](https://github.com/suibari/nagi_client/commit/246c3b226f2d197891c20fed1ae94f5e65748961)
+- BSKY-06の権限と分割投稿に関する記述は、後続の [Bluesky操作](../2026-11-22-bluesky-interactions/proposal.md) と長文クロスポストのchangeで更新済み。
 - 実装中に、投稿成功後の警告がモーダルと一緒に閉じて見えない既存の不具合を見つけた。BSKY-06の「警告で伝える」を満たすため、投稿完了の案内（PostFollowNotice）に警告を載せるよう直した。
