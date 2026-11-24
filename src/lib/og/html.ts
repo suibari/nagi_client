@@ -16,11 +16,15 @@ const escapeAttribute = (value: string) =>
 		.replaceAll('<', '&lt;')
 		.replaceAll('>', '&gt;');
 
-function replaceMeta(html: string, selector: 'property' | 'name', key: string, content: string) {
-	const pattern = new RegExp(
+function metaPattern(selector: 'property' | 'name', key: string) {
+	return new RegExp(
 		`<meta\\s+${selector}=["']${key.replace(':', '\\:')}["']\\s+content=["'][^"']*["']\\s*/?>`,
 		'i',
 	);
+}
+
+function replaceMeta(html: string, selector: 'property' | 'name', key: string, content: string) {
+	const pattern = metaPattern(selector, key);
 	const meta = `<meta ${selector}="${key}" content="${escapeAttribute(content)}" />`;
 	return pattern.test(html)
 		? html.replace(pattern, meta)
@@ -28,10 +32,17 @@ function replaceMeta(html: string, selector: 'property' | 'name', key: string, c
 }
 
 export type PostCardKind = 'post' | 'blog';
+export const POST_ATTACHMENT_CARD_VERSION = '2';
 
-function withImageMeta(html: string, image: string, alt: string) {
+function withImageMeta(html: string, image: string, alt: string, variableImage = false) {
 	let output = replaceMeta(html, 'property', 'og:image', image);
-	output = replaceMeta(output, 'property', 'og:image:type', 'image/png');
+	if (variableImage) {
+		for (const key of ['og:image:type', 'og:image:width', 'og:image:height']) {
+			output = output.replace(metaPattern('property', key), '');
+		}
+	} else {
+		output = replaceMeta(output, 'property', 'og:image:type', 'image/png');
+	}
 	output = replaceMeta(output, 'property', 'og:image:alt', alt);
 	output = replaceMeta(output, 'name', 'twitter:image', image);
 	return replaceMeta(output, 'name', 'twitter:image:alt', alt);
@@ -59,11 +70,15 @@ function withStandardSiteDocumentLink(html: string, did: string, rkey: string) {
 	);
 }
 
-/** ポスト・ブログの共有リンクには、本文やタイトルを載せた専用カードを出す。 */
 export function withPostCardMeta(html: string, did: string, rkey: string, kind: PostCardKind) {
-	const query = new URLSearchParams({ v: '1', kind, did, rkey });
+	const query = new URLSearchParams({
+		v: kind === 'post' ? POST_ATTACHMENT_CARD_VERSION : '1',
+		kind,
+		did,
+		rkey,
+	});
 	const image = `https://nagi.suibari.com/api/post-card?${query}`;
-	if (kind === 'post') return withImageMeta(html, image, 'Nagiのポスト');
+	if (kind === 'post') return withImageMeta(html, image, 'Nagiのポスト', true);
 	return withStandardSiteDocumentLink(withImageMeta(html, image, 'Nagiのブログ'), did, rkey);
 }
 

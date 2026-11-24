@@ -136,3 +136,11 @@ change [bluesky-push](changes/archive/2026-11-22-bluesky-push/proposal.md) で�
 change [allow-feed-swipe-on-images](changes/archive/2026-11-22-allow-feed-swipe-on-images/proposal.md) で、FEED-08のメディア除外を見直し、画像の拡大用タイル上でも横スワイプでタブ移動できるようにした（2026-11-22に合意）。従来は画像タイルがbuttonのため共通認識器で除外されており、従来仕様との不一致ではなく操作対象の変更である。横ドラッグ後は画像を誤って開かず、通常タップと縦スクロールを維持する。警告操作・動画・音声・通常の操作部品・内部スクロール・拡大ビューは保護する。
 
 検証結果と実機での確認境界はchangeの [verification.md](changes/archive/2026-11-22-allow-feed-swipe-on-images/verification.md) に記す。
+
+## 投稿の添付メディアを使う共有画像
+
+[post-attachment-ogp](changes/archive/2026-11-24-post-attachment-ogp/proposal.md) で、通常投稿のスレッドURLから取得するカード画像に公開可能な添付を使うようにした。 [SEO-03](specs/seo-deployment/spec.md#seo-03)
+
+ローカルのHTTP環境でスレッドHTMLの共有画像URLを取得し、本番AppViewの公開投稿から画像（`/api/blob/…`、WebP）と動画サムネイル（`/api/video/…/thumbnail.jpg`、JPEG）を返せることを確認した。こっそりの検証データでは、添付の取得を行わずサイト共通画像へ誘導した。個別CW、ラベル、削除、取得失敗、公開条件が変わった場合の再取得はモックテストで確認した。
+
+Vercel本番への反映と、Bluesky・Xなど外部サービスの表示は未確認。外部サービスで保存済みのカードは、そのサービスの保存期間に従う。

@@ -38,9 +38,10 @@ export const flatten = (value: string | undefined, limit = 120) => {
 	return text.length <= limit ? text : `${text.slice(0, limit)}…`;
 };
 
-export async function appViewJson<T>(path: string): Promise<T> {
+export async function appViewJson<T>(path: string, cache?: RequestCache): Promise<T> {
 	const response = await fetch(`${APPVIEW_ORIGIN}${path}`, {
 		headers: { Accept: 'application/json' },
+		cache,
 		signal: AbortSignal.timeout(5_000),
 	});
 	if (!response.ok) throw new Error(`${path.split('?', 1)[0]} returned ${response.status}`);
