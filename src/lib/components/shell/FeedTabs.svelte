@@ -11,15 +11,19 @@
 	let { activeId }: { activeId?: string } = $props();
 
 	// 昔の URL（/global, /affirmation）から来たときも、対応するタブを光らせる。
+	// /affirmation と ?tab=affirmation はおすすめタブを指す。
 	const legacyId = $derived(
 		page.url.pathname.startsWith('/affirmation')
-			? 'affirmation'
+			? (feedTabs.byId('recommended')?.id ?? 'recommended')
 			: page.url.pathname.startsWith('/global')
 				? 'global'
 				: undefined,
 	);
 	const current = $derived(
-		activeId ?? page.url.searchParams.get('tab') ?? legacyId ?? feedTabs.fallback.id,
+		activeId ??
+			feedTabs.byId(page.url.searchParams.get('tab'))?.id ??
+			legacyId ??
+			feedTabs.fallback.id,
 	);
 
 	// ホームは本人のリストなので、未ログインではサインインへ送る（従来どおり）。

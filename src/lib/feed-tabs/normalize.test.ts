@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeFeedTabs } from './normalize';
-import { DEFAULT_FEED_TABS } from './types';
+import { DEFAULT_FEED_TABS, findFeedTab } from './types';
 
 describe('normalizeFeedTabs', () => {
 	it('keeps hashtag tabs as lowercase tags without the leading #', () => {
@@ -66,9 +66,54 @@ describe('normalizeFeedTabs', () => {
 		]);
 	});
 
+	it('reads a saved affirmation tab as the recommended tab in the same place, once', () => {
+		expect(
+			normalizeFeedTabs([
+				{ id: 'home', kind: 'list', source: 'home' },
+				{ id: 'affirmation', kind: 'custom', source: 'affirmation' },
+				{ id: 'recommended', kind: 'custom', source: 'recommended' },
+				{ id: 'global', kind: 'global' },
+			]),
+		).toEqual([
+			{ id: 'home', kind: 'list', source: 'home' },
+			{ id: 'affirmation', kind: 'custom', source: 'recommended' },
+			{ id: 'global', kind: 'global' },
+		]);
+	});
+
+	it('puts the recommended tab first in the defaults', () => {
+		expect(DEFAULT_FEED_TABS.map((tab) => tab.id)).toEqual(['recommended', 'home', 'global']);
+		expect(DEFAULT_FEED_TABS[0]).toEqual({
+			id: 'recommended',
+			kind: 'custom',
+			source: 'recommended',
+		});
+	});
+
 	it('falls back to the defaults when nothing usable is left', () => {
 		expect(normalizeFeedTabs([{ id: 'ch_1', kind: 'channel', uri: 'at://x' }])).toEqual(
 			DEFAULT_FEED_TABS,
 		);
+	});
+});
+
+describe('findFeedTab', () => {
+	const saved = normalizeFeedTabs([
+		{ id: 'home', kind: 'list', source: 'home' },
+		{ id: 'affirmation', kind: 'custom', source: 'affirmation' },
+	]);
+
+	it('opens the recommended tab from the old affirmation link and from its built-in id', () => {
+		expect(findFeedTab(saved, 'affirmation')?.source).toBe('recommended');
+		expect(findFeedTab(saved, 'recommended')?.id).toBe('affirmation');
+		expect(findFeedTab(DEFAULT_FEED_TABS, 'affirmation')?.id).toBe('recommended');
+	});
+
+	it('does not invent a tab that is not there', () => {
+		expect(findFeedTab([{ id: 'home', kind: 'list', source: 'home' }], 'affirmation')).toBe(
+			undefined,
+		);
+		expect(findFeedTab(saved, 'global')).toBe(undefined);
+		expect(findFeedTab(saved, null)).toBe(undefined);
 	});
 });

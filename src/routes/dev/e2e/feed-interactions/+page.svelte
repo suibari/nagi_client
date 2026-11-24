@@ -82,7 +82,7 @@
 	onMount(() => {
 		feedTabs.tabs = [
 			{ id: 'global', kind: 'global' },
-			{ id: 'affirmation', kind: 'custom', source: 'affirmation' },
+			{ id: 'affirmation', kind: 'custom', source: 'recommended' },
 		];
 	});
 	async function refresh() {

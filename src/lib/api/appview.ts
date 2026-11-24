@@ -179,6 +179,12 @@ export const getAffirmation = (cursor?: string) =>
 		'com.suibari.nagi.getAffirmation',
 		`/xrpc/com.suibari.nagi.getAffirmation?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
 	);
+/** permission set の更新前のセッションでも読めるよう、認可だけが拒否されたら公開取得へ落とす。 */
+export const getRecommended = (cursor?: string) =>
+	withPublicFallback<TimelinePage>(
+		'com.suibari.nagi.getRecommended',
+		`/xrpc/com.suibari.nagi.getRecommended?limit=${POST_PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
+	);
 export const getDrafts = () =>
 	call<DraftsView>(
 		'com.suibari.nagi.getDrafts',

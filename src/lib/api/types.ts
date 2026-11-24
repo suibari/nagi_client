@@ -541,7 +541,7 @@ export type EmojiFavorite =
 export type FeedTabKind = 'list' | 'global' | 'custom' | 'hashtag' | 'search' | 'bsky';
 /** list / custom が指す組み込みの中身。 */
 /** bsky の following は Bluesky のホームタイムライン（フォロー中）で、uri の代わりにこれで指す。 */
-export type FeedTabSource = 'home' | 'affirmation' | 'following';
+export type FeedTabSource = 'home' | 'recommended' | 'following';
 /**
  * フィードのタブ1枚。種別ごとの union にせずフラットに持つのは、lexicon で
  * タグ付き union を表しづらく、将来の種別追加を optional の追加で吸収したいため。
@@ -549,7 +549,7 @@ export type FeedTabSource = 'home' | 'affirmation' | 'following';
 export type FeedTab = {
 	id: string;
 	kind: FeedTabKind;
-	/** kind が list / custom のときの参照先（list=home, custom=affirmation）。 */
+	/** kind が list / custom のときの参照先（list=home, custom=recommended）。 */
 	source?: FeedTabSource;
 	/** kind==='search' は自由文の保存クエリ、kind==='hashtag' はタグ（# を除いた小文字）。 */
 	query?: string;
