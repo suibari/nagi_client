@@ -72,7 +72,7 @@ export const en: Messages = {
 	navFeed: 'Feed',
 	navHome: 'Home',
 	navGlobal: 'Global',
-	navAffirmation: 'Affirmation',
+	navRecommended: 'For you',
 	navNews: 'News',
 	navNotifications: 'Notifications',
 	navSettings: 'Settings',
@@ -778,7 +778,7 @@ export const en: Messages = {
 	homeFeedAuthRequired: 'Refresh your permissions to view Home.',
 	homeFeedRefreshPermissions: 'Sign in again',
 
-	affirmationEmpty: 'Posts that Bot-tan affirmed most strongly gather here.',
+	recommendedEmpty: 'Posts that drew reactions, and posts close to what you enjoy, show up here.',
 
 	notifFetchFailed: 'Could not fetch notifications',
 	notifEmpty: 'No notifications yet.',
@@ -1050,8 +1050,8 @@ export const en: Messages = {
 	feedTabsKindListHint: 'Posts from people in your list',
 	feedTabsKindGlobal: 'Global',
 	feedTabsKindGlobalHint: 'Posts from everyone on Nagi',
-	feedTabsKindCustom: 'Affirmation',
-	feedTabsKindCustomHint: 'Posts Bot-tan affirmed',
+	feedTabsKindCustom: 'For you',
+	feedTabsKindCustomHint: 'Posts close to what you enjoy, and posts that drew reactions',
 	feedTabsKindHashtag: 'Hashtag',
 	feedTabsKindHashtagHint: 'Posts with a hashtag you keep an eye on',
 	feedTabsHashtagLabel: 'Hashtag',

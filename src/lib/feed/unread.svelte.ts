@@ -5,17 +5,17 @@ import { createReadWatermark, type ReadWatermark } from '$lib/unread/watermark.s
 // タブごとに読んだ位置は別なので、キーも分ける。
 export const globalFeedRead = createReadWatermark('nagi.feed-read-state.global.v1');
 export const homeFeedRead = createReadWatermark('nagi.feed-read-state.home.v1');
-export const affirmationFeedRead = createReadWatermark('nagi.feed-read-state.affirmation.v1');
+export const recommendedFeedRead = createReadWatermark('nagi.feed-read-state.recommended.v1');
 
 /**
  * タブごとのウォーターマーク。追加できるタブ（ハッシュタグなど）は数が決まらないので、
  * 使われたぶんだけ遅延で作る。上の3本は既存キーをそのまま返す — キー文字列を
- * 変えるとその端末の既読が全部リセットされる。
+ * 変えるとその端末の既読が全部リセットされる（おすすめは全肯定と中身が違うので新しいキー）。
  */
 const registry = new Map<string, ReadWatermark>([
 	['global', globalFeedRead],
 	['home', homeFeedRead],
-	['affirmation', affirmationFeedRead],
+	['recommended', recommendedFeedRead],
 ]);
 export function feedRead(key: string): ReadWatermark {
 	const existing = registry.get(key);

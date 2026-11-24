@@ -74,7 +74,7 @@ export const ja = {
 	navFeed: 'フィード',
 	navHome: 'ホーム',
 	navGlobal: 'グローバル',
-	navAffirmation: '全肯定',
+	navRecommended: 'おすすめ',
 	navNews: 'ニュース',
 	navNotifications: '通知',
 	navSettings: '設定',
@@ -795,8 +795,9 @@ export const ja = {
 	homeFeedAuthRequired: 'ホームを表示するための権限を更新してください。',
 	homeFeedRefreshPermissions: 'ログインし直す',
 
-	// affirmation
-	affirmationEmpty: 'botたんがとくに強く肯定した投稿が、ここに集まります。',
+	// recommended
+	recommendedEmpty:
+		'みんなの反応が集まった投稿や、あなたの好きなことに近い投稿が、ここに並びます。',
 
 	// notifications — name-first suffix pattern; works because both locales put
 	// the actor name first (revisit if a third locale is ever added)
@@ -1084,8 +1085,8 @@ export const ja = {
 	feedTabsKindListHint: 'リストのみんなの投稿',
 	feedTabsKindGlobal: 'グローバル',
 	feedTabsKindGlobalHint: 'Nagi のみんなの投稿',
-	feedTabsKindCustom: '全肯定',
-	feedTabsKindCustomHint: 'botたんが全肯定した投稿',
+	feedTabsKindCustom: 'おすすめ',
+	feedTabsKindCustomHint: 'あなたの好きなことに近い投稿や、反応が集まった投稿',
 	feedTabsKindHashtag: 'ハッシュタグ',
 	feedTabsKindHashtagHint: '決まったハッシュタグの投稿',
 	feedTabsHashtagLabel: 'ハッシュタグ',

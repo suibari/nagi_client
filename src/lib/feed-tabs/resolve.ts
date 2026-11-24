@@ -1,17 +1,17 @@
 import {
 	ApiRequestError,
-	getAffirmation,
 	getHomeTimeline,
+	getRecommended,
 	getTimeline,
 	searchPosts,
 	searchPostsByQuery,
 } from '$lib/api/appview';
 import type { FeedItem, TimelinePage } from '$lib/api/types';
 import {
-	affirmationFeedRead,
 	feedRead,
 	globalFeedRead,
 	homeFeedRead,
+	recommendedFeedRead,
 } from '$lib/feed/unread.svelte';
 import { m } from '$lib/i18n/i18n.svelte';
 import type { ReadWatermark } from '$lib/unread/watermark.svelte';
@@ -51,7 +51,7 @@ export function feedTabLabel(tab: FeedTab): string {
 		case 'global':
 			return m.navGlobal();
 		case 'custom':
-			return m.navAffirmation();
+			return m.navRecommended();
 		case 'hashtag':
 			return tab.query ? `#${tab.query}` : m.feedTabsKindHashtag();
 		case 'search':
@@ -123,14 +123,16 @@ export function resolveFeedTab(
 				showGuestHero: true,
 			};
 		case 'custom':
-			// 今は全肯定だけ。ユーザー定義のカスタムフィードもここに入る予定。
+			// 今はおすすめだけ（FEED-10）。ユーザー定義のカスタムフィードもここに入る予定。
 			return {
-				key: `${scope}:affirmation`,
-				fetcher: getAffirmation,
-				optimisticFilter: (item) =>
-					Boolean(item.isAffirmation) && !(item.threadKossori ?? item.kossori),
-				watermark: affirmationFeedRead,
-				empty: m.affirmationEmpty,
+				key: `${scope}:recommended`,
+				fetcher: getRecommended,
+				// 候補かどうかはサーバーが反応と興味で決める。直後の自分の投稿はどちらも満たさない。
+				optimisticFilter: () => false,
+				watermark: recommendedFeedRead,
+				empty: m.recommendedEmpty,
+				// 未サインインの最初のタブなので、グローバルと同じ案内を出す。
+				showGuestHero: true,
 			};
 		case 'hashtag': {
 			const tag = tab.query ?? '';

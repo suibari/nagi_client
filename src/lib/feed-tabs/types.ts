@@ -21,14 +21,14 @@ export const MAX_TAB_LABEL_LENGTH = 64;
  */
 export const DEFAULT_SOURCE: Partial<Record<FeedTabKind, FeedTabSource>> = {
 	list: 'home',
-	custom: 'affirmation',
+	custom: 'recommended',
 };
 
-/** 何も設定していない人が見るタブ。今日の見た目（ホーム/グローバル/全肯定）と同じ。 */
+/** 何も設定していない人（未サインインを含む）が見るタブ（FEED-01）。 */
 export const DEFAULT_FEED_TABS: FeedTab[] = [
+	{ id: 'recommended', kind: 'custom', source: 'recommended' },
 	{ id: 'home', kind: 'list', source: 'home' },
 	{ id: 'global', kind: 'global' },
-	{ id: 'affirmation', kind: 'custom', source: 'affirmation' },
 ];
 
 /**
@@ -58,9 +58,21 @@ export function tabIdentity(tab: FeedTab): string {
 const BUILTIN_IDS: Record<string, string> = {
 	'list:home': 'home',
 	global: 'global',
-	'custom:affirmation': 'affirmation',
+	'custom:recommended': 'recommended',
 };
 export const builtinTabId = (tab: FeedTab): string | undefined => BUILTIN_IDS[tabIdentity(tab)];
+
+/**
+ * ?tab= の id からタブを引く。全肯定タブはおすすめに置き換えたので、旧リンクの
+ * `?tab=affirmation` と組み込み id の `recommended` は、id が違っていてもおすすめタブへ寄せる
+ * （以前に保存した全肯定タブは id が affirmation のまま残っている）。
+ */
+export function findFeedTab(tabs: FeedTab[], id: string | null | undefined): FeedTab | undefined {
+	if (!id) return undefined;
+	const exact = tabs.find((tab) => tab.id === id);
+	if (exact || (id !== 'affirmation' && id !== 'recommended')) return exact;
+	return tabs.find((tab) => tab.kind === 'custom');
+}
 
 /**
  * hashtag / search / bsky タブの id。衝突しても normalize が採番し直すので短くてよい。

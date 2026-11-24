@@ -54,20 +54,37 @@
 
 **理由と制約**：タブ移動が成立しない短いドラッグや中断でも画像を誤って開かないようにする。次の独立した入力でクリック抑止を解除し、タップ・キーボード操作は維持する。拡大ビューはportalで認識器の外へ出す。画像を含むすべてのbuttonを許可すると警告やアイコン操作を巻き込むため、拡大用buttonだけを例外にする。
 
+### D7: 全肯定タブをおすすめに置き換え、既定の一番左に置く
+
+**課題**：全肯定タブはbotたんの採点だけで選び、読む人の好みも他の人の反応も反映しなかった。初めて来た人や未サインインの人の最初の画面は自分と関係のない投稿が並び、合う投稿があると分かるきっかけが乏しかった。以前、埋め込みで閲覧者に近い投稿を全肯定フィードへ混ぜる枠を入れたが、候補が少なすぎて撤去した（本番実測で30日12件）。
+
+**採用判断**：全肯定タブを「興味に近い」または「反応が集まった」投稿のおすすめに置き換え（[FEED-10](spec.md#feed-10)）、既定タブを「おすすめ / ホーム / グローバル」とする。並びは時系列、1人1日1件。保存済みの全肯定タブと旧リンクはおすすめとして読む。タブの `source` は `recommended` を新設し、AppViewとクライアントの両方で `affirmation` を読み替える。
+
+**理由と制約**：
+
+- 候補を積集合や興味だけにすると、撤去した枠と同じく尽きる。和集合にし、興味が分からない人にも反応の候補が残るようにした。代表選びは興味に近い投稿を優先し（その中で近い順）、無ければ反応した人数、最後に新しさで決める。
+- 反応の基準は投稿者本人とbotたんを除く5人以上。当初の2人では開発DBのほぼ全投稿が該当し、グローバルを1人1日1件に絞っただけになって興味が効かなかった（2026-11-24に変更）。botたんの投稿は毎日反応が集まり、1人1日1件でも上に並び続けるので除く。
+- 返信は会話にまとめずに並べると読めないので候補にしない。閲覧者本人の投稿は自分の興味に必ず近くなるので出さない。
+- 興味の閾値（qwen3-embedding:0.6bで0.50）は、開発DBで最近傍距離を測って決めた（1%点0.41、5%点0.51、10%点0.55。0.55を超えると挨拶や日常のひとことが混ざった）。検索と違って順位で打ち止めできないため、較正値のないモデルでは興味の候補を出さない。
+- AppViewは日の境界で区切った範囲を1回ずつ採点し、窓関数で代表を選ぶ。全肯定と同じNOT EXISTSでは兄弟ごとに採点し直し、全投稿を走査して遅かった（開発DB 1万件で約450ms）。範囲は日の境界で切ってからカーソルを当て、ページをまたいで代表が変わらないようにする。
+- 旧クライアントは未知の `source` を全肯定に寄せて全肯定APIを呼ぶため、全肯定APIは当面残す。未読位置のキーは全肯定と中身が違うので新しくした。
+- 未サインインの最初のタブになるので、グローバルと同じ案内を出す。直後の自分の投稿は候補を満たさないので楽観表示しない。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                          | 探す処理・責務                             |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| [src/lib/feed/gestures.ts](../../../src/lib/feed/gestures.ts)                                     | タッチ認識・画像タイルのクリック抑止       |
-| [src/lib/components/ImageGallery.svelte](../../../src/lib/components/ImageGallery.svelte)         | 画像タイルと拡大ビュー                     |
-| [src/lib/feed/feed.svelte.ts](../../../src/lib/feed/feed.svelte.ts)                               | 会話のマージと更新                         |
-| [src/lib/feed/post-follow.svelte.ts](../../../src/lib/feed/post-follow.svelte.ts)                 | 投稿後の追従                               |
-| [src/lib/feed-tabs/resolve.ts](../../../src/lib/feed-tabs/resolve.ts)                             | タブの取得先解決                           |
-| [src/lib/components/shell/FeedTabBar.svelte](../../../src/lib/components/shell/FeedTabBar.svelte) | タブバーの描画・はみ出し判定・一覧メニュー |
-| [src/lib/thread/bot-reply-collapse.ts](../../../src/lib/thread/bot-reply-collapse.ts)             | 折り畳み候補と確認キャッシュ               |
-| [src/lib/components/ChatBubble.svelte](../../../src/lib/components/ChatBubble.svelte)             | 発言の表示と操作                           |
+| ファイル                                                                                          | 探す処理・責務                              |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| [src/lib/feed/gestures.ts](../../../src/lib/feed/gestures.ts)                                     | タッチ認識・画像タイルのクリック抑止        |
+| [src/lib/components/ImageGallery.svelte](../../../src/lib/components/ImageGallery.svelte)         | 画像タイルと拡大ビュー                      |
+| [src/lib/feed/feed.svelte.ts](../../../src/lib/feed/feed.svelte.ts)                               | 会話のマージと更新                          |
+| [src/lib/feed/post-follow.svelte.ts](../../../src/lib/feed/post-follow.svelte.ts)                 | 投稿後の追従                                |
+| [src/lib/feed-tabs/resolve.ts](../../../src/lib/feed-tabs/resolve.ts)                             | タブの取得先解決                            |
+| [src/lib/feed-tabs/types.ts](../../../src/lib/feed-tabs/types.ts)                                 | 既定タブ・旧リンクの読み替え（findFeedTab） |
+| [src/lib/components/shell/FeedTabBar.svelte](../../../src/lib/components/shell/FeedTabBar.svelte) | タブバーの描画・はみ出し判定・一覧メニュー  |
+| [src/lib/thread/bot-reply-collapse.ts](../../../src/lib/thread/bot-reply-collapse.ts)             | 折り畳み候補と確認キャッシュ                |
+| [src/lib/components/ChatBubble.svelte](../../../src/lib/components/ChatBubble.svelte)             | 発言の表示と操作                            |
 
 ## 出典と変更時の扱い
 

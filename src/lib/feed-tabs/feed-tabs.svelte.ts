@@ -1,6 +1,6 @@
 import { preferences } from '$lib/preferences/preferences.svelte';
 import { normalizeFeedTabs } from './normalize';
-import { DEFAULT_FEED_TABS, type FeedTab } from './types';
+import { DEFAULT_FEED_TABS, findFeedTab, type FeedTab } from './types';
 
 /**
  * フィードのタブ構成。真実源はアカウント（AppView）で、localStorage はその端末の
@@ -78,8 +78,7 @@ class FeedTabsStore {
 	}
 
 	byId(id: string | null | undefined): FeedTab | undefined {
-		if (!id) return undefined;
-		return this.tabs.find((tab) => tab.id === id);
+		return findFeedTab(this.tabs, id);
 	}
 
 	/** ?tab= が無い / 消えたタブを指しているときに開くタブ。 */
