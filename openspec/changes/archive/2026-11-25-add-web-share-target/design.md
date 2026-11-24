@@ -77,6 +77,6 @@ OAuth完了前や画面の準備前にSWからpostMessageだけで送る方式�
 ## References / Verification Boundary
 
 - [Chrome公式](https://developer.chrome.com/docs/capabilities/web-apis/web-share-target)と[web.dev公式](https://web.dev/articles/files/receive-shared-files)：manifestとPOST受信の技術的根拠。2026-11-20に参照。
-- [投稿の設計](../../specs/post-composer/design.md)、[画像の設計](../../specs/media-processing/design.md)、[配信の設計](../../specs/seo-deployment/design.md)：既存入力・画像・SPAの制約。
-- [投稿コメント原文](../../reference/comment-snapshot/post-composer.md)と[台帳](../../comment-catalog.json)：導入時の固定履歴への入口。原文や採録コミットのリンクは上書きしない。
+- [投稿の設計](../../../specs/post-composer/design.md)、[画像の設計](../../../specs/media-processing/design.md)、[配信の設計](../../../specs/seo-deployment/design.md)：既存入力・画像・SPAの制約。
+- [投稿コメント原文](../../../reference/comment-snapshot/post-composer.md)と[台帳](../../../comment-catalog.json)：導入時の固定履歴への入口。原文や採録コミットのリンクは上書きしない。
 - この段階ではソース・設定の読み取りと提案文書の形式検証のみを実施する。OSの共有メニュー、実機インストール、OAuth本番往復、外部リポジトリの動作は未検証。

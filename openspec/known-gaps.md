@@ -26,7 +26,7 @@ change [prioritize-startup-notification-count](changes/archive/2026-11-12-priori
 - コメントの不一致: OAuth側は「作成だけで更新・削除は一切行わない」と説明する。一方、投稿側はNagi保存失敗時に先行Blueskyコピーを削除して巻き戻すと説明する。
 - 実装で確認: `CROSSPOST_SCOPE` は `?action=create`。通常投稿保存失敗時と分割投稿途中失敗時には `deleteBlueskyPosts()` を呼び、削除失敗はconsoleへ記録して継続する。
 - 確定方針: Bluesky投稿の要求権限はcreateのみに限定する。不用意な削除権限を持たないことを優先し、後始末を成立させるために権限を拡張しない。
-- 解消（2026-11-12）: change [crosspost-after-nagi-save](changes/crosspost-after-nagi-save/proposal.md) で、通常投稿もNagi保存後にBlueskyへ投稿し、コピーの参照を投稿へ追記する順序へ改めた。`deleteBlueskyPosts()` を削除し、分割投稿の途中失敗でも作成済みの分を削除しない。途中までのコピーと参照追記の失敗は警告で伝える（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)）。前提として、AppViewは見える内容が変わらない更新を編集とみなさない（[API-09](specs/appview-protocol/spec.md#api-09)）。AppViewは本番反映済み、クライアントは本番反映待ち。
+- 解消（2026-11-12）: change [crosspost-after-nagi-save](changes/archive/2026-11-25-crosspost-after-nagi-save/proposal.md) で、通常投稿もNagi保存後にBlueskyへ投稿し、コピーの参照を投稿へ追記する順序へ改めた。`deleteBlueskyPosts()` を削除し、分割投稿の途中失敗でも作成済みの分を削除しない。途中までのコピーと参照追記の失敗は警告で伝える（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)）。前提として、AppViewは見える内容が変わらない更新を編集とみなさない（[API-09](specs/appview-protocol/spec.md#api-09)）。AppViewとクライアントの変更は本番反映済み。本番での投稿操作は未検証。
 - 方針変更（2026-11-21）: change [bluesky-interactions](changes/archive/2026-11-22-bluesky-interactions/proposal.md) で、Nagiから書いたBluesky投稿を消せるよう、Bluesky投稿の権限を作成と削除に広げた（[BSKY-06](specs/bluesky-integration/spec.md#bsky-06)、[AUTH-03](specs/auth-session/spec.md#auth-03)）。updateは要求しない。削除の操作を出すのは`via: "Nagi"`を持つ自分の投稿と、利用者が選んだクロスポストのコピーだけで（[BSKY-10](specs/bluesky-integration/spec.md#bsky-10)）、失敗時に自動で消して巻き戻すことは引き続きしない。上の「create限定」の確定方針は、この時点で置き換えた。
 - 解消前の状態（記録として残す）: 作成限定scopeと削除の試行が共存し、削除は拒否されうるためコピーが残る可能性があった。実際のPDSでの削除拒否や旧全操作scopeのセッションとの差は、確認しないまま解消した。
 
@@ -93,11 +93,15 @@ change [fix-blog-draft-leave-warning](changes/archive/2026-11-16-fix-blog-draft-
 
 ## 外部共有受信と初回の投稿範囲
 
-change [add-web-share-target](changes/add-web-share-target/proposal.md)でWeb Share Targetのテキスト・URL・画像受信を実装した（POST-11）。Service WorkerからIndexedDBへ保存し、通常投稿へ確認後に取り込む。下書きAPIは引き続き画像blobを保存しない。
+change [add-web-share-target](changes/archive/2026-11-25-add-web-share-target/proposal.md)でWeb Share Targetのテキスト・URL・画像受信を実装した（POST-11）。Service WorkerからIndexedDBへ保存し、通常投稿へ確認後に取り込む。下書きAPIは引き続き画像blobを保存しない。
 
 調査時、Composerの初回生成が保存済みの前回scopeを復元せず、呼び出し元のdefaultScopeだけを使う不一致を確認した。POST-01に合わせて初回も`restorePostScope`で前回値を優先するよう修正した。共有画像がこっそりの意図を自動で広げないことを操作テストで確認する。
 
-検証結果と環境の境界はchangeの [verification.md](changes/add-web-share-target/verification.md)に記す。OSの外部アプリの共有一覧から選ぶ実機確認と、本番OAuth・デプロイは未実施。ブラウザでのPOST受信やモック認証の操作確認を、本番対応の確認済みと扱わない。
+検証結果と環境の境界はchangeの [verification.md](changes/archive/2026-11-25-add-web-share-target/verification.md)に記す。2026-11-25に本番配信のmanifestとService Workerで共有受信の設定を確認した。OSの外部アプリの共有一覧から選ぶ実機確認と、本番OAuthを経由する取り込みは未実施。
+
+## 保護者同意の廃止と既存データ
+
+[drop-parental-consent](changes/archive/2026-11-25-drop-parental-consent/tasks.md) のクライアントとAppViewの変更は、2026-11-25までに本番反映済み（[AUTH-07](specs/auth-session/spec.md#auth-07)、[MOD-01](specs/moderation-privacy/spec.md#mod-01)）。AppViewは新たな同意日時の記録を行わない。既存の同意日時を消去するSQL（`0106_nagi_drop_parental_consent.sql`）は手動適用用で、本番DBへの適用有無は未確認。認証済みの本番環境での生年月日の申告も未検証。
 
 ## 3行日記の画像貼り付けと圧縮エラーの表示
 
