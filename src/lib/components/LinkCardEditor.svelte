@@ -8,6 +8,7 @@
 	import { APPVIEW_URL, getLinkMetadata, getLinkThumbnail } from '$lib/api/appview';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { session } from '$lib/oauth/session.svelte';
+	import { loadLinkCardThumbnail } from '$lib/post/link-card-thumbnail';
 	import { linkCardAllowed } from '$lib/post/quote-url';
 	import { createSortable } from '$lib/dnd/sortable.svelte';
 	import Icon from './shell/Icon.svelte';
@@ -145,8 +146,7 @@
 			let previewUrl: string | undefined;
 			if (metadata.image) {
 				try {
-					thumbnail = await getLinkThumbnail(metadata.image);
-					previewUrl = URL.createObjectURL(thumbnail);
+					({ thumbnail, previewUrl } = await loadLinkCardThumbnail(uri, metadata.image));
 				} catch {
 					const fallback = await getLinkMetadata(uri, true).catch(() => undefined);
 					if (fallback?.image) {

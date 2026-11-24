@@ -158,3 +158,63 @@ test('編集でも同じページでタグを付け替えて保存し、記事�
 		},
 	});
 });
+
+test('Nagi投稿のOGPが1MBを超えてもブログのカードに画像を表示する', async ({ page }) => {
+	await mockXrpc(page);
+	await page.route('**/xrpc/com.atproto.repo.listRecords?**', (route) =>
+		route.fulfill({ json: { records: [] } }),
+	);
+	const rkey = 'image-preview';
+	const postUrl = `https://nagi.suibari.com/thread/${did}/${rkey}`;
+	const image = `https://nagi.suibari.com/api/post-card?v=2&kind=post&did=${encodeURIComponent(did)}&rkey=${rkey}`;
+	await page.route('**/xrpc/com.suibari.nagi.getLinkMetadata?**', (route) =>
+		route.fulfill({ json: { uri: postUrl, title: '画像付きの投稿', image } }),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.getLinkThumbnail?**', (route) =>
+		route.fulfill({ status: 413, json: { error: 'response_too_large' } }),
+	);
+	await page.addInitScript(() => {
+		localStorage.setItem('nagi-locale', 'ja');
+		const imageSizes = new Map<string, number>();
+		Reflect.set(window, 'testImageSizes', imageSizes);
+		const createObjectURL = URL.createObjectURL.bind(URL);
+		URL.createObjectURL = (object) => {
+			const url = createObjectURL(object);
+			if (object instanceof Blob) imageSizes.set(url, object.size);
+			return url;
+		};
+		const fetchOriginal = window.fetch.bind(window);
+		window.fetch = async (input, init) => {
+			if (typeof input !== 'string' || !input.startsWith('/api/post-card?'))
+				return fetchOriginal(input, init);
+			const canvas = document.createElement('canvas');
+			canvas.width = canvas.height = 768;
+			const context = canvas.getContext('2d')!;
+			const pixels = context.createImageData(canvas.width, canvas.height);
+			let seed = 42;
+			for (let offset = 0; offset < pixels.data.length; offset++) {
+				seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+				pixels.data[offset] = offset % 4 === 3 ? 255 : seed >>> 24;
+			}
+			context.putImageData(pixels, 0, 0);
+			const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+			if (!blob || blob.size <= 1_000_000) throw new Error('Test image must exceed 1 MB');
+			return new Response(blob);
+		};
+	});
+	await page.goto('/dev/e2e/blog-write');
+	await page.getByPlaceholder('タイトルを入力…').fill('リンクカードのテスト');
+	await page.locator('.blog-write .cm-content').pressSequentially(postUrl);
+
+	const card = page.locator('.composer-embed-card');
+	await expect(card).toContainText('画像付きの投稿');
+	const preview = card.locator('img');
+	await expect(preview).toBeVisible();
+	const thumbnail = await preview.evaluate(async (element: HTMLImageElement) => {
+		await element.decode();
+		const imageSizes = Reflect.get(window, 'testImageSizes') as Map<string, number>;
+		return { size: imageSizes.get(element.src), width: element.naturalWidth };
+	});
+	expect(thumbnail.size).toBeLessThanOrEqual(1_000_000);
+	expect(thumbnail.width).toBeGreaterThan(0);
+});
