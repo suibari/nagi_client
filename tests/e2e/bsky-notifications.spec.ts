@@ -47,7 +47,13 @@ const notifications = seeds.map((item) => ({
 	indexedAt: item.at,
 }));
 
-type Calls = { bskySeen: string[]; nagiSeen: number; failList: boolean; unread: string[] };
+type Calls = {
+	bskySeen: string[];
+	nagiSeen: number;
+	failList: boolean;
+	unread: string[];
+	lastSeen?: string;
+};
 
 async function setup(page: Page, opts: { tab?: 'bluesky'; unread?: string[] } = {}) {
 	const calls: Calls = {
@@ -95,15 +101,21 @@ async function setup(page: Page, opts: { tab?: 'bluesky'; unread?: string[] } = 
 					json: {
 						notifications: notifications.map((item) => ({
 							...item,
-							isRead: !calls.unread.includes(item.reason),
+							// Bluesky AppView と同じく、記録した seenAt より厳密に前の通知だけ既読になる。
+							isRead:
+								!calls.unread.includes(item.reason) ||
+								(calls.lastSeen !== undefined && calls.lastSeen > item.indexedAt),
 						})),
 					},
 				});
 			case 'app.bsky.notification.getUnreadCount':
 				return route.fulfill({ json: { count: 2 } });
-			case 'app.bsky.notification.updateSeen':
-				calls.bskySeen.push(route.request().postDataJSON().seenAt);
+			case 'app.bsky.notification.updateSeen': {
+				const seenAt: string = route.request().postDataJSON().seenAt;
+				calls.bskySeen.push(seenAt);
+				if (!calls.lastSeen || seenAt > calls.lastSeen) calls.lastSeen = seenAt;
 				return route.fulfill({ json: {} });
+			}
 			case 'app.bsky.feed.getPosts':
 				return route.fulfill({
 					json: {
@@ -176,8 +188,23 @@ test('lists each like on its own, without counts, and marks Bluesky as seen', as
 	await expect(list).not.toContainText('3');
 	await expect(list).not.toContainText('frank');
 	await expect(list.getByText('わたしの散歩の投稿').first()).toBeVisible();
-	await expect.poll(() => calls.bskySeen).toEqual(['2026-11-21T00:05:00.000Z']);
+	await expect.poll(() => calls.bskySeen).toEqual(['2026-11-21T00:05:00.001Z']);
 	expect(calls.nagiSeen).toBe(0);
+});
+
+test('clears the Bluesky badge after viewing the Bluesky tab and returning', async ({ page }) => {
+	const calls = await setup(page);
+	const tabs = page.getByRole('tablist', { name: '通知の種類' });
+	const badge = tabs.getByRole('img', { name: 'Blueskyに未読の通知があります' });
+	await expect(badge).toBeVisible();
+
+	await tabs.getByRole('tab', { name: 'Bluesky' }).click();
+	await expect(page.getByText('daveさんさんが返信しました')).toBeVisible();
+	await expect.poll(() => calls.bskySeen.length).toBeGreaterThan(0);
+
+	await tabs.getByRole('tab', { name: 'Nagi' }).click();
+	await expect(page.getByText('Nagiの返信')).toBeVisible();
+	await expect(badge).toHaveCount(0);
 });
 
 test('hides adult content from people not confirmed as adults', async ({ page }) => {

@@ -436,7 +436,9 @@ export async function getBskyNotifications(
 }
 
 /** 表示した最新の通知までを Bluesky 側で既読にする。Nagi の通知の既読とは別。 */
-export async function markBskyNotificationsSeen(seenAt: string): Promise<void> {
+export async function markBskyNotificationsSeen(latestShownAt: string): Promise<void> {
+	// Bluesky AppView は seenAt > indexedAt で既読と判定するため、同時刻では最新の1件が未読に残る。
+	const seenAt = new Date(Date.parse(latestShownAt) + 1).toISOString();
 	await currentContext().agent.app.bsky.notification.updateSeen({ seenAt });
 }
 
