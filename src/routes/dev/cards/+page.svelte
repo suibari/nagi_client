@@ -57,7 +57,6 @@
 	/*
 	 * 記念日カード。段 0・card_number = 西暦*100+slot・レアリティは常に UR、というサーバー側の
 	 * 組み立て（shared-configs の buildAnniversaryCardDef）をここでは手で真似ている。
-	 * art つきの1枚（ハロウィン）で背景の見え方を、art なしの1枚で従来の見た目を確認する。
 	 */
 	function anniversary(
 		slot: number,
@@ -90,6 +89,16 @@
 		};
 	}
 
+	const thanksgivingCard = anniversary(14, 'サンクスギビングデー', 'Thanksgiving Day', {
+		attribute: 'earth',
+		atk: 1123,
+		def: 2600,
+		art: 'anniv-thanksgiving-us',
+		textJa: '感謝を数える日。数え始めると意外と多いことに、毎年おなじだけ驚く。',
+		textEn:
+			'A day for counting what you are thankful for. Every year, the same surprise at how long the list gets.',
+	});
+
 	const anniversaryShowcase: CardView[] = [
 		anniversary(17, 'ハッピーバースデー!', 'Happy Birthday!', {
 			attribute: 'light',
@@ -107,6 +116,7 @@
 			art: 'anniv-halloween',
 			commentJa: 'トリックオアトリート！ お菓子くれなきゃ、ずっと隣にいちゃうよ。',
 		}),
+		thanksgivingCard,
 		anniversary(12, '七夕', 'Tanabata', {
 			attribute: 'wind',
 			atk: 707,
@@ -147,6 +157,7 @@
 		| 'pending'
 		| 'review'
 		| 'anniversary'
+		| 'anniversary-thanksgiving'
 		| 'anniversary-pending';
 	let dialogCase = $state<DialogCase | undefined>();
 	let milestone = $state<number | undefined>();
@@ -167,6 +178,11 @@
 			id: 'anniversary',
 			label: '誕生日（背景あり）',
 			note: 'ハッピーバースデー見出し。UR 相当の演出＋anniv-hbd背景',
+		},
+		{
+			id: 'anniversary-thanksgiving',
+			label: 'サンクスギビングデー',
+			note: '透過線画の背景',
 		},
 		{
 			id: 'anniversary-pending',
@@ -208,6 +224,8 @@
 				return mock('N', 'earth', { commentJa: 'あのときのきみも、ちゃんとえらかったよ。' });
 			case 'anniversary':
 				return anniversaryShowcase[0];
+			case 'anniversary-thanksgiving':
+				return thanksgivingCard;
 			case 'anniversary-pending':
 				return anniversary(13, 'ハロウィン', 'Halloween', { art: 'anniv-halloween' });
 		}
