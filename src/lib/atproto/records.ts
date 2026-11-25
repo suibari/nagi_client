@@ -149,6 +149,8 @@ export type PostDraft = {
 	botSilent?: boolean;
 	/** サイレントリプライ。true の返信は直接の返信先へ通知しない。 */
 	silentReply?: boolean;
+	/** 返信できる人（POST-10）。誰でも返信できるときは付けない。 */
+	replyGate?: 'bot' | 'nobody';
 	/** セルフラベル (com.atproto.label.defs#selfLabels) */
 	labels?: { $type: string; values: Array<{ val: string }> };
 	/**
@@ -437,6 +439,7 @@ export async function createPost(
 				createdAt: draft.createdAt,
 				...(draft.botSilent && { botSilent: true }),
 				...(draft.silentReply && { silentReply: true }),
+				...(draft.replyGate && { replyGate: draft.replyGate }),
 				...(draft.reply && { reply: draft.reply }),
 			});
 		} catch (cause) {
@@ -460,6 +463,7 @@ export async function createPost(
 				// kossori はここへ来ない（上で AppView 経路へ分岐済み）。
 				...(draft.botSilent && { botSilent: true }),
 				...(draft.silentReply && { silentReply: true }),
+				...(draft.replyGate && { replyGate: draft.replyGate }),
 				...(draft.reply && { reply: draft.reply }),
 				// ニュース記事そのものは引用カードで描画し、本文中の別URLだけがここへ入る。
 				...(cards.length && { linkCards: cards }),
@@ -782,6 +786,9 @@ export async function updatePost(
 						embed: record.embed,
 						linkCards: record.linkCards,
 						...(record.botSilent === true ? { botSilent: true } : {}),
+						...(record.replyGate === 'bot' || record.replyGate === 'nobody'
+							? { replyGate: record.replyGate }
+							: {}),
 					},
 					...(original.labels ? { labels: original.labels } : {}),
 					...(cover ? { coverImage: cover } : {}),

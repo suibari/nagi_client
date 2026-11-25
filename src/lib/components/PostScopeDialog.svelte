@@ -4,6 +4,7 @@
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { POST_SCOPES, type PostScope } from '$lib/post/scope';
 	import type { BskyGateSettings } from '$lib/bsky/gates';
+	import { NAGI_REPLY_GATES, type NagiReplyGate } from '$lib/post/reply-gate';
 	import BskyGateControls from './bsky/BskyGateControls.svelte';
 	import Icon from './shell/Icon.svelte';
 
@@ -17,6 +18,11 @@
 		onclose,
 		bskyGates = $bindable(),
 		bskyReplyApplicable = true,
+		scopeLocked = false,
+		scopeLockedReason = '',
+		replyGate = $bindable(),
+		silentReply = $bindable(),
+		replyToBot = false,
 	}: {
 		scope: PostScope;
 		externalEligible: boolean;
@@ -30,15 +36,37 @@
 		bskyGates?: BskyGateSettings;
 		/** 返信として出すときは、返信の制限が効かないので選ばせない。 */
 		bskyReplyApplicable?: boolean;
+		/** こっそりスレッドへの返信など、公開範囲を変えられないとき。返信の設定は選べる。 */
+		scopeLocked?: boolean;
+		scopeLockedReason?: string;
+		/** Nagi で返信できる人（POST-10）。編集では渡さない。 */
+		replyGate?: NagiReplyGate;
+		/** サイレントリプライ（POST-12）。返信のときだけ渡す。 */
+		silentReply?: boolean;
+		replyToBot?: boolean;
 	} = $props();
+
+	const uid = $props.id();
+	const replyGateLabel = (value: NagiReplyGate) =>
+		value === 'everyone'
+			? m.nagiReplyEveryone()
+			: value === 'bot'
+				? m.nagiReplyBot()
+				: m.nagiReplyNobody();
 
 	let dialog = $state<HTMLDivElement>();
 
 	const disabledFor = (value: PostScope) =>
-		(value === 'external' && !externalEligible) || (value === 'kossori' && kossoriDisabled);
+		(scopeLocked && value !== scope) ||
+		(value === 'external' && !externalEligible) ||
+		(value === 'kossori' && kossoriDisabled);
 
 	const reasonFor = (value: PostScope) =>
-		value === 'kossori' ? kossoriDisabledReason : externalDisabledReason;
+		scopeLocked
+			? scopeLockedReason
+			: value === 'kossori'
+				? kossoriDisabledReason
+				: externalDisabledReason;
 
 	const labelFor = (value: PostScope) =>
 		value === 'kossori'
@@ -130,11 +158,47 @@
 		</div>
 
 		<p class="scope-detail">{detailFor(scope)}</p>
-		{#if kossoriDisabled && kossoriDisabledReason}
+		{#if scopeLocked && scopeLockedReason}
+			<p class="scope-note">{scopeLockedReason}</p>
+		{:else if kossoriDisabled && kossoriDisabledReason}
 			<p class="scope-note">{kossoriDisabledReason}</p>
 		{/if}
 		{#if !externalEligible && externalDisabledReason}
 			<p class="scope-note">{externalDisabledReason}</p>
+		{/if}
+
+		{#if replyGate !== undefined}
+			<section class="scope-nagi-reply" aria-label={m.nagiReplyGateTitle()}>
+				<h3>{m.nagiReplyGateTitle()}</h3>
+				<label class="scope-row" for={`${uid}-reply-gate`}>
+					<span>{m.nagiReplyAudience()}</span>
+					<select
+						id={`${uid}-reply-gate`}
+						value={replyGate}
+						onchange={(event) => {
+							replyGate = event.currentTarget.value as NagiReplyGate;
+						}}
+					>
+						{#each NAGI_REPLY_GATES as value (value)}
+							<option {value}>{replyGateLabel(value)}</option>
+						{/each}
+					</select>
+				</label>
+				<p class="scope-note">{m.nagiReplyGateNote()}</p>
+				{#if silentReply !== undefined}
+					<label class="scope-row scope-check">
+						<input
+							type="checkbox"
+							checked={silentReply}
+							onchange={(event) => (silentReply = event.currentTarget.checked)}
+						/>
+						<span class="scope-check-text">
+							<span>{m.silentReplyLabel()}</span>
+							<small>{replyToBot ? m.silentReplyToBotDetail() : m.silentReplyDetail()}</small>
+						</span>
+					</label>
+				{/if}
+			</section>
 		{/if}
 
 		{#if scope === 'external' && externalEligible && bskyGates}
@@ -174,12 +238,46 @@
 		box-shadow: var(--shadow-pop);
 	}
 
+	.scope-nagi-reply,
 	.scope-bsky-gates {
 		display: grid;
 		gap: 8px;
 		padding-top: 12px;
 		border-top: 1px solid var(--line);
 	}
+	.scope-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		color: var(--text-sub);
+		font-size: 13px;
+	}
+	.scope-row select {
+		min-height: 32px;
+		padding: 4px 8px;
+		border: 1px solid var(--line);
+		border-radius: var(--r-sm);
+		background: var(--surface-1);
+		color: var(--text);
+		font: inherit;
+	}
+	.scope-check {
+		justify-content: flex-start;
+		align-items: flex-start;
+	}
+	.scope-check input {
+		margin-top: 3px;
+	}
+	.scope-check-text {
+		display: grid;
+		gap: 2px;
+	}
+	.scope-check-text small {
+		color: var(--text-faint);
+		font-size: 0.74rem;
+	}
+	.scope-nagi-reply h3,
 	.scope-bsky-gates h3 {
 		margin: 0;
 		color: var(--text-muted);

@@ -97,6 +97,35 @@ describe('silent replies', () => {
 		);
 	});
 
+	it('writes replyGate to the public Nagi post record', async () => {
+		createRecord.mockResolvedValue({
+			data: { uri: 'at://did:plc:self/com.suibari.nagi.post/gated', cid: 'bafygated' },
+		});
+		const draft = preparePostDraft('closed', undefined, undefined, [], [], [], [], false, true);
+		draft.replyGate = 'nobody';
+
+		await createPost(draft, { images: [], cards: [] });
+
+		expect(createRecord).toHaveBeenCalledWith(
+			expect.objectContaining({
+				record: expect.objectContaining({ botSilent: true, replyGate: 'nobody' }),
+			}),
+		);
+	});
+
+	it('sends replyGate through the AppView-only kossori route', async () => {
+		createKossoriPost.mockResolvedValue({
+			uri: 'at://did:web:nagi-api.suibari.com/com.suibari.nagi.post/gated',
+			cid: 'bafykossori',
+		});
+		const draft = preparePostDraft('bot only', undefined, undefined, [], [], [], [], true);
+		draft.replyGate = 'bot';
+
+		await createPost(draft);
+
+		expect(createKossoriPost).toHaveBeenCalledWith(expect.objectContaining({ replyGate: 'bot' }));
+	});
+
 	it('writes silentReply through the AppView-only kossori reply route', async () => {
 		createKossoriPost.mockResolvedValue({
 			uri: 'at://did:web:nagi-api.suibari.com/com.suibari.nagi.post/reply',

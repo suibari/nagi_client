@@ -780,6 +780,13 @@
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
+/* 返信の制限・サイレントリプライが有効なことの目印（POST-10）。 */
+.scope-button > .scope-button-flag {
+	display: inline-flex;
+	flex: none;
+	overflow: visible;
+	color: var(--accent-strong);
+}
 .scope-button:disabled {
 	cursor: not-allowed;
 	opacity: 0.45;
@@ -1525,6 +1532,19 @@
 	color: var(--accent-strong);
 	background: var(--accent-softer);
 }
+/* 返信を受け付けない投稿の目印（FEED-11）。押せないので hover で色を変えない。 */
+.post-actions .reply-closed,
+.post-actions .reply-closed:hover,
+.post-actions .reply-closed:active {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	color: var(--text-faint);
+	background: transparent;
+	cursor: default;
+}
 .post-actions button.danger {
 	color: var(--danger);
 }
@@ -1600,8 +1620,7 @@
 	background: var(--accent-softer);
 }
 .icon-action.kossori-toggle.active,
-.icon-action.article-toggle.active,
-.icon-action.bot-silent-toggle.active {
+.icon-action.article-toggle.active {
 	color: var(--accent-strong);
 	background: var(--accent-softer);
 }

@@ -155,6 +155,10 @@
 		reactionHoldUntil = Date.now() + 15_000;
 		thread = { ...thread, post: { ...thread.post, reactions: next } };
 	}
+	/** 返信できる人の制限（FEED-11）。投稿者本人は常に書ける。 */
+	const canReply = $derived(
+		!post?.replyDisabled || ($session?.did !== undefined && $session.did === post.author.did),
+	);
 	function reply() {
 		if (!post) return;
 		if (!$session) {
@@ -289,9 +293,9 @@
 				>
 					<Icon name="emojiPlus" size={19} /> <span>{labels.reactions}</span>
 				</Button>
-				<Button variant="secondary" size="sm" type="button" onclick={reply}
-					><Icon name="reply" size={18} /> <span>{labels.comment}</span></Button
-				>
+				{#if canReply}<Button variant="secondary" size="sm" type="button" onclick={reply}
+						><Icon name="reply" size={18} /> <span>{labels.comment}</span></Button
+					>{/if}
 			</div>
 		</div>
 	{/if}
@@ -299,9 +303,9 @@
 	<section class="blog-comments" id="comments" aria-labelledby="comments-title">
 		<div class="comments-heading">
 			<h2 id="comments-title">{labels.comments} <span>{replies.length}</span></h2>
-			{#if post}<Button variant="secondary" size="sm" type="button" onclick={reply}
+			{#if post && canReply}<Button variant="secondary" size="sm" type="button" onclick={reply}
 					>{labels.write}</Button
-				>{/if}
+				>{:else if post}<span class="comments-closed">{m.replyClosed()}</span>{/if}
 		</div>
 		{#if error && !thread}<p class="state error" role="alert">{labels.loadError} {error}</p>
 		{:else if !thread}<Spinner />
@@ -462,6 +466,10 @@
 		gap: 12px;
 		padding-bottom: 16px;
 		border-bottom: 1px solid var(--line);
+	}
+	.comments-closed {
+		color: var(--text-faint);
+		font-size: 0.8rem;
 	}
 	.comments-heading h2 {
 		margin: 0;
