@@ -477,8 +477,8 @@ export const en: Messages = {
 	postScopeKossoriShort: 'Limited',
 	postScopeKossoriDetail:
 		'Only you and bot-tan can read this post. It stays out of shared feeds. You can find it on your own profile or through search. All replies that follow are also limited. Choosing Limited partway through a thread does not change earlier posts.',
-	postScopeFeed: 'This feed',
-	postScopeFeedShort: 'Everyone',
+	postScopeFeed: 'Nagi',
+	postScopeFeedShort: 'Nagi',
 	postScopeFeedDetail:
 		'Posts to the shared Nagi timeline. Posts written on the Blog tab can also appear in search engines.',
 	postScopeBluesky: 'Also Bluesky',
@@ -488,7 +488,7 @@ export const en: Messages = {
 	postScopeExternalUnavailable: 'Enable Bluesky cross-posting in settings to use this',
 	postScopeKossoriArticle: 'A blog post cannot be limited',
 	postScopeKossoriPublicReply:
-		'A reply to a public post cannot be limited. Switch the audience to Feed.',
+		'A reply to a public post cannot be limited. Choose “Nagi” as the post scope.',
 	guestPostTitle: 'Post only on this device',
 	guestPostScope: 'Private on this device',
 	guestPostScopeDetail: 'Saved on this device only. It will not appear in feeds.',
