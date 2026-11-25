@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
-	import {
-		BOT_AAR_PRICE,
-		KEEP_PER_CARD,
-		WELCOME_ZENNY,
-		ZENNY_RATES,
-	} from '$lib/cards/share-board';
+	import { BOT_AAR_PRICE, KEEP_PER_CARD, WELCOME_ZENNY, ZENNY_RATES } from '$lib/cards/share-board';
 
 	/** おすそわけボードのしくみ。画面の短い説明文に入りきらない決まりごとをここに置く。 */
 	let { id, onclose }: { id: string; onclose: () => void } = $props();

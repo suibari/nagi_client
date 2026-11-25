@@ -753,14 +753,19 @@
 		{#if !displayOnly && !post.deleted && !optimistic}
 			<div class="post-actions">
 				{#if !managementOnly}
-					<button
-						class="ghost timeline-action"
-						class:active={composerHost.open && composerHost.replyTarget?.post.cid === post.cid}
-						type="button"
-						aria-label={m.replyPost()}
-						title={m.replyPost()}
-						onclick={() => openComposer('reply')}><Icon name="reply" size={17} /></button
-					>
+					{#if post.replyDisabled && !mine}<span
+							class="timeline-action reply-closed"
+							role="img"
+							aria-label={m.replyClosed()}
+							title={m.replyClosed()}><Icon name="replyOff" size={17} /></span
+						>{:else}<button
+							class="ghost timeline-action"
+							class:active={composerHost.open && composerHost.replyTarget?.post.cid === post.cid}
+							type="button"
+							aria-label={m.replyPost()}
+							title={m.replyPost()}
+							onclick={() => openComposer('reply')}><Icon name="reply" size={17} /></button
+						>{/if}
 					{#if post.isBot || mine}<button
 							class="ghost timeline-action"
 							class:active={composerHost.open && composerHost.quoteTarget?.post?.cid === post.cid}

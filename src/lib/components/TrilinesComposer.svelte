@@ -5,6 +5,8 @@
 	import Icon from './shell/Icon.svelte';
 	import PostScopeDialog from './PostScopeDialog.svelte';
 	import { getLastPostScope, setLastPostScope, type PostScope } from '$lib/post/scope';
+	import { replyGateRecordValue } from '$lib/post/reply-gate';
+	import { replyGatePreference } from '$lib/post/reply-gate-preference.svelte';
 	import { generateTrilinesAssist } from '$lib/api/appview';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
@@ -71,6 +73,8 @@
 	 */
 	let scope = $state<PostScope>('feed');
 	let scopeDialogOpen = $state(false);
+	/** Nagi で返信できる人（POST-10）。通常の投稿と同じ選択を使う。 */
+	const replyGate = $derived(replyGatePreference.value);
 	let loadedEditUri: string | undefined;
 	let fileInputs = $state<HTMLInputElement[]>([]);
 
@@ -257,7 +261,11 @@
 				onposted?.(updated.uri);
 				return;
 			}
-			const created = await createTrilinesDiary(lines, [languagePreferences.postLanguage]);
+			const created = await createTrilinesDiary(
+				lines,
+				[languagePreferences.postLanguage],
+				replyGateRecordValue(replyGate),
+			);
 			if (scope === 'external' && crosspostReady) {
 				try {
 					const shared = await crosspostTrilinesToBluesky(created, lines, {
@@ -429,6 +437,13 @@
 			>
 				<Icon name={scope === 'external' ? 'bluesky' : 'home'} size={15} />
 				<span>{scopeLabel}</span>
+				{#if replyGate !== 'everyone'}<span
+						class="scope-button-flag"
+						role="img"
+						aria-label={m.nagiReplyLimited()}
+						title={m.nagiReplyLimited()}
+						><Icon name={replyGate === 'nobody' ? 'replyOff' : 'bot'} size={14} /></span
+					>{/if}
 			</button>
 		{/if}
 		<div class="composer-submit-actions">
@@ -466,6 +481,9 @@
 			scope = next;
 			setLastPostScope(next);
 		}}
+		bind:replyGate={
+			() => replyGatePreference.value, (next) => next && replyGatePreference.set(next)
+		}
 		onclose={() => (scopeDialogOpen = false)}
 	/>
 {/if}

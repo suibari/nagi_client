@@ -298,6 +298,7 @@ export const createKossoriPost = (input: {
 	createdAt: string;
 	botSilent?: boolean;
 	silentReply?: boolean;
+	replyGate?: 'bot' | 'nobody';
 	reply?: { root: { uri: string; cid: string }; parent: { uri: string; cid: string } };
 }) =>
 	call<{ uri: string; cid: string }>(

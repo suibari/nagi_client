@@ -58,7 +58,7 @@
 
 **課題**：サイレントリプライは「相手に知らせずそっと返す」機能だが、返信先がbotたんだとbotたんが返事をしてしまう。返信ではbotたんサイレントのボタンを出していないので、利用者には止める手段がなかった。
 
-**採用判断**：直接の返信先がbotたん（AppViewの `isBot`）でサイレントリプライをONにした返信には、クライアントが `botSilent: true` も付ける（POST-10）。条件は、サイレントリプライが通知を抑える範囲に揃えて直接の返信先だけとし、本文でbotたんをメンションしただけの返信は含めない。ボタンは増やさず、説明文でbotたんも返信しないことを示す。
+**採用判断**：直接の返信先がbotたん（AppViewの `isBot`）でサイレントリプライをONにした返信には、クライアントが `botSilent: true` も付ける（POST-12）。条件は、サイレントリプライが通知を抑える範囲に揃えて直接の返信先だけとし、本文でbotたんをメンションしただけの返信は含めない。トグルの説明文でbotたんも返信しないことを示す。返信できる人が「botたんのみ」でも、この場合はbotたんは返事をしない。
 
 **理由と制約**：botたんが返事を積むかどうかは、bot側（別リポジトリ）の判定が一か所で `botSilent` を見て決めている。返信でもこっそり投稿でも同じで、`silentReply` は通知の判定にしか使われない（bsky-affirmative-bot `06c1fe06` で確認）。クライアントで `botSilent` を付ければ別リポジトリの変更は要らず、レコードを見ればbotたんが返事をしない理由が分かる。`isBot` が取れない返信先はbotたんでないものとして扱い、`botSilent` は付けない。
 
@@ -80,19 +80,29 @@
 
 **理由と制約**：問題は「引用」という形ではなく、相手の本文を自分の投稿の中に見せることにある。カード画像にも本文が入るので、カードにすれば実質的に引用になる。URLのDIDが本人なら本人の投稿と分かるが、botたんの投稿かどうかはAppViewが付けるisBotでしか分からないため、本人以外は投稿を取得して判定し、判定できるまではカードを付けない。取得に失敗した判定は覚えず、次の入力で確かめ直す。
 
+### D10: 返信できる人を公開範囲モーダルに置き、投稿レコードに持つ
+
+**課題**：Blueskyへ出すときは返信できる人を選べた（BSKY-12）が、Nagiの投稿には人からの返信を止める手段がなかった。送信ボタン横のbotたんサイレントとサイレントリプライはアイコンだけで意味が伝わりにくく、届け先の設定と場所が分かれていた。
+
+**採用判断**：公開範囲モーダルに「誰でも・botたんのみ・返信不可」を置き、送信ボタン横の2つのトグルを撤去した（POST-10・POST-12）。サイレントリプライは返信のときだけモーダル内のトグルにする。値は `com.suibari.nagi.post` と記事の `nagi` 拡張の `replyGate` に保存し、「返信不可」は `botSilent: true` も付ける。返信できる人はブラウザに保存して引き継ぎ、サイレントリプライは相手ごとに決めるので保存せず、返信先が変わるとOFFへ戻す。トグルがなくなった代わりに、制限やサイレントリプライが有効なときは公開範囲ボタンに目印を出す。こっそりスレッドへの返信でも返信の設定を選べるよう、公開範囲ボタンは押せるままにして、モーダル側で公開範囲だけを固定する。
+
+**理由と制約**：投稿後は変更しないと決めた（利用者確認、2026-11-25）。後から変えるには表示時の絞り込みとこっそり投稿の変更APIが必要になるが、届いた通知やbotたんの判断は取り消せず、利点が少ないためである。別レコードにする必要がないので、botたんサイレントと同じくレコードの中に置く。制限の対象は直接の返信だけで、投稿者本人は常に返信できる。3行日記も同じ選択を使う。入力ごとに設定が分かれるより単純だからである（利用者確認、2026-11-25）。日記レコードは TriLinesAt と共有する lexicon なので `botSilent` を足さず、`replyGate: "nobody"` だけでbotたんが返さないようbot側の判定でも扱う。TriLinesAt の編集はレコードを丸ごと引き継ぐので、値は消えない。Bluesky側の返信制限（BSKY-12）とは連動させない。Blueskyには対応しない選択肢があり、片方の変更でもう片方の選択が書き換わるのを避けるためである。人からの返信を実際に止めるのはAppViewの取り込み（API-12）で、クライアントは表示の出し分け（FEED-11）だけを担う。経緯はchange `add-nagi-reply-gate` に残す。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                                            | 探す処理・責務                                                   |
-| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [src/lib/components/Composer.svelte](../../../src/lib/components/Composer.svelte)                   | 投稿状態と送信処理                                               |
-| [src/lib/post/quote-url.ts](../../../src/lib/post/quote-url.ts)                                     | 引用URLの解釈・引用可否・linkCardAllowed                         |
-| [src/lib/post/quote-pick.svelte.ts](../../../src/lib/post/quote-pick.svelte.ts)                     | 貼り付けで付く引用と、引用できないURLの書き戻し                  |
-| [src/lib/post/scope.ts](../../../src/lib/post/scope.ts)                                             | scopeForPublicReply / defaultScopeForPath                        |
-| [src/lib/post/silent-flags.ts](../../../src/lib/post/silent-flags.ts)                               | postSilentFlags（送信時のbotたんサイレント・サイレントリプライ） |
-| [src/lib/drafts/drafts.svelte.ts](../../../src/lib/drafts/drafts.svelte.ts)                         | 下書きの共有状態                                                 |
-| [src/lib/components/ComposerAssistant.svelte](../../../src/lib/components/ComposerAssistant.svelte) | 入力中のおたすけ（placement で配置を選ぶ）                       |
+| ファイル                                                                                            | 探す処理・責務                                               |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [src/lib/components/Composer.svelte](../../../src/lib/components/Composer.svelte)                   | 投稿状態と送信処理                                           |
+| [src/lib/post/quote-url.ts](../../../src/lib/post/quote-url.ts)                                     | 引用URLの解釈・引用可否・linkCardAllowed                     |
+| [src/lib/post/quote-pick.svelte.ts](../../../src/lib/post/quote-pick.svelte.ts)                     | 貼り付けで付く引用と、引用できないURLの書き戻し              |
+| [src/lib/post/scope.ts](../../../src/lib/post/scope.ts)                                             | scopeForPublicReply / defaultScopeForPath                    |
+| [src/lib/post/silent-flags.ts](../../../src/lib/post/silent-flags.ts)                               | postSilentFlags（送信時のbotSilent・silentReply・replyGate） |
+| [src/lib/post/reply-gate.ts](../../../src/lib/post/reply-gate.ts)                                   | 返信できる人の選択肢とブラウザ保存                           |
+| [src/lib/components/PostScopeDialog.svelte](../../../src/lib/components/PostScopeDialog.svelte)     | 公開範囲・返信できる人・サイレントリプライのモーダル         |
+| [src/lib/drafts/drafts.svelte.ts](../../../src/lib/drafts/drafts.svelte.ts)                         | 下書きの共有状態                                             |
+| [src/lib/components/ComposerAssistant.svelte](../../../src/lib/components/ComposerAssistant.svelte) | 入力中のおたすけ（placement で配置を選ぶ）                   |
 
 外部共有は `src/lib/share-target/store.ts` の受信保存・Web Locks、`receive.ts` のSW受信、`src/routes/share-target/+page.svelte` の受信画面、`ShareImportPanel.svelte` の取り込み確認、`Composer.svelte` の `importShared` が担当する。`src/lib/image-selection.ts` が画像選択と共有の処理をつなぐ。
 

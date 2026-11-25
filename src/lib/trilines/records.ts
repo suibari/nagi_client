@@ -39,6 +39,8 @@ export type TrilinesRecord = {
 	hubRef?: string;
 	/** Nagi に投稿として出すか。TriLinesAt からはオプトイン、Nagi から書いた日記は常に true。 */
 	shareToNagi?: boolean;
+	/** Nagi で返信できる人（POST-10）。誰でも返信できるときは付けない。 */
+	replyGate?: 'bot' | 'nobody';
 	sharedPost?: { uri: string; cid: string };
 };
 
@@ -111,6 +113,7 @@ export function newTrilinesRecord(
 	lines: TrilinesRecordLine[],
 	langs: readonly string[],
 	now: Date = new Date(),
+	replyGate?: 'bot' | 'nobody',
 ): TrilinesRecord {
 	return {
 		$type: TRILINES_DIARY,
@@ -119,17 +122,19 @@ export function newTrilinesRecord(
 		createdAt: now.toISOString(),
 		hubRef: TRILINES_HUB_URI,
 		shareToNagi: true,
+		...(replyGate ? { replyGate } : {}),
 	};
 }
 
 export async function createTrilinesDiary(
 	lines: readonly TrilinesLineDraft[],
 	langs: string[],
+	replyGate?: 'bot' | 'nobody',
 ): Promise<{ uri: string; cid: string; record: TrilinesRecord }> {
 	const s = current();
 	const agent = new Agent(s);
 	const blobs = await uploadLineImages(agent, lines);
-	const record = newTrilinesRecord(buildTrilinesLines(lines, blobs), langs);
+	const record = newTrilinesRecord(buildTrilinesLines(lines, blobs), langs, new Date(), replyGate);
 	const { data } = await agent.com.atproto.repo.createRecord({
 		repo: s.did,
 		collection: TRILINES_DIARY,

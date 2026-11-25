@@ -95,6 +95,7 @@
 	import { hasContentWarning, validContentWarningSyntax } from '$lib/atproto/contentWarning';
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
 	import { postSilentFlags } from '$lib/post/silent-flags';
+	import { replyGatePreference } from '$lib/post/reply-gate-preference.svelte';
 	import {
 		restorePostScope,
 		scopeAfterExternalEligibility,
@@ -170,7 +171,8 @@
 	let pendingRestoreId = $state<string | null>(null);
 	let loadedDid = $state<string | undefined>(undefined);
 	let crosspostReady = $state(false);
-	let botSilent = $state(false);
+	/** Nagi で返信できる人（POST-10）。3行日記と同じ選択を使い、前回の値を引き継ぐ。 */
+	const replyGate = $derived(replyGatePreference.value);
 	let silentReply = $state(false);
 	let selfLabels = $state<string[]>([]);
 	/**
@@ -604,9 +606,11 @@
 		if (kossoriThread && scope !== 'kossori') scope = 'kossori';
 	});
 	const replyToBot = $derived(replyTarget?.post.isBot === true);
-	const silentReplyEnableTooltip = $derived(
-		replyToBot ? m.silentReplyToBotEnableTooltip() : m.silentReplyEnableTooltip(),
-	);
+	// サイレントリプライは返信の相手ごとに決める。返信先が変わったらOFFへ戻す。
+	$effect(() => {
+		void replyTarget?.post.uri;
+		untrack(() => (silentReply = false));
+	});
 	/**
 	 * こっそりではないスレッドへの返信か。AppView はこっそりスレッドの外にこっそり投稿を
 	 * 置かせない（createKossoriPost が 400 "Reply root is not a kossori post" を返す）。
@@ -711,7 +715,6 @@
 		scope = restorePostScope(defaultScope);
 		articleTitle = '';
 		articleTags = [];
-		botSilent = false;
 		silentReply = false;
 		selfLabels = [];
 		mediaWarning = false;
@@ -993,7 +996,7 @@
 		const flags = postSilentFlags({
 			reply: Boolean(reply),
 			replyToBot,
-			botSilent,
+			replyGate,
 			silentReply,
 		});
 		const quotedPost = quoteTarget?.post ?? quotePick.post;
@@ -1014,8 +1017,9 @@
 			video?.toRecord(),
 			{ article: Boolean(article) },
 		);
-		// preparePostDraft の引数はすでに多いので、記事フラグは組み立て後に足す。
+		// preparePostDraft の引数はすでに多いので、記事フラグと返信できる人は組み立て後に足す。
 		if (article) draft.article = true;
+		if (flags.replyGate) draft.replyGate = flags.replyGate;
 		const optimisticId = optimisticPosts.add(draft, $session.did, {
 			...(replyPost && { replyParent: replyPost }),
 			...(quotedPost && { quote: quotedPost }),
@@ -1066,6 +1070,7 @@
 								: {}),
 							linkCards: assets.cards,
 							...(draft.botSilent ? { botSilent: true } : {}),
+							...(draft.replyGate ? { replyGate: draft.replyGate } : {}),
 						},
 						...(draft.labels ? { labels: draft.labels } : {}),
 					})
@@ -1513,17 +1518,28 @@
 		{#if !editing}<button
 				class="scope-button"
 				type="button"
-				disabled={busy || kossoriThread}
+				disabled={busy}
 				aria-haspopup="dialog"
 				aria-expanded={scopeDialogOpen}
 				aria-label={m.postScopeOpenAria({ scope: scopeLabel })}
-				title={kossoriThread
-					? m.postScopeKossoriDetail()
-					: m.postScopeOpenAria({ scope: scopeLabel })}
+				title={m.postScopeOpenAria({ scope: scopeLabel })}
 				onclick={() => (scopeDialogOpen = true)}
 			>
 				<Icon name={scopeIcon} size={15} />
 				<span>{scopeLabel}</span>
+				{#if replyGate !== 'everyone'}<span
+						class="scope-button-flag"
+						role="img"
+						aria-label={m.nagiReplyLimited()}
+						title={m.nagiReplyLimited()}
+						><Icon name={replyGate === 'nobody' ? 'replyOff' : 'bot'} size={14} /></span
+					>{/if}
+				{#if replyTarget && silentReply}<span
+						class="scope-button-flag"
+						role="img"
+						aria-label={m.silentReplyLabel()}
+						title={m.silentReplyLabel()}><Icon name="bellOff" size={14} /></span
+					>{/if}
 			</button>{/if}
 		<div class="composer-status">
 			<span>{graphemes}{blog ? '' : ' / 3000'}</span>
@@ -1547,35 +1563,6 @@
 				{/if}
 			</div>{/if}
 		<div class="composer-submit-actions">
-			{#if editing}
-				<!-- botたんの反応の有無は公開時に決まる。編集では変えない。 -->
-			{:else if replyTarget}
-				<button
-					class="icon-action bot-silent-toggle"
-					class:active={silentReply}
-					type="button"
-					disabled={busy}
-					aria-label={silentReply ? m.silentReplyDisableTooltip() : silentReplyEnableTooltip}
-					aria-pressed={silentReply}
-					title={silentReply ? m.silentReplyDisableTooltip() : silentReplyEnableTooltip}
-					onclick={() => (silentReply = !silentReply)}
-				>
-					<Icon name="bellOff" size={18} />
-				</button>
-			{:else}
-				<button
-					class="icon-action bot-silent-toggle"
-					class:active={botSilent}
-					type="button"
-					disabled={busy}
-					aria-label={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
-					aria-pressed={botSilent}
-					title={botSilent ? m.botSilentDisableTooltip() : m.botSilentEnableTooltip()}
-					onclick={() => (botSilent = !botSilent)}
-				>
-					<Icon name="bot-off" size={18} />
-				</button>
-			{/if}
 			<Button
 				variant="primary"
 				class="submit-primary"
@@ -1632,6 +1619,15 @@
 		}}
 		bind:bskyGates
 		bskyReplyApplicable={!replyTarget}
+		scopeLocked={kossoriThread}
+		scopeLockedReason={kossoriThread ? m.postScopeKossoriDetail() : ''}
+		bind:replyGate={
+			() => replyGatePreference.value, (next) => next && replyGatePreference.set(next)
+		}
+		bind:silentReply={
+			() => (replyTarget ? silentReply : undefined), (next) => (silentReply = Boolean(next))
+		}
+		{replyToBot}
 		onclose={() => (scopeDialogOpen = false)}
 	/>
 {/if}

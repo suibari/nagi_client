@@ -100,6 +100,7 @@ export type ArticleInput = {
 		embed?: unknown;
 		linkCards?: unknown;
 		botSilent?: boolean;
+		replyGate?: 'bot' | 'nobody';
 	};
 	labels?: unknown;
 	/** Nagi 投稿の rkey。document の rkey にもそのまま使う。 */

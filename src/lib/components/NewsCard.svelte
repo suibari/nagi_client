@@ -114,7 +114,12 @@
 </script>
 
 {#if !deleted && !moderation.hidden}<article class="news-card" class:unread class:embedded>
-		<ContentWarningMask kind="content" active={moderation.warn} title={m.moderationAutomaticWarning()} reasons={moderationReasons}>
+		<ContentWarningMask
+			kind="content"
+			active={moderation.warn}
+			title={m.moderationAutomaticWarning()}
+			reasons={moderationReasons}
+		>
 			{#if reasonGenre}<p class="news-reason">
 					<Icon name="heart" size={14} /><span
 						>{m.newsRecommendedReason({ genre: reasonGenre })}</span

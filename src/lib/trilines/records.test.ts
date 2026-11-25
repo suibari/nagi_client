@@ -32,6 +32,12 @@ describe('newTrilinesRecord', () => {
 			shareToNagi: true,
 		});
 	});
+
+	it('返信できる人を制限したときだけ replyGate を付ける', () => {
+		const date = new Date('2026-11-03T00:00:00Z');
+		expect(newTrilinesRecord([{ text: 'a' }], [], date, 'nobody').replyGate).toBe('nobody');
+		expect(newTrilinesRecord([{ text: 'a' }], [], date)).not.toHaveProperty('replyGate');
+	});
 });
 const { buildTrilinesShareText } = await import('./share');
 
