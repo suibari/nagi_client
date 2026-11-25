@@ -1,7 +1,12 @@
 import { BskyThreadLoader, toThreadSnapshot } from './thread';
 import { get } from 'svelte/store';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import { Agent, type AppBskyFeedDefs, type ModerationOpts } from '@atproto/api';
+import {
+	Agent,
+	type AppBskyActorDefs,
+	type AppBskyFeedDefs,
+	type ModerationOpts,
+} from '@atproto/api';
 import type { OAuthSession } from '@atproto/oauth-client-browser';
 import { session } from '$lib/oauth/session.svelte';
 import { feedGeneratorUri, isFeedGeneratorUri, parseFeedInput } from './links';
@@ -67,6 +72,14 @@ type Context = {
 };
 let context: Context | undefined;
 
+class BskyAgent extends Agent {
+	// SDKのgetPreferencesは旧フィード設定を変換したあと、このメソッドで保存を試みる。
+	// NagiのOAuth権限では設定を書き込めないので、変換結果は読み取りにだけ使う。
+	override async overwriteSavedFeeds(savedFeeds: AppBskyActorDefs.SavedFeed[]) {
+		return savedFeeds;
+	}
+}
+
 /**
  * @atproto/api は応答を lexicon で厳密に検証し、1件でも上限を超えた値（1000文字を超える動画の alt など）が
  * あるとページごと捨てる。Bluesky AppView 自身はその投稿を返しており HTTP も成功しているので、閲覧では
@@ -96,7 +109,7 @@ function currentContext(): Context {
 	const current = get(session);
 	if (!current) throw new Error('Authentication required');
 	if (context?.session !== current) {
-		const agent = new Agent(current);
+		const agent = new BskyAgent(current);
 		agent.configureProxy(`${BSKY_APPVIEW_DID}#bsky_appview`);
 		context = { session: current, agent };
 	}
@@ -382,8 +395,6 @@ export async function deleteCrosspostCopies(copy: {
 export type BskyNotificationPage = {
 	items: BskyNotificationView[];
 	cursor?: string;
-	/** 一覧で一番新しい通知の時刻。表示したらここまでを既読にする。 */
-	latest?: string;
 };
 
 const GET_POSTS_LIMIT = 25;
@@ -392,7 +403,10 @@ const GET_POSTS_LIMIT = 25;
  * Bluesky の通知（NOTIFY-07）。ミュート・ブロックは Bluesky 側で除いたものが返る。
  * いいね・リポストの対象の投稿は通知に本文が無いので、まとめて引いてラベルごと添える。
  */
-export async function getBskyNotifications(cursor?: string): Promise<BskyNotificationPage> {
+export async function getBskyNotifications(
+	cursor?: string,
+	{ unreadOnly = false }: { unreadOnly?: boolean } = {},
+): Promise<BskyNotificationPage> {
 	const ctx = currentContext();
 	await loadPrefs(ctx);
 	const { data } = await lenient(
@@ -402,10 +416,11 @@ export async function getBskyNotifications(cursor?: string): Promise<BskyNotific
 			reasons: [...BSKY_NOTIFICATION_REASONS],
 		}),
 	);
+	const notifications = unreadOnly
+		? data.notifications.filter((notification) => !notification.isRead)
+		: data.notifications;
 	const uris = [
-		...new Set(
-			data.notifications.flatMap((notification) => notificationPostUri(notification) ?? []),
-		),
+		...new Set(notifications.flatMap((notification) => notificationPostUri(notification) ?? [])),
 	];
 	const posts = new Map<string, AppBskyFeedDefs.PostView>();
 	for (let index = 0; index < uris.length; index += GET_POSTS_LIMIT) {
@@ -415,20 +430,14 @@ export async function getBskyNotifications(cursor?: string): Promise<BskyNotific
 		for (const post of page.posts) posts.set(post.uri, post);
 	}
 	return {
-		items: toBskyNotifications(data.notifications, posts),
+		items: toBskyNotifications(notifications, posts),
 		cursor: data.cursor && data.cursor !== cursor ? data.cursor : undefined,
-		latest: data.notifications[0]?.indexedAt,
 	};
 }
 
 /** 表示した最新の通知までを Bluesky 側で既読にする。Nagi の通知の既読とは別。 */
 export async function markBskyNotificationsSeen(seenAt: string): Promise<void> {
 	await currentContext().agent.app.bsky.notification.updateSeen({ seenAt });
-}
-
-export async function getBskyUnreadCount(): Promise<number> {
-	const { data } = await currentContext().agent.app.bsky.notification.getUnreadCount({});
-	return data.count;
 }
 
 const isRecordNotFound = (error: unknown) =>

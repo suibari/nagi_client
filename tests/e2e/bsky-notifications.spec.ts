@@ -21,8 +21,8 @@ const reply = 'at://did:plc:dave/app.bsky.feed.post/reply';
 const adult = 'at://did:plc:erin/app.bsky.feed.post/adult';
 type Seed = { reason: string; name: string; uri: string; subject?: string; at: string };
 const seeds: Seed[] = [
+	{ reason: 'mention', name: 'erin', uri: adult, at: '2026-11-21T00:06:00.000Z' },
 	{ reason: 'reply', name: 'dave', uri: reply, at: '2026-11-21T00:05:00.000Z' },
-	{ reason: 'mention', name: 'erin', uri: adult, at: '2026-11-21T00:04:00.000Z' },
 	...['alice', 'bob', 'carol'].map((name, index) => ({
 		reason: 'like',
 		name,
@@ -44,14 +44,18 @@ const notifications = seeds.map((item) => ({
 	reason: item.reason,
 	...(item.subject ? { reasonSubject: item.subject } : {}),
 	record: {},
-	isRead: item.reason !== 'reply',
 	indexedAt: item.at,
 }));
 
-type Calls = { bskySeen: string[]; nagiSeen: number; failList: boolean };
+type Calls = { bskySeen: string[]; nagiSeen: number; failList: boolean; unread: string[] };
 
-async function setup(page: Page, opts: { tab?: 'bluesky'; unread?: number } = {}) {
-	const calls: Calls = { bskySeen: [], nagiSeen: 0, failList: false };
+async function setup(page: Page, opts: { tab?: 'bluesky'; unread?: string[] } = {}) {
+	const calls: Calls = {
+		bskySeen: [],
+		nagiSeen: 0,
+		failList: false,
+		unread: opts.unread ?? ['reply'],
+	};
 	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.route('**/xrpc/**', async (route) => {
 		const url = new URL(route.request().url());
@@ -87,9 +91,16 @@ async function setup(page: Page, opts: { tab?: 'bluesky'; unread?: number } = {}
 			case 'app.bsky.notification.listNotifications':
 				if (calls.failList)
 					return route.fulfill({ status: 503, json: { error: 'Unavailable', message: 'down' } });
-				return route.fulfill({ json: { notifications } });
+				return route.fulfill({
+					json: {
+						notifications: notifications.map((item) => ({
+							...item,
+							isRead: !calls.unread.includes(item.reason),
+						})),
+					},
+				});
 			case 'app.bsky.notification.getUnreadCount':
-				return route.fulfill({ json: { count: opts.unread ?? 0 } });
+				return route.fulfill({ json: { count: 2 } });
 			case 'app.bsky.notification.updateSeen':
 				calls.bskySeen.push(route.request().postDataJSON().seenAt);
 				return route.fulfill({ json: {} });
@@ -117,6 +128,8 @@ async function setup(page: Page, opts: { tab?: 'bluesky'; unread?: number } = {}
 				});
 			case 'app.bsky.actor.getPreferences':
 				return route.fulfill({ json: { preferences: [] } });
+			case 'app.bsky.actor.putPreferences':
+				return route.fulfill({ status: 403, json: { error: 'Forbidden' } });
 			case 'app.bsky.labeler.getServices':
 				return route.fulfill({ json: { views: [] } });
 			default:
@@ -128,13 +141,29 @@ async function setup(page: Page, opts: { tab?: 'bluesky'; unread?: number } = {}
 }
 
 test('separates Bluesky notifications into their own tab, opening on Nagi', async ({ page }) => {
-	const calls = await setup(page, { unread: 2 });
+	const calls = await setup(page);
 	const tabs = page.getByRole('tablist', { name: '通知の種類' });
 	await expect(tabs.getByRole('tab', { name: 'Nagi' })).toHaveAttribute('aria-selected', 'true');
 	await expect(page.getByText('Nagiの返信')).toBeVisible();
 	await expect(tabs.getByRole('img', { name: 'Blueskyに未読の通知があります' })).toBeVisible();
 	expect(calls.bskySeen).toEqual([]);
 	await expect.poll(() => calls.nagiSeen).toBeGreaterThan(0);
+});
+
+test('clears the Bluesky badge on return when only excluded notifications are unread', async ({
+	page,
+}) => {
+	await page.clock.install();
+	const calls = await setup(page);
+	const badge = page.getByRole('img', { name: 'Blueskyに未読の通知があります' });
+	await expect(badge).toBeVisible();
+
+	// Bluesky側で返信を既読にしたあと、非表示の通知だけが未読。
+	calls.unread = ['mention', 'like-via-repost'];
+	await page.clock.fastForward(1_100);
+	await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+	await expect(badge).toHaveCount(0);
+	expect(calls.bskySeen).toEqual([]);
 });
 
 test('lists each like on its own, without counts, and marks Bluesky as seen', async ({ page }) => {

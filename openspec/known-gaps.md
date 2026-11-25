@@ -119,9 +119,11 @@ change [bluesky-interactions](changes/archive/2026-11-22-bluesky-interactions/pr
 
 Blueskyへの返信・引用の入力欄には、最初の版では動画とメディアのself-labelを付ける手段が無い。投稿した返信はフィードの会話の再取得（30秒ごと）まで表示に出ない。
 
-調査中に、Blueskyの閲覧の準備で`@atproto/api`の`getPreferences`が保存フィードの設定を新形式へ移すため`putPreferences`を呼ぶことがあると分かった。新形式の設定をまだ持たないアカウントだけで起きると見ている。Nagiはこの権限を要求していないので書き込みは失敗するはずだが、その失敗がフィードの読み込みを止めるかは確かめていない。今回の変更とは別の既存の課題として残す。
+`@atproto/api`の`getPreferences`は、新形式の保存フィード設定がないときに`putPreferences`を呼ぶ。Nagiは設定の書き込み権限を要求していないため、通知バッジの修正に合わせて、SDKの変換結果を読み取りにだけ使うようにした。書き込みを拒否するモックでも通知を取得できることを確認した。
 
 検証の詳細はchangeの [verification.md](changes/archive/2026-11-22-bluesky-interactions/verification.md) に記す。
+
+Blueskyタブの未読の印は、以前は通知一覧と異なるAPIの未読総数を参照していたため、タブに表示できる未読がなくても残り得た。また、一覧で非表示の通知が先頭にある場合も、その通知の時刻まで既読にしていた。NOTIFY-07に合わせ、印と既読の上限を通知タブの表示条件に揃えた。本番の認証済みアカウントでの再現・確認は未実施。
 
 ## BlueskyのPushの確認境界
 

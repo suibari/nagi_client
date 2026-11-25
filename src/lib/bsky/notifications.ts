@@ -1,5 +1,10 @@
-import type { AppBskyFeedDefs, AppBskyNotificationListNotifications } from '@atproto/api';
+import type {
+	AppBskyFeedDefs,
+	AppBskyNotificationListNotifications,
+	ModerationOpts,
+} from '@atproto/api';
 import { toActor, toPostCard, type BskyActor, type BskyPostCardView } from './mapView';
+import { bskyPostDisplay } from './moderation';
 
 /** Nagi の通知タブに出す Bluesky の通知の種類（NOTIFY-07）。これ以外は出さない。 */
 export const BSKY_NOTIFICATION_REASONS = [
@@ -30,6 +35,14 @@ export type BskyNotificationView = {
 
 const isShown = (reason: string): reason is BskyNotificationReason =>
 	(BSKY_NOTIFICATION_REASONS as readonly string[]).includes(reason);
+
+export function isBskyNotificationVisible(
+	item: BskyNotificationView,
+	moderation: ModerationOpts,
+	viewer: { isAdult: boolean },
+): boolean {
+	return !item.post || !bskyPostDisplay(item.post.raw, moderation, viewer).hidden;
+}
 
 /** 通知に添えて見せる投稿の URI。相手の投稿か、反応の付いた自分の投稿か。 */
 export function notificationPostUri(notification: Notification): string | undefined {
