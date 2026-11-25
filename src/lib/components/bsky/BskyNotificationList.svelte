@@ -10,7 +10,7 @@
 	} from '$lib/bsky/agent';
 	import { bskyConversations } from '$lib/bsky/conversation';
 	import { bskyPostDisplay } from '$lib/bsky/moderation';
-	import type { BskyNotificationView } from '$lib/bsky/notifications';
+	import { isBskyNotificationVisible, type BskyNotificationView } from '$lib/bsky/notifications';
 	import { dateLocale, m } from '$lib/i18n/i18n.svelte';
 	import { ageAssurance } from '$lib/moderation/age.svelte';
 	import { session } from '$lib/oauth/session.svelte';
@@ -33,7 +33,7 @@
 	}: {
 		/** 表示中のタブか。見えていない間は取得も既読化もしない。 */
 		active: boolean;
-		/** Bluesky 側で既読にできた。タブの未読の印を消すのに使う。 */
+		/** Bluesky 側で既読にできた。 */
 		onseen?: () => void;
 		/** ナビの再押下などで読み直す合図。 */
 		refreshToken?: number;
@@ -53,30 +53,33 @@
 
 	const visible = $derived(
 		moderation
-			? items.filter(
-					(item) =>
-						!item.post ||
-						!bskyPostDisplay(item.post.raw, moderation!, { isAdult: ageAssurance.isAdult }).hidden,
+			? items.filter((item) =>
+					isBskyNotificationVisible(item, moderation!, { isAdult: ageAssurance.isAdult }),
 				)
 			: [],
 	);
 
 	async function reload() {
-		if (loading || !$session) return;
+		const current = $session;
+		if (loading || !current) return;
 		loading = true;
 		try {
 			granted ??= await canInteractWithBsky();
 			if (!granted) return;
 			moderation ??= await getModerationOpts();
 			const page = await getBskyNotifications();
+			if ($session !== current) return;
 			items = page.items;
 			cursor = page.cursor;
 			error = '';
-			if (page.latest && active) {
-				await markBskyNotificationsSeen(page.latest).catch((cause) =>
-					console.warn('[BskyNotificationList] updateSeen failed', cause),
-				);
-				onseen?.();
+			const latest = visible[0]?.createdAt;
+			if (latest && active) {
+				try {
+					await markBskyNotificationsSeen(latest);
+					if ($session === current) onseen?.();
+				} catch (cause) {
+					console.warn('[BskyNotificationList] updateSeen failed', cause);
+				}
 			}
 		} catch (cause) {
 			console.warn('[BskyNotificationList] load failed', cause);

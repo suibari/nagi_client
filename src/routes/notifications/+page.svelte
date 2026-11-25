@@ -22,7 +22,9 @@
 	import BusinessCardDialog from '$lib/components/BusinessCardDialog.svelte';
 	import { cardFromProfile, type BusinessCardData } from '$lib/card/data';
 	import BskyNotificationList from '$lib/components/bsky/BskyNotificationList.svelte';
-	import { getBskyUnreadCount } from '$lib/bsky/agent';
+	import { getBskyNotifications, getModerationOpts } from '$lib/bsky/agent';
+	import { isBskyNotificationVisible } from '$lib/bsky/notifications';
+	import { ageAssurance } from '$lib/moderation/age.svelte';
 	import { hasBlueskyViewScope } from '$lib/optin/scope-optin';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -34,6 +36,7 @@
 	type NotificationTab = 'nagi' | 'bluesky';
 	let blueskyLinked = $state(false);
 	let blueskyUnread = $state(false);
+	let blueskyUnreadRequest = 0;
 	const tab = $derived<NotificationTab>(
 		blueskyLinked && page.url.searchParams.get('tab') === 'bluesky' ? 'bluesky' : 'nagi',
 	);
@@ -44,18 +47,35 @@
 		void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
 	}
 	async function refreshBlueskyUnread() {
-		if (!blueskyLinked || tab === 'bluesky') return;
-		blueskyUnread = (await getBskyUnreadCount().catch(() => 0)) > 0;
+		const request = ++blueskyUnreadRequest;
+		const current = $session;
+		if (!current || !blueskyLinked || tab === 'bluesky') return;
+		const viewer = { isAdult: ageAssurance.isAdult };
+		try {
+			const [{ items }, moderation] = await Promise.all([
+				getBskyNotifications(undefined, { unreadOnly: true }),
+				getModerationOpts(),
+			]);
+			if (request !== blueskyUnreadRequest || $session !== current) return;
+			blueskyUnread = items.some((item) => isBskyNotificationVisible(item, moderation, viewer));
+		} catch {
+			// 次の再取得まで最後に確認できた状態を保つ。
+		}
 	}
 	$effect(() => {
-		const did = $session?.did;
+		const current = $session;
 		blueskyLinked = false;
-		if (!did) return;
+		blueskyUnread = false;
+		if (!current) return;
 		void hasBlueskyViewScope().then((linked) => {
-			if ($session?.did !== did) return;
-			blueskyLinked = linked;
-			void refreshBlueskyUnread();
+			if ($session === current) blueskyLinked = linked;
 		});
+	});
+	$effect(() => {
+		void refreshBlueskyUnread();
+		return () => {
+			blueskyUnreadRequest++;
+		};
 	});
 	// 表示した最新分までを一括既読にしてバッジを落とす。取得後に届いた通知はまだ見えていないので、
 	// seenAt は表示済みの最新 createdAt に限る。Bluesky のタブを見ている間は Nagi の一覧が
@@ -156,7 +176,10 @@
 		const requested = $pageRefresh;
 		if (requested === refreshHandled) return;
 		refreshHandled = requested;
-		untrack(() => void reload());
+		untrack(() => {
+			void reload();
+			void refreshBlueskyUnread();
+		});
 	});
 	/** ゼンカツはお題、ドローの控えは引いた札の名前を、投稿本文の代わりに出す。 */
 	const cardSubjectText = (subject: NonNullable<NotificationView['cardSubject']>) =>
@@ -296,7 +319,7 @@
 		<BskyNotificationList
 			active={tab === 'bluesky'}
 			refreshToken={$pageRefresh}
-			onseen={() => (blueskyUnread = false)}
+			onseen={refreshBlueskyUnread}
 		/>
 	</section>
 {/if}
