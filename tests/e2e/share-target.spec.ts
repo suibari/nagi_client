@@ -136,8 +136,24 @@ test('未ログインの共有を保持してログイン復帰先を記録す�
 	await expect(page.locator('.attachment-preview')).toHaveCount(1);
 });
 
-test('画像はこっそりで保留し、利用者の範囲変更後に取り込む', async ({ page }) => {
+test('画像はこっそりで保留し、利用者が「Nagiに」を選んだ後に投稿できる', async ({ page }) => {
 	await start(page);
+	const cid = 'bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm';
+	await page.route('**/xrpc/com.atproto.repo.uploadBlob', (route) =>
+		route.fulfill({
+			json: {
+				blob: {
+					$type: 'blob',
+					ref: { $link: cid },
+					mimeType: 'image/webp',
+					size: route.request().postDataBuffer()?.length ?? 0,
+				},
+			},
+		}),
+	);
+	await page.route('**/xrpc/com.atproto.repo.createRecord', (route) =>
+		route.fulfill({ json: { uri: `at://${did}/com.suibari.nagi.post/3new`, cid } }),
+	);
 	const id = await receive(page, '', 1);
 	await page.evaluate(() => localStorage.setItem('nagi-last-post-scope', 'kossori'));
 	// addInitScriptのfeed初期値より後、Composerのマウントより前に設定する。
@@ -149,10 +165,19 @@ test('画像はこっそりで保留し、利用者の範囲変更後に取り�
 	await expect(page.getByRole('button', { name: '確認して取り込む', exact: true })).toBeDisabled();
 	expect((await pending(page, id))?.files).toHaveLength(1);
 	await page.getByRole('button', { name: '投稿範囲：', exact: false }).click();
-	await page.getByRole('radio', { name: 'このフィード', exact: true }).click();
+	await page.getByRole('radio', { name: 'Nagiに', exact: true }).click();
 	await page.getByRole('button', { name: '決定', exact: true }).click();
+	await expect(page.getByRole('button', { name: '投稿範囲：Nagiに（変更する）' })).toBeVisible();
 	await page.getByRole('button', { name: '確認して取り込む', exact: true }).click();
 	await expect(page.locator('.attachment-preview')).toHaveCount(1);
+	const saved = page.waitForResponse('**/xrpc/com.atproto.repo.createRecord');
+	await page.locator('.post-modal').getByRole('button', { name: '投稿する', exact: true }).click();
+	const response = await saved;
+	expect(response.ok()).toBe(true);
+	expect(response.request().postDataJSON()).toMatchObject({
+		collection: 'com.suibari.nagi.post',
+		record: { embed: { images: [{ image: { ref: { $link: cid } } }] } },
+	});
 });
 
 test('別受信を上書きせず、排他ロックはページ終了後に再取得できる', async ({ page, context }) => {

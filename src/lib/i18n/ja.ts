@@ -495,8 +495,8 @@ export const ja = {
 	postScopeKossoriShort: 'こっそり',
 	postScopeKossoriDetail:
 		'自分とbotたんだけが読める投稿です。共有フィードには表示されず、自分のプロフィールや検索で確認できます。ここから続く返信もすべてこっそりになります。途中で選んでも、それまでの投稿は変わりません。',
-	postScopeFeed: 'このフィード',
-	postScopeFeedShort: 'みんなに',
+	postScopeFeed: 'Nagiに',
+	postScopeFeedShort: 'Nagiに',
 	postScopeFeedDetail:
 		'Nagiの共有タイムラインに投稿します。ブログタブで書いた投稿は検索エンジンにも公開されます。',
 	postScopeBluesky: 'Blueskyにも',
@@ -506,7 +506,7 @@ export const ja = {
 	postScopeExternalUnavailable: 'Blueskyへの同時投稿は設定から有効にできます',
 	postScopeKossoriArticle: 'ブログはこっそりにはできません',
 	postScopeKossoriPublicReply:
-		'公開の投稿にはこっそりで返信できません。投稿範囲をフィードに切り替えてください。',
+		'公開の投稿にはこっそりで返信できません。投稿範囲で「Nagiに」を選んでください。',
 	guestPostTitle: 'この端末だけに投稿',
 	guestPostScope: 'この端末のこっそり',
 	guestPostScopeDetail: '投稿はこの端末に保存され、タイムラインには出ません',
