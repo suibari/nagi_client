@@ -7,6 +7,7 @@ const tokens = readFileSync(new URL('../../routes/styles/tokens.css', import.met
 describe('line-art card backgrounds', () => {
 	it('反転するのは透過の線画だけ', () => {
 		expect(isLineArt('anniv-hbd')).toBe(true);
+		expect(isLineArt('anniv-thanksgiving-us')).toBe(true);
 		expect(isLineArt('anniv-halloween')).toBe(false);
 		expect(isLineArt(undefined)).toBe(false);
 	});
