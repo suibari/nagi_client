@@ -10,6 +10,10 @@ export default defineConfig(({ command, mode }) => {
 	const isDev = command === 'serve';
 	const publicEnv = loadEnv(mode, '.', 'PUBLIC_');
 	const deploymentEnv = loadEnv(mode, '.', '');
+	const umamiWebsiteId =
+		!isDev && deploymentEnv.VERCEL_ENV === 'production'
+			? (publicEnv.PUBLIC_UMAMI_WEBSITE_ID?.trim() ?? '')
+			: '';
 	const directAppView = publicEnv.PUBLIC_APPVIEW_DIRECT === 'true';
 	const appViewTarget = publicEnv.PUBLIC_APPVIEW_URL || 'http://127.0.0.1:3202';
 	const oauthDeployment = resolveOAuthDeployment(deploymentEnv);
@@ -20,9 +24,7 @@ export default defineConfig(({ command, mode }) => {
 	return {
 		define: {
 			__NAGI_OAUTH_DEPLOYMENT__: JSON.stringify(oauthDeployment),
-			__NAGI_UMAMI_WEBSITE_ID__: JSON.stringify(
-				isDev ? '' : (publicEnv.PUBLIC_UMAMI_WEBSITE_ID ?? ''),
-			),
+			__NAGI_UMAMI_WEBSITE_ID__: JSON.stringify(umamiWebsiteId),
 		},
 		// ブラウザからローカル AppView を直接参照すると、svelte-kit sync が生成した本番用
 		// CSP を開発サーバーが再利用した際に拒否される。開発時は同一オリジンへ寄せ、
@@ -104,7 +106,7 @@ export default defineConfig(({ command, mode }) => {
 					directives: {
 						'default-src': ['self'],
 						// SEO-08: 外部scriptはUmamiのトラッカーの配信元だけを許可する。
-						'script-src': isDev ? ['self'] : ['self', 'https://cloud.umami.is'],
+						'script-src': umamiWebsiteId ? ['self', 'https://cloud.umami.is'] : ['self'],
 						// heic-to/csp は eval 不要のデコーダーを blob Worker で実行する。
 						'worker-src': ['self', 'blob:'],
 						'style-src': ['self', 'unsafe-inline'],

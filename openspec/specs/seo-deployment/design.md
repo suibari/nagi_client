@@ -56,7 +56,7 @@
 
 **課題**：流入の多いGoogle検索からニュースへ来た人の動線を知りたいが、無料のVercel Web Analyticsはページ単位の集計だけで、ページ間の遷移・滞在時間が分からず、表示期間も1か月に限られる。HobbyプランではOAuth診断のカスタムイベントも記録されない可能性がある。
 
-**採用判断**：Cookieを使わないUmami Cloudを加え、当面はVercelと併用する。トラッカーは `cloud.umami.is` から直接読み込み、CSPの `script-src` にはこのホストだけを加える。サイトIDはビルド時に `PUBLIC_UMAMI_WEBSITE_ID` から埋め込み、開発ビルドでは空にする。本番ホスト名以外では読み込まない。クエリ文字列とハッシュは送らず、Do Not Trackを尊重し、`identify` は使わない。OAuth診断は両方へ送る。
+**採用判断**：Cookieを使わないUmami Cloudを加え、当面はVercelと併用する。`VERCEL_ENV` が `production` でサイトIDが設定されたビルドで `PUBLIC_UMAMI_WEBSITE_ID` を埋め込み、CSPの `script-src` に `cloud.umami.is` を加える。本番ホスト名で開き、Do Not Trackが無効な場合にこのホストからトラッカーを直接読み込む。クエリ文字列とハッシュは送らず、`identify` は使わない。OAuth診断は両方へ送る。
 
 **理由と制約**：自サイト経由で中継すると、Umamiから見える送信元IPがVercelのものになり、訪問者の判定と地域の推定が崩れる。そのため直接読み込み、広告ブロッカーによる取りこぼしは許容する。クエリを捨てるとUTMと `/advent?day=` などの内訳を失うが、検索流入の詳細はGoogle Search Consoleで補う。送信内容を変えるときはプライバシーポリシー（MOD-05）も同時に改める。Vercelを外す判断は別に行う。
 

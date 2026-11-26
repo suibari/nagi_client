@@ -20,6 +20,10 @@ export function shouldLoadUmami(websiteId: string, hostname: string): boolean {
 export function injectUmami(websiteId: string): void {
 	if (typeof document === 'undefined') return;
 	if (!shouldLoadUmami(websiteId, location.hostname)) return;
+	const browser = window as Window & { doNotTrack?: string | number };
+	const navigator = browser.navigator as Navigator & { msDoNotTrack?: string | number };
+	const dntSignals = [navigator.doNotTrack, browser.doNotTrack, navigator.msDoNotTrack];
+	if (dntSignals.some((signal) => signal === '1' || signal === 1 || signal === 'yes')) return;
 	if (document.querySelector(`script[src="${UMAMI_SCRIPT_SRC}"]`)) return;
 	const script = document.createElement('script');
 	script.defer = true;
