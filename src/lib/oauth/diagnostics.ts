@@ -1,4 +1,5 @@
 import { track } from '@vercel/analytics';
+import { trackUmami } from '$lib/analytics/umami';
 
 const LAST_SUCCESS_KEY = 'nagi.oauth.last-success-at';
 
@@ -90,5 +91,7 @@ export function reportOAuthDiagnostic(
 		hoursSinceSuccess: hoursSinceLastSuccess(),
 	};
 	console.warn(`[oauth] ${event}`, properties);
-	track(`oauth_${event.replaceAll('-', '_')}`, properties);
+	const name = `oauth_${event.replaceAll('-', '_')}`;
+	track(name, properties);
+	trackUmami(name, properties);
 }

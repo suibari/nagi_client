@@ -52,17 +52,26 @@
 
 **理由と制約**：更新済みSWが必要であり、旧SWや未登録状態のPOSTを受信成功と扱わない。Pushのfetch以外のイベント処理を維持する。未知URLは引き続き404にする。画像を含む受信の認証・取り込み条件はPOST-11と投稿の主設計に記す。
 
+### D6: アクセス解析にUmami Cloudを加える
+
+**課題**：流入の多いGoogle検索からニュースへ来た人の動線を知りたいが、無料のVercel Web Analyticsはページ単位の集計だけで、ページ間の遷移・滞在時間が分からず、表示期間も1か月に限られる。HobbyプランではOAuth診断のカスタムイベントも記録されない可能性がある。
+
+**採用判断**：Cookieを使わないUmami Cloudを加え、当面はVercelと併用する。トラッカーは `cloud.umami.is` から直接読み込み、CSPの `script-src` にはこのホストだけを加える。サイトIDはビルド時に `PUBLIC_UMAMI_WEBSITE_ID` から埋め込み、開発ビルドでは空にする。本番ホスト名以外では読み込まない。クエリ文字列とハッシュは送らず、Do Not Trackを尊重し、`identify` は使わない。OAuth診断は両方へ送る。
+
+**理由と制約**：自サイト経由で中継すると、Umamiから見える送信元IPがVercelのものになり、訪問者の判定と地域の推定が崩れる。そのため直接読み込み、広告ブロッカーによる取りこぼしは許容する。クエリを捨てるとUTMと `/advent?day=` などの内訳を失うが、検索流入の詳細はGoogle Search Consoleで補う。送信内容を変えるときはプライバシーポリシー（MOD-05）も同時に改める。Vercelを外す判断は別に行う。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
 
-| ファイル                                                                        | 探す処理・責務        |
-| ------------------------------------------------------------------------------- | --------------------- |
-| [src/lib/seo/seo.ts](../../../src/lib/seo/seo.ts)                               | PageSeo / SITE_ORIGIN |
-| [src/routes/sitemap.xml/+server.ts](../../../src/routes/sitemap.xml/+server.ts) | 公開URL集合           |
-| [api/spa.ts](../../../api/spa.ts)                                               | shell取得と索引制御   |
+| ファイル                                                                        | 探す処理・責務                  |
+| ------------------------------------------------------------------------------- | ------------------------------- |
+| [src/lib/seo/seo.ts](../../../src/lib/seo/seo.ts)                               | PageSeo / SITE_ORIGIN           |
+| [src/routes/sitemap.xml/+server.ts](../../../src/routes/sitemap.xml/+server.ts) | 公開URL集合                     |
+| [api/spa.ts](../../../api/spa.ts)                                               | shell取得と索引制御             |
 | [api/post-card.tsx](../../../api/post-card.tsx)                                 | 投稿OGPの非公開境界と添付の選択 |
-| [vite.config.ts](../../../vite.config.ts)                                       | 静的生成とCSP         |
+| [vite.config.ts](../../../vite.config.ts)                                       | 静的生成とCSP                   |
+| [src/lib/analytics/umami.ts](../../../src/lib/analytics/umami.ts)               | Umamiの読み込み条件と送信属性   |
 
 ## 出典と変更時の扱い
 
