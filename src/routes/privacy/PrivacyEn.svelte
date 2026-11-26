@@ -359,15 +359,18 @@
 					>)
 				</td>
 				<td>
-					Umami Cloud receives the page path (excluding the query string and anything after # in the
-					URL), page title, referrer, timestamp, screen size, language, approximate location derived
-					from the IP address, and device, OS, and browser type. It also aggregates how pages are
-					visited in sequence and how long they are viewed within a single visit. OAuth diagnostics
-					send the same custom events as described for Vercel above. Nothing linked to your account,
-					such as your DID or handle, is sent. Umami uses no cookies; visitors are distinguished by
-					a hash of the IP address and browser type combined with a value that changes monthly, and
-					the IP address itself is not stored in the analytics data. Nothing is sent if your browser
-					has Do Not Track enabled. Aggregated data is retained for the period set by the Umami plan
+					Umami Cloud receives the type of page viewed, such as a profile or a news article. For
+					in-app navigation, it receives the previous page type. When you open Nagi directly from a
+					link, it receives only the referring site's origin. Page titles, query strings, URL
+					fragments and record identifiers are excluded. Umami also processes the visit time, screen
+					size, language, approximate location derived from the IP address, and device, OS, and
+					browser type. It aggregates the sequence of page types and time spent during a visit.
+					OAuth diagnostics send the same custom events as described for Vercel above. Nothing
+					linked to your account, such as your DID or handle, is sent. Umami uses no cookies;
+					visitors are distinguished by a hash of the IP address and browser type combined with a
+					value that changes monthly, and the IP address itself is not stored in the analytics data.
+					Nothing is sent if your browser has Do Not Track enabled. Aggregated data is retained for
+					the period set by the Umami plan
 				</td>
 			</tr>
 			<tr>

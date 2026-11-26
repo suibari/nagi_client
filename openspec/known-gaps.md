@@ -163,3 +163,7 @@ Bluesky連携設定の日本語・英語の説明に、現行のクロスポス�
 
 - 返信は対象外と案内しているが、本人のクロスポスト済み投稿に既存コピーがある場合、Blueskyへ返信を続けられる。 [BSKY-04](specs/bluesky-integration/spec.md#bsky-04)
 - 長文はBlueskyで複数投稿に分割すると案内しているが、Nagiのクロスポストでは冒頭と「もっと見る」のリンクを1件投稿する。Bluesky専用の返信・引用では分割する。 [BSKY-05](specs/bluesky-integration/spec.md#bsky-05)
+
+## Umamiの閲覧URLとタイトル
+
+導入時は自動計測のURLと参照元のパスから動的なDID・レコードキーを除いておらず、本文由来のタイトルも計測対象だった。日英のプライバシーポリシーにあるアカウントと結び付く情報の扱いに合わせ、[minimize-umami-data](changes/minimize-umami-data/proposal.md)でUmamiへ渡すページ情報を固定のルートIDと最小化した参照元に置き換えた（[SEO-08](specs/seo-deployment/spec.md#seo-08)）。ニュースなどの集計は個別記事からルート種別単位に変わる。Cloudの実配信版と本番の集計は未確認。

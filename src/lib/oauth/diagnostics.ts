@@ -12,6 +12,22 @@ export type OAuthFailureKind =
 	| 'revoked'
 	| 'unknown';
 
+export type OAuthDiagnosticData = {
+	failure: OAuthFailureKind | 'none';
+	online: boolean;
+	locks: boolean;
+	display: 'unknown' | 'standalone' | 'browser';
+	hoursSinceSuccess: number | null;
+};
+
+const diagnosticNames = {
+	'restore-failed': 'oauth_restore_failed',
+	'restore-recovered': 'oauth_restore_recovered',
+	'session-deleted': 'oauth_session_deleted',
+} as const;
+
+export type OAuthDiagnosticName = (typeof diagnosticNames)[keyof typeof diagnosticNames];
+
 function errorText(error: unknown): string {
 	if (!(error instanceof Error)) return String(error ?? '');
 	const cause = (error as Error & { cause?: unknown }).cause;
@@ -43,7 +59,7 @@ export function classifyOAuthFailure(error: unknown): OAuthFailureKind {
 export const isTransientOAuthFailure = (error: unknown): boolean =>
 	classifyOAuthFailure(error) === 'network';
 
-function displayMode(): string {
+function displayMode(): OAuthDiagnosticData['display'] {
 	if (typeof window === 'undefined') return 'unknown';
 	if (window.matchMedia?.('(display-mode: standalone)').matches) return 'standalone';
 	if ((navigator as Navigator & { standalone?: boolean }).standalone === true) return 'standalone';
@@ -79,11 +95,8 @@ export async function requestPersistentOAuthStorage(): Promise<string> {
 	}
 }
 
-export function reportOAuthDiagnostic(
-	event: 'restore-failed' | 'restore-recovered' | 'session-deleted',
-	error?: unknown,
-): void {
-	const properties = {
+export function reportOAuthDiagnostic(event: keyof typeof diagnosticNames, error?: unknown): void {
+	const properties: OAuthDiagnosticData = {
 		failure: error ? classifyOAuthFailure(error) : 'none',
 		online: typeof navigator === 'undefined' ? false : navigator.onLine,
 		locks: typeof navigator !== 'undefined' && !!navigator.locks,
@@ -91,7 +104,7 @@ export function reportOAuthDiagnostic(
 		hoursSinceSuccess: hoursSinceLastSuccess(),
 	};
 	console.warn(`[oauth] ${event}`, properties);
-	const name = `oauth_${event.replaceAll('-', '_')}`;
+	const name = diagnosticNames[event];
 	track(name, properties);
 	trackUmami(name, properties);
 }

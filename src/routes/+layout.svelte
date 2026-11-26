@@ -10,7 +10,8 @@
 	import { myProfile } from '$lib/profile/me.svelte';
 	import { welcomeTutorial } from '$lib/onboarding/tutorial.svelte';
 	import { resolvePendingOptIns } from '$lib/optin/scope-optin';
-	import { beforeNavigate } from '$app/navigation';
+	import { afterNavigate, beforeNavigate } from '$app/navigation';
+	import { trackUmamiPageView } from '$lib/analytics/umami';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { startUnreadPolling } from '$lib/notifications/unread.svelte';
@@ -82,6 +83,10 @@
 	let pushSyncedDid: string | undefined;
 	let preferencesDid: string | undefined;
 	let guestCardClaimKey: string | undefined;
+	afterNavigate(({ type, from, to }) => {
+		// 初回通知の from と to は、プリレンダー済みかどうかで変わる。
+		trackUmamiPageView(type === 'enter' ? { from: null, to: page } : { from, to });
+	});
 	beforeNavigate(() => {
 		postTranslations.cancelPending();
 		// 画面を移ったら投稿の追従は打ち切る。移った先で急に画面が動くほうが戸惑う。
