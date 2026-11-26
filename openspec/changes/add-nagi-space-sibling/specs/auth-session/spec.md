@@ -2,7 +2,7 @@
 
 ### Requirement: AUTH-06 姉妹アプリへのヒントとチケット
 
-閲覧者DIDのヒントは許可したcanonical originだけに付け、既存didを尊重しなければならない（MUST）。許可するoriginは、botたんのお部屋（https://room.bot-tan.com）とNagi Space（https://space.nagi.suibari.com）とする。60秒有効のSSOチケットはクリック時に取得し、失敗時はDIDヒント付きの通常OAuth導線へ戻す。修飾キー操作はブラウザに任せ、新規タブは同期で開いてopenerを切る。
+閲覧者DIDのヒントは許可したcanonical originだけに付け、既存didを尊重しなければならない（MUST）。許可するoriginは、botたんのお部屋（https://room.bot-tan.com）とNagi Space（https://nagi-space.suibari.com）とする。60秒有効のSSOチケットはクリック時に取得し、失敗時はDIDヒント付きの通常OAuth導線へ戻す。修飾キー操作はブラウザに任せ、新規タブは同期で開いてopenerを切る。
 
 #### Scenario: 無関係な外部リンク
 

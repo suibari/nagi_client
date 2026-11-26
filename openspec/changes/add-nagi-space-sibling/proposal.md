@@ -6,7 +6,7 @@ Nagi の姉妹アプリとして、リアルタイム音声チャット「Nagi S
 
 ## What Changes
 
-- 姉妹アプリの許可 origin（`src/lib/sso/links.ts` の `SSO_APPS`）に Nagi Space（`https://space.nagi.suibari.com`。ドメインは仮で、Nagi Space 側の決定待ち）を加える。これにより、Nagi Space へのリンクに閲覧者の DID ヒントが付く（AUTH-06）。
+- 姉妹アプリの許可 origin（`src/lib/sso/links.ts` の `SSO_APPS`）に Nagi Space（`https://nagi-space.suibari.com`。ドメインは仮で、Nagi Space 側の決定待ち）を加える。これにより、Nagi Space へのリンクに閲覧者の DID ヒントが付く（AUTH-06）。
 - Nagi Space の SSO チケットの受け口は `/sso`（nagi-passport の既定）。チケットを使う導線（`gotoSsoApp`）は今回は足さない。リンクの DID ヒントだけで、Nagi Space はハンドル入力を省いて認可へ進む。
 
 ## Capabilities
