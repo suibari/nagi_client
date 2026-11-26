@@ -12,8 +12,8 @@
 	<ul>
 		<li><strong>We never receive your password, and we don't collect your email.</strong></li>
 		<li>
-			<strong>No advertising.</strong> We use cookie-free Vercel Web Analytics to collect anonymous traffic
-			statistics for service improvements.
+			<strong>No advertising.</strong> We use cookie-free Vercel Web Analytics and Umami to collect anonymous
+			traffic statistics for service improvements.
 		</li>
 		<li>
 			Your PDS holds the authoritative copy of your posts. Nagi keeps
@@ -351,6 +351,26 @@
 				</td>
 			</tr>
 			<tr>
+				<td>
+					Our analytics provider (<a
+						href="https://umami.is/privacy"
+						target="_blank"
+						rel="noreferrer noopener">Umami</a
+					>)
+				</td>
+				<td>
+					Umami Cloud receives the page path (excluding the query string and anything after # in the
+					URL), page title, referrer, timestamp, screen size, language, approximate location derived
+					from the IP address, and device, OS, and browser type. It also aggregates how pages are
+					visited in sequence and how long they are viewed within a single visit. OAuth diagnostics
+					send the same custom events as described for Vercel above. Nothing linked to your account,
+					such as your DID or handle, is sent. Umami uses no cookies; visitors are distinguished by
+					a hash of the IP address and browser type combined with a value that changes monthly, and
+					the IP address itself is not stored in the analytics data. Nothing is sent if your browser
+					has Do Not Track enabled. Aggregated data is retained for the period set by the Umami plan
+				</td>
+			</tr>
+			<tr>
 				<td>Your browser's push service (Google, Apple, Mozilla, and so on)</td>
 				<td>
 					Only if you enable notifications. A notification includes the other person's display name
@@ -404,8 +424,9 @@
 </div>
 <p>
 	We do not provide your information to third parties other than the above.
-	<strong>We do not provide information to advertising companies.</strong> Vercel Web Analytics, described
-	above, is the only analytics service we use. This does not apply where disclosure is required by law.
+	<strong>We do not provide information to advertising companies.</strong> Vercel Web Analytics and Umami,
+	described above, are the only analytics services we use. This does not apply where disclosure is required
+	by law.
 </p>
 <p>
 	Posting features <strong>create additional records in your own PDS.</strong> Optional Bluesky
@@ -537,8 +558,8 @@
 		outside the operator's control.
 	</li>
 	<li>
-		Anonymous, aggregated traffic statistics in Vercel Web Analytics. They are not retained in
-		association with an individual user, so they cannot be deleted account by account.
+		Anonymous, aggregated traffic statistics in Vercel Web Analytics and Umami. They are not
+		retained in association with an individual user, so they cannot be deleted account by account.
 	</li>
 </ul>
 <p>

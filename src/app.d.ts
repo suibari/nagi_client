@@ -1,5 +1,6 @@
 declare global {
 	const __NAGI_OAUTH_DEPLOYMENT__: import('$lib/oauth/deployment').OAuthDeployment;
+	const __NAGI_UMAMI_WEBSITE_ID__: string;
 
 	namespace App {
 		interface PageData {

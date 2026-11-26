@@ -14,11 +14,12 @@ SvelteKitの静的HTMLとSPA fallback、Vercel Functionsを組み合わせる。
 | ---------------------- | ------------------------------------------------------- | ----------------- |
 | 索引可能なページの宣言 | 本文を返せたページだけが検索向けメタ情報を持つ。        | [SEO-01](#seo-01) |
 | canonicalとsitemap     | 実体のあるURLを統一し、記事集合を共有する。             | [SEO-02](#seo-02) |
-| 共有画像               | 投稿の添付やプロフィール・季節カードに応じたOGPを返す。| [SEO-03](#seo-03) |
+| 共有画像               | 投稿の添付やプロフィール・季節カードに応じたOGPを返す。 | [SEO-03](#seo-03) |
 | 外部取得の制限         | 画像やshell取得を信頼できる宛先へ限定する。             | [SEO-04](#seo-04) |
 | 静的配信とfallback     | 生成済み本文を優先し、アプリ画面と未知URLを分ける。     | [SEO-05](#seo-05) |
 | CSPとローカル開発      | 本番の制約と開発proxy、必要なmedia/worker経路を揃える。 | [SEO-06](#seo-06) |
 | 記事の検証情報         | 公開URLとstandard.siteレコードの対応をHTMLへ示す。      | [SEO-07](#seo-07) |
+| アクセス解析           | 流入とページ遷移を、アカウントと結び付けずに集計する。  | [SEO-08](#seo-08) |
 
 ### 主な利用の流れ
 
@@ -170,6 +171,42 @@ CSPはhashモードでbootstrapに追従し、任意PDS/OAuthのHTTPSと動画�
 - **WHEN** lang=en付きのリンクを共有する
 - **THEN** OGPも英語にする
 
+<a id="seo-08"></a>
+
+### Requirement: SEO-08 アクセス解析の送信範囲
+
+本番環境では、Cookieを使わないアクセス解析としてVercel Web AnalyticsとUmami Cloudへページの閲覧を送らなければならない（MUST）。Umamiのトラッカーは、本番のビルドでサイトIDが設定され、本番のホスト名で開いたときだけ読み込む。Umamiへは、URLのクエリ文字列とハッシュを送ってはならない。参照元は送る。解析の訪問者を利用者のDIDやアカウントと結び付けてはならない。ブラウザがDo Not Trackを送っている場合はUmamiへ送らない。CSPは、Umamiのトラッカーの配信元だけを外部のscriptとして許可する。送信先と送信内容を変えるときは、プライバシーポリシーの記述を同時に改める。
+
+#### Scenario: 検索結果ページの閲覧
+
+- **WHEN** 本番で `/search?q=...` を開く
+- **THEN** Umamiへは `/search` のパスと参照元だけを送り、検索語は送らない
+
+#### Scenario: Googleからニュースへ来て別のページへ移る
+
+- **WHEN** Google検索の結果からニュース記事を開き、続けて別のページへ移動する
+- **THEN** Umamiで、同じ訪問の中の入口ページ・移動先・滞在時間を確認できる
+
+#### Scenario: サイトIDが無い・開発環境・プレビュー
+
+- **WHEN** サイトIDが未設定、開発サーバ、または本番以外のホスト名で開く
+- **THEN** Umamiへは何も送らない
+
+#### Scenario: Do Not Trackが有効なブラウザ
+
+- **WHEN** Do Not Trackを送るブラウザで本番を開く
+- **THEN** Umamiへは何も送らない
+
+#### Scenario: ログイン中の閲覧
+
+- **WHEN** ログインした利用者がページを移動する
+- **THEN** UmamiへDIDやハンドルを訪問者の識別子として送らない
+
+#### Scenario: OAuth診断
+
+- **WHEN** OAuthの復旧結果を診断イベントとして記録する
+- **THEN** 同じ項目をVercelとUmamiの両方へ送り、Umamiが読み込まれていなければ失敗せずに省く
+
 ## 参照資料
 
 ### 外部資料
@@ -179,6 +216,8 @@ CSPはhashモードでbootstrapに追従し、任意PDS/OAuthのHTTPSと動画�
 | [SvelteKit — adapter-static](https://svelte.dev/docs/kit/adapter-static)                                               | プリレンダとSPA fallbackを組み合わせる配信構成 |
 | [Google Search Central — robots meta tag](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag) | robots metaとX-Robots-Tagによる索引制御        |
 | [Standard.site — Introduction](https://standard.site/docs/introduction/)                                               | publicationとdocumentによる長文公開の全体像    |
+| [Umami — Tracker configuration](https://docs.umami.is/docs/tracker-configuration)                                      | トラッカーの属性（除外・DNT・ドメイン限定）    |
+| [Umami — Metric definitions](https://docs.umami.is/docs/metric-definitions)                                            | Cookieを使わない訪問者・セッションの判定方法   |
 
 リンクの到達先と対象を2026-11-11に確認した。外部の説明は更新されるため、本リポジトリ固有の制約と外部仕様を区別する。現行実装の基準はこの文書の要件とし、外部仕様への追従で振る舞いを変える場合は差分を記録する。
 
