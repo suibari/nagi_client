@@ -156,3 +156,10 @@ change [allow-feed-swipe-on-images](changes/archive/2026-11-22-allow-feed-swipe-
 ### ブログ編集欄のカード画像と取得上限
 
 本番の投稿OGPが1,184,358バイトのWebPを返し、別リポジトリのAppViewと共用するリンクカード取得処理で同じURLが上限の1,000,000バイトを超えて413になることを確認した。ブログ編集欄ではカードのメタデータを取得できても画像だけが欠ける。編集欄の取得経路に、Nagiの投稿OGPを1 MB以内に縮小して使う処理を追加した。 [MEDIA-06の設計](specs/media-processing/design.md#d4-リンク情報の取得失敗で執筆を止めない)
+
+## Bluesky連携設定の案内
+
+Bluesky連携設定の日本語・英語の説明に、現行のクロスポスト仕様と異なる案内が残っている。文言は [日本語辞書](../src/lib/i18n/ja.ts) と [英語辞書](../src/lib/i18n/en.ts) の `crosspostHelp` と `crosspostSplitNote` で確認した。
+
+- 返信は対象外と案内しているが、本人のクロスポスト済み投稿に既存コピーがある場合、Blueskyへ返信を続けられる。 [BSKY-04](specs/bluesky-integration/spec.md#bsky-04)
+- 長文はBlueskyで複数投稿に分割すると案内しているが、Nagiのクロスポストでは冒頭と「もっと見る」のリンクを1件投稿する。Bluesky専用の返信・引用では分割する。 [BSKY-05](specs/bluesky-integration/spec.md#bsky-05)

@@ -48,11 +48,7 @@
 
 	const uid = $props.id();
 	const replyGateLabel = (value: NagiReplyGate) =>
-		value === 'everyone'
-			? m.nagiReplyEveryone()
-			: value === 'bot'
-				? m.nagiReplyBot()
-				: m.nagiReplyNobody();
+		value === 'everyone' ? m.replyEveryone() : value === 'bot' ? m.nagiReplyBot() : m.replyNobody();
 
 	let dialog = $state<HTMLDivElement>();
 
@@ -171,7 +167,7 @@
 			<section class="scope-nagi-reply" aria-label={m.nagiReplyGateTitle()}>
 				<h3>{m.nagiReplyGateTitle()}</h3>
 				<label class="scope-row" for={`${uid}-reply-gate`}>
-					<span>{m.nagiReplyAudience()}</span>
+					<span>{m.replyAudience()}</span>
 					<select
 						id={`${uid}-reply-gate`}
 						value={replyGate}
