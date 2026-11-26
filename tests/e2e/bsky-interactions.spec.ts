@@ -370,7 +370,7 @@ test('limits replies and quotes on a quote posted to Bluesky', async ({ page }) 
 	await editor(page, 'Blueskyで引用').click();
 	await page.keyboard.type('ひとこと');
 	await dialog.getByText('Blueskyでの返信・引用').click();
-	await dialog.getByLabel('返信できる人').selectOption('nobody');
+	await dialog.getByLabel('返信できる人').selectOption({ label: '返信不可' });
 	await dialog.getByRole('checkbox', { name: '引用を許可する' }).uncheck();
 	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
 	await expect.poll(() => writes.length).toBe(3);
@@ -407,7 +407,9 @@ test('changes reply settings later on my own post made through Nagi', async ({ p
 	await expect(page.getByRole('menuitem', { name: 'Blueskyに通報' })).toHaveCount(0);
 	await page.getByRole('menuitem', { name: '返信・引用の設定' }).click();
 	const dialog = page.getByRole('dialog', { name: 'Blueskyでの返信・引用' });
-	await dialog.getByLabel('返信できる人').selectOption('following');
+	const replyAudience = dialog.getByLabel('返信できる人');
+	await expect(replyAudience.locator('option[value="nobody"]')).toHaveText('返信不可');
+	await replyAudience.selectOption('following');
 	await dialog.getByRole('button', { name: '保存する' }).click();
 	await expect(dialog).toHaveCount(0);
 	expect(writes.map((write) => [write.method, write.body.collection, write.body.rkey])).toEqual([

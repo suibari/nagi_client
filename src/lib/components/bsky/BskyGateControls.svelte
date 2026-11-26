@@ -25,20 +25,20 @@
 	const uid = $props.id();
 	const audienceLabel = (value: ReplyAudience) =>
 		value === 'everyone'
-			? m.bskyReplyEveryone()
+			? m.replyEveryone()
 			: value === 'following'
 				? m.bskyReplyFollowing()
 				: value === 'followers'
 					? m.bskyReplyFollowers()
 					: value === 'mentioned'
 						? m.bskyReplyMentioned()
-						: m.bskyReplyNobody();
+						: m.replyNobody();
 </script>
 
 <div class="bsky-gates">
 	{#if replyApplicable}
 		<label class="bsky-gate-row" for={`${uid}-reply`}>
-			<span>{m.bskyReplyAudience()}</span>
+			<span>{m.replyAudience()}</span>
 			<select
 				id={`${uid}-reply`}
 				value={customReply ? '' : settings.reply}

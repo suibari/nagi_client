@@ -269,6 +269,27 @@ test('a quote of your own crosspost quotes the Bluesky copy', async ({ page }) =
 	});
 });
 
+test('the two reply audiences use the same label and can be set independently', async ({
+	page,
+}) => {
+	await setup(page);
+	await page.getByTestId('crossposted').getByRole('button', { name: '引用', exact: true }).click();
+	const composer = page.getByRole('dialog').last();
+	await composer.getByRole('button', { name: /投稿範囲：/ }).click();
+	const scope = page.getByRole('dialog', { name: '投稿範囲' });
+	await scope.getByRole('radio', { name: 'Blueskyにも', exact: true }).click();
+	const nagi = scope.getByRole('region', { name: 'Nagiでの返信' }).getByLabel('返信できる人');
+	const bluesky = scope
+		.getByRole('region', { name: 'Blueskyでの返信・引用' })
+		.getByLabel('返信できる人');
+	await expect(nagi.locator('option[value="nobody"]')).toHaveText('返信不可');
+	await expect(bluesky.locator('option[value="nobody"]')).toHaveText('返信不可');
+	await nagi.selectOption('nobody');
+	await expect(bluesky).toHaveValue('everyone');
+	await bluesky.selectOption('following');
+	await expect(nagi).toHaveValue('nobody');
+});
+
 async function quoteToBluesky(page: Page, testId: string, text: string) {
 	await page.getByTestId(testId).getByRole('button', { name: '引用', exact: true }).click();
 	const composer = page.getByRole('dialog').last();
