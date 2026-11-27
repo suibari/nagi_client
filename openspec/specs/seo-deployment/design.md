@@ -60,6 +60,12 @@
 
 **理由と制約**：自サイト経由で中継すると、Umamiから見える送信元IPがVercelのものになり、訪問者の判定と地域の推定が崩れる。そのため直接読み込み、広告ブロッカーによる取りこぼしは許容する。クエリを捨てるとUTMと `/advent?day=` などの内訳を失うが、検索流入の詳細はGoogle Search Consoleで補う。送信内容を変えるときはプライバシーポリシー（MOD-05）も同時に改める。Vercelを外す判断は別に行う。
 
+### D7. Nagi Space とブラウザ用 favicon の角丸を揃える
+
+共通 HTML の `rel="icon"` でブラウザ用の透過 PNG を参照する。既存の 96 × 96 px のアイコンから半径 21 px の角丸を作り、輪郭の透明度に中間値を付けて縮小表示でも滑らかにする。半径の比率は Nagi Space の元画像（512 × 512、`rx="112"`）に基づく。 [Nagi Space の元画像](https://github.com/suibari/nagi_space/blob/78889fcc33af040db14facd036b1181d049307b1/static/icons/icon.svg) [favicon 生成処理](https://github.com/suibari/nagi_space/blob/78889fcc33af040db14facd036b1181d049307b1/scripts/build-icons.mjs)
+
+ブラウザ用に固有のファイル名を使うことで、更新した HTML から新しい URL で取得できる。ログイン画面や共有画像などの素材はそれぞれの配信経路で管理する。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
@@ -72,6 +78,7 @@
 | [api/post-card.tsx](../../../api/post-card.tsx)                                 | 投稿OGPの非公開境界と添付の選択 |
 | [vite.config.ts](../../../vite.config.ts)                                       | 静的生成とCSP                   |
 | [src/lib/analytics/umami.ts](../../../src/lib/analytics/umami.ts)               | Umamiの読み込み条件と送信属性   |
+| [src/app.html](../../../src/app.html)、[static/nagi-favicon.png](../../../static/nagi-favicon.png) | ブラウザ用 favicon の指定と画像 |
 
 ## 出典と変更時の扱い
 

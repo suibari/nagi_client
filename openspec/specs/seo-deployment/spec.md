@@ -20,6 +20,7 @@ SvelteKitの静的HTMLとSPA fallback、Vercel Functionsを組み合わせる。
 | CSPとローカル開発      | 本番の制約と開発proxy、必要なmedia/worker経路を揃える。 | [SEO-06](#seo-06) |
 | 記事の検証情報         | 公開URLとstandard.siteレコードの対応をHTMLへ示す。      | [SEO-07](#seo-07) |
 | アクセス解析           | 流入とページ遷移を、アカウントと結び付けずに集計する。  | [SEO-08](#seo-08) |
+| ブラウザ用 favicon      | タブで Nagi を識別できる角丸のアイコンを表示する。      | [SEO-09](#seo-09) |
 
 ### 主な利用の流れ
 
@@ -206,6 +207,17 @@ CSPはhashモードでbootstrapに追従し、任意PDS/OAuthのHTTPSと動画�
 
 - **WHEN** OAuthの復旧結果を診断イベントとして記録する
 - **THEN** 同じ項目をVercelとUmamiの両方へ送り、Umamiが読み込まれていなければ失敗せずに省く
+
+<a id="seo-09"></a>
+
+### Requirement: SEO-09 Nagi Space と揃えた favicon の角丸
+
+Nagi のブラウザ用 favicon は Nagi の絵柄を保ち、四隅が透明な角丸の正方形でなければならない（MUST）。角丸半径は Nagi Space の基準と同じ、画像の一辺の 21.875% とする。
+
+#### Scenario: ブラウザで Nagi を開く
+
+- **WHEN** ブラウザが Nagi のページを開き、HTML が指定する favicon を取得する
+- **THEN** ブラウザが Nagi の絵柄を表示でき、四隅の透明部分による角丸が Nagi Space と同じ比率になる
 
 ## 参照資料
 
