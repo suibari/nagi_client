@@ -673,6 +673,20 @@ describe('initial Nagi profile', () => {
 			putRecord.mock.calls.every(([call]) => call.collection === 'com.suibari.nagi.profile'),
 		).toBe(true);
 	});
+	it('reports no new profile when another tab already saved it', async () => {
+		getRecord
+			.mockRejectedValueOnce({ error: 'RecordNotFound' })
+			.mockResolvedValueOnce({ data: { value: { displayName: 'Other tab' } } });
+		putRecord.mockRejectedValue({ error: 'InvalidSwap' });
+		await expect(createNagiProfileFromBluesky()).resolves.toBe(false);
+		expect(ensureRecord).not.toHaveBeenCalled();
+	});
+	it('propagates an unsuccessful first save when no profile exists', async () => {
+		getRecord.mockRejectedValue({ error: 'RecordNotFound' });
+		putRecord.mockRejectedValue(new Error('offline'));
+		await expect(createNagiProfileFromBluesky()).rejects.toThrow('offline');
+		expect(ensureRecord).not.toHaveBeenCalled();
+	});
 	it('rejects invalid website URLs before writing', async () => {
 		await expect(
 			putProfile('Name', '', {

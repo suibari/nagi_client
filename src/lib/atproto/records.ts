@@ -241,8 +241,7 @@ const isRecordNotFound = (error: unknown) =>
 			typeof (error as { message?: unknown }).message === 'string' &&
 			(error as { message: string }).message.includes('RecordNotFound')));
 
-export async function getOwnNagiProfile(): Promise<ProfileDraft | null> {
-	const s = current();
+export async function getOwnNagiProfile(s = current()): Promise<ProfileDraft | null> {
 	try {
 		const response = await new Agent(s).com.atproto.repo.getRecord({
 			repo: s.did,
@@ -294,9 +293,8 @@ export async function ensureOwnNagiProfile(): Promise<ProfileDraft> {
  * （まず使ってもらい、変えたくなったら設定から変えてもらう）。アバターは同じ repo の blob なので
  * そのまま参照できる。別タブが先に作っていたら上書きせず、作らなかったことを返す。
  */
-export async function createNagiProfileFromBluesky(): Promise<boolean> {
-	const draft = await getBlueskyProfileDraft();
-	const s = current();
+export async function createNagiProfileFromBluesky(s = current()): Promise<boolean> {
+	const draft = await getBlueskyProfileDraft(s);
 	try {
 		await indexed(
 			new Agent(s).com.atproto.repo.putRecord({
@@ -317,13 +315,12 @@ export async function createNagiProfileFromBluesky(): Promise<boolean> {
 		);
 		return true;
 	} catch (error) {
-		if (await getOwnNagiProfile()) return false;
+		if (await getOwnNagiProfile(s)) return false;
 		throw error;
 	}
 }
 
-export async function getBlueskyProfileDraft(): Promise<ProfileDraft> {
-	const s = current();
+export async function getBlueskyProfileDraft(s = current()): Promise<ProfileDraft> {
 	const agent = new Agent(s);
 	const [recordResult, viewResult] = await Promise.allSettled([
 		agent.com.atproto.repo.getRecord({

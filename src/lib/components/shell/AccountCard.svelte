@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { trackSignupCta } from '$lib/analytics/signup-cta';
 	import { session, oauthReady, signOut } from '$lib/oauth/session.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import Avatar from '../Avatar.svelte';
@@ -26,6 +27,6 @@
 	</div>
 {:else if $oauthReady}
 	<div class="account-login">
-		<a href="/login">{m.loginOrStart()}</a>
+		<a onclick={trackSignupCta} href="/login">{m.loginOrStart()}</a>
 	</div>
 {/if}

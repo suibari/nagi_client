@@ -4,7 +4,8 @@
 	import SidebarRight from '$lib/components/shell/SidebarRight.svelte';
 	import MobileHeader from '$lib/components/shell/MobileHeader.svelte';
 	import MobileNav from '$lib/components/shell/MobileNav.svelte';
-	import { initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
+	import { consumeSignupCallback, initOAuth, session, oauthReady } from '$lib/oauth/session.svelte';
+	import { trackSignupEvent } from '$lib/analytics/umami';
 	import { initLocale, m, i18n } from '$lib/i18n/i18n.svelte';
 	import { createNagiProfileFromBluesky, getOwnNagiProfile } from '$lib/atproto/records';
 	import { myProfile } from '$lib/profile/me.svelte';
@@ -232,17 +233,21 @@
 		};
 	});
 	$effect(() => {
-		const did = $session?.did;
-		if (!$oauthReady || !did || checkedDid === did) return;
+		const current = $session;
+		if (!$oauthReady || !current || checkedDid === current.did) return;
+		const did = current.did;
 		checkedDid = did;
-		void getOwnNagiProfile()
+		const signup = consumeSignupCallback(current);
+		void getOwnNagiProfile(current)
 			.then(async (profile) => {
 				/*
 				 * 初回はプロフィール登録を挟まず、Bluesky のプロフィールをそのまま写して始めてもらう。
 				 * 変えたくなったら設定から変えられる。まず「Nagiのはじめかた」で使ってみてもらう。
 				 */
 				if (!profile) {
-					if (await createNagiProfileFromBluesky()) {
+					if ($session !== current) return;
+					if (await createNagiProfileFromBluesky(current)) {
+						if (signup) trackSignupEvent('signup_complete', '/oauth/callback');
 						myProfile.refresh();
 						if ($session?.did === did) welcomeTutorial.start(did);
 					}
