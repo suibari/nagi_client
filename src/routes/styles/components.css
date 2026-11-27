@@ -5341,13 +5341,12 @@ a.about-feature:focus-visible {
 	font-variant-numeric: tabular-nums;
 }
 
-/* ---- チャンネル機能 ---- */
 .blog-directory {
-	padding: 0 1rem 1rem;
+	padding-block-end: 1rem;
 }
 .blog-tags {
 	display: flex;
-	gap: 7px;
+	gap: 8px;
 	overflow-x: auto;
 	padding-block-end: 12px;
 	scrollbar-width: thin;
@@ -5366,6 +5365,40 @@ a.about-feature:focus-visible {
 .blog-tags a {
 	padding: 5px 10px;
 }
+.blog-tags-heading {
+	display: none;
+}
+@media (min-width: 1180px) {
+	.shell-blog-directory .blog-directory {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) var(--shell-right-width);
+		grid-template-rows: auto 1fr;
+		column-gap: var(--shell-column-gap);
+		align-items: start;
+	}
+	.shell-blog-directory .blog-directory > :not(.blog-tags) {
+		grid-column: 1;
+	}
+	.shell-blog-directory .blog-directory > .blog-tags {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		flex-wrap: wrap;
+		overflow: visible;
+		padding-block-start: 20px;
+	}
+	.shell-blog-directory .blog-tags-heading {
+		display: block;
+		flex-basis: 100%;
+		margin: 0 0 4px;
+		font-size: 1rem;
+		font-weight: 500;
+	}
+	.shell-blog-directory .blog-tags a {
+		max-inline-size: 100%;
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+}
 .blog-tags a:hover,
 .blog-tags a.active,
 .blog-card-tags a:hover {
@@ -5376,7 +5409,7 @@ a.about-feature:focus-visible {
 .blog-list {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: 16px;
 }
 .blog-card {
 	overflow: hidden;
@@ -5396,8 +5429,19 @@ a.about-feature:focus-visible {
 	block-size: 100%;
 	object-fit: cover;
 }
+.blog-directory .blog-card {
+	box-shadow: none;
+}
+.blog-directory .blog-card-cover {
+	inline-size: 100%;
+	aspect-ratio: 3 / 1;
+	max-block-size: 15rem;
+}
 .blog-card-content {
 	padding: 14px 15px;
+}
+.blog-directory .blog-card-content {
+	padding: 16px;
 }
 .blog-card-main {
 	display: block;
@@ -5409,6 +5453,10 @@ a.about-feature:focus-visible {
 	font-size: 1.05rem;
 	line-height: 1.45;
 	overflow-wrap: anywhere;
+}
+.blog-directory .blog-card-main h2 {
+	margin-block-end: 8px;
+	font-size: 1.2rem;
 }
 .blog-card-main:hover h2 {
 	color: var(--accent-strong);
@@ -5430,6 +5478,17 @@ a.about-feature:focus-visible {
 	gap: 6px;
 	color: var(--text-faint);
 	font-size: 0.75rem;
+}
+.blog-directory .blog-card-byline {
+	flex-wrap: wrap;
+	overflow-wrap: anywhere;
+}
+.blog-directory .blog-card-tags li {
+	min-inline-size: 0;
+}
+.blog-directory .blog-card-tags a {
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 .blog-card-reactions {
 	margin-block-start: 8px;

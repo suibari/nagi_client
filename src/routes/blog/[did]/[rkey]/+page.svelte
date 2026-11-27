@@ -38,7 +38,6 @@
 	let labels = $derived(
 		i18n.locale === 'ja'
 			? {
-					blog: 'ブログ',
 					tags: 'タグ',
 					reactions: 'リアクション',
 					comment: 'コメントする',
@@ -48,7 +47,6 @@
 					loadError: 'コメントを読み込めませんでした。',
 				}
 			: {
-					blog: 'Blog',
 					tags: 'Tags',
 					reactions: 'React',
 					comment: 'Comment',
@@ -200,10 +198,6 @@
 	{/if}
 </svelte:head>
 
-{#if showHero}
-	<GuestHero />
-{/if}
-
 <article class="blog-article">
 	{#if cover}
 		<div class="blog-cover">
@@ -211,7 +205,6 @@
 		</div>
 	{/if}
 	<header class="blog-header">
-		<p class="blog-label"><Icon name="newspaper" size={17} /> {labels.blog}</p>
 		<h1>{title}</h1>
 		<div class="blog-byline">
 			<AvatarLink actor={author} size="small" />
@@ -334,14 +327,18 @@
 	</section>
 </article>
 
+{#if showHero}
+	<div class="blog-introduction">
+		<GuestHero />
+	</div>
+{/if}
+
 <style>
 	.blog-article {
-		max-width: 820px;
-		margin: 0 auto;
-		padding: 20px 22px 96px;
+		padding-block: 20px 48px;
 	}
 	.blog-cover {
-		margin: 0 -22px 30px;
+		margin-block-end: 32px;
 		overflow: hidden;
 		border-radius: 18px;
 		background: var(--bg-inset);
@@ -353,17 +350,8 @@
 		object-fit: cover;
 	}
 	.blog-header {
-		padding-bottom: 22px;
+		padding-bottom: 24px;
 		border-bottom: 1px solid var(--line);
-	}
-	.blog-label {
-		display: flex;
-		align-items: center;
-		gap: 7px;
-		margin: 0 0 13px;
-		color: var(--accent-strong);
-		font-size: 13px;
-		font-weight: 700;
 	}
 	.blog-translation {
 		display: flex;
@@ -414,7 +402,7 @@
 		white-space: nowrap;
 	}
 	.blog-byline time {
-		margin-left: auto;
+		margin-inline-start: 8px;
 		white-space: nowrap;
 	}
 	.blog-tags {
@@ -449,7 +437,7 @@
 		margin-top: 12px;
 	}
 	.blog-body {
-		margin: 34px 0;
+		margin: 32px 0;
 	}
 
 	.blog-media,
@@ -457,7 +445,7 @@
 		margin: 24px 0;
 	}
 	.blog-comments {
-		margin-top: 46px;
+		margin-top: 48px;
 	}
 	.comments-heading {
 		display: flex;
@@ -492,17 +480,16 @@
 	}
 	@media (max-width: 600px) {
 		.blog-article {
-			padding: 0 16px 70px;
+			padding-block: 0 32px;
 		}
 		.blog-cover {
-			margin: 0 -16px 24px;
-			border-radius: 0;
+			margin-block-end: 24px;
 		}
 		.blog-byline {
 			flex-wrap: wrap;
 		}
 		.blog-byline time {
-			margin-left: 0;
+			margin-inline-start: 0;
 			width: 100%;
 			padding-left: 42px;
 		}

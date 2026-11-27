@@ -1501,6 +1501,7 @@ export const en: Messages = {
 	blogEditNotFound: 'We could not find a blog post you can edit.',
 	blogIntro: 'Read blogs published on Nagi. Choose a tag to filter the articles.',
 	blogTags: 'Blog tags',
+	blogTagFilterHeading: 'Tags',
 	blogAll: 'All',
 	blogEmpty: 'No blogs have been published yet.',
 	blogTagEmpty: (p: { tag: string }) => `No blogs with #${p.tag} yet.`,

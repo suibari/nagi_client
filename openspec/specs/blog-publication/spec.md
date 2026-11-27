@@ -19,6 +19,7 @@ publicationは著者のブログに相当する公開単位、documentは1件の
 | 本文メディア         | 画像・URL行の位置に添付を配置する。                    | [BLOG-05](#blog-05)                       |
 | 公開ページと翻訳     | 原文を静的公開し、閲覧者向けの翻訳を後から表示する。   | [BLOG-06](#blog-06)                       |
 | 執筆・編集ページ     | 作成と編集を同じページで行い、タグも編集できる。       | [BLOG-07](#blog-07)                       |
+| ブログ閲覧           | 中央ペインで記事を探して読む。幅の広い画面では一覧の右側に絞り込みタグが並ぶ。           | [BLOG-08](#blog-08)                       |
 
 ### 主な利用の流れ
 
@@ -26,6 +27,7 @@ publicationは著者のブログに相当する公開単位、documentは1件の
 2. 公開条件を確認し、必要なら本人用publicationを作る。
 3. documentを本人PDSへ保存し、記事URLと検証情報を公開する。
 4. 以後の編集・削除を既存記事へ反映する。閲覧時は静的な原文へ補助情報や翻訳を加える。
+5. ブログ一覧でタグや見出しから記事を選び、個別記事を読む。未ログイン向けのNagi紹介は記事とコメントの後ろに表示する。
 
 この文書は現行クライアントの振る舞いを整理する。設計判断は [design.md](design.md)、導入時の証跡は [コメント原文](../../reference/comment-snapshot/blog-publication.md)、既知の不整合は [known-gaps.md](../../known-gaps.md) に分けて記録する。シナリオは確認条件であり、全外部環境での実行合格を示すものではない。
 
@@ -183,6 +185,49 @@ publication.urlは https://nagi.suibari.com/blog/<did>、document.pathは /<rkey
 - **WHEN** 本文等は下書き保存済みだが、離脱すると失われる添付画像やヘッダー画像がある
 - **THEN** 画像が下書きに保存されないことを画面内に示し、アプリ内の離脱確認にも明示する。タブを閉じる・再読み込み時はブラウザ標準の確認を出す
 
+<a id="blog-08"></a>
+
+### Requirement: BLOG-08 ブログ閲覧レイアウト
+
+ブログ一覧（`/blog`）と個別記事（`/blog/<did>/<rkey>`）は、共通の中央ペインにコンテンツを表示しなければならない（MUST）。一覧では幅に応じて絞り込みタグの位置を切り替え、個別記事の右ペインの位置は余白とする。
+
+#### Scenario: 広い画面で一覧を開く
+
+- **WHEN** 右ペインが表示される幅で `/blog` を開くか、タグで絞り込む
+- **THEN** 左ナビと中央ペインの記事一覧を表示し、右ペインには絞り込みタグだけを表示する
+- **AND** 右ペインの見出しは「タグ」とする
+
+#### Scenario: 本文から記事の抜粋を作る
+
+- **WHEN** 記事の概要が無いか、保存済みの概要が先頭見出しを含む本文の自動抜粋である
+- **THEN** カードの抜粋は見出しに続く本文から作る
+
+#### Scenario: 広い画面で個別記事を読む
+
+- **WHEN** 個別記事を直接開くか、一覧やフィードから移動する
+- **THEN** 初回表示から、カバー画像・タイトル・著者情報・本文・記事末尾の操作・コメントを共通の中央ペインに収め、右ペインの位置を空ける
+
+#### Scenario: 一覧と個別記事を行き来する
+
+- **WHEN** 右ペインが表示される幅で一覧と個別記事を行き来する
+- **THEN** 一覧カードと記事の読み始めの左端を同じ中央ペインの左端にそろえる
+
+#### Scenario: 未ログインで個別記事を開く
+
+- **WHEN** 未ログインの閲覧者が個別記事を開く
+- **THEN** 記事とコメントの後ろにNagiの紹介を表示する
+
+#### Scenario: 狭い画面で読む
+
+- **WHEN** 共通シェルで右ペインが出ない幅で一覧または個別記事を開く
+- **THEN** 一覧の絞り込みタグを記事一覧の上に配置し、長いタイトルやURLを折り返す
+- **AND** モバイル幅では共通のモバイルナビを使い、記事や画像が画面から横にはみ出さない
+
+#### Scenario: フィードへ戻る
+
+- **WHEN** ブログから、通常は右ペインが表示される画面へ広い画面のまま移動する
+- **THEN** 移動先で通常の右ペインを表示する
+
 ## 参照資料
 
 ### 外部資料
@@ -192,6 +237,8 @@ publication.urlは https://nagi.suibari.com/blog/<did>、document.pathは /<rkey
 | [Standard.site — Introduction](https://standard.site/docs/introduction/) | publicationとdocumentによる長文公開の全体像  |
 | [AT Protocol — Repository](https://atproto.com/specs/repository)         | PDSに保存する公開レコードと参照関係          |
 | [AT Protocol — Blobs](https://atproto.com/specs/blob)                    | 添付のBlobRef、CID、参照レコードと保持の関係 |
+| [WordPress Twenty Twenty-Five](https://wordpress.org/documentation/article/twenty-twenty-five/) | 一列で記事を探して読むブログの構成例 |
+| [GOV.UK Design System — Layout](https://design-system.service.gov.uk/styles/layout/) | 行長を抑える一列レイアウトの指針 |
 
 リンクの到達先と対象を2026-11-11に確認した。外部の説明は更新されるため、本リポジトリ固有の制約と外部仕様を区別する。現行実装の基準はこの文書の要件とし、外部仕様への追従で振る舞いを変える場合は差分を記録する。
 

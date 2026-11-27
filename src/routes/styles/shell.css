@@ -1,9 +1,11 @@
 /* App shell: 3-column responsive layout (tomarigi-style) */
 .shell {
+	--shell-column-gap: 32px;
+	--shell-right-width: 300px;
 	display: grid;
-	grid-template-columns: 240px minmax(0, 640px) 300px;
+	grid-template-columns: 240px minmax(0, 640px) var(--shell-right-width);
 	justify-content: center;
-	gap: 32px;
+	gap: var(--shell-column-gap);
 	width: min(1244px, 100%);
 	margin: 0 auto;
 	padding: 0 12px;
@@ -15,10 +17,14 @@
 	padding: 16px 0 90px;
 }
 
-/* 紹介ページ（/about）だけは右レールを外し、そのぶん本文を広げる。
-   シェル全体の幅と左ナビの位置は他のページと同じなので、遷移しても左側は動かない。 */
 .shell.shell-wide {
 	grid-template-columns: 240px minmax(0, 1fr);
+}
+
+@media (min-width: 1180px) {
+	.shell-blog-directory > main {
+		grid-column: 2 / -1;
+	}
 }
 
 /* --- sidebars --- */
