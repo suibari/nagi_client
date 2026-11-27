@@ -67,9 +67,8 @@
 			!NO_FAB.some((path) => page.url.pathname.startsWith(path)),
 	);
 	const defaultScope = $derived(defaultScopeForPath(page.url.pathname));
-	// 紹介ページは、機能の見本を横に並べて見せたいので右レールを畳んで本文を広げる。
-	// ブログの執筆ページも、本文の右に記事メタ欄を並べるので同じく広げる。
-	// 左のナビは残す（ログイン後に設定から来た人の帰り道になる）。
+	const blogDirectory = $derived(page.route.id === '/blog');
+	const blogArticle = $derived(page.route.id === '/blog/[did]/[rkey]');
 	const wideMain = $derived(
 		page.url.pathname === '/about' ||
 			page.url.pathname === '/write' ||
@@ -286,12 +285,10 @@
 	<main class="landing-main">{@render children()}</main>
 {:else}
 	<MobileHeader />
-	<!-- ページ遷移時に本文位置と幅が動かないよう、すべてのルートで同じシェルを使う。
-	     例外は紹介ページだけで、左ナビの位置はそのまま右レールのぶん本文を広げる。 -->
-	<div class="shell" class:shell-wide={wideMain}>
+	<div class="shell" class:shell-wide={wideMain} class:shell-blog-directory={blogDirectory}>
 		<SidebarLeft />
 		<main>{@render children()}</main>
-		{#if !wideMain}<SidebarRight />{/if}
+		{#if !wideMain && !blogDirectory && !blogArticle}<SidebarRight />{/if}
 	</div>
 	<MobileNav />
 {/if}

@@ -1537,6 +1537,7 @@ export const ja = {
 	blogEditNotFound: '編集できる記事が見つかりませんでした。',
 	blogIntro: 'Nagiで公開されたブログを読めます。タグを選ぶと記事を絞り込めます。',
 	blogTags: 'ブログのタグ',
+	blogTagFilterHeading: 'タグ',
 	blogAll: 'すべて',
 	blogEmpty: '公開されているブログはまだありません。',
 	blogTagEmpty: (p: { tag: string }) => `#${p.tag} のブログはまだありません。`,

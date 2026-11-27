@@ -93,16 +93,17 @@
 	});
 </script>
 
-<PageHeader title={m.blogTitle()} description={m.blogIntro()}>
-	{#snippet actions()}
-		<!-- 未サインインなら執筆ページがログインへ送る。 -->
-		<Button variant="primary" href="/write">{m.blogWrite()}</Button>
-	{/snippet}
-</PageHeader>
-
 <section class="blog-directory">
+	<PageHeader title={m.blogTitle()} description={m.blogIntro()}>
+		{#snippet actions()}
+			<!-- 未サインインなら執筆ページがログインへ送る。 -->
+			<Button variant="primary" href="/write">{m.blogWrite()}</Button>
+		{/snippet}
+	</PageHeader>
+
 	{#if tags.length}
 		<nav class="blog-tags" aria-label={m.blogTags()}>
+			<h2 class="blog-tags-heading">{m.blogTagFilterHeading()}</h2>
 			<a href="/blog" class:active={!selectedTag}>{m.blogAll()}</a>
 			{#each tags as tag (tag)}
 				<a

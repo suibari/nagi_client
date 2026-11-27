@@ -47,7 +47,9 @@
 			{#if item.optimisticState}<span class="post-sending" role="status"
 					>{item.optimisticState === 'sending' ? m.postSending() : m.postCreated()}</span
 				>{/if}
-			<p lang={translatedText ? translatedLang : undefined}>{summary.description}</p>
+			{#if summary.description}
+				<p lang={translatedText ? translatedLang : undefined}>{summary.description}</p>
+			{/if}
 			<span class="blog-card-byline">
 				{item.author.displayName ?? item.author.handle}
 				<span aria-hidden="true">·</span>

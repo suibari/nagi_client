@@ -157,6 +157,10 @@ change [allow-feed-swipe-on-images](changes/archive/2026-11-22-allow-feed-swipe-
 
 本番の投稿OGPが1,184,358バイトのWebPを返し、別リポジトリのAppViewと共用するリンクカード取得処理で同じURLが上限の1,000,000バイトを超えて413になることを確認した。ブログ編集欄ではカードのメタデータを取得できても画像だけが欠ける。編集欄の取得経路に、Nagiの投稿OGPを1 MB以内に縮小して使う処理を追加した。 [MEDIA-06の設計](specs/media-processing/design.md#d4-リンク情報の取得失敗で執筆を止めない)
 
+## 著者別ブログURLの配信設定
+
+ブログ公開の設計書では `/blog/<did>` の扱いを Vercel の rewrite と記載していた。リポジトリの配信設定では redirect として定義され、移動先は `/profile/<did>`。配信設定に合わせて設計書の説明を更新した。 [BLOG-07の設計](specs/blog-publication/design.md#d5-作成と編集を1つの執筆ページにまとめる) [Vercelの配信設定](../vercel.json)
+
 ## Bluesky連携設定の案内
 
 Bluesky連携設定の日本語・英語の説明に、現行のクロスポスト仕様と異なる案内が残っている。文言は [日本語辞書](../src/lib/i18n/ja.ts) と [英語辞書](../src/lib/i18n/en.ts) の `crosspostHelp` と `crosspostSplitNote` で確認した。

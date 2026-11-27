@@ -1,6 +1,7 @@
 import { extractTitle, stripMarkdown } from '$lib/atproto/markdown';
 import { getRecord } from '$lib/atproto/pds';
 import type { IndexableBlog } from '$lib/api/types';
+import { splitArticleText } from './articleText';
 import { fetchIndexableBlogs } from './indexable';
 
 export type BlogDirectoryItem = IndexableBlog & {
@@ -39,6 +40,17 @@ export function buildBlogDirectoryItem(
 	const recordTitle = typeof record?.title === 'string' ? record.title.trim() : '';
 	const recordDescription =
 		typeof record?.description === 'string' ? record.description.trim() : '';
+	const article = splitArticleText(post.text);
+	// 既存の自動概要は本文全体を平文化し、長い場合は末尾に「…」を付けて保存している。
+	const generatedDescription =
+		recordDescription === plain ||
+		(recordDescription.length > 1 &&
+			recordDescription.endsWith('…') &&
+			plain.startsWith(recordDescription.slice(0, -1)));
+	const description =
+		recordDescription && !(article.prefix && generatedDescription)
+			? recordDescription
+			: stripMarkdown(article.body).slice(0, 200);
 	const tags = Array.isArray(record?.tags)
 		? [
 				...new Set(
@@ -53,7 +65,7 @@ export function buildBlogDirectoryItem(
 	return {
 		...post,
 		title: recordTitle || extractTitle(post.text) || plain.slice(0, 80),
-		description: recordDescription || plain.slice(0, 200),
+		description,
 		tags,
 		...(coverCid
 			? {

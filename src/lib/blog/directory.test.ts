@@ -38,4 +38,14 @@ describe('blog directory', () => {
 		expect(blogMatches(item, 'travel')).toBe(true);
 		expect(blogMatches(item, '山')).toBe(false);
 	});
+
+	it('omits the leading title from automatically generated excerpts', () => {
+		for (const record of [
+			undefined,
+			{ description: '海辺の散歩 今日は風が穏やかでした。' },
+			{ description: '海辺の散歩 今日は風が…' },
+		]) {
+			expect(buildBlogDirectoryItem(post, record).description).toBe('今日は風が穏やかでした。');
+		}
+	});
 });
