@@ -92,6 +92,14 @@ describe('vercel SPA rewrites', () => {
 		expect(missing).toEqual([]);
 	});
 
+	it('points rewrites at clean URLs', () => {
+		// cleanUrls が有効だと /200.html は /200 への308になり、rewrite 先に書くと404を返す。
+		const htmlDestinations = vercel.rewrites
+			.filter((r) => r.destination.startsWith('/') && /\.html(?:$|\?)/.test(r.destination))
+			.map((r) => r.source);
+		expect(htmlDestinations).toEqual([]);
+	});
+
 	it('keeps the SPA fallback out of the search index', () => {
 		// 200.html は中身の無い殻。どのURLで拾われても同じものが見えるので、載せない。
 		const indexable = shellRoutes
