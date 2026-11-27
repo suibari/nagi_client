@@ -175,8 +175,8 @@ describe('guest post privacy boundary', () => {
 			expect(page).toContain('<GuestHero />');
 		}
 		expect(blogArticle.indexOf('<GuestHero />')).toBeGreaterThan(blogArticle.indexOf('</article>'));
-		expect(newsArticle.indexOf('<GuestHero />')).toBeLessThan(
-			newsArticle.indexOf('<article class="news-permalink">'),
+		expect(newsArticle).toMatch(
+			/<\/article>\s*\{#if showHero\}\s*<GuestHero \/>\s*\{\/if\}\s*<section [^>]*aria-labelledby="news-quotes-heading"/,
 		);
 		expect(blogList).not.toContain('GuestHero');
 		expect(newsList).not.toContain('GuestHero');

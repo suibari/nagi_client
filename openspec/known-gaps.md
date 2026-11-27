@@ -175,3 +175,7 @@ Bluesky連携設定の日本語・英語の説明に、現行のクロスポス�
 ## 登録計測の確認範囲
 
 [track-signup-funnel](changes/track-signup-funnel/design.md) は登録OAuthを経たNagiプロフィール初回保存を集計する。EntrywayのOAuth結果にはAT Protocolアカウントの新規作成有無が含まれないため、既存のAT Protocolアカウントで初めてNagiプロフィールを作成した場合も、登録経路を通れば計上される。Umami Cloudでの集計と本番Entrywayでの往復は未確認。
+
+## ニュース個別ページの紹介位置
+
+オーナーの明示決定に沿って、未ログイン向けの紹介をニュース記事の前から記事の直後に移した。AppViewのモックを使ったChromiumのテストで、ニュース一覧に紹介がなく、個別ページでは記事・紹介・みんなのコメントの順で表示され、紹介の参加リンクからログイン画面を開けることを確認した。 [NEWS-05](specs/news-chronicle/spec.md#news-05)

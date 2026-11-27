@@ -93,12 +93,12 @@
 	><span class="news-back-icon" aria-hidden="true"><Icon name="chevron" size={16} /></span
 	>{m.newsBackToList()}</a
 >
-{#if showHero}
-	<GuestHero />
-{/if}
 <article class="news-permalink">
 	<NewsCard news={data.news} botActor={data.botActor} showImage clampTitle={false} />
 </article>
+{#if showHero}
+	<GuestHero />
+{/if}
 
 <section class="news-related" aria-labelledby="news-quotes-heading">
 	<h2 id="news-quotes-heading">{m.newsQuotesHeading()}</h2>
@@ -179,6 +179,9 @@
 	.news-permalink {
 		display: grid;
 		gap: 12px;
+	}
+	.news-permalink + :global(.hero) {
+		margin-block-start: 16px;
 	}
 	.news-related {
 		margin-block-start: 24px;

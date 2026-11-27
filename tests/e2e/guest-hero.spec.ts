@@ -52,3 +52,51 @@ test('keeps the prerendered introduction visible without JavaScript', async ({
 		await context.close();
 	}
 });
+
+test('shows the news article before the guest introduction and opens login from it', async ({
+	page,
+}) => {
+	const rkey = 'guest-hero-test';
+	const news = {
+		uri: `at://did:plc:newsbot/com.suibari.nagi.news/${rkey}`,
+		cid: 'news-cid',
+		articleId: rkey,
+		url: 'https://example.com/news',
+		title: 'Guest hero test article',
+		botComment: 'A comment accompanying the news article.',
+		lang: 'ja',
+		createdAt: '2026-11-26T00:00:00Z',
+		indexedAt: '2026-11-26T00:00:00Z',
+		reactions: [],
+	};
+	const newsPage = { items: [news], hasMore: false };
+	await page.route('**/xrpc/com.suibari.nagi.getPositiveNews?*', (route) =>
+		route.fulfill({ json: newsPage }),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.getNewsItem?*', (route) =>
+		route.fulfill({ json: { news } }),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.getNewsQuotes?*', (route) =>
+		route.fulfill({ json: { items: [], hasMore: false } }),
+	);
+	await page.route('**/xrpc/com.suibari.nagi.getSimilarNews?*', (route) =>
+		route.fulfill({ json: { items: [] } }),
+	);
+
+	await page.goto('/news');
+	const articleLink = page.getByRole('link', { name: news.title, exact: true });
+	await expect(articleLink).toBeVisible();
+	await expect(page.locator('.hero-join')).toHaveCount(0);
+	await articleLink.click();
+	await expect(page).toHaveURL(new RegExp(`/news/${rkey}$`));
+
+	const article = page.locator('.news-permalink');
+	await expect(article.getByText(news.title)).toBeVisible();
+	await expect(article.getByText(news.botComment)).toBeVisible();
+	const hero = page.locator(
+		'.news-permalink + .hero:has(+ [aria-labelledby="news-quotes-heading"])',
+	);
+	await expect(hero).toBeVisible();
+	await hero.locator('a.hero-join[href="/login"]').click();
+	await expect(page).toHaveURL(/\/login$/);
+});
