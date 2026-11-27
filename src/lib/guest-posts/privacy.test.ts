@@ -174,9 +174,7 @@ describe('guest post privacy boundary', () => {
 			expect(page).toContain('const showHero = $derived(!$session);');
 			expect(page).toContain('<GuestHero />');
 		}
-		expect(blogArticle.indexOf('<GuestHero />')).toBeGreaterThan(
-			blogArticle.indexOf('<article class="blog-article">'),
-		);
+		expect(blogArticle.indexOf('<GuestHero />')).toBeGreaterThan(blogArticle.indexOf('</article>'));
 		expect(newsArticle.indexOf('<GuestHero />')).toBeLessThan(
 			newsArticle.indexOf('<article class="news-permalink">'),
 		);
