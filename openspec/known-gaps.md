@@ -161,6 +161,10 @@ change [allow-feed-swipe-on-images](changes/archive/2026-11-22-allow-feed-swipe-
 
 ブログ公開の設計書では `/blog/<did>` の扱いを Vercel の rewrite と記載していた。リポジトリの配信設定では redirect として定義され、移動先は `/profile/<did>`。配信設定に合わせて設計書の説明を更新した。 [BLOG-07の設計](specs/blog-publication/design.md#d5-作成と編集を1つの執筆ページにまとめる) [Vercelの配信設定](../vercel.json)
 
+## 個別ページのNagi紹介のテスト
+
+公開投稿詳細へNagi紹介を追加する際、ブログの紹介を記事の前に期待する単体テストが残っていた。記事とコメントの後ろに紹介を表示するブログの現行仕様に合わせてテストを更新した。 [BLOG-08](specs/blog-publication/spec.md#blog-08) [FEED-12](specs/feed-thread/spec.md#feed-12)
+
 ## Bluesky連携設定の案内
 
 Bluesky連携設定の日本語・英語の説明に、現行のクロスポスト仕様と異なる案内が残っている。文言は [日本語辞書](../src/lib/i18n/ja.ts) と [英語辞書](../src/lib/i18n/en.ts) の `crosspostHelp` と `crosspostSplitNote` で確認した。

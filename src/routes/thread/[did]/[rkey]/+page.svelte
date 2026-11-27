@@ -6,10 +6,11 @@
 	import { getThread } from '$lib/api/appview';
 	import type { ThreadView } from '$lib/api/types';
 	import ChatBubble from '$lib/components/ChatBubble.svelte';
+	import GuestHero from '$lib/components/GuestHero.svelte';
 	import BotReplyStatus from '$lib/components/BotReplyStatus.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { goto } from '$app/navigation';
-	import { session } from '$lib/oauth/session.svelte';
+	import { oauthReady, session } from '$lib/oauth/session.svelte';
 	import { optimisticPosts } from '$lib/feed/optimistic-posts.svelte';
 	import { followPostedScroll, threadRootUriFromPage } from '$lib/feed/post-follow.svelte';
 	import ThreadFlags from '$lib/components/ThreadFlags.svelte';
@@ -18,6 +19,7 @@
 	import { postTranslations } from '$lib/i18n/postTranslations.svelte';
 	import { replyDepths, replyIndent } from '$lib/thread/replyIndent';
 	let thread = $state<ThreadView>();
+	const kossori = $derived(Boolean(thread?.post.threadKossori ?? thread?.post.kossori));
 	let error = $state('');
 	let enteringReplyUris = $state<Set<string>>(new Set());
 	let entryGeneration = 0;
@@ -104,7 +106,7 @@
 	{:else if !thread}<Spinner />
 	{:else}
 		<article class="thread-unit">
-			<ThreadFlags kossori={Boolean(thread.post.threadKossori ?? thread.post.kossori)} />
+			<ThreadFlags {kossori} />
 			<div data-post-uri={thread.post.uri}>
 				<ChatBubble post={thread.post} ondeleted={postDeleted} onposted={refreshThread} />
 			</div>
@@ -136,5 +138,8 @@
 				/>
 			{/each}
 		</article>
+		{#if $oauthReady && !$session && !kossori && !thread.post.deleted && !thread.post.unavailableReason}
+			<GuestHero />
+		{/if}
 	{/if}
 </section>

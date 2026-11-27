@@ -169,15 +169,15 @@ describe('guest post privacy boundary', () => {
 		expect(guestHero).toContain('class="hero-join" href="/login">{m.joinCta()}</Button>');
 	});
 
-	it('puts the guest hero above blog and news articles, not on their list pages', () => {
-		for (const [page, article] of [
-			[blogArticle, '<article class="blog-article">'],
-			[newsArticle, '<article class="news-permalink">'],
-		]) {
+	it('puts the guest hero after the blog article and before the news article', () => {
+		for (const page of [blogArticle, newsArticle]) {
 			expect(page).toContain('const showHero = $derived(!$session);');
 			expect(page.indexOf('<GuestHero />')).toBeGreaterThan(-1);
-			expect(page.indexOf('<GuestHero />')).toBeLessThan(page.indexOf(article));
 		}
+		expect(blogArticle.indexOf('<GuestHero />')).toBeGreaterThan(blogArticle.indexOf('</article>'));
+		expect(newsArticle.indexOf('<GuestHero />')).toBeLessThan(
+			newsArticle.indexOf('<article class="news-permalink">'),
+		);
 		expect(blogList).not.toContain('GuestHero');
 		expect(newsList).not.toContain('GuestHero');
 	});
