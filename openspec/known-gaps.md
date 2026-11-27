@@ -167,3 +167,7 @@ Bluesky連携設定の日本語・英語の説明に、現行のクロスポス�
 
 - 返信は対象外と案内しているが、本人のクロスポスト済み投稿に既存コピーがある場合、Blueskyへ返信を続けられる。 [BSKY-04](specs/bluesky-integration/spec.md#bsky-04)
 - 長文はBlueskyで複数投稿に分割すると案内しているが、Nagiのクロスポストでは冒頭と「もっと見る」のリンクを1件投稿する。Bluesky専用の返信・引用では分割する。 [BSKY-05](specs/bluesky-integration/spec.md#bsky-05)
+
+## 登録計測の確認範囲
+
+[track-signup-funnel](changes/track-signup-funnel/design.md) は登録OAuthを経たNagiプロフィール初回保存を集計する。EntrywayのOAuth結果にはAT Protocolアカウントの新規作成有無が含まれないため、既存のAT Protocolアカウントで初めてNagiプロフィールを作成した場合も、登録経路を通れば計上される。Umami Cloudでの集計と本番Entrywayでの往復は未確認。

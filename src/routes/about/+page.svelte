@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { trackSignupCta } from '$lib/analytics/signup-cta';
 	import Button from '$lib/components/Button.svelte';
 	import {
 		sampleAvatar,
@@ -245,7 +246,9 @@
 			</p>
 			{#if showJoin}
 				<div class="about-cta">
-					<Button variant="primary" size="lg" href="/login">{m.aboutHeroCta()}</Button>
+					<Button variant="primary" size="lg" onclick={trackSignupCta} href="/login"
+						>{m.aboutHeroCta()}</Button
+					>
 					<p class="about-cta-note">{m.aboutHeroCtaNote()}</p>
 				</div>
 			{/if}

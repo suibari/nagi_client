@@ -1,8 +1,19 @@
 import { BrowserOAuthClient } from '@atproto/oauth-client-browser';
+import { trackSignupEvent } from '$lib/analytics/umami';
 import { createOAuthClientMetadata } from './deployment';
 
 /** Bluesky が提供する PDS 群の共通 OAuth / アカウント作成入口。 */
 export const BLUESKY_ENTRYWAY_URL = 'https://bsky.social';
+export const SIGNUP_OAUTH_STATE = 'nagi-signup';
+
+class NagiOAuthClient extends BrowserOAuthClient {
+	override async authorize(...args: Parameters<BrowserOAuthClient['authorize']>): Promise<URL> {
+		const url = await super.authorize(...args);
+		// signInRedirect はこの戻り値で遷移し、戻る操作時の中断も SDK が扱う。
+		if (args[1]?.state === SIGNUP_OAUTH_STATE) trackSignupEvent('signup_oauth_start', '/login');
+		return url;
+	}
+}
 
 /** クロスポスト対象コレクション。付与判定の前方一致にも使う。 */
 export const CROSSPOST_COLLECTION_SCOPE = 'repo:app.bsky.feed.post';
@@ -151,7 +162,7 @@ export function getOAuthClient(): BrowserOAuthClient {
 		throw new Error('Moving to the canonical OAuth origin');
 	}
 
-	oauthClient = new BrowserOAuthClient({
+	oauthClient = new NagiOAuthClient({
 		onSessionDeleted: (sub, cause) => {
 			for (const handler of sessionDeletedHandlers) handler(sub, cause);
 		},

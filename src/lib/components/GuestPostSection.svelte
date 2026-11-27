@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { trackSignupCta } from '$lib/analytics/signup-cta';
 	import Button from '$lib/components/Button.svelte';
 	import type { ActorView, PostView } from '$lib/api/types';
 	import { guestPosts } from '$lib/guest-posts/guest-posts.svelte';
@@ -68,7 +69,7 @@
 		{/each}
 		{#if hasReply}<div class="signup-prompt">
 				<div><strong>{m.guestPostSignupTitle()}</strong><span>{m.guestPostSignupBody()}</span></div>
-				<a href="/login">{m.loginOrStart()}</a>
+				<a onclick={trackSignupCta} href="/login">{m.loginOrStart()}</a>
 			</div>{/if}
 	</section>
 {/if}

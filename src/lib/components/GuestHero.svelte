@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { trackSignupCta } from '$lib/analytics/signup-cta';
 	import Button from '$lib/components/Button.svelte';
 	/**
 	 * 未ログインの人に見せる紹介。
@@ -38,7 +39,9 @@
 		<Button variant="secondary" size="lg" class="hero-about" href="/about"
 			>{m.welcomeAboutLink()}</Button
 		>
-		<Button variant="primary" size="lg" class="hero-join" href="/login">{m.joinCta()}</Button>
+		<Button variant="primary" size="lg" class="hero-join" onclick={trackSignupCta} href="/login"
+			>{m.joinCta()}</Button
+		>
 	</div>
 </section>
 

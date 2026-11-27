@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { trackSignupCta } from '$lib/analytics/signup-cta';
 	import type { Feed } from '$lib/feed/feed.svelte';
 	import type { FeedTabSpec } from '$lib/feed-tabs/resolve';
 	import { nagiFeedFor as feedFor, nagiFeeds as cache } from '$lib/feed/feed-caches';
@@ -83,7 +84,7 @@
 					<strong>{m.welcomeTitle()}</strong><span>{m.welcomeBody()}</span>
 					<a class="welcome-about" href="/about">{m.welcomeAboutLink()} →</a>
 				</div>
-				<a href="/login">{m.joinCta()}</a>
+				<a onclick={trackSignupCta} href="/login">{m.joinCta()}</a>
 			</aside>
 		{/if}
 		<!-- 歓迎カードを必ずタブ直下に置き、その次に端末保存スレッドを通常フィードと同じ列で並べる。 -->
