@@ -110,8 +110,8 @@ describe('guest post privacy boundary', () => {
 	});
 
 	it('uses one text link for the shared sign-in and start entry point', () => {
-		expect(accountCard).toContain('<a href="/login">{m.loginOrStart()}</a>');
-		expect(section).toContain('<a href="/login">{m.loginOrStart()}</a>');
+		expect(accountCard).toMatch(/<a[^>]* href="\/login"[^>]*>\s*\{m\.loginOrStart\(\)\}/);
+		expect(section).toMatch(/<a[^>]* href="\/login"[^>]*>\s*\{m\.loginOrStart\(\)\}/);
 		expect(accountCard).not.toContain('/login#signup');
 		expect(section).not.toContain('/login#signup');
 		expect(accountCard).not.toContain('{m.loginHint()}');
@@ -133,7 +133,7 @@ describe('guest post privacy boundary', () => {
 
 	it('puts join links at the top and bottom of the landing', () => {
 		// 参加ボタンはログイン画面を先頭から開く（AUTH-07）。
-		expect(landing).toContain('href="/login">{m.aboutHeroCta()}</Button>');
+		expect(landing).toMatch(/href="\/login"[^>]*>\s*\{m\.aboutHeroCta\(\)\}/);
 		expect(landing).not.toContain('/login#signup');
 		// 末尾は /about と同じ参加の締めを使う。
 		expect(landing).toContain('<JoinFinale ');
@@ -166,18 +166,20 @@ describe('guest post privacy boundary', () => {
 	it('keeps the guest hero copy with its about and join links', () => {
 		expect(guestHero).toContain('{m.heroTitle()}');
 		expect(guestHero).toMatch(/class="hero-about" href="\/about"\s*>\{m\.welcomeAboutLink\(\)\}/);
-		expect(guestHero).toContain('class="hero-join" href="/login">{m.joinCta()}</Button>');
+		expect(guestHero).toMatch(/class="hero-join"[^>]* href="\/login"[^>]*>\s*\{m\.joinCta\(\)\}/);
 	});
 
-	it('puts the guest hero above blog and news articles, not on their list pages', () => {
-		for (const [page, article] of [
-			[blogArticle, '<article class="blog-article">'],
-			[newsArticle, '<article class="news-permalink">'],
-		]) {
+	it('keeps the guest hero on news and blog articles in their specified positions', () => {
+		for (const page of [blogArticle, newsArticle]) {
 			expect(page).toContain('const showHero = $derived(!$session);');
-			expect(page.indexOf('<GuestHero />')).toBeGreaterThan(-1);
-			expect(page.indexOf('<GuestHero />')).toBeLessThan(page.indexOf(article));
+			expect(page).toContain('<GuestHero />');
 		}
+		expect(blogArticle.indexOf('<GuestHero />')).toBeGreaterThan(
+			blogArticle.indexOf('<article class="blog-article">'),
+		);
+		expect(newsArticle.indexOf('<GuestHero />')).toBeLessThan(
+			newsArticle.indexOf('<article class="news-permalink">'),
+		);
 		expect(blogList).not.toContain('GuestHero');
 		expect(newsList).not.toContain('GuestHero');
 	});

@@ -363,11 +363,14 @@
 					URL), page title, referrer, timestamp, screen size, language, approximate location derived
 					from the IP address, and device, OS, and browser type. It also aggregates how pages are
 					visited in sequence and how long they are viewed within a single visit. OAuth diagnostics
-					send the same custom events as described for Vercel above. Nothing linked to your account,
-					such as your DID or handle, is sent. Umami uses no cookies; visitors are distinguished by
-					a hash of the IP address and browser type combined with a value that changes monthly, and
-					the IP address itself is not stored in the analytics data. Nothing is sent if your browser
-					has Do Not Track enabled. Aggregated data is retained for the period set by the Umami plan
+					send the same custom events as described for Vercel above. We also count clicks on join
+					buttons, the start of sign-up authorization, and the first successful save of a Nagi
+					profile during sign-up. Those events use fixed page types and external referrer origins
+					(such as https://www.google.com). Nothing linked to your account, such as your DID or
+					handle, is sent. Umami uses no cookies; visitors are distinguished by a hash of the IP
+					address and browser type combined with a value that changes monthly, and the IP address
+					itself is not stored in the analytics data. Nothing is sent if your browser has Do Not
+					Track enabled. Aggregated data is retained for the period set by the Umami plan
 				</td>
 			</tr>
 			<tr>

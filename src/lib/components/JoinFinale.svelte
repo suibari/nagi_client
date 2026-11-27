@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { trackSignupCta } from '$lib/analytics/signup-cta';
 	/**
 	 * 参加の締め（「はじめてみませんか」）。/about とランディングの末尾で同じものを使う。
 	 * 泡の面に botたんを置き、「Nagiをはじめる」に触れると喜び、押すと一度跳ねてから登録へ進む。
@@ -31,6 +32,7 @@
 	let botHopping = $state(false);
 	let joinTimer: ReturnType<typeof setTimeout> | undefined;
 	function onJoinClick(event: MouseEvent) {
+		trackSignupCta();
 		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
 			return;
 		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;

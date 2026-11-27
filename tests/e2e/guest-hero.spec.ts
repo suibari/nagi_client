@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 for (const recentSession of [false, true]) {
-	test(`hides prerendered hero before hydration (recent session: ${recentSession})`, async ({
+	test(`hides prerendered landing before hydration (recent session: ${recentSession})`, async ({
 		page,
 	}) => {
 		await page.addInitScript((recent) => {
@@ -23,16 +23,20 @@ for (const recentSession of [false, true]) {
 			}
 		});
 		await page.goto('/');
-		await expect(page.locator('.hero')).toBeAttached();
-		await expect(page.locator('.hero')).toBeHidden();
+		await expect(page.locator('.landing-hero')).toBeAttached();
+		await expect(page.locator('.landing-hero')).toBeHidden();
 		await expect(page.locator('html')).toHaveAttribute('data-oauth-pending', '');
 	});
 }
 
-test('shows the guest hero after confirming there is no session', async ({ page }) => {
+test('shows the landing and opens login from the join CTA after confirming there is no session', async ({
+	page,
+}) => {
 	await page.goto('/');
 	await expect(page.locator('html')).not.toHaveAttribute('data-oauth-pending');
-	await expect(page.locator('.hero')).toBeVisible();
+	await expect(page.locator('.landing-hero')).toBeVisible();
+	await page.locator('.landing-hero a[href="/login"]').click();
+	await expect(page).toHaveURL(/\/login$/);
 });
 
 test('keeps the prerendered introduction visible without JavaScript', async ({
@@ -43,7 +47,7 @@ test('keeps the prerendered introduction visible without JavaScript', async ({
 	try {
 		const page = await context.newPage();
 		await page.goto('/');
-		await expect(page.locator('.hero')).toBeVisible();
+		await expect(page.locator('.landing-hero')).toBeVisible();
 	} finally {
 		await context.close();
 	}

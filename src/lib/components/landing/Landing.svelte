@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { trackSignupCta } from '$lib/analytics/signup-cta';
 	/**
 	 * 未サインインの TOP（`/`）。アプリの殻（左ナビ・右レール・投稿ボタン）は外し、
 	 * 体験と「ふつうのSNSとの違い」を上から順に伝える。
@@ -89,7 +90,9 @@
 			</h1>
 			<p class="landing-hero-body">{m.landingLead()}</p>
 			<div class="landing-cta">
-				<Button variant="primary" size="lg" href="/login">{m.aboutHeroCta()}</Button>
+				<Button variant="primary" size="lg" onclick={trackSignupCta} href="/login"
+					>{m.aboutHeroCta()}</Button
+				>
 				<Button variant="secondary" size="lg" href="/feed">{m.landingBrowse()}</Button>
 			</div>
 		</div>

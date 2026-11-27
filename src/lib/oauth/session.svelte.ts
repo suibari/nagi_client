@@ -5,6 +5,7 @@ import {
 	buildScope,
 	getOAuthClient,
 	onOAuthSessionDeleted,
+	SIGNUP_OAUTH_STATE,
 	type ScopeOptIns,
 } from './client';
 import { normalizeHandle } from '$lib/atproto/handle';
@@ -23,6 +24,11 @@ const OAUTH_RETURN_TO_KEY = 'nagi.oauth.return-to';
 const OAUTH_DID_KEY = 'nagi.did';
 let explicitSignOut = false;
 const sessionReadyListeners = new Set<(value: OAuthSession) => void>();
+const signupCallbacks = new WeakSet<OAuthSession>();
+
+export function consumeSignupCallback(value: OAuthSession): boolean {
+	return signupCallbacks.delete(value);
+}
 
 export function onOAuthSessionReady(listener: (value: OAuthSession) => void): () => void {
 	sessionReadyListeners.add(listener);
@@ -103,8 +109,10 @@ export async function initOAuth() {
 	try {
 		oauthClient = getOAuthClient();
 		const result = await oauthClient.init();
-		if (result?.session) rememberSession(result.session);
-		else {
+		if (result?.session) {
+			if (result.state === SIGNUP_OAUTH_STATE) signupCallbacks.add(result.session);
+			rememberSession(result.session);
+		} else {
 			const did = localStorage.getItem(OAUTH_DID_KEY);
 			if (did) rememberSession(await oauthClient.restore(did));
 		}
@@ -152,6 +160,7 @@ export async function signIn(
 export async function signUp(options: ScopeOptIns = {}) {
 	await getOAuthClient().signIn(BLUESKY_ENTRYWAY_URL, {
 		scope: buildScope(options),
+		...(get(oauthReady) && !get(session) ? { state: SIGNUP_OAUTH_STATE } : {}),
 		// PDS が対応していれば、現在の Nagi 表示言語を登録画面にも引き継ぐ。
 		ui_locales: i18n.locale,
 	});
