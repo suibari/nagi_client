@@ -11,7 +11,8 @@ export const BLUEMOJI_ITEM = 'blue.moji.collection.item';
 export const NAGI_BLUEMOJI = 'com.suibari.nagi.bluemoji';
 /** ラスタ形式は長辺 128px。1 ページに多数並ぶため blob も小さく保つ。 */
 export const EMOJI_SIZE = 128;
-export const MAX_EMOJI_BLOB_SIZE = 262_144;
+const MAX_LEGACY_EMOJI_BLOB_SIZE = 262_144;
+export const MAX_EMOJI_BLOB_SIZE = 128_000;
 export const MAX_EMOJI_INLINE_SIZE = 65_536;
 export const MAX_EMOJI_ORIGINAL_SIZE = 1_000_000;
 export const MAX_EMOJI_INPUT_SIZE = 5_000_000;
@@ -38,13 +39,15 @@ export const EMOJI_FILE_ACCEPT = [
 	'.lottie',
 ].join(',');
 
-/** blob の mimeType と formats_v0 のフィールド名の対応。 */
 const FORMAT_KEY: Record<string, string> = {
 	'image/png': 'png_128',
 	'image/webp': 'webp_128',
 	'image/gif': 'gif_128',
+	'image/apng': 'apng_128',
+	'application/lottie+zip': 'lottie',
 };
 const FORMATS_V0 = `${BLUEMOJI_ITEM}#formats_v0`;
+const FORMATS_V1 = `${BLUEMOJI_ITEM}#formats_v1`;
 
 /**
  * 絵文字名を rkey にすると、同名の旧形式レコードが PDS に残っている場合に create が
@@ -263,37 +266,43 @@ const directMediaOf = (
 	raw: unknown,
 ): Pick<MyEmoji, 'url' | 'mediaType' | 'formats'> | undefined => {
 	const formats = raw as Record<string, any>;
-	if (!formats || formats.$type !== FORMATS_V0) return undefined;
-	const lottie = validBytes(formats.lottie);
+	if (!formats || (formats.$type !== FORMATS_V0 && formats.$type !== FORMATS_V1)) return undefined;
+	const legacy = formats.$type === FORMATS_V0;
+	const lottie = legacy ? validBytes(formats.lottie) : undefined;
 	if (lottie)
 		return {
 			url: `data:application/lottie+zip;base64,${lottie}`,
 			mediaType: 'application/lottie+zip',
 			formats: { $type: 'blue.moji.richtext.facet#formats_v0', lottie: true },
 		};
-	const apng = validBytes(formats.apng_128);
+	const apng = legacy ? validBytes(formats.apng_128) : undefined;
 	if (apng)
 		return {
 			url: `data:image/apng;base64,${apng}`,
 			mediaType: 'image/apng',
 			formats: { $type: 'blue.moji.richtext.facet#formats_v0', apng_128: true },
 		};
-	for (const [key, mediaType] of [
+	const blobLimit = legacy ? MAX_LEGACY_EMOJI_BLOB_SIZE : MAX_EMOJI_BLOB_SIZE;
+	const slots = [
+		['lottie', 'application/lottie+zip'],
+		['apng_128', 'image/apng'],
 		['gif_128', 'image/gif'],
 		['webp_128', 'image/webp'],
 		['png_128', 'image/png'],
-	] as const) {
+	] as const;
+	for (const [key, mediaType] of legacy ? slots.slice(2) : slots) {
 		const blob = formats[key] as BlobRef | undefined;
 		const link = blob?.ref?.$link;
-		if (validBlob(blob, MAX_EMOJI_BLOB_SIZE, (type) => type.length > 0) && typeof link === 'string')
-			return {
-				url: pdsBlobUrl(pds, did, link),
-				mediaType,
-				formats: {
-					$type: 'blue.moji.richtext.facet#formats_v0',
-					[key]: link,
-				},
-			};
+		if (!validBlob(blob, blobLimit, (type) => type.length > 0) || typeof link !== 'string')
+			continue;
+		return {
+			url: pdsBlobUrl(pds, did, link),
+			mediaType,
+			formats: {
+				$type: 'blue.moji.richtext.facet#formats_v0',
+				[key]: key === 'lottie' || key === 'apng_128' ? true : link,
+			},
+		};
 	}
 	const original = formats.original as BlobRef | undefined;
 	if (
@@ -474,30 +483,22 @@ export async function createBluemojiItem(
 ) {
 	const s = current();
 	const agent = new Agent(s);
-	let formats: Record<string, unknown>;
-	if (
-		(blob.type === 'image/apng' || blob.type === 'application/lottie+zip') &&
-		blob.size <= MAX_EMOJI_INLINE_SIZE
-	) {
-		const bytes = new Uint8Array(await blob.arrayBuffer());
-		let binary = '';
-		for (const byte of bytes) binary += String.fromCharCode(byte);
-		formats = {
-			$type: FORMATS_V0,
-			[blob.type === 'image/apng' ? 'apng_128' : 'lottie']: { $bytes: btoa(binary) },
-		};
-	} else {
-		const uploaded = await retryEmojiRequest(() =>
-			agent.com.atproto.repo.uploadBlob(blob, { encoding: blob.type }),
+	const slot = FORMAT_KEY[blob.type];
+	if (!slot) throw new EmojiProcessingError('Unsupported image type', 'type');
+	const canUseOriginal = slot === 'apng_128' || slot === 'lottie';
+	const limit = canUseOriginal ? MAX_EMOJI_ORIGINAL_SIZE : MAX_EMOJI_BLOB_SIZE;
+	if (blob.size > limit)
+		throw new EmojiProcessingError(
+			'Emoji exceeds the Bluemoji format limit',
+			slot === 'png_128' || slot === 'webp_128' ? 'compress' : 'animated-size',
 		);
-		const formatKey = FORMAT_KEY[blob.type];
-		if (!formatKey && blob.type !== 'image/apng' && blob.type !== 'application/lottie+zip')
-			throw new EmojiProcessingError('Unsupported image type', 'type');
-		formats = {
-			$type: FORMATS_V0,
-			[formatKey ?? 'original']: uploaded.data.blob,
-		};
-	}
+	const uploaded = await retryEmojiRequest(() =>
+		agent.com.atproto.repo.uploadBlob(blob, { encoding: blob.type }),
+	);
+	const formats = {
+		$type: FORMATS_V1,
+		[blob.size <= MAX_EMOJI_BLOB_SIZE ? slot : 'original']: uploaded.data.blob,
+	};
 	const alias = `:${name}:`;
 	const createdAt = new Date().toISOString();
 	const subject = `at://${s.did}/${BLUEMOJI_ITEM}/${rkey}`;
