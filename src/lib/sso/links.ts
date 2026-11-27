@@ -8,11 +8,25 @@ import { createSsoTicket } from '$lib/api/appview';
 // OAuth の client_id と揃えて後者を正とする。
 export const SSO_APPS = {
 	room: 'https://room.bot-tan.com',
+	space: 'https://nagi-space.suibari.com',
 } as const;
 
 export type SsoApp = keyof typeof SSO_APPS;
 
 const SIBLING_ORIGINS: readonly string[] = Object.values(SSO_APPS);
+
+// チケットの受け口。ここに無いアプリには DID ヒントだけを付ける（AUTH-06）。
+// お部屋は Next.js の API ルートで受け、trailingSlash 設定のため末尾スラッシュまで書く
+// （無いと 308 で1往復増える）。
+const TICKET_PATHS: Partial<Record<SsoApp, string>> = {
+	room: '/api/sso/',
+};
+
+/** チケットを使う姉妹アプリ宛なら、その受け口のパス。 */
+export function ticketPathFor(origin: string): string | undefined {
+	const app = (Object.keys(SSO_APPS) as SsoApp[]).find((key) => SSO_APPS[key] === origin);
+	return app ? TICKET_PATHS[app] : undefined;
+}
 
 /**
  * 外部リンクが姉妹アプリ宛なら did ヒントを足す。それ以外の URL は一切変更しない。
@@ -68,15 +82,16 @@ export function buildDidHintUrl(app: SsoApp, path = '/'): string {
  * 認可サーバのキャッシュが最大24h残り createSsoTicket が 403 になりうるので、
  * この分岐が無いとその間ずっと導線が壊れる（appview.ts の withPublicFallback と同じ理由）。
  */
-// お部屋は Next.js の API ルートでチケットを受ける。trailingSlash 設定のため
-// 末尾スラッシュまで書く（無いと 308 で1往復増える）。
-const SSO_PATH = '/api/sso/';
-
 export async function gotoSsoApp(app: SsoApp, returnTo = '/'): Promise<void> {
 	const appOrigin = SSO_APPS[app];
+	const ssoPath = TICKET_PATHS[app];
+	if (!ssoPath) {
+		window.location.href = buildDidHintUrl(app, returnTo);
+		return;
+	}
 	try {
 		const { ticket } = await createSsoTicket(appOrigin);
-		window.location.href = buildTicketUrl({ appOrigin, ticket, returnTo, ssoPath: SSO_PATH });
+		window.location.href = buildTicketUrl({ appOrigin, ticket, returnTo, ssoPath });
 		return;
 	} catch (error) {
 		console.warn('[sso] ticket unavailable, falling back to did hint:', error);
@@ -92,7 +107,12 @@ function returnToFrom(url: URL): string {
 	return `${url.pathname}${query ? `?${query}` : ''}${url.hash}`;
 }
 
-async function navigateWithTicket(url: URL, popup: Window | null, fallbackHref: string) {
+async function navigateWithTicket(
+	url: URL,
+	ssoPath: string,
+	popup: Window | null,
+	fallbackHref: string,
+) {
 	const go = (target: string) => {
 		if (popup) {
 			// 同期で開いた空タブは opener を持つので、遷移前に切っておく。
@@ -109,7 +129,7 @@ async function navigateWithTicket(url: URL, popup: Window | null, fallbackHref: 
 				appOrigin: url.origin,
 				ticket,
 				returnTo: returnToFrom(url),
-				ssoPath: SSO_PATH,
+				ssoPath,
 			}),
 		);
 		return;
@@ -121,7 +141,7 @@ async function navigateWithTicket(url: URL, popup: Window | null, fallbackHref: 
 }
 
 /**
- * 姉妹アプリ宛リンクのクリックを横取りし、チケット経由の遷移に差し替える。
+ * チケットを使う姉妹アプリ宛リンクのクリックを横取りし、チケット経由の遷移に差し替える。
  *
  * チケットは60秒で失効するので href には埋められない。かといってリンクを
  * ヒント経路のままにすると遷移先で毎回 OAuth の承認画面が出るため、
@@ -146,12 +166,14 @@ export function interceptSiblingLinkClick(event: MouseEvent): void {
 	} catch {
 		return;
 	}
-	if (!SIBLING_ORIGINS.includes(url.origin)) return;
+	// チケットを使わない姉妹アプリは、href の ?did= のままブラウザに任せる。
+	const ssoPath = ticketPathFor(url.origin);
+	if (!ssoPath) return;
 	if (!get(session)) return;
 
 	event.preventDefault();
 	// ポップアップブロッカに掛からないよう、新規タブはクリック直後に同期で開く。
 	// noopener を渡すと参照が返らず遷移先を設定できないので、後から opener を切る。
 	const popup = anchor.target === '_blank' ? window.open('', '_blank') : null;
-	void navigateWithTicket(url, popup, anchor.href);
+	void navigateWithTicket(url, ssoPath, popup, anchor.href);
 }
