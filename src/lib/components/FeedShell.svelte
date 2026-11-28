@@ -12,6 +12,7 @@
 	import InfiniteScroll from './InfiniteScroll.svelte';
 	import Icon from './shell/Icon.svelte';
 	import { session } from '$lib/oauth/session.svelte';
+	import { mutes } from '$lib/mute/mutes.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import GuestPostSection from './GuestPostSection.svelte';
 	import FeedSurface from './FeedSurface.svelte';
@@ -36,6 +37,13 @@
 	$effect(() => {
 		if (spec.key === shownKey) return;
 		shownKey = spec.key;
+		feed = feedFor(spec);
+	});
+	// 表示中にミュートした場合（タグのメニューなど）も、その場で取り直す。
+	let seenMutesVersion = untrack(() => mutes.version);
+	$effect(() => {
+		if (mutes.version === seenMutesVersion) return;
+		seenMutesVersion = mutes.version;
 		feed = feedFor(spec);
 	});
 	onMount(() =>

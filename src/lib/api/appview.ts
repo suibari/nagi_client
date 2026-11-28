@@ -270,15 +270,18 @@ export const listIndexableNews = (lang: 'ja' | 'en', cursor?: string) => {
 		'none',
 	);
 };
-/** ブログタブで公開を選んだ投稿。静的記事ページと sitemap の生成に使う。 */
-export const listIndexableBlogs = (cursor?: string) => {
+/**
+ * ブログタブで公開を選んだ投稿。静的記事ページと sitemap の生成には閲覧者なしで使う。
+ * 閲覧者付き（required）はミュートで絞った本人向けの一覧になる。
+ */
+export const listIndexableBlogs = (cursor?: string, auth: 'none' | 'required' = 'none') => {
 	const params = new URLSearchParams({ limit: '200' });
 	if (cursor) params.set('cursor', cursor);
 	return call<{ items: IndexableBlog[]; cursor?: string; hasMore: boolean }>(
 		'com.suibari.nagi.listIndexableBlogs',
 		`/xrpc/com.suibari.nagi.listIndexableBlogs?${params}`,
 		{},
-		'none',
+		auth,
 	);
 };
 export const getThread = (uri: string) =>

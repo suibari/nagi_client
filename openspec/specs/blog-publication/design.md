@@ -58,6 +58,8 @@
 
 一覧・個別記事はフィードと同じ中央ペインを基準にする。一覧では、右ペインが出る画面幅で絞り込みタグを右側の列に表示する。右ペインが出ない画面幅では同じタグのナビゲーションを一覧の前に置く。個別記事では右列の位置を余白とし、カバーからコメントまでを中央ペインに収める。ページ間で同じ列を使用することで、一覧から個別記事へ進んでも読み始めの左端が動かない。 [WordPress Twenty Twenty-Five](https://wordpress.org/documentation/article/twenty-twenty-five/) [GOV.UK Layout](https://design-system.service.gov.uk/styles/layout/)
 
+ログイン中の一覧はミュートで絞った本人向けの一覧を取り直す。プリレンダ・sitemap・記事ページの生成は閲覧者なしの共通の一覧を使う（PROFILE-05、preferences-profileの設計D5）。
+
 未ログイン向けの紹介は記事とコメントの後ろに置く。表示条件と認証の復元中に隠す制御は共通の紹介コンポーネントを引き継ぐ。一覧で本文から作る抜粋は先頭見出しの次から始める。独立した概要があれば優先する。一覧の調整には Damir Sokolovsky（@heydamir）の unslop（CC BY 4.0）を参照した。
 
 ## 実装の入口

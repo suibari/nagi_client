@@ -9,14 +9,22 @@
 	import { afterNavigate } from '$app/navigation';
 	import BlogCard from '$lib/components/BlogCard.svelte';
 	import Icon from '$lib/components/shell/Icon.svelte';
-	import { fetchBlogDirectory, type BlogDirectoryItem } from '$lib/blog/directory';
+	import {
+		fetchBlogDirectory,
+		visibleBlogItems,
+		type BlogDirectory,
+		type BlogDirectoryItem,
+	} from '$lib/blog/directory';
+	import { mutes } from '$lib/mute/mutes.svelte';
+	import { session } from '$lib/oauth/session.svelte';
 	import { fetchCachedBlogTranslations } from '$lib/blog/directoryTranslations';
 	import { languagePreferences } from '$lib/i18n/languagePreferences.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 
 	let { data } = $props();
 	// svelte-ignore state_referenced_locally -- prerender seed; onMount enriches it with document tags
-	let items = $state<BlogDirectoryItem[]>(data.seed);
+	let directory = $state<BlogDirectory>({ items: data.seed });
+	let items = $derived(visibleBlogItems(directory));
 	let loading = $state(false);
 	let error = $state('');
 	let selectedTag = $state('');
@@ -75,8 +83,8 @@
 		loading = !mergedItems.length;
 		error = '';
 		try {
-			items = await fetchBlogDirectory({ refresh });
-			const indexed = new Set(items.map((item) => item.uri));
+			directory = await fetchBlogDirectory({ refresh });
+			const indexed = new Set(directory.items.map((item) => item.uri));
 			optimisticPosts.blogs = optimisticPosts.blogs.filter((item) => !indexed.has(item.uri));
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : m.loadFailed();
@@ -85,8 +93,13 @@
 		}
 	}
 
+	// ログインの復元やミュートの変更のあとは、本人向けの一覧を取り直す。
+	$effect(() => {
+		void $session?.did;
+		void mutes.version;
+		untrack(() => void load());
+	});
 	onMount(() => {
-		void load();
 		return startVisiblePolling(() => void load(true), 10_000, {
 			when: () => optimisticPosts.blogs.some((item) => item.optimisticState === 'indexing'),
 		});

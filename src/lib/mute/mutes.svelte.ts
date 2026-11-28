@@ -17,12 +17,21 @@ class Mutes {
 	loaded = $state(false);
 	/** 進行中の切り替え（連打防止とスピナー表示用）。値は subject。 */
 	pending = $state<string[]>([]);
+	/** 保存に成功するたびに進む。キャッシュ済みのフィードを捨てる合図に使う。 */
+	version = $state(0);
 
 	hasActor(did: string) {
 		return this.actors.some((actor) => actor.did === did);
 	}
 	hasTag(tag: string) {
 		return this.tags.includes(normalizeTag(tag));
+	}
+	/**
+	 * AppView が絞った結果を待つ間だけ、公開の結果から仮に隠す（PROFILE-05）。
+	 * 一覧を読めていなければ何も隠さない。
+	 */
+	hidesProvisionally(did: string, tags: readonly string[] = []) {
+		return this.hasActor(did) || tags.some((tag) => this.hasTag(tag));
 	}
 	isPending(subject: string) {
 		return this.pending.includes(subject);
@@ -36,8 +45,9 @@ class Mutes {
 		}
 		try {
 			const view = await getMutes();
-			this.actors = view.actors;
-			this.tags = view.tags;
+			// 一覧の欠けで、仮の除外を使う画面ごと落とさない。
+			this.actors = view.actors ?? [];
+			this.tags = view.tags ?? [];
 			this.loaded = true;
 		} catch {
 			// 取得できなくてもサーバ側のフィルタは効くので、閲覧自体は止めない。
@@ -83,6 +93,7 @@ class Mutes {
 		this.pending = [...this.pending, subject];
 		try {
 			await setMute(subjectType, subject, muted);
+			this.version += 1;
 		} catch (error) {
 			rollback();
 			throw error;
