@@ -21,7 +21,12 @@
 	import Icon from '$lib/components/shell/Icon.svelte';
 	import BookmarkSearchSections from '$lib/components/BookmarkSearchSections.svelte';
 	import BlogCard from '$lib/components/BlogCard.svelte';
-	import { blogMatches, fetchBlogDirectory, type BlogDirectoryItem } from '$lib/blog/directory';
+	import {
+		blogMatches,
+		fetchBlogDirectory,
+		visibleBlogItems,
+		type BlogDirectoryItem,
+	} from '$lib/blog/directory';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
 	import { startVisiblePolling } from '$lib/polling';
 	import { session } from '$lib/oauth/session.svelte';
@@ -156,7 +161,11 @@
 			.catch(() => {})
 			.finally(() => fresh() && (readyExact.users = true));
 		void fetchBlogDirectory()
-			.then((items) => fresh() && (blogsExact = items.filter((item) => blogMatches(item, q))))
+			.then(
+				(directory) =>
+					fresh() &&
+					(blogsExact = visibleBlogItems(directory).filter((item) => blogMatches(item, q))),
+			)
 			.catch(() => {})
 			.finally(() => fresh() && (readyExact.blogs = true));
 		void searchNewsByQuery(q, locale, undefined, 'exact')

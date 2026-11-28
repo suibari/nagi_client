@@ -11,6 +11,7 @@
 		ZenkatsuSubmissionView,
 	} from '$lib/api/types';
 	import { cardCollections } from '$lib/cards/collection.svelte';
+	import { mutes } from '$lib/mute/mutes.svelte';
 	import { markZenkatsuPlayed, updateZenkatsuNotice } from '$lib/zenkatsu/notice';
 	import { createZenkatsu } from '$lib/atproto/records';
 	import { i18n, m } from '$lib/i18n/i18n.svelte';
@@ -74,6 +75,16 @@
 	const VIEWER_TIMEOUT_MS = 60_000;
 	let loadVersion = 0;
 	let viewerForDid = $state<string | undefined>();
+	/** 表示中の回答を AppView がミュートで絞ったときの mutes.version。公開の応答なら undefined。 */
+	let submissionsMutesVersion = $state<number | undefined>();
+	// AppView の絞り込みが届くまでは、公開の応答から仮に隠す（PROFILE-05）。
+	let submissions = $derived(
+		!feed
+			? []
+			: submissionsMutesVersion === mutes.version
+				? feed.submissions
+				: feed.submissions.filter((s) => !mutes.hidesProvisionally(s.author.did)),
+	);
 
 	/**
 	 * @param next  追加読み込みのカーソル。
@@ -85,6 +96,7 @@
 		error = '';
 		const currentDid = $session?.did;
 		const signedIn = !!currentDid;
+		const requestMutesVersion = mutes.version;
 		viewerLoading = signedIn;
 		viewerSlow = false;
 		viewerFailed = false;
@@ -145,17 +157,24 @@
 			if (!publicOnly && result.viewer && currentDid)
 				updateZenkatsuNotice(currentDid, result.theme.themeDate, result.viewer.submitted);
 			received = true;
-			const submissions = result.submissions ?? [];
+			const incoming = result.submissions ?? [];
 			const previousViewer =
 				publicOnly &&
 				viewerForDid === currentDid &&
 				feed?.theme.themeDate === result.theme.themeDate
 					? feed.viewer
 					: undefined;
+			const filtered = !publicOnly && signedIn;
+			if (!next) submissionsMutesVersion = filtered ? requestMutesVersion : undefined;
+			else if (!filtered) submissionsMutesVersion = undefined;
 			feed =
 				next && feed
-					? { ...result, submissions: [...feed.submissions, ...submissions] }
-					: { ...result, submissions, ...(previousViewer ? { viewer: previousViewer } : {}) };
+					? { ...result, submissions: [...feed.submissions, ...incoming] }
+					: {
+							...result,
+							submissions: incoming,
+							...(previousViewer ? { viewer: previousViewer } : {}),
+						};
 			loading = false;
 		}
 		// ログイン済みでページ遷移した場合も、お題は PDS/OAuth の応答を待たずに表示する。
@@ -340,11 +359,11 @@
 
 	<section class="record">
 		<h2>{m.zenkatsuRecordTitle()}</h2>
-		{#if !feed.submissions.length}
+		{#if !submissions.length}
 			<p class="note">{m.zenkatsuRecordEmpty()}</p>
 		{/if}
 		<ul class="entries">
-			{#each feed.submissions as s (s.uri)}
+			{#each submissions as s (s.uri)}
 				<li class="entry">
 					<div class="entry-author">
 						<AvatarLink actor={s.author} size="small" showName />

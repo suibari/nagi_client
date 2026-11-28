@@ -179,3 +179,7 @@ Bluesky連携設定の日本語・英語の説明に、現行のクロスポス�
 ## ニュース個別ページの紹介位置
 
 オーナーの明示決定に沿って、未ログイン向けの紹介をニュース記事の前から記事の直後に移した。AppViewのモックを使ったChromiumのテストで、ニュース一覧に紹介がなく、個別ページでは記事・紹介・みんなのコメントの順で表示され、紹介の参加リンクからログイン画面を開けることを確認した。 [NEWS-05](specs/news-chronicle/spec.md#news-05)
+
+## ブログ一覧とゼンカツのミュートの確認範囲
+
+[apply-mutes-to-blog-and-zenkatsu](changes/archive/2026-11-28-apply-mutes-to-blog-and-zenkatsu/design.md) で、ブログ一覧とゼンカツの回答一覧にミュートを効かせ、ミュート直後にフィードを取り直すようにした（PROFILE-05）。AppView（`bsky-affirmative-bot/apps/nagi_appview`）の変更は、条件の組み立てを単体テストで確かめたが、実際のPostgreSQLでの取得は確認していない。クライアントはモックによる単体テストとChromiumのテストで確認した。閲覧者付きのブログ一覧に要るpermission setの更新は、公開（`pnpm lex:publish`）するまで反映されない。公開前も、クライアントが要求スコープに明示しているため、新しくログインしたセッションでは取得できる。
