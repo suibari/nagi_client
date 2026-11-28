@@ -7,6 +7,9 @@
 		type BskyConversation,
 	} from '$lib/bsky/conversation';
 	import type { BskyThreadSnapshot } from '$lib/bsky/thread';
+	import { sentBskyReplies } from '$lib/bsky/sent-replies.svelte';
+	import { session } from '$lib/oauth/session.svelte';
+	import type { OAuthSession } from '@atproto/oauth-client-browser';
 	import { EntryMotion } from '$lib/feed/entry-motion.svelte';
 	import Spinner from '../Spinner.svelte';
 	import type { BskyPostCardView } from '$lib/bsky/mapView';
@@ -35,13 +38,23 @@
 
 	let row = $state<HTMLElement>();
 	let visible = $state(false);
-	let detail = $state<{ uri: string; snapshot: BskyThreadSnapshot }>();
+	let detail = $state.raw<{
+		uri: string;
+		owner: OAuthSession | null;
+		snapshot: BskyThreadSnapshot;
+	}>();
 	let loading = $state(false);
 	let failed = $state(false);
 	let attempt = $state(0);
 	const arrivals = new EntryMotion();
+	const sent = $derived(interactive ? sentBskyReplies.get(thread.rootUri) : undefined);
+	const sentRevision = $derived(sent?.revision ?? 0);
 	const shown = $derived(
-		detail?.uri === thread.rootUri ? expandBskyConversation(thread, detail.snapshot) : thread,
+		expandBskyConversation(
+			thread,
+			detail?.uri === thread.rootUri && detail.owner === $session ? detail.snapshot : undefined,
+			sent?.replies.map(({ post }) => post),
+		),
 	);
 
 	onMount(() => {
@@ -56,11 +69,17 @@
 	});
 	$effect(() => {
 		const uri = thread.rootUri;
+		const owner = $session;
 		void revision;
 		void attempt;
 		const fetcher = loadThread;
 		if (!visible || !fetcher) return;
-		if (thread.root.raw.replyCount === 0 && !thread.replies.length && !thread.incomplete) {
+		if (
+			!sentRevision &&
+			thread.root.raw.replyCount === 0 &&
+			!thread.replies.length &&
+			!thread.incomplete
+		) {
 			detail = undefined;
 			loading = false;
 			failed = false;
@@ -72,7 +91,7 @@
 		void untrack(() => fetcher(uri))
 			.then(
 				(snapshot) => {
-					if (cancelled) return;
+					if (cancelled || $session !== owner) return;
 					const previousUris = new Set(
 						conversationPosts(untrack(() => shown)).map((post) => post.uri),
 					);
@@ -80,7 +99,8 @@
 						untrack(() => thread),
 						snapshot,
 					);
-					detail = { uri, snapshot };
+					detail = { uri, owner, snapshot };
+					if (interactive) sentBskyReplies.reconcile(uri, snapshot);
 					arrivals.mark(
 						[],
 						conversationPosts(next)
@@ -89,7 +109,7 @@
 					);
 				},
 				(error: unknown) => {
-					if (cancelled) return;
+					if (cancelled || $session !== owner) return;
 					console.warn('[BskyThreadUnit] thread failed', error);
 					failed = true;
 				},

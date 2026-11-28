@@ -130,10 +130,13 @@ class TagFavoritesStore {
 	}
 
 	/** 投稿に成功したときに、その投稿で使ったタグを履歴へ積む。 */
-	recordUsed(tags: string[]) {
+	recordUsed(tags: string[], did = scopeDid) {
 		if (!tags.length) return;
-		this.recents = pushRecentTags(this.recents, tags);
-		write(recentTagsStorageKey(scopeDid), this.recents);
+		const key = recentTagsStorageKey(did);
+		const current = did === scopeDid ? this.recents : readRecents(key);
+		const recents = pushRecentTags(current, tags);
+		if (did === scopeDid) this.recents = recents;
+		write(key, recents);
 	}
 
 	#save(tags: string[]) {

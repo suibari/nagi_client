@@ -38,6 +38,7 @@
 		mentions = $bindable<MentionSelection[]>([]),
 		emojis = $bindable<EmojiSelection[]>([]),
 		mentionSuggestionsEnabled = true,
+		unicodeEmojiOnly = false,
 		id,
 		placeholder,
 		ariaLabel,
@@ -53,6 +54,7 @@
 		mentions?: MentionSelection[];
 		emojis?: EmojiSelection[];
 		mentionSuggestionsEnabled?: boolean;
+		unicodeEmojiOnly?: boolean;
 		id?: string;
 		placeholder?: string;
 		ariaLabel?: string;
@@ -104,6 +106,7 @@
 				q: query,
 				limit: EMOJI_SUGGESTION_CUSTOM_LIMIT,
 				includeUnicode: true,
+				unicodeEmojiOnly,
 				locale: i18n.locale,
 				signal,
 			}).then((result) => [
@@ -115,7 +118,7 @@
 		{ debounceMs: 80, leading: true },
 	);
 	const tagSuggest = createTypeaheadSearch<TagSuggestionView>(
-		(query, signal) => searchTags(query, 10, signal).then((result) => result.tags),
+		(query, signal) => searchTags(query, 10, signal).then((result) => result.tags ?? []),
 		{
 			debounceMs: 80,
 			leading: true,

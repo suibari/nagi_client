@@ -82,19 +82,27 @@ function previewConversation(
 /** A feed can contain only the root; replies are supplied by getPostThread, independently of feed filtering. */
 export function expandBskyConversation(
 	thread: BskyConversation,
-	snapshot: BskyThreadSnapshot,
+	snapshot?: BskyThreadSnapshot,
+	localReplies: readonly BskyPostCardView[] = [],
 ): BskyConversation {
-	const unavailable = new Set(snapshot.unavailableUris);
+	if (!snapshot && !localReplies.length) return thread;
+	const unavailable = new Set(snapshot?.unavailableUris);
 	const posts = new Map(
-		(snapshot.incomplete ? conversationPosts(thread) : [])
+		(!snapshot || snapshot.incomplete ? conversationPosts(thread) : [])
 			.filter((post) => !unavailable.has(post.uri))
 			.map((post) => [post.uri, post]),
 	);
-	for (const post of snapshot.posts) posts.set(post.uri, post);
+	for (const post of snapshot?.posts ?? []) posts.set(post.uri, post);
+	for (const post of localReplies) {
+		if (!unavailable.has(post.uri) && !posts.has(post.uri)) posts.set(post.uri, post);
+	}
 	const root = posts.get(thread.rootUri) ?? thread.root;
-	return previewConversation(
+	const expanded = previewConversation(
 		{ ...thread, root },
 		[...posts.values()],
-		snapshot.incomplete || !posts.has(thread.rootUri),
+		(snapshot?.incomplete ?? thread.incomplete) || !posts.has(thread.rootUri),
 	);
+	// An incomplete snapshot may know about replies omitted from the feed preview.
+	if (!snapshot) expanded.hiddenCount += thread.hiddenCount;
+	return expanded;
 }

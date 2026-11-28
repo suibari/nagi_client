@@ -61,5 +61,33 @@
 		</label>
 		<button type="button" onclick={() => openTarget('reply')}>Open reply target</button>
 		<button type="button" onclick={() => openTarget('quote')}>Open quote target</button>
+		<button
+			type="button"
+			onclick={() =>
+				composerHost.openQuoteNews({
+					uri: 'at://did:plc:news/com.suibari.nagi.newsRecord/story',
+					cid: 'story',
+					articleId: 'story',
+					url: 'https://example.test/story',
+					title: 'Test news headline',
+					sourceName: 'Test news source',
+					botComment: '',
+					lang: 'en',
+					createdAt: '',
+					indexedAt: '',
+					reactions: [],
+				})}>Open news target</button
+		>
+		<button
+			type="button"
+			onclick={() =>
+				composerHost.openQuoteRadio({
+					slotKey: 'fixture',
+					title: 'Test song',
+					artist: 'Test artist',
+					comment: '',
+					publishedAt: '',
+				})}>Open radio target</button
+		>
 	{/if}
 </section>

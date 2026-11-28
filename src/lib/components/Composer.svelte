@@ -3,7 +3,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { composerHost } from '$lib/post/composer-host.svelte';
-	import Avatar from './Avatar.svelte';
+	import ComposerTargetCard from './ComposerTargetCard.svelte';
 	import QuoteCard from './QuoteCard.svelte';
 	import PostModerationGuard from './PostModerationGuard.svelte';
 	import NewsQuoteCard from './NewsQuoteCard.svelte';
@@ -1292,96 +1292,39 @@
 		{/if}
 	{/snippet}
 
-	{#if replyTarget || quoteTarget}
-		<div class="composer-target-box">
-			{#if replyTarget}
-				<div class="composer-target-card reply">
-					<div class="composer-target-header">
-						<div class="composer-target-badge">
-							<Icon name="reply" size={14} />
-							<span>{m.replyTargetLabel()}</span>
-							<span class="composer-target-sub">@{replyTarget.post.author.handle}</span>
-						</div>
-						<button
-							type="button"
-							class="composer-target-remove icon-action"
-							disabled={busy}
-							aria-label={m.replyRemove()}
-							title={m.replyRemove()}
-							onclick={() => composerHost.clearReply()}
-						>
-							<Icon name="close" size={16} />
-						</button>
-					</div>
-					<div class="composer-target-body">
-						<Avatar actor={replyTarget.post.author} size="small" />
-						<div class="composer-target-content">
-							<div class="composer-target-meta">
-								<span class="name"
-									>{replyTarget.post.author.displayName || replyTarget.post.author.handle}</span
-								>
-							</div>
-							<PostModerationGuard post={replyTarget.post}>
-								<p class="composer-target-text">{replyTarget.post.text}</p>
-							</PostModerationGuard>
-						</div>
-					</div>
-				</div>
-			{:else if quoteTarget}
-				<div class="composer-target-card quote">
-					<div class="composer-target-header">
-						<div class="composer-target-badge">
-							<Icon name="quote" size={14} />
-							<span>{m.quoteTargetLabel()}</span>
-							{#if quoteTarget.post}
-								<span class="composer-target-sub">@{quoteTarget.post.author.handle}</span>
-							{/if}
-						</div>
-						<button
-							type="button"
-							class="composer-target-remove icon-action"
-							disabled={busy}
-							aria-label={m.quoteRemove()}
-							title={m.quoteRemove()}
-							onclick={() => composerHost.clearQuote()}
-						>
-							<Icon name="close" size={16} />
-						</button>
-					</div>
-					<div class="composer-target-body">
-						{#if quoteTarget.post}
-							<Avatar actor={quoteTarget.post.author} size="small" />
-							<div class="composer-target-content">
-								<div class="composer-target-meta">
-									<span class="name"
-										>{quoteTarget.post.author.displayName || quoteTarget.post.author.handle}</span
-									>
-								</div>
-								<PostModerationGuard post={quoteTarget.post}>
-									<p class="composer-target-text">{quoteTarget.post.text}</p>
-								</PostModerationGuard>
-							</div>
-						{:else if quoteTarget.news}
-							<div class="composer-target-content">
-								<div class="composer-target-meta">
-									<span class="name">{quoteTarget.news.sourceName || 'News'}</span>
-								</div>
-								<p class="composer-target-text">{quoteTarget.news.title}</p>
-							</div>
-						{:else if quoteTarget.radio}
-							<div class="composer-target-content">
-								<div class="composer-target-meta">
-									<span class="name">{m.radioQuoteLabel()}</span>
-								</div>
-								<p class="composer-target-text">
-									{quoteTarget.radio.artist} - {quoteTarget.radio.title}
-								</p>
-							</div>
-						{/if}
-					</div>
-				</div>
+	{#if replyTarget}
+		<ComposerTargetCard
+			kind="reply"
+			author={replyTarget.post.author}
+			disabled={busy}
+			onremove={() => composerHost.clearReply()}
+		>
+			<PostModerationGuard post={replyTarget.post}>
+				<p class="composer-target-text">{replyTarget.post.text}</p>
+			</PostModerationGuard>
+		</ComposerTargetCard>
+	{:else if quoteTarget}
+		<ComposerTargetCard
+			kind="quote"
+			author={quoteTarget.post?.author}
+			name={quoteTarget.news
+				? quoteTarget.news.sourceName || 'News'
+				: quoteTarget.radio
+					? m.radioQuoteLabel()
+					: undefined}
+			disabled={busy}
+			onremove={() => composerHost.clearQuote()}
+		>
+			{#if quoteTarget.post}
+				<PostModerationGuard post={quoteTarget.post}>
+					<p class="composer-target-text">{quoteTarget.post.text}</p>
+				</PostModerationGuard>
+			{:else if quoteTarget.news}
+				<p class="composer-target-text">{quoteTarget.news.title}</p>
+			{:else if quoteTarget.radio}
+				<p class="composer-target-text">{quoteTarget.radio.artist} - {quoteTarget.radio.title}</p>
 			{/if}
-		</div>
+		</ComposerTargetCard>
 	{/if}
 	{#if quoteTarget?.radio && radioScopeReady === false}
 		<!-- 送信ボタンが押せない理由になるので、引用先のすぐ下に出す（引用欄は高さを絞っているので外に置く）。 -->

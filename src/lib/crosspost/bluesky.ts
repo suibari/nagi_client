@@ -280,6 +280,18 @@ export type CrosspostTarget = {
 	quoteLink?: string;
 };
 
+export type CreatedBskyPost = {
+	ref: StrongRef;
+	record: {
+		text: string;
+		facets?: Facet[];
+		createdAt: string;
+		via: string;
+		reply?: CrosspostTarget['reply'];
+		embed?: { $type: string };
+	};
+};
+
 /** 作ったコピー。ref は Nagi の投稿レコードの crosspost にそのまま入れる。 */
 export type CrosspostResult = {
 	ref: { root: StrongRef; tail: StrongRef; threadRoot: StrongRef };
@@ -322,6 +334,7 @@ export async function crosspostToBluesky(
 	assets: PostAssets,
 	target: CrosspostTarget = {},
 	continuation?: CrosspostContinuation,
+	oncreated?: (post: CreatedBskyPost) => void,
 ): Promise<CrosspostResult | undefined> {
 	// こっそり投稿と、Bluesky では伏せられない CW を含む投稿はクロスポストしない。
 	if (draft.kossori || crosspostDraftBlock(draft)) return;
@@ -358,31 +371,33 @@ export async function crosspostToBluesky(
 	try {
 		for (const [index, chunk] of chunks.entries()) {
 			const replyRoot = threadRoot ?? root;
+			const record = {
+				$type: BSKY_POST,
+				text: chunk.text,
+				...(chunk.facets.length ? { facets: chunk.facets } : {}),
+				langs: draft.langs,
+				...(crosspostSelfLabels?.length
+					? {
+							labels: {
+								$type: 'com.atproto.label.defs#selfLabels',
+								values: crosspostSelfLabels,
+							},
+						}
+					: {}),
+				createdAt: new Date(base + index).toISOString(),
+				via: VIA,
+				...(longPost ? { [LONG_POST_FIELD]: { uri: longPost.uri, cid: longPost.cid } } : {}),
+				...(index === 0 && firstEmbed ? { embed: firstEmbed } : {}),
+				...(replyRoot && parent ? { reply: { root: replyRoot, parent } } : {}),
+			};
 			const response = await agent.com.atproto.repo.createRecord({
 				repo: current.did,
 				collection: BSKY_POST,
-				record: {
-					$type: BSKY_POST,
-					text: chunk.text,
-					...(chunk.facets.length ? { facets: chunk.facets } : {}),
-					langs: draft.langs,
-					...(crosspostSelfLabels?.length
-						? {
-								labels: {
-									$type: 'com.atproto.label.defs#selfLabels',
-									values: crosspostSelfLabels,
-								},
-							}
-						: {}),
-					createdAt: new Date(base + index).toISOString(),
-					via: VIA,
-					...(longPost ? { [LONG_POST_FIELD]: { uri: longPost.uri, cid: longPost.cid } } : {}),
-					...(index === 0 && firstEmbed ? { embed: firstEmbed } : {}),
-					...(replyRoot && parent ? { reply: { root: replyRoot, parent } } : {}),
-				},
+				record,
 			});
 			const ref = { uri: response.data.uri, cid: response.data.cid };
 			created.push(ref);
+			oncreated?.({ ref, record });
 			root ??= ref;
 			parent = ref;
 		}

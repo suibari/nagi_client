@@ -40,6 +40,8 @@
 	let {
 		open = $bindable(false),
 		anchor,
+		unicodeEmojiOnly = false,
+		restoreFocusOnSelect = true,
 		select,
 		close,
 		ariaLabel = m.quickReactionAria(),
@@ -47,6 +49,8 @@
 	}: {
 		open?: boolean;
 		anchor?: HTMLElement;
+		unicodeEmojiOnly?: boolean;
+		restoreFocusOnSelect?: boolean;
 		select: (emoji: string | EmojiView) => void;
 		close?: () => void;
 		ariaLabel?: string;
@@ -58,11 +62,14 @@
 	let quickPickerStyle = $state('');
 	let quickItems = $state<ReactionChoice[]>([]);
 	let favorites = $state<ReactionChoice[]>([]);
+	const visibleFavorites = $derived(
+		unicodeEmojiOnly ? favorites.filter((item) => item.kind === 'unicode') : favorites,
+	);
 	const QUICK_COLUMNS = 6;
 	let usage = $state<ReactionUsage[]>([]);
 	const recentItems = $derived(
 		recentReactionChoices(
-			usage,
+			unicodeEmojiOnly ? usage.filter((item) => item.kind === 'unicode') : usage,
 			QUICK_COLUMNS,
 			failedCustomUris,
 			new Set(favorites.map(reactionChoiceKey)),
@@ -102,7 +109,7 @@
 	$effect(() => {
 		const q = quickQuery.trim();
 		const requestId = ++quickSearchRequestId;
-		if (!q) return;
+		if (!q || unicodeEmojiOnly) return;
 		const controller = new AbortController();
 		const timer = setTimeout(async () => {
 			try {
@@ -145,10 +152,17 @@
 		const failedSnapshot = untrack(() => failedCustomUris);
 		const favoriteSnapshot = untrack(loadFavorites);
 		const did = $session?.did;
-		const preparedPool = did ? getPreparedCustomSuggestionPool(did) : undefined;
+		const preparedPool =
+			did && !unicodeEmojiOnly ? getPreparedCustomSuggestionPool(did) : undefined;
+		const displayFavorites = unicodeEmojiOnly
+			? favoriteSnapshot.filter((item) => item.kind === 'unicode')
+			: favoriteSnapshot;
+		const displayUsage = unicodeEmojiOnly
+			? usageSnapshot.filter((item) => item.kind === 'unicode')
+			: usageSnapshot;
 		const favoriteKeys = new Set(favoriteSnapshot.map(reactionChoiceKey));
 		const localRecent = recentReactionChoices(
-			usageSnapshot,
+			displayUsage,
 			QUICK_COLUMNS,
 			failedSnapshot,
 			favoriteKeys,
@@ -157,11 +171,11 @@
 		favorites = favoriteSnapshot;
 		usage = usageSnapshot;
 		quickItems =
-			favoriteSnapshot.length || localRecent.length
+			displayFavorites.length || localRecent.length
 				? []
-				: buildQuickReactionChoices(usageSnapshot, preparedPool ?? [], failedSnapshot);
+				: buildQuickReactionChoices(displayUsage, preparedPool ?? [], failedSnapshot);
 		// 開いている最中には候補を差し替えない。検証・候補取得結果は次回表示から使う。
-		if (did)
+		if (did && !unicodeEmojiOnly)
 			void prepareReactionPalette(did, usageSnapshot, favoriteSnapshot)
 				.then((prepared) => {
 					// ドラッグで編集した後は、開いた時点のスナップショットで巻き戻さない。
@@ -193,7 +207,7 @@
 	const QUICK_HINT = 21;
 	const QUICK_RESULTS_MAX = QUICK_CELL * 3;
 	function estimateQuickHeight(columns: number) {
-		const favoriteRows = favorites.length ? Math.ceil(favorites.length / columns) : 0;
+		const favoriteRows = Math.ceil(visibleFavorites.length / columns);
 		const recentCount = recentItems.length || quickItems.length;
 		const recentRows = recentCount ? Math.ceil(recentCount / columns) : 0;
 		const labels = (favoriteRows ? QUICK_LABEL : 0) + (recentItems.length ? QUICK_LABEL : 0);
@@ -235,11 +249,11 @@
 		};
 	});
 
-	function closePalette() {
+	function closePalette(restoreFocus = true) {
 		open = false;
 		fullPickerOpen = false;
 		close?.();
-		requestAnimationFrame(() => anchor?.focus());
+		if (restoreFocus) requestAnimationFrame(() => anchor?.focus());
 	}
 
 	function markCustomUnavailable(uri: string) {
@@ -262,7 +276,7 @@
 		usage = recordReactionUsage(loadReactionUsage(), emoji);
 		select(emoji);
 		if (!keepOpen) {
-			closePalette();
+			closePalette(restoreFocusOnSelect);
 			return;
 		}
 		// 同じタイルを連打してもアニメを再生し直すため、いったん外してから付け直す。
@@ -291,7 +305,11 @@
 	 */
 	function insertionIndex(zone: { kind: string; index?: number; after?: boolean }) {
 		if (zone.kind !== 'favorite' || zone.index === undefined) return favorites.length;
-		return zone.index + (zone.after ? 1 : 0);
+		const target = visibleFavorites[zone.index];
+		const index = target
+			? favorites.findIndex((item) => reactionChoiceKey(item) === reactionChoiceKey(target))
+			: -1;
+		return index < 0 ? favorites.length : index + (zone.after ? 1 : 0);
 	}
 
 	/**
@@ -300,7 +318,7 @@
 	 */
 	function applyDrop(payload: DragPayload, zone: DropZone | undefined) {
 		if (!zone) return;
-		const { choice, source } = payload;
+		const { choice, source, index } = payload;
 		const key = reactionChoiceKey(choice);
 		if (zone.kind !== 'favorite' && zone.kind !== 'bar') return;
 		if (source === 'favorites') {
@@ -309,6 +327,12 @@
 				announcement = m.emojiFavoriteRemoved({ emoji: labelOf(choice) });
 				return;
 			}
+			if (
+				zone.index !== undefined &&
+				(zone.index + (zone.after ? 1 : 0) === index ||
+					zone.index + (zone.after ? 1 : 0) === index + 1)
+			)
+				return;
 			const from = favorites.findIndex((item) => reactionChoiceKey(item) === key);
 			if (from < 0) return;
 			// 自分を抜いた分、後ろ向きの移動先はひとつ手前にずれる。
@@ -353,14 +377,13 @@
 		if (source !== 'favorites' || !drag.dragging) return undefined;
 		const zone = drag.zone;
 		if (zone?.kind !== 'favorite' || zone.index === undefined) return undefined;
-		const at = insertionIndex(zone);
-		// 自分の位置に戻すだけのドロップにはキャレットを出さない。
-		if (draggingKey !== undefined && drag.payload?.source === 'favorites') {
-			const from = favorites.findIndex((item) => reactionChoiceKey(item) === draggingKey);
-			if (from >= 0 && (at === from || at === from + 1)) return undefined;
+		const at = zone.index + (zone.after ? 1 : 0);
+		if (drag.payload?.source === 'favorites') {
+			const from = drag.payload.index;
+			if (at === from || at === from + 1) return undefined;
 		}
 		if (at === index) return 'before';
-		if (at === favorites.length && index === favorites.length - 1) return 'after';
+		if (at === visibleFavorites.length && index === visibleFavorites.length - 1) return 'after';
 		return undefined;
 	}
 	const dropBarLabel = $derived.by(() => {
@@ -408,10 +431,14 @@
 {#if open && anchor}
 	<div class="emoji-palette-portal" use:portal>
 		{#if fullPickerOpen}
-			<button class="emoji-picker-backdrop" aria-label={m.closeEmojiAria()} onclick={closePalette}
+			<button
+				class="emoji-picker-backdrop"
+				aria-label={m.closeEmojiAria()}
+				onclick={() => closePalette()}
 			></button>
 			<EmojiPicker
 				{anchor}
+				{unicodeEmojiOnly}
 				select={choose}
 				close={closePalette}
 				{ariaLabel}
@@ -446,11 +473,11 @@
 						{/if}
 					</div>
 				{:else}
-					{#if favorites.length}
+					{#if visibleFavorites.length}
 						<div class="reaction-quick-section">
 							<span class="reaction-quick-label">{m.quickReactionFavorites()}</span>
 							<div class="reaction-quick-grid reaction-quick-favorites">
-								{#each favorites as item, index (reactionChoiceKey(item))}{@render quickChoice(
+								{#each visibleFavorites as item, index (reactionChoiceKey(item))}{@render quickChoice(
 										item,
 										'favorites',
 										index,

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppBskyFeedDefs } from '@atproto/api';
 import { BskyThreadLoader, toThreadSnapshot, type BskyThreadSnapshot } from './thread';
 import { bskyConversations, expandBskyConversation } from './conversation';
-import { toFeedItem } from './mapView';
+import { toPostCard, toFeedItem } from './mapView';
 
 const uri = (id: string) => `at://did:plc:thread/app.bsky.feed.post/${id}`;
 function node(
@@ -70,6 +70,37 @@ describe('thread enrichment', () => {
 		expect(expanded.replies.map((reply) => reply.post.text)).toEqual(['2']);
 		expect(expanded.incomplete).toBe(true);
 	});
+	it('shows a sent reply while AppView catches up and honors an explicit block', () => {
+		const root = node('root');
+		const reply = node('1', [], 'root');
+		const [feedThread] = bskyConversations([toFeedItem({ post: root.post })]);
+		const local = [toPostCard(reply.post)];
+		expect(expandBskyConversation(feedThread, undefined, local).replies[0].post.uri).toBe(
+			reply.post.uri,
+		);
+		const stale = toThreadSnapshot(root);
+		expect(expandBskyConversation(feedThread, stale, local).replies[0].post.uri).toBe(
+			reply.post.uri,
+		);
+		const indexed = toThreadSnapshot({
+			...root,
+			replies: [
+				{
+					...reply,
+					post: { ...reply.post, record: { text: 'indexed' } },
+				},
+			],
+		});
+		expect(
+			expandBskyConversation(feedThread, indexed, local).replies.map(({ post }) => post.text),
+		).toEqual(['indexed']);
+		const blocked = toThreadSnapshot({
+			...root,
+			replies: [{ $type: 'app.bsky.feed.defs#blockedPost', uri: reply.post.uri, blocked: true }],
+		});
+		expect(expandBskyConversation(feedThread, blocked, local).replies).toEqual([]);
+	});
+
 	it('marks truncated response branches without inventing a missing count', () => {
 		const root = node('root');
 		root.post.replyCount = 10;
@@ -102,6 +133,27 @@ describe('thread request lifecycle', () => {
 		await loader.get('root');
 		expect(fetcher).toHaveBeenCalledTimes(2);
 	});
+	it('invalidates only the affected root and ignores an older request when it settles', async () => {
+		let finishOld!: (value: BskyThreadSnapshot) => void;
+		const fetcher = vi
+			.fn()
+			.mockImplementationOnce(
+				() => new Promise<BskyThreadSnapshot>((resolve) => (finishOld = resolve)),
+			)
+			.mockResolvedValue(snapshot);
+		const loader = new BskyThreadLoader(fetcher);
+		const old = loader.get('root');
+		const other = loader.get('other');
+		loader.invalidate('root');
+		const next = loader.get('root');
+		expect(next).not.toBe(old);
+		await next;
+		finishOld(snapshot);
+		await old;
+		expect(loader.get('root')).toBe(next);
+		expect(loader.get('other')).toBe(other);
+	});
+
 	it('retries failures instead of caching the rejected request', async () => {
 		const fetcher = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(snapshot);
 		const loader = new BskyThreadLoader(fetcher);
