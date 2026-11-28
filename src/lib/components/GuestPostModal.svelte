@@ -105,6 +105,7 @@
 			bind:emojis
 			mentionSuggestionsEnabled={false}
 			emojiPickerEnabled={false}
+			tagPaletteEnabled={false}
 			contentWarningEnabled={false}
 			placeholder={m.composerPlaceholder()}
 			ariaLabel={m.composerAria()}

@@ -28,6 +28,7 @@
 		select,
 		close,
 		showFavorites = true,
+		unicodeEmojiOnly = false,
 		oncustomunavailable,
 		ariaLabel = m.emojiPickerAria(),
 		choiceAriaLabel = (emoji: string) => m.reactWithAria({ emoji }),
@@ -38,22 +39,25 @@
 		close: () => void;
 		/** 設定画面から「お気に入りに追加する絵文字」を選ぶときは false。 */
 		showFavorites?: boolean;
+		unicodeEmojiOnly?: boolean;
 		oncustomunavailable?: (uri: string) => void;
 		ariaLabel?: string;
 		choiceAriaLabel?: (emoji: string) => string;
 	} = $props();
 	type FavoriteItem = { id: string; choice: ReactionChoice };
 	// パレットを開いた時点のお気に入りを編集対象にし、並び替えのたびに保存する。
-	// svelte-ignore state_referenced_locally -- showFavorites は開いている間変わらない
-	const initialFavorites = showFavorites
-		? loadFavorites().map((choice) => ({ id: reactionChoiceKey(choice), choice }))
-		: [];
+	const pickerFavorites = () =>
+		showFavorites
+			? loadFavorites()
+					.filter((choice) => !unicodeEmojiOnly || choice.kind === 'unicode')
+					.map((choice) => ({ id: reactionChoiceKey(choice), choice }))
+			: [];
+	const initialFavorites = pickerFavorites();
 	let favorites = $state<FavoriteItem[]>(initialFavorites);
 	$effect(() => {
 		preferences.cacheVersion;
 		$session?.did;
-		if (showFavorites)
-			favorites = loadFavorites().map((choice) => ({ id: reactionChoiceKey(choice), choice }));
+		favorites = pickerFavorites();
 	});
 	let host: HTMLDivElement;
 	let unicodeHost = $state<HTMLDivElement>();
@@ -85,8 +89,20 @@
 	const addCustomHref = $derived(`/emoji?returnTo=${returnTo}`);
 	const favoritesSettingsHref = $derived(`/emoji?returnTo=${returnTo}#favorites`);
 
-	const persistFavorites = (items: FavoriteItem[]) =>
-		saveFavorites(items.map((item) => item.choice));
+	function persistFavorites(items: FavoriteItem[]) {
+		const ordered = items.map((item) => item.choice);
+		if (!unicodeEmojiOnly) {
+			saveFavorites(ordered);
+			return;
+		}
+		const keys = new Set(items.map((item) => item.id));
+		let index = 0;
+		saveFavorites(
+			loadFavorites().map((choice) =>
+				keys.has(reactionChoiceKey(choice)) ? ordered[index++] : choice,
+			),
+		);
+	}
 
 	const VIEWPORT_MARGIN = 16;
 	const ANCHOR_GAP = 8;
@@ -99,6 +115,7 @@
 	// 検索: 名前と意味で探し、カスタム絵文字を Unicode 絵文字より上に並べる。
 	$effect(() => {
 		const q = query.trim();
+		const onlyUnicode = unicodeEmojiOnly;
 		if (tab === 'favorites' || !q) return;
 		const requestId = ++resultsRequestId;
 		const controller = new AbortController();
@@ -109,6 +126,7 @@
 					q,
 					limit: 60,
 					includeUnicode: true,
+					unicodeEmojiOnly: onlyUnicode,
 					locale: i18n.locale,
 					signal: controller.signal,
 				});
@@ -129,7 +147,7 @@
 
 	// 一覧: 検索語が無いときのカスタムタブ。本人分はPDSキャッシュ、他ユーザー分はAppView。
 	$effect(() => {
-		if (tab !== 'custom' || searching) return;
+		if (unicodeEmojiOnly || tab !== 'custom' || searching) return;
 		const requestId = ++customRequestId;
 		let cancelled = false;
 		customLoading = true;
@@ -306,12 +324,14 @@
 			class:active={tab === 'unicode'}
 			onclick={() => (tab = 'unicode')}>{m.emojiTabUnicode()}</button
 		>
-		<button
-			role="tab"
-			aria-selected={tab === 'custom'}
-			class:active={tab === 'custom'}
-			onclick={() => (tab = 'custom')}>{m.emojiTabCustom()}</button
-		>
+		{#if !unicodeEmojiOnly}
+			<button
+				role="tab"
+				aria-selected={tab === 'custom'}
+				class:active={tab === 'custom'}
+				onclick={() => (tab = 'custom')}>{m.emojiTabCustom()}</button
+			>
+		{/if}
 	</div>
 	{#if tab === 'favorites'}
 		<div class="emoji-panel emoji-favorites">

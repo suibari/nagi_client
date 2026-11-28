@@ -117,7 +117,9 @@ change [bluesky-interactions](changes/archive/2026-11-22-bluesky-interactions/pr
 - 本番OAuthでの再認可の流れと、旧セッションからの移行。
 - 通報が公式モデレーションサービスに届くこと、threadgate／postgateがBluesky公式アプリでも効いて見えること。
 
-Blueskyへの返信・引用の入力欄には、最初の版では動画とメディアのself-labelを付ける手段が無い。投稿した返信はフィードの会話の再取得（30秒ごと）まで表示に出ない。
+Blueskyへの返信・引用の入力欄には、動画とメディアのself-labelを付ける手段が無い。従来、送った返信は会話の再取得まで表示されなかった。BSKY-09の更新で、本人PDSが作成を確認した返信を会話へ即時反映するようにした。返信数0からの表示、取り込み後の重複防止、分割途中の失敗、アカウント切替はモックによる検証範囲であり、本番PDSとBluesky AppViewでの投稿は未確認。 [BSKY-09](specs/bluesky-integration/spec.md#bsky-09)
+
+従来のBluesky入力欄では絵文字ボタンを隠しても、本文でカスタム絵文字候補が出た。共通パレットの追加に合わせ、本文候補もUnicodeに揃えた。Blueskyの各クライアントでのBluemoji描画は未確認。 [EMOJI-02](specs/emoji-tags/spec.md#emoji-02)
 
 `@atproto/api`の`getPreferences`は、新形式の保存フィード設定がないときに`putPreferences`を呼ぶ。Nagiは設定の書き込み権限を要求していないため、通知バッジの修正に合わせて、SDKの変換結果を読み取りにだけ使うようにした。書き込みを拒否するモックでも通知を取得できることを確認した。
 

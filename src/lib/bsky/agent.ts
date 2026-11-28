@@ -1,4 +1,5 @@
 import { BskyThreadLoader, toThreadSnapshot } from './thread';
+import { sentBskyReplies } from './sent-replies.svelte';
 import { get } from 'svelte/store';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import {
@@ -153,6 +154,10 @@ export async function getBskyThread(uri: string) {
 		return toThreadSnapshot(data.thread);
 	});
 	return ctx.threads.get(uri);
+}
+
+export function invalidateBskyThread(uri: string) {
+	currentContext().threads?.invalidate(uri);
 }
 
 export type BskyFeedPage = { items: BskyFeedItemView[]; cursor?: string };
@@ -326,12 +331,14 @@ export const deletedBskyPosts = new SvelteSet<string>();
  * 自分のリポジトリの投稿以外は消さない。
  */
 export async function deleteOwnBskyPost(uri: string): Promise<void> {
+	const owner = get(session);
 	const agent = repoAgent();
 	const [repo, collection] = uri.slice('at://'.length).split('/');
 	if (repo !== agent.did || collection !== 'app.bsky.feed.post')
 		throw new Error('Only your own Bluesky posts can be deleted');
 	await agent.deletePost(uri);
 	deletedBskyPosts.add(uri);
+	if (owner === get(session)) sentBskyReplies.remove(uri);
 }
 
 type ThreadNode = { post?: { uri: string; author: { did: string } }; replies?: unknown[] };

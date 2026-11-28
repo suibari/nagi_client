@@ -54,7 +54,7 @@ SDKが旧フィード設定を読み取り時に新形式へ変換する場合�
 
 **課題**：Bluesky投稿への返信をNagiに保存することはできず、保存しようとするとBSKY-01の境界に触れる。NagiのComposerはこっそり・記事・下書きの自動保存を1つの状態で扱っており、Bluesky専用の入力を混ぜると、Nagiの下書きへ誤って書き込む経路ができる。
 
-**採用判断**：Bluesky投稿への返信・引用は、ポストモーダルの中に別の入力欄を出してBlueskyにだけ投稿する。入力・画像・リンクカードの部品はNagiと共有し、分割・facet・`via`はクロスポストの処理を使う。下書きには保存せず、書きかけで閉じるときは破棄を確かめる。投稿の直前に相手の投稿の有無と返信・引用の可否を確かめる。
+**採用判断**：Bluesky投稿への返信・引用は、ポストモーダルの中に別の入力欄を出してBlueskyにだけ投稿する。入力・画像・リンクカードと返信・引用先カードの骨組みをNagiと共有し、分割・facet・`via`はクロスポストの処理を使う。下書きには保存せず、書きかけで閉じるときは破棄を確かめる。投稿の直前に相手の投稿の有無と返信・引用の可否を確かめる。
 
 **理由と制約**：Blueskyは返信先が消えていても返信レコードを受け付けるため、孤立した返信を作らないよう確かめる。分割の途中で失敗したら、送り直すと重複するので入力を閉じて伝える。最初の版では動画とメディアのself-labelを付ける手段を持たない。
 
@@ -100,6 +100,14 @@ SDKが旧フィード設定を読み取り時に新形式へ変換する場合�
 
 **理由と制約**：コピーを作った後でNagi投稿へ`crosspost`を追記する（D4）ため、目印の`cid`は必ず1つ古い。`cid`を任意にする案はmochottの形から外れるので採らず、lexiconに「クロスポストした時点の版」と明記した。Nagiは版の違いを編集済みとは扱わない（AppViewの判定はAPI-09）。Nagi AppViewへ渡すのはNagi投稿のURIだけで、BlueskyのURIは渡さない（D1）。botたんの定期ポストも同じ目印を書く（bsky-affirmative-bot側、2026-11-25）。
 
+### D12: 作成が確認できたBlueskyへの返信を先に表示する
+
+**課題**：送信の完了通知だけでは、Bluesky AppViewの取り込みや次の会話取得を待つ間、送った返信を画面で確認できない。古い返信数が0なら会話取得自体も省かれる。
+
+**採用判断**：本人PDSが作成を返したレコードをセッションとルートURIにひも付けて保持する。会話カードはURIで重複を除き、作成が確認できた返信を既存の返信プレビューに含める。該当ルートだけキャッシュを破棄し、表示中の会話を再取得する。返信の取り込みが遅い間は補完を続け、同じURIのビューが届いたら確定表示へ切り替える。
+
+**理由と制約**：分割の一部が作成された場合は、その分だけを表示して途中失敗を知らせる。明示的な非表示・削除・セッション変更で一時表示を片付ける。添付の表示用URLは確定データに替わるまでメモリ上で保持する。引用は独立した新規投稿なので既存の完了通知から辿れる。
+
 ## 実装の入口
 
 現在のコードを調べるための入口。行番号は管理せず、ファイル内の処理名・責務で探す。ファイル移動時はこの一覧を更新する。
@@ -115,6 +123,7 @@ SDKが旧フィード設定を読み取り時に新形式へ変換する場合�
 | [src/lib/crosspost/content-warning.ts](../../../src/lib/crosspost/content-warning.ts)               | crosspostContentWarningBlock                                                                                 |
 | [src/lib/bsky/interactions.svelte.ts](../../../src/lib/bsky/interactions.svelte.ts)                 | いいね・リポストの自分の状態と楽観表示                                                                       |
 | [src/lib/bsky/compose.ts](../../../src/lib/bsky/compose.ts)                                         | Blueskyにだけ投稿する返信・引用                                                                              |
+| [src/lib/bsky/sent-replies.svelte.ts](../../../src/lib/bsky/sent-replies.svelte.ts) | 作成が確認できた返信の保持と会話取得結果との照合 |
 | [src/lib/bsky/gates.ts](../../../src/lib/bsky/gates.ts)                                             | threadgate／postgateの組み立てと読み取り                                                                     |
 | [src/lib/bsky/notifications.ts](../../../src/lib/bsky/notifications.ts)                             | Blueskyの通知の絞り込みと変換                                                                                |
 | [src/lib/components/bsky/BskyPostCard.svelte](../../../src/lib/components/bsky/BskyPostCard.svelte) | 操作列と「…」メニュー、長文の「全文を表示」                                                                  |

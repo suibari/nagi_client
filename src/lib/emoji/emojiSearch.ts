@@ -9,8 +9,7 @@ export type UnicodeEmojiChoice = { emoji: string; label: string };
 
 /** 投稿欄の `:` 補完の1行。カスタム絵文字の後ろに Unicode 絵文字が続く。 */
 export type EmojiSuggestion =
-	| { kind: 'custom'; emoji: EmojiView }
-	| ({ kind: 'unicode' } & UnicodeEmojiChoice);
+	{ kind: 'custom'; emoji: EmojiView } | ({ kind: 'unicode' } & UnicodeEmojiChoice);
 
 export type EmojiSearchResult = {
 	/** カスタム絵文字。Unicode 絵文字より常に上に並べる。 */
@@ -33,11 +32,17 @@ export async function searchEmojiSuggestions(opts: {
 	q: string;
 	limit: number;
 	includeUnicode: boolean;
+	unicodeEmojiOnly?: boolean;
 	locale: string;
 	signal?: AbortSignal;
 }): Promise<EmojiSearchResult> {
 	const q = opts.q.trim();
 	if (!q) return { custom: [], unicode: [] };
+	const localUnicode = async () => {
+		const index = await loadUnicodeEmojiIndex(opts.locale);
+		return searchUnicodeEmojis(index, q, opts.limit).map(({ emoji, label }) => ({ emoji, label }));
+	};
+	if (opts.unicodeEmojiOnly) return { custom: [], unicode: await localUnicode() };
 	const did = get(session)?.did;
 	const needle = q.toLowerCase();
 	// AppView と同じく、名前の区切り（- _ 空白）の違いは無視する（bottan で :bot-tan_duel:）。
@@ -85,12 +90,5 @@ export async function searchEmojiSuggestions(opts: {
 			})),
 		};
 	// AppView に届かないときは手元の名前一致だけで出す。これも失敗したら検索失敗として投げる。
-	const index = await loadUnicodeEmojiIndex(opts.locale);
-	return {
-		custom,
-		unicode: searchUnicodeEmojis(index, q, opts.limit).map((emoji) => ({
-			emoji: emoji.emoji,
-			label: emoji.label,
-		})),
-	};
+	return { custom, unicode: await localUnicode() };
 }

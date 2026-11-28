@@ -42,6 +42,9 @@ test('tag palette inserts tags and adds recent ones to favorites', async ({ page
 	await page.getByRole('button', { name: 'Open composer' }).click();
 	const input = page.getByRole('textbox', { name: '投稿内容' });
 	await input.click();
+	await expect(
+		page.locator('.post-modal').getByRole('button', { name: '絵文字を挿入' }),
+	).toBeVisible();
 	await page.keyboard.type('こんにちは');
 
 	await page.locator('.post-modal').getByRole('button', { name: 'タグを挿入' }).click();
@@ -92,4 +95,13 @@ test('right-clicking a hashtag opens the tag menu', async ({ page }) => {
 	await page.keyboard.press('Escape');
 	await expect(menu).toBeHidden();
 	await expect(page).toHaveURL(/\/dev\/e2e\/tags$/);
+});
+
+test('guest composer keeps both palettes hidden', async ({ page }) => {
+	await page.goto('/dev/e2e/tags?guest=1');
+	await page.getByRole('button', { name: 'Open guest composer' }).click();
+	const guest = page.getByRole('dialog', { name: 'この端末だけに投稿', exact: true });
+	await expect(guest).toBeVisible();
+	await expect(guest.getByRole('button', { name: 'タグを挿入' })).toHaveCount(0);
+	await expect(guest.getByRole('button', { name: '絵文字を挿入' })).toHaveCount(0);
 });

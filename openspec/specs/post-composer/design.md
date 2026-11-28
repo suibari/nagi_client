@@ -97,6 +97,8 @@
 | ファイル                                                                                            | 探す処理・責務                                               |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [src/lib/components/Composer.svelte](../../../src/lib/components/Composer.svelte)                   | 投稿状態と送信処理                                           |
+| [src/lib/components/ComposerEditor.svelte](../../../src/lib/components/ComposerEditor.svelte) | NagiとBlueskyで共有する本文入力とタグ・絵文字の操作 |
+| [src/lib/components/ComposerTargetCard.svelte](../../../src/lib/components/ComposerTargetCard.svelte) | NagiとBlueskyで共有する返信・引用先カードの枠と著者表示 |
 | [src/lib/post/quote-url.ts](../../../src/lib/post/quote-url.ts)                                     | 引用URLの解釈・引用可否・linkCardAllowed                     |
 | [src/lib/post/quote-pick.svelte.ts](../../../src/lib/post/quote-pick.svelte.ts)                     | 貼り付けで付く引用と、引用できないURLの書き戻し              |
 | [src/lib/post/scope.ts](../../../src/lib/post/scope.ts)                                             | scopeForPublicReply / defaultScopeForPath                    |

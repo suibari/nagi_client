@@ -19,7 +19,7 @@ const post = {
 
 type Write = { method: string; body: Record<string, unknown> };
 
-async function signIn(page: Page, withInteractionScopes = true) {
+async function signIn(page: Page, withInteractionScopes = true, viewer = VIEWER) {
 	await page.evaluate(
 		async ({ withInteractionScopes, viewer }) => {
 			const sessionPath = '/src/lib/oauth/session.svelte.ts';
@@ -48,12 +48,16 @@ async function signIn(page: Page, withInteractionScopes = true) {
 			});
 			feedTabs.tabs = tabs;
 		},
-		{ withInteractionScopes, viewer: VIEWER },
+		{ withInteractionScopes, viewer },
 	);
 }
 
 let writes: Write[];
 let failWrites: boolean;
+let failCollection: (body: Record<string, unknown>) => boolean;
+let threadReply: unknown;
+let threadReads: number;
+let createdPosts: number;
 let timeline: unknown[];
 let threadMissing: boolean;
 let otherRequests: string[];
@@ -64,6 +68,10 @@ let nagiThread: unknown;
 test.beforeEach(async ({ page }) => {
 	writes = [];
 	failWrites = false;
+	failCollection = () => false;
+	threadReply = undefined;
+	threadReads = 0;
+	createdPosts = 0;
 	timeline = [{ post }];
 	threadMissing = false;
 	otherRequests = [];
@@ -77,12 +85,18 @@ test.beforeEach(async ({ page }) => {
 			const body = route.request().postDataJSON() as Record<string, unknown>;
 			if (body.collection !== 'com.suibari.nagi.actor.profile') {
 				writes.push({ method, body });
-				if (failWrites)
+				if (failWrites || failCollection(body))
 					return route.fulfill({ status: 500, json: { error: 'Internal', message: 'down' } });
+				if (method === 'com.atproto.repo.createRecord' && body.collection === 'app.bsky.feed.post')
+					createdPosts++;
+				const rkey =
+					body.collection === 'app.bsky.feed.post' && createdPosts > 1
+						? `created-${createdPosts}`
+						: 'created';
 				return route.fulfill({
 					json:
 						method === 'com.atproto.repo.createRecord'
-							? { uri: `at://${VIEWER}/${body.collection}/created`, cid: CID }
+							? { uri: `at://${VIEWER}/${body.collection}/${rkey}`, cid: CID }
 							: {},
 				});
 			}
@@ -98,6 +112,8 @@ test.beforeEach(async ({ page }) => {
 		if (method === 'app.bsky.actor.getPreferences')
 			return route.fulfill({ json: { preferences: [] } });
 		if (method === 'app.bsky.labeler.getServices') return route.fulfill({ json: { views: [] } });
+		if (method === 'app.bsky.feed.getLikes')
+			return route.fulfill({ json: { uri: post.uri, likes: [] } });
 		if (method === 'app.bsky.feed.getTimeline') return route.fulfill({ json: { feed: timeline } });
 		if (method === 'com.suibari.nagi.getThread') {
 			nagiThreadRequests.push(new URL(route.request().url()).searchParams.get('uri') ?? '');
@@ -106,12 +122,19 @@ test.beforeEach(async ({ page }) => {
 			return route.fulfill({ json: { thread: { post: nagiThread, replies: [] } } });
 		}
 		if (method === 'app.bsky.feed.getPostThread') {
-			const uri = new URL(route.request().url()).searchParams.get('uri');
+			const params = new URL(route.request().url()).searchParams;
+			const uri = params.get('uri');
+			const withReplies = params.get('depth') !== '0';
+			if (withReplies) threadReads++;
 			return route.fulfill({
 				json: {
 					thread: threadMissing
 						? { $type: 'app.bsky.feed.defs#notFoundPost', uri, notFound: true }
-						: { $type: 'app.bsky.feed.defs#threadViewPost', post, replies: [] },
+						: {
+								$type: 'app.bsky.feed.defs#threadViewPost',
+								post,
+								replies: withReplies && threadReply ? [threadReply] : [],
+							},
 				},
 			});
 		}
@@ -133,7 +156,16 @@ test.beforeEach(async ({ page }) => {
 				},
 			});
 		return route.fulfill({
-			json: { items: [], cards: [], folders: [], uris: [], actors: [], count: 0, drafts: [] },
+			json: {
+				items: [],
+				cards: [],
+				folders: [],
+				uris: [],
+				actors: [],
+				count: 0,
+				drafts: [],
+				tags: [],
+			},
 		});
 	});
 	await page.goto('/feed?tab=bsky-like');
@@ -207,9 +239,123 @@ test('asks sessions without interaction permission to reauthorize instead of wri
 const editor = (page: Page, name: string) =>
 	page.getByRole('dialog').getByRole('textbox', { name });
 
+const tagFacet = (prefix: string, tag: string) => ({
+	index: {
+		byteStart: new TextEncoder().encode(prefix).length,
+		byteEnd: new TextEncoder().encode(`${prefix}#${tag}`).length,
+	},
+	features: [{ $type: 'app.bsky.richtext.facet#tag', tag }],
+});
+
+const recentTags = (page: Page) =>
+	page.evaluate(
+		(viewer) =>
+			JSON.parse(localStorage.getItem(`nagi:tag-recents:v1.${encodeURIComponent(viewer)}`) ?? '[]'),
+		VIEWER,
+	);
+
+for (const name of ['Blueskyへ返信', 'Blueskyで引用']) {
+	test(`inserts a tag and Unicode emoji at the selection in ${name}`, async ({ page }) => {
+		await signIn(page);
+		await page.evaluate(async () => {
+			const path = '/src/lib/tag-favorites/tag-favorites.svelte.ts';
+			const { tagFavorites } = await import(/* @vite-ignore */ path);
+			tagFavorites.favorites = ['テスト'];
+		});
+		await card(page).getByRole('button', { name }).click();
+		const dialog = page.getByRole('dialog', { name, exact: true });
+		await expect(dialog.locator('.composer-target-card')).toContainText('投稿した人');
+		const input = editor(page, name);
+		await input.fill('前 消 後');
+		await input.press('Home');
+		await input.press('ArrowRight');
+		await input.press('ArrowRight');
+		await input.press('Shift+ArrowRight');
+		await dialog.getByRole('button', { name: 'タグを挿入' }).click();
+		await page.getByRole('button', { name: '#テスト を投稿に挿入' }).click();
+		await expect(input).toBeFocused();
+		await expect(input).toHaveText('前 #テスト 後');
+		await input.press('End');
+		await dialog.getByRole('button', { name: '絵文字を挿入' }).click();
+		const quickSearch = page.locator('.reaction-quick-search');
+		await quickSearch.fill('炎');
+		await page
+			.locator('.reaction-quick-results')
+			.getByRole('button', { name: '🔥 を投稿に挿入', exact: true })
+			.click();
+		await expect(input).toBeFocused();
+		await page.keyboard.insertText('続');
+		await expect(input).toHaveText('前 #テスト 後🔥続');
+	});
+}
+
+test('filters Unicode in all emoji input paths and preserves custom favorites', async ({
+	page,
+}) => {
+	await signIn(page);
+	const favoriteKey = `nagi:emoji-favorites:v2.${encodeURIComponent(VIEWER)}`;
+	await page.evaluate((key) => {
+		const custom = {
+			uri: 'at://did:plc:custom/community.lexicon.emoji.emoji/fire',
+			cid: 'preview',
+			did: 'did:plc:custom',
+			name: ':fire_custom:',
+			url: '/custom.png',
+			mediaType: 'image/png',
+		};
+		localStorage.setItem(
+			key,
+			JSON.stringify({
+				choices: [
+					{ kind: 'unicode', emoji: '😀' },
+					{ kind: 'custom', emoji: custom },
+					{ kind: 'unicode', emoji: '🎉' },
+				],
+			}),
+		);
+		localStorage.setItem(
+			'nagi:reaction-usage:v2',
+			JSON.stringify([{ kind: 'custom', emoji: custom, lastUsedAt: Date.now(), count: 1 }]),
+		);
+	}, favoriteKey);
+	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信', exact: true });
+	await dialog.getByRole('button', { name: '絵文字を挿入' }).click();
+	const quick = page.locator('.reaction-quick-picker');
+	await expect(quick.locator('.reaction-quick-favorites button')).toHaveCount(2);
+	await expect(quick.locator('img')).toHaveCount(0);
+	await quick.getByRole('button', { name: 'すべて見る' }).click();
+	const full = page.locator('.emoji-picker');
+	await expect(full.getByRole('tab', { name: 'カスタム' })).toHaveCount(0);
+	await expect(full.locator('.emoji-sort-item')).toHaveCount(2);
+	await full.locator('.emoji-sort-item').first().press('ArrowRight');
+	const favorites = await page.evaluate(
+		(key) => JSON.parse(localStorage.getItem(key)!).choices,
+		favoriteKey,
+	);
+	expect(
+		favorites.map((favorite: { kind: string; emoji: string }) =>
+			favorite.kind === 'unicode' ? favorite.emoji : favorite.kind,
+		),
+	).toEqual(['🎉', 'custom', '😀']);
+	await full.getByRole('tab', { name: '絵文字', exact: true }).click();
+	await full.getByRole('searchbox').fill('fire');
+	await full.locator('.emoji-unicode-item').filter({ hasText: '🔥' }).first().click();
+	const input = editor(page, 'Blueskyへ返信');
+	await expect(input).toHaveText('🔥');
+	await input.fill(':fire');
+	await page.keyboard.press('End');
+	const suggestions = page.locator('.mention-suggestions-portal');
+	await expect(suggestions.getByText('🔥', { exact: true })).toBeVisible();
+	await page.keyboard.press('Enter');
+	await expect(input).toHaveText('🔥');
+	expect(otherRequests.some((name) => /searchEmojis|resolveEmojis/.test(name))).toBe(false);
+});
+
 test('replies to a Bluesky post only on Bluesky, without a Nagi post or draft', async ({
 	page,
 }) => {
+	await page.clock.install();
 	await signIn(page);
 	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
 	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信' });
@@ -221,6 +367,11 @@ test('replies to a Bluesky post only on Bluesky, without a Nagi post or draft', 
 	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
 	await expect(page.getByRole('status').filter({ hasText: 'Blueskyへ投稿しました' })).toBeVisible();
 	await expect(dialog).toHaveCount(0);
+	const conversation = page.locator(`[data-bsky-thread="${post.uri}"]`);
+	const reply = conversation.getByText('Nagiから返信します', { exact: true });
+	await expect(reply).toBeVisible();
+	await expect.poll(() => threadReads).toBe(1);
+	await expect(reply).toHaveCount(1);
 
 	expect(writes).toHaveLength(1);
 	const record = writes[0].body.record as Record<string, unknown>;
@@ -232,6 +383,20 @@ test('replies to a Bluesky post only on Bluesky, without a Nagi post or draft', 
 		parent: { uri: post.uri, cid: CID },
 	});
 	expect(otherRequests.filter((method) => /putDraft|createPost/.test(method))).toEqual([]);
+
+	threadReply = {
+		$type: 'app.bsky.feed.defs#threadViewPost',
+		post: {
+			uri: `at://${VIEWER}/app.bsky.feed.post/created`,
+			cid: CID,
+			author: { did: VIEWER, handle: 'confirmed.test', displayName: '取り込み済み' },
+			record,
+			indexedAt: record.createdAt,
+		},
+	};
+	await page.clock.fastForward(31_000);
+	await expect(conversation.getByText('取り込み済み', { exact: true })).toBeVisible();
+	await expect(reply).toHaveCount(1);
 });
 
 test('quotes a Bluesky post as a Bluesky quote', async ({ page }) => {
@@ -239,13 +404,128 @@ test('quotes a Bluesky post as a Bluesky quote', async ({ page }) => {
 	await card(page).getByRole('button', { name: 'Blueskyで引用' }).click();
 	const dialog = page.getByRole('dialog', { name: 'Blueskyで引用' });
 	await editor(page, 'Blueskyで引用').click();
-	await page.keyboard.type('これいい');
+	await page.keyboard.type('これいい 🔥 #引用');
 	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
 	await expect.poll(() => writes.length).toBe(1);
 	expect((writes[0].body.record as { embed: unknown }).embed).toEqual({
 		$type: 'app.bsky.embed.record',
 		record: { uri: post.uri, cid: CID },
 	});
+	expect((writes[0].body.record as { facets: unknown }).facets).toEqual([
+		tagFacet('これいい 🔥 ', '引用'),
+	]);
+	await expect(dialog).toHaveCount(0);
+	expect(await recentTags(page)).toEqual(['引用']);
+});
+
+test('records tags from each created chunk without counting tags from failed submissions', async ({
+	page,
+}) => {
+	await signIn(page);
+	const replyText = `最初 🔥 #先頭
+${'長'.repeat(290)} 🔥 #末尾`;
+	const conversation = page.locator(`[data-bsky-thread="${post.uri}"]`);
+	const openReply = async (text: string) => {
+		await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
+		await editor(page, 'Blueskyへ返信').fill(text);
+		return page.getByRole('dialog', { name: 'Blueskyへ返信', exact: true });
+	};
+	const submit = (dialog: ReturnType<Page['getByRole']>) =>
+		dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
+
+	failCollection = (body) =>
+		body.collection === 'app.bsky.feed.post' &&
+		writes.filter((write) => write.body.collection === 'app.bsky.feed.post').length === 2;
+	let dialog = await openReply(replyText);
+	await submit(dialog);
+	await expect(dialog).toHaveCount(0);
+	const firstChunk = conversation.locator(
+		`[data-bsky-uri="at://${VIEWER}/app.bsky.feed.post/created"]`,
+	);
+	await expect(firstChunk.getByText('最初 🔥', { exact: false })).toBeVisible();
+	await expect(conversation.getByText('#末尾', { exact: true })).toHaveCount(0);
+	expect(await recentTags(page)).toEqual([]);
+	await openMenu(page, firstChunk);
+	await page.getByRole('menuitem', { name: '削除' }).click();
+	await page
+		.getByRole('dialog', { name: 'Blueskyの投稿を削除' })
+		.getByRole('button', { name: '削除する' })
+		.click();
+	await expect(firstChunk).toHaveCount(0);
+
+	failWrites = true;
+	dialog = await openReply('最初から失敗 #失敗');
+	await submit(dialog);
+	await expect(dialog.getByRole('alert')).toBeVisible();
+	await expect(conversation.getByText('#失敗', { exact: true })).toHaveCount(0);
+	expect(await recentTags(page)).toEqual([]);
+	await dialog.getByRole('button', { name: '閉じる' }).click();
+	await page.getByRole('button', { name: '破棄する' }).click();
+	expect(await recentTags(page)).toEqual([]);
+
+	failWrites = false;
+	failCollection = () => false;
+	dialog = await openReply(replyText);
+	await submit(dialog);
+	await expect(dialog).toHaveCount(0);
+	const records = writes
+		.slice(-2)
+		.map(({ body }) => body.record as { text: string; facets: unknown });
+	expect(records[0].facets).toEqual([tagFacet('最初 🔥 ', '先頭')]);
+	expect(records[1].facets).toEqual([tagFacet(`${'長'.repeat(290)} 🔥 `, '末尾')]);
+	expect(await recentTags(page)).toEqual(['先頭', '末尾']);
+	await expect(conversation.getByText('#末尾', { exact: true })).toBeVisible();
+});
+
+test('records tags when only the gate write fails', async ({ page }) => {
+	await signIn(page);
+	failCollection = (body) => body.collection === 'app.bsky.feed.postgate';
+	await card(page).getByRole('button', { name: 'Blueskyで引用' }).click();
+	const dialog = page.getByRole('dialog', { name: 'Blueskyで引用', exact: true });
+	await editor(page, 'Blueskyで引用').fill('引用 #公開');
+	await dialog.getByText('Blueskyでの返信・引用').click();
+	await dialog.getByRole('checkbox', { name: '引用を許可する' }).uncheck();
+	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
+	await expect(dialog).toHaveCount(0);
+	await expect(
+		page.getByText('投稿しましたが、返信・引用の設定を付けられませんでした'),
+	).toBeVisible();
+	expect(await recentTags(page)).toEqual(['公開']);
+});
+
+test('a pending reply does not enter the next account’s conversation or tag history', async ({
+	page,
+}) => {
+	await signIn(page);
+	const otherDid = 'did:plc:other-interaction-viewer';
+	let requestStarted!: () => void;
+	const requested = new Promise<void>((resolve) => (requestStarted = resolve));
+	let finishWrite!: () => void;
+	const response = new Promise<void>((resolve) => (finishWrite = resolve));
+	const uri = `at://${VIEWER}/app.bsky.feed.post/sent-before-switch`;
+	await page.route('**/xrpc/com.atproto.repo.createRecord', async (route) => {
+		if (route.request().postDataJSON().collection !== 'app.bsky.feed.post') return route.fallback();
+		requestStarted();
+		await response;
+		await route.fulfill({ json: { uri, cid: CID } });
+	});
+	await card(page).getByRole('button', { name: 'Blueskyへ返信' }).click();
+	await editor(page, 'Blueskyへ返信').fill('切替の前 #旧アカウント');
+	const dialog = page.getByRole('dialog', { name: 'Blueskyへ返信', exact: true });
+	await dialog.getByRole('button', { name: 'Blueskyへ投稿' }).last().click();
+	await requested;
+	try {
+		await signIn(page, true, otherDid);
+	} finally {
+		finishWrite();
+	}
+	await expect.poll(() => recentTags(page)).toEqual(['旧アカウント']);
+	await expect(page.locator(`[data-bsky-uri="${uri}"]`)).toHaveCount(0);
+	const otherTags = await page.evaluate(
+		(did) => localStorage.getItem(`nagi:tag-recents:v1.${encodeURIComponent(did)}`),
+		otherDid,
+	);
+	expect(otherTags).toBeNull();
 });
 
 test('keeps the text and stops when the post being replied to is gone', async ({ page }) => {

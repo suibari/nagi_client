@@ -45,6 +45,10 @@ export class BskyThreadLoader {
 	#active = 0;
 	constructor(private readonly fetcher: (uri: string) => Promise<BskyThreadSnapshot>) {}
 
+	invalidate(uri: string) {
+		this.#cache.delete(uri);
+	}
+
 	get(uri: string): Promise<BskyThreadSnapshot> {
 		const cached = this.#cache.get(uri);
 		if (cached && cached.expires > Date.now()) return cached.promise;

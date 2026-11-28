@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { EmojiSelection, MentionSelection } from '$lib/atproto/facets';
+	import type { MentionSelection } from '$lib/atproto/facets';
 	import { preparePostDraft, type LinkCardDraft } from '$lib/atproto/records';
 	import { applyBskyGates, checkBskyTarget, type BskyTargetStatus } from '$lib/bsky/agent';
 	import { DEFAULT_BSKY_GATES, type BskyGateSettings } from '$lib/bsky/gates';
@@ -10,9 +10,10 @@
 	import { postFollowNotice } from '$lib/feed/post-follow.svelte';
 	import { m } from '$lib/i18n/i18n.svelte';
 	import { MAX_IMAGE_COUNT, type ImageAttachment } from '$lib/images';
+	import { session } from '$lib/oauth/session.svelte';
 	import { composerHost, type BskyComposeTarget } from '$lib/post/composer-host.svelte';
 	import { postSubmissionErrorMessage } from '$lib/post/submission-error';
-	import Avatar from '../Avatar.svelte';
+	import ComposerTargetCard from '../ComposerTargetCard.svelte';
 	import Button from '../Button.svelte';
 	import ComposerEditor from '../ComposerEditor.svelte';
 	import ImageAttachmentEditor from '../ImageAttachmentEditor.svelte';
@@ -22,10 +23,6 @@
 	import Spinner from '../Spinner.svelte';
 	import Icon from '../shell/Icon.svelte';
 
-	/**
-	 * Bluesky 投稿への返信・引用（BSKY-09）。Bluesky にだけ投稿し、Nagi の投稿と下書きは作らない。
-	 * こっそり・CW・Nagi の絵文字のように Bluesky で意味を持たないものは出さない。
-	 */
 	let {
 		target,
 		submittable = $bindable(false),
@@ -38,7 +35,6 @@
 
 	let text = $state('');
 	let mentions = $state<MentionSelection[]>([]);
-	let emojis = $state<EmojiSelection[]>([]);
 	let attachments = $state<ImageAttachment[]>([]);
 	let linkCards = $state<LinkCardDraft[]>([]);
 	let dismissedUrls = $state<string[]>([]);
@@ -80,7 +76,6 @@
 	function reset() {
 		text = '';
 		mentions = [];
-		emojis = [];
 		attachments = [];
 		linkCards = [];
 		dismissedUrls = [];
@@ -90,25 +85,20 @@
 
 	export async function submit() {
 		if (!submittable) return;
+		const owner = $session;
 		busy = true;
 		onsendingchange?.(true);
 		error = '';
 		try {
 			const status = await checkBskyTarget(target.post.uri, target.kind);
+			if ($session !== owner) return;
 			if (status !== 'ok') {
 				error = statusMessage(status);
 				return;
 			}
-			const draft = preparePostDraft(
-				text,
-				undefined,
-				undefined,
-				attachments,
-				linkCards,
-				mentions,
-				emojis,
-			);
+			const draft = preparePostDraft(text, undefined, undefined, attachments, linkCards, mentions);
 			const created = await postToBluesky(draft, target);
+			if ($session !== owner) return;
 			// 返信の制限はスレッドの先頭にだけ効く。引用は新しいスレッドの先頭になる。
 			const gateWarning = await applyBskyGates(
 				{
@@ -123,6 +113,7 @@
 					return m.bskyGatesFailed();
 				},
 			);
+			if ($session !== owner) return;
 			reset();
 			composerHost.hide();
 			postFollowNotice.showBluesky(
@@ -130,6 +121,7 @@
 				gateWarning,
 			);
 		} catch (cause) {
+			if ($session !== owner) return;
 			if (cause instanceof CrosspostPartialError) {
 				// 途中まで投稿できている。同じ内容で送り直すと重複するので、閉じて伝える。
 				reset();
@@ -164,26 +156,9 @@
 </script>
 
 <section class="composer bsky-composer">
-	<div class="composer-target-box">
-		<div class="composer-target-card" class:reply class:quote={!reply}>
-			<div class="composer-target-header">
-				<div class="composer-target-badge">
-					<Icon name={reply ? 'reply' : 'quote'} size={14} />
-					<span>{reply ? m.replyTargetLabel() : m.quoteTargetLabel()}</span>
-					<span class="composer-target-sub">@{target.post.author.handle}</span>
-				</div>
-			</div>
-			<div class="composer-target-body">
-				<Avatar actor={target.post.author} size="small" />
-				<div class="composer-target-content">
-					<div class="composer-target-meta">
-						<span class="name">{target.post.author.displayName ?? target.post.author.handle}</span>
-					</div>
-					<p class="composer-target-text">{target.post.text}</p>
-				</div>
-			</div>
-		</div>
-	</div>
+	<ComposerTargetCard kind={target.kind} author={target.post.author}>
+		<p class="composer-target-text">{target.post.text}</p>
+	</ComposerTargetCard>
 
 	<p class="bsky-destination"><Icon name="bluesky" size={14} />{m.bskyComposeDestination()}</p>
 
@@ -194,8 +169,7 @@
 			<ComposerEditor
 				bind:value={text}
 				bind:mentions
-				bind:emojis
-				emojiPickerEnabled={false}
+				unicodeEmojiOnly
 				contentWarningEnabled={false}
 				placeholder={reply ? m.bskyReplyPlaceholder() : m.bskyQuotePlaceholder()}
 				ariaLabel={reply ? m.bskyReplyTitle() : m.bskyQuoteTitle()}

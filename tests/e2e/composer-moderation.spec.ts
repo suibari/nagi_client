@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
+	await page.addInitScript(() => localStorage.setItem('nagi-locale', 'ja'));
 	await page.route('**/xrpc/**', (route) => {
 		if (new URL(route.request().url()).pathname.endsWith('/com.atproto.repo.getRecord')) {
 			return route.fulfill({
@@ -71,3 +72,17 @@ for (const kind of ['reply', 'quote'] as const) {
 		await expect(target.locator('.cw-mask')).not.toHaveAttribute('role', 'button');
 	});
 }
+
+test('news and radio quote cards keep their content and can be removed', async ({ page }) => {
+	for (const [kind, expected] of [
+		['news', ['Test news source', 'Test news headline']],
+		['radio', ['Test artist - Test song']],
+	] as const) {
+		await page.getByRole('button', { name: `Open ${kind} target` }).click();
+		const target = page.locator('.post-modal .composer-target-card.quote');
+		for (const text of expected) await expect(target).toContainText(text);
+		await target.getByRole('button', { name: '引用を外す' }).click();
+		await expect(target).toHaveCount(0);
+		await page.locator('.post-modal').getByRole('button', { name: '閉じる' }).click();
+	}
+});

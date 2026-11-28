@@ -19,6 +19,8 @@
 		emojis = $bindable<EmojiSelection[]>([]),
 		mentionSuggestionsEnabled = true,
 		emojiPickerEnabled = true,
+		tagPaletteEnabled = true,
+		unicodeEmojiOnly = false,
 		id,
 		placeholder,
 		ariaLabel,
@@ -42,6 +44,8 @@
 		emojis?: EmojiSelection[];
 		mentionSuggestionsEnabled?: boolean;
 		emojiPickerEnabled?: boolean;
+		tagPaletteEnabled?: boolean;
+		unicodeEmojiOnly?: boolean;
 		id?: string;
 		placeholder?: string;
 		ariaLabel?: string;
@@ -113,6 +117,7 @@
 		bind:mentions
 		bind:emojis
 		{mentionSuggestionsEnabled}
+		{unicodeEmojiOnly}
 		{id}
 		{placeholder}
 		{ariaLabel}
@@ -127,7 +132,7 @@
 	<div class="composer-tools" class:with-leading={tools}>
 		{#if tools}<div class="composer-tools-leading">{@render tools()}</div>{/if}
 		<div class="composer-format-tools">
-			{#if emojiPickerEnabled}<button
+			{#if tagPaletteEnabled}<button
 					bind:this={tagButton}
 					class="icon-action"
 					class:active={tagPaletteOpen}
@@ -139,7 +144,8 @@
 					aria-expanded={tagPaletteOpen}
 					onmousedown={(event) => event.preventDefault()}
 					onclick={() => (tagPaletteOpen = !tagPaletteOpen)}><Icon name="hash" size={17} /></button
-				><button
+				>{/if}
+			{#if emojiPickerEnabled}<button
 					bind:this={emojiButton}
 					class="icon-action"
 					class:active={emojiPickerOpen}
@@ -178,7 +184,7 @@
 		</div>
 	</div>
 </div>
-{#if emojiPickerEnabled}<TagPalette
+{#if tagPaletteEnabled}<TagPalette
 		bind:open={tagPaletteOpen}
 		anchor={tagButton}
 		select={(tag) => editor?.insertTag(tag)}
@@ -186,6 +192,8 @@
 {#if emojiPickerEnabled}<QuickEmojiPalette
 		bind:open={emojiPickerOpen}
 		anchor={emojiButton}
+		restoreFocusOnSelect={false}
+		{unicodeEmojiOnly}
 		select={(emoji) => editor?.insertEmoji(emoji)}
 		ariaLabel={m.insertEmojiPickerAria()}
 		choiceAriaLabel={(emoji) => m.insertEmojiChoiceAria({ emoji })}
