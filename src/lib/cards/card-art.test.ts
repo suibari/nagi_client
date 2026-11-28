@@ -19,3 +19,20 @@ describe('line-art card backgrounds', () => {
 		);
 	});
 });
+
+describe('missing card art', () => {
+	const card = readFileSync(
+		new URL('../components/AffirmationCard.svelte', import.meta.url),
+		'utf8',
+	);
+
+	it('画像が無い記念日は読み込み失敗で文字だけのカードへ戻す', () => {
+		// AppView は全記念日に anniv-{id} を送るので、static/card-art に無い名前が普通に来る。
+		expect(card).toContain('onerror={() => (missingArt = art)}');
+		expect(card).toMatch(
+			/const art = \$derived\(revealed && card\.art !== missingArt \? card\.art : undefined\)/,
+		);
+		// has-art（ベールと帯）も art に連動して外れる。
+		expect(card).toContain('class:has-art={!!art}');
+	});
+});
