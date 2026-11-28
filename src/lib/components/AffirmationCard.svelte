@@ -68,7 +68,13 @@
 	);
 	// 未所持カードでは背景を出さない。何のカードかを伏せる演出のほうが優先。
 	const revealed = $derived(card.owned || revealUnowned);
-	const art = $derived(revealed ? card.art : undefined);
+	/*
+	 * AppView は記念日カードに画像の有無を問わず `anniv-{id}` を送ってくる。絵は
+	 * static/card-art に置いたものだけが出て、無いものは読み込み失敗で文字だけのカードへ戻す。
+	 * 失敗した名前を覚えるだけなので、別のカードに差し替わればまた読みに行く。
+	 */
+	let missingArt = $state<string | undefined>();
+	const art = $derived(revealed && card.art !== missingArt ? card.art : undefined);
 </script>
 
 <article
@@ -90,6 +96,7 @@
 			aria-hidden="true"
 			loading="eager"
 			decoding="async"
+			onerror={() => (missingArt = art)}
 		/>
 		<div class="card-art-veil" aria-hidden="true"></div>
 	{/if}

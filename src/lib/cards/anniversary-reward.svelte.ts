@@ -43,6 +43,7 @@ class AnniversaryCardReward {
 	/**
 	 * 背景画像を先に読み込ませる。記念日モーダルは一発勝負の演出なので、
 	 * 画像が間に合わないと文字だけのカードがめくれてしまう。
+	 * 名前は全記念日に来るので、絵を置いていない日は 404 になるだけ（カード側で文字だけに戻る）。
 	 */
 	preload(art: string | undefined): void {
 		if (!art || typeof Image === 'undefined') return;
