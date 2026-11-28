@@ -38,6 +38,16 @@ export function collapsibleBotReplies(
 	);
 }
 
+export type BotReplyCheck =
+	{ status: 'pending' } | { status: 'checked'; collapsible: Set<string> } | { status: 'failed' };
+
+/** FEED-05: candidates stay collapsed while checking; only a completed check can keep one collapsed afterwards. */
+export function collapsedBotReplies(candidates: Set<string>, check: BotReplyCheck): Set<string> {
+	if (check.status === 'failed') return new Set();
+	if (check.status === 'pending') return new Set(candidates);
+	return new Set([...candidates].filter((uri) => check.collapsible.has(uri)));
+}
+
 /** Short-lived, shared checks. Invalidation also prevents an old request from repopulating the cache. */
 export class BotReplyChecks {
 	private entries = new Map<

@@ -10,7 +10,12 @@
 	import { replyIndent } from '$lib/thread/replyIndent';
 	import { postPageHref } from '$lib/feed/post-follow.svelte';
 	import { session, oauthReady, hadRecentSession } from '$lib/oauth/session.svelte';
-	import { itemPosts, collapsibleBotReplies } from '$lib/thread/bot-reply-collapse';
+	import {
+		itemPosts,
+		collapsibleBotReplies,
+		collapsedBotReplies,
+		type BotReplyCheck,
+	} from '$lib/thread/bot-reply-collapse';
 	import {
 		botReplyChecks,
 		botReplyCheckRevision,
@@ -44,29 +49,30 @@
 	} = $props();
 
 	let expandedUris = $state<Set<string>>(new Set());
-	let checkedUris = $state<Set<string>>(new Set());
+	let check = $state<BotReplyCheck>({ status: 'pending' });
 	let knownPosts = $derived(itemPosts(item));
 	let candidates = $derived(
 		collapseBotReplies ? collapsibleBotReplies(knownPosts, $session?.did, true) : new Set<string>(),
 	);
 	let ready = $derived(Boolean($session || $oauthReady || !hadRecentSession()));
-	let collapseUris = $derived(
-		ready ? new Set([...candidates].filter((uri) => checkedUris.has(uri))) : new Set<string>(),
-	);
+	let collapseUris = $derived(ready ? collapsedBotReplies(candidates, check) : new Set<string>());
 	$effect(() => {
 		const posts = knownPosts;
 		const viewer = $session?.did;
 		const revision = $botReplyCheckRevision;
 		const currentItem = item;
 		const eligible = candidates;
-		checkedUris = new Set();
+		check = { status: 'pending' };
 		if (!ready || !eligible.size) return;
 		if (currentItem.conversation?.hiddenCount === 0) {
-			checkedUris = eligible;
+			check = { status: 'checked', collapsible: eligible };
 			return;
 		}
 		const rootUri = posts.find((post) => eligible.has(post.uri))?.reply?.root.uri;
-		if (!rootUri) return;
+		if (!rootUri) {
+			check = { status: 'failed' };
+			return;
+		}
 		let active = true;
 		const signature = JSON.stringify([
 			revision,
@@ -74,9 +80,16 @@
 			currentItem.conversation?.totalCount,
 		]);
 		void botReplyChecks.get(viewer, rootUri, signature).then((thread) => {
-			if (!active || !thread) return;
+			if (!active) return;
+			if (!thread) {
+				check = { status: 'failed' };
+				return;
+			}
 			// Local optimistic replies override a fetched snapshot immediately.
-			checkedUris = collapsibleBotReplies([thread.post, ...thread.replies, ...posts], viewer);
+			check = {
+				status: 'checked',
+				collapsible: collapsibleBotReplies([thread.post, ...thread.replies, ...posts], viewer),
+			};
 		});
 		return () => {
 			active = false;

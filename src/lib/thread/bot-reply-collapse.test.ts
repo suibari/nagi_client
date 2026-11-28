@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PostView, ThreadView } from '$lib/api/types';
-import { BotReplyChecks, collapsibleBotReplies, itemPosts } from './bot-reply-collapse';
+import {
+	BotReplyChecks,
+	collapsedBotReplies,
+	collapsibleBotReplies,
+	itemPosts,
+} from './bot-reply-collapse';
 
 const post = (uri: string, isBot = false, parent?: PostView, root = parent): PostView => ({
 	uri,
@@ -76,6 +81,21 @@ describe('bot reply collapse policy', () => {
 				},
 			}),
 		).toEqual([root, bot]);
+	});
+});
+
+describe('collapsed state while checking (FEED-05)', () => {
+	const candidates = new Set(['bot-a', 'bot-b']);
+	it('collapses every candidate before the check finishes', () => {
+		expect(collapsedBotReplies(candidates, { status: 'pending' })).toEqual(candidates);
+	});
+	it('expands candidates the check decided to keep', () => {
+		expect(
+			collapsedBotReplies(candidates, { status: 'checked', collapsible: new Set(['bot-a', 'x']) }),
+		).toEqual(new Set(['bot-a']));
+	});
+	it('expands every candidate when the check fails', () => {
+		expect(collapsedBotReplies(candidates, { status: 'failed' })).toEqual(new Set());
 	});
 });
 
